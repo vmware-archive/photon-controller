@@ -140,7 +140,7 @@ class TestEsxVmManager(unittest.TestCase):
         self.vm_manager.vim_client = vim_mock
 
         vm_folder_mock = MagicMock()
-        vim_mock.get_vm_folder.return_value = vm_folder_mock
+        vim_mock.vm_folder = vm_folder_mock
 
         root_res_pool_mock = PropertyMock(return_value="fake_rp")
         type(vim_mock).root_resource_pool = root_res_pool_mock
@@ -171,7 +171,7 @@ class TestEsxVmManager(unittest.TestCase):
         self.vm_manager.vim_client = vim_mock
 
         vm_folder_mock = MagicMock()
-        vim_mock.get_vm_folder.return_value = vm_folder_mock
+        vim_mock.vm_folder = vm_folder_mock
 
         self.vm_manager.register_vm("datastore_id", "1234567890")
 

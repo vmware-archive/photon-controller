@@ -53,6 +53,11 @@ def GetHostFolder(dataCenter=None, si=None):
     return GetDatacenter(dataCenter, si).hostFolder
 
 
+def GetVmFolder(dataCenter=None, si=None):
+    """Retrieve the folder where virtual machines are stored on this host."""
+    return GetDatacenter(dataCenter, si).vmFolder
+
+
 def FindChild(parent, name):
     """
     Find the managed entity with the given name in the list of children for
