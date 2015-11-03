@@ -574,6 +574,19 @@ class VimClient(object):
         else:
             raise VmNotFoundException("VM '%s' not found on host." % vm_id)
 
+    @lock_with("_vm_cache_lock")
+    def get_vm_obj_in_cache(self, vm_id):
+        """ Get vim vm object given ID of the vm.
+
+        :return: vim.VirtualMachine object
+        :raise VmNotFoundException when vm is not found
+        """
+        if vm_id not in self._vm_name_to_ref:
+            raise VmNotFoundException("VM '%s' not found on host." % vm_id)
+
+        moid = self._vm_name_to_ref[vm_id].split(":")[-1][:-1]
+        return vim.VirtualMachine(moid, self._si._stub)
+
     @hostd_error_handler
     def update_cache(self, timeout=10):
         """Polling on VM updates on host. This call will block caller until
