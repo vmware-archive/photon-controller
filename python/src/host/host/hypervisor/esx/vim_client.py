@@ -31,6 +31,7 @@ from common.log import log_duration_with
 from gen.agent.ttypes import TaskCache
 from pysdk import connect
 from pysdk import host
+from pysdk import invt
 from pysdk import task
 from pyVmomi import SoapStubAdapter
 from pyVmomi import vim
@@ -318,6 +319,15 @@ class VimClient(object):
 
     @property
     @hostd_error_handler
+    def vm_folder(self):
+        """Get the default vm folder for this host.
+
+        :rtype: vim.Folder
+        """
+        return invt.GetVmFolder(si=self._si)
+
+    @property
+    @hostd_error_handler
     def host_system(self):
         return host.GetHostSystem(self._si)
 
@@ -524,14 +534,6 @@ class VimClient(object):
         :rtype: list of vim.Datastore
         """
         return self.get_datastore_folder().childEntity
-
-    @hostd_error_handler
-    def get_vm_folder(self):
-        """Get the folder where virtual machines are stored on this host.
-
-        :rtype: vim.Folder
-        """
-        return self.find_by_inventory_path(VM_FOLDER_NAME)
 
     @hostd_error_handler
     def get_vms(self):
@@ -766,7 +768,7 @@ class VimClient(object):
                      "config"]
         )
         object_spec = PC.ObjectSpec(
-            obj=self.get_vm_folder(),
+            obj=self.vm_folder,
             selectSet=[traversal_spec]
         )
         return PC.FilterSpec(
