@@ -239,7 +239,7 @@ class EsxVmManager(VmManager):
         :type ConfigSpec
         :raise: VmAlreadyExistException
         """
-        folder = self.vim_client.get_vm_folder()
+        folder = self.vim_client.vm_folder
         resource_pool = self.vim_client.root_resource_pool
 
         # sanity check since VIM does not prevent this
@@ -471,7 +471,7 @@ class EsxVmManager(VmManager):
 
     def get_resource_ids(self):
         ids = []
-        vm_folder = self.vim_client.get_vm_folder()
+        vm_folder = self.vim_client.vm_folder
         for vm in vm_folder.GetChildEntity():
             ids.append(vm.name)
         return ids
@@ -956,7 +956,7 @@ class EsxVmManager(VmManager):
         if not os.path.isfile(os_path):
             raise VmNotFoundException("vmx path %s not found" % os_path)
 
-        folder = self.vim_client.get_vm_folder()
+        folder = self.vim_client.vm_folder
         resource_pool = self.vim_client.root_resource_pool
         vmx_datastore_path = os_to_datastore_path(os_path)
 
