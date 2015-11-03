@@ -582,6 +582,74 @@ struct DeleteDisksResponse {
   3: optional map<string, DeleteDiskError> disk_errors
 }
 
+// Transfer Image
+struct TransferImageRequest {
+  // The id of the source image.
+  1: required string source_image_id
+
+  2: required server_address.ServerAddress destination_host
+
+  // The datastore name or id.
+  3: required string destination_datastore
+
+  // The id of the datastore that image resides in.
+  4: optional string source_datastore
+
+  // If not specified, source_image_id will be the id of the image
+  // used at the destination
+  5: optional string destination_image_id
+
+  99: optional tracing.TracingInfo tracing_info
+}
+enum TransferImageResultCode {
+  /* The image was created successfully. */
+  OK = 0
+  /* Catch all error. */
+  SYSTEM_ERROR = 1
+  /* Transfer is rejected because another is in progress. */
+  TRANSFER_IN_PROGRESS = 2
+}
+struct TransferImageResponse {
+  1: required TransferImageResultCode result
+
+  // An opaque string to locate the transferred data at the
+  // receiving host
+  2: required string transferred_image_id
+
+  3: optional string error
+}
+
+// Receive Image
+struct ReceiveImageRequest {
+  // The ID of the Image.
+  1: required string image_id
+
+  // The datastore name or id.
+  2: required string datastore
+
+  // The opaque string from TransferImageResponse to identify the transferred
+  // image data.
+  3: required string transferred_image_id
+
+  99: optional tracing.TracingInfo tracing_info
+}
+enum ReceiveImageResultCode {
+  /* The image was created successfully. */
+  OK = 0
+  /* Catch all error. */
+  SYSTEM_ERROR = 1
+  /* The src image directory was not found. */
+  IMAGE_NOT_FOUND = 2
+  /* The destination image already exists. */
+  DESTINATION_ALREADY_EXIST = 3
+  /* The datastore was not found. */
+  DATASTORE_NOT_FOUND = 4
+}
+struct ReceiveImageResponse {
+  1: required ReceiveImageResultCode result
+  2: optional string error
+}
+
 // Create Image
 struct CreateImageRequest {
   // The ID of the Image.
@@ -1007,6 +1075,9 @@ service Host {
   DeleteImageResponse delete_image(1: DeleteImageRequest request)
   GetImagesResponse get_images(1: GetImagesRequest request)
   ImageInfoResponse get_image_info(1: ImageInfoRequest request)
+
+  TransferImageResponse transfer_image(1: TransferImageRequest request)
+  ReceiveImageResponse receive_image(1: ReceiveImageRequest request)
 
   /**
    * Image scan/sweep
