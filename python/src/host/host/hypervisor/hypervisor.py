@@ -155,3 +155,6 @@ class Hypervisor(object):
 
     def set_cpu_overcommit(self, value):
         self.placement_manager.cpu_overcommit = value
+
+    def acquire_cgi_ticket(self, url, op):
+        return self.hypervisor.acquire_cgi_ticket(url, op)
