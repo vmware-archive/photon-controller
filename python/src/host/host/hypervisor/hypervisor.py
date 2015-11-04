@@ -141,3 +141,6 @@ class Hypervisor(object):
 
     def acquire_vim_ticket(self):
         return self.hypervisor.acquire_vim_ticket()
+
+    def acquire_cgi_ticket(self, url, op):
+        return self.hypervisor.acquire_cgi_ticket(url, op)
