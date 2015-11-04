@@ -84,6 +84,8 @@ from gen.host.ttypes import GetVmNetworkResponse
 from gen.host.ttypes import GetVmNetworkResultCode
 from gen.host.ttypes import HostConfig
 from gen.host.ttypes import HostMode
+from gen.host.ttypes import HttpTicketResponse
+from gen.host.ttypes import HttpTicketResultCode
 from gen.host.ttypes import ImageInfoResponse
 from gen.host.ttypes import ImageInfoResultCode
 from gen.host.ttypes import LoadResponse
@@ -1840,6 +1842,28 @@ class HostHandler(Host.Iface):
             return ServiceTicketResponse(
                 ServiceTicketResultCode.BAD_REQUEST,
                 "Operation not supported")
+
+    @log_request
+    @error_handler(HttpTicketResponse, HttpTicketResultCode)
+    def get_http_ticket(self, request):
+        """ Get HTTP CGI ticket from host.
+
+        The ticket returned is only for performing the requested HTTP
+        operation on the specified URL.
+
+        :param request: HttpTicketRequest
+        :return: HttpTicketResponse
+        """
+        try:
+            ticket = self.hypervisor.acquire_cgi_ticket(request.url,
+                                                        request.op)
+            return HttpTicketResponse(HttpTicketResultCode.OK,
+                                      ticket=ticket)
+        except:
+            return self._error_response(
+                HttpTicketResultCode.SYSTEM_ERROR,
+                str(sys.exc_info()[0]),
+                HttpTicketResponse())
 
     @log_request
     @error_handler(MksTicketResponse, MksTicketResultCode)
