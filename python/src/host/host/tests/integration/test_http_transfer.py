@@ -22,7 +22,7 @@ from testconfig import config
 
 from gen.host.ttypes import HttpOp
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.http_disk_transfer import HttpTransferer
+from host.hypervisor.esx.http_disk_transfer import HttpNfcTransferer
 from host.hypervisor.esx.http_disk_transfer import HttpTransferException
 
 
@@ -42,9 +42,9 @@ class TestHttpTransfer(unittest.TestCase):
 
         self._logger = logging.getLogger(__name__)
         self.vim_client = VimClient(self.host, "root", self.pwd)
-        self.http_transferer = HttpTransferer(self.vim_client,
-                                              self.image_datastore,
-                                              self.host)
+        self.http_transferer = HttpNfcTransferer(self.vim_client,
+                                                 self.image_datastore,
+                                                 self.host)
 
         with tempfile.NamedTemporaryFile(delete=False) as source_file:
             with open(source_file.name, 'wb') as f:
@@ -116,3 +116,23 @@ class TestHttpTransfer(unittest.TestCase):
                 filecmp.cmp(self.random_file, downloaded_file.name,
                             shallow=False),
                 is_(True))
+
+    def test_get_streamoptimized_image_stream(self):
+        image_id = "ttylinux"
+        lease, url = self.http_transferer._get_image_stream_from_shadow_vm(
+            image_id)
+        try:
+            with tempfile.NamedTemporaryFile(delete=True) as downloaded_file:
+                # see if we can download without errors
+                self.http_transferer.download_file(url, downloaded_file.name)
+                # check that the first part of the file looks like that from a
+                # stream-optimized disk
+                with open(downloaded_file.name, 'rb') as f:
+                    data = f.read(65536)
+                    assert_that(len(data), is_(65536))
+                    regex = re.compile("streamOptimized",
+                                       re.IGNORECASE | re.MULTILINE)
+                    matches = regex.findall(data)
+                    assert_that(matches, not(empty()))
+        finally:
+            lease.Complete()
