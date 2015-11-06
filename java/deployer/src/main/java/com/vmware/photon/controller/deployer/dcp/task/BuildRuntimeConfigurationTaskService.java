@@ -429,8 +429,8 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     ContainersConfig containersConfig = HostUtils.getContainersConfig(this);
     Map<String, String> dynamicParameters = containersConfig.getContainerSpecs().get(containerType.name())
         .getDynamicParameters();
-    dynamicParameters.put("memoryGb",
-        String.valueOf(containersConfig.getContainerSpecs().get(containerType.name()).getMemoryGb()));
+    dynamicParameters.put("memoryMb",
+        String.valueOf(containersConfig.getContainerSpecs().get(containerType.name()).getMemoryMb()));
     dynamicParameters.put("cpuCount",
         String.valueOf(containersConfig.getContainerSpecs().get(containerType.name()).getCpuCount()));
     dynamicParameters.put("diskGb",

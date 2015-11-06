@@ -47,7 +47,7 @@ public class FlavorServiceTest {
     state.vmFlavorName = "vmFlavorName";
     state.diskFlavorName = "diskFlavorName";
     state.cpuCount = 1;
-    state.memoryGb = 2;
+    state.memoryMb = 2048;
     state.diskGb = 4;
 
     return state;
@@ -137,7 +137,7 @@ public class FlavorServiceTest {
       assertThat(savedState.vmFlavorName, is("vmFlavorName"));
       assertThat(savedState.diskFlavorName, is("diskFlavorName"));
       assertThat(savedState.cpuCount, is(1));
-      assertThat(savedState.memoryGb, is(2));
+      assertThat(savedState.memoryMb, is(2048));
       assertThat(savedState.diskGb, is(4));
     }
 

@@ -59,7 +59,7 @@ public class ContainersConfig {
     private int cpuCount;
 
     @Range(min = 1)
-    private int memoryGb;
+    private int memoryMb;
 
     @Range(min = 1)
     private int diskGb;
@@ -102,12 +102,12 @@ public class ContainersConfig {
       this.cpuCount = cpuCount;
     }
 
-    public int getMemoryGb() {
-      return memoryGb;
+    public int getMemoryMb() {
+      return memoryMb;
     }
 
-    public void setMemoryGb(int memoryGb) {
-      this.memoryGb = memoryGb;
+    public void setMemoryMb(int memoryMb) {
+      this.memoryMb = memoryMb;
     }
 
     public int getDiskGb() {

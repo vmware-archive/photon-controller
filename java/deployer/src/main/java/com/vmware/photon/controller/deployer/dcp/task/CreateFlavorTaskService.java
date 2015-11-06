@@ -205,15 +205,15 @@ public class CreateFlavorTaskService extends StatefulService {
               hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE)) {
             int finalCpuCount = Integer.parseInt(hostState.metadata.get(
                 HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE));
-            int finalMemoryGb = Integer.parseInt(hostState.metadata.get(
+            int finalMemoryMb = Integer.parseInt(hostState.metadata.get(
                 HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_GB_OVERWIRTE));
             int finalDiskGb = Integer.parseInt(hostState.metadata.get(
                 HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE));
 
             ServiceUtils.logInfo(service, "Use VM resource overwrite values: %d CPU, %dGB memory, %d GB disk",
-                finalCpuCount, finalMemoryGb, finalDiskGb);
+                finalCpuCount, finalMemoryMb, finalDiskGb);
 
-            createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryGb, finalDiskGb);
+            createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryMb, finalDiskGb);
           } else {
             queryContainerEntityLinks(currentState, vmState);
           }
@@ -313,18 +313,18 @@ public class CreateFlavorTaskService extends StatefulService {
 
           try {
             int finalCpuCount = 0;
-            int finalMemoryGb = 0;
+            int finalMemoryMb = 0;
             int finalDiskGb = 0;
 
             for (Operation getOperation : ops.values()) {
               ContainerTemplateService.State containerTemplateState = getOperation.getBody(
                   ContainerTemplateService.State.class);
               finalCpuCount = max(containerTemplateState.cpuCount, finalCpuCount);
-              finalMemoryGb += containerTemplateState.memoryGb;
+              finalMemoryMb += containerTemplateState.memoryMb;
               finalDiskGb += containerTemplateState.diskGb;
             }
 
-            createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryGb, finalDiskGb);
+            createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryMb, finalDiskGb);
           } catch (Throwable t) {
             failTask(t);
           }
@@ -333,20 +333,20 @@ public class CreateFlavorTaskService extends StatefulService {
   }
 
   private void createFlavorInApife(final State currentState, final VmService.State vmState, final int finalCpuCount,
-     final int finalMemoryGb, final int finalDiskGb) throws IOException {
+     final int finalMemoryMb, final int finalDiskGb) throws IOException {
 
     ApiClient client = HostUtils.getApiClient(this);
 
     final AtomicInteger finishLatch = new AtomicInteger(2);
     final List<Throwable> failures = new ArrayList<>();
-    FlavorCreateSpec vmFlavorCreateSpec = composeVmFlavorCreateSpec(vmState, finalCpuCount, finalMemoryGb);
+    FlavorCreateSpec vmFlavorCreateSpec = composeVmFlavorCreateSpec(vmState, finalCpuCount, finalMemoryMb);
     FlavorCreateSpec diskFlavorCreateSpec = composeDiskFlavorCreateSpec(vmState, finalDiskGb);
 
     final FlavorService.State flavorState = new FlavorService.State();
     flavorState.vmFlavorName = vmFlavorCreateSpec.getName();
     flavorState.diskFlavorName = diskFlavorCreateSpec.getName();
     flavorState.cpuCount = finalCpuCount;
-    flavorState.memoryGb = finalMemoryGb;
+    flavorState.memoryMb = finalMemoryMb;
     flavorState.diskGb = finalDiskGb;
 
     FutureCallback<Task> callback = new FutureCallback<Task>() {
@@ -372,7 +372,7 @@ public class CreateFlavorTaskService extends StatefulService {
   }
 
   private FlavorCreateSpec composeVmFlavorCreateSpec(final VmService.State vmState, int finalCpuCount,
-    int finalMemoryGb) {
+    int finalMemoryMb) {
     FlavorCreateSpec spec = new FlavorCreateSpec();
     spec.setName(String.format("mgmt-vm-%s", vmState.name));
     spec.setKind("vm");
@@ -381,7 +381,7 @@ public class CreateFlavorTaskService extends StatefulService {
     cost.add(new QuotaLineItem("vm", 1.0, QuotaUnit.COUNT));
     cost.add(new QuotaLineItem(String.format("vm.flavor.%s", spec.getName()), 1.0, QuotaUnit.COUNT));
     cost.add(new QuotaLineItem("vm.cpu", finalCpuCount, QuotaUnit.COUNT));
-    cost.add(new QuotaLineItem("vm.memory", finalMemoryGb, QuotaUnit.GB));
+    cost.add(new QuotaLineItem("vm.memory", finalMemoryMb, QuotaUnit.MB));
     cost.add(new QuotaLineItem("vm.cost", 1.0, QuotaUnit.COUNT));
     spec.setCost(cost);
 

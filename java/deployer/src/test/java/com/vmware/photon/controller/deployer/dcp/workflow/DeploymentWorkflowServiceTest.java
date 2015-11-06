@@ -1044,7 +1044,7 @@ public class DeploymentWorkflowServiceTest {
 
         assertThat(finalState.name, is(spec.getType()));
         assertThat(finalState.cpuCount, is(spec.getCpuCount()));
-        assertThat(finalState.memoryGb, is(spec.getMemoryGb()));
+        assertThat(finalState.memoryMb, is(spec.getMemoryMb()));
         assertThat(finalState.diskGb, is(spec.getDiskGb()));
         assertThat(finalState.isReplicated, is(spec.getIsReplicated()));
         assertThat(finalState.containerImage, is(spec.getContainerImage()));

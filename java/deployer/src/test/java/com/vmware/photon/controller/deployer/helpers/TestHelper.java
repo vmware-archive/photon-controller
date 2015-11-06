@@ -155,7 +155,7 @@ public class TestHelper {
     startState.portBindings = new HashMap<>();
     startState.portBindings.put(5432, 5432);
     startState.cpuCount = 1;
-    startState.memoryGb = 2;
+    startState.memoryMb = 2048;
     startState.diskGb = 4;
     return startState;
   }
@@ -172,7 +172,7 @@ public class TestHelper {
     containerTemplateServiceState.name = spec.getType();
     containerTemplateServiceState.isReplicated = spec.getIsReplicated();
     containerTemplateServiceState.cpuCount = spec.getCpuCount();
-    containerTemplateServiceState.memoryGb = spec.getMemoryGb();
+    containerTemplateServiceState.memoryMb = spec.getMemoryMb();
     containerTemplateServiceState.diskGb = spec.getDiskGb();
     containerTemplateServiceState.isPrivileged = spec.getIsPrivileged();
     containerTemplateServiceState.volumesFrom = spec.getVolumesFrom();
