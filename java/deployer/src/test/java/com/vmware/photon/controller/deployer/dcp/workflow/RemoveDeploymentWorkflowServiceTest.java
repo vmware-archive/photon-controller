@@ -563,7 +563,7 @@ public class RemoveDeploymentWorkflowServiceTest {
       flavorState.vmFlavorName = flavorName;
       flavorState.diskFlavorName = "diskFlavorName";
       flavorState.cpuCount = 1;
-      flavorState.memoryGb = 1;
+      flavorState.memoryMb = 1024;
       flavorState.diskGb = 1;
 
       testEnvironment.sendPostAndWait(FlavorFactoryService.SELF_LINK, flavorState);

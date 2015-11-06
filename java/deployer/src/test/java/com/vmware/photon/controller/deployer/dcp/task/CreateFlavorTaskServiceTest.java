@@ -471,7 +471,7 @@ public class CreateFlavorTaskServiceTest {
       assertThat(vmFlavorState.vmFlavorName, is("mgmt-vm-NAME"));
       assertThat(vmFlavorState.diskFlavorName, is("mgmt-vm-disk-NAME"));
       assertThat(vmFlavorState.cpuCount, is(2));
-      assertThat(vmFlavorState.memoryGb, is(6));
+      assertThat(vmFlavorState.memoryMb, is(6144));
       assertThat(vmFlavorState.diskGb, is(12));
     }
 
@@ -504,7 +504,7 @@ public class CreateFlavorTaskServiceTest {
       assertThat(vmFlavorState.vmFlavorName, is("mgmt-vm-NAME"));
       assertThat(vmFlavorState.diskFlavorName, is("mgmt-vm-disk-NAME"));
       assertThat(vmFlavorState.cpuCount, is(1));
-      assertThat(vmFlavorState.memoryGb, is(2));
+      assertThat(vmFlavorState.memoryMb, is(2));
       assertThat(vmFlavorState.diskGb, is(3));
     }
 
@@ -715,7 +715,7 @@ public class CreateFlavorTaskServiceTest {
       ContainerTemplateService.State containerTemplateSavedState1 = TestHelper.createContainerTemplateService(machine);
       ContainerTemplateService.State containerTemplateState2 = TestHelper.getContainerTemplateServiceStartState();
       containerTemplateState2.cpuCount = 2;
-      containerTemplateState2.memoryGb = 4;
+      containerTemplateState2.memoryMb = 4096;
       containerTemplateState2.diskGb = 8;
       ContainerTemplateService.State containerTemplateSavedState2 = TestHelper.createContainerTemplateService
           (machine, containerTemplateState2);

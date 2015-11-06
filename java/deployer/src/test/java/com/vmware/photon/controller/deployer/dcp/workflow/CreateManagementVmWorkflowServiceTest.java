@@ -552,7 +552,7 @@ public class CreateManagementVmWorkflowServiceTest {
       flavorServiceStartState.vmFlavorName = "vmFlavorName";
       flavorServiceStartState.diskFlavorName = "diskFlavorName";
       flavorServiceStartState.cpuCount = 1;
-      flavorServiceStartState.memoryGb = 2;
+      flavorServiceStartState.memoryMb = 2048;
       flavorServiceStartState.diskGb = 4;
       projectServiceStartState = new ProjectService.State();
       projectServiceStartState.projectName = "projectName";

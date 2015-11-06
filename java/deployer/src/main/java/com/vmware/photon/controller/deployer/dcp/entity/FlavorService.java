@@ -58,7 +58,7 @@ public class FlavorService extends StatefulService {
      */
     @NotNull
     @Immutable
-    public Integer memoryGb;
+    public Integer memoryMb;
 
     /**
      * This value represents the amount of disk which should be allocated for the VM, in GB.

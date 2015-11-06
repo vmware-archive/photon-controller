@@ -30,9 +30,9 @@ fi
 # jvm heap size will be set to by default is 128m
 jvm_mem=128
 
-{{#memoryGb}}
-jvm_mem=$(({{{memoryGb}}}*1024/2))
-{{/memoryGb}}
+{{#memoryMb}}
+jvm_mem=$(({{{memoryMb}}}/2))
+{{/memoryMb}}
 
 export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC {{{JAVA_DEBUG}}}"
 
