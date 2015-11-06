@@ -1,0 +1,31 @@
+registrationAddress: 172.31.253.10
+background_workers: 500
+background_workers_queue_size: 200
+
+database:
+  driverClass: org.postgresql.Driver
+  user: esxcloud
+  password: esxcloud
+  url: jdbc:postgresql://172.31.253.10/apife
+  properties:
+    hibernate.hbm2ddl.auto: validate
+
+  # the maximum amount of time to wait on an empty pool before throwing an exception
+  maxWaitForConnection: 1s
+
+  # the SQL query to run when validating a connection's liveness
+  validationQuery: "/* MyService Health Check */ SELECT 1"
+
+  # the minimum number of connections to keep open
+  minSize: 8
+
+  # the maximum number of connections to keep open
+  maxSize: 16
+
+  # whether or not idle connections should be validated
+  checkConnectionWhileIdle: false
+
+zookeeper:
+  quorum: 172.31.253.10:2181
+image:
+  replicationTimeout: -600

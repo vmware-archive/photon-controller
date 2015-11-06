@@ -1,0 +1,14 @@
+/develop
+/develop_tools
+/dist
+src/*/dist
+src/*/build
+*.pyc
+*.egg-info
+.coverage
+/visor-*
+
+# IDEA
+*.iml
+*.ipr
+*.iws

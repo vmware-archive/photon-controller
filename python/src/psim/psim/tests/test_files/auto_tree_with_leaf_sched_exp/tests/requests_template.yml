@@ -1,0 +1,8 @@
+# Placement requests
+---
+# Place request of 1 vm with 3 disks
+auto:
+   count: 100
+   flavor: core-220
+   disks:
+   - flavor: core-100

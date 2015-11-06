@@ -1,0 +1,29 @@
+# VIM
+.*.s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+
+# IDEA
+.idea
+
+# Local Dev DB
+mem.h2.db
+mem.trace.db
+
+# cscope, ctags
+cscope.files
+cscope.in.out
+cscope.out
+cscope.po.out
+tags
+
+
+.ruby
+
+tmp/
+ruby/common/test_files/deployment/dcmap.yml

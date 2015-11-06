@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+# Copyright (c) 2015 VMware, Inc. All Rights Reserved.
+from eccli.concurrency import run_concurrency
+
+from eccli.optparser import default_parser
+from eccli.thrift import get_client
+from gen.agent.ttypes import VersionRequest
+
+parser = default_parser(usage="eccli-version",
+                        add_help=True)
+(options, args) = parser.parse_args()
+
+client = get_client(options, "AgentControl")
+
+request = VersionRequest()
+
+print "Calling get_version..."
+response = client.get_version(request)
+print "Reponse: %s" % response
+
+report = run_concurrency("get_version", request, options)

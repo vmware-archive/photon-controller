@@ -1,0 +1,16 @@
+flavors:
+  # persistent disks
+  - name: core-100
+    kind: persistent-disk
+    cost:
+      - { key: "persistent-disk", value: 1.0, unit: "COUNT" }
+
+  - name: core-200
+    kind: persistent-disk
+    cost:
+      - { key: "persistent-disk", value: 1.0, unit: "COUNT" }
+
+  - name: core-300
+    kind: persistent-disk
+    cost:
+      - { key: "persistent-disk", value: 1.0, unit: "COUNT" }

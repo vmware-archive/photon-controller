@@ -1,0 +1,356 @@
+# Copyright 2015 VMware, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+# under the License is distributed on an "AS IS" BASIS, without warranties or
+# conditions of any kind, EITHER EXPRESS OR IMPLIED. See the License for the
+# specific language governing permissions and limitations under the License.
+
+module EsxCloud::Cli
+  module Commands
+    class Deployments < Base
+
+      usage "deployment create [<options>]"
+      desc "Create a new deployment"
+
+      def create(args = [])
+        options = parse_deployment_creation_arguments(args)
+
+        if interactive?
+          options = read_deployment_arguments_inactively(options)
+        end
+
+        validate_deployment_arguments(options)
+
+        if confirmed?
+          initialize_client
+          oauth_security_groups =
+              options[:oauth_security_groups].split(/\s*,\s*/) unless options[:oauth_security_groups].nil?
+          spec = EsxCloud::DeploymentCreateSpec.new(
+              options[:image_datastore],
+              EsxCloud::AuthInfo.new(
+                  options[:auth_enabled],
+                  options[:oauth_endpoint],
+                  options[:oauth_port],
+                  options[:oauth_tenant],
+                  options[:oauth_username],
+                  options[:oauth_password],
+                  oauth_security_groups
+              ),
+              options[:syslog_endpoint],
+              options[:ntp_endpoint],
+              options[:use_image_datastore_for_vms],
+              options[:loadbalancer_enabled])
+          deployment = EsxCloud::Deployment.create(spec)
+          puts green("deployment '#{deployment.id}' created")
+        else
+          puts yellow("OK, canceled")
+        end
+
+      end
+
+      usage "deployment deploy <id>"
+      desc "Perform a deployment"
+      def deploy(args = [])
+        id = shift_keyword_arg(args)
+        if id.blank?
+          usage_error("Please provide Deployment id")
+        end
+        deployment = client.deploy_deployment(id)
+        puts green("deployment '#{deployment.id}' deployed")
+      end
+
+      usage "deployment update <id> [options]"
+      desc "Update a deployment"
+      def update(args = [])
+        id = shift_keyword_arg(args)
+        if id.blank?
+          usage_error("Please provide Deployment id")
+        end
+
+        security_groups = nil
+        opts_parser = OptionParser.new do |opts|
+          opts.on('-g', '--security_groups Security Groups', 'List of security groups separated by comma (e.g, g1,
+g2)') do |g|
+            security_groups = g
+          end
+        end
+
+        parse_options(args, opts_parser)
+
+        if security_groups.nil?
+          puts red("No security groups were provided. Halted!")
+          exit
+        end
+
+        security_groups_in_hash = {items: security_groups.split(/\s*,\s*/)}
+
+        initialize_client
+        client.update_security_groups(id, security_groups_in_hash)
+
+        puts green("Security groups of deployment '#{id}' has been changed to #{security_groups}")
+      end
+
+      usage "deployment delete <id>"
+      desc "Delete Deployment by id"
+
+      def delete(args = [])
+        id = shift_keyword_arg(args)
+        if id.blank?
+          usage_error("Please provide Deployment id")
+        end
+
+        client.delete_api_deployment(id)
+        puts green("Deleted Deployment '#{id}'")
+      end
+
+      usage "deployment destroy <id>"
+      desc "Destroy Deployment by id"
+
+      def destroy(args = [])
+        id = shift_keyword_arg(args)
+        if id.blank?
+          usage_error("Please provide Deployment id")
+        end
+
+        client.destroy_deployment(id)
+        puts green("Destroy Deployment '#{id}'")
+      end
+
+      usage "deployment list"
+      desc "Lists all the deployments"
+
+      def list(args = [])
+        initialize_client
+
+        deployments = EsxCloud::Deployment.find_all.items
+        render_deployments(deployments)
+      end
+
+      usage "deployment show <id>"
+      desc "Show deployment info"
+
+      def show(args=[])
+        id = shift_keyword_arg(args)
+        usage_error("Please provide deployment id") if id.blank?
+
+        deployment = client.find_deployment_by_id(id)
+        vms = client.get_deployment_vms(id).items
+        data = vms.map do |vm|
+          connections = client.get_vm_networks(vm.id).network_connections.select { |n| !n.network.blank? }
+          [vm, connections.first.ip_address]
+        end
+
+        puts
+        puts "Deployment #{id}:"
+        puts
+        puts "  State:                        #{deployment.state}"
+        puts
+        puts "  Image Datastore:              #{deployment.image_datastore}"
+        puts "  Use image datastore for vms:  #{deployment.use_image_datastore_for_vms}"
+        puts
+        puts "  Auth Enabled:                 #{deployment.auth.enabled}"
+        puts "  Auth Endpoint:                #{deployment.auth.endpoint || "-"}"
+        puts "  Auth Port:                    #{deployment.auth.port || "-"}"
+        puts "  Auth Tenant:                  #{deployment.auth.tenant || "-"}"
+        puts "  Auth Security Groups:         #{deployment.auth.securityGroups || "-"}"
+        puts
+        puts "  Syslog Endpoint:              #{deployment.syslog_endpoint || "-"}"
+        puts "  Ntp Endpoint:                 #{deployment.ntp_endpoint || "-"}"
+        puts
+        puts "  Loadbalancer Enabled:         #{deployment.loadbalancer_enabled}"
+        puts
+        render_deployment_summary(data)
+        if deployment.migration.data_migration_cycle_size != 0
+          puts
+          puts "  MigrationState:"
+          puts "    Completed data migration cycles:         #{deployment.migration.completed_cycles}"
+          puts "    Current data migration cycles progress:  #{deployment.migration.data_migration_cycle_progress} / #{deployment.migration.data_migration_cycle_size}"
+          puts "    Vib upload progress:                     #{deployment.migration.vibs_uploaded} / #{deployment.migration.vibs_uploaded + deployment.migration.vibs_uploading}"
+        end
+      end
+
+      usage "deployment list_vms <id>"
+      desc "Lists all the vms associated with the deployment"
+
+      def list_vms(args = [])
+        id = shift_keyword_arg(args)
+        usage_error("Please provide deployment id") if id.blank?
+        initialize_client
+
+        render_vms(client.get_deployment_vms(id).items)
+      end
+
+      usage "deployment list_hosts <id>"
+      desc "Lists all the hosts associated with the deployment"
+
+      def list_hosts(args = [])
+        id = shift_keyword_arg(args)
+        usage_error("Please provide deployment id") if id.blank?
+        initialize_client
+
+        render_hosts(client.get_deployment_hosts(id).items)
+      end
+
+      usage "deployment pause_system <id>"
+      desc "Pause system under the deployment"
+      def pause_system(args = [])
+        id = shift_keyword_arg(args)
+        usage_error("Please provide deployment id") if id.blank?
+
+        client.pause_system(id)
+        puts green("System is paused")
+      end
+
+      usage "deployment configure_cluster <id> [<options>]"
+      desc "Configure a cluster of certain type associated with the deployment"
+      def configure_cluster(args = [])
+        type, image_id = nil, nil
+
+        opts_parser = OptionParser.new do |opts|
+          opts.on("-k", "--type TYPE",
+                  "Cluster type. Accepted values are KUBERNETES, MESOS, or SWARM") { |v| type = v }
+          opts.on("-i", "--imageId IMAGE_ID", "ID of the cluster image.") { |v| image_id = v }
+        end
+        id = shift_keyword_arg(args)
+        parse_options(args, opts_parser)
+
+        usage_error("Please provide deployment id") if id.blank?
+        usage_error("Please provide cluster type") if type.blank?
+        usage_error("Please provide image ID") if image_id.blank?
+        usage_error("Unsupported cluster type #{type}") unless %w(KUBERNETES MESOS SWARM).include? type
+
+        if confirmed?
+          initialize_client
+          spec = EsxCloud::ClusterConfigurationSpec.new(
+              type,
+              image_id)
+
+          config = EsxCloud::Deployment.configure_cluster(id, spec)
+
+          puts green("''#{type}' cluster is configured for deployment '#{id}'")
+        else
+          puts yellow("OK, canceled")
+        end
+      end
+
+      private
+
+      def parse_deployment_creation_arguments(args)
+        options = {
+            :image_datastore => nil,
+            :auth_enabled => false,
+            :oauth_endpoint => nil,
+            :oauth_port => nil,
+            :oauth_tenant => nil,
+            :oauth_username => nil,
+            :oauth_password => nil,
+            :oauth_security_groups => nil,
+            :syslog_endpoint => nil,
+            :ntp_endpoint => nil,
+            :use_image_datastore_for_vms => false,
+            :loadbalancer_enabled => true,
+        }
+
+        opts_parser = OptionParser.new do |opts|
+          opts.banner = "Usage: deployment create [options]"
+          opts.on('-i', '--image_datastore DATASTORE_NAME', 'Image Datastore Name') do |i|
+            options[:image_datastore] = i
+          end
+          opts.on('-v', '--use_image_datastore_for_vms', 'Use Image Datastore For VMs') do |_|
+            options[:use_image_datastore_for_vms] = true
+          end
+          opts.on('-a', '--enable_auth', 'Enable authentication/authorization for deployment') do |_|
+            options[:auth_enabled] = true
+          end
+          opts.on('-o', '--oauth_endpoint ENDPOINT', 'OAuth Endpoint (Service URL)') do |o|
+            options[:oauth_endpoint] = o
+          end
+          opts.on('-r', '--oauth_port PORT', 'OAuth Port (Authentication Server Port)') do |r|
+            options[:oauth_port] = r
+          end
+          opts.on('-t', '--oauth_tenant TENANT_NAME', 'OAuth Tenant/Domain') do |t|
+            options[:oauth_tenant]= t
+          end
+          opts.on('-u', '--oauth_username USERNAME', 'OAuth Tenant/Dommain Admin Username') do |u|
+            options[:oauth_username] = u
+          end
+          opts.on('-p', '--oauth_password PASSWORD', 'OAuth Tenant/Domain Admin Password') do |p|
+            options[:oauth_password] = p
+          end
+          opts.on('-g', '--oauth_security_groups SECURITY_GROUPS', 'Comma-separated list of security groups') do |g|
+            options[:oauth_security_groups] = g
+          end
+          opts.on('-s', '--syslog_endpoint ENDPOINT', 'Syslog Endpoint/IP') do |s|
+            options[:syslog_endpoint] = s
+          end
+          opts.on('-n', '--ntp_endpoint ENDPOINT', 'Ntp Endpoint/IP') do |n|
+            options[:ntp_endpoint] = n
+          end
+          opts.on('-l', '--disable_loadbalancer', 'Disable loadbalancer for deployment') do |o|
+            options[:loadbalancer_enabled] = false
+          end
+        end
+
+        parse_options(args, opts_parser)
+
+        options
+      end
+
+      def read_deployment_arguments_inactively(options)
+        options[:image_datastore] ||= ask("Image Datastore Name: ")
+
+        if options[:auth_enabled]
+          options[:oauth_endpoint] ||= ask("OAuth Endpoint: ")
+          options[:oauth_port] ||= ask("OAuth Port: ")
+          options[:oauth_tenant] ||= ask("OAuth Tenant: ")
+          options[:oauth_username] ||= ask("OAuth Username: ")
+          options[:oauth_password] ||= ask("OAuth Password: ")
+          options[:oauth_security_groups] ||= ask("OAuth Security Groups: ")
+        end
+
+        if options[:syslog_endpoint].nil?
+          syslog_input = ask("Syslog Endpoint: ")
+          options[:syslog_endpoint] = syslog_input.blank? ? nil : syslog_input
+        end
+
+        if options[:ntp_endpoint].nil?
+          ntp_input = ask("Ntp Endpoint: ")
+          options[:ntp_endpoint] = ntp_input.blank? ? nil : ntp_input
+        end
+
+        options
+      end
+
+      def validate_deployment_arguments(options)
+        if options[:image_datastore].blank?
+          usage_error("Image datastore name cannot be nil.")
+        end
+
+        if options[:auth_enabled]
+          if options[:oauth_endpoint].blank?
+            usage_error("OAuth endpoint cannot be nil when auth is enabled.")
+          end
+          if options[:oauth_port].blank?
+            usage_error("OAuth port cannot be nil when auth is enabled.")
+          end
+          if options[:oauth_tenant].blank?
+            usage_error("OAuth tenant cannot be nil when auth is enabled.")
+          end
+          if options[:oauth_username].blank?
+            usage_error("OAuth username cannot be nil when auth is enabled.")
+          end
+          if options[:oauth_password].blank?
+            usage_error("OAuth password cannot be nil when auth is enabled.")
+          end
+          if options[:oauth_security_groups].blank?
+            usage_error("OAuth security groups cannot be nil when auth is enabled.")
+          end
+        end
+      end
+    end
+  end
+end

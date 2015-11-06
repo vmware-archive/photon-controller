@@ -1,0 +1,9 @@
+bind: localhost
+registrationAddress: localhost
+port: 19000
+storagePath: "/tmp/dcp/cloud-store/"
+zookeeper:
+  quorum: localhost:2181
+  retries:
+    max_retries: 3
+

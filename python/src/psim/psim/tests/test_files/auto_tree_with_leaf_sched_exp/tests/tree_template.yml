@@ -1,0 +1,19 @@
+num_hosts: 512
+root_branchout: 1024
+sched_branchout: 32
+overcommit:
+  mem: 1.0
+  cpu: 1.0
+root_config:
+   min_fanout: 2
+   max_fanout: 16
+   fanout_ratio: 0.5
+# 32 Core, 128GB RAM, 100TB Disk
+# The Disk size is because, the FakeDisk
+# hardcodes the vm disk size to 1TB..which 
+# impacts placements.
+host_config:
+  cpu: 32
+  mem: 132352
+  disk: 102400
+  constraints: []

@@ -1,0 +1,68 @@
+{"components": [
+    {
+        "component": "CHAIRMAN",
+        "status": "INITIALIZING",
+        "instances": [
+            {
+                "address": "127.0.0.0",
+                "status": "INITIALIZING"
+            }
+        ]
+    },
+    {
+        "component": "ROOT_SCHEDULER",
+        "status": "ERROR",
+        "instances": [
+            {
+                "address": "127.0.0.1",
+                "status": "ERROR"
+            }
+        ]
+    },
+    {
+        "component": "HOUSEKEEPER",
+        "status": "READY",
+        "instances": [
+            {
+                "address": "127.0.0.2",
+                "status": "READY"
+            },
+            {
+                "address": "127.0.0.3",
+                "status": "READY"
+            },
+            {
+                "address": "127.0.0.4",
+                "status": "READY"
+            }
+        ]
+    },
+    {
+        "component": "DEPLOYER",
+        "status": "INITIALIZING",
+        "instances": [
+            {
+                "address": "127.0.0.5",
+                "status": "READY"
+            },
+            {
+                "address": "127.0.0.6",
+                "status": "READY",
+                "buildInfo": "version 0.0.1"
+            },
+            {
+                "address": "127.0.0.7",
+                "status": "INITIALIZING",
+                "message": "In progress",
+                "stats": {
+                    "k": "v"
+                }
+            }
+        ],
+        "message": "MGMT plane is deployed",
+        "stats": {
+            "READY": "3"
+        },
+        "buildInfo": "version 0.0.1"
+    }
+], "status": "ERROR"}

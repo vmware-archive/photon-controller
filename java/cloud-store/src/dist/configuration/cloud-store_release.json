@@ -1,0 +1,22 @@
+{
+  "cpuCount": 1,
+  "memoryGb": 4,
+  "diskGb": 8,
+  "isReplicated": true,
+  "isPrivileged": false,
+  "containerImage": "esxcloud/cloud-store",
+  "portBindings": {
+    "19000": 19000,
+    "19001": 19001
+  },
+  "volumeBindings": {
+    "/var/log": "/var/log"
+  },
+  "dynamicParameters": {
+    "CLOUD-STORE_BIND_ADDRESS": "0.0.0.0",
+    "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
+    "LOG_DIRECTORY": "/var/log/esxcloud",
+    "CLOUD-STORE_PORT": 19000,
+    "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store"
+  }
+}

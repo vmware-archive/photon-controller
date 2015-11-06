@@ -1,0 +1,8 @@
+{
+    "name": "network1",
+    "usageTags": [
+        "CLOUD",
+        "MGMT"
+    ],
+    "kind": "portGroup"
+}

@@ -1,0 +1,133 @@
+/*
+ * Copyright 2015 VMware, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License.  You may obtain a copy of
+ * the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, without warranties or
+ * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+
+package com.vmware.photon.controller.apife.entities;
+
+import com.vmware.photon.controller.api.DeploymentState;
+
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import java.util.Arrays;
+
+/**
+ * Tests {@link DeploymentEntity}.
+ */
+public class DeploymentEntityTest {
+  private DeploymentEntity entity;
+
+  /**
+   * Dummy test case to make Intellij recognize this as a test class.
+   */
+  @Test(enabled = false)
+  private void dummy() {
+  }
+
+  /**
+   * Test getters and setters.
+   */
+  public class AccessorsTest {
+    @BeforeMethod
+    public void setUp() {
+      entity = new DeploymentEntity();
+    }
+
+    @Test
+    public void testAll() {
+      entity.setState(DeploymentState.READY);
+      entity.setSyslogEndpoint("http://syslog");
+      entity.setAuthEnabled(true);
+      entity.setOauthEndpoint("192.168.0.1");
+      entity.setOauthPort(443);
+      entity.setOauthTenant("tenant");
+      entity.setOauthUsername("username");
+      entity.setOauthPassword("password");
+      entity.setOauthSecurityGroups(Arrays.asList(new String[]{"authGroup1, authGroup2"}));
+      entity.setNtpEndpoint("http://ntp");
+      entity.setImageDatastore("datastore1");
+      entity.setUseImageDatastoreForVms(true);
+      entity.setOperationId("opid");
+
+      assertThat(entity.getState(), is(DeploymentState.READY));
+      assertThat(entity.getSyslogEndpoint(), is("http://syslog"));
+      assertThat(entity.getAuthEnabled(), is(true));
+      assertThat(entity.getOauthEndpoint(), is("192.168.0.1"));
+      assertThat(entity.getOauthPort(), is(443));
+      assertThat(entity.getOauthTenant(), is("tenant"));
+      assertThat(entity.getOauthUsername(), is("username"));
+      assertThat(entity.getOauthPassword(), is("password"));
+      assertThat(entity.getOauthSecurityGroups(), is(Arrays.asList(new String[]{"authGroup1, authGroup2"})));
+      assertThat(entity.getNtpEndpoint(), is("http://ntp"));
+      assertThat(entity.getImageDatastore(), is("datastore1"));
+      assertThat(entity.getUseImageDatastoreForVms(), is(true));
+      assertThat(entity.getOperationId(), is("opid"));
+    }
+  }
+
+  /**
+   * Test equals method.
+   */
+  public class EqualsTest {
+    @BeforeMethod
+    public void setUp() {
+      entity = new DeploymentEntity();
+      entity.setSyslogEndpoint("http://syslog");
+      entity.setAuthEnabled(true);
+      entity.setOauthEndpoint("192.168.0.1");
+      entity.setOauthPort(443);
+      entity.setOauthTenant("t");
+      entity.setOauthUsername("u");
+      entity.setOauthPassword("p");
+      entity.setOauthSecurityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}));
+      entity.setNtpEndpoint("http://ntp");
+      entity.setImageDatastore("datastore1");
+      entity.setUseImageDatastoreForVms(true);
+    }
+
+    @Test
+    public void testEqualsItself() {
+      assertThat(entity.equals(entity), is(true));
+    }
+
+    @Test
+    public void testEqualsClone() throws Throwable {
+      assertThat(entity.equals(entity.clone()), is(true));
+    }
+
+    @Test
+    public void testStateIsIgnored() throws Throwable {
+      DeploymentEntity clone = (DeploymentEntity) entity.clone();
+      clone.setState(DeploymentState.READY);
+
+      assertThat(entity.equals(clone), is(true));
+    }
+
+    @Test
+    public void testOperationIdIsIgnored() throws Throwable {
+      DeploymentEntity clone = (DeploymentEntity) entity.clone();
+      clone.setOperationId("opid");
+
+      assertThat(entity.equals(clone), is(true));
+    }
+
+    @Test
+    public void testDoesNotEqual() throws Throwable {
+      DeploymentEntity other = (DeploymentEntity) entity.clone();
+      other.setSyslogEndpoint(null);
+
+      assertThat(entity.equals(other), is(false));
+    }
+  }
+}

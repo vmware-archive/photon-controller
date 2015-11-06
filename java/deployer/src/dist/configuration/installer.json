@@ -1,0 +1,17 @@
+{
+  "DEPLOYER_BIND_ADDRESS": "0.0.0.0",
+  "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
+  "DEPLOYER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/deployer",
+  "DEPLOYER_REGISTRATION_ADDRESS": "127.0.0.1",
+  "LOG_DIRECTORY": "/var/log/esxcloud",
+  "APIFE_PORT": 9000,
+  "DEPLOYER_PORT": 18000,
+  "TENANT_NAME": "mgmt-tenant",
+  "PROJECT_NAME": "mgmt-project",
+  "RESOURCE_TICKET_NAME": "mgmt-res-ticket",
+  "MAX_MEMORY_GB": 64,
+  "MAX_VM_COUNT": 20,
+  "VIB_DIRECTORY": "/var/esxcloud/packages",
+  "ZOOKEEPER_QUORUM": "127.0.0.1:2181",
+  "SHARED_SECRET": "6337dfac-73ab-4a46-8b15-8382652b61ef"
+}

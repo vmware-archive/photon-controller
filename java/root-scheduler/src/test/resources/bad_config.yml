@@ -1,0 +1,23 @@
+port: 15000
+root:
+  place_timeout_ms: 10000
+  find_timeout_ms: 60000
+  fan_out_ratio: 0.5
+  max_fan_out_count: 33
+  min_fan_out_count: 2
+  fast_place_response_timeout_ratio: 0.25
+  fast_place_response_ratio: 0.5
+  fast_place_response_min_count: 33
+zookeeper:
+  quorum: localhost:2181
+  retries:
+    max_retries: 3
+healthcheck:
+  period_ms: 1000
+  timeout_ms: 5000
+logging:
+  level: INFO
+  console:
+    logFormat: "%-5p [%d{ISO8601}]%X{request} %c: %m\n%ex"
+  loggers:
+    "com.vmware.esxcloud.rootscheduler": DEBUG

@@ -1,0 +1,38 @@
+#!/bin/bash -ex
+
+tools=$(readlink -nf $(dirname $0))
+source $tools/common.sh
+
+function usage() {
+  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD" 1>&2
+  echo
+  echo "Supplied args:"
+  echo $*
+  exit 1
+}
+
+if [ "$#" -lt 3 ]
+then
+  usage $*
+fi
+
+host_address=$1
+shift
+username=$1
+shift
+password=$1
+shift
+
+# Remove agent if existed
+agent_existing=`esxcli -s $host_address -u $username -p "$password" software vib list | grep esxcloud | wc -l`
+if [ $agent_existing -ne 0 ]
+then
+  esxcli -s $host_address -u $username -p "$password" software vib remove -f -n esxcloud
+fi
+
+# Remove agent if existed
+agent_existing=`esxcli -s $host_address -u $username -p "$password" software vib list | grep photon-controller-agent | wc -l`
+if [ $agent_existing -ne 0 ]
+then
+  esxcli -s $host_address -u $username -p "$password" software vib remove -f -n photon-controller-agent
+fi

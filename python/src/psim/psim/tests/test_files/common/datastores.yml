@@ -1,0 +1,15 @@
+---
+  # id: id of datastore
+  # capacity: total capacity in datastore in GB
+-
+  id: datastore-1
+  capacity: 1024
+-
+  id: datastore-2
+  capacity: 1024
+-
+  id: datastore-3
+  capacity: 1024
+-
+  id: datastore-4
+  capacity: 1024

@@ -1,0 +1,19 @@
+{
+  "cpuCount": 1,
+  "memoryGb": 1,
+  "diskGb": 1,
+  "isReplicated": false,
+  "isPrivileged": true,
+  "containerImage": "esxcloud/haproxy",
+  "portBindings": {
+    "8080": 8080,
+    "443": 443
+  },
+  "volumeBindings": {
+    "/var/log": "/var/log"
+  },
+  "dynamicParameters": {
+    "LOG_DIRECTORY": "/var/log",
+    "LOAD_BALANCER_HTTPS_PORT" : 443
+  }
+}

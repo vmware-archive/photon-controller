@@ -1,0 +1,55 @@
+{
+    "apiVersion": "v1",
+    "swaggerVersion": "1.2",
+    "basePath": "",
+    "resourcePath": "/test",
+    "apis": [
+        {
+            "path": "/test/path",
+            "operations": [
+                {
+                    "httpMethod": "GET",
+                    "summary": "Get path one.",
+                    "notes": "",
+                    "responseClass": "int",
+                    "nickname": "getPathOne",
+                    "parameters": [
+                        {
+                            "name": "foo",
+                            "required": true,
+                            "allowMultiple": false,
+                            "dataType": "String",
+                            "paramType": "path",
+                            "description": "The description",
+                            "allowableValues": {
+                                "values": ["Val1", "Val2"],
+                                "valueType": "LIST"
+                            },
+                            "defaultValue": "Val1"
+                        }
+                    ]
+                },
+                {
+                    "httpMethod": "POST",
+                    "summary": "Post path two.",
+                    "notes": "",
+                    "responseClass": "int",
+                    "nickname": "postPathOne",
+                    "parameters": [
+                        {
+                            "name": "foo",
+                            "required": true,
+                            "allowMultiple": false,
+                            "dataType": "HashMap[String,String]",
+                            "paramType": "query",
+                            "description": "",
+                            "allowableValues": null,
+                            "defaultValue": ""
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "models": {}
+}

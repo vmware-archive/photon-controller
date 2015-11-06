@@ -1,0 +1,16 @@
+COWD(# Disk DescriptorFile
+version=1
+encoding="UTF-8"
+CID=fffffffe
+parentCID=fffffffe
+isNativeSnapshot="no"
+createType="vmfsSparse"
+# The parent file name hint points to an invalid image directory
+parentFileNameHint="/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/92e62599-6689-4a8f-ba2a-633914b5048e.vmdk"
+# Extent description
+RW 16777216 VMFSSPARSE "64957258-3dbb-41b6-8fea-15479167e95d-delta.vmdk"
+
+# The Disk Data Base
+#DDB
+
+ddb.longContentID = "7def2e55006bf3512dfc0c5cfffffffe"

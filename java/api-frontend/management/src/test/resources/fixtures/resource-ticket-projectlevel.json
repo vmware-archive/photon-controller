@@ -1,0 +1,51 @@
+{
+    "id": "1-rt",
+    "kind": "resource-ticket",
+    "tags": [],
+    "name": "myrt",
+    "parentId": "1-rt-master",
+    "limits": [
+        {
+            "key": "vm.cost",
+            "value": 50.0,
+            "unit": "COUNT"
+        },
+        {
+            "key": "persistent-disk.cost",
+            "value": 50.0,
+            "unit": "COUNT"
+        },
+        {
+            "key": "network.cost",
+            "value": 50.0,
+            "unit": "COUNT"
+        },
+        {
+            "key": "ephemeral-disk.cost",
+            "value": 50.0,
+            "unit": "COUNT"
+        }
+    ],
+    "usage": [
+        {
+            "key": "vm.cost",
+            "value": 0.0,
+            "unit": "COUNT"
+        },
+        {
+            "key": "persistent-disk.cost",
+            "value": 0.0,
+            "unit": "COUNT"
+        },
+        {
+            "key": "network.cost",
+            "value": 0.0,
+            "unit": "COUNT"
+        },
+        {
+            "key": "ephemeral-disk.cost",
+            "value": 0.0,
+            "unit": "COUNT"
+        }
+    ]
+}

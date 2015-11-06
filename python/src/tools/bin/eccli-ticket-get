@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+# Copyright (c) 2015 VMware, Inc. All Rights Reserved.
+import sys
+
+from eccli.concurrency import run_concurrency
+from eccli.format import print_request
+from eccli.format import print_response
+from eccli.optparser import default_parser
+from eccli.thrift import get_client
+from gen.host.ttypes import ServiceTicketRequest, ServiceType
+
+parser = default_parser(usage="eccli-ticket-get [options]",
+                        add_help=True)
+parser.add_option("-t", "--type",
+                  action="store", type="string", dest="type",
+                  help="service type [NFC, VIM, HTTP]")
+parser.add_option("-d", "--datastore",
+                  action="store", type="string", dest="datastore",
+                  help="datastore name to get NFC ticket")
+(options, args) = parser.parse_args()
+
+if not options.type:
+    print >> sys.stderr, "Error: type is required\n"
+    parser.print_help()
+    exit(1)
+
+client = get_client(options)
+
+request = ServiceTicketRequest()
+type = ServiceType._NAMES_TO_VALUES[options.type]
+request.service_type = type
+request.datastore_name = options.datastore
+
+print_request(request)
+response = client.get_service_ticket(request)
+print_response(response)
+
+report = run_concurrency("get_service_ticket", request, options)

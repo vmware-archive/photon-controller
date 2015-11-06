@@ -1,0 +1,27 @@
+{
+    "id": "t1",
+    "selfLink": "http://localhost:9080/v1/tenants/t1",
+    "name": "t1name",
+    "resourceTickets": [
+        {
+            "id": "rt1",
+            "name": "rt1name"
+        },
+        {
+            "id": "rt2",
+            "name": "rt2name"
+        }
+    ],
+    "projects": [
+        {
+            "id": "p1",
+            "name": "p1name"
+        },
+        {
+            "id": "p2",
+            "name": "p2name"
+        }
+    ],
+    "kind": "tenant",
+    "tags": ["foo", "bar"]
+}

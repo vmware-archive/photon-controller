@@ -1,0 +1,16 @@
+num_hosts: 512
+root_branchout: 64
+sched_branchout: 8
+overcommit:
+  mem: 1.0
+  cpu: 1.0
+root_config:
+   min_fanout: 2
+   max_fanout: 32
+   fanout_ratio: 0.5
+host_config:
+  cpu: 32
+  mem: 132352
+  disk: 10240
+  constraints: []
+

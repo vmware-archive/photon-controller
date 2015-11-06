@@ -1,0 +1,179 @@
+{"apiVersion": "v1", "swaggerVersion": "1.2", "basePath": "", "resourcePath": "/test", "apis": [
+    {
+        "path": "/test/pathtwo",
+        "operations": [
+            {
+                "httpMethod": "POST",
+                "summary": "Get path two.",
+                "notes": "",
+                "responseClass": "List[SomeClass]",
+                "nickname": "getPathTwo",
+                "parameters": [
+                    {
+                        "name": "foo",
+                        "required": true,
+                        "allowMultiple": false,
+                        "dataType": "HashMap[String,String]",
+                        "paramType": "query",
+                        "description": "",
+                        "allowableValues": null,
+                        "defaultValue": ""
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "path": "/test/paththree",
+        "operations": [
+            {
+                "httpMethod": "POST",
+                "summary": "Get path three.",
+                "notes": "",
+                "responseClass": "ResourceList<SomeClass4>",
+                "nickname": "getPathThree",
+                "parameters": [
+                    {
+                        "name": "foo",
+                        "required": true,
+                        "allowMultiple": false,
+                        "dataType": "List[String]",
+                        "paramType": "query",
+                        "description": "",
+                        "allowableValues": null,
+                        "defaultValue": ""
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "path": "/test/pathone",
+        "operations": [
+            {
+                "httpMethod": "GET",
+                "summary": "Get path one.",
+                "notes": "",
+                "responseClass": "SomeClass3",
+                "nickname": "getPathOne",
+                "parameters": [
+                    {
+                        "name": "foo",
+                        "required": true,
+                        "allowMultiple": false,
+                        "dataType": "String",
+                        "paramType": "path",
+                        "description": "The description",
+                        "allowableValues": {
+                            "valueType": "LIST",
+                            "values": ["Val1", "Val2"]
+                        },
+                        "defaultValue": "Val1"
+                    }
+                ]
+            }
+        ]
+    }
+], "models": {
+    "SomeClass": {
+        "id": "SomeClass",
+        "name": "SomeClass",
+        "properties": {
+            "someProperty": {
+                "type": "String",
+                "required": true,
+                "items": null,
+                "description": "This is someProperty.",
+                "allowableValues": {
+                    "valueType": "LIST",
+                    "values": ["allowable1", "allowable2"]
+                }
+            }
+        }
+    },
+    "ResourceList<SomeClass4>": {
+        "id": "ResourceList",
+        "name": "ResourceList",
+        "properties": {
+            "items": {
+                "type": "List",
+                "required": true,
+                "items": {
+                    "$ref": "SomeClass4"
+                },
+                "description": null,
+                "allowableValues": null
+            }
+        }
+    },
+    "SomeClass3": {
+        "id": "SomeClass3",
+        "name": "SomeClass3",
+        "properties": {
+            "name": {
+                "type": "int",
+                "required": true,
+                "items": null,
+                "description": "This is name",
+                "allowableValues": null
+            },
+            "someProperty": {
+                "type": "String",
+                "required": true,
+                "items": null,
+                "description": "This is someProperty.",
+                "allowableValues": {
+                    "valueType": "LIST",
+                    "values": ["allowable1", "allowable2"]
+                }
+            }
+        }
+    },
+    "SomeClass4": {
+        "id": "SomeClass4",
+        "name": "SomeClass4",
+        "properties": {
+            "someClass": {
+                "type": "SomeClass",
+                "required": false,
+                "items": null,
+                "description": "This is nested model",
+                "allowableValues": null
+            },
+            "ids": {
+                "type": "List",
+                "required": true,
+                "items": {
+                    "type": "Integer"
+                },
+                "description": "This is collection of primitive",
+                "allowableValues": null
+            },
+            "class3s": {
+                "type": "List",
+                "required": true,
+                "items": {
+                    "$ref": "SomeClass3"
+                },
+                "description": "This is nested collection of model",
+                "allowableValues": null
+            }
+        }
+    },
+    "SomeClass2": {
+        "id": "SomeClass2",
+        "name": "SomeClass2",
+        "properties": {
+            "someProperty": {
+                "type": "String",
+                "required": true,
+                "items": null,
+                "description": "This is someProperty.",
+                "allowableValues": {
+                    "valueType": "LIST",
+                    "values": ["allowable1", "allowable2"]
+                }
+            }
+        }
+    }
+}}

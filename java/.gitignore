@@ -1,0 +1,13 @@
+.gradle
+.gradletasknamecache
+build
+out
+target
+tags
+
+# IDEA
+*.iml
+*.ipr
+*.iws
+*.ids
+.idea/

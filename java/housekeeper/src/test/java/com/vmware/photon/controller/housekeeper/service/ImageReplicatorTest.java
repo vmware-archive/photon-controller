@@ -1,0 +1,305 @@
+/*
+ * Copyright 2015 VMware, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License.  You may obtain a copy of
+ * the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, without warranties or
+ * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+
+package com.vmware.photon.controller.housekeeper.service;
+
+import com.vmware.dcp.common.Operation;
+import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.dcp.helpers.dcp.TestServiceIgnoresPosts;
+import com.vmware.photon.controller.common.logging.LoggingUtils;
+import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
+import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorServiceFactory;
+import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
+import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
+import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResultCode;
+import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusCode;
+import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusRequest;
+import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusResponse;
+import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
+import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
+
+import com.google.inject.Injector;
+import org.hamcrest.Matchers;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
+
+/**
+ * Test {@link ImageReplicator}.
+ */
+public class ImageReplicatorTest {
+
+  private static final String configFilePath = "/config.yml";
+  private static final int minReqCopies = 10;
+
+  private Injector injector;
+  private TestHost dcpHost;
+  private ImageReplicator replicator;
+
+  private String startTestServiceInStage(ImageReplicatorService.TaskState.TaskStage stage) throws Throwable {
+    ImageReplicatorService.State state = new ImageReplicatorService.State();
+    state.taskInfo = new ImageReplicatorService.TaskState();
+    state.taskInfo.stage = stage;
+
+    return startTestService(state);
+  }
+
+  private String startTestService(ImageReplicatorService.State state) throws Throwable {
+    TestServiceIgnoresPosts service = new TestServiceIgnoresPosts(ImageReplicatorService.State.class);
+
+    Operation op = dcpHost.startServiceSynchronously(service, state, ImageReplicatorServiceFactory.SELF_LINK);
+    return op.getBody(ImageReplicatorService.State.class).documentSelfLink;
+  }
+
+  /**
+   * Dummy test case to make Intellij recognize this as a test class.
+   */
+  @Test
+  private void dummy() {
+  }
+
+  /**
+   * Tests for the ReplicateImage method.
+   */
+  public class ReplicateImageTest {
+    @BeforeMethod
+    private void setUp() throws Throwable {
+      injector = TestHelper.createInjector(configFilePath);
+      HostClient hostClient = injector.getInstance(HostClient.class);
+      dcpHost = spy(TestHost.create(hostClient));
+      replicator = spy(new ImageReplicator(dcpHost, minReqCopies));
+
+      LoggingUtils.setRequestId(null);
+    }
+
+    @AfterMethod
+    private void tearDown() throws Throwable {
+      if (dcpHost != null) {
+        TestHost.destroy(dcpHost);
+      }
+    }
+
+    @Test
+    public void testOperationContainsContextId() throws Throwable {
+      LoggingUtils.setRequestId("validRequestId");
+      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(dcpHost);
+
+      ReplicateImageRequest requestStart = new ReplicateImageRequest();
+      replicator.replicateImage(requestStart);
+
+      assertThat("Operation RequestId does not match.", contextId[0], is("validRequestId"));
+    }
+
+    @Test
+    public void testOperationDoesNotContainContextId() throws Throwable {
+      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(dcpHost);
+
+      ReplicateImageRequest requestStart = new ReplicateImageRequest();
+      replicator.replicateImage(requestStart);
+
+      assertThat("Operation RequestId is not 'null'", contextId[0], nullValue());
+    }
+
+    @Test
+    public void testCopyTriggerFails() throws Throwable {
+      doThrow(Exception.class).when(dcpHost).sendRequest(any(Operation.class));
+
+      TestServiceIgnoresPosts service = new TestServiceIgnoresPosts(ImageReplicatorService.State.class);
+      dcpHost.startServiceSynchronously(service, null, ImageReplicatorServiceFactory.SELF_LINK);
+
+      ReplicateImageRequest request = new ReplicateImageRequest();
+      ReplicateImageResponse response = replicator.replicateImage(request);
+
+      assertThat(response.getResult().getCode(), Matchers.is(ReplicateImageResultCode.SYSTEM_ERROR));
+    }
+
+    @Test
+    public void testCopyTriggerTimesOut() throws Throwable {
+      doNothing().when(dcpHost).sendRequest(any(Operation.class));
+      replicator.setDcpOperationTimeout(1);
+
+      TestServiceIgnoresPosts service = new TestServiceIgnoresPosts(ImageReplicatorService.State.class);
+      dcpHost.startServiceSynchronously(service, null, ImageReplicatorServiceFactory.SELF_LINK);
+
+      ReplicateImageRequest request = new ReplicateImageRequest();
+      ReplicateImageResponse response = replicator.replicateImage(request);
+
+      assertThat(response.getResult().getCode(), is(ReplicateImageResultCode.SYSTEM_ERROR));
+    }
+  }
+
+  /**
+   * Tests for the GetReplicateImageStatus method.
+   */
+  public class GetReplicateImageStatusTest {
+
+    @BeforeMethod
+    private void setUp() throws Throwable {
+      injector = TestHelper.createInjector(configFilePath);
+      HostClient hostClient = injector.getInstance(HostClient.class);
+      dcpHost = spy(TestHost.create(hostClient));
+      replicator = spy(new ImageReplicator(dcpHost, 10));
+
+      LoggingUtils.setRequestId(null);
+    }
+
+    @AfterMethod
+    private void tearDown() throws Throwable {
+      if (dcpHost != null) {
+        TestHost.destroy(dcpHost);
+      }
+    }
+
+    @Test
+    public void testOperationContainsContextId() throws Throwable {
+      LoggingUtils.setRequestId("validRequestId");
+
+      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(dcpHost);
+      assertThat("Unexpected operation RequestId", contextId[0], not("validRequestId"));
+
+      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(
+          startTestServiceInStage(ImageReplicatorService.TaskState.TaskStage.FINISHED));
+
+      replicator.getImageReplicationStatus(request);
+      assertThat("Operation RequestId does not match.", contextId[0], is("validRequestId"));
+    }
+
+    @Test
+    public void testOperationDoesNotContainContextId() throws Throwable {
+      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(dcpHost);
+      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(
+          startTestServiceInStage(ImageReplicatorService.TaskState.TaskStage.FINISHED));
+
+      replicator.getImageReplicationStatus(request);
+      assertThat("Operation RequestId is not 'null'", contextId[0], nullValue());
+    }
+
+    @Test(dataProvider = "ReplicationCompletionStatesData")
+    public void testReplicationCompletionStates(ImageReplicatorService.TaskState.TaskStage taskStage,
+                                                ReplicateImageStatusCode statusCode) throws Throwable {
+      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(
+          startTestServiceInStage(taskStage));
+
+      ReplicateImageStatusResponse response = replicator.getImageReplicationStatus(request);
+      assertThat(response.getStatus().getCode(), is(statusCode));
+    }
+
+    @DataProvider(name = "ReplicationCompletionStatesData")
+    public Object[][] getReplicationCompletionStatesData() {
+      return new Object[][]{
+          {ImageReplicatorService.TaskState.TaskStage.FINISHED, ReplicateImageStatusCode.FINISHED},
+          {ImageReplicatorService.TaskState.TaskStage.FAILED, ReplicateImageStatusCode.FAILED},
+          {ImageReplicatorService.TaskState.TaskStage.CANCELLED, ReplicateImageStatusCode.CANCELLED},
+      };
+    }
+
+    @Test
+    public void testReplicationFailedWithGivenErrorMessage() throws Throwable {
+      ImageReplicatorService.State state = new ImageReplicatorService.State();
+      state.taskInfo = new ImageReplicatorService.TaskState();
+      state.taskInfo.stage = ImageReplicatorService.TaskState.TaskStage.FAILED;
+      state.taskInfo.failure = new com.vmware.dcp.common.ServiceErrorResponse();
+      state.taskInfo.failure.message = "Replication fails";
+
+      String operationId = startTestService(state);
+
+      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(operationId);
+      ReplicateImageStatusResponse response = replicator.getImageReplicationStatus(request);
+
+      assertThat(response.getStatus().getCode(), is(ReplicateImageStatusCode.FAILED));
+      assertThat(response.getStatus().getError(), is("Image replication failed. Error details: " + state
+          .taskInfo.failure.message));
+    }
+
+    @Test
+    public void testReplicationMinimumCopiesDone() throws Throwable {
+      ImageReplicatorService.State state = new ImageReplicatorService.State();
+      state.taskInfo = new ImageReplicatorService.TaskState();
+      state.taskInfo.stage = ImageReplicatorService.TaskState.TaskStage.STARTED;
+      state.finishedCopies = minReqCopies;
+
+      String operationId = startTestService(state);
+
+      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(operationId);
+      ReplicateImageStatusResponse response = replicator.getImageReplicationStatus(request);
+
+      assertThat(response.getStatus().getCode(), is(ReplicateImageStatusCode.FINISHED));
+    }
+
+    @Test
+    public void testReplicationBeforeMinRequiredCopiedWithFailures() throws Throwable {
+      ImageReplicatorService.State state = new ImageReplicatorService.State();
+      state.taskInfo = new ImageReplicatorService.TaskState();
+      state.taskInfo.stage = ImageReplicatorService.TaskState.TaskStage.STARTED;
+      //min required copies for replicator to return success is 10
+      state.finishedCopies = minReqCopies - 1;
+      state.failedOrCanceledCopies = 5;
+
+      String operationId = startTestService(state);
+
+      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(operationId);
+      ReplicateImageStatusResponse response = replicator.getImageReplicationStatus(request);
+
+      assertThat(response.getStatus().getCode(), is(ReplicateImageStatusCode.IN_PROGRESS));
+    }
+
+    @Test
+    public void testReplicationAfterMinRequiredCopiedWithFailures() throws Throwable {
+      ImageReplicatorService.State state = new ImageReplicatorService.State();
+      state.taskInfo = new ImageReplicatorService.TaskState();
+      state.taskInfo.stage = ImageReplicatorService.TaskState.TaskStage.STARTED;
+      state.finishedCopies = minReqCopies;
+      state.failedOrCanceledCopies = 5;
+
+      String operationId = startTestService(state);
+
+      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(operationId);
+      ReplicateImageStatusResponse response = replicator.getImageReplicationStatus(request);
+
+      assertThat(response.getStatus().getCode(), is(ReplicateImageStatusCode.FINISHED));
+    }
+
+    @Test
+    public void testReplicationAfterMinRequiredCopiedAndTaskFailed() throws Throwable {
+      ImageReplicatorService.State state = new ImageReplicatorService.State();
+      state.taskInfo = new ImageReplicatorService.TaskState();
+      state.taskInfo.stage = ImageReplicatorService.TaskState.TaskStage.FAILED;
+      state.finishedCopies = minReqCopies;
+      state.failedOrCanceledCopies = 5;
+
+      String operationId = startTestService(state);
+
+      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(operationId);
+      ReplicateImageStatusResponse response = replicator.getImageReplicationStatus(request);
+
+      assertThat(response.getStatus().getCode(), is(ReplicateImageStatusCode.FINISHED));
+    }
+
+    @Test
+    public void testServiceNotFound() throws Throwable {
+      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest("service-id");
+      ReplicateImageStatusResponse response = replicator.getImageReplicationStatus(request);
+      assertThat(response.getResult().getCode(), is(ReplicateImageResultCode.SERVICE_NOT_FOUND));
+      assertThat(response.getResult().getError(), is("ImageReplicatorService is unavailable"));
+    }
+  }
+}

@@ -1,0 +1,552 @@
+/*
+ * Copyright 2015 VMware, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License.  You may obtain a copy of
+ * the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, without warranties or
+ * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+
+package com.vmware.photon.controller.apife.backends;
+
+import com.vmware.photon.controller.api.ImageCreateSpec;
+import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.commands.steps.ImageUploadStepCmd;
+import com.vmware.photon.controller.apife.db.HibernateTestModule;
+import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
+import com.vmware.photon.controller.apife.entities.ImageEntity;
+import com.vmware.photon.controller.apife.entities.ImageSettingsEntity;
+import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.ImageUploadException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.DcpClient;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
+import org.mockito.Mock;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Guice;
+import org.testng.annotations.Test;
+import static junit.framework.TestCase.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+
+import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+
+
+/**
+ * Test {@link ImageBackend}.
+ */
+public class ImageDcpBackendTest {
+
+  private static ImageEntity prepareImageUpload(ImageBackend imageBackend, InputStream inputStream,
+                                                String imageFileName, String imageName,
+                                                ImageReplicationType replicationType)
+      throws ExternalException {
+    TaskEntity task = imageBackend.prepareImageUpload(inputStream, imageFileName, replicationType);
+    if (replicationType == ImageReplicationType.EAGER) {
+      assertThat(task.getSteps().size(), is(2));
+    } else {
+      assertThat(task.getSteps().size(), is(1));
+    }
+
+    StepEntity step = task.getSteps().get(0);
+    assertThat(step.getTransientResourceEntities().size(), is(1));
+    assertThat(step.getOperation(), is(Operation.UPLOAD_IMAGE));
+    ImageEntity image = (ImageEntity) step.getTransientResourceEntities().get(0);
+    assertThat(image.getName(), is(imageName));
+    assertThat(image.getState(), is(ImageState.CREATING));
+    assertThat(image.getReplicationType(), is(replicationType));
+    assertThat((InputStream) step.getTransientResource(ImageUploadStepCmd.INPUT_STREAM), is(inputStream));
+
+    if (replicationType == ImageReplicationType.EAGER) {
+      step = task.getSteps().get(1);
+      assertThat(step.getTransientResourceEntities().size(), is(1));
+      assertThat(step.getOperation(), is(Operation.REPLICATE_IMAGE));
+      assertThat((ImageEntity) step.getTransientResourceEntities().get(0), is(image));
+      assertThat(step.getTransientResource(ImageUploadStepCmd.INPUT_STREAM), nullValue());
+    }
+
+    ImageEntity imageEntity = imageBackend.findById(task.getEntityId());
+    assertThat(imageEntity.getName(), is(imageName));
+    assertThat(imageEntity.getState(), is(ImageState.CREATING));
+    assertThat(imageEntity.getReplicationType(), is(replicationType));
+
+    assertThat(task.getLockableEntityIds().size(), is(1));
+    assertThat(task.getLockableEntityIds().get(0), is(task.getEntityId()));
+
+    return imageEntity;
+  }
+
+  private static String createImageDocument(DcpClient dcpClient,
+                                            String imageName,
+                                            ImageState imageState,
+                                            Long imageSize) throws Throwable {
+    ImageService.State imageServiceState = new ImageService.State();
+    imageServiceState.name = imageName;
+    imageServiceState.state = imageState;
+    imageServiceState.replicationType = ImageReplicationType.EAGER;
+    imageServiceState.size = imageSize;
+    imageServiceState.totalDatastore = 10;
+    imageServiceState.totalImageDatastore =  7;
+    imageServiceState.replicatedDatastore = 5;
+    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(ImageServiceFactory.SELF_LINK, imageServiceState);
+    ImageService.State createdState = result.getBody(ImageService.State.class);
+    return ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);
+  }
+
+  @Test
+  private void dummy() {
+  }
+
+  /**
+   * Tests {@link ImageDcpBackend#deriveImage(ImageCreateSpec,
+   * ImageEntity)}.
+   */
+  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
+  public static class DeriveImageUploadTest extends BaseDaoTest {
+
+    private ImageBackend imageBackend;
+    private ApiFeDcpRestClient dcpClient;
+    private BasicServiceHost host;
+    @Inject
+    private TaskBackend taskBackend;
+    @Inject
+    private EntityLockBackend entityLockBackend;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      super.setUp();
+
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          ImageServiceFactory.SELF_LINK,
+          10, 10);
+
+      host.startServiceSynchronously(new ImageServiceFactory(), null);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+
+      imageBackend = new ImageDcpBackend(dcpClient, null, taskBackend, entityLockBackend, null);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      super.tearDown();
+
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      dcpClient.stop();
+    }
+
+    @Test
+    public void testSuccess() throws Throwable {
+      ImageCreateSpec imageCreateSpec = new ImageCreateSpec();
+      imageCreateSpec.setName("i1");
+      imageCreateSpec.setReplicationType(ImageReplicationType.EAGER);
+
+      ImageEntity originalImage = new ImageEntity();
+      originalImage.setSize(100L);
+      ImageSettingsEntity imageSettingsEntity = new ImageSettingsEntity();
+      imageSettingsEntity.setImage(originalImage);
+      imageSettingsEntity.setName("n");
+      imageSettingsEntity.setDefaultValue("v");
+      originalImage.getImageSettings().add(imageSettingsEntity);
+
+      String imageId = imageBackend.deriveImage(imageCreateSpec, originalImage).getId();
+      ImageEntity image = imageBackend.findById(imageId);
+      assertThat(image.getName(), is(imageCreateSpec.getName()));
+      assertThat(image.getReplicationType(), is(imageCreateSpec.getReplicationType()));
+      assertThat(image.getState(), is(ImageState.CREATING));
+      assertThat(image.getSize(), is(100L));
+      assertThat(image.getImageSettingsMap(), is((Map<String, String>) ImmutableMap.of("n", "v")));
+    }
+  }
+
+  /**
+   * Tests for creating a image.
+   */
+  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
+  public static class PrepareImageUploadTest extends BaseDaoTest {
+
+    private static String imageName;
+    private ImageBackend imageBackend;
+    private ApiFeDcpRestClient dcpClient;
+    private BasicServiceHost host;
+    @Inject
+    private TaskBackend taskBackend;
+    @Inject
+    private EntityLockBackend entityLockBackend;
+    @Mock
+    private InputStream inputStream;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      super.setUp();
+
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          ImageServiceFactory.SELF_LINK,
+          10, 10);
+
+      host.startServiceSynchronously(new ImageServiceFactory(), null);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+
+      imageBackend = new ImageDcpBackend(dcpClient, null, taskBackend, entityLockBackend, null);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      super.tearDown();
+
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      dcpClient.stop();
+    }
+
+    @Test
+    public void testPrepareImageUploadEager() throws ExternalException {
+      imageName = UUID.randomUUID().toString();
+      prepareImageUpload(imageBackend, inputStream, imageName, imageName, ImageReplicationType.EAGER);
+    }
+
+    @Test
+    public void testPrepareImageUploadOnDemand() throws ExternalException {
+      imageName = UUID.randomUUID().toString();
+      prepareImageUpload(imageBackend, inputStream, imageName, imageName, ImageReplicationType.ON_DEMAND);
+    }
+
+    @Test(dataProvider = "ImageFileNames")
+    public void testPrepareImageUploadImageFileNames(String imageFileName) throws ExternalException {
+      prepareImageUpload(imageBackend, inputStream, imageFileName, imageName, ImageReplicationType.ON_DEMAND);
+    }
+
+    @DataProvider(name = "ImageFileNames")
+    public Object[][] getImageNames() {
+      imageName = UUID.randomUUID().toString();
+      return new Object[][]{
+          {imageName},
+          {"/tmp/" + imageName},
+          {"tmp/" + imageName}
+      };
+    }
+
+    @Test(expectedExceptions = ImageUploadException.class,
+        expectedExceptionsMessageRegExp = "Image file name cannot be blank.")
+    public void testPrepareImageUploadBlankFileName() throws Throwable {
+      imageBackend.prepareImageUpload(inputStream, "", ImageReplicationType.ON_DEMAND);
+    }
+
+    @Test
+    public void testUploadingImageWithDuplicatedName() throws ExternalException {
+      int currentCountOfImages = imageBackend.getAll().size();
+      String testImage = UUID.randomUUID().toString();
+      imageBackend.prepareImageUpload(inputStream, testImage, ImageReplicationType.ON_DEMAND);
+      imageBackend.prepareImageUpload(inputStream, testImage, ImageReplicationType.ON_DEMAND);
+      flushSession();
+
+      assertThat(imageBackend.getAll().size(), is(currentCountOfImages + 2));
+    }
+  }
+
+  /**
+   * Tests for deleting an image.
+   */
+  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
+  public static class ImageDeleteTest extends BaseDaoTest {
+
+    private static String imageName;
+    private ImageBackend imageBackend;
+    private ApiFeDcpRestClient dcpClient;
+    private BasicServiceHost host;
+    @Inject
+    private TaskBackend taskBackend;
+    @Inject
+    private TombstoneBackend tombstoneBackend;
+    @Inject
+    private EntityLockBackend entityLockBackend;
+    @Mock
+    private VmBackend vmBackend;
+    @Mock
+    private InputStream inputStream;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      super.setUp();
+
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          ImageServiceFactory.SELF_LINK,
+          10, 10);
+
+      host.startServiceSynchronously(new ImageServiceFactory(), null);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+
+      imageBackend = new ImageDcpBackend(dcpClient, vmBackend, taskBackend, entityLockBackend, tombstoneBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      super.tearDown();
+
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      dcpClient.stop();
+    }
+
+    @Test
+    public void testPrepareImageDelete() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String id = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+
+      TaskEntity taskDelete = imageBackend.prepareImageDelete(id);
+      assertThat(taskDelete.getSteps().size(), is(2));
+      assertThat(taskDelete.getSteps().get(0).getOperation(), is(Operation.DELETE_IMAGE));
+      assertThat(taskDelete.getSteps().get(1).getOperation(), is(Operation.DELETE_IMAGE_REPLICAS));
+    }
+
+    @Test(expectedExceptions = InvalidImageStateException.class)
+    public void testPrepareImageDeleteInPendingDelete() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String id = createImageDocument(dcpClient, imageName, ImageState.PENDING_DELETE, 1L);
+      imageBackend.prepareImageDelete(id);
+    }
+
+    @Test(expectedExceptions = ImageNotFoundException.class)
+    public void testDeletingAnNonExistingImage() throws Throwable {
+      imageBackend.prepareImageDelete("non-existing-id");
+    }
+
+    @Test
+    public void testTombstone() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String id = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+      ImageEntity imageEntity = imageBackend.findById(id);
+      assertThat(imageBackend.findById(imageEntity.getId()), notNullValue());
+
+      imageBackend.tombstone(imageEntity);
+      try {
+        imageBackend.findById(imageEntity.getId());
+        fail("should have failed with ImageNotFoundException.");
+      } catch (ImageNotFoundException e) {
+      }
+    }
+  }
+
+  /**
+   * Tests for updating an Image.
+   */
+  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
+  public static class ImageUpdateTest extends BaseDaoTest {
+
+    private static String imageName;
+    private ImageBackend imageBackend;
+    private ApiFeDcpRestClient dcpClient;
+    private BasicServiceHost host;
+    @Inject
+    private TaskBackend taskBackend;
+    @Inject
+    private TombstoneBackend tombstoneBackend;
+    @Inject
+    private EntityLockBackend entityLockBackend;
+    @Inject
+    private VmBackend vmBackend;
+    @Mock
+    private InputStream inputStream;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      super.setUp();
+
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          ImageServiceFactory.SELF_LINK,
+          10, 10);
+
+      host.startServiceSynchronously(new ImageServiceFactory(), null);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+
+      imageBackend = new ImageDcpBackend(dcpClient, vmBackend, taskBackend, entityLockBackend, tombstoneBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      super.tearDown();
+
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      dcpClient.stop();
+    }
+
+    @Test
+    public void testUpdateSettings() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+
+      ImageEntity imageEntity = imageBackend.findById(imageId);
+
+      Map<String, String> imageSettings = new HashMap<>();
+      imageSettings.put("property-1", "value-1");
+      imageSettings.put("property-2", null);
+
+      imageBackend.updateSettings(imageEntity, imageSettings);
+
+      imageEntity = imageBackend.findById(imageId);
+
+      assertThat(imageEntity.getImageSettings().size(), is(2));
+
+      ImageSettingsEntity settings1 = imageEntity.getImageSettings().get(0);
+      assertThat(settings1.getImage().getId(), is(imageId));
+      assertThat(settings1.getName(), is("property-1"));
+      assertThat(settings1.getDefaultValue(), is("value-1"));
+
+      ImageSettingsEntity settings2 = imageEntity.getImageSettings().get(1);
+      assertThat(settings2.getImage().getId(), is(imageId));
+      assertThat(settings2.getName(), is("property-2"));
+      assertThat(settings2.getDefaultValue(), is(""));
+    }
+
+    @Test
+    public void testUpdateSize() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      Long originalImageSize = 1L;
+      Long newImageSize = originalImageSize + 1L;
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, originalImageSize);
+      ImageEntity imageEntity = imageBackend.findById(imageId);
+      assertThat(imageEntity.getTotalDatastore(), is(10));
+      assertThat(imageEntity.getTotalImageDatastore(), is(7));
+      assertThat(imageEntity.getReplicatedDatastore(), is(5));
+
+      imageBackend.updateSize(imageEntity, newImageSize);
+      imageEntity = imageBackend.findById(imageId);
+      assertThat(imageEntity.getSize(), is(newImageSize));
+    }
+  }
+
+  /**
+   * Tests for getting tasks related to an Image.
+   */
+  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
+  public static class ImageTasksTest extends BaseDaoTest {
+
+    private static String imageName;
+    private ImageBackend imageBackend;
+    private ApiFeDcpRestClient dcpClient;
+    private BasicServiceHost host;
+    @Inject
+    private TaskBackend taskBackend;
+    @Inject
+    private TombstoneBackend tombstoneBackend;
+    @Inject
+    private EntityLockBackend entityLockBackend;
+    @Inject
+    private VmBackend vmBackend;
+    @Mock
+    private InputStream inputStream;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      super.setUp();
+
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          ImageServiceFactory.SELF_LINK,
+          10, 10);
+
+      host.startServiceSynchronously(new ImageServiceFactory(), null);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+
+      imageBackend = new ImageDcpBackend(dcpClient, vmBackend, taskBackend, entityLockBackend, tombstoneBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      super.tearDown();
+
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      dcpClient.stop();
+    }
+
+    @Test
+    public void testGetTasks() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+      imageBackend.prepareImageDelete(imageId);
+      List<Task> tasks = imageBackend.getTasks(imageId, Optional.<String>absent());
+      assertThat(tasks.size(), is(1));
+      assertThat(tasks.get(0).getState(), is("QUEUED"));
+    }
+
+    @Test
+    public void testGetTasksWithGivenState() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+      imageBackend.prepareImageDelete(imageId);
+      List<Task> tasks = imageBackend.getTasks(imageId, Optional.of("FINISHED"));
+      assertThat(tasks.size(), is(0));
+    }
+
+    @Test(expectedExceptions = ImageNotFoundException.class,
+        expectedExceptionsMessageRegExp = "^Image id 'image1' not found$")
+    public void testGetTasksWithInvalidImageId() throws Exception {
+      imageBackend.getTasks("image1", Optional.<String>absent());
+    }
+  }
+}

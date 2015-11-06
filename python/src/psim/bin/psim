@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+# Copyright (c) 2014 VMware, Inc. All Rights Reserved.
+
+import argparse
+import logging
+import sys
+
+from psim.command import ParseError, parse_cmd
+import psim.commands
+
+PS1 = ">"
+
+def main():
+    parser = argparse.ArgumentParser(description="Placement Simulator")
+    parser.add_argument("-r", "--recipe")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="verbose mode")
+    args = parser.parse_args()
+
+    if args.recipe:
+        cmd_file = args.recipe
+        interactive = False
+    else:
+        interactive = True
+
+    if interactive:
+        print """\
+     _________________
+    < Welcome to psim >
+     -----------------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\\
+                    ||----w |
+                    ||     ||
+        """
+        while True:
+            try:
+                cmd = raw_input(PS1 + " ")
+                cmd = parse_cmd(cmd.split())
+                cmd.run()
+            except ParseError:
+                print 'Wrong command'
+                continue
+            except EOFError:
+                break
+            except Exception, e:
+                print e
+                continue
+    else:
+        with open(cmd_file, 'r') as f:
+            n = 1
+            for line in f:
+                try:
+                    if args.verbose: sys.stdout.write("#%d running %s" % (n, line))
+                    cmd = parse_cmd(line.split())
+                    cmd.run()
+                    if args.verbose: print ""
+                    n += 1
+                except ParseError:
+                    print 'Wrong command'
+                    print 'quit!'
+                    break
+
+if __name__ == '__main__':
+    main()

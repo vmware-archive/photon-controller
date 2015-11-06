@@ -1,0 +1,17 @@
+{
+  "cpuCount": 1,
+  "memoryGb": 1,
+  "diskGb": 8,
+  "isReplicated": false,
+  "isPrivileged": true,
+  "containerImage": "vmware/lightwave-sts",
+  "portBindings": {
+    "443":443
+  },
+  "volumeBindings": {
+    "/var/log/esxcloud": "/var/log/vmware"
+  },
+  "dynamicParameters": {
+    "LIGHTWAVE_DOMAIN" : "esxcloud"
+  }
+}

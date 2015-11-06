@@ -1,0 +1,65 @@
+#!/bin/sh
+#
+# Copyright 2013 VMware, Inc.  All rights reserved.
+#
+# photon-controller-agent:
+#   Start and stop photon-controller-agent
+#
+# chkconfig: on 101 100
+# description: photon-controller-agent, photon controller agent
+#
+
+
+export PATH=/bin:/sbin
+
+PHOTON_CONTROLLER_AGENT_TAG="photon-controller-agent"
+PHOTON_CONTROLLER_ROOT="/opt/vmware/photon/controller"
+PHOTON_CONTROLLER_AGENT_RUN="-m agent.agent"
+PHOTON_CONTROLLER_GROUPNAME="photon-controller-agent"
+
+# Optionally set additional PHOTON_CONTROLLER_AGENT_PARAMS
+. ${PHOTON_CONTROLLER_ROOT}/sh/photon_controller_params.sh
+
+PHOTON_CONTROLLER_AGENT_PARAMS="--hypervisor esx $PHOTON_CONTROLLER_AGENT_PARAMS"
+
+
+. ${PHOTON_CONTROLLER_ROOT}/sh/photon_controller_init.sh
+
+PYTHON_PATH="/bin/python"
+
+destroy_rp() {
+  # Delete the group from the system
+  init_destroy_rp ${PHOTON_CONTROLLER_GROUPNAME}
+  return $?
+}
+
+
+configure_rp() {
+  # Create resource pool if it doesn't exist and assign no minreservation
+  # and no maximum limits for memory and reserve one PCPU min.
+  # Memory reservation is in MB, cpu reservation in pct. -1 == unlimited
+  init_config_rp ${PHOTON_CONTROLLER_GROUPNAME} 0 -1 100 -1
+  return $?
+}
+
+
+start() {
+  ulimit -p 128
+  if [ `uname -r | grep '^5\.'` ]; then
+     PYVER="2.6"
+     export PYTHONPATH=$PHOTON_CONTROLLER_ROOT/$PYVER/site-packages
+  else
+     PYVER="2.7"
+     # Workaround for ESXi 6.0.0 build-3029758, in which python fails to load
+     # setuptools by .pth. Add it directly to PYTHONPATH.
+     PYTHONPATH=$PYTHONPATH:/lib/python$PYVER/site-packages/setuptools-0.6c11-py$PYVER.egg
+  fi
+  init_start ${PHOTON_CONTROLLER_AGENT_TAG} ${PHOTON_CONTROLLER_GROUPNAME} ${PYTHON_PATH} ${PHOTON_CONTROLLER_AGENT_RUN} ${PHOTON_CONTROLLER_AGENT_PARAMS}
+}
+
+stop() {
+  daemon_pid="$(ps -c | grep "python[ ]*$PYTHON_PATH $PHOTON_CONTROLLER_AGENT_RUN" | awk '{print $2}')"
+  init_stop ${PHOTON_CONTROLLER_AGENT_TAG} $daemon_pid
+}
+
+init_main ${PHOTON_CONTROLLER_AGENT_TAG} ${1}

@@ -1,0 +1,86 @@
+#!/bin/bash -ex
+# Copyright 2015 VMware, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License.  You may obtain a copy
+# of the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, without
+# warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+# License for then specific language governing permissions and limitations
+# under the License.
+
+ESX_PWD=$1
+
+# Define any custom config process
+if [ -n "$CUSTOM_TEST_CONFIG" ]; then
+    echo Using custom settings in $CUSTOM_TEST_CONFIG
+    source $CUSTOM_TEST_CONFIG
+else
+    echo No CUSTOM_TEST_CONFIG to override default test behavior
+fi
+
+env
+
+checklist="\
+  CHAIRMAN_IP\
+  DATASTORE_DIR\
+  ESX_IP\
+  ESX_DATASTORE\
+  IMAGES_DIR\
+  ISO_DATASTORE_DIR\
+  ISO_DIR"
+
+for var in $checklist; do
+  if [ -z "$(printenv $var)" ]; then
+      echo Cannot run test. $var is not defined.
+      echo This list of properties must be defined. $checklist
+      exit 1
+  fi
+done
+
+echo "Using ESX server $ESX_IP"
+
+cd $WORKSPACE
+git submodule update --init
+
+cd $WORKSPACE/python
+make clean
+make develop
+
+SSH_PATH=$WORKSPACE/python/misc/resources/scripts
+$SSH_PATH/gen-ssh-key
+$SSH_PATH/copy-id --password $ESX_PWD root@$ESX_IP
+
+make vib DEBUG=1
+
+$SSH_PATH/scp ./dist/photon-controller-agent-*.vib root@$ESX_IP:/tmp
+$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'esxcli software vib remove -f -n photon-controller-agent' || true
+$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'esxcli software vib install -f -v /tmp/photon-controller-agent-*.vib'
+
+$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'esxcfg-vswitch -a test' || true
+$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'esxcfg-vswitch -A "VM Network" test' || true
+$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'vim-cmd hostsvc/net/refresh' || true
+$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec '/etc/init.d/photon-controller-agent restart'
+
+IMAGE_SUB_DIR=images/tt/ttylinux
+
+# Copy the ttylinux image and metadata to datastore
+$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec "mkdir -p $DATASTORE_DIR/$IMAGE_SUB_DIR" || true
+$SSH_PATH/scp $IMAGES_DIR/* root@$ESX_IP:$DATASTORE_DIR/$IMAGE_SUB_DIR/
+
+# Copy the test iso to datastore
+$SSH_PATH/scp $ISO_DIR/* root@$ESX_IP:$ISO_DATASTORE_DIR/
+
+ESX_PWD_ESCAPE=$(echo $ESX_PWD | sed 's/\$/$$/g')
+# Save return code from the test run and copy the agent log.
+make -s test VERBOSE_REPORT=1 XUNIT=1 INTEGRATION=1 \
+  ESX_PWD=$ESX_PWD_ESCAPE REMOTE_SERVER=$ESX_IP DATASTORES=$ESX_DATASTORE \
+  REMOTE_ISO="[$ESX_DATASTORE] $ISO_NAME" CHAIRMAN=$CHAIRMAN_IP:13000 \
+  DISABLE_HYPERVISOR_LOGGING=1 \
+  || make_return_code=$?
+
+$SSH_PATH/scp root@$ESX_IP:/var/log/photon-controller-agent.log . || true
+
+exit $make_return_code

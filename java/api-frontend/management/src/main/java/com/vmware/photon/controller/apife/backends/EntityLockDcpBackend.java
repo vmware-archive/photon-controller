@@ -1,0 +1,143 @@
+/*
+ * Copyright 2015 VMware, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License.  You may obtain a copy of
+ * the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, without warranties or
+ * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+
+package com.vmware.photon.controller.apife.backends;
+
+import com.vmware.dcp.common.Operation;
+import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
+import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Entity Lock operations using DCP cloud store.
+ */
+@Singleton
+public class EntityLockDcpBackend implements EntityLockBackend {
+
+  private static final Logger logger = LoggerFactory.getLogger(EntityLockDcpBackend.class);
+
+  private final ApiFeDcpRestClient dcpClient;
+
+  @Inject
+  public EntityLockDcpBackend(ApiFeDcpRestClient dcpClient) {
+    this.dcpClient = dcpClient;
+    this.dcpClient.start();
+  }
+
+  @Override
+  public void setStepLock(BaseEntity entity, StepEntity step) throws ConcurrentTaskException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void clearLocks(StepEntity step) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void setTaskLock(String entityId, TaskEntity task) throws ConcurrentTaskException {
+    checkNotNull(entityId, "Entity cannot be null.");
+    checkNotNull(task, "TaskEntity cannot be null.");
+
+    EntityLockService.State state = new EntityLockService.State();
+    state.taskId = task.getId();
+    state.entityId = entityId;
+    state.documentSelfLink = entityId;
+
+    try {
+      dcpClient.postAndWait(EntityLockServiceFactory.SELF_LINK, state);
+      logger.info("Entity Lock with entityId : {} and taskId: {} has been set", state.entityId, state.taskId);
+    } catch (DcpRuntimeException e) {
+      //re-throw any exception other than a conflict which indicated the lock already exists
+      if (e.getOperationResult().completedOperation.getStatusCode() != Operation.STATUS_CODE_CONFLICT) {
+        throw e;
+      }
+
+      //creation failed since a lock for this entity already exists
+
+      //check if the lock is being re-acquired by the same task, if yes then nothing needs to be done
+      EntityLockService.State lock = null;
+      try {
+        lock = getByEntityIdOrThrow(entityId);
+      } catch (DocumentNotFoundException ex) {
+        String errorMessage = String.format(
+            "Failed to create lock for entityid {%s} and taskid {%s} because an existing lock was detected but it " +
+                "disappeared thereafter, throwing ConcurrentTaskException anyways so that client can re-try",
+            entityId,
+            task.getId());
+        logger.warn(errorMessage);
+        throw new ConcurrentTaskException();
+      }
+
+      if (!lock.taskId.equals(task.getId())) {
+        logger.warn("Entity Lock with entityId: {} already acquired by taskId {}", entityId, lock.taskId);
+        throw new ConcurrentTaskException();
+      }
+
+      logger.info("Ignoring lock conflict for entityId : {} because task id : {} already owns the it",
+          entityId, task.getId());
+    }
+  }
+
+  @Override
+  public void clearTaskLocks(TaskEntity task) {
+    checkNotNull(task, "TaskEntity cannot be null.");
+    List<String> failedToDeleteLockableEntityIds = new ArrayList<>();
+    for (String lockableEntityId : task.getLockableEntityIds()) {
+      String lockUrl = EntityLockServiceFactory.SELF_LINK + "/" + lockableEntityId;
+      try {
+        dcpClient.deleteAndWait(lockUrl, new EntityLockService.State());
+        logger.info("Entity Lock with taskId : {} and url : {} has been cleared", task.getId(), lockUrl);
+      } catch (Throwable swallowedException) {
+        failedToDeleteLockableEntityIds.add(lockableEntityId);
+        logger.error("Failed to delete entity lock with url: " + lockUrl, swallowedException);
+      }
+    }
+    task.setLockableEntityIds(failedToDeleteLockableEntityIds);
+  }
+
+  private EntityLockService.State getByEntityIdOrThrow(String entityId) throws DocumentNotFoundException {
+    Operation operation = dcpClient.getAndWait(EntityLockServiceFactory.SELF_LINK + "/" + entityId);
+    return operation.getBody(EntityLockService.State.class);
+  }
+
+  @Override
+  public Boolean lockExistsForEntityId(String entityId) {
+    throw new UnsupportedOperationException();
+  }
+
+  private List<String> findDocumentsByTaskId(String taskId) {
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    if (!taskId.isEmpty()) {
+      termsBuilder.put("taskId", taskId);
+    }
+
+    return dcpClient.queryDocumentsForLinks(EntityLockService.State.class, termsBuilder.build());
+  }
+}

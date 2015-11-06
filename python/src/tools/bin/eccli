@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+# Copyright (c) 2015 VMware, Inc. All Rights Reserved.
+
+import os
+import subprocess
+import sys
+
+from eccli.optparser import default_parser
+
+
+__dir__ = os.path.dirname(__file__)
+PROG = "eccli"
+
+
+def get_subcommands():
+    prefix = get_command() + "-"
+    files = os.listdir(__dir__)
+    subcommands = [cmd[len(prefix):].split("-")[0]
+                   for cmd in files if cmd.startswith(prefix)]
+
+    return set(subcommands)
+
+
+def get_command():
+    cmd = PROG
+    for subcmd in sys.argv[1:]:
+        if subcmd.startswith("-"):
+            break
+        else:
+            cmd += "-" + subcmd
+    return cmd
+
+
+def usage(args=[]):
+    if args:
+        parser.set_usage(PROG + " " + " ".join(args) + " {cmd} [cmd options]")
+    parser.print_help()
+    print """
+Available Namespaces:
+  %s
+    """ % "\n  ".join(get_subcommands())
+
+
+parser = default_parser(usage="Usage: %s {namespace}+ {cmd} "
+                              "[options]" % PROG,
+                        add_help=False)
+(options, args) = parser.parse_args()
+
+cmd = get_command()
+if cmd == PROG:
+    usage()
+    sys.exit(0)
+
+# Run subcommand if it exists
+cmd_path = os.path.join(__dir__, cmd)
+if os.path.isfile(cmd_path):
+    cmd = cmd_path + " " + " ".join(sys.argv[1:])
+    return_code = subprocess.call(cmd, shell=True)
+    sys.exit(return_code)
+
+if not get_subcommands():
+    print >> sys.stderr, "Err: Unknown command %s\n" % " ".join(args)
+    usage()
+    sys.exit(1)
+else:
+    usage()

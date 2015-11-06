@@ -1,0 +1,11 @@
+---
+- vm:
+    flavor: core-1
+  disks:
+  - flavor: core-2
+  - flavor: core-3
+  - flavor: core-4
+- vm:
+    flavor: core-5
+  disks:
+  - flavor: core-6

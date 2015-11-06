@@ -1,0 +1,81 @@
+flavors:
+  # 000's - ultra small VMs
+  # 1 cpu, 8MB memory
+  - name: core-10
+    kind: vm
+    cost:
+      - { key: "vm.cpu", value: 1.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 32.0, unit: "MB" }
+
+  # 100's - entry level, non-production sla only
+  # 1 cpu, 2GB memory, vm.cost = 1.0 baseline
+  - name: core-100
+    kind: vm
+    cost:
+      - { key: "vm.cpu", value: 1.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 2.0, unit: "GB" }
+
+  # 1 cpu, 4GB memory, vm.cost = 1.5 baseline
+  # intention is ~parity with GCE n1-standard-1 (ephemeral root)
+  - name: core-110
+    kind: vm
+    cost:
+      - { key: "vm.cpu", value: 1.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 4.0, unit: "GB" }
+
+  # 200's - entry level production class vm's in an HA environment
+  # 2 cpu, 4GB memory, vm.cost 2.0
+  - name: core-200
+    kind: vm
+    cost:
+      - { key: "vm.cpu", value: 2.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 4.0, unit: "GB" }
+
+  # 2 cpu, 8GB memory, vm.cost 4.0
+  # intention is ~parity with GCE n1-standard-2 (ephemeral root)
+  - name: core-220
+    kind: vm
+    cost:
+      - { key: "vm.cpu", value: 2.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 8.0, unit: "GB" }
+
+  # 4 cpu, 16GB memory, vm.cost 12.0
+  # intention is ~parity with GCE n1-standard-4 (ephemeral root)
+  - name: core-240
+    kind: vm
+    cost:
+      - { key: "vm.cpu", value: 4.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 16.0, unit: "GB" }
+
+  # 4 cpu, 32GB memory, vm.cost 20.0
+  - name: core-245
+    kind: vm
+    cost:
+      - { key: "vm.cpu", value: 4.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 32.0, unit: "GB" }
+
+  # 8 cpu, 32GB memory, vm.cost 25.0
+  # intention is ~parity with GCE n1-standard-8 (ephemeral root)
+  - name: core-280
+    kind: vm
+    cost:
+      - { key: "vm.cpu", value: 8.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 32.0, unit: "GB" }
+
+  # 8 cpu, 64GB memory, vm.cost 48.0
+  # intention is ~parity with GCE n1-standard-8 (ephemeral root)
+  - name: core-285
+    kind: vm
+    cost:
+      - { key: "vm.cpu", value: 8.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 64.0, unit: "GB" }
+
+  # flavor used for failure test
+  - name: huge-vm
+    kind: vm
+    cost:
+      - { key: "vm.cpu", value: 8000.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 9000.0, unit: "GB" }
+
+  # 300's - high end containers with access to: X, Y, Z
+  # 400's - ultra-high end containers with access to: XX, YY, ZZ

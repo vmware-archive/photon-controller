@@ -1,0 +1,12 @@
+{
+    "address": "10.146.1.1",
+    "username": "username",
+    "password": "password",
+    "availabilityZone": "availabilityZone",
+    "usageTags": [
+        "MGMT"
+    ],
+    "metadata": {
+        "id": "h_146_36_27"
+    }
+}

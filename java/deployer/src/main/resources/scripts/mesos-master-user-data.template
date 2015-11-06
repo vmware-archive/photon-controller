@@ -1,0 +1,51 @@
+#cloud-config
+bootcmd:
+  - rm -f /etc/systemd/network/*.network
+  - systemctl stop systemd-networkd
+
+write_files:
+  - content: |
+        eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
+        cat > "/etc/systemd/network/10-dhcp-${eno_name}.network" << EOF
+        [Match]
+        Name=${eno_name}
+
+        [Network]
+        DHCP=yes
+        EOF
+        ip addr flush label "${eno_name}"
+        systemctl restart systemd-networkd
+        while :
+        do
+          eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
+          ipAddress=`ifconfig ${eno_name} | sed -n '/addr:/{;s/.*addr://;s/ .*//;p;}'`
+          echo ${ipAddress}
+          if [ -n "${ipAddress}" ]; then
+            echo "Successfully acquired DHCP IP address"
+            break
+          fi
+          sleep 1
+        done
+    owner: root:root
+    permissions: 0644
+    path: /tmp/init-network.sh
+  - content: |
+        eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
+        ipAddress=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
+
+        echo "Starting mesos master"
+
+        docker run --net=host --restart=always -e "MESOS_HOSTNAME=${ipAddress}" -e "MESOS_IP=${ipAddress}" \
+          -e "MESOS_ZK=zk://$ZK_QUORUM/mesos" -e "MESOS_PORT=$MESOS_PORT" -e "MESOS_LOG_DIR=/var/log/mesos" \
+          -e "MESOS_QUORUM=$QUORUM_SIZE" -e "MESOS_WORK_DIR=/var/lib/mesos"  -d mesosphere/mesos-master:0.20.1
+
+        echo "done"
+    owner: root:root
+    permissions: 0644
+    path: /tmp/start-mesos-master.sh
+
+runcmd:
+  - sh /tmp/init-network.sh
+  - systemctl enable docker
+  - systemctl start docker
+  - sh /tmp/start-mesos-master.sh > /var/log/mesos-master.log

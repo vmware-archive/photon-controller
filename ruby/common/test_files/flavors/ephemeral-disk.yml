@@ -1,0 +1,17 @@
+
+flavors:
+  # ephemeral disks
+  - name: core-100
+    kind: ephemeral-disk
+    cost:
+      - { key: "ephemeral-disk", value: 1.0, unit: "COUNT" }
+
+  - name: core-200
+    kind: ephemeral-disk
+    cost:
+      - { key: "ephemeral-disk", value: 1.0, unit: "COUNT" }
+
+  - name: core-300
+    kind: ephemeral-disk
+    cost:
+      - { key: "ephemeral-disk", value: 1.0, unit: "COUNT" }

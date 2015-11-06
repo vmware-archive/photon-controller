@@ -1,0 +1,12 @@
+{
+  "id": "id",
+  "name": "name",
+  "type": "KUBERNETES",
+  "state": "READY",
+  "projectId": "projectId",
+  "slaveCount": 3,
+  "extendedProperties": {
+    "containerNetwork": "10.1.0.0/16"
+  },
+  "kind": "cluster"
+}

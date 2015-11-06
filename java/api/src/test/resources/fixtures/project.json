@@ -1,0 +1,55 @@
+{
+    "id": "1-base",
+    "selfLink": "http://localhost:9080/v1/projects/1-base",
+    "kind": "project",
+    "tags": [],
+    "name": "myproject",
+    "resourceTicket": {
+        "tenantTicketId": "SOME-TENANT-ID",
+        "tenantTicketName": "SOME-TENANT-NAME",
+        "limits": [
+            {
+                "key": "vm.cost",
+                "value": 50.0,
+                "unit": "COUNT"
+            },
+            {
+                "key": "persistent-disk.cost",
+                "value": 50.0,
+                "unit": "COUNT"
+            },
+            {
+                "key": "network.cost",
+                "value": 50.0,
+                "unit": "COUNT"
+            },
+            {
+                "key": "ephemeral-disk.cost",
+                "value": 50.0,
+                "unit": "COUNT"
+            }
+        ],
+        "usage": [
+            {
+                "key": "vm.cost",
+                "value": 27.5,
+                "unit": "COUNT"
+            },
+            {
+                "key": "persistent-disk.cost",
+                "value": 13.125,
+                "unit": "COUNT"
+            },
+            {
+                "key": "network.cost",
+                "value": 11.5,
+                "unit": "COUNT"
+            },
+            {
+                "key": "ephemeral-disk.cost",
+                "value": 5.25,
+                "unit": "COUNT"
+            }
+        ]
+    }
+}

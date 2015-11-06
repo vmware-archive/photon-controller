@@ -1,0 +1,58 @@
+# Photon Controller Agent Place Simulator
+
+## Overview
+Placement Simulator, aka psim, is a program to simulate placement requests on
+scheduler hierachy. It tries to build a scheduler tree based on user input,
+then takes sample placement requests, simulating those requestw in scheduler
+tree. The purpose of this simulator is to evaluate how good the placement
+algorithm performances, in terms of distribution of loads, and so on.
+
+## Caveat
+Psim needs python 2.7.x since it is using argparse. You'd have to set
+VERSIONER_PYTHON_VERSION=2.7 and then repeat the make develop shebang
+to get the virtualenv based on 2.7.
+
+## How to use psim
+The CLI has 2 modes: interactive and batch. For interactive mode, psim takes
+command from user standard input, parses it and executes it. For batch mode,
+psim will read all commands from a file, and executes themm together.
+
+### Interactive
+
+    $ bin/psim
+         _________________
+        < Welcome to psim >
+         -----------------
+                \   ^__^
+                 \  (oo)\_______
+                    (__)\       )\/\
+                        ||----w |
+                        ||     ||
+
+    > sample 1
+    running sample 1
+    > help
+    Usages:
+
+    sample [sampe_name]
+    quit
+    help
+    > quit
+
+
+### batch mode:
+
+    $ cat samples/sample.cmd
+    sample 1 2 3
+    help
+
+    $ bin/psim -r samples/sample.cmd
+    #1 running sample 1 2 3
+    running sample 1 2 3
+
+    #2 running help
+    Usages:
+
+    sample [sampe_name]
+    quit
+    help

@@ -1,0 +1,22 @@
+kind: vm
+
+flavors:
+  # 000's - ultra small VMs
+  # 1 cpu, 8MB memory
+  - name: core-10
+    cost:
+      - { key: "vm", value: 1.0, unit: "COUNT" }
+      - { key: "vm.flavor.core-10", value: 1.0, unit: "COUNT" }
+      - { key: "vm.cpu", value: 1.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 32.0, unit: "MB" }
+      - { key: "vm.cost", value: 0.025, unit: "COUNT" }
+
+  # 100's - entry level, non-production sla only
+  # 1 cpu, 2GB memory, vm.cost = 1.0 baseline
+  - name: core-100
+    cost:
+      - { key: "vm", value: 1.0, unit: "COUNT" }
+      - { key: "vm.flavor.core-100", value: 1.0, unit: "COUNT" }
+      - { key: "vm.cpu", value: 1.0, unit: "COUNT" }
+      - { key: "vm.memory", value: 2.0, unit: "GB" }
+      - { key: "vm.cost", value: 1.0, unit: "COUNT" }

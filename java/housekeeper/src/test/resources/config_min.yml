@@ -1,0 +1,5 @@
+port: 16000
+dcp:
+  storage_path: "/tmp/dcp/16000"
+zookeeper:
+  quorum: localhost:2181

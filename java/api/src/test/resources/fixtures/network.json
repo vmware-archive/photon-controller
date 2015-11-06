@@ -1,0 +1,9 @@
+{
+    "id": "id",
+    "name": "network1",
+    "tags": [],
+    "kind": "network",
+    "description": "VM Network",
+    "state": "READY",
+    "portGroups": ["PG1", "PG2"]
+}

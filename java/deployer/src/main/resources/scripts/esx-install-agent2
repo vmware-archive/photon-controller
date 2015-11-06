@@ -1,0 +1,68 @@
+#!/bin/bash -ex
+
+tools=$(readlink -nf $(dirname $0))
+source $tools/common.sh
+
+function usage() {
+  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_PATH [-l SYSLOG_URI]" 1>&2
+  echo
+  echo "Supplied args:"
+  echo $*
+  exit 1
+}
+
+syslog_uri=""
+username=""
+password=""
+vib_path=""
+
+if [ "$#" -lt 4 ]
+then
+  usage $*
+fi
+
+host_address=$1
+shift
+username=$1
+shift
+password=$1
+shift
+vib_path=$1
+shift
+
+while getopts d:l:n:h flag
+do
+  case $flag in
+    l)
+      syslog_uri="$OPTARG"
+      ;;
+    ?)
+      usage $*
+      ;;
+  esac
+done
+
+if [ ! -z "$syslog_uri" ]
+then
+
+esxcli -s $host_address -u $username -p "$password" system syslog config set --loghost=tcp://$syslog_uri
+esxcli -s $host_address -u $username -p "$password" network firewall ruleset set -r syslog -e true
+esxcli -s $host_address -u $username -p "$password" system syslog reload
+
+fi
+
+# Remove original agent if existed
+agent_existing=`esxcli -s $host_address -u $username -p "$password" software vib list | grep esxcloud | wc -l`
+if [ $agent_existing -ne 0 ]
+then
+  esxcli -s $host_address -u $username -p "$password" software vib remove -f -n esxcloud
+fi
+
+# Remove agent if existed
+agent_existing=`esxcli -s $host_address -u $username -p "$password" software vib list | grep photon-controller-agent | wc -l`
+if [ $agent_existing -ne 0 ]
+then
+  esxcli -s $host_address -u $username -p "$password" software vib remove -f -n photon-controller-agent
+fi
+
+esxcli -s $host_address -u $username -p "$password" software vib install -f -v $vib_path

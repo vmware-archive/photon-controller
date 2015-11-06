@@ -1,0 +1,16 @@
+{
+    "id": "e897bfb1-0f25-4fb8-985d-e3d0a337fe7a",
+    "kind": "host",
+    "address": "10.146.1.1",
+    "username": "username",
+    "password": "password",
+    "availabilityZone": "availabilityZone",
+    "esxVersion": "6.0",
+    "usageTags": [
+        "MGMT"
+    ],
+    "metadata": {
+        "id": "h_146_36_27"
+    },
+    "state": "CREATING"
+}

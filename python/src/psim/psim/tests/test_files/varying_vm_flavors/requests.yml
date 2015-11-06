@@ -1,0 +1,21 @@
+# Placement requests
+---
+# Place request of 1 vm with 3 disks
+auto:
+   count: 100
+   types:
+   - ratio : 1
+     flavor: core-200
+     disks:
+     - flavor: core-100
+     - flavor: core-100
+     - flavor: core-100
+   - ratio : 2
+     flavor: core-110
+     disks:
+     - flavor: core-100
+     - flavor: core-100
+   - ratio : 4
+     flavor: core-100
+     disks:
+     - flavor: core-100

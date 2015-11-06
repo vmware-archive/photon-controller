@@ -1,0 +1,8 @@
+# IDEA
+*.iml
+*.ipr
+*.iws
+*.jar
+
+reports
+.bundle

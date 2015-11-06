@@ -1,0 +1,3 @@
+[submodule "vendor/xenon"]
+	path = vendor/xenon
+	url = ../xenon
