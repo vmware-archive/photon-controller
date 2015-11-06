@@ -527,7 +527,7 @@ public class CreateManagementVmTaskServiceTest {
       flavorServiceStartState.vmFlavorName = "vmFlavor";
       flavorServiceStartState.diskGb = 1;
       flavorServiceStartState.cpuCount = 1;
-      flavorServiceStartState.memoryGb = 1;
+      flavorServiceStartState.memoryMb = 1024;
 
       containerTemplateStartState = TestHelper.getContainerTemplateServiceStartState();
 

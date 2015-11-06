@@ -276,7 +276,7 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
     startState.name = spec.getType();
     startState.isReplicated = spec.getIsReplicated();
     startState.cpuCount = spec.getCpuCount();
-    startState.memoryGb = spec.getMemoryGb();
+    startState.memoryMb = spec.getMemoryMb();
     startState.diskGb = spec.getDiskGb();
     startState.isPrivileged = spec.getIsPrivileged();
     startState.volumesFrom = spec.getVolumesFrom();

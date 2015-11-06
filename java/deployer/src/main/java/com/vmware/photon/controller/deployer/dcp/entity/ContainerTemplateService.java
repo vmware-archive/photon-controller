@@ -64,7 +64,7 @@ public class ContainerTemplateService extends StatefulService {
     @NotNull
     @Immutable
     @Positive
-    public Integer memoryGb;
+    public Integer memoryMb;
 
     /**
      * This value lists the amount of disk which should be allocated for the container, in GB.

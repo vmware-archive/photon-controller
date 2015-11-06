@@ -117,7 +117,7 @@ public class ContainerTemplateServiceTest {
       assertThat(savedState.isPrivileged, is(false));
       assertThat(savedState.portBindings.get(5432), is(5432));
       assertThat(savedState.cpuCount, is(1));
-      assertThat(savedState.memoryGb, is(2));
+      assertThat(savedState.memoryMb, is(2048));
       assertThat(savedState.diskGb, is(4));
     }
 
@@ -149,8 +149,8 @@ public class ContainerTemplateServiceTest {
       return new Object[][]{
           {"cpuCount", new Integer(0)},
           {"cpuCount", new Integer(-10)},
-          {"memoryGb", new Integer(0)},
-          {"memoryGb", new Integer(-10)},
+          {"memoryMb", new Integer(0)},
+          {"memoryMb", new Integer(-10)},
           {"diskGb", new Integer(0)},
           {"diskGb", new Integer(-10)}
       };
