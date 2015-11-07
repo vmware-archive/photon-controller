@@ -55,6 +55,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -563,8 +564,8 @@ public class CreateAndValidateContainerWorkflowServiceTest {
      */
     @Test
     public void testTaskSuccess() throws Throwable {
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
 
       HealthChecker healthChecker = new HealthChecker() {
         @Override
@@ -595,8 +596,8 @@ public class CreateAndValidateContainerWorkflowServiceTest {
      */
     @Test
     public void testTaskFailureWhenServiceFailsToStart() throws Throwable {
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
 
       HealthChecker healthChecker = new HealthChecker() {
         @Override
@@ -627,9 +628,9 @@ public class CreateAndValidateContainerWorkflowServiceTest {
      */
     @Test
     public void testTaskFailureInsideCreateContainer() throws Throwable {
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " +
-          "failed", 500));
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenThrow(new
+          DockerException("Start container " + "failed", 500));
 
       CreateAndValidateContainerWorkflowService.State finalState =
           machine.callServiceAndWaitForState(

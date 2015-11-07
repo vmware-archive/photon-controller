@@ -48,6 +48,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -581,9 +582,9 @@ public class CreateContainersWorkflowServiceTest {
 
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " +
-          "failed", 500));
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenThrow(new
+          DockerException("Start container " + "failed", 500));
 
       createHostEntitiesAndAllocateVmsAndContainers(3, 7);
       createDeploymentServiceDocuments();
@@ -614,13 +615,12 @@ public class CreateContainersWorkflowServiceTest {
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
 
       // For create container
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
 
       // For copydb container
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).
-          thenReturn("id");
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
 
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 

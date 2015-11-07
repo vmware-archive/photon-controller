@@ -132,12 +132,12 @@ public class MockHelper {
     DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
     when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
     if (isSuccess) {
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
     } else {
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " +
-          "failed", 500));
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenThrow(new
+          DockerException("Start container " + "failed", 500));
     }
   }
 

@@ -425,6 +425,8 @@ public class CreateContainerTaskService extends StatefulService {
         String containerId = dockerProvisioner.launchContainer(
             containerTemplateState.name,
             containerTemplateState.containerImage,
+            containerTemplateState.cpuShares,
+            containerTemplateState.memoryMb,
             containerTemplateState.volumeBindings,
             containerTemplateState.portBindings,
             containerTemplateState.volumesFrom,
