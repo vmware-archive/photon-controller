@@ -178,9 +178,17 @@ public class DockerProvisioner {
     this.getDockerClient().removeImageCmd(imageName).withForce().exec();
   }
 
-  public String createContainer(String containerName, String containerImage, Map<String, String> volumeBindings,
-                              Map<Integer, Integer> portBindings, String volumesFrom, Boolean isPrivileged,
-                              Map<String, String> environmentVariables, Boolean restart, String... command) {
+  public String createContainer(String containerName,
+                                String containerImage,
+                                Integer cpuShares,
+                                Integer memoryMb,
+                                Map<String, String> volumeBindings,
+                                Map<Integer, Integer> portBindings,
+                                String volumesFrom,
+                                Boolean isPrivileged,
+                                Map<String, String> environmentVariables,
+                                Boolean restart,
+                                String... command) {
     if (StringUtils.isBlank(containerImage)) {
       throw new IllegalArgumentException("containerImage field cannot be null or blank");
     }
@@ -191,6 +199,14 @@ public class DockerProvisioner {
     // Create container with image and name
     CreateContainerCmd createContainerCmd = this.getDockerClient().createContainerCmd(containerImage);
     createContainerCmd = createContainerCmd.withName(containerName);
+
+    if (memoryMb != null) {
+      createContainerCmd = createContainerCmd.withMemoryLimit(memoryMb * 1024 * 1024);
+    }
+
+    if (cpuShares != null) {
+      createContainerCmd = createContainerCmd.withCpuShares(cpuShares);
+    }
 
     // Expose container ports to host
     Ports containerPortBindings = getPortBindings(portBindings);
@@ -262,6 +278,8 @@ public class DockerProvisioner {
 
   public String launchContainer(String containerName,
                                 String containerImage,
+                                Integer cpuShares,
+                                Integer memoryMb,
                                 Map<String, String> volumeBindings,
                                 Map<Integer, Integer> portBindings,
                                 String volumesFrom,
@@ -276,8 +294,8 @@ public class DockerProvisioner {
       throw new IllegalArgumentException("containerName field cannot be null or blank");
     }
 
-    String containerId = createContainer(containerName, containerImage, volumeBindings, portBindings, volumesFrom,
-        isPrivileged, environmentVariables, restart, command);
+    String containerId = createContainer(containerName, containerImage, cpuShares, memoryMb, volumeBindings,
+        portBindings, volumesFrom, isPrivileged, environmentVariables, restart, command);
     startContainer(containerId);
 
     return containerId;

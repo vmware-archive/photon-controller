@@ -23,6 +23,9 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
+import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
+
+import org.hibernate.validator.constraints.Range;
 
 import java.util.Map;
 
@@ -113,6 +116,13 @@ public class ContainerTemplateService extends StatefulService {
      */
     @Immutable
     public Map<String, String> environmentVariables;
+
+    /**
+     * This value represents the cpu share constraint needed by docker for creating the container.
+     */
+    @WriteOnce
+    @Range(min = 2, max = 1024)
+    public Integer cpuShares;
   }
 
   public ContainerTemplateService() {

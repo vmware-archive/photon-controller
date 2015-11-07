@@ -343,8 +343,9 @@ public class RegisterAuthClientTaskServiceTest {
 
       DockerProvisioner dockerProvisioner = Mockito.mock(DockerProvisioner.class);
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn("id");
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyString(), anyString(), anyString(), anyString(),
+          anyString())).thenReturn("id");
 
       startTestEnvironment();
       setupDeploymentServiceDocuments();
