@@ -267,14 +267,14 @@ public class DockerProvisionerTest {
   public void testLaunchContainerWithNull() {
     DockerProvisioner dockerProvisioner = new DockerProvisioner("0.0.0.0");
     try {
-      dockerProvisioner.launchContainer(null, "image", null, null, null, true, null, true);
+      dockerProvisioner.launchContainer(null, "image", 0, 0, null, null, null, true, null, true);
       fail("launchContainer should fail with null container name parameter");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is("containerName field cannot be null or blank"));
     }
 
     try {
-      dockerProvisioner.launchContainer("name", null, null, null, null, true, null, true);
+      dockerProvisioner.launchContainer("name", null, 0, 0, null, null, null, true, null, true);
       fail("launchContainer should fail with null container image parameter");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is("containerImage field cannot be null or blank"));
@@ -285,14 +285,14 @@ public class DockerProvisionerTest {
   public void testLaunchContainerWithBlank() {
     DockerProvisioner dockerProvisioner = new DockerProvisioner("0.0.0.0");
     try {
-      dockerProvisioner.launchContainer("", "image", null, null, null, true, null, true);
+      dockerProvisioner.launchContainer("", "image", 0, 0, null, null, null, true, null, true);
       fail("launchContainer should fail with blank container name parameter");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is("containerName field cannot be null or blank"));
     }
 
     try {
-      dockerProvisioner.launchContainer("name", "", null, null, null, true, null, true);
+      dockerProvisioner.launchContainer("name", "", 0, 0, null, null, null, true, null, true);
       fail("launchContainer should fail with blank container image parameter");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is("containerImage field cannot be null or blank"));
@@ -303,14 +303,14 @@ public class DockerProvisionerTest {
   public void testCreateContainerWithNull() {
     DockerProvisioner dockerProvisioner = new DockerProvisioner("0.0.0.0");
     try {
-      dockerProvisioner.createContainer(null, "image", null, null, null, true, null, true);
+      dockerProvisioner.createContainer(null, "image", 0, 0, null, null, null, true, null, true);
       fail("createContainer should fail with null container name parameter");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is("containerName field cannot be null or blank"));
     }
 
     try {
-      dockerProvisioner.createContainer("name", null, null, null, null, true, null, true);
+      dockerProvisioner.createContainer("name", null, 0, 0, null, null, null, true, null, true);
       fail("createContainer should fail with null container image parameter");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is("containerImage field cannot be null or blank"));
@@ -321,14 +321,14 @@ public class DockerProvisionerTest {
   public void testCreateContainerWithBlank() {
     DockerProvisioner dockerProvisioner = new DockerProvisioner("0.0.0.0");
     try {
-      dockerProvisioner.createContainer("", "image", null, null, null, true, null, true);
+      dockerProvisioner.createContainer("", "image", 0, 0, null, null, null, true, null, true);
       fail("createContainer should fail with blank container name parameter");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is("containerName field cannot be null or blank"));
     }
 
     try {
-      dockerProvisioner.createContainer("name", "", null, null, null, true, null, true);
+      dockerProvisioner.createContainer("name", "", 0, 0, null, null, null, true, null, true);
       fail("createContainer should fail with blank container image parameter");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is("containerImage field cannot be null or blank"));
@@ -390,10 +390,10 @@ public class DockerProvisionerTest {
     doNothing().when(dockerProvisioner).startContainer("id");
 
     // Test with name, linked container and privileged flag
-    when(dockerProvisioner.launchContainer("postgres", "devbox/postgres", null, null, "data", true, null, true))
-        .thenCallRealMethod();
-    assertEquals(dockerProvisioner.launchContainer("postgres", "devbox/postgres", null, null, "data", true, null, true),
-        null);
+    when(dockerProvisioner.launchContainer("postgres", "devbox/postgres", 0, 0, null, null, "data", true, null,
+        true)).thenCallRealMethod();
+    assertEquals(dockerProvisioner.launchContainer("postgres", "devbox/postgres", 0, 0, null, null, "data", true, null,
+        true), null);
 
     // Test with volume and port bindings
     Map<String, String> vb = new HashMap<String, String>();
@@ -401,15 +401,15 @@ public class DockerProvisionerTest {
     Map<Integer, Integer> pb = new HashMap<Integer, Integer>();
     pb.put(5432, 5432);
     pb.put(2181, 2181);
-    when(dockerProvisioner.launchContainer("postgres", "devbox/postgres", vb, pb, "data", true, null, true))
+    when(dockerProvisioner.launchContainer("postgres", "devbox/postgres", 0, 0, vb, pb, "data", true, null, true))
         .thenCallRealMethod();
-    assertEquals(dockerProvisioner.launchContainer("postgres", "devbox/postgres", vb, pb, "data", true, null, true),
-        null);
+    assertEquals(dockerProvisioner.launchContainer("postgres", "devbox/postgres", 0, 0, vb, pb, "data", true, null,
+            true), null);
 
     // Test with command
-    when(dockerProvisioner.launchContainer("postgres", "devbox/postgres", vb, pb, "data", true, null, true, "postgres"))
-        .thenCallRealMethod();
-    assertEquals(dockerProvisioner.launchContainer("postgres", "devbox/postgres", vb, pb, "data", true, null, true,
-            "postgres"), null);
+    when(dockerProvisioner.launchContainer("postgres", "devbox/postgres", 0, 0, vb, pb, "data", true, null, true,
+        "postgres")).thenCallRealMethod();
+    assertEquals(dockerProvisioner.launchContainer("postgres", "devbox/postgres", 0, 0, vb, pb, "data", true, null,
+        true, "postgres"), null);
   }
 }
