@@ -257,6 +257,15 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     }
   }
 
+  private void patchTaskServiceWithStepUpdate(String taskId, TaskService.StepUpdate stepUpdate) throws
+      TaskNotFoundException {
+    try {
+      dcpClient.patchAndWait(TaskServiceFactory.SELF_LINK + "/" + taskId, stepUpdate);
+    } catch (DocumentNotFoundException e) {
+      throw new TaskNotFoundException(taskId);
+    }
+  }
+
   private List<TaskEntity> getProjectTasks(
       String projectId, Optional<String> state, Optional<String> entityKind) {
 
@@ -373,19 +382,10 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
   @Override
   public void update(StepEntity stepEntity) throws TaskNotFoundException {
-    TaskService.State taskState = getTaskStateById(stepEntity.getTask().getId());
-
-    if (taskState.steps != null) {
-      for (TaskService.State.Step step : taskState.steps) {
-        if (step.operation.equals(stepEntity.getOperation())) {
-          fillStep(step, stepEntity);
-          patchTaskService(stepEntity.getTask().getId(), taskState);
-          return;
-        }
-      }
-    }
-
-    throw new IllegalArgumentException(String.format("Cannot find step for update: stepEntity {%s}", stepEntity));
+    TaskService.State.Step step = new TaskService.State.Step();
+    fillStep(step, stepEntity);
+    TaskService.StepUpdate stepUpdate = new TaskService.StepUpdate(step);
+    patchTaskServiceWithStepUpdate(stepEntity.getTask().getId(), stepUpdate);
   }
 
   @Override

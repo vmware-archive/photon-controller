@@ -140,7 +140,7 @@ public class TaskService extends StatefulService {
   /**
    * Class for updating step.
    */
-  public static class StepUpdate {
+  public static class StepUpdate extends ServiceDocument {
     public static final String KIND = StepUpdate.class.getCanonicalName();
     public final String kind;
     public State.Step step;
