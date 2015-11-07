@@ -61,6 +61,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -547,8 +548,8 @@ public class CreateContainerTaskServiceTest {
 
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenCallRealMethod();
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenCallRealMethod();
 
       setupValidOtherServiceDocuments(ContainersConfig.ContainerType.Chairman);
 
@@ -581,9 +582,9 @@ public class CreateContainerTaskServiceTest {
 
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " +
-          "failed", 500));
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenThrow(new
+          DockerException("Start container " + "failed", 500));
 
       setupValidOtherServiceDocuments(ContainersConfig.ContainerType.Chairman);
 
@@ -615,8 +616,8 @@ public class CreateContainerTaskServiceTest {
 
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
 
       setupValidOtherServiceDocuments(containerType);
       setupDeploymentServiceDocument(implicitClient);
@@ -632,8 +633,9 @@ public class CreateContainerTaskServiceTest {
       assertEquals(finalState.containerId, "id");
 
       ArgumentCaptor<Map> volumeBindingsArgument = ArgumentCaptor.forClass(Map.class);
-      verify(dockerProvisioner, times(1)).launchContainer(anyString(), anyString(), volumeBindingsArgument.capture(),
-          anyMap(), anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg());
+      verify(dockerProvisioner, times(1)).launchContainer(anyString(), anyString(), anyInt(), anyInt(),
+          volumeBindingsArgument.capture(), anyMap(), anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers
+              .<String>anyVararg());
 
       String expectedKey = ServiceFileConstants.VM_MUSTACHE_DIRECTORY + ServiceFileConstants
           .CONTAINER_CONFIG_ROOT_DIRS.get(containerType);
@@ -681,8 +683,8 @@ public class CreateContainerTaskServiceTest {
 
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyMap(), anyMap(), anyString(), anyBoolean(),
-          anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
 
       setupValidOtherServiceDocumentsWithContainerId(ContainersConfig.ContainerType.Chairman);
       setupDeploymentServiceDocument(implicitClient);
