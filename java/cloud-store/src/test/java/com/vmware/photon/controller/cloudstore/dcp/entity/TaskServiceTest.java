@@ -20,14 +20,17 @@ import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
+import org.joda.time.DateTime;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -136,6 +139,15 @@ public class TaskServiceTest {
       testState.entityId = UUID.randomUUID().toString();
       testState.entityKind = UUID.randomUUID().toString();
       testState.state = TaskService.State.TaskState.STARTED;
+      testState.steps = new ArrayList<>();
+      TaskService.State.Step step = new TaskService.State.Step();
+      step.operation = com.vmware.photon.controller.api.Operation.CREATE_VM;
+      step.state = TaskService.State.StepState.QUEUED;
+      step.warnings = new ArrayList<>();
+      TaskService.State.StepError stepError = new TaskService.State.StepError();
+      stepError.code = UUID.randomUUID().toString();
+      step.warnings.add(stepError);
+      testState.steps.add(step);
     }
 
     @AfterMethod
@@ -154,7 +166,18 @@ public class TaskServiceTest {
      */
     @Test
     public void testPatchSuccess() throws Throwable {
-      host.startServiceSynchronously(service, testState);
+      Operation result = host.startServiceSynchronously(service, testState);
+
+      TaskService.State taskState = result.getBody(TaskService.State.class);
+
+      assertThat(taskState.entityId, is(testState.entityId));
+      assertThat(taskState.state, is(testState.state));
+      assertThat(taskState.steps.get(0).operation, is(testState.steps.get(0).operation));
+      assertThat(taskState.steps.get(0).state, is(testState.steps.get(0).state));
+      assertThat(taskState.steps.get(0).startedTime, is(testState.steps.get(0).startedTime));
+      assertThat(taskState.steps.get(0).warnings.get(0).code,
+          is(testState.steps.get(0).warnings.get(0).code));
+      assertThat(taskState.steps.get(0).errors, is(nullValue()));
 
       TaskService.State patchState = new TaskService.State();
       patchState.state = TaskService.State.TaskState.COMPLETED;
@@ -164,7 +187,83 @@ public class TaskServiceTest {
           .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
           .setBody(patchState);
 
-      host.sendRequestAndWait(patch);
+      result = host.sendRequestAndWait(patch);
+
+      taskState = result.getBody(TaskService.State.class);
+
+      assertThat(taskState.entityId, is(patchState.entityId));
+      assertThat(taskState.state, is(patchState.state));
+      assertThat(taskState.steps, is(nullValue()));
+
+    }
+
+    @Test
+    public void testUpdateStep() throws Throwable {
+      Operation result = host.startServiceSynchronously(service, testState);
+
+      TaskService.State taskState = result.getBody(TaskService.State.class);
+
+      assertThat(taskState.entityId, is(testState.entityId));
+      assertThat(taskState.state, is(testState.state));
+      assertThat(taskState.steps.get(0).operation, is(testState.steps.get(0).operation));
+      assertThat(taskState.steps.get(0).state, is(testState.steps.get(0).state));
+      assertThat(taskState.steps.get(0).startedTime, is(testState.steps.get(0).startedTime));
+      assertThat(taskState.steps.get(0).warnings.get(0).code,
+          is(testState.steps.get(0).warnings.get(0).code));
+      assertThat(taskState.steps.get(0).errors, is(nullValue()));
+
+      TaskService.State.Step step = new TaskService.State.Step();
+      step.operation = testState.steps.get(0).operation;
+      TaskService.StepUpdate stepUpdate = new TaskService.StepUpdate(step);
+      stepUpdate.step.startedTime = DateTime.now().toDate();
+      stepUpdate.step.state = TaskService.State.StepState.STARTED;
+      TaskService.State.StepError stepError = new TaskService.State.StepError();
+      stepError.code = UUID.randomUUID().toString();
+      stepUpdate.step.warnings = testState.steps.get(0).warnings;
+      stepUpdate.step.warnings.add(stepError);
+      stepUpdate.step.errors = new ArrayList<>();
+      stepUpdate.step.errors.add(stepError);
+      stepUpdate.step.endTime = DateTime.now().toDate();
+
+      Operation patch = Operation
+          .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
+          .setBody(stepUpdate);
+
+      result = host.sendRequestAndWait(patch);
+
+      taskState = result.getBody(TaskService.State.class);
+
+      assertThat(taskState.entityId, is(testState.entityId));
+      assertThat(taskState.state, is(testState.state));
+      assertThat(taskState.steps.get(0).operation, is(stepUpdate.step.operation));
+      assertThat(taskState.steps.get(0).state, is(TaskService.State.StepState.STARTED));
+      assertThat(taskState.steps.get(0).startedTime, is(stepUpdate.step.startedTime));
+      assertThat(taskState.steps.get(0).warnings
+              .stream().anyMatch(w -> w.code.equals(testState.steps.get(0).warnings.get(0).code)),
+          is(true));
+      assertThat(taskState.steps.get(0).warnings
+              .stream().anyMatch(w -> w.code.equals(stepError.code)),
+          is(true));
+      assertThat(taskState.steps.get(0).warnings.get(0).code,
+          is(testState.steps.get(0).warnings.get(0).code));
+      assertThat(taskState.steps.get(0).endTime, is(stepUpdate.step.endTime));
+
+      taskState = host.getServiceState(TaskService.State.class, taskState.documentSelfLink);
+
+      assertThat(taskState.entityId, is(testState.entityId));
+      assertThat(taskState.state, is(testState.state));
+      assertThat(taskState.steps.get(0).operation, is(stepUpdate.step.operation));
+      assertThat(taskState.steps.get(0).state, is(TaskService.State.StepState.STARTED));
+      assertThat(taskState.steps.get(0).startedTime, is(stepUpdate.step.startedTime));
+      assertThat(taskState.steps.get(0).warnings
+              .stream().anyMatch(w -> w.code.equals(testState.steps.get(0).warnings.get(0).code)),
+          is(true));
+      assertThat(taskState.steps.get(0).warnings
+              .stream().anyMatch(w -> w.code.equals(stepError.code)),
+          is(true));
+      assertThat(taskState.steps.get(0).warnings.get(0).code,
+          is(testState.steps.get(0).warnings.get(0).code));
+      assertThat(taskState.steps.get(0).endTime, is(stepUpdate.step.endTime));
     }
   }
 }

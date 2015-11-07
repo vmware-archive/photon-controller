@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationProcessingChain;
+import com.vmware.dcp.common.RequestRouter;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -43,6 +45,61 @@ public class TaskService extends StatefulService {
   }
 
   @Override
+  public OperationProcessingChain getOperationProcessingChain() {
+    if (super.getOperationProcessingChain() != null) {
+      return super.getOperationProcessingChain();
+    }
+
+    RequestRouter myRouter = new RequestRouter();
+
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<StepUpdate>(
+            StepUpdate.class, "kind", StepUpdate.KIND),
+        this::handleStepUpdatePatch, "Step Update");
+
+    OperationProcessingChain opProcessingChain = new OperationProcessingChain();
+    opProcessingChain.add(myRouter);
+    setOperationProcessingChain(opProcessingChain);
+    return opProcessingChain;
+  }
+
+  public void handleStepUpdatePatch(Operation patch) {
+    State currentState = getState(patch);
+    StepUpdate stepUpdate = patch.getBody(StepUpdate.class);
+
+    if (stepUpdate.step == null) {
+      throw new IllegalArgumentException("Null step is not allowed for StepUpdate patch");
+    }
+
+    if (stepUpdate.step.operation == null) {
+      throw new IllegalArgumentException("Null step.operation is not allowed for StepUpdate patch");
+    }
+
+    State.Step step = null;
+    if (currentState.steps != null) {
+      for (State.Step currentStep : currentState.steps) {
+        if (currentStep.operation.equals(stepUpdate.step.operation)) {
+          step = currentStep;
+        }
+      }
+    }
+
+    if (step == null) {
+      throw new IllegalArgumentException("Cannot update a step that does not exist");
+    }
+
+    currentState.steps.remove(step);
+    currentState.steps.add(stepUpdate.step);
+
+    validateState(currentState);
+
+    setState(patch, currentState);
+    patch.setBody(currentState);
+    patch.complete();
+  }
+
+  @Override
   public void handleStart(Operation startOperation) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
     try {
@@ -65,16 +122,10 @@ public class TaskService extends StatefulService {
     State currentState = getState(patchOperation);
     State patchState = patchOperation.getBody(State.class);
 
-    try {
-      ValidationUtils.validatePatch(currentState, patchState);
-      PatchUtils.patchState(currentState, patchState);
-      patchOperation.complete();
-    } catch (Throwable t) {
-      ServiceUtils.logSevere(this, t);
-      if (!OperationUtils.isCompleted(patchOperation)) {
-        patchOperation.fail(t);
-      }
-    }
+    ValidationUtils.validatePatch(currentState, patchState);
+    PatchUtils.patchState(currentState, patchState);
+    validateState(currentState);
+    patchOperation.complete();
   }
 
   /**
@@ -84,6 +135,40 @@ public class TaskService extends StatefulService {
    */
   protected void validateState(State currentState) {
     ValidationUtils.validateState(currentState);
+  }
+
+  /**
+   * Class for updating step.
+   */
+  public static class StepUpdate {
+    public static final String KIND = StepUpdate.class.getCanonicalName();
+    public final String kind;
+    public State.Step step;
+
+    //We do not want to allow creating this update patch without setting "kind".
+    //That will lead to handlePatch to be invoked with an empty patch wiping the state of the document clean.
+    //We also cannot set "kind" in default constructor as that would lead to all patches getting matched to StepUpdate
+    //in RequestRouter.RequestBodyMatcher
+    //That will lead to all patches other than StepUpdate to fail.
+    //Hence we make the default constructor private and provide a constructor that ensures this object
+    //is properly constructed.
+
+    private StepUpdate() {
+      kind = null;
+    }
+
+    public StepUpdate(State.Step step) {
+      if (step == null) {
+        throw new IllegalArgumentException("step cannot be null");
+      }
+
+      if (step.operation == null) {
+        throw new IllegalArgumentException("Null step.operation is not allowed");
+      }
+
+      this.kind = KIND;
+      this.step = step;
+    }
   }
 
   /**
