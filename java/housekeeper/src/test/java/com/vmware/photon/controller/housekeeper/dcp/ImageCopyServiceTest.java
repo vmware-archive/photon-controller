@@ -19,13 +19,18 @@ import com.vmware.dcp.common.ServiceHost;
 import com.vmware.dcp.common.ServiceStats;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
+import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.CopyImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientCopyImageErrorMock;
@@ -37,6 +42,7 @@ import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -56,6 +62,7 @@ import static org.mockito.Mockito.spy;
 import static org.testng.Assert.fail;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -63,7 +70,8 @@ import java.util.function.Predicate;
 /**
  * Tests {@link ImageCopyService}.
  */
-public class ImageCopyServiceTest {
+public class
+    ImageCopyServiceTest {
 
   private static final Logger logger = LoggerFactory.getLogger(ImageCopyServiceTest.class);
   private TestHost host;
@@ -595,10 +603,14 @@ public class ImageCopyServiceTest {
 
       hostClient.setCopyImageResultCode(code);
       doReturn(hostClient).when(hostClientFactory).create();
-
+      cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
 
-      // Call Service.
+      ImageService.State createdImageState = createNewImageEntity();
+      int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
+      copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+
+          // Call Service.
       ImageCopyService.State response = machine.callServiceAndWaitForState(
           ImageCopyServiceFactory.SELF_LINK,
           copyTask,
@@ -609,6 +621,14 @@ public class ImageCopyServiceTest {
               return state.taskInfo.stage == TaskState.TaskStage.FINISHED;
             }
           });
+
+      //Check Image Service replicatedDatastore counts
+      createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
+      if (code.equals(CopyImageResultCode.OK)) {
+        assertThat(createdImageState.replicatedDatastore, is(initialReplicatedDatastoreCount + 1));
+      } else {
+        assertThat(createdImageState.replicatedDatastore, is(initialReplicatedDatastoreCount));
+      }
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
@@ -836,6 +856,36 @@ public class ImageCopyServiceTest {
                   1.0 + // Host and dest data store retrieval
                   1.0   // FAILED
           ));
+    }
+
+    private com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State createNewImageEntity()
+      throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
+
+      machine.startFactoryServiceSynchronously(
+          com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.class,
+          com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK);
+
+      com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State state
+          = new com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State();
+      state.name = "image-1";
+      state.replicationType = ImageReplicationType.EAGER;
+      state.state = ImageState.READY;
+      state.totalDatastore = 1;
+
+      Operation op = cloudStoreHelper
+          .createPost(com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a image in cloud store.");
+            }
+          });
+      Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      return result.getBody(ImageService.State.class);
     }
   }
 }
