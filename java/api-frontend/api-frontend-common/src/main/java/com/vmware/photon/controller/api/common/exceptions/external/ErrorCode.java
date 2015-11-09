@@ -30,6 +30,8 @@ public enum ErrorCode {
   FLAVOR_NOT_FOUND("FlavorNotFound", Response.Status.NOT_FOUND),
   INVALID_FLAVOR("InvalidFlavor", Response.Status.BAD_REQUEST),
   FLAVOR_IN_USE("FlavorInUse", Response.Status.BAD_REQUEST),
+  AVAILABILITYZONE_NOT_FOUND("AvailabilityZoneNotFound", Response.Status.NOT_FOUND),
+  INVALID_AVAILABILITYZONE("InvalidAvailabilityZone", Response.Status.BAD_REQUEST),
   ISO_ALREADY_ATTACHED("IsoAlreadyAttached", Response.Status.BAD_REQUEST),
   MORE_THAN_ONE_ISO_ATTACHED("MoreThanOneIsoAttached", Response.Status.BAD_REQUEST),
   NO_ISO_ATTACHED("NoIsoAttached", Response.Status.BAD_REQUEST),

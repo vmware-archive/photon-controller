@@ -38,6 +38,8 @@ import com.vmware.photon.controller.apife.auth.fetcher.VmSecurityGroupFetcher;
 import com.vmware.photon.controller.apife.backends.AttachedDiskBackend;
 import com.vmware.photon.controller.apife.backends.AttachedDiskDcpBackend;
 import com.vmware.photon.controller.apife.backends.AttachedDiskSqlBackend;
+import com.vmware.photon.controller.apife.backends.AvailabilityZoneBackend;
+import com.vmware.photon.controller.apife.backends.AvailabilityZoneDcpBackend;
 import com.vmware.photon.controller.apife.backends.DatastoreBackend;
 import com.vmware.photon.controller.apife.backends.DatastoreDcpBackend;
 import com.vmware.photon.controller.apife.backends.DatastoreSqlBackend;
@@ -440,6 +442,7 @@ public class ApiFeModule extends AbstractModule {
       logger.info("Using cloud store DCP backend");
       bind(DcpClient.class).to(ApiFeDcpRestClient.class);
       bind(FlavorBackend.class).to(FlavorDcpBackend.class);
+      bind(AvailabilityZoneBackend.class).to(AvailabilityZoneDcpBackend.class);
       bind(ImageBackend.class).to(ImageDcpBackend.class);
       bind(NetworkBackend.class).to(NetworkDcpBackend.class);
       bind(DatastoreBackend.class).to(DatastoreDcpBackend.class);

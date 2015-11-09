@@ -79,4 +79,13 @@ public class AvailabilityZoneEntity extends BaseEntity implements Named {
 
     this.state = state;
   }
+
+  public AvailabilityZone toApiRepresentation() {
+    AvailabilityZone availabilityZone = new AvailabilityZone();
+    availabilityZone.setId(getId());
+    availabilityZone.setName(getName());
+    availabilityZone.setKind(getKind());
+    availabilityZone.setState(getState());
+    return availabilityZone;
+  }
 }

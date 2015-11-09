@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.clients;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.backends.AvailabilityZoneBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.HostBackend;
@@ -56,10 +57,13 @@ public class TaskFeClient {
 
   private final HostBackend hostBackend;
 
+  private final AvailabilityZoneBackend availabilityZoneBackend;
+
   @Inject
   public TaskFeClient(TaskBackend taskBackend, TenantBackend tenantBackend, ProjectBackend projectBackend,
                       ResourceTicketBackend resourceTicketBackend, VmBackend vmBackend, DiskBackend diskBackend,
-                      ImageBackend imageBackend, FlavorBackend flavorBackend, HostBackend hostBackend) {
+                      ImageBackend imageBackend, FlavorBackend flavorBackend, HostBackend hostBackend,
+                      AvailabilityZoneBackend availabilityZoneBackend) {
     this.taskBackend = taskBackend;
     this.tenantBackend = tenantBackend;
     this.projectBackend = projectBackend;
@@ -69,6 +73,7 @@ public class TaskFeClient {
     this.imageBackend = imageBackend;
     this.flavorBackend = flavorBackend;
     this.hostBackend = hostBackend;
+    this.availabilityZoneBackend = availabilityZoneBackend;
   }
 
   public Task get(String id) throws ExternalException {
@@ -122,5 +127,10 @@ public class TaskFeClient {
   public ResourceList<Task> getHostTasks(String hostId, Optional<String> state)
       throws ExternalException {
     return new ResourceList<>(hostBackend.getTasks(hostId, state));
+  }
+
+  public ResourceList<Task> getAvailabilityZoneTasks(String availabilityZoneId, Optional<String> state)
+      throws ExternalException {
+    return new ResourceList<>(availabilityZoneBackend.getTasks(availabilityZoneId, state));
   }
 }

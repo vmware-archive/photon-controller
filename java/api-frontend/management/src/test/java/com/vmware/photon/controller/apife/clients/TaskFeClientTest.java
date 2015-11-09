@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.clients;
 
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.apife.backends.AvailabilityZoneDcpBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.FlavorSqlBackend;
 import com.vmware.photon.controller.apife.backends.HostBackend;
@@ -59,7 +60,8 @@ public class TaskFeClientTest {
       feClient = new TaskFeClient(
           taskBackend, mock(TenantBackend.class), mock(ProjectBackend.class),
           mock(ResourceTicketBackend.class), mock(VmBackend.class), mock(DiskBackend.class),
-          mock(ImageBackend.class), mock(FlavorSqlBackend.class), mock(HostBackend.class));
+          mock(ImageBackend.class), mock(FlavorSqlBackend.class), mock(HostBackend.class),
+          mock(AvailabilityZoneDcpBackend.class));
     }
 
     /**
