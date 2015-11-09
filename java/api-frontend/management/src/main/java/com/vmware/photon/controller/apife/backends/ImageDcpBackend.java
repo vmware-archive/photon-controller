@@ -377,7 +377,7 @@ public class ImageDcpBackend implements ImageBackend {
         imageEntity.getReplicatedDatastore() != null  &&
         imageEntity.getTotalDatastore() != 0) {
       String replicatedDatastoreRatio =
-          (imageEntity.getReplicatedDatastore() * 100 / imageEntity.getTotalDatastore()) + "%";
+          (imageEntity.getReplicatedDatastore() * 100.00 / imageEntity.getTotalDatastore()) + "%";
       image.setReplicationProgress(replicatedDatastoreRatio);
     }
 
