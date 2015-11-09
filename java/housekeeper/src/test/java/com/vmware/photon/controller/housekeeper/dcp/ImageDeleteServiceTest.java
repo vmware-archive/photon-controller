@@ -19,13 +19,18 @@ import com.vmware.dcp.common.ServiceHost;
 import com.vmware.dcp.common.ServiceStats;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
+import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidRefCountException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.DeleteImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientDeleteImageErrorMock;
@@ -40,6 +45,7 @@ import com.google.inject.Injector;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -60,6 +66,7 @@ import static org.mockito.Mockito.spy;
 import static org.testng.Assert.fail;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -645,8 +652,15 @@ public class ImageDeleteServiceTest {
       hostClient.setDeleteImageResultCode(code);
       doReturn(hostClient).when(hostClientFactory).create();
       zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock();
+      cloudStoreHelper = new CloudStoreHelper();
 
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+
+      // Create image entity in cloudstore
+      ImageService.State createdImageState = createNewImageEntity();
+      int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
+
+      deleteTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
 
       // Call Service.
       ImageDeleteService.State response = machine.callServiceAndWaitForState(
@@ -660,6 +674,15 @@ public class ImageDeleteServiceTest {
             }
           }
       );
+
+      //Check Image Service replicatedDatastore counts
+      createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
+      if (code.equals(DeleteImageResultCode.OK)) {
+        assertThat(createdImageState.replicatedDatastore, is(initialReplicatedDatastoreCount - 1));
+      } else {
+        assertThat(createdImageState.replicatedDatastore, is(initialReplicatedDatastoreCount));
+      }
+
 
       // Check response.
       assertThat(response.image, is(deleteTask.image));
@@ -707,8 +730,15 @@ public class ImageDeleteServiceTest {
       hostClient.setDeleteImageResultCode(code);
       hostClient.setImageInfo(info);
       doReturn(hostClient).when(hostClientFactory).create();
+      cloudStoreHelper = new CloudStoreHelper();
 
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+
+      // Create image entity in cloudstore
+      ImageService.State createdImageState = createNewImageEntity();
+      int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
+
+      deleteTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
 
       // Call Service.
       deleteTask.imageWatermarkTime = DateTime.now().getMillis();
@@ -723,6 +753,14 @@ public class ImageDeleteServiceTest {
             }
           }
       );
+
+      //Check Image Service replicatedDatastore counts
+      createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
+      if (code.equals(DeleteImageResultCode.OK)) {
+        assertThat(createdImageState.replicatedDatastore, is(initialReplicatedDatastoreCount - 1));
+      } else {
+        assertThat(createdImageState.replicatedDatastore, is(initialReplicatedDatastoreCount));
+      }
 
       // Check response.
       assertThat(response.image, is(deleteTask.image));
@@ -972,6 +1010,37 @@ public class ImageDeleteServiceTest {
                   1.0   // FAILED
           )
       );
+    }
+
+    private ImageService.State createNewImageEntity()
+        throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
+
+      machine.startFactoryServiceSynchronously(
+          com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.class,
+          com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK);
+
+      com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State state
+          = new com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State();
+      state.name = "image-1";
+      state.replicationType = ImageReplicationType.EAGER;
+      state.state = ImageState.READY;
+      state.totalDatastore = 1;
+      state.replicatedDatastore = 1;
+
+      Operation op = cloudStoreHelper
+          .createPost(com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a image in clod store.");
+            }
+          });
+      Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      return result.getBody(ImageService.State.class);
     }
   }
 }
