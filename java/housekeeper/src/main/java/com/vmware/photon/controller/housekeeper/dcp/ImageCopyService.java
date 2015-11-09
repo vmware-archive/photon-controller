@@ -19,11 +19,13 @@ import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
@@ -239,6 +241,8 @@ public class ImageCopyService extends StatefulService {
           ServiceUtils.logInfo(ImageCopyService.this, "CopyImageResponse %s", r);
           switch (r.getResult()) {
             case OK:
+              sendPatchToIncrementImageReplicatedCount(current);
+              break;
             case DESTINATION_ALREADY_EXIST:
               sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
               break;
@@ -266,6 +270,38 @@ public class ImageCopyService extends StatefulService {
     } catch (IOException | RpcException e) {
       failTask(e);
     }
+  }
+
+  /**
+   * Sends patch to update replicatedDatastore in image cloud store entity.
+   * @param current
+   */
+  private void sendPatchToIncrementImageReplicatedCount(final State current) {
+    try {
+      CloudStoreHelper cloudStoreHelper = ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper();
+      ImageService.DatastoreCountRequest requestBody = constructDatastoreCountRequest(1);
+      cloudStoreHelper.patchEntity(ImageCopyService.this,
+          com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK + "/" + current.image,
+          requestBody,
+          (op, t) -> {
+            sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
+            if (t != null) {
+              ServiceUtils.logWarning(this, "Could not increment replicatedDatastore for image %s by %s: %s",
+                  current.image, requestBody.amount, t);
+              return;
+            }
+          });
+    } catch (Exception e){
+      ServiceUtils.logSevere(this, "Exception thrown while sending patch to image service to increment count: %s",
+          e);
+    }
+  }
+
+  private ImageService.DatastoreCountRequest constructDatastoreCountRequest(int adjustCount) {
+    ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
+    requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT;
+    requestBody.amount = adjustCount;
+    return requestBody;
   }
 
   /**
