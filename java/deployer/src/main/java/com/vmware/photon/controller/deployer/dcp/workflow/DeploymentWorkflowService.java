@@ -122,27 +122,6 @@ public class DeploymentWorkflowService extends StatefulService {
     public String esxCloudManagementVmImageFile;
 
     /**
-     * This value represents the file name of the Kubernetes VM image.
-     */
-    @NotNull
-    @Immutable
-    public String kubernetesImageFile;
-
-    /**
-     * This value represents the file name of the Mesos VM image.
-     */
-    @NotNull
-    @Immutable
-    public String mesosImageFile;
-
-    /**
-     * This value represents the file name of the Mesos VM image.
-     */
-    @NotNull
-    @Immutable
-    public String swarmImageFile;
-
-    /**
      * This value represents the state of the current task.
      */
     @DefaultTaskState(value = TaskState.TaskStage.CREATED)
@@ -906,9 +885,6 @@ public class DeploymentWorkflowService extends StatefulService {
 
     AllocateClusterManagerResourcesTaskService.State startState =
         new AllocateClusterManagerResourcesTaskService.State();
-    startState.kubernetesImageFile = currentState.kubernetesImageFile;
-    startState.mesosImageFile = currentState.mesosImageFile;
-    startState.swarmImageFile = currentState.swarmImageFile;
 
     TaskUtils.startTaskAsync(
         this,

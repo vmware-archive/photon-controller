@@ -17,16 +17,14 @@ describe "Mesos cluster-service lifecycle", cluster: true do
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance
     @cleaner = EsxCloud::SystemCleaner.new(client)
-    if ENV["DEVBOX_PHOTON"]
-      @mesos_image = EsxCloud::ClusterHelper.upload_mesos_image(client)
-    end
+    @deployment = @seeder.deployment!
+    @mesos_image = EsxCloud::ClusterHelper.upload_mesos_image(client)
+    @cluster_configuration = EsxCloud::ClusterHelper.configure_cluster(client, @deployment, @mesos_image, "MESOS")
   end
 
   after(:all) do
     puts "Staring to clean up Mesos Cluster lifecycle tests Env"
-    if ENV["DEVBOX_PHOTON"]
-      @cleaner.delete_image(@mesos_image)
-    end
+    @cleaner.delete_image(@mesos_image)
   end
 
   it 'should create, delete and resize Mesos cluster successfully' do

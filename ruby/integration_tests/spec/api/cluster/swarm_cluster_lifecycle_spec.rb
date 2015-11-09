@@ -17,16 +17,14 @@ describe "Swarm cluster-service lifecycle", cluster: true do
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance
     @cleaner = EsxCloud::SystemCleaner.new(client)
-    if ENV["DEVBOX_PHOTON"]
-      @swarm_image = EsxCloud::ClusterHelper.upload_swarm_image(client)
-    end
+    @deployment = @seeder.deployment!
+    @swarm_image = EsxCloud::ClusterHelper.upload_swarm_image(client)
+    @cluster_configuration = EsxCloud::ClusterHelper.configure_cluster(client, @deployment, @swarm_image, "SWARM")
   end
 
   after(:all) do
     puts "Staring to clean up Swarm Cluster lifecycle tests Env"
-    if ENV["DEVBOX_PHOTON"]
-      @cleaner.delete_image(@swarm_image)
-    end
+    @cleaner.delete_image(@swarm_image)
   end
 
   it 'should create, delete and resize Swarm cluster successfully' do

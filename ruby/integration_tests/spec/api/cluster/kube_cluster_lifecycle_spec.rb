@@ -17,16 +17,15 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance
     @cleaner = EsxCloud::SystemCleaner.new(client)
-    if ENV["DEVBOX_PHOTON"]
-      @kubernetes_image = EsxCloud::ClusterHelper.upload_kubernetes_image(client)
-    end
+    @deployment = @seeder.deployment!
+    @kubernetes_image = EsxCloud::ClusterHelper.upload_kubernetes_image(client)
+    @cluster_configuration = EsxCloud::ClusterHelper.configure_cluster(client, @deployment, @kubernetes_image,
+                                                                       "KUBERNETES")
   end
 
   after(:all) do
     puts "Staring to clean up Kubernetes Cluster lifecycle tests Env"
-    if ENV["DEVBOX_PHOTON"]
-      @cleaner.delete_image(@kubernetes_image)
-    end
+    @cleaner.delete_image(@kubernetes_image)
   end
 
   it 'should create/resize/delete Kubernetes cluster successfully' do

@@ -44,10 +44,6 @@ public class ClusterManagerConstants {
    * This class defines constant values for Kubernetes cluster.
    */
   public static class Kubernetes {
-
-    public static final String IMAGE_FILE_NAME_PREFIX = "photon-kubernetes-vm";
-    public static final String IMAGE_NAME = "kubernetes-vm-image";
-
     public static final int MASTER_COUNT = 1;
 
     public static final int API_PORT = 8080;
@@ -57,9 +53,6 @@ public class ClusterManagerConstants {
    * This class defines constant values for Mesos cluster.
    */
   public static class Mesos {
-    public static final String IMAGE_FILE_NAME_PREFIX = "photon-mesos-vm";
-    public static final String IMAGE_NAME = "mesos-vm-image";
-
     public static final int MASTER_COUNT = 3;
     public static final int MARATHON_COUNT = 1;
 
@@ -72,9 +65,6 @@ public class ClusterManagerConstants {
    * This class defines constant values for Swarm cluster.
    */
   public static class Swarm {
-    public static final String IMAGE_FILE_NAME_PREFIX = "photon-swarm-vm";
-    public static final String IMAGE_NAME = "swarm-vm-image";
-
     public static final int MASTER_COUNT = 1;
 
     public static final int ETCD_PORT = 2379;

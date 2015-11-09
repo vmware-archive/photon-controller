@@ -317,6 +317,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     state = operation.getBody(ClusterConfigurationService.State.class);
 
     ClusterConfiguration config = new ClusterConfiguration();
+    config.setId(state.clusterType.toString().toLowerCase());
     config.setType(state.clusterType);
     config.setImageId(state.imageId);
 

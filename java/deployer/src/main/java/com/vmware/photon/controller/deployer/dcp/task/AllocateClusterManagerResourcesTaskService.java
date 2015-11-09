@@ -23,7 +23,6 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
-import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Task;
@@ -37,10 +36,8 @@ import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
-import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
@@ -81,9 +78,6 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
      */
     public enum SubStage {
       GET_LOAD_BALANCER_ADDRESS,
-      UPLOAD_KUBERNETES_IMAGE,
-      UPLOAD_MESOS_IMAGE,
-      UPLOAD_SWARM_IMAGE,
       CREATE_MASTER_VM_FLAVOR,
       CREATE_OTHER_VM_FLAVOR,
       CREATE_VM_DISK_FLAVOR
@@ -108,27 +102,6 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
     @DefaultInteger(value = 0)
     @Immutable
     public Integer controlFlags;
-
-    /**
-     * This value represents the file name of the Kubernetes VM image.
-     */
-    @NotNull
-    @Immutable
-    public String kubernetesImageFile;
-
-    /**
-     * This value represents the file name of the Mesos VM image.
-     */
-    @NotNull
-    @Immutable
-    public String mesosImageFile;
-
-    /**
-     * This value represents the file name of the Swarm VM image.
-     */
-    @NotNull
-    @Immutable
-    public String swarmImageFile;
 
     /**
      * This value represents the address of the Load Balancer.
@@ -194,18 +167,6 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
     switch (currentState.taskState.subStage) {
       case GET_LOAD_BALANCER_ADDRESS:
         queryForLoadBalancerContainerTemplate(currentState);
-        break;
-      case UPLOAD_KUBERNETES_IMAGE:
-        uploadImage(currentState, ClusterManagerConstants.Kubernetes.IMAGE_NAME,
-            currentState.kubernetesImageFile, TaskState.SubStage.UPLOAD_MESOS_IMAGE);
-        break;
-      case UPLOAD_MESOS_IMAGE:
-        uploadImage(currentState, ClusterManagerConstants.Mesos.IMAGE_NAME,
-            currentState.mesosImageFile, TaskState.SubStage.UPLOAD_SWARM_IMAGE);
-        break;
-      case UPLOAD_SWARM_IMAGE:
-        uploadImage(currentState, ClusterManagerConstants.Swarm.IMAGE_NAME,
-            currentState.swarmImageFile, TaskState.SubStage.CREATE_MASTER_VM_FLAVOR);
         break;
       case CREATE_MASTER_VM_FLAVOR:
         createFlavor(currentState, createMasterVmFlavor(), TaskState.SubStage.CREATE_OTHER_VM_FLAVOR);
@@ -339,7 +300,7 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
             try {
               VmService.State vmState = operation.getBody(VmService.State.class);
               State patchState = buildPatch(TaskState.TaskStage.STARTED,
-                  TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE, null);
+                  TaskState.SubStage.CREATE_MASTER_VM_FLAVOR, null);
               patchState.loadBalancerAddress = new URL(String.format("%s://%s:%s",
                   MANAGEMENT_API_PROTOCOL,
                   vmState.ipAddress,
@@ -352,56 +313,6 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
 
     sendRequest(getOperation);
 
-  }
-
-  private void uploadImage(final State currentState,
-                           final String imageName,
-                           final String imageFileName,
-                           final TaskState.SubStage nextSubStage) throws Throwable {
-
-    FutureCallback<UploadImageTaskService.State> callback = new FutureCallback<UploadImageTaskService.State>() {
-      @Override
-      public void onSuccess(@Nullable UploadImageTaskService.State result) {
-        switch (result.taskState.stage) {
-          case FINISHED:
-            try {
-              TaskUtils.sendSelfPatch(AllocateClusterManagerResourcesTaskService.this,
-                  buildPatch(TaskState.TaskStage.STARTED, nextSubStage, null));
-            } catch (Throwable t) {
-              failTask(t);
-            }
-            break;
-          case CANCELLED:
-            TaskUtils.sendSelfPatch(AllocateClusterManagerResourcesTaskService.this,
-                buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-            break;
-          case FAILED:
-            TaskUtils.sendSelfPatch(AllocateClusterManagerResourcesTaskService.this,
-                buildPatch(TaskState.TaskStage.FAILED, null, result.taskState.failure));
-            break;
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-
-    UploadImageTaskService.State startState = new UploadImageTaskService.State();
-    startState.imageName = imageName;
-    startState.imageFile = imageFileName;
-    startState.imageReplicationType = ImageReplicationType.EAGER;
-    startState.apiFeEndpoint = currentState.loadBalancerAddress;
-
-    TaskUtils.startTaskAsync(
-        this,
-        UploadImageTaskFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        UploadImageTaskService.State.class,
-        DeployerDefaults.DEFAULT_TASK_POLL_DELAY,
-        callback);
   }
 
   private void createFlavor(final State currentState,
@@ -516,9 +427,6 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
 
       switch (state.taskState.subStage) {
         case GET_LOAD_BALANCER_ADDRESS:
-        case UPLOAD_KUBERNETES_IMAGE:
-        case UPLOAD_MESOS_IMAGE:
-        case UPLOAD_SWARM_IMAGE:
         case CREATE_MASTER_VM_FLAVOR:
         case CREATE_OTHER_VM_FLAVOR:
         case CREATE_VM_DISK_FLAVOR:

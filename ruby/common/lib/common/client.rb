@@ -490,5 +490,11 @@ module EsxCloud
     def destroy_deployment(id)
     end
 
+    # @param [String] deployment_id
+    # @param [String] payload
+    # @return [ClusterConfiguration]
+    def configure_cluster(deployment_id, payload)
+    end
+
   end
 end
