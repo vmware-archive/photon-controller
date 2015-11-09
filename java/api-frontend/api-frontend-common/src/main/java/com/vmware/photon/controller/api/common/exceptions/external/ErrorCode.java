@@ -105,6 +105,7 @@ public enum ErrorCode {
   DUPLICATE_HOST("DuplicateHost", Response.Status.BAD_REQUEST),
   NO_MANAGEMENT_HOST_CONFIGURED("NoManagementHostConfigured", Response.Status.BAD_REQUEST),
   INVALID_AUTH_CONFIG("InvalidAuthConfig", Response.Status.BAD_REQUEST),
+  INVALID_SECURITY_GROUP_FORMAT("InvalidSecurityGroupFormat", Response.Status.BAD_REQUEST),
   INVALID_FLAVOR_STATE("InvalidFlavorState", Response.Status.BAD_REQUEST),
   INVALID_NETWORK_STATE("InvalidNetworkState", Response.Status.BAD_REQUEST),
   INVALID_LOGIN("InvalidLoginCredentials", Response.Status.BAD_REQUEST),

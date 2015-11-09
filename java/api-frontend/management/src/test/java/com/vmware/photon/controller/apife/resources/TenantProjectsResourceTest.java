@@ -44,6 +44,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
+import java.util.Arrays;
 
 /**
  * Tests {@link TenantProjectsResource}.
@@ -122,6 +123,12 @@ public class TenantProjectsResourceTest extends ResourceTest {
   @Test
   public void testMissingResourceTicket() throws Exception {
     spec.setResourceTicket(null);
+    assertThat(createProject().getStatus(), is(400));
+  }
+
+  @Test
+  public void testInvalidSecurityGroup() throws Exception {
+    spec.setSecurityGroups(Arrays.asList(new String[]{"adminGroup1"}));
     assertThat(createProject().getStatus(), is(400));
   }
 
