@@ -291,6 +291,10 @@ public class EntityLockCleanerService extends StatefulService {
       TaskService.State task = op.getBody(TaskService.State.class);
       if (task.state != TaskService.State.TaskState.QUEUED &&
           task.state != TaskService.State.TaskState.STARTED) {
+          ServiceUtils.logSevere(this, "Deleting a dangling EntityLock. Investigation needed on associated " +
+                  "TaskService. EntityLock Id: %s, TaskService documentSelfLink:  %s",
+              task.entityId,
+              task.documentSelfLink);
         Operation deleteOperation = Operation
             .createDelete(UriUtils.buildUri(getHost(), EntityLockServiceFactory.SELF_LINK + "/" + task.entityId))
             .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
