@@ -22,6 +22,7 @@ import com.vmware.photon.controller.apife.clients.ProjectFeClient;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
+import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
@@ -70,6 +71,7 @@ public class TenantProjectsResource {
   public Response create(@Context Request request,
                          @PathParam("id") String tenantId,
                          @Validated ProjectCreateSpec project) throws ExternalException {
+    SecurityGroupUtils.validateSecurityGroupsFormat(project.getSecurityGroups());
     return generateCustomResponse(
         Response.Status.CREATED,
         projectFeClient.create(tenantId, project),

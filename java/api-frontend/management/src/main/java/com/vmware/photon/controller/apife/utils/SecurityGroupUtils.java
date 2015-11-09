@@ -15,7 +15,9 @@ package com.vmware.photon.controller.apife.utils;
 
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.apife.entities.SecurityGroupEntity;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidSecurityGroupFormatException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -99,6 +101,23 @@ public class SecurityGroupUtils {
         });
 
     return Pair.of(mergedSecurityGroups, selfSecurityGroupsRemoved);
+  }
+
+  /**
+   * Validate the security groups' format.
+   *
+   * @param securityGroups   The list of security groups.
+   */
+  public static void validateSecurityGroupsFormat(List<String> securityGroups) throws
+      InvalidSecurityGroupFormatException {
+    if (securityGroups != null) {
+      for (String sg : securityGroups) {
+        // match domain\group" format
+        if (StringUtils.isBlank(sg) || sg.split("\\\\").length != 2) {
+          throw new InvalidSecurityGroupFormatException("The security group format should match domain\\group");
+        }
+      }
+    }
   }
 
   /**

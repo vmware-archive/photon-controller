@@ -21,6 +21,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.clients.TenantFeClient;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
+import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
@@ -68,6 +69,7 @@ public class TenantsResource {
   public Response create(@Context Request request,
                          @Validated TenantCreateSpec tenant)
       throws ExternalException {
+    SecurityGroupUtils.validateSecurityGroupsFormat(tenant.getSecurityGroups());
     return generateCustomResponse(
         Response.Status.CREATED,
         tenantFeClient.create(tenant),

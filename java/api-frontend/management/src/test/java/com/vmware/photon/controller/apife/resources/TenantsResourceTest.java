@@ -41,6 +41,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -100,6 +101,12 @@ public class TenantsResourceTest extends ResourceTest {
         .request()
         .post(Entity.entity("{ \"name\":\"thename\",\"foo\"}", MediaType.APPLICATION_JSON_TYPE));
     assertThat(r.getStatus(), is(400));
+  }
+
+  @Test
+  public void testInvalidSecurityGroup() throws Exception {
+    spec.setSecurityGroups(Arrays.asList(new String[]{"adminGroup1"}));
+    assertThat(createTenant().getStatus(), is(400));
   }
 
   @Test

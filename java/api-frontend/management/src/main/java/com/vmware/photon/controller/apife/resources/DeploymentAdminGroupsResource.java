@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 
 import com.google.inject.Inject;
@@ -64,6 +65,7 @@ public class DeploymentAdminGroupsResource {
                                          @Validated ResourceList<String> securityGroups)
       throws ExternalException {
 
+    SecurityGroupUtils.validateSecurityGroupsFormat(securityGroups.getItems());
     Task task = client.setSecurityGroups(id, securityGroups.getItems());
     return generateCustomResponse(
         Response.Status.OK,

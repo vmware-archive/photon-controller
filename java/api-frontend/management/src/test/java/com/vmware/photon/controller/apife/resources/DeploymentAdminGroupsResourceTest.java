@@ -65,7 +65,8 @@ public class DeploymentAdminGroupsResourceTest extends ResourceTest {
 
     when(deploymentFeClient.setSecurityGroups(eq(deploymentId), anyListOf(String.class))).thenReturn(task);
 
-    ResourceList<String> adminGroups = new ResourceList<>(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}));
+    ResourceList<String> adminGroups = new ResourceList<>(Arrays.asList(new String[]{"tenant\\adminGroup1",
+        "tenant\\adminGroup2"}));
 
     Response response = client()
         .target(deploymentRoutePath)
@@ -82,7 +83,8 @@ public class DeploymentAdminGroupsResourceTest extends ResourceTest {
 
   @Test
   public void testSetAdminGroupsFail() throws Exception {
-    ResourceList<String> adminGroups = new ResourceList<>(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}));
+    ResourceList<String> adminGroups = new ResourceList<>(Arrays.asList(new String[]{"tenant\\adminGroup1",
+        "tenant\\adminGroup2"}));
     when(deploymentFeClient.setSecurityGroups(eq(deploymentId), anyListOf(String.class)))
         .thenThrow(new InvalidAuthConfigException("Auth is not enabled, and security groups cannot be set."));
 
@@ -95,5 +97,23 @@ public class DeploymentAdminGroupsResourceTest extends ResourceTest {
     ApiError errors = response.readEntity(ApiError.class);
     assertThat(errors.getCode(), is("InvalidAuthConfig"));
     assertThat(errors.getMessage(), containsString("Auth is not enabled, and security groups cannot be set."));
+  }
+
+  @Test
+  public void testSetAdminGroupsFailWithInvalidSecurityGroup() throws Exception {
+    ResourceList<String> adminGroups = new ResourceList<>(Arrays.asList(new String[]{"adminGroup1",
+        "adminGroup2"}));
+    when(deploymentFeClient.setSecurityGroups(eq(deploymentId), anyListOf(String.class)))
+        .thenThrow(new InvalidAuthConfigException("Auth is not enabled, and security groups cannot be set."));
+
+    Response response = client()
+        .target(deploymentRoutePath)
+        .request()
+        .post(Entity.entity(adminGroups, MediaType.APPLICATION_JSON_TYPE));
+    assertThat(response.getStatus(), is(400));
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), is("InvalidSecurityGroupFormat"));
+    assertThat(errors.getMessage(), containsString("The security group format should match domain\\group"));
   }
 }
