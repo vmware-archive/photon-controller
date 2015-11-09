@@ -20,11 +20,16 @@ import com.vmware.dcp.common.ServiceHost;
 import com.vmware.dcp.common.ServiceStats;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientDeleteImageErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
@@ -35,6 +40,7 @@ import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 
 import org.hamcrest.Matchers;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -54,6 +60,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -1001,7 +1008,11 @@ public class ImageRemoverServiceTest {
 
     @Test(dataProvider = "hostCount")
     public void testSuccess(int hostCount) throws Throwable {
+      cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+
+      ImageService.State createdImageState = createNewImageEntity();
+      request.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
 
       //Call Service.
       ImageRemoverService.State response = machine.callServiceAndWaitForState(ImageRemoverServiceFactory.SELF_LINK,
@@ -1128,6 +1139,37 @@ public class ImageRemoverServiceTest {
                   1.0     // FAILED
           )
       );
+    }
+
+    private com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State createNewImageEntity()
+        throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
+
+      machine.startFactoryServiceSynchronously(
+          com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.class,
+          com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK);
+
+      com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State state
+          = new com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State();
+      state.name = "image-1";
+      state.replicationType = ImageReplicationType.EAGER;
+      state.state = ImageState.READY;
+      state.totalDatastore = 1;
+      state.replicatedDatastore = 1;
+
+      Operation op = cloudStoreHelper
+          .createPost(com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a reference image.");
+            }
+          });
+      Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      return result.getBody(com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State.class);
     }
   }
 }
