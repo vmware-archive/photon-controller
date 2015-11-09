@@ -25,3 +25,4 @@ class ServiceName(Enum):
     DATASTORE_TAGS = 7
     HYPERVISOR = 8
     REGISTRANT = 9
+    VIM_CLIENT = 10
