@@ -19,12 +19,14 @@ import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.DatastoreNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidRefCountException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
@@ -332,6 +334,14 @@ public class ImageDeleteService extends StatefulService {
           ServiceUtils.logInfo(ImageDeleteService.this, "DeleteImageResponse %s", r);
           switch (r.getResult()) {
             case OK:
+              try {
+                sendPatchToDecrementImageReplicatedCount(current);
+              } catch (Exception e) {
+                ServiceUtils.logWarning(ImageDeleteService.this,
+                    "Exception thrown while sending patch to image service to increment count: %s",
+                    e);
+              }
+              break;
             case IMAGE_IN_USE:
             case IMAGE_NOT_FOUND:
               sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
@@ -360,6 +370,33 @@ public class ImageDeleteService extends StatefulService {
     } catch (IOException | RpcException e) {
       failTask(e);
     }
+  }
+
+  /**
+   * Sends patch to update replicatedDatastore in image cloud store entity.
+   * @param current
+   */
+  private void sendPatchToDecrementImageReplicatedCount(final State current) {
+    CloudStoreHelper cloudStoreHelper = ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper();
+    ImageService.DatastoreCountRequest requestBody = constructDatastoreCountRequest(-1);
+    cloudStoreHelper.patchEntity(ImageDeleteService.this,
+        com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK + "/" + current.image,
+        requestBody,
+        (op, t) -> {
+          sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
+          if (t != null) {
+            ServiceUtils.logWarning(this, "Could not decrement replicatedDatastore for image %s by %s: %s",
+                current.image, requestBody.amount, t);
+            return;
+          }
+        });
+  }
+
+  private ImageService.DatastoreCountRequest constructDatastoreCountRequest(int adjustCount) {
+    ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
+    requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT;
+    requestBody.amount = adjustCount;
+    return requestBody;
   }
 
   /**
