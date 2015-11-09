@@ -226,7 +226,7 @@ describe "image", management: true, image: true do
       image = EsxCloud::Image.find_all.items.find { |i| i.id == image_id }
       expect(image).to_not be_nil
       expect(image.state).to eq "PENDING_DELETE"
-      expect(image.replication_progress).to eq "0%"
+      expect(image.replication_progress).to eq "100.0%"
 
       tasks = client.get_image_tasks(image.id).items
       expect(tasks.size).to eq(2)
