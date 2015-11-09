@@ -60,6 +60,9 @@ public enum Operation {
   CREATE_FLAVOR("CreateFlavor"),
   DELETE_FLAVOR("DeleteFlavor"),
 
+  CREATE_AVAILABILITYZONE("CreateAvailabilityZone"),
+  DELETE_AVAILABILITYZONE("DeleteAvailabilityZone"),
+
   CREATE_DATASTORE("CreateDatastore"),
   DELETE_DATASTORE("DeleteDatastore"),
   CREATE_NETWORK("CreateNetwork"),
