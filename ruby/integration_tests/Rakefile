@@ -97,27 +97,33 @@ end
 namespace "upgrade" do
   namespace "test" do
     desc "Runs tests checking the old_install setup"
-    Rspec::Core::RakeTask.new(:old_install) do |task|
-      task.pattern = FileList['spec/upgrade/old_install_spec.rb']
-      task.rspec_opts = "--tag upgrade_old_install --format RspecJunitFormatter --out reports/rspec-upgrade-old-install.xml --tag ~slow"
+    RSpec::Core::RakeTask.new(:old_install) do |task|
+      task.pattern = FileList['spec/upgrade/verify_old_install_spec.rb']
+      task.rspec_opts = "--tag verify_upgrade_old_install --format RspecJunitFormatter --out reports/rspec-upgrade-old-install.xml --tag ~slow"
     end
 
     desc "Runs tests checking the new install setup"
-    Rspec::Core::RakeTask.new(:new_install) do |task|
-      task.pattern = FileList['spec/upgrade/new_install_spec.rb']
-      task.rspec_opts = "--tag upgrade_new_install --format RspecJunitFormatter --out reports/rspec-upgrade-new-install.xml --tag ~slow"
+    RSpec::Core::RakeTask.new(:new_install) do |task|
+      task.pattern = FileList['spec/upgrade/verify_new_install_spec.rb']
+      task.rspec_opts = "--tag verify_upgrade_new_install --format RspecJunitFormatter --out reports/rspec-upgrade-new-install.xml --tag ~slow"
     end
 
     desc "Runs tests checking the migration preparation"
-    Rspec::Core::RakeTask.new(:prepare) do |task|
-      task.pattern = FileList['spec/upgrade/prepare_spec.rb']
-      task.rspec_opts = "--tag upgrade_initialize --format RspecJunitFormatter --out reports/rspec-upgrade-prepare.xml --tag ~slow"
+    RSpec::Core::RakeTask.new(:during_prepare) do |task|
+      task.pattern = FileList['spec/upgrade/during_prepare_spec.rb']
+      task.rspec_opts = "--tag during_upgrade_prepare --format RspecJunitFormatter --out reports/rspec-during-upgrade-prepare.xml --tag ~slow"
     end
 
     desc "Runs tests checking the migration finalization"
-    Rspec::Core::RakeTask.new(:finalize) do |task|
-      task.pattern = FileList['spec/upgrade/finalize_spec.rb']
-      task.rspec_opts = "--tag upgrade_finalize --format RspecJunitFormatter --out reports/rspec--upgrade-finilize.xml --tag ~slow"
+    RSpec::Core::RakeTask.new(:during_finalize) do |task|
+      task.pattern = FileList['spec/upgrade/during_finalize_spec.rb']
+      task.rspec_opts = "--tag during_upgrade_finalize --format RspecJunitFormatter --out reports/rspec-during-upgrade-finilize.xml --tag ~slow"
+    end
+
+    desc "Runs tests checking the migration finalization"
+    RSpec::Core::RakeTask.new(:after_finalize) do |task|
+      task.pattern = FileList['spec/upgrade/after_finalize_spec.rb']
+      task.rspec_opts = "--tag after_upgrade_finalize --format RspecJunitFormatter --out reports/rspec-after-upgrade-finilize.xml --tag ~slow"
     end
   end
 
