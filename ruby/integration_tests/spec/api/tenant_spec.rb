@@ -34,10 +34,10 @@ describe "tenant", management: true do
   it "should create one with security groups, get it, then delete it" do
     begin
       tenant_name = random_name("tenant-")
-      tenant = create_tenant(:name => tenant_name, :security_groups => ["adminGroup1", "adminGroup2"])
+      tenant = create_tenant(:name => tenant_name, :security_groups => ["tenant\\adminGroup1", "tenant\\adminGroup2"])
       tenant.name.should == tenant_name
-      tenant.security_groups.should =~ [{"name"=>"adminGroup1", "inherited"=>false},
-                                        {"name"=>"adminGroup2", "inherited"=>false}]
+      tenant.security_groups.should =~ [{"name"=>"tenant\\adminGroup1", "inherited"=>false},
+                                        {"name"=>"tenant\\adminGroup2", "inherited"=>false}]
 
       tenants = find_tenants_by_name(tenant_name)
       tenants.items.size.should == 1
@@ -169,13 +169,13 @@ describe "tenant", management: true do
       validate_tenant_tasks(client.get_tenant_tasks(tenant.id))
       validate_tenant_tasks(client.get_tenant_tasks(tenant.id, "COMPLETED"))
 
-      security_groups = {items: ["adminGroup1", "adminGroup2"]}
+      security_groups = {items: ["tenant\\adminGroup1", "tenant\\adminGroup2"]}
 
       client.set_tenant_security_groups(tenant.id, security_groups)
 
       retrieved_tenant = find_tenant_by_id(tenant.id)
-      retrieved_tenant.security_groups.should =~ [{"name"=>"adminGroup1", "inherited"=>false},
-                                                  {"name"=>"adminGroup2", "inherited"=>false}]
+      retrieved_tenant.security_groups.should =~ [{"name"=>"tenant\\adminGroup1", "inherited"=>false},
+                                                  {"name"=>"tenant\\adminGroup2", "inherited"=>false}]
     ensure
       tenant.delete
     end

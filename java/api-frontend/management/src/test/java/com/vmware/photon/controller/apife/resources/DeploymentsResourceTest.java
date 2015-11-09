@@ -109,7 +109,7 @@ public class DeploymentsResourceTest extends ResourceTest {
         .username("u")
         .password("p")
         .endpoint("https://foo")
-        .securityGroups(Arrays.asList(new String[]{"adminGroup1"}))
+        .securityGroups(Arrays.asList(new String[]{"t\\adminGroup1"}))
         .build());
 
     Task task = new Task();
@@ -148,6 +148,31 @@ public class DeploymentsResourceTest extends ResourceTest {
     assertThat(apiError.getCode(), is("InvalidAuthConfig"));
     assertThat(apiError.getMessage(),
         containsString("securityGroups size must be between 1 and 2147483647 (was [])"));
+  }
+
+  @Test
+  public void testInvalidSecurityGroupFormatWithAuthEnabled() throws Exception {
+    spec.setAuth(new AuthInfoBuilder()
+        .enabled(true)
+        .endpoint("https://foo")
+        .tenant("t")
+        .username("u")
+        .password("p")
+        .securityGroups(Arrays.asList(new String[]{"adminGroup1"}))
+        .build());
+
+    Task task = new Task();
+    task.setId(taskId);
+    when(deploymentFeClient.create(spec)).thenReturn(task);
+
+    Response response = createDeployment(spec);
+
+    assertThat(response.getStatus(), is(400));
+
+    ApiError apiError = response.readEntity(ApiError.class);
+    assertThat(apiError.getCode(), is("InvalidSecurityGroupFormat"));
+    assertThat(apiError.getMessage(),
+        containsString("The security group format should match domain\\group"));
   }
 
   @Test

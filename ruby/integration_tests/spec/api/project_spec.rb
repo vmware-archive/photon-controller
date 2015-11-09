@@ -55,11 +55,11 @@ describe "project", management: true do
             name: project_name,
             resource_ticket_name: @seeder.resource_ticket!.name,
             limits: [create_limit("vm", 10.0, "COUNT")],
-            security_groups: ["adminGroup1", "adminGroup2"])
+            security_groups: ["tenant\\adminGroup1", "tenant\\adminGroup2"])
 
         project.name.should == project_name
-        project.security_groups.should =~ [{"name"=>"adminGroup1", "inherited"=>false},
-                                           {"name"=>"adminGroup2", "inherited"=>false}]
+        project.security_groups.should =~ [{"name"=>"tenant\\adminGroup1", "inherited"=>false},
+                                           {"name"=>"tenant\\adminGroup2", "inherited"=>false}]
         task_list = client.get_project_tasks(project.id, "COMPLETED").items
         task_list.should be_empty
 
@@ -79,7 +79,7 @@ describe "project", management: true do
 
     context "when tenant has security groups" do
       before(:all) do
-        tenant_security_groups = {items: ["adminGroup2", "adminGroup3"]}
+        tenant_security_groups = {items: ["tenant\\adminGroup2", "tenant\\adminGroup3"]}
         client.set_tenant_security_groups(@seeder.tenant!.id, tenant_security_groups)
       end
 
@@ -91,18 +91,18 @@ describe "project", management: true do
           project_name = random_name("project-")
 
           retrieved_tenant = find_tenant_by_id(@seeder.tenant!.id)
-          retrieved_tenant.security_groups.should =~ [{"name"=>"adminGroup2", "inherited"=>false},
-                                                      {"name"=>"adminGroup3", "inherited"=>false}]
+          retrieved_tenant.security_groups.should =~ [{"name"=>"tenant\\adminGroup2", "inherited"=>false},
+                                                      {"name"=>"tenant\\adminGroup3", "inherited"=>false}]
           project = @seeder.tenant!.create_project(
               name: project_name,
               resource_ticket_name: @seeder.resource_ticket!.name,
               limits: [create_limit("vm", 10.0, "COUNT")],
-              security_groups: ["adminGroup1", "adminGroup2"])
+              security_groups: ["tenant\\adminGroup1", "tenant\\adminGroup2"])
 
           project.name.should == project_name
-          project.security_groups.should =~ [{"name"=>"adminGroup2", "inherited"=>true},
-                                             {"name"=>"adminGroup3", "inherited"=>true},
-                                             {"name"=>"adminGroup1", "inherited"=>false}]
+          project.security_groups.should =~ [{"name"=>"tenant\\adminGroup2", "inherited"=>true},
+                                             {"name"=>"tenant\\adminGroup3", "inherited"=>true},
+                                             {"name"=>"tenant\\adminGroup1", "inherited"=>false}]
           task_list = client.get_project_tasks(project.id, "COMPLETED").items
           task_list.should be_empty
 
@@ -188,12 +188,12 @@ describe "project", management: true do
         task_list = client.get_project_tasks(project.id, "COMPLETED").items
         task_list.should be_empty
 
-        security_groups = {items: ["adminGroup1", "adminGroup2"]}
+        security_groups = {items: ["tenant\\adminGroup1", "tenant\\adminGroup2"]}
         client.set_project_security_groups(project.id, security_groups)
 
         retrieved_project = find_project_by_id(project.id)
-        retrieved_project.security_groups.should =~ [{"name"=>"adminGroup1", "inherited"=>false},
-                                                     {"name"=>"adminGroup2", "inherited"=>false}]
+        retrieved_project.security_groups.should =~ [{"name"=>"tenant\\adminGroup1", "inherited"=>false},
+                                                     {"name"=>"tenant\\adminGroup2", "inherited"=>false}]
       ensure
         project.delete unless project.nil?
       end
@@ -211,25 +211,25 @@ describe "project", management: true do
         task_list = client.get_project_tasks(project.id, "COMPLETED").items
         task_list.should be_empty
 
-        security_groups = {items: ["adminGroup1", "adminGroup2"]}
+        security_groups = {items: ["tenant\\adminGroup1", "tenant\\adminGroup2"]}
         client.set_project_security_groups(project.id, security_groups)
 
         retrieved_project = find_project_by_id(project.id)
-        retrieved_project.security_groups.should =~ [{"name"=>"adminGroup1", "inherited"=>false},
-                                                     {"name"=>"adminGroup2", "inherited"=>false}]
+        retrieved_project.security_groups.should =~ [{"name"=>"tenant\\adminGroup1", "inherited"=>false},
+                                                     {"name"=>"tenant\\adminGroup2", "inherited"=>false}]
 
-        tenant_security_groups = {items: ["adminGroup2", "adminGroup3"]}
+        tenant_security_groups = {items: ["tenant\\adminGroup2", "tenant\\adminGroup3"]}
 
         client.set_tenant_security_groups(@seeder.tenant!.id, tenant_security_groups)
 
         retrieved_tenant = find_tenant_by_id(@seeder.tenant!.id)
-        retrieved_tenant.security_groups.should =~ [{"name"=>"adminGroup2", "inherited"=>false},
-                                                    {"name"=>"adminGroup3", "inherited"=>false}]
+        retrieved_tenant.security_groups.should =~ [{"name"=>"tenant\\adminGroup2", "inherited"=>false},
+                                                    {"name"=>"tenant\\adminGroup3", "inherited"=>false}]
 
         retrieved_project = find_project_by_id(project.id)
-        retrieved_project.security_groups.should =~ [{"name"=>"adminGroup2", "inherited"=>true},
-                                                     {"name"=>"adminGroup3", "inherited"=>true},
-                                                     {"name"=>"adminGroup1", "inherited"=>false}]
+        retrieved_project.security_groups.should =~ [{"name"=>"tenant\\adminGroup2", "inherited"=>true},
+                                                     {"name"=>"tenant\\adminGroup3", "inherited"=>true},
+                                                     {"name"=>"tenant\\adminGroup1", "inherited"=>false}]
       ensure
         project.delete unless project.nil?
       end

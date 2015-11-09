@@ -23,6 +23,7 @@ import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
 import org.mockito.Mock;
 import org.testng.annotations.Test;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
@@ -61,7 +62,7 @@ public class ProjectSecurityGroupsResourceTest extends ResourceTest {
     Task task = new Task();
     task.setId(taskId);
 
-    List<String> securityGroups = Arrays.asList(new String[]{"adminGroup1", "adminGroup2"});
+    List<String> securityGroups = Arrays.asList(new String[]{"tenant\\adminGroup1", "tenant\\adminGroup2"});
     when(projectFeClient.setSecurityGroups(projectId, securityGroups)).thenReturn(task);
 
     Response response = client()
@@ -78,7 +79,7 @@ public class ProjectSecurityGroupsResourceTest extends ResourceTest {
 
   @Test
   public void testSetSecurityGroupsFail() throws Exception {
-    List<String> securityGroups = Arrays.asList(new String[]{"adminGroup1", "adminGroup2"});
+    List<String> securityGroups = Arrays.asList(new String[]{"tenant\\adminGroup1", "tenant\\adminGroup2"});
     when(projectFeClient.setSecurityGroups(projectId, securityGroups))
         .thenThrow(new ExternalException("Failed to change security groups"));
 
@@ -91,5 +92,22 @@ public class ProjectSecurityGroupsResourceTest extends ResourceTest {
     ApiError errors = response.readEntity(ApiError.class);
     assertThat(errors.getCode(), is("InternalError"));
     assertThat(errors.getMessage(), is("Failed to change security groups"));
+  }
+
+  @Test
+  public void testSetSecurityGroupsFailWithInvalidSecurityGroup() throws Exception {
+    List<String> securityGroups = Arrays.asList(new String[]{"adminGroup1", "adminGroup2"});
+    when(projectFeClient.setSecurityGroups(projectId, securityGroups))
+        .thenThrow(new ExternalException("Failed to change security groups"));
+
+    Response response = client()
+        .target(projectRoutePath)
+        .request()
+        .post(Entity.entity(new ResourceList<>(securityGroups), MediaType.APPLICATION_JSON_TYPE));
+    assertThat(response.getStatus(), is(400));
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), is("InvalidSecurityGroupFormat"));
+    assertThat(errors.getMessage(), containsString("The security group format should match domain\\group"));
   }
 }

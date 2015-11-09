@@ -69,7 +69,7 @@ describe "deployment", management: true, devbox: true do
           let(:deployment_create_spec) do
             EsxCloud::DeploymentCreateSpec.new(
               "image_datastore",
-              EsxCloud::AuthInfo.new(false, '0.0.0.0','8080', 't', 'u', 'p', ['securityGroup1']),
+              EsxCloud::AuthInfo.new(false, '0.0.0.0','8080', 't', 'u', 'p', ['t\\securityGroup1']),
               "0.0.0.1",
               "0.0.0.2",
               true)
@@ -172,7 +172,7 @@ describe "deployment", management: true, devbox: true do
       it "fails to update security groups" do
         begin
           deployment_id = deployment.id
-          security_groups = ["adminGroup1", "adminGroup2"]
+          security_groups = ["esxcloud\\adminGroup1", "esxcloud\\adminGroup2"]
           security_groups_in_hash = {items: security_groups}
 
           client.update_security_groups(deployment_id, security_groups_in_hash)
@@ -207,19 +207,19 @@ describe "deployment", management: true, devbox: true do
 
         deployment_id = deployment.id;
 
-        security_groups = {items: ["adminGroup2", "adminGroup3"]}
+        security_groups = {items: ["esxcloud\\adminGroup2", "esxcloud\\adminGroup3"]}
         client.update_security_groups(deployment_id, security_groups)
 
         deployment = client.find_deployment_by_id(deployment_id)
-        expect(deployment.auth.securityGroups).to eq(["adminGroup2", "adminGroup3"])
+        expect(deployment.auth.securityGroups).to eq(["esxcloud\\adminGroup2", "esxcloud\\adminGroup3"])
 
         tenant = client.find_tenant_by_id(@tenant.id)
-        tenant.security_groups.should =~ [{"name"=>"adminGroup2", "inherited"=>true},
-                                          {"name"=>"adminGroup3", "inherited"=>true}]
+        tenant.security_groups.should =~ [{"name"=>"esxcloud\\adminGroup2", "inherited"=>true},
+                                          {"name"=>"esxcloud\\adminGroup3", "inherited"=>true}]
 
         project = client.find_project_by_id(@project.id)
-        project.security_groups.should =~ [{"name"=>"adminGroup2", "inherited"=>true},
-                                           {"name"=>"adminGroup3", "inherited"=>true}]
+        project.security_groups.should =~ [{"name"=>"esxcloud\\adminGroup2", "inherited"=>true},
+                                           {"name"=>"esxcloud\\adminGroup3", "inherited"=>true}]
       end
     end
   end

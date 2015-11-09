@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.clients.TenantFeClient;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
+import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 
 import com.google.inject.Inject;
@@ -61,7 +62,7 @@ public class TenantSecurityGroupsResource {
   public Response setSecurityGroups(@Context Request request,
                                     @PathParam("id") String id,
                                     @Validated ResourceList<String> securityGroups) throws ExternalException {
-
+    SecurityGroupUtils.validateSecurityGroupsFormat(securityGroups.getItems());
     return generateCustomResponse(
         Response.Status.OK,
         client.setSecurityGroups(id, securityGroups.getItems()),
