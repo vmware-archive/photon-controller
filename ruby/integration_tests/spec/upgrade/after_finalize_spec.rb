@@ -69,27 +69,6 @@ describe "migrate finalize", upgrade: true do
       end
     end
 
-    it "should pause both systems during finalize" do
-      client.resume_system(destination_deployment.id)
-      source_api_client.resume_system(source_deployment.id)
-      client.finalize_deployment_migration(EsxCloud::TestHelpers.get_upgrade_source_address,
-                                           destination_deployment.id)
-
-      # the destination system should be resumed
-      create_tenant(name: random_name("tenant-"))
-
-      begin
-        # the source system should be frozen
-        source_api_client.create_tenant(name: random_name("tenant-"))
-        fail("source system should be paused")
-      rescue EsxCloud::ApiError => e
-        expect(e.response_code).to eq 403
-        expect(e.errors.size).to eq 1
-        expect(e.errors[0].code).to eq "SystemPaused"
-        expect(e.errors[0].message).to match /System is paused/
-      end
-    end
-
     it "should remove old mgmt vms from new deployment" do
       source_management_vms = source_api_client.get_deployment_vms(source_deployment.id)
       source_management_vms.each do |vm|
