@@ -48,6 +48,7 @@ public class DcpBackendTestModule extends AbstractModule {
     bind(TombstoneBackend.class).to(TombstoneDcpBackend.class);
     bind(HostBackend.class).to(HostDcpBackend.class);
     bind(DeploymentBackend.class).to(DeploymentDcpBackend.class);
+    bind(AvailabilityZoneBackend.class).to(AvailabilityZoneDcpBackend.class);
   }
 
   @Provides

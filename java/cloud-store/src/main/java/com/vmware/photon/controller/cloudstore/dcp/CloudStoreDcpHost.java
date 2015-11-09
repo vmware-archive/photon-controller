@@ -18,6 +18,7 @@ import com.vmware.dcp.common.ServiceHost;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AttachedDiskServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
@@ -94,6 +95,7 @@ public class CloudStoreDcpHost
       ClusterServiceFactory.class,
       ClusterConfigurationServiceFactory.class,
       EntityLockCleanerFactoryService.class,
+      AvailabilityZoneServiceFactory.class,
 
       // Tasks
       TaskTriggerFactoryService.class,
@@ -157,6 +159,7 @@ public class CloudStoreDcpHost
         && checkServiceAvailable(TombstoneServiceFactory.SELF_LINK)
         && checkServiceAvailable(ClusterServiceFactory.SELF_LINK)
         && checkServiceAvailable(ClusterConfigurationServiceFactory.SELF_LINK)
+        && checkServiceAvailable(AvailabilityZoneServiceFactory.SELF_LINK)
 
         //tasks
         && checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
