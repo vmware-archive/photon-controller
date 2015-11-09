@@ -23,10 +23,7 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.ClusterType;
-import com.vmware.photon.controller.api.Image;
-import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.NetworkConnection;
-import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.VmNetworks;
@@ -654,7 +651,7 @@ public class KubernetesClusterCreateTaskServiceTest {
     @Test
     public void testEndToEndSuccess() throws Throwable {
 
-      mockAllocateResources(true, false);
+      mockAllocateResources(true);
       mockVmProvisioningTaskService(true);
       mockKubernetesClient();
 
@@ -695,7 +692,7 @@ public class KubernetesClusterCreateTaskServiceTest {
     @Test
     public void testEndToEndFailureAllocateResourceFails() throws Throwable {
 
-      mockAllocateResources(false, false);
+      mockAllocateResources(false);
       mockVmProvisioningTaskService(true);
       mockKubernetesClient();
 
@@ -707,30 +704,14 @@ public class KubernetesClusterCreateTaskServiceTest {
       );
 
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(savedState.taskState.failure.message, Matchers.containsString("Found 0 Kubernetes cluster image"));
-    }
-
-    @Test
-    public void testEndToEndSuccessNoClusterConfigurationButImage() throws Throwable {
-
-      mockAllocateResources(false, true);
-      mockVmProvisioningTaskService(true);
-      mockKubernetesClient();
-
-      KubernetesClusterCreateTask savedState = machine.callServiceAndWaitForState(
-          KubernetesClusterCreateTaskFactoryService.SELF_LINK,
-          startState,
-          KubernetesClusterCreateTask.class,
-          state -> TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal()
-      );
-
-      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FINISHED));
+      assertThat(savedState.taskState.failure.message,
+          Matchers.containsString("Cannot find cluster configuration for KUBERNETES"));
     }
 
     @Test
     public void testEndToEndFailureProvisionVmFails() throws Throwable {
 
-      mockAllocateResources(true, true);
+      mockAllocateResources(true);
       mockVmProvisioningTaskService(false);
       mockKubernetesClient();
 
@@ -771,7 +752,7 @@ public class KubernetesClusterCreateTaskServiceTest {
           .hostCount(1)
           .build();
 
-      mockAllocateResources(true, true);
+      mockAllocateResources(true);
       mockVmProvisioningTaskService(true);
 
       KubernetesClusterCreateTask savedState = machine.callServiceAndWaitForState(
@@ -785,10 +766,9 @@ public class KubernetesClusterCreateTaskServiceTest {
       assertThat(savedState.taskState.failure.message, Matchers.containsString("wait cluster vm failed"));
     }
 
-    private void mockAllocateResources(boolean isQueryClusterConfigurationSuccess,
-                                       boolean isQueryImageSuccess) throws Throwable {
+    private void mockAllocateResources(boolean isSuccess) throws Throwable {
 
-      if (isQueryClusterConfigurationSuccess) {
+      if (isSuccess) {
         ClusterConfigurationService.State clusterConfiguration = new ClusterConfigurationService.State();
         clusterConfiguration.clusterType = ClusterType.KUBERNETES;
         clusterConfiguration.imageId = "imageId";
@@ -800,20 +780,6 @@ public class KubernetesClusterCreateTaskServiceTest {
             ClusterConfigurationService.State.class,
             state -> true);
       }
-
-      final ResourceList<Image> images = new ResourceList<>(new ArrayList<>());
-      if (isQueryImageSuccess) {
-        Image image = new Image();
-        image.setId("imageId");
-        image.setName(ClusterManagerConstants.Kubernetes.IMAGE_FILE_NAME_PREFIX + "-disk1.vmdk");
-        image.setState(ImageState.READY);
-        images.getItems().add(image);
-      }
-
-      doAnswer(invocation -> {
-        ((FutureCallback<ResourceList<Image>>) invocation.getArguments()[0]).onSuccess(images);
-        return null;
-      }).when(imagesApi).getImagesAsync(any(FutureCallback.class));
     }
 
     private void mockVmProvisioningTaskService(boolean isSuccess) throws Throwable {

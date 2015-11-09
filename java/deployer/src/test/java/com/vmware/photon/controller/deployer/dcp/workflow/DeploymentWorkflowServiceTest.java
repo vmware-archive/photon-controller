@@ -117,9 +117,6 @@ public class DeploymentWorkflowServiceTest {
 
     DeploymentWorkflowService.State startState = new DeploymentWorkflowService.State();
     startState.esxCloudManagementVmImageFile = "ESX_CLOUD_MANAGEMENT_VM_IMAGE_FILE";
-    startState.kubernetesImageFile = "ESX_CLOUD_KUBERNETES_VM_IMAGE_FILE";
-    startState.mesosImageFile = "ESX_CLOUD_MESOS_VM_IMAGE_FILE";
-    startState.swarmImageFile = "ESX_CLOUD_SWARM_VM_IMAGE_FILE";
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
 
     if (null != startStage) {
@@ -1135,31 +1132,13 @@ public class DeploymentWorkflowServiceTest {
 
     private void verifyImageServiceState() throws Throwable {
       List<ImageService.State> states = queryForServiceStates(ImageService.State.class, localDeployer);
-      assertThat(states.size(), is(4));
-
-      assertThat(states.stream().filter(
-          s -> s.imageFile.contains("ESX_CLOUD_KUBERNETES_VM_IMAGE_FILE")).count(), is(1L));
-      assertThat(states.stream().filter(
-              s -> s.imageFile.contains("ESX_CLOUD_KUBERNETES_VM_IMAGE_FILE")).findFirst().get().imageId,
-          is("KUBERNETES_UPLOAD_IMAGE_ENTITY_ID"));
+      assertThat(states.size(), is(1));
 
       assertThat(states.stream().filter(
           s -> s.imageFile.contains("ESX_CLOUD_MANAGEMENT_VM_IMAGE_FILE")).count(), is(1L));
       assertThat(states.stream().filter(
               s -> s.imageFile.contains("ESX_CLOUD_MANAGEMENT_VM_IMAGE_FILE")).findFirst().get().imageId,
           is("MANAGEMENT_UPLOAD_IMAGE_ENTITY_ID"));
-
-      assertThat(states.stream().filter(
-          s -> s.imageFile.contains("ESX_CLOUD_MESOS_VM_IMAGE_FILE")).count(), is(1L));
-      assertThat(states.stream().filter(
-              s -> s.imageFile.contains("ESX_CLOUD_MESOS_VM_IMAGE_FILE")).findFirst().get().imageId,
-          is("MESOS_UPLOAD_IMAGE_ENTITY_ID"));
-
-      assertThat(states.stream().filter(
-          s -> s.imageFile.contains("ESX_CLOUD_SWARM_VM_IMAGE_FILE")).count(), is(1L));
-      assertThat(states.stream().filter(
-              s -> s.imageFile.contains("ESX_CLOUD_SWARM_VM_IMAGE_FILE")).findFirst().get().imageId,
-          is("SWARM_UPLOAD_IMAGE_ENTITY_ID"));
     }
 
     private void verifyFlavorServiceStates() throws Throwable {

@@ -22,9 +22,6 @@ import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.api.ClusterType;
-import com.vmware.photon.controller.api.Image;
-import com.vmware.photon.controller.api.ImageState;
-import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
@@ -57,7 +54,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -174,10 +170,9 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
           NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
           Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
           if (documentLinks.isEmpty()) {
-            ServiceUtils.logInfo(KubernetesClusterCreateTaskService.this,
-                "Cannot find cluster configuration for %s, try querying image from APIFE",
-                ClusterType.KUBERNETES.toString());
-            queryImage(currentState);
+            failTask(new IllegalStateException(String.format(
+                "Cannot find cluster configuration for %s",
+                ClusterType.KUBERNETES.toString())));
             return;
           }
 
@@ -186,7 +181,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
   }
 
   /**
-   * This method retrieves the cluster configuration entity for the Swarm Cluster.
+   * This method retrieves the cluster configuration entity for the Kubernetes Cluster.
    * @param currentState
    * @param clusterConfigurationLink
    */
@@ -205,45 +200,6 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
               ClusterConfigurationService.State.class);
           createClusterService(currentState, clusterConfiguration.imageId);
         });
-  }
-
-  /**
-   * This method retrieves the image Id for the Kubernetes Cluster VMs from APIFE.
-   *
-   * @param currentState
-   */
-  private void queryImage(final KubernetesClusterCreateTask currentState) {
-    try {
-      HostUtils.getApiClient(this)
-          .getImagesApi()
-          .getImagesAsync(new FutureCallback<ResourceList<Image>>() {
-            @Override
-            public void onSuccess(@Nullable ResourceList<Image> imageResourceList) {
-              try {
-                if (imageResourceList != null) {
-                  for (Image image : imageResourceList.getItems()) {
-                    if (image.getName().startsWith(ClusterManagerConstants.Kubernetes.IMAGE_FILE_NAME_PREFIX) &&
-                        image.getState() == ImageState.READY) {
-                      createClusterService(currentState, image.getId());
-                      return;
-                    }
-                  }
-                }
-
-                throw new IllegalStateException("Found 0 Kubernetes cluster image");
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-              failTask(t);
-            }
-          });
-    } catch (IOException e) {
-      failTask(e);
-    }
   }
 
   /**

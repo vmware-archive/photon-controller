@@ -15,21 +15,14 @@ package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.ServiceHost;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.FlavorApi;
-import com.vmware.photon.controller.client.resource.ImagesApi;
-import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
@@ -38,7 +31,6 @@ import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -63,7 +55,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -71,11 +62,8 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executors;
 
 /**
@@ -188,7 +176,6 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
       AllocateClusterManagerResourcesTaskService.State savedState = host.getServiceState(
           AllocateClusterManagerResourcesTaskService.State.class);
       assertThat(savedState.taskState, notNullValue());
-      assertThat(savedState.kubernetesImageFile, is("kubernetesImageFile"));
     }
 
     @DataProvider(name = "validStartStates")
@@ -198,12 +185,6 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE},
           {TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_MASTER_VM_FLAVOR},
           {TaskState.TaskStage.STARTED,
@@ -307,45 +288,12 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
           {TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS,
               TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE,
-              TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_MASTER_VM_FLAVOR},
           {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE,
+              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE,
+              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED,
@@ -417,60 +365,12 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
               TaskState.TaskStage.CREATED, null},
 
           {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE},
-
-          {TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_MASTER_VM_FLAVOR,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_MASTER_VM_FLAVOR,
               TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_MASTER_VM_FLAVOR,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_MASTER_VM_FLAVOR,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_MASTER_VM_FLAVOR,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE},
 
           {TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_OTHER_VM_FLAVOR,
@@ -479,18 +379,6 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_OTHER_VM_FLAVOR,
               TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_OTHER_VM_FLAVOR,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_OTHER_VM_FLAVOR,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_OTHER_VM_FLAVOR,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE},
           {TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_OTHER_VM_FLAVOR,
               TaskState.TaskStage.STARTED,
@@ -503,18 +391,6 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_VM_DISK_FLAVOR,
               TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_VM_DISK_FLAVOR,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_VM_DISK_FLAVOR,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE},
-          {TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_VM_DISK_FLAVOR,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE},
           {TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_VM_DISK_FLAVOR,
               TaskState.TaskStage.STARTED,
@@ -529,15 +405,6 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_MASTER_VM_FLAVOR},
@@ -561,15 +428,6 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_MASTER_VM_FLAVOR},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED,
@@ -589,15 +447,6 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.GET_LOAD_BALANCER_ADDRESS},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_MESOS_IMAGE},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_SWARM_IMAGE},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
               AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_MASTER_VM_FLAVOR},
@@ -625,7 +474,7 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
 
       AllocateClusterManagerResourcesTaskService.State patchState = buildValidPatchState(
           TaskState.TaskStage.STARTED,
-          AllocateClusterManagerResourcesTaskService.TaskState.SubStage.UPLOAD_KUBERNETES_IMAGE);
+          AllocateClusterManagerResourcesTaskService.TaskState.SubStage.CREATE_MASTER_VM_FLAVOR);
 
       Field declaredField = patchState.getClass().getDeclaredField(attributeName);
       declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
@@ -659,11 +508,7 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
     private ListeningExecutorService listeningExecutorService;
     private ApiClientFactory apiClientFactory;
     private ApiClient apiClient;
-    private ImagesApi imagesApi;
     private FlavorApi flavorApi;
-    private Task taskReturnedByUploadKubernetesImage;
-    private Task taskReturnedByUploadMesosImage;
-    private Task taskReturnedByUploadSwarmImage;
     private Task taskReturnedByCreateFlavor;
 
     @BeforeMethod
@@ -675,10 +520,8 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
 
       apiClient = mock(ApiClient.class);
-      imagesApi = mock(ImagesApi.class);
       flavorApi = mock(FlavorApi.class);
       apiClientFactory = mock(ApiClientFactory.class);
-      doReturn(imagesApi).when(apiClient).getImagesApi();
       doReturn(flavorApi).when(apiClient).getFlavorApi();
       doReturn(apiClient).when(apiClientFactory).create();
       doReturn(apiClient).when(apiClientFactory).create(any(String.class));
@@ -686,9 +529,6 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      taskReturnedByUploadKubernetesImage = TestHelper.createCompletedApifeTask("KUBERNETES_UPLOAD_IMAGE");
-      taskReturnedByUploadMesosImage = TestHelper.createCompletedApifeTask("MESOS_UPLOAD_IMAGE");
-      taskReturnedByUploadSwarmImage = TestHelper.createCompletedApifeTask("SWARM_UPLOAD_IMAGE");
       taskReturnedByCreateFlavor = TestHelper.createCompletedApifeTask("CREATE_FLAVOR");
 
       startState = buildValidStartupState();
@@ -703,7 +543,6 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
       }
 
       startState = null;
-      taskReturnedByUploadKubernetesImage = null;
       taskReturnedByCreateFlavor = null;
     }
 
@@ -729,7 +568,6 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
     @Test
     public void testEndToEndSuccess() throws Throwable {
       machine = createTestEnvironment();
-      mockUploadImage(true);
       mockCreateFlavor(true);
       setupServiceDocuments();
 
@@ -741,55 +579,11 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
-
-      // Verify that an ImageService document has been created
-      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-      querySpecification.query = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(ImageService.State.class));
-      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-      NodeGroupBroadcastResponse queryResponse = machine.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
-
-      assertThat(documentLinks.size(), is(3));
-      Set<String> imageNames = new HashSet<>();
-      for (String documentLink : documentLinks) {
-        ImageService.State imageService = machine.getServiceState(documentLink, ImageService.State.class);
-
-        imageNames.add(imageService.imageName);
-        assertThat(imageService.imageId, notNullValue());
-        assertThat(imageService.imageFile, notNullValue());
-      }
-
-      assertThat(imageNames.containsAll(Arrays.asList(
-          ClusterManagerConstants.Kubernetes.IMAGE_NAME,
-          ClusterManagerConstants.Mesos.IMAGE_NAME,
-          ClusterManagerConstants.Swarm.IMAGE_NAME)), is(true));
-    }
-
-    @Test
-    public void testEndToEndFailureUploadImageFails() throws Throwable {
-      machine = createTestEnvironment();
-      mockUploadImage(false);
-      mockCreateFlavor(true);
-      setupServiceDocuments();
-
-      AllocateClusterManagerResourcesTaskService.State finalState =
-          machine.callServiceAndWaitForState(
-              AllocateClusterManagerResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateClusterManagerResourcesTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, Matchers.containsString("upload image failed"));
     }
 
     @Test
     public void testEndToEndFailureCreateFlavorFails() throws Throwable {
       machine = createTestEnvironment();
-      mockUploadImage(true);
       mockCreateFlavor(false);
       setupServiceDocuments();
 
@@ -823,17 +617,6 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
       containerState.vmServiceLink = vmSavedState.documentSelfLink;
       containerState.containerTemplateServiceLink = containerTemplateSavedState.documentSelfLink;
       TestHelper.createContainerService(machine, containerState);
-    }
-
-    private void mockUploadImage(boolean isSuccess) throws Throwable {
-      if (isSuccess) {
-        doReturn(taskReturnedByUploadKubernetesImage).
-        doReturn(taskReturnedByUploadMesosImage).
-        doReturn(taskReturnedByUploadSwarmImage).
-            when(imagesApi).uploadImage(anyString(), anyString());
-      } else {
-        doThrow(new RuntimeException("upload image failed")).when(imagesApi).uploadImage(anyString(), anyString());
-      }
     }
 
     private void mockCreateFlavor(boolean isSuccess) throws Throwable {

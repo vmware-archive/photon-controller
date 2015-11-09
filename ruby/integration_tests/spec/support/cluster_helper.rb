@@ -30,6 +30,17 @@ module EsxCloud
         client.create_image(ENV["SWARM_IMAGE"], "photon-swarm-vm-disk1.vmdk", "EAGER")
       end
 
+      def configure_cluster(client, deployment, image, cluster_type)
+        spec = EsxCloud::ClusterConfigurationSpec.new(
+            cluster_type,
+            image.id)
+
+        puts "Spec: #{spec.to_hash}"
+        puts "Deployment: #{deployment.to_hash}"
+
+        client.configure_cluster(deployment.id, spec.to_hash)
+      end
+
       def show_logs(project, client)
         clusters = client.get_project_clusters(project.id).items
         clusters.map do |cluster|

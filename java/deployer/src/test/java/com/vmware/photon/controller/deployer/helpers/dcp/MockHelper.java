@@ -238,9 +238,6 @@ public class MockHelper {
     final Task taskReturnedByCreateClusterVmDiskFlavor =
         TestHelper.createCompletedApifeTask("CREATE_CLUSTER_VM_DISK_FLAVOR");
     final Task taskReturnedByUploadManagementImage = TestHelper.createCompletedApifeTask("MANAGEMENT_UPLOAD_IMAGE");
-    final Task taskReturnedByUploadKubernetesImage = TestHelper.createCompletedApifeTask("KUBERNETES_UPLOAD_IMAGE");
-    final Task taskReturnedByUploadMesosImage = TestHelper.createCompletedApifeTask("MESOS_UPLOAD_IMAGE");
-    final Task taskReturnedByUploadSwarmImage = TestHelper.createCompletedApifeTask("SWARM_UPLOAD_IMAGE");
     final Task taskReturnedByCreateTenant = TestHelper.createCompletedApifeTask("CREATE_TENANT");
     final Task taskReturnedByCreateResourceTicket = TestHelper.createCompletedApifeTask("CREATE_RESOURCE_TICKET");
     final Task taskReturnedByCreateProject = TestHelper.createCompletedApifeTask("CREATE_PROJECT");
@@ -374,9 +371,6 @@ public class MockHelper {
 
       // Upload image
       doReturn(taskReturnedByUploadManagementImage).
-          doReturn(taskReturnedByUploadKubernetesImage).
-          doReturn(taskReturnedByUploadMesosImage).
-          doReturn(taskReturnedByUploadSwarmImage).
           when(imagesApi).uploadImage(anyString(), anyString());
 
       // Create VM

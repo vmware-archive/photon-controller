@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer;
 
 import com.vmware.photon.controller.chairman.HierarchyConfig;
-import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -89,9 +88,6 @@ public class DeployerConfig {
   private static final String IMAGES_PATH = "/var/photon/images/";
 
   private static String managementImageFile = IMAGES_PATH + MANAGEMENT_IMAGE_FILE_NAME_PREFIX;
-  private static String kubernetesImageFile = IMAGES_PATH + ClusterManagerConstants.Kubernetes.IMAGE_FILE_NAME_PREFIX;
-  private static String mesosImageFile = IMAGES_PATH + ClusterManagerConstants.Mesos.IMAGE_FILE_NAME_PREFIX;
-  private static String swarmImageFile = IMAGES_PATH + ClusterManagerConstants.Swarm.IMAGE_FILE_NAME_PREFIX;
 
   public DeployerConfig() {
     try {
@@ -140,18 +136,6 @@ public class DeployerConfig {
 
   public String getManagementImageFile() {
     return getImageFile(managementImageFile);
-  }
-
-  public String getKubernetesImageFile() {
-    return getImageFile(kubernetesImageFile);
-  }
-
-  public String getMesosImageFile() {
-    return getImageFile(mesosImageFile);
-  }
-
-  public String getSwarmImageFile() {
-    return getImageFile(swarmImageFile);
   }
 
   private String getImageFile(String imageFile) {

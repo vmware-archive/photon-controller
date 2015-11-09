@@ -84,9 +84,6 @@ public class DeploymentWorkFlowServiceClient {
     state.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + request.getDeployment().getId();
 
     state.esxCloudManagementVmImageFile = deployerConfig.getManagementImageFile();
-    state.kubernetesImageFile = deployerConfig.getKubernetesImageFile();
-    state.mesosImageFile = deployerConfig.getMesosImageFile();
-    state.swarmImageFile = deployerConfig.getSwarmImageFile();
     state.isLoadBalancerEnabled = true;
     state.isAuthEnabled = request.getDeployment().isAuthEnabled();
     state.ntpEndpoint = request.getDeployment().getNtpEndpoint();
