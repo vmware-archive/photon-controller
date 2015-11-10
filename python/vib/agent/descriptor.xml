@@ -2,7 +2,7 @@
   <type>bootbank</type>
   <name>photon-controller-agent</name>
   <version>$AGENT_VERSION-$ESX_VERSION</version>
-  <vendor>Photon</vendor>
+  <vendor>VMware</vendor>
   <summary>Photon Controller Daemons</summary>
   <description>Adds custom firewall rule and daemons to ESXi host</description>
   <relationships>
