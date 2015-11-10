@@ -25,11 +25,13 @@ import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
 import com.vmware.photon.controller.apife.db.HibernateTestModule;
 import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
 import com.vmware.photon.controller.apife.db.dao.ProjectDao;
 import com.vmware.photon.controller.apife.db.dao.ResourceTicketDao;
 import com.vmware.photon.controller.apife.db.dao.TenantDao;
+import com.vmware.photon.controller.apife.entities.IsoEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
@@ -57,7 +59,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Mockito.mock;
 
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -132,6 +136,118 @@ public class TaskDcpBackendTest extends BaseDaoTest {
       assertThat(createdTask.getEndTime(), is(createdTask.getStartedTime()));
       assertThat(createdTask.getQueuedTime(), is(createdTask.getStartedTime()));
     }
+
+    @Test
+    public void testCreateTaskWithSteps() {
+
+      InputStream inputStream = mock(InputStream.class);
+      IsoEntity isoEntity = new IsoEntity();
+      isoEntity.setId(UUID.randomUUID().toString());
+      List<StepEntity> stepEntities = new ArrayList<>();
+      List<BaseEntity> entityList = new ArrayList<>();
+      entityList.add(vmEntity);
+      entityList.add(isoEntity);
+
+      StepEntity step = new StepEntity();
+      stepEntities.add(step);
+      step.createOrUpdateTransientResource(IsoUploadStepCmd.INPUT_STREAM, inputStream);
+      step.addResources(entityList);
+      step.setOperation(Operation.UPLOAD_ISO);
+
+      step = new StepEntity();
+      stepEntities.add(step);
+      step.addResources(entityList);
+      step.setOperation(Operation.ATTACH_ISO);
+
+      //create a QUEUED task
+
+      TaskEntity createdTask = taskBackend.createTaskWithSteps(vmEntity, Operation.ATTACH_ISO, false, stepEntities);
+
+      assertThat(createdTask, is(notNullValue()));
+      assertThat(createdTask.getEntityId(), is(vmEntity.getId()));
+      assertThat(createdTask.getEntityKind(), is(vmEntity.getKind()));
+      assertThat(createdTask.getOperation(), is(Operation.ATTACH_ISO));
+      assertThat(createdTask.getState(), is(TaskEntity.State.QUEUED));
+      assertThat(createdTask.getProjectId(), is(projectEntity.getId()));
+      assertThat(createdTask.getStartedTime(), is(nullValue()));
+      assertThat(createdTask.getEndTime(), is(nullValue()));
+      assertThat(createdTask.getQueuedTime(), is(notNullValue()));
+      assertThat(createdTask.getSteps(), is(notNullValue()));
+      assertThat(createdTask.getSteps().size(), is(2));
+      StepEntity createdStep1 = createdTask.getSteps().get(0);
+      StepEntity createdStep2 = createdTask.getSteps().get(1);
+
+      assertThat(createdStep1, is(notNullValue()));
+      assertThat(createdStep1.getTask().getId(), is(createdTask.getId()));
+      assertThat(createdStep1.getOperation(), is(Operation.UPLOAD_ISO));
+      assertThat(createdStep1.getState(), is(StepEntity.State.QUEUED));
+      assertThat(createdStep1.getQueuedTime(), is(notNullValue()));
+      assertThat(createdStep1.getStartedTime(), is(nullValue()));
+      assertThat(createdStep1.getEndTime(), is(nullValue()));
+      assertThat(createdStep1.getTransientResourceEntities().size(), is(2));
+      assertThat(createdStep1.getTransientResourceEntities().get(0).getId(),
+          is(entityList.get(0).getId()));
+      assertThat(createdStep1.getTransientResourceEntities().get(1).getId(),
+          is(entityList.get(1).getId()));
+
+      assertThat(createdStep2, is(notNullValue()));
+      assertThat(createdStep2.getTask().getId(), is(createdTask.getId()));
+      assertThat(createdStep2.getOperation(), is(Operation.ATTACH_ISO));
+      assertThat(createdStep2.getState(), is(StepEntity.State.QUEUED));
+      assertThat(createdStep2.getQueuedTime(), is(notNullValue()));
+      assertThat(createdStep2.getStartedTime(), is(nullValue()));
+      assertThat(createdStep2.getEndTime(), is(nullValue()));
+      assertThat(createdStep2.getTransientResourceEntities().size(), is(2));
+      assertThat(createdStep2.getTransientResourceEntities().get(0).getId(),
+          is(entityList.get(0).getId()));
+      assertThat(createdStep2.getTransientResourceEntities().get(1).getId(),
+          is(entityList.get(1).getId()));
+
+      //create a COMPLETED task
+
+      createdTask = taskBackend.createTaskWithSteps(vmEntity, Operation.ATTACH_ISO, true, stepEntities);
+
+      assertThat(createdTask, is(notNullValue()));
+      assertThat(createdTask.getEntityId(), is(vmEntity.getId()));
+      assertThat(createdTask.getEntityKind(), is(vmEntity.getKind()));
+      assertThat(createdTask.getOperation(), is(Operation.ATTACH_ISO));
+      assertThat(createdTask.getState(), is(TaskEntity.State.COMPLETED));
+      assertThat(createdTask.getProjectId(), is(projectEntity.getId()));
+      assertThat(createdTask.getStartedTime(), is(notNullValue()));
+      assertThat(createdTask.getEndTime(), is(createdTask.getStartedTime()));
+      assertThat(createdTask.getQueuedTime(), is(createdTask.getStartedTime()));
+      assertThat(createdTask.getSteps(), is(notNullValue()));
+      assertThat(createdTask.getSteps().size(), is(2));
+      createdStep1 = createdTask.getSteps().get(0);
+      createdStep2 = createdTask.getSteps().get(1);
+
+      assertThat(createdStep1, is(notNullValue()));
+      assertThat(createdStep1.getTask().getId(), is(createdTask.getId()));
+      assertThat(createdStep1.getOperation(), is(Operation.UPLOAD_ISO));
+      assertThat(createdStep1.getState(), is(StepEntity.State.COMPLETED));
+      assertThat(createdStep1.getQueuedTime(), is(notNullValue()));
+      assertThat(createdStep1.getStartedTime(), is(createdStep1.getQueuedTime()));
+      assertThat(createdStep1.getEndTime(), is(createdStep1.getQueuedTime()));
+      assertThat(createdStep1.getTransientResourceEntities().size(), is(2));
+      assertThat(createdStep1.getTransientResourceEntities().get(0).getId(),
+          is(entityList.get(0).getId()));
+      assertThat(createdStep1.getTransientResourceEntities().get(1).getId(),
+          is(entityList.get(1).getId()));
+
+      assertThat(createdStep2, is(notNullValue()));
+      assertThat(createdStep2.getTask().getId(), is(createdTask.getId()));
+      assertThat(createdStep2.getOperation(), is(Operation.ATTACH_ISO));
+      assertThat(createdStep2.getState(), is(StepEntity.State.COMPLETED));
+      assertThat(createdStep2.getQueuedTime(), is(notNullValue()));
+      assertThat(createdStep2.getStartedTime(), is(createdStep2.getQueuedTime()));
+      assertThat(createdStep2.getEndTime(), is(createdStep2.getQueuedTime()));
+      assertThat(createdStep2.getTransientResourceEntities().size(), is(2));
+      assertThat(createdStep2.getTransientResourceEntities().get(0).getId(),
+          is(entityList.get(0).getId()));
+      assertThat(createdStep2.getTransientResourceEntities().get(1).getId(),
+          is(entityList.get(1).getId()));
+    }
+
   }
 
   /**

@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -175,6 +176,69 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     com.vmware.dcp.common.Operation result = dcpClient.postAndWait(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
     TaskEntity task = convertToTaskEntity(createdState);
+    logger.info("created task: {}", task);
+    return task;
+  }
+
+  @Override
+  public TaskEntity createTaskWithSteps(BaseEntity entity,
+                                        Operation operation,
+                                        Boolean isCompleted,
+                                        List<StepEntity> stepEntities) {
+    Date currentTime = DateTime.now().toDate();
+    TaskService.State taskServiceState = new TaskService.State();
+
+    //currently creation of kubernetes and mesos cluster, their resize and delete pass null entity
+    //putting this null check temporarily to allow the switch to dcp backend to work
+    //
+    if (entity != null) {
+      taskServiceState.entityId = entity.getId();
+      taskServiceState.entityKind = entity.getKind();
+
+      // auto-link infrastructure tasks to their project
+      if (entity instanceof InfrastructureEntity) {
+        InfrastructureEntity infrastructureEntity = (InfrastructureEntity) entity;
+        String projectId = infrastructureEntity.getProjectId();
+        taskServiceState.projectId = projectId;
+      }
+    }
+
+    if (isCompleted) {
+      taskServiceState.state = TaskService.State.TaskState.COMPLETED;
+      taskServiceState.startedTime = currentTime;
+      taskServiceState.endTime = currentTime;
+      taskServiceState.queuedTime = currentTime;
+    } else {
+      taskServiceState.state = TaskService.State.TaskState.QUEUED;
+      taskServiceState.queuedTime = currentTime;
+    }
+
+    taskServiceState.operation = operation;
+
+    if (stepEntities != null) {
+      taskServiceState.steps = new ArrayList<>();
+      Integer nextStepSequence = 0;
+      for (StepEntity stepEntity : stepEntities) {
+        stepEntity.setQueuedTime(currentTime);
+        if (isCompleted) {
+          stepEntity.setState(StepEntity.State.COMPLETED);
+          stepEntity.setStartedTime(currentTime);
+          stepEntity.setEndTime(currentTime);
+        } else {
+          stepEntity.setState(StepEntity.State.QUEUED);
+        }
+        stepEntity.setSequence(nextStepSequence);
+        nextStepSequence++;
+        TaskService.State.Step step = new TaskService.State.Step();
+        fillStep(step, stepEntity);
+        taskServiceState.steps.add(step);
+      }
+    }
+
+    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(TaskServiceFactory.SELF_LINK, taskServiceState);
+    TaskService.State createdState = result.getBody(TaskService.State.class);
+    TaskEntity task = convertToTaskEntity(createdState);
+    task.setSteps(stepEntities); // replacing steps to retain the transient properties
     logger.info("created task: {}", task);
     return task;
   }
@@ -854,12 +918,13 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     }
 
     step.operation = operation;
-    step.queuedTime = DateTime.now().toDate();
+    Date currentTime = DateTime.now().toDate();
+    step.queuedTime = currentTime;
     step.options = convertStepOptionsToString(stepOptions, taskEntity);
 
     if (StepEntity.State.COMPLETED.equals(state)) {
-      step.startedTime = DateTime.now().toDate();
-      step.endTime = DateTime.now().toDate();
+      step.startedTime = currentTime;
+      step.endTime = currentTime;
     }
 
     if (entities != null) {

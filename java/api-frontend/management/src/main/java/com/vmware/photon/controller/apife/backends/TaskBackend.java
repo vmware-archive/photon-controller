@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
+import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidQueryParamsException;
 
@@ -45,6 +46,11 @@ public interface TaskBackend {
   TaskEntity createQueuedTask(BaseEntity entity, Operation operation);
 
   TaskEntity createCompletedTask(BaseEntity entity, Operation operation);
+
+  TaskEntity createTaskWithSteps(BaseEntity entity,
+                                 Operation operation,
+                                 Boolean isCompleted,
+                                 List<StepEntity> stepEntities);
 
   void markTaskAsStarted(TaskEntity task) throws TaskNotFoundException;
 

@@ -156,6 +156,14 @@ public class TaskSqlBackend implements TaskBackend {
     return task;
   }
 
+  @Override
+  public TaskEntity createTaskWithSteps(BaseEntity entity,
+                                        Operation operation,
+                                        Boolean isCompleted,
+                                        List<StepEntity> stepEntities) {
+    throw new UnsupportedOperationException();
+  }
+
   /**
    * Marks task as started.
    *
