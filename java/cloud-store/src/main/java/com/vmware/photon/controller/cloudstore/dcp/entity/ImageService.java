@@ -107,7 +107,7 @@ public class ImageService extends StatefulService {
 
     if (currentState.replicatedDatastore != null) {
       checkState(currentState.replicatedDatastore >= 0,
-              "Replicated datastore count cannot be less than '0'.");
+              "Replicated datastore count cannot be less than 0, but got %s.", currentState.replicatedDatastore);
     }
   }
 

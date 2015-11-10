@@ -315,7 +315,7 @@ public class ImageServiceTest {
      * @throws Throwable
      */
     @Test(expectedExceptions = IllegalStateException.class,
-          expectedExceptionsMessageRegExp = "Replicated datastore count exceeds total datastore count.")
+        expectedExceptionsMessageRegExp = "Replicated datastore count exceeds total datastore count.")
     public void testReplicatedDatastoreCountExceedsTotalCount() throws Throwable {
       host.startServiceSynchronously(service, testState);
 
@@ -336,7 +336,7 @@ public class ImageServiceTest {
      * @throws Throwable
      */
     @Test(expectedExceptions = IllegalStateException.class,
-          expectedExceptionsMessageRegExp = "Replicated datastore count cannot be less than '0'.")
+        expectedExceptionsMessageRegExp = "Replicated datastore count cannot be less than 0, but got -1.")
     public void testReplicatedDatastoreCountEndsUpLessThanZero() throws Throwable {
       host.startServiceSynchronously(service, testState);
 
