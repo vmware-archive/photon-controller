@@ -81,6 +81,11 @@ struct HostConfig {
 
   // Whether the host is management only. Default as False.
   9: optional bool management_only
+
+  // Image datastore IDs. Note that it's possible for the host to have multiple
+  // image datastores.
+  // TODO(mmutsuzaki) deprecate the image_datastore_id field.
+  10: optional set<string> image_datastore_ids
 }
 
 struct GetConfigResponse {
