@@ -45,7 +45,7 @@ describe EsxCloud::HttpClient do
     expect(Faraday).to receive(:new).twice.with(:url => "http://foo", :proxy => anything, :ssl => nil).and_yield(@conn).and_return(@conn)
 
     expect(@conn).to receive(:request).with(:url_encoded)
-    expect(@conn).to receive(:adapter).with(Faraday.default_adapter)
+    expect(@conn).to receive(:adapter).with(:net_http)
 
     client
   end
