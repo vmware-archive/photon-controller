@@ -137,6 +137,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1516,6 +1518,9 @@ public class HostClient {
     provisionRequest.setManagement_only(managementOnly);
     provisionRequest.setHost_id(hostId);
     provisionRequest.setNtp_endpoint(ntpEndpoint);
+    // TODO(mmutsuzaki): We'll remove the image_datastore_info field once the
+    // agent starts using the image_datastores field.
+    provisionRequest.setImage_datastores(new HashSet<>(Arrays.asList(imageDatastore)));
 
     clientProxy.setTimeout(PROVISION_TIMEOUT_MS);
     logger.info("provision target {}, request {}", getTarget(), provisionRequest);

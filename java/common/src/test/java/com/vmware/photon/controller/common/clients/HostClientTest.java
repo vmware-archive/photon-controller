@@ -128,6 +128,7 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
+import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.annotations.AfterMethod;
@@ -135,6 +136,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -3471,6 +3473,7 @@ public class HostClientTest {
       provisionResponse.setResult(ProvisionResultCode.OK);
       final Host.AsyncClient.provision_call provisionCall = mock(Host.AsyncClient.provision_call.class);
       doReturn(provisionResponse).when(provisionCall).getResult();
+      ArgumentCaptor<ProvisionRequest> request = ArgumentCaptor.forClass(ProvisionRequest.class);
       doAnswer(getAnswer(provisionCall))
           .when(clientProxy).provision(any(ProvisionRequest.class), any(AsyncMethodCallback.class));
 
@@ -3480,6 +3483,9 @@ public class HostClientTest {
               hostAddress, hostPort, environment, chairmanServerList, memoryOverCommit, loggingEndpoint,
                       logLevel, managementOnly, hostId, ntpEndpoint),
           is(provisionResponse));
+      verify(clientProxy).provision(request.capture(), any(AsyncMethodCallback.class));
+      // Verify that the image_datastores field is set.
+      assertThat(request.getValue().getImage_datastores(), containsInAnyOrder(imageDataStore));
     }
 
     @Test
