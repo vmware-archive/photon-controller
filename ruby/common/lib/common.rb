@@ -70,6 +70,8 @@ require "common/resources/cluster"
 require "common/resources/cluster_list"
 require "common/resources/cluster_configuration"
 require "common/resources/security_group"
+require "common/resources/availability_zone"
+require "common/resources/availability_zone_list"
 
 
 require "common/create_specs/deployment_create_spec"
@@ -85,6 +87,7 @@ require "common/create_specs/host_create_spec"
 require "common/create_specs/image_create_spec"
 require "common/create_specs/cluster_create_spec"
 require "common/create_specs/cluster_configuration_spec"
+require "common/create_specs/availability_zone_create_spec.rb"
 
 
 require "common/importers/ip_range"

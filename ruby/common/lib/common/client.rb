@@ -22,6 +22,7 @@ require_relative "api_client/flavor_api"
 require_relative "api_client/image_api"
 require_relative "api_client/deployment_api"
 require_relative "api_client/cluster_api"
+require_relative "api_client/availability_zone_api"
 
 module EsxCloud
   #noinspection RubyUnusedLocalVariable
@@ -494,6 +495,31 @@ module EsxCloud
     # @param [String] payload
     # @return [ClusterConfiguration]
     def configure_cluster(deployment_id, payload)
+    end
+
+    # @param [Hash] payload
+    # @return [AvailabilityZone]
+    def create_availability_zone(payload)
+    end
+
+    # @param [String] id
+    # @return AvailabilityZone
+    def find_availability_zone_by_id(id)
+    end
+
+    # @return [AvailabilityZoneList]
+    def find_all_availability_zones()
+    end
+
+    # @param [String] id
+    # @return [Boolean]
+    def delete_availability_zone(id)
+    end
+
+    # @param [String] id
+    # @param [String] state
+    # @return [TaskList]
+    def get_availability_zone_tasks(id, state = nil)
     end
 
   end

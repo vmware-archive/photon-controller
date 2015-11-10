@@ -25,6 +25,7 @@ require_relative "cli_client/network_api"
 require_relative "cli_client/task_api"
 require_relative "cli_client/host_api"
 require_relative "cli_client/cluster_api"
+require_relative "cli_client/availability_zone_api"
 
 module EsxCloud
   class CliClient
@@ -44,6 +45,7 @@ module EsxCloud
     include EsxCloud::CliClient::TaskApi
     include EsxCloud::CliClient::HostApi
     include EsxCloud::CliClient::ClusterApi
+    include EsxCloud::CliClient::AvailabilityZoneApi
 
     attr_reader :project_to_tenant, :vm_to_project, :disk_to_project, :api_client
 
