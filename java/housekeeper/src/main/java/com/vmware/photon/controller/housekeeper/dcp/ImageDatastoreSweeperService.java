@@ -32,6 +32,7 @@ import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
@@ -478,6 +479,17 @@ public class ImageDatastoreSweeperService extends StatefulService {
               ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Received: %s", response);
               HostClient.ResponseValidator.checkGetDeletedImagesResponse(response);
 
+              for (InactiveImageDescriptor descriptor : response.getImage_descs()) {
+                updateReplicatedDatastoreCount(descriptor.getImage_id(),
+                    (operation, throwable) -> {
+                      if (throwable != null) {
+                        logWarning("Image update replicated datastore count failed for image .",
+                            descriptor.getImage_id());
+                      }
+                    }
+                );
+              }
+
               if (current.isSelfProgressionDisabled) {
                 return;
               }
@@ -525,7 +537,6 @@ public class ImageDatastoreSweeperService extends StatefulService {
     QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(
         ImageService.State.class, termsBuilder.build());
     spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-
 
     CloudStoreHelper cloudStoreHelper = ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper();
     cloudStoreHelper.queryEntities(this, spec, (operation, throwable) -> {
@@ -592,6 +603,21 @@ public class ImageDatastoreSweeperService extends StatefulService {
         current.sweepRate,
         current.sweepTimeout,
         callback);
+  }
+
+  /**
+   * Update replicatedDatastore in ImageService within Cloudstore.
+   *
+   * @param imageId
+   * @param completionHandler
+   */
+  private void updateReplicatedDatastoreCount(String imageId, Operation.CompletionHandler completionHandler) {
+    CloudStoreHelper cloudStoreHelper = ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper();
+    ImageService.DatastoreCountRequest datastoreCountRequest = new ImageService.DatastoreCountRequest();
+    datastoreCountRequest.amount = -1;
+    datastoreCountRequest.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT;
+    cloudStoreHelper.patchEntity(this, ServiceUriPaths.CLOUDSTORE_ROOT + "/images/" + imageId,
+        datastoreCountRequest, completionHandler);
   }
 
   /**
