@@ -16,6 +16,7 @@ package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.dcp.common.ServiceHost;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
@@ -32,6 +33,7 @@ import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
@@ -57,6 +59,7 @@ import org.apache.thrift.async.AsyncMethodCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.net.ProtocolException;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -478,6 +481,22 @@ public class ImageDatastoreSweeperService extends StatefulService {
               ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Received: %s", response);
               HostClient.ResponseValidator.checkGetDeletedImagesResponse(response);
 
+              for (InactiveImageDescriptor descriptor : response.getImage_descs()) {
+                updateReplicatedDatastoreCount(descriptor.getImage_id(),
+                    (operation, throwable) -> {
+                      if (throwable instanceof ProtocolException
+                          || throwable instanceof ServiceHost.ServiceNotFoundException) {
+                        logWarning("Image with id %s deleted, but Image document doesn't exist.",
+                            descriptor.getImage_id());
+                        return;
+                      }
+                      if (throwable != null) {
+                        failTask(throwable);
+                      }
+                    }
+                );
+              }
+
               if (current.isSelfProgressionDisabled) {
                 return;
               }
@@ -525,7 +544,6 @@ public class ImageDatastoreSweeperService extends StatefulService {
     QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(
         ImageService.State.class, termsBuilder.build());
     spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-
 
     CloudStoreHelper cloudStoreHelper = ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper();
     cloudStoreHelper.queryEntities(this, spec, (operation, throwable) -> {
@@ -592,6 +610,20 @@ public class ImageDatastoreSweeperService extends StatefulService {
         current.sweepRate,
         current.sweepTimeout,
         callback);
+  }
+
+  /**
+   * Update replicatedDatastore in ImageService within Cloudstore.
+   *
+   * @param imageId
+   */
+  private void updateReplicatedDatastoreCount(String imageId, Operation.CompletionHandler completionHandler) {
+    CloudStoreHelper cloudStoreHelper = ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper();
+    ImageService.DatastoreCountRequest datastoreCountRequest = new ImageService.DatastoreCountRequest();
+    datastoreCountRequest.amount = -1;
+    datastoreCountRequest.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT;
+    cloudStoreHelper.patchEntity(this, ServiceUriPaths.CLOUDSTORE_ROOT + "/images/" + imageId,
+        datastoreCountRequest, completionHandler);
   }
 
   /**

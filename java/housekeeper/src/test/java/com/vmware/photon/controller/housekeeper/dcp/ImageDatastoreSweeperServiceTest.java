@@ -985,6 +985,19 @@ public class ImageDatastoreSweeperServiceTest {
           stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
           is(patchCount)
       );
+
+//      QueryTask.Query kindClause = new QueryTask.Query()
+//          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+//          .setTermMatchValue(com.vmware.dcp.common.Utils.buildKind(ImageService.State.class));
+//      QueryTask.Query datastoreClause = new QueryTask.Query()
+//          .setTermPropertyName("replicatedDatastore")
+//          .setTermMatchValue("4");
+//
+//      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+//      querySpecification.query.addBooleanClause(datastoreClause);
+//      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
+//      NodeGroupBroadcastResponse queryResponse = machine.sendBroadcastQueryAndWait(queryTask);
+//      assertThat(QueryTaskUtils.getBroadcastQueryResults(queryResponse).size(), is(refImages.size()));
     }
 
     @DataProvider(name = "Success")
@@ -1184,6 +1197,9 @@ public class ImageDatastoreSweeperServiceTest {
         if (i < tombstoned) {
           state.state = ImageState.PENDING_DELETE;
         }
+        state.totalImageDatastore = 1;
+        state.totalDatastore = 1;
+        state.replicatedDatastore = 1;
 
         Operation op = cloudStoreHelper
             .createPost(ImageServiceFactory.SELF_LINK)
