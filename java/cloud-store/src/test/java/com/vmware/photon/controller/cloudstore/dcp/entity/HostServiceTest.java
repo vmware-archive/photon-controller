@@ -418,5 +418,24 @@ public class HostServiceTest {
       HostService.State patchedState = result.getBody(HostService.State.class);
       assertThat(patchedState.reportedImageDatastores, containsInAnyOrder(newDs));
     }
+
+    @Test
+    public void testPatchMemoryAndCpu() throws Throwable {
+      host.startServiceSynchronously(new HostServiceFactory(), null);
+      Operation result = dcpRestClient.postAndWait(HostServiceFactory.SELF_LINK,
+          TestHelper.getHostServiceStartState());
+      assertThat(result.getStatusCode(), is(200));
+      HostService.State createdState = result.getBody(HostService.State.class);
+
+      HostService.State patchState = new HostService.State();
+      patchState.memoryMb = 4096;
+      patchState.cpuCount = 2;
+
+      dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+      HostService.State savedState = dcpRestClient.getAndWait(createdState.documentSelfLink)
+          .getBody(HostService.State.class);
+      assertThat(savedState.cpuCount, is(2));
+      assertThat(savedState.memoryMb, is(4096));
+    }
   }
 }

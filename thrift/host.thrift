@@ -86,6 +86,8 @@ struct HostConfig {
   // image datastores.
   // TODO(mmutsuzaki) deprecate the image_datastore_id field.
   10: optional set<string> image_datastore_ids
+  11: optional i32 memory_mb
+  12: optional i32 cpu_count
 }
 
 struct GetConfigResponse {

@@ -52,6 +52,7 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactor
 import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
+import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.host.gen.SetHostModeResultCode;
 
 import com.github.dockerjava.api.DockerException;
@@ -87,10 +88,15 @@ public class MockHelper {
 
     HostClient hostClient;
     if (isSuccess) {
+      HostConfig hostConfig = new HostConfig();
+      hostConfig.setCpu_count(2);
+      hostConfig.setMemory_mb(4096);
+
       hostClient = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .getConfigResultCode(GetConfigResultCode.OK)
           .setHostModeResultCode(SetHostModeResultCode.OK)
+          .hostConfig(hostConfig)
           .build();
     } else {
       hostClient = new HostClientMock.Builder()
