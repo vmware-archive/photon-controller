@@ -15,14 +15,18 @@ import logging
 import os
 import re
 import socket
+import threading
 import time
 import uuid
 
 from common.photon_thrift.direct_client import DirectClient
+from common.lock import lock_non_blocking
 from gen.host import Host
 from gen.host.ttypes import HttpTicketRequest
 from gen.host.ttypes import HttpTicketResultCode
 from gen.host.ttypes import HttpOp
+from gen.host.ttypes import ReceiveImageRequest
+from gen.host.ttypes import ReceiveImageResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
@@ -64,16 +68,24 @@ class NfcLeaseInitiatizationError(Exception):
     pass
 
 
+class ReceiveImageException(Exception):
+    def __init__(self, error_code, error):
+        super(ReceiveImageException, self).__init__(
+            "Fail to receive image at destination host:")
+        self.error_code = error_code
+        self.error = error
+
+    def __str__(self):
+        return "Failed to receive image: Code: %d : Reason : %s" % (
+            self.error_code, self.error)
+
+
 class HttpTransferer(object):
     """ Class for handling HTTP-based data transfers between ESX hosts. """
 
-    def __init__(self, vim_client, image_datastore, host_name="localhost"):
+    def __init__(self, vim_client):
         self._logger = logging.getLogger(__name__)
         self._vim_client = vim_client
-        self._image_datastore = image_datastore
-        self._vm_config = EsxVmConfig(self._vim_client)
-        self._vm_manager = EsxVmManager(self._vim_client, None)
-        self._shadow_vm_id = "shadow_%s" % self._vim_client.host_uuid
 
     def _open_connection(self, host, protocol):
         if protocol == "http":
@@ -193,9 +205,14 @@ class HttpNfcTransferer(HttpTransferer):
 
     LEASE_INITIALIZATION_WAIT_SECS = 10
 
-    def __init__(self, vim_client, image_datastore, host_name="localhost"):
-        super(HttpNfcTransferer, self).__init__(vim_client, image_datastore)
+    def __init__(self, vim_client, image_datastores, host_name="localhost"):
+        super(HttpNfcTransferer, self).__init__(vim_client)
+        self.lock = threading.Lock()
+        self._shadow_vm_id = "shadow_%s" % self._vim_client.host_uuid
         self._lease_url_host_name = host_name
+        self._image_datastores = image_datastores
+        self._vm_config = EsxVmConfig(self._vim_client)
+        self._vm_manager = EsxVmManager(self._vim_client, None)
 
     def _get_remote_connections(self, host, port):
         agent_client = DirectClient("Host", Host.Client, host, port)
@@ -255,6 +272,10 @@ class HttpNfcTransferer(HttpTransferer):
         self._wait_for_lease(lease)
         return lease, self._get_disk_url_from_lease(lease)
 
+    def _get_shadow_vm_datastore(self):
+        # The datastore in which the shadow VM will be created.
+        return self._image_datastores[0]
+
     def _ensure_shadow_vm(self):
         """ Creates a shadow vm specifically for use by this host if absent.
 
@@ -267,31 +288,30 @@ class HttpNfcTransferer(HttpTransferer):
             self._logger.debug("shadow vm exists")
             return
 
-        spec = self._vm_config.create_spec(vm_id=vm_id,
-                                           datastore=self._image_datastore,
-                                           memory=32,
-                                           cpus=1)
+        spec = self._vm_config.create_spec(
+            vm_id=vm_id, datastore=self._get_shadow_vm_datastore(),
+            memory=32, cpus=1)
         try:
             self._vm_manager.create_vm(vm_id, spec)
         except Exception:
             self._logger.exception("Error creating vm with id %s" % vm_id)
             raise
 
-    def _configure_shadow_vm_with_disk(self, image_id):
+    def _configure_shadow_vm_with_disk(self, image_id, image_datastore):
         """ Reconfigures the shadow vm to contain only one image disk. """
         try:
             spec = self._vm_manager.update_vm_spec()
             info = self._vm_manager.get_vm_config(self._shadow_vm_id)
             self._vm_manager.remove_all_disks(spec, info)
-            self._vm_manager.add_disk(spec, self._image_datastore, image_id,
-                                      info, disk_is_image=True)
+            self._vm_manager.add_disk(spec, image_datastore, image_id, info,
+                                      disk_is_image=True)
             self._vm_manager.update_vm(self._shadow_vm_id, spec)
         except Exception:
             self._logger.exception(
                 "Error configuring shadow vm with image %s" % image_id)
             raise
 
-    def _get_image_stream_from_shadow_vm(self, image_id):
+    def _get_image_stream_from_shadow_vm(self, image_id, image_datastore):
         """ Obtain a handle to the streamOptimized disk from shadow vm.
 
         The stream-optimized disk is obtained via configuring a shadow
@@ -301,7 +321,7 @@ class HttpNfcTransferer(HttpTransferer):
         """
 
         self._ensure_shadow_vm()
-        self._configure_shadow_vm_with_disk(image_id)
+        self._configure_shadow_vm_with_disk(image_id, image_datastore)
         lease, disk_url = self._export_shadow_vm()
         disk_url = self._ensure_host_in_url(disk_url,
                                             self._lease_url_host_name)
@@ -332,25 +352,46 @@ class HttpNfcTransferer(HttpTransferer):
         disk_url = self._ensure_host_in_url(disk_url, dst_vim_client.host)
         return lease, disk_url
 
-    def send_image_to_host(self, image_id, destination_datastore, host, port,
-                           intermediate_file_path=None):
-        read_lease, disk_url = self._get_image_stream_from_shadow_vm(image_id)
+    def _register_imported_image_at_host(self, agent_client,
+                                         image_id, destination_datastore,
+                                         imported_vm_name):
+        """ Installs an image at another host.
+
+        Image data was transferred via ImportVApp to said host.
+        """
+
+        request = ReceiveImageRequest(image_id, destination_datastore,
+                                      imported_vm_name)
+        response = agent_client.receive_image(request)
+        if response.result != ReceiveImageResultCode.OK:
+            raise ReceiveImageException(response.result, response.error)
+
+    @lock_non_blocking
+    def send_image_to_host(self, image_id, image_datastore,
+                           destination_image_id, destination_datastore,
+                           host, port, intermediate_file_path=None):
+        read_lease, disk_url = self._get_image_stream_from_shadow_vm(
+            image_id, image_datastore)
 
         # Save stream-optimized disk to a unique path locally for now.
-        # TODO(vui) Switch to chunked transfers to handle not knowing content
+        # TODO(vui): Switch to chunked transfers to handle not knowing content
         # length in the full streaming mode.
 
         if intermediate_file_path:
             tmp_path = intermediate_file_path
         else:
             tmp_path = "/vmfs/volumes/%s/%s_transfer.vmdk" % (
-                self._image_datastore, self._shadow_vm_id)
+                self._get_shadow_vm_datastore(),
+                self._shadow_vm_id)
         try:
             self.download_file(disk_url, tmp_path)
         finally:
             read_lease.Complete()
 
-        spec = self._create_import_vm_spec(image_id, destination_datastore)
+        if destination_image_id is None:
+            destination_image_id = image_id
+        spec = self._create_import_vm_spec(
+            destination_image_id, destination_datastore)
 
         agent_client, vim_client = self._get_remote_connections(host, port)
         try:
@@ -364,6 +405,17 @@ class HttpNfcTransferer(HttpTransferer):
                     os.unlink(tmp_path)
                 except OSError:
                     pass
+
+            # TODO(vui): imported vm name should be made unique to remove
+            # ambiguity during subsequent lookup
+            imported_vm_name = destination_image_id
+
+            self._register_imported_image_at_host(
+                agent_client, destination_image_id, destination_datastore,
+                imported_vm_name)
+
         finally:
             agent_client.close()
             vim_client.disconnect()
+
+        return imported_vm_name
