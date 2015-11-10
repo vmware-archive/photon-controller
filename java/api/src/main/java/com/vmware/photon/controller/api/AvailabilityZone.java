@@ -28,7 +28,7 @@ import java.util.Objects;
 @ApiModel(value = "This class represents a availability zone")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AvailabilityZone extends VisibleModel {
-  public static final String KIND = "availabilityZone";
+  public static final String KIND = "availability-zone";
 
   @JsonProperty
   @ApiModelProperty(value = "kind=\"availabilityZone\"", required = true)
