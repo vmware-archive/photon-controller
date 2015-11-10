@@ -145,6 +145,10 @@ struct ProvisionRequest {
   // NTP endpoint to configure on ESX host
   14: optional string ntp_endpoint
 
+  // A set of image datastores for this host.
+  // The image_datastore_info field will be deprecated.
+  15: optional set<resource.ImageDatastore> image_datastores
+
   99: optional tracing.TracingInfo tracing_info
 }
 
