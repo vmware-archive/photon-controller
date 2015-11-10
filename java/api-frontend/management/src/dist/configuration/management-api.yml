@@ -52,8 +52,10 @@ zookeeper:
 {{#USE_ESX_STORE}}
 image:
   use_esx_store: true
+{{#ESX_HOST}}
   endpoint: https://{{{ESX_HOST}}}/sdk
   datastore: {{{DATASTORE}}}
+{{/ESX_HOST}}
 {{/USE_ESX_STORE}}
 {{^USE_ESX_STORE}}
 image:
@@ -63,6 +65,7 @@ image:
 
 auth:
   enable_auth: {{{ENABLE_AUTH}}}
+{{#ENABLE_AUTH}}
   sharedSecret: {{{SHARED_SECRET}}}
 {{#AUTH_SERVER_ADDRESS}}
   auth_server_address: {{{AUTH_SERVER_ADDRESS}}}
@@ -73,6 +76,7 @@ auth:
 {{#AUTH_SERVER_TENANT}}
   tenant: {{{AUTH_SERVER_TENANT}}}
 {{/AUTH_SERVER_TENANT}}
+{{/ENABLE_AUTH}}
 
 {{#TASK_EXPIRATION_THRESHOLD}}
 {{#TASK_EXPIRATION_SCAN_INTERVAL}}
