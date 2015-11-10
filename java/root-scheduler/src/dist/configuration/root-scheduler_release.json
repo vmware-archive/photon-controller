@@ -4,7 +4,7 @@
   "diskGb": 1,
   "isReplicated": true,
   "isPrivileged": false,
-  "containerImage": "esxcloud/rootscheduler",
+  "containerImage": "esxcloud/root-scheduler",
   "portBindings": {
     "13010": 13010
   },
