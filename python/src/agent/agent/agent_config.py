@@ -70,6 +70,7 @@ class AgentConfig(object):
     WAIT_TIMEOUT = "wait_timeout"
     MANAGEMENT_ONLY = "management_only"
     HOST_ID = "host_id"
+    IMAGE_DATASTORES = "image_datastores"
 
     PROVISION_ARGS = [HOST_PORT]
     BOOTSTRAP_ARGS = PROVISION_ARGS + [AVAILABILITY_ZONE, HOSTNAME, CHAIRMAN,
@@ -136,7 +137,8 @@ class AgentConfig(object):
         Sets a given option attribute.
         @return True if the attribute had to be updated False otherwise.
         """
-        if (getattr(self._options, attr_name) == value):
+        # Return None if the attribute is not set.
+        if getattr(self._options, attr_name, None) == value:
             return False
         setattr(self._options, attr_name, value)
         self._logger.debug("Updating config %s %s" %
@@ -171,9 +173,16 @@ class AgentConfig(object):
         # Check if image_datastore_info is valid
         if provision_req.image_datastore_info and provision_req.datastores:
             if not self._check_image_datastore(
-                    provision_req.image_datastore_info.name,
+                    [provision_req.image_datastore_info],
                     provision_req.datastores):
                 raise InvalidConfig("image_datastore_info is not valid")
+
+        # Check if image_datastores field is valid
+        if provision_req.image_datastores and provision_req.datastores:
+            if not self._check_image_datastore(
+                    provision_req.image_datastores,
+                    provision_req.datastores):
+                raise InvalidConfig("image_datastores field is invalid")
 
         avail_zone = provision_req.availability_zone
         config_changed = False
@@ -213,6 +222,12 @@ class AgentConfig(object):
 
         config_changed |= self._check_and_set_attr(
             self.IMAGE_DATASTORE_FOR_VMS, image_datastore_for_vms)
+
+        if provision_req.image_datastores:
+            image_datastores = self._convert_image_datastores(
+                provision_req.image_datastores)
+            config_changed |= self._check_and_set_attr(
+                self.IMAGE_DATASTORES, image_datastores)
 
         if (provision_req.environment):
             self._logger.info(provision_req.environment)
@@ -349,6 +364,11 @@ class AgentConfig(object):
     @locked
     def image_datastore(self):
         return getattr(self._options, self.IMAGE_DATASTORE)
+
+    @property
+    @locked
+    def image_datastores(self):
+        return getattr(self._options, self.IMAGE_DATASTORES)
 
     @property
     @locked
@@ -627,6 +647,23 @@ class AgentConfig(object):
                 servers.append(server_str)
         return servers
 
+    def _convert_image_datastores(self, image_datastores):
+        """
+        Convert a set of ImageDatastore thrift struct to a simple dict.
+
+        Deployer sends a set of image datastores as a part of the provision
+        request. This method converts the set to a list of dicts to be saved
+        in config.json. Here is an example of the image_datastores field in
+        config.json:
+
+        > "image_datastores": [
+        >     {"name": "ds1", "used_for_vm": True},
+        >     {"name": "ds2", "used_for_vm": False}
+        > ]
+        """
+        return [{"name": ds.name, "used_for_vms": ds.used_for_vms}
+                for ds in image_datastores]
+
     def _sanitize_config(self):
         """
         Sanitize config to return an array if params are specified as a list
@@ -722,14 +759,17 @@ class AgentConfig(object):
                 new_config[key] = value
         self._write_json_file(self.DEFAULT_CONFIG_FILE, new_config)
 
-    def _check_image_datastore(self, image_ds, datastores):
-        """ Check that the image datastore is a valid one """
-        # In the current version we don't actually call out to esx to check if
-        # the ds exists, we just check if it is in one of datastores specified
-        # by the user through the DC_MAP
-        if image_ds is None:
-            return True
-        if datastores and (image_ds in datastores):
-            return True
-        self._logger.warning("Image ds %s not in %s " % (image_ds, datastores))
-        return False
+    def _check_image_datastore(self, image_datastores, datastores):
+        """
+        Check that all the image datastores are valid.
+
+        In the current version we don't actually call out to esx to check if
+        the ds exists, we just check if it is in one of datastores specified
+        by the user through the deployment.yml.
+        """
+        for image_ds in image_datastores:
+            if image_ds.name not in datastores:
+                self._logger.warning("Image ds %s not in %s" % (image_ds.name,
+                                                                datastores))
+                return False
+        return True

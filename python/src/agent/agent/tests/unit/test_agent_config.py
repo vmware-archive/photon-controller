@@ -213,6 +213,7 @@ class TestUnitAgent(unittest.TestCase):
                                    "--hostname", "localhost",
                                    "--port", "1234",
                                    "--datastores", "ds1, ds2"])
+        expected_image_ds = [{"name": "ds3", "used_for_vms": True}]
 
         # Without chairman config we can't be provision ready
         self.assertFalse(self.agent.bootstrap_ready)
@@ -225,6 +226,7 @@ class TestUnitAgent(unittest.TestCase):
         req.networks = ["Public"]
         req.memory_overcommit = 1.5
         req.image_datastore_info = ImageDatastore("ds3", True)
+        req.image_datastores = set([ImageDatastore("ds3", True)])
         addr = ServerAddress(host="localhost", port=2345)
         req.chairman_server = [ServerAddress("h1", 13000),
                                ServerAddress("h2", 13000)]
@@ -247,6 +249,7 @@ class TestUnitAgent(unittest.TestCase):
                     equal_to(1.5))
         assert_that(self.agent.image_datastore, equal_to("ds3"))
         assert_that(self.agent.image_datastore_for_vms, equal_to(True))
+        assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
         assert_that(self.agent.host_id, equal_to("host1"))
 
         self.assertTrue(self.agent.bootstrap_ready)
@@ -268,6 +271,7 @@ class TestUnitAgent(unittest.TestCase):
         self.assertFalse(self.agent.bootstrap_ready)
         self.assertEqual(self.agent.image_datastore, "ds3")
         self.assertEqual(self.agent.image_datastore_for_vms, False)
+        assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
         assert_that(self.agent.host_id, equal_to(None))
 
         # Test an invalid update and verify the update doesn't have any side
@@ -418,6 +422,25 @@ class TestUnitAgent(unittest.TestCase):
     def test_host_id(self):
         self.agent._parse_options(["--host-id", "host1"])
         self.assertEqual(self.agent.host_id, "host1")
+
+    def test_load_image_datastores(self):
+        """
+        Verify that the image_datastores field gets loaded from config.json.
+        """
+        self.agent._parse_options(["--config-path", self.agent_conf_dir])
+        expected_image_ds = [
+            {"name": "ds1", "used_for_vms": True},
+            {"name": "ds2", "used_for_vms": False},
+        ]
+        req = ProvisionRequest()
+        req.datastores = ["ds1", "ds2", "ds3"]
+        req.image_datastores = set([ImageDatastore("ds1", True),
+                                    ImageDatastore("ds2", False)])
+        self.agent.update_config(req)
+        self.agent._persist_config()
+        self.agent._load_config()
+        assert_that(self.agent.datastores, equal_to(["ds1", "ds2", "ds3"]))
+        assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
 
 
 if __name__ == "__main__":
