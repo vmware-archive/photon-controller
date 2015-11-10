@@ -161,6 +161,24 @@ module EsxCloud
       EsxCloud::Host.create(deployment.id, spec)
     end
 
+    # @param[AvailabilityZoneCreateSpec] spec
+    # @return [AvailabilityZone]
+    def create_availability_zone(spec)
+      AvailabilityZone.create(spec)
+    end
+
+    def find_availability_zone_by_id(id)
+      AvailabilityZone.find_by_id(id)
+    end
+
+    def find_all_availability_zones
+      AvailabilityZone.find_all
+    end
+
+    def delete_availability_zone_by_id(id)
+      AvailabilityZone.delete(id)
+    end
+
     # @param[FlavorCreateSpec] spec
     # @return [Flavor]
     def create_flavor(spec)

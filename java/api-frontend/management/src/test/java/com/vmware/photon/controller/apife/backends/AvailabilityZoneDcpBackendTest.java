@@ -22,6 +22,7 @@ import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
@@ -40,6 +41,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.testng.Assert.fail;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -154,9 +156,23 @@ public class AvailabilityZoneDcpBackendTest {
       AvailabilityZoneEntity availabilityZone = availabilityZoneDcpBackend.getEntityById(availabilityZoneId);
       assertThat(availabilityZone, is(notNullValue()));
       assertThat(availabilityZone.getName(), is(availabilityZoneCreateSpec.getName()));
-      assertThat(availabilityZone.getKind(), is("availabilityZone"));
+      assertThat(availabilityZone.getKind(), is("availability-zone"));
       assertThat(availabilityZone.getState(), is(AvailabilityZoneState.READY));
       assertThat(availabilityZone.getId(), is(availabilityZoneId));
+    }
+
+    @Test
+    public void testCreateAvailabilityZoneTwiceWithSameName() throws Throwable {
+      createdAvailabilityZoneTaskEntity = availabilityZoneDcpBackend.createAvailabilityZone(availabilityZoneCreateSpec);
+      AvailabilityZoneEntity availabilityZone = availabilityZoneDcpBackend
+          .getEntityById(createdAvailabilityZoneTaskEntity.getEntityId());
+
+      try {
+        availabilityZoneDcpBackend.createAvailabilityZone(availabilityZoneCreateSpec);
+        fail("availabilityZoneDcpBackend.createAvailabilityZone for existing availability zone should have failed ");
+      } catch (NameTakenException e) {
+        assertThat(e.getMessage(), containsString(availabilityZone.getName()));
+      }
     }
   }
 
@@ -208,7 +224,7 @@ public class AvailabilityZoneDcpBackendTest {
       String id = UUID.randomUUID().toString();
       try {
         availabilityZoneDcpBackend.getEntityById(id);
-        fail("availabilityZoneDcpBackend.findById for a non existing id should have failed");
+        fail("availabilityZoneDcpBackend.getEntityById for a non existing id should have failed");
       } catch (AvailabilityZoneNotFoundException e) {
         assertThat(e.getMessage(), containsString(id));
       }
@@ -219,6 +235,26 @@ public class AvailabilityZoneDcpBackendTest {
       AvailabilityZone foundAvailabilityZone = availabilityZoneDcpBackend.getApiRepresentation(availabilityZoneId);
       assertThat(foundAvailabilityZone.getName(), is(availabilityZone.name));
       assertThat(foundAvailabilityZone.getState(), is(availabilityZone.state));
+    }
+
+    @Test
+    public void testGetAll() throws Throwable {
+      createTestAvailabilityZoneDocument(createTestAvailabilityZone(AvailabilityZoneState.CREATING));
+      List<AvailabilityZoneEntity> foundAvailabilityZoneEntities = availabilityZoneDcpBackend.getAll();
+      assertThat(foundAvailabilityZoneEntities.isEmpty(), is(false));
+      assertThat(foundAvailabilityZoneEntities.size(), is(2));
+      assertThat(foundAvailabilityZoneEntities.get(0).getState(), is(availabilityZone.state));
+      assertThat(foundAvailabilityZoneEntities.get(1).getState(), is(availabilityZone.state));
+    }
+
+    @Test
+    public void testGetListApiRepresentation() throws Throwable {
+      createTestAvailabilityZoneDocument(createTestAvailabilityZone(AvailabilityZoneState.CREATING));
+      List<AvailabilityZone> foundAvailabilityZones = availabilityZoneDcpBackend.getListApiRepresentation();
+      assertThat(foundAvailabilityZones.isEmpty(), is(false));
+      assertThat(foundAvailabilityZones.size(), is(2));
+      assertThat(foundAvailabilityZones.get(0).getState(), is(availabilityZone.state));
+      assertThat(foundAvailabilityZones.get(1).getState(), is(availabilityZone.state));
     }
   }
 
