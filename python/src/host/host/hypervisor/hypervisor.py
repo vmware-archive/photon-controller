@@ -158,3 +158,14 @@ class Hypervisor(object):
 
     def acquire_cgi_ticket(self, url, op):
         return self.hypervisor.acquire_cgi_ticket(url, op)
+
+    def transfer_image(self, source_image_id, source_datastore,
+                       destination_image_id, destination_datastore,
+                       host, port):
+        return self.hypervisor.transfer_image(
+            source_image_id, source_datastore, destination_image_id,
+            destination_datastore, host, port)
+
+    def receive_image(self, image_id, datastore, imported_vm_name):
+        return self.hypervisor.receive_image(image_id, datastore,
+                                             imported_vm_name)

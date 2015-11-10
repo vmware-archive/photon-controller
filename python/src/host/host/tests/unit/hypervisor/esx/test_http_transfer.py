@@ -21,6 +21,7 @@ from nose_parameterized import parameterized
 from common import services
 from common.service_name import ServiceName
 from gen.host import Host
+from gen.host.ttypes import ReceiveImageResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
@@ -253,9 +254,12 @@ class TestHttpTransfer(unittest.TestCase):
         xferer._get_url_from_import_vm = MagicMock(
             return_value=(write_lease_mock, to_url_mock))
         xferer.upload_file = MagicMock()
+        receive_image_resp_mock = MagicMock()
+        receive_image_resp_mock.result = ReceiveImageResultCode.OK
+        agent_conn_mock.receive_image.return_value = receive_image_resp_mock
 
         self.http_transferer.send_image_to_host(
-            image_id, destination_datastore, host, port)
+            image_id, None, destination_datastore, host, port)
 
         xferer._get_image_stream_from_shadow_vm.assert_called_once_with(
             image_id)

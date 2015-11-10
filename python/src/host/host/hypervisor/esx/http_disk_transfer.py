@@ -14,14 +14,18 @@ import httplib
 import logging
 import os
 import re
+import threading
 import time
 import uuid
 
 from common.photon_thrift.direct_client import DirectClient
+from common.lock import lock_non_blocking
 from gen.host import Host
 from gen.host.ttypes import HttpTicketRequest
 from gen.host.ttypes import HttpTicketResultCode
 from gen.host.ttypes import HttpOp
+from gen.host.ttypes import ReceiveImageRequest
+from gen.host.ttypes import ReceiveImageResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
@@ -53,6 +57,18 @@ class NfcLeaseInitiatizationTimeout(Exception):
 class NfcLeaseInitiatizationError(Exception):
     """ Error waiting for the HTTP NFC lease to initialize. """
     pass
+
+
+class ReceiveImageException(Exception):
+    def __init__(self, error_code, error):
+        super(ReceiveImageException, self).__init__(
+            "Fail to receive image at destination host:")
+        self.error_code = error_code
+        self.error = error
+
+    def __str__(self):
+        return "Failed to receive image: Code: %d : Reason : %s" % (
+            self.error_code, self.error)
 
 
 class HttpTransferer(object):
@@ -179,6 +195,7 @@ class HttpNfcTransferer(HttpTransferer):
 
     def __init__(self, vim_client, image_datastore, host_name="localhost"):
         super(HttpNfcTransferer, self).__init__(vim_client, image_datastore)
+        self.lock = threading.Lock()
         self._lease_url_host_name = host_name
 
     def _get_remote_connections(self, host, port):
@@ -316,12 +333,28 @@ class HttpNfcTransferer(HttpTransferer):
         disk_url = self._ensure_host_in_url(disk_url, dst_vim_client.host)
         return lease, disk_url
 
-    def send_image_to_host(self, image_id, destination_datastore, host, port,
+    def _register_imported_image_at_host(self, agent_client,
+                                         image_id, destination_datastore,
+                                         imported_vm_name):
+        """ Installs an image at another host.
+
+        Image data was transferred via ImportVApp to said host.
+        """
+
+        request = ReceiveImageRequest(image_id, destination_datastore,
+                                      imported_vm_name)
+        response = agent_client.receive_image(request)
+        if response.result != ReceiveImageResultCode.OK:
+            raise ReceiveImageException(response.result, response.error)
+
+    @lock_non_blocking
+    def send_image_to_host(self, image_id, destination_image_id,
+                           destination_datastore, host, port,
                            intermediate_file_path=None):
         read_lease, disk_url = self._get_image_stream_from_shadow_vm(image_id)
 
         # Save stream-optimized disk to a unique path locally for now.
-        # TODO(vui) Switch to chunked transfers to handle not knowing content
+        # TODO(vui): Switch to chunked transfers to handle not knowing content
         # length in the full streaming mode.
 
         if intermediate_file_path:
@@ -334,7 +367,10 @@ class HttpNfcTransferer(HttpTransferer):
         finally:
             read_lease.Complete()
 
-        spec = self._create_import_vm_spec(image_id, destination_datastore)
+        if destination_image_id is None:
+            destination_image_id = image_id
+        spec = self._create_import_vm_spec(
+            destination_image_id, destination_datastore)
 
         agent_client, vim_client = self._get_remote_connections(host, port)
         try:
@@ -348,6 +384,17 @@ class HttpNfcTransferer(HttpTransferer):
                     os.unlink(tmp_path)
                 except OSError:
                     pass
+
+            # TODO(vui): imported vm name should be made unique to remove
+            # ambiguity during subsequent lookup
+            imported_vm_name = destination_image_id
+
+            self._register_imported_image_at_host(
+                agent_client, destination_image_id, destination_datastore,
+                imported_vm_name)
+
         finally:
             agent_client.close()
             vim_client.disconnect()
+
+        return imported_vm_name

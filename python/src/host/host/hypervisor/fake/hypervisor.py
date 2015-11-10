@@ -94,3 +94,11 @@ class FakeHypervisor(object):
 
     def remove_update_listener(self, listener):
         self.vm_manager.remove_update_listener(listener)
+
+    def transfer_image(self, source_image_id, source_datastore,
+                       destination_image_id, destination_datastore,
+                       host, port):
+        return ""
+
+    def receive_image(self, image_id, datastore, imported_vm_name):
+        pass
