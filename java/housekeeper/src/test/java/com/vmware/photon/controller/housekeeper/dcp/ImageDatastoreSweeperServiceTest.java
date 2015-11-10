@@ -15,17 +15,23 @@ package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
+import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.ServiceHost;
 import com.vmware.dcp.common.ServiceStats;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
+import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
+import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
@@ -51,6 +57,8 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -985,6 +993,20 @@ public class ImageDatastoreSweeperServiceTest {
           stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
           is(patchCount)
       );
+
+      QueryTask.Query datastoreClause = new QueryTask.Query()
+          .setTermPropertyName("replicatedDatastore")
+          .setNumericRange(QueryTask.NumericRange.createEqualRange(0L));
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(ImageService.State.class));
+
+      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+      querySpecification.query.addBooleanClause(kindClause).addBooleanClause(datastoreClause);
+      querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
+      NodeGroupBroadcastResponse queryResponse = machine.sendBroadcastQueryAndWait(queryTask);
+      assertThat(QueryTaskUtils.getBroadcastQueryResults(queryResponse).size(), lessThanOrEqualTo(deletedImages));
     }
 
     @DataProvider(name = "Success")
@@ -1184,6 +1206,9 @@ public class ImageDatastoreSweeperServiceTest {
         if (i < tombstoned) {
           state.state = ImageState.PENDING_DELETE;
         }
+        state.totalImageDatastore = 1;
+        state.totalDatastore = 1;
+        state.replicatedDatastore = 1;
 
         Operation op = cloudStoreHelper
             .createPost(ImageServiceFactory.SELF_LINK)
