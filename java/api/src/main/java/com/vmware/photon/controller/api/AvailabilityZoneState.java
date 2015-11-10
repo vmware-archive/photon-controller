@@ -41,7 +41,7 @@ import java.util.Set;
  * - READY - means the availability zone is created successfully.
  * <p/>
  * - PENDING_DELETE - means the availability zone was deleted by the user but there
- * are active VMs that were associated with the availability zone.
+ * are active Hosts that were associated with the availability zone.
  * <p/>
  * - DELETED - the availability zone is a deleted tombstone
  * <p/>
