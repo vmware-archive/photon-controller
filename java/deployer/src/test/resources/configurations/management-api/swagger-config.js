@@ -1,5 +1,1 @@
-window.swaggerConfig = {
-  enableAuth: {{{ENABLE_AUTH}}},
-  swaggerLoginUrl: '{{{SWAGGER_LOGIN_URL}}}',
-  swaggerLogoutUrl: '{{{SWAGGER_LOGOUT_URL}}}',
-};
+../../../../../../api-frontend/management/src/dist/configuration/swagger-config.js
