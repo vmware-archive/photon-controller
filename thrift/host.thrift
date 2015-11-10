@@ -81,6 +81,8 @@ struct HostConfig {
 
   // Whether the host is management only. Default as False.
   9: optional bool management_only
+  10: optional i32 memory_mb
+  11: optional i32 cpu_count
 }
 
 struct GetConfigResponse {

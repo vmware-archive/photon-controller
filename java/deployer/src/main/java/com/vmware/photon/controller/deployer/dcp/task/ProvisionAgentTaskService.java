@@ -37,7 +37,9 @@ import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.photon.controller.host.gen.HostConfig;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.thrift.TException;
@@ -342,8 +344,9 @@ public class ProvisionAgentTaskService extends StatefulService {
           @Override
           public void onComplete(Host.AsyncClient.get_host_config_call getHostConfigCall) {
             try {
-              HostClient.ResponseValidator.checkGetConfigResponse(getHostConfigCall.getResult());
-              sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+              GetConfigResponse configResponse = getHostConfigCall.getResult();
+              HostClient.ResponseValidator.checkGetConfigResponse(configResponse);
+              updateHostDocumentWithConfig(currentState, configResponse.getHostConfig());
             } catch (TException e) {
               retryOrFail(retryable, currentState, new RpcException(e.getMessage()));
             } catch (Throwable t) {
@@ -363,6 +366,38 @@ public class ProvisionAgentTaskService extends StatefulService {
       hostClient.getHostConfig(handler);
     } catch (Throwable t) {
       retryOrFail(retryable, currentState, t);
+    }
+  }
+
+  private void updateHostDocumentWithConfig(final State currentState, HostConfig hostConfig) {
+    try {
+      HostService.State patchState = new HostService.State();
+      if (hostConfig.isSetMemory_mb()) {
+        patchState.memoryMb = hostConfig.getMemory_mb();
+      }
+      if (hostConfig.isSetCpu_count()) {
+        patchState.cpuCount = hostConfig.getCpu_count();
+      }
+      if (hostConfig.isSetMemory_mb() || hostConfig.isSetCpu_count()) {
+        CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
+        cloudStoreHelper.patchEntity(this, currentState.hostServiceLink, patchState,
+            new Operation.CompletionHandler() {
+              @Override
+              public void handle(Operation operation, Throwable throwable) {
+                if (null != throwable) {
+                  failTask(throwable);
+                  return;
+                }
+
+                sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+              }
+            }
+        );
+      } else {
+        sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+      }
+    } catch(Throwable t) {
+      failTask(t);
     }
   }
 
