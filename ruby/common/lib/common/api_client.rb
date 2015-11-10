@@ -28,6 +28,7 @@ require_relative "api_client/config_api"
 require_relative "api_client/status_api"
 require_relative "api_client/task_api"
 require_relative "api_client/cluster_api"
+require_relative "api_client/availability_zone_api"
 
 module EsxCloud
   class ApiClient
@@ -50,6 +51,7 @@ module EsxCloud
     include EsxCloud::ApiClient::StatusApi
     include EsxCloud::ApiClient::TaskApi
     include EsxCloud::ApiClient::ClusterApi
+    include EsxCloud::ApiClient::AvailabilityZoneApi
 
     attr_accessor :task_tracker, :http_client
 
