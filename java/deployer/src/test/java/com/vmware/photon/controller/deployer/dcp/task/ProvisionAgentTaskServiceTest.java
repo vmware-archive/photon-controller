@@ -37,6 +37,7 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
+import com.vmware.photon.controller.host.gen.HostConfig;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
@@ -445,10 +446,14 @@ public class ProvisionAgentTaskServiceTest {
 
     @Test
     public void testEndToEndSuccess() throws Throwable {
+      HostConfig hostConfig = new HostConfig();
+      hostConfig.setCpu_count(2);
+      hostConfig.setMemory_mb(4096);
 
       HostClientMock hostClientMock = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .getConfigResultCode(GetConfigResultCode.OK)
+          .hostConfig(hostConfig)
           .build();
 
       doReturn(hostClientMock).when(hostClientFactory).create();
@@ -464,7 +469,29 @@ public class ProvisionAgentTaskServiceTest {
     }
 
     @Test
-    public void testEndToEndSuccessGetConfigReturnsFailures() throws Throwable {
+    public void testEndToEndSuccessWhenHostConfigNotSet() throws Throwable {
+      HostConfig hostConfig = new HostConfig();
+
+      HostClientMock hostClientMock = new HostClientMock.Builder()
+          .provisionResultCode(ProvisionResultCode.OK)
+          .getConfigResultCode(GetConfigResultCode.OK)
+          .hostConfig(hostConfig)
+          .build();
+
+      doReturn(hostClientMock).when(hostClientFactory).create();
+
+      ProvisionAgentTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              ProvisionAgentTaskFactoryService.SELF_LINK,
+              startState,
+              ProvisionAgentTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      TestHelper.assertTaskStateFinished(finalState.taskState);
+    }
+
+    @Test
+    public void testEndToEndFailureGetConfigReturnsFailures() throws Throwable {
 
       HostClientMock provisionSuccessHostClientMock = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
@@ -495,7 +522,7 @@ public class ProvisionAgentTaskServiceTest {
               ProvisionAgentTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
-      TestHelper.assertTaskStateFinished(finalState.taskState);
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
     }
 
     @Test

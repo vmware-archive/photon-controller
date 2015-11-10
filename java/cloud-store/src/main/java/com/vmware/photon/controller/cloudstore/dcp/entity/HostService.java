@@ -28,6 +28,8 @@ import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotEmpty;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.common.dcp.validation.Range;
+import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -219,6 +221,20 @@ public class HostService extends StatefulService {
      * This value represents the availability zone this host belongs to.
      */
     public String availabilityZone;
+
+    /**
+     * This value represents the total physical memory of the host.
+     */
+    @WriteOnce
+    @Range(min = 1, max = Integer.MAX_VALUE)
+    public Integer memoryMb;
+
+    /**
+     * This value represents the total number of cpu cores of the host.
+     */
+    @WriteOnce
+    @Range(min = 1, max = Integer.MAX_VALUE)
+    public Integer cpuCount;
 
     /**
      * This value represents the usage tag associated with the host.
