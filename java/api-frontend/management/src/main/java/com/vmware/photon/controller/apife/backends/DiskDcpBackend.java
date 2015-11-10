@@ -26,7 +26,6 @@ import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
@@ -192,28 +191,7 @@ public class DiskDcpBackend implements DiskBackend {
   @Override
   public void createVmDiskOperationStep(TaskEntity task, VmEntity vm, List<String> diskIds,
                                         Operation operation) throws ExternalException {
-    List<BaseEntity> entityList = new ArrayList<>();
-    // Add vm entity
-    entityList.add(vm);
-    // Add disk entities
-    for (String diskId : diskIds) {
-      BaseDiskEntity disk = find(PersistentDisk.KIND, diskId);
-      // Check if disk is a valid state for the operation
-      DiskStateChecks.checkOperationState(disk, operation);
-      entityList.add(disk);
-    }
-
-    /*
-     * If we make it to this point all disks have been found
-     * and they are all detached (otherwise find() and checkOperationState()
-     * would have thrown exceptions)
-     */
-
-    taskBackend.getStepBackend().createQueuedStep(task, entityList, operation);
-
-    for (BaseEntity entity : entityList) {
-      task.getLockableEntityIds().add(entity.getId());
-    }
+    throw new UnsupportedOperationException();
   }
 
   @Override
