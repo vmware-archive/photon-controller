@@ -22,6 +22,7 @@ from common.util import suicide
 import gen.hypervisor.esx.ttypes
 from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
 from host.hypervisor.esx.disk_manager import EsxDiskManager
+from host.hypervisor.esx.http_disk_transfer import HttpNfcTransferer
 from host.hypervisor.esx.network_manager import EsxNetworkManager
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_manager import EsxVmManager
@@ -66,6 +67,8 @@ class EsxHypervisor(object):
         self.network_manager = EsxNetworkManager(self.vim_client, networks)
         self.system = EsxSystem(self.vim_client)
         self.image_manager.monitor_for_cleanup()
+        self.image_transferer = HttpNfcTransferer(self.vim_client,
+                                                  image_datastore)
         atexit.register(self.image_manager.cleanup)
 
     @property
@@ -108,3 +111,16 @@ class EsxHypervisor(object):
 
     def remove_update_listener(self, listener):
         self.vim_client.remove_update_listener(listener)
+
+    def transfer_image(self, source_image_id, source_datastore,
+                       destination_image_id, destination_datastore,
+                       host, port):
+        # source_datastore is ignored for now (the datastore of the
+        # image is assumed to be the lone configured image datastore
+        return self.image_transferer.send_image_to_host(
+            source_image_id, destination_image_id,
+            destination_datastore, host, port)
+
+    def receive_image(self, image_id, datastore, imported_vm_name):
+        self.image_manager.receive_image(
+            image_id, datastore, imported_vm_name)
