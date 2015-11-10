@@ -78,6 +78,8 @@ from gen.host.ttypes import SetHostModeRequest
 from gen.host.ttypes import StartImageOperationResultCode
 from gen.host.ttypes import StartImageScanRequest
 from gen.host.ttypes import StartImageSweepRequest
+from gen.host.ttypes import TransferImageRequest
+from gen.host.ttypes import TransferImageResultCode
 from gen.resource.constants import LOCAL_VMFS_TAG
 from gen.resource.constants import NFS_TAG
 from gen.resource.constants import SHARED_VMFS_TAG
@@ -380,6 +382,31 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
                     logger.warning("Failed to cleanup image %s " % image_id)
         else:
             logger.warning("Failed to obtain the list of images to cleanup")
+
+    def test_send_image_to_host(self):
+        image_id = new_id() + "_test_xfer_image"
+        image_id_2 = "%s_xfered" % image_id
+
+        dst_image, _ = self._create_test_image(image_id)
+
+        datastore = self._find_configured_datastore_in_host_config()
+        transfer_image_request = TransferImageRequest(
+            source_image_id=image_id,
+            source_datastore_id=datastore.id,
+            destination_host=ServerAddress(host=self.server, port=8835),
+            destination_datastore_id=datastore.id,
+            destination_image_id=image_id_2)
+        res = self.host_client.transfer_image(transfer_image_request)
+        self.assertEqual(res.result, TransferImageResultCode.OK)
+
+        # clean up images created in test
+        res = self.host_client.delete_image(DeleteImageRequest(dst_image,
+                                            True, False))
+        self.assertEqual(res.result, DeleteImageResultCode.OK)
+        xfered_image = Image(image_id_2, datastore)
+        res = self.host_client.delete_image(DeleteImageRequest(xfered_image,
+                                            True, False))
+        self.assertEqual(res.result, DeleteImageResultCode.OK)
 
     def test_host_config_after_provision(self):
         """

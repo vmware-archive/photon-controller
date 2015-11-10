@@ -782,6 +782,24 @@ class EsxImageManager(ImageManager):
                               name=dst_vmdk_ds_path)
             raise
 
+    def receive_image(self, image_id, datastore_id, imported_vm_name):
+        """ Creates an image using the data from the imported vm.
+
+        This is run at the destination host end of the host-to-host
+        image transfer.
+        """
+
+        vm = self._vim_client.get_vm_obj_in_cache(imported_vm_name)
+        vmx_os_path = datastore_to_os_path(vm.config.files.vmPathName)
+        vm_dir = os.path.dirname(vmx_os_path)
+        vm.Unregister()
+        if self.check_image_dir(image_id, datastore_id):
+            self._logger.info("Image %s on datastore %s already exists" %
+                              (image_id, datastore_id))
+            raise DiskAlreadyExistException()
+        self._move_image(image_id, datastore_id, vm_dir)
+        self._create_image_timestamp_file_from_ids(datastore_id, image_id)
+
     def delete_tmp_dir(self, datastore_id, tmp_dir):
         """ Deletes a temp image directory by moving it to a GC directory """
         file_path = os_datastore_path(datastore_id, tmp_dir)

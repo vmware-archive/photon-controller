@@ -26,6 +26,7 @@ from common import services
 from common.photon_thrift.decorators import error_handler
 from common.photon_thrift.decorators import log_request
 from common.lock import lock_with
+from common.lock import AlreadyLocked
 from common.lock_vm import lock_vm
 from common.mode import MODE, ModeTransitionError
 from common.service_name import ServiceName
@@ -96,6 +97,8 @@ from gen.host.ttypes import GetMonitoredImagesResultCode
 from gen.host.ttypes import PowerVmOp
 from gen.host.ttypes import PowerVmOpResponse
 from gen.host.ttypes import PowerVmOpResultCode
+from gen.host.ttypes import ReceiveImageResponse
+from gen.host.ttypes import ReceiveImageResultCode
 from gen.host.ttypes import RegisterVmResponse
 from gen.host.ttypes import RegisterVmResultCode
 from gen.host.ttypes import ReserveResponse
@@ -112,6 +115,8 @@ from gen.host.ttypes import StartImageScanResponse
 from gen.host.ttypes import StartImageSweepResponse
 from gen.host.ttypes import StopImageOperationResultCode
 from gen.host.ttypes import StopImageOperationResponse
+from gen.host.ttypes import TransferImageResponse
+from gen.host.ttypes import TransferImageResultCode
 from gen.host.ttypes import UnregisterVmResponse
 from gen.host.ttypes import UnregisterVmResultCode
 from gen.host.ttypes import VmDisksOpResponse
@@ -1963,6 +1968,56 @@ class HostHandler(Host.Iface):
                 CreateImageResponse())
 
         return CreateImageResponse(CreateImageResultCode.OK)
+
+    @log_request
+    @error_handler(TransferImageResponse, TransferImageResultCode)
+    def transfer_image(self, request):
+        """ Transfer an image to another host via host-to-host transfer. """
+        try:
+            self.hypervisor.transfer_image(
+                request.source_image_id,
+                request.source_datastore_id,
+                request.destination_image_id,
+                request.destination_datastore_id,
+                request.destination_host.host,
+                request.destination_host.port)
+        except AlreadyLocked:
+            return self._error_response(
+                TransferImageResultCode.TRANSFER_IN_PROGRESS,
+                "Only one image transfer is allowed at any time",
+                TransferImageResponse())
+        except:
+            return self._error_response(
+                TransferImageResultCode.SYSTEM_ERROR,
+                str(sys.exc_info()[0]),
+                TransferImageResponse())
+
+        return TransferImageResponse(TransferImageResultCode.OK)
+
+    @log_request
+    @error_handler(ReceiveImageResponse, ReceiveImageResultCode)
+    def receive_image(self, request):
+        """ Receive an image by atomically moving it from a temp location
+            to the specified image_id location.
+        """
+        try:
+            datastore_id = self.hypervisor.datastore_manager.normalize(
+                request.datastore_id)
+            self.hypervisor.receive_image(request.image_id,
+                                          datastore_id,
+                                          request.transferred_image_id)
+        except DiskAlreadyExistException:
+            return self._error_response(
+                ReceiveImageResultCode.IMAGE_ALREADY_EXIST,
+                "Image disk already exists",
+                ReceiveImageResponse())
+        except:
+            return self._error_response(
+                ReceiveImageResultCode.SYSTEM_ERROR,
+                str(sys.exc_info()[0]),
+                ReceiveImageResponse())
+
+        return ReceiveImageResponse(ReceiveImageResultCode.OK)
 
     @log_request
     @error_handler(CreateImageFromVmResponse, CreateImageFromVmResultCode)

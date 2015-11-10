@@ -629,6 +629,9 @@ struct ReceiveImageRequest {
   // The datastore name or id.
   2: required string datastore_id
 
+  // The id to lookup transferred image data at the receiving host
+  3: required string transferred_image_id
+
   99: optional tracing.TracingInfo tracing_info
 }
 enum ReceiveImageResultCode {
