@@ -25,6 +25,7 @@ import com.vmware.photon.controller.api.Iso;
 import com.vmware.photon.controller.api.LocalitySpec;
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.Tag;
 import com.vmware.photon.controller.api.Task;
@@ -42,6 +43,7 @@ import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
+import com.vmware.photon.controller.apife.entities.DiskStateChecks;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
@@ -433,8 +435,35 @@ public class VmDcpBackend implements VmBackend {
     }
 
     logger.info("Operation {} on VM {}", operation, vm);
-    TaskEntity task = taskBackend.createQueuedTask(vm, operation);
-    diskBackend.createVmDiskOperationStep(task, vm, diskIds, operation);
+
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
+    // Add vm entity
+    entityList.add(vm);
+    // Add disk entities
+    for (String diskId : diskIds) {
+      BaseDiskEntity disk = diskBackend.find(PersistentDisk.KIND, diskId);
+      // Check if disk is a valid state for the operation
+      DiskStateChecks.checkOperationState(disk, operation);
+      entityList.add(disk);
+    }
+
+    /*
+     * If we make it to this point all disks have been found
+     * and they are all detached (otherwise find() and checkOperationState()
+     * would have thrown exceptions)
+     */
+
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(operation);
+
+    TaskEntity task = taskBackend.createTaskWithSteps(vm, operation, false, stepEntities);
+    for (BaseEntity entity : entityList) {
+      task.getLockableEntityIds().add(entity.getId());
+    }
+
     logger.info("created Task: {}", task);
     return task;
   }
@@ -467,8 +496,16 @@ public class VmDcpBackend implements VmBackend {
   @Override
   public TaskEntity prepareVmGetNetworks(String vmId) throws ExternalException {
     VmEntity vm = findById(vmId);
-    TaskEntity task = taskBackend.createQueuedTask(vm, Operation.GET_NETWORKS);
-    taskBackend.getStepBackend().createQueuedStep(task, vm, Operation.GET_NETWORKS);
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
+    entityList.add(vm);
+
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.GET_NETWORKS);
+
+    TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.GET_NETWORKS, false, stepEntities);
     logger.info("created Task: {}", task);
     return task;
   }
@@ -479,8 +516,16 @@ public class VmDcpBackend implements VmBackend {
     if (!VmState.STARTED.equals(vm.getState())) {
       throw new InvalidVmStateException("Get Mks Ticket is not allowed on vm that is not powered on.");
     }
-    TaskEntity task = taskBackend.createQueuedTask(vm, Operation.GET_MKS_TICKET);
-    taskBackend.getStepBackend().createQueuedStep(task, vm, Operation.GET_MKS_TICKET);
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
+    entityList.add(vm);
+
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.GET_MKS_TICKET);
+
+    TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.GET_MKS_TICKET, false, stepEntities);
     logger.info("created Task: {}", task);
     return task;
   }
@@ -738,16 +783,18 @@ public class VmDcpBackend implements VmBackend {
   }
 
   private TaskEntity createTask(VmEntity vm) throws ExternalException {
-    TaskEntity task = taskBackend.createQueuedTask(vm, Operation.CREATE_VM);
 
-    StepEntity step = taskBackend.getStepBackend().createQueuedStep(task, vm, Operation.RESERVE_RESOURCE);
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
+    entityList.add(vm);
+
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.RESERVE_RESOURCE);
     for (Throwable warning : vm.getWarnings()) {
       step.addWarning(warning);
     }
-
-    List<BaseEntity> entityList = new ArrayList<>();
-    entityList.add(vm);
-    task.getLockableEntityIds().add(vm.getId());
 
     for (AttachedDiskEntity attachedDisk : attachedDiskBackend.findByVmId(vm.getId())) {
       BaseDiskEntity disk = diskBackend.find(attachedDisk.getKind(), attachedDisk.getUnderlyingDiskId());
@@ -757,7 +804,13 @@ public class VmDcpBackend implements VmBackend {
       entityList.add(disk);
     }
 
-    taskBackend.getStepBackend().createQueuedStep(task, entityList, Operation.CREATE_VM);
+    step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.CREATE_VM);
+
+    TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.CREATE_VM, false, stepEntities);
+    task.getLockableEntityIds().add(vm.getId());
     return task;
   }
 
@@ -895,42 +948,62 @@ public class VmDcpBackend implements VmBackend {
   private TaskEntity deleteTask(VmEntity vm) throws ExternalException {
     EntityStateValidator.validateOperationState(vm, vm.getState(), Operation.DELETE_VM, VmState.OPERATION_PREREQ_STATE);
 
-    TaskEntity task = taskBackend.createQueuedTask(vm, Operation.DELETE_VM);
-
-    List<BaseEntity> deleteVmEntityList = new ArrayList<>();
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
     for (AttachedDiskEntity attachedDisk : attachedDiskBackend.findByVmId(vm.getId())) {
       BaseDiskEntity disk = diskBackend.find(attachedDisk.getKind(), attachedDisk.getUnderlyingDiskId());
       if (!EphemeralDisk.KIND.equals(disk.getKind())) {
         throw new PersistentDiskAttachedException(disk, vm);
       }
-      deleteVmEntityList.add(disk);
+      entityList.add(disk);
     }
+    entityList.add(vm);
 
-    deleteVmEntityList.add(vm);
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.DELETE_VM);
+
+    TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.DELETE_VM, false, stepEntities);
     task.getLockableEntityIds().add(vm.getId());
-    taskBackend.getStepBackend().createQueuedStep(task, deleteVmEntityList, Operation.DELETE_VM);
-
     return task;
   }
 
   private TaskEntity operationTask(VmEntity vm, Operation op) throws ExternalException {
-    TaskEntity task = taskBackend.createQueuedTask(vm, op);
-    StepEntity step = taskBackend.getStepBackend().createQueuedStep(task, vm, op);
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
+    entityList.add(vm);
+
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(op);
+
+    TaskEntity task = taskBackend.createTaskWithSteps(vm, op, false, stepEntities);
     task.getLockableEntityIds().add(vm.getId());
     return task;
   }
 
   private TaskEntity attachIsoTask(InputStream inputStream, VmEntity vmEntity,
                                    IsoEntity isoEntity) throws ExternalException {
-    TaskEntity task = taskBackend.createQueuedTask(vmEntity, Operation.ATTACH_ISO);
+
+    List<StepEntity> stepEntities = new ArrayList<>();
     List<BaseEntity> entityList = new ArrayList<>();
     entityList.add(vmEntity);
     entityList.add(isoEntity);
 
-    StepEntity step = taskBackend.getStepBackend().createQueuedStep(task, entityList, Operation.UPLOAD_ISO);
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
     step.createOrUpdateTransientResource(IsoUploadStepCmd.INPUT_STREAM, inputStream);
+    step.addResources(entityList);
+    step.setOperation(Operation.UPLOAD_ISO);
 
-    taskBackend.getStepBackend().createQueuedStep(task, entityList, Operation.ATTACH_ISO);
+    step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.ATTACH_ISO);
+
+    TaskEntity task = taskBackend.createTaskWithSteps(vmEntity, Operation.ATTACH_ISO, false, stepEntities);
 
     task.getLockableEntityIds().add(isoEntity.getId());
     task.getLockableEntityIds().add(vmEntity.getId());
@@ -938,26 +1011,36 @@ public class VmDcpBackend implements VmBackend {
     return task;
   }
 
-  private TaskEntity detachIsoTask(VmEntity vm) throws ExternalException {
-    TaskEntity task = taskBackend.createQueuedTask(vm, Operation.DETACH_ISO);
+  private TaskEntity detachIsoTask(VmEntity vmEntity) throws ExternalException {
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
+    entityList.add(vmEntity);
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.DETACH_ISO);
+
+    TaskEntity task = taskBackend.createTaskWithSteps(vmEntity, Operation.DETACH_ISO, false, stepEntities);
+    task.getLockableEntityIds().add(vmEntity.getId());
+
     logger.info("created Task: {}", task);
-
-    taskBackend.getStepBackend().createQueuedStep(task, vm, Operation.DETACH_ISO);
-    task.getLockableEntityIds().add(vm.getId());
-
     return task;
   }
 
   private TaskEntity createImageTask(VmEntity vm, ImageEntity image, ImageEntity vmImage)
       throws ExternalException {
-    TaskEntity task = taskBackend.createQueuedTask(image, Operation.CREATE_VM_IMAGE);
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
+    entityList.add(vm);
+    entityList.add(image);
+    entityList.add(vmImage);
 
-    List<BaseEntity> stepEntities = ImmutableList.of((BaseEntity) vm, image, vmImage);
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.CREATE_VM_IMAGE);
 
-    taskBackend.getStepBackend()
-        .createQueuedStep(task,
-            stepEntities,
-            Operation.CREATE_VM_IMAGE);
+    TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.CREATE_VM_IMAGE, false, stepEntities);
     task.getLockableEntityIds().add(vm.getId());
 
     BackendHelpers.createReplicateImageStep(taskBackend, image, task);
