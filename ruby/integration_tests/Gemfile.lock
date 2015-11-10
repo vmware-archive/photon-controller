@@ -5,6 +5,7 @@ GEM
     diff-lcs (1.2.5)
     faraday (0.8.7)
       multipart-post (~> 1.1)
+    httpclient (2.7.0.1)
     ipaddress (0.8.0)
     json (1.8.3)
     multipart-post (1.2.0)
@@ -36,6 +37,7 @@ PLATFORMS
 
 DEPENDENCIES
   faraday (~> 0.8.7)
+  httpclient (~> 2.7.0)
   ipaddress (~> 0.8.0)
   json (~> 1.8)
   net-ping (~> 1.7.6)
