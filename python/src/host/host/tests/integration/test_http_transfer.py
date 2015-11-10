@@ -16,7 +16,6 @@ import os
 import re
 import tempfile
 import unittest
-import uuid
 
 from hamcrest import *  # noqa
 from mock import patch
@@ -46,7 +45,7 @@ class TestHttpTransfer(unittest.TestCase):
         self._logger = logging.getLogger(__name__)
         self.vim_client = VimClient(self.host, "root", self.pwd)
         self.http_transferer = HttpNfcTransferer(self.vim_client,
-                                                 self.image_datastore,
+                                                 [self.image_datastore],
                                                  self.host)
 
         with tempfile.NamedTemporaryFile(delete=False) as source_file:
@@ -124,7 +123,7 @@ class TestHttpTransfer(unittest.TestCase):
     def test_get_streamoptimized_image_stream(self, _exists):
         image_id = "ttylinux"
         lease, url = self.http_transferer._get_image_stream_from_shadow_vm(
-            image_id)
+            image_id, self.image_datastore)
         try:
             with tempfile.NamedTemporaryFile(delete=True) as downloaded_file:
                 # see if we can download without errors
@@ -140,14 +139,3 @@ class TestHttpTransfer(unittest.TestCase):
                     assert_that(matches, not(empty()))
         finally:
             lease.Complete()
-
-    def test_send_image_to_host(self):
-        image_id = "ttylinux"
-        tmp_vmdk_path = "/tmp/test_send_image_%s.vmdk" % str(uuid.uuid4())
-        self.http_transferer.send_image_to_host(
-            image_id, self.image_datastore, self.host, self.agent_port,
-            intermediate_file_path=tmp_vmdk_path)
-
-        vim_vm = self.vim_client.get_vm(image_id)
-        vim_task = vim_vm.Destroy()
-        self.vim_client.wait_for_task(vim_task)

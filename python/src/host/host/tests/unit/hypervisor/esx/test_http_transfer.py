@@ -21,6 +21,7 @@ from nose_parameterized import parameterized
 from common import services
 from common.service_name import ServiceName
 from gen.host import Host
+from gen.host.ttypes import ReceiveImageResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
@@ -36,14 +37,14 @@ class TestHttpTransfer(unittest.TestCase):
     def setUp(self, connect, creds):
         self.host_uuid = str(uuid.uuid4())
         VimClient.host_uuid = self.host_uuid
-        self.image_ds = "image_ds"
+        self.image_datastores = ["image_ds", "alt_image_ds"]
         creds.return_value = ["username", "password"]
         self.vim_client = VimClient(auto_sync=False)
         self.patcher = patch("host.hypervisor.esx.vm_config.GetEnv")
         self.patcher.start()
         services.register(ServiceName.AGENT_CONFIG, MagicMock())
         self.http_transferer = HttpNfcTransferer(self.vim_client,
-                                                 self.image_ds)
+                                                 self.image_datastores)
 
     def tearDown(self):
         self.vim_client.disconnect(wait=True)
@@ -127,10 +128,12 @@ class TestHttpTransfer(unittest.TestCase):
         self.assertEqual(vm_id_arg, expected_vm_id)
         self.assertEqual(
             vm_spec_arg.files.vmPathName,
-            '[] /vmfs/volumes/%s/vms/%s' % (self.image_ds, expected_vm_id[:2]))
+            '[] /vmfs/volumes/%s/vms/%s' % (
+                self.image_datastores[0], expected_vm_id[:2]))
 
     def test_configure_shadow_vm_with_disk(self):
         image_id = "fake_image_id"
+        image_datastore = "fake_image_ds"
         vm_mgr = self.http_transferer._vm_manager
         vm_mgr.update_vm = MagicMock()
         spec_mock = MagicMock()
@@ -140,17 +143,20 @@ class TestHttpTransfer(unittest.TestCase):
         vm_mgr.remove_all_disks = MagicMock()
         vm_mgr.add_disk = MagicMock()
 
-        self.http_transferer._configure_shadow_vm_with_disk(image_id)
+        self.http_transferer._configure_shadow_vm_with_disk(image_id,
+                                                            image_datastore)
 
         expected_vm_id = "shadow_%s" % self.host_uuid
         vm_mgr.update_vm_spec.assert_called_once_with()
         vm_mgr.get_vm_config.assert_called_once_with(expected_vm_id)
         vm_mgr.remove_all_disks.assert_called_once_with(spec_mock, info_mock)
         vm_mgr.add_disk.assert_called_once_with(
-            spec_mock, self.image_ds, image_id, info_mock, disk_is_image=True)
+            spec_mock, image_datastore, image_id, info_mock,
+            disk_is_image=True)
 
     def test_get_image_stream_from_shadow_vm(self):
         image_id = "fake_image_id"
+        image_datastore = "fake_image_ds"
         lease_mock = MagicMock()
         url_mock = MagicMock()
         xferer = self.http_transferer
@@ -163,11 +169,12 @@ class TestHttpTransfer(unittest.TestCase):
             return_value=url_mock)
 
         lease, url = self.http_transferer._get_image_stream_from_shadow_vm(
-            image_id)
+            image_id, image_datastore)
 
         xferer._ensure_shadow_vm.assert_called_once_with()
+        xferer._configure_shadow_vm_with_disk.assert_called_once_with(
+            image_id, image_datastore)
         xferer._export_shadow_vm.assert_called_once_with()
-        xferer._configure_shadow_vm_with_disk.assert_called_once_with(image_id)
         xferer._ensure_host_in_url.assert_called_once_with(url_mock,
                                                            "localhost")
         self.assertEqual(lease, lease_mock)
@@ -233,7 +240,8 @@ class TestHttpTransfer(unittest.TestCase):
         host = "mock_host"
         port = 8835
         image_id = "fake_image_id"
-        destination_datastore = "fake_datastore"
+        image_datastore = "fake_image_ds"
+        destination_datastore = "fake_destination_image_ds"
         read_lease_mock = MagicMock()
         from_url_mock = MagicMock()
         write_lease_mock = MagicMock()
@@ -253,15 +261,18 @@ class TestHttpTransfer(unittest.TestCase):
         xferer._get_url_from_import_vm = MagicMock(
             return_value=(write_lease_mock, to_url_mock))
         xferer.upload_file = MagicMock()
+        receive_image_resp_mock = MagicMock()
+        receive_image_resp_mock.result = ReceiveImageResultCode.OK
+        agent_conn_mock.receive_image.return_value = receive_image_resp_mock
 
         self.http_transferer.send_image_to_host(
-            image_id, destination_datastore, host, port)
+            image_id, image_datastore, None, destination_datastore, host, port)
 
         xferer._get_image_stream_from_shadow_vm.assert_called_once_with(
-            image_id)
+            image_id, image_datastore)
         shadow_vm_id = "shadow_%s" % self.host_uuid
         expected_tmp_file = "/vmfs/volumes/%s/%s_transfer.vmdk" % (
-            self.image_ds, shadow_vm_id)
+            self.image_datastores[0], shadow_vm_id)
         xferer.download_file.assert_called_once_with(
             from_url_mock, expected_tmp_file)
         read_lease_mock.Complete.assert_called_once_with()
