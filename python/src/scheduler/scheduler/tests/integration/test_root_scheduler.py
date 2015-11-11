@@ -76,6 +76,10 @@ HOSTS_PREFIX = "/hosts"
 ROLES_PREFIX = "/roles"
 ROOT_SCHEDULER_PERIOD = 1000
 ROOT_SCHEDULER_TIME_OUT = 5000
+LOCAL_HOST = "localhost"
+ZOOKEEPER_GREP = "ps -e | grep 'org.apache.zookeeper' " \
+                 " | grep -v grep | cut -f 1 -d' '"
+ZOOKEEPER_KILL = "kill -15 "
 
 
 class TestRootScheduler(BaseKazooTestCase):
@@ -106,13 +110,28 @@ class TestRootScheduler(BaseKazooTestCase):
         except:
             print "no children"
 
+    def _cleanup_existing_zookeeper(self):
+        proc = subprocess.Popen(ZOOKEEPER_GREP,
+                                stdout=subprocess.PIPE,
+                                shell=True)
+        pid = proc.communicate()[0]
+
+        if not pid:
+            return
+
+        subprocess.call(ZOOKEEPER_KILL + pid, shell=True)
+
+        # Check again
+        proc = subprocess.Popen(ZOOKEEPER_GREP,
+                                stdout=subprocess.PIPE,
+                                shell=True)
+        pid = proc.communicate()[0]
+        assert_that(pid, is_(''))
+
     def setUp(self):
         self.default_watch_function = "exists"
 
-        # check if zk is running before we run setup
-        result = subprocess.call("ps -ef | grep 'org.apache.zookeeper' | grep "
-                                 "-v grep", shell=True)
-        assert_that(result, is_not(0))
+        self._cleanup_existing_zookeeper()
 
         self.set_up_kazoo_base()
         print "Current zk pid: ", harness.CLUSTER[0].process.pid
@@ -136,13 +155,13 @@ class TestRootScheduler(BaseKazooTestCase):
         self.root_conf = {}
         self.root_conf['healthcheck'] = {}
         self.root_conf['zookeeper'] = {}
-        self.root_conf['zookeeper']['quorum'] = ("localhost:%i" %
-                                                 (DEFAULT_ZK_PORT,))
+        self.root_conf['zookeeper']['quorum'] = \
+            ("%s:%i" % (LOCAL_HOST, DEFAULT_ZK_PORT,))
         self.root_conf['healthcheck']['timeout_ms'] = ROOT_SCHEDULER_TIME_OUT
         self.root_conf['healthcheck']['period_ms'] = ROOT_SCHEDULER_PERIOD
 
         # start root scheduler
-        self.root_host = "localhost"
+        self.root_host = LOCAL_HOST
         self.root_port = 15000
         self.root_conf['bind'] = self.root_host
         self.root_conf['port'] = self.root_port
@@ -153,7 +172,7 @@ class TestRootScheduler(BaseKazooTestCase):
         self.root_transports.append(root_transport)
 
         # start chairman
-        self.chairman_host = '127.0.0.1'
+        self.chairman_host = LOCAL_HOST
         self.chairman_port = 13000
         self.leaf_fanout = 32
         self.runtime.start_chairman(self.chairman_host,
@@ -313,13 +332,14 @@ class TestRootScheduler(BaseKazooTestCase):
                       GetSchedulersResultCode.NOT_LEADER)
 
         # start a thrift server end point
-        agent_host = "localhost"
+        agent_host = LOCAL_HOST
         agent_port = 23456
         num_agents = 1
         handler = AgentHandler(num_agents)
         server = ThriftServer(agent_host, agent_port, handler)
         self.thrift_procs.append(server)
         server.start_server()
+        time.sleep(10)
 
         # register one host to chairman
         ds1 = Datastore("ds1", "ds1", DatastoreType.SHARED_VMFS)
@@ -477,7 +497,7 @@ class TestRootScheduler(BaseKazooTestCase):
         Test if root scheduler can detect and send report_missing
         requests to the chairman.
         """
-        conf = self.runtime.get_agent_config('localhost', 8835,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, 8835,
                                              self.chairman_host,
                                              self.chairman_port)
         res = self.runtime.start_agent(conf)
@@ -508,7 +528,7 @@ class TestRootScheduler(BaseKazooTestCase):
         self.assertTrue(reported_missing)
 
         # Agent Re-registers
-        conf = self.runtime.get_agent_config('localhost', 8835,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, 8835,
                                              self.chairman_host,
                                              self.chairman_port)
         res = self.runtime.start_agent(conf)
@@ -533,12 +553,12 @@ class TestRootScheduler(BaseKazooTestCase):
         """
         port1 = 8835
         port2 = 8836
-        conf = self.runtime.get_agent_config('localhost', port1,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, port1,
                                              self.chairman_host,
                                              self.chairman_port)
         res = self.runtime.start_agent(conf)
         (agent_proc1, agent_client1, agent1_control) = res
-        conf = self.runtime.get_agent_config('localhost', port2,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, port2,
                                              self.chairman_host,
                                              self.chairman_port)
         res = self.runtime.start_agent(conf)
@@ -647,7 +667,7 @@ class TestRootScheduler(BaseKazooTestCase):
         self.assertTrue(child_missing)
         # Bring the agent back up
         if kill:
-            conf = self.runtime.get_agent_config('localhost',
+            conf = self.runtime.get_agent_config(LOCAL_HOST,
                                                  agents[child_host][2],
                                                  self.chairman_host,
                                                  self.chairman_port)
@@ -671,7 +691,7 @@ class TestRootScheduler(BaseKazooTestCase):
 
         # start 1 agent and wait for the root to get configured
         base_port = 12345
-        conf = self.runtime.get_agent_config('localhost', base_port,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, base_port,
                                              self.chairman_host,
                                              self.chairman_port)
         self.runtime.start_agent(conf)
@@ -694,7 +714,7 @@ class TestRootScheduler(BaseKazooTestCase):
         """
         # start an agent
         port = 8835
-        conf = self.runtime.get_agent_config('localhost', port,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, port,
                                              self.chairman_host,
                                              self.chairman_port)
         res = self.runtime.start_agent(conf)
@@ -761,12 +781,12 @@ class TestRootScheduler(BaseKazooTestCase):
         children until it succeeds.
         """
         port1, port2 = 8835, 8836
-        conf = self.runtime.get_agent_config('localhost', port1,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, port1,
                                              self.chairman_host,
                                              self.chairman_port)
         res = self.runtime.start_agent(conf)
         (agent_proc1, agent_client1, _) = res
-        conf = self.runtime.get_agent_config('localhost', port2,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, port2,
                                              self.chairman_host,
                                              self.chairman_port)
         res = self.runtime.start_agent(conf)
@@ -812,11 +832,11 @@ class TestRootScheduler(BaseKazooTestCase):
         id but with a different endpoint when there is a new owner.
         """
         port1, port2 = 8835, 8836
-        conf = self.runtime.get_agent_config('localhost', port1,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, port1,
                                              self.chairman_host,
                                              self.chairman_port)
         (agent_proc1, _, _) = self.runtime.start_agent(conf)
-        conf = self.runtime.get_agent_config('localhost', port2,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, port2,
                                              self.chairman_host,
                                              self.chairman_port)
         (agent_proc2, _, _) = self.runtime.start_agent(conf)
@@ -850,7 +870,7 @@ class TestRootScheduler(BaseKazooTestCase):
                                                       self.chairman_port + 1)
 
         # start a thrift endpoint
-        agent_host = "localhost"
+        agent_host = LOCAL_HOST
         agent_port = 23456
         handler = AgentHandler(num_agents)
         server = ThriftServer(agent_host, agent_port, handler)
@@ -886,7 +906,7 @@ class TestRootScheduler(BaseKazooTestCase):
         self.runtime.root_procs[0].kill()
 
         # start a thrift endpoint
-        agent_host, agent_port = "localhost", 23456
+        agent_host, agent_port = LOCAL_HOST, 23456
         handler = AgentHandler(num_agents)
         server = ThriftServer(agent_host, agent_port, handler)
         self.thrift_procs.append(server)
@@ -943,7 +963,7 @@ class TestRootScheduler(BaseKazooTestCase):
         self.runtime.root_procs[0].kill()
 
         # start a thrift endpoint
-        agent_host, agent_port = "localhost", 23456
+        agent_host, agent_port = LOCAL_HOST, 23456
         handler = AgentHandler(num_agents)
         server = ThriftServer(agent_host, agent_port, handler)
         self.thrift_procs.append(server)
@@ -984,7 +1004,7 @@ class TestRootScheduler(BaseKazooTestCase):
         self.runtime.root_procs[0].kill()
 
         # start a thrift endpoint
-        agent_host, agent_port = "localhost", 23456
+        agent_host, agent_port = LOCAL_HOST, 23456
         handler = AgentHandler(num_agents)
         server = ThriftServer(agent_host, agent_port, handler)
         self.thrift_procs.append(server)
@@ -1045,7 +1065,7 @@ class TestRootScheduler(BaseKazooTestCase):
                 return ConfigureResponse(ConfigureResultCode.OK)
 
         # start a thrift endpoint
-        agent_host, agent_port = "localhost", 23456
+        agent_host, agent_port = LOCAL_HOST, 23456
         handler = AgentHandler(num_leaves, self.leaf_fanout)
         server = ThriftServer(agent_host, agent_port, handler)
         self.thrift_procs.append(server)
@@ -1083,7 +1103,7 @@ class TestRootScheduler(BaseKazooTestCase):
         self.runtime.root_procs[0].kill()
 
         # start a thrift endpoint
-        agent_host = "localhost"
+        agent_host = LOCAL_HOST
         agent_port = 23456
         handler = AgentHandler(num_agents)
         server = ThriftServer(agent_host, agent_port, handler)
@@ -1152,7 +1172,7 @@ class TestRootScheduler(BaseKazooTestCase):
         self.runtime.root_procs[0].kill()
 
         # start a thrift endpoint
-        agent_host, agent_port = "localhost", 23456
+        agent_host, agent_port = LOCAL_HOST, 23456
 
         # Make sure to reject/fail all configuration host flows in order
         # to check if chairman will keep re-assigning the leaf owner randomly
@@ -1204,7 +1224,7 @@ class TestRootScheduler(BaseKazooTestCase):
         self.runtime.root_procs[0].kill()
 
         # start a thrift endpoint
-        agent_host = "localhost"
+        agent_host = LOCAL_HOST
         agent_port = 23456
         num_agents = 2
         handler = AgentHandler(num_agents)
@@ -1338,7 +1358,7 @@ class TestRootScheduler(BaseKazooTestCase):
                 rootSch.parent_id = "None"
                 _str_id = "h" + str(leaf_num)
                 rootSch.scheduler_children = [ChildInfo(id=leaf_id,
-                                                        address="localhost",
+                                                        address=LOCAL_HOST,
                                                         port=10000 + leaf_num,
                                                         owner_host=_str_id)]
                 role1.schedulers = [rootSch]
@@ -1358,15 +1378,15 @@ class TestRootScheduler(BaseKazooTestCase):
         port1, port2, port3 = 8835, 8836, 8837
         # ap - agent_proc
         # ac - agent client
-        conf = self.runtime.get_agent_config('localhost', port1,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, port1,
                                              self.chairman_host,
                                              self.chairman_port)
         (ap1, ac1, _) = self.runtime.start_agent(conf)
-        conf = self.runtime.get_agent_config('localhost', port2,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, port2,
                                              self.chairman_host,
                                              self.chairman_port)
         (ap2, ac2, _) = self.runtime.start_agent(conf)
-        conf = self.runtime.get_agent_config('localhost', port3,
+        conf = self.runtime.get_agent_config(LOCAL_HOST, port3,
                                              self.chairman_host,
                                              self.chairman_port)
         (ap3, ac3, _) = self.runtime.start_agent(conf)
@@ -1443,7 +1463,7 @@ class TestRootScheduler(BaseKazooTestCase):
 
     def test_management_hosts_in_hierarchy(self):
         # start a thrift server end point
-        host = "localhost"
+        host = LOCAL_HOST
         mgmt_port = 23456
         num_agents = 2
         non_mgmt_port = 23457
