@@ -141,7 +141,7 @@ def start_service(service_name, config_path=None, log_file=None, flag="w"):
     return proc
 
 
-def _wait_for_transport(transport, num_retries=10, sleep_sec=1):
+def _wait_for_transport(transport, num_retries=20, sleep_sec=1):
     """Open thrift transport.
 
     transport Transport to open
