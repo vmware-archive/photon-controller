@@ -12,13 +12,15 @@
 
 import json
 import logging
-from optparse import OptionParser
 import os
 import threading
 
+import common
+
+from optparse import OptionParser
 from common.file_util import atomic_write_file
 from common.lock import locked
-import common
+from common.lock import lock_with
 from gen.common.ttypes import ServerAddress
 
 
@@ -95,6 +97,10 @@ class AgentConfig(object):
         self._persist_config()
         # No reboot required yet.
         self._reboot_required = False
+
+        # Option callbacks
+        self._option_callbacks = {}
+        self._callback_lock = threading.Lock()
 
     @property
     @locked
@@ -175,57 +181,57 @@ class AgentConfig(object):
                     provision_req.datastores):
                 raise InvalidConfig("image_datastore_info is not valid")
 
-        avail_zone = provision_req.availability_zone
-        config_changed = False
-        config_changed |= self._check_and_set_attr(self.AVAILABILITY_ZONE,
-                                                   avail_zone)
-        config_changed |= self._check_and_set_attr(self.DATASTORES,
-                                                   provision_req.datastores)
-        config_changed |= self._check_and_set_attr(self.VM_NETWORK,
-                                                   provision_req.networks)
+        reboot = False
+        reboot |= self._check_and_set_attr(
+            self.AVAILABILITY_ZONE, provision_req.availability_zone)
+        reboot |= self._check_and_set_attr(
+            self.DATASTORES, provision_req.datastores)
+        reboot |= self._check_and_set_attr(
+            self.VM_NETWORK, provision_req.networks)
+
         host = None
-        port = None
+        port = self.DEFAULT_PORT_NUMBER
         if provision_req.address:
             host = provision_req.address.host
             port = provision_req.address.port
 
-        config_changed |= self._check_and_set_attr(
+        reboot |= self._check_and_set_attr(
             self.HOSTNAME, host)
-        config_changed |= self._check_and_set_attr(
+        reboot |= self._check_and_set_attr(
             self.HOST_PORT, port)
 
         chairman_str = \
             self._parse_chairman_server_address(provision_req.chairman_server)
-        config_changed |= self._check_and_set_attr(
-            self.CHAIRMAN, chairman_str)
+        if self._check_and_set_attr(self.CHAIRMAN, chairman_str):
+            self._trigger_callbacks(self.CHAIRMAN, self.chairman_list)
 
-        config_changed |= self._check_and_set_attr(
+        reboot |= self._check_and_set_attr(
             self.MEMORY_OVERCOMMIT, memory_overcommit)
-        config_changed |= self._check_and_set_attr(
+        reboot |= self._check_and_set_attr(
             self.CPU_OVERCOMMIT, cpu_overcommit)
 
         image_datastore_for_vms = False
         if provision_req.image_datastore_info:
-            config_changed |= self._check_and_set_attr(
+            reboot |= self._check_and_set_attr(
                 self.IMAGE_DATASTORE, provision_req.image_datastore_info.name)
             image_datastore_for_vms = \
                 provision_req.image_datastore_info.used_for_vms
 
-        config_changed |= self._check_and_set_attr(
+        reboot |= self._check_and_set_attr(
             self.IMAGE_DATASTORE_FOR_VMS, image_datastore_for_vms)
 
         if (provision_req.environment):
             self._logger.info(provision_req.environment)
             for k in provision_req.environment:
-                config_changed |= self._check_and_set_attr(
+                reboot |= self._check_and_set_attr(
                     k, provision_req.environment[k])
 
         if provision_req.management_only:
-            config_changed |= self._check_and_set_attr(
+            reboot |= self._check_and_set_attr(
                 self.MANAGEMENT_ONLY,
                 provision_req.management_only)
 
-        config_changed |= self._check_and_set_attr(
+        reboot |= self._check_and_set_attr(
             self.HOST_ID, provision_req.host_id)
 
         # Persist the updates to the config file.
@@ -233,7 +239,7 @@ class AgentConfig(object):
 
         # For simplicity mark for reboot when any provision configuration
         # changes.
-        if (config_changed):
+        if reboot:
             # When we have all the parameters for the agent to be provisioned
             # into esx-cloud notify for reboot.
             self._logger.info("Agent configuration updated reboot required")
@@ -419,6 +425,25 @@ class AgentConfig(object):
     @locked
     def host_id(self):
         return getattr(self._options, self.HOST_ID)
+
+    @lock_with("_callback_lock")
+    def on_config_change(self, option, callback):
+        """
+        Register a callback on config change for a specific option. The
+        callback will be called whenever the configuration changes.
+        """
+        if option not in self._option_callbacks:
+            self._option_callbacks[option] = []
+        self._option_callbacks[option].append(callback)
+
+    @lock_with("_callback_lock")
+    def _trigger_callbacks(self, option, new_value):
+        """
+        Trigger callbacks for a specific option
+        """
+        if option in self._option_callbacks:
+            for callback in self._option_callbacks[option]:
+                callback(new_value)
 
     def _config_populated(self, prop_list):
         """

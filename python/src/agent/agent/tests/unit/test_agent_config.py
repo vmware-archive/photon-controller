@@ -258,7 +258,7 @@ class TestUnitAgent(unittest.TestCase):
         self.agent.update_config(req)
         assert_that(self.agent.availability_zone, equal_to(None))
         assert_that(self.agent.hostname, equal_to(None))
-        assert_that(self.agent.host_port, equal_to(None))
+        assert_that(self.agent.host_port, equal_to(8835))
         assert_that(self.agent.datastores, equal_to([]))
         assert_that(self.agent.networks, equal_to([]))
         assert_that(self.agent.chairman_list, equal_to([]))
@@ -288,7 +288,7 @@ class TestUnitAgent(unittest.TestCase):
         self.assertRaises(InvalidConfig, self.agent.update_config, req)
         assert_that(self.agent.availability_zone, equal_to(None))
         assert_that(self.agent.hostname, equal_to(None))
-        assert_that(self.agent.host_port, equal_to(None))
+        assert_that(self.agent.host_port, equal_to(8835))
         assert_that(self.agent.datastores, equal_to([]))
         assert_that(self.agent.networks, equal_to([]))
         assert_that(self.agent.chairman_list, equal_to([]))
@@ -419,6 +419,21 @@ class TestUnitAgent(unittest.TestCase):
         self.agent._parse_options(["--host-id", "host1"])
         self.assertEqual(self.agent.host_id, "host1")
 
+    def test_config_change(self):
+        callback1 = mock.MagicMock()
+        callback2 = mock.MagicMock()
+
+        chairman_server = [
+            ServerAddress("192.168.0.1", 8835),
+            ServerAddress("192.168.0.2", 8835),
+        ]
+        self.agent.on_config_change(self.agent.CHAIRMAN, callback1)
+        self.agent.on_config_change(self.agent.CHAIRMAN, callback2)
+        provision = ProvisionRequest(chairman_server=chairman_server)
+        self.agent.update_config(provision)
+        callback1.assert_called_once_with(chairman_server)
+        callback2.assert_called_once_with(chairman_server)
+        self.assertFalse(self.agent.reboot_required)
 
 if __name__ == "__main__":
     unittest.main()
