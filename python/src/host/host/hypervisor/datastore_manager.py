@@ -36,10 +36,11 @@ class DatastoreManager(object):
         pass
 
     @abc.abstractmethod
-    def image_datastore(self):
-        """ Image datasotre is the image shared datastore that is accessible
-        by all hosts.
-        :return: str, image datastore id
+    def image_datastores(self):
+        """
+        Get the set of image datastores for this host.
+
+        :return: set of image datastore ids for this host.
         """
         pass
 
@@ -84,7 +85,7 @@ class DatastoreManager(object):
         """
         assert(self.get_datastore_ids() is not None)
         return [ds_id for ds_id in self.get_datastore_ids()
-                if ds_id != self.image_datastore()]
+                if ds_id not in self.image_datastores()]
 
     def normalize(self, id_or_name, to_id=True):
         """Normalizes datastore id and name to datastore id.
