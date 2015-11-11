@@ -53,8 +53,11 @@ class FakeDatastoreManager(DatastoreManager):
                 ds.tags.extend(user_tags[ds.id])
         return datastores
 
-    def image_datastore(self):
-        return self._image_datastore
+    def image_datastores(self):
+        if not self._image_datastore:
+            return set()
+        else:
+            return set([self._image_datastore])
 
     def datastore_nfc_ticket(self, datastore_name):
         return HostServiceTicket(port=902, service_type="nfc",
