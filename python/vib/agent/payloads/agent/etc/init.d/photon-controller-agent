@@ -47,13 +47,16 @@ start() {
   ulimit -p 128
   if [ `uname -r | grep '^5\.'` ]; then
      PYVER="2.6"
-     export PYTHONPATH=$PHOTON_CONTROLLER_ROOT/$PYVER/site-packages
   else
      PYVER="2.7"
-     # Workaround for ESXi 6.0.0 build-3029758, in which python fails to load
-     # setuptools by .pth. Add it directly to PYTHONPATH.
-     PYTHONPATH=$PYTHONPATH:/lib/python$PYVER/site-packages/setuptools-0.6c11-py$PYVER.egg
   fi
+
+  export PYTHONPATH=$PHOTON_CONTROLLER_ROOT/$PYVER/site-packages
+
+  # Workaround for ESXi 6.0.0 build-3029758, in which python fails to load
+  # setuptools by .pth. Add it directly to PYTHONPATH.
+  PYTHONPATH=/lib/python$PYVER/site-packages/setuptools-0.6c11-py$PYVER.egg:$PYTHONPATH
+
   init_start ${PHOTON_CONTROLLER_AGENT_TAG} ${PHOTON_CONTROLLER_GROUPNAME} ${PYTHON_PATH} ${PHOTON_CONTROLLER_AGENT_RUN} ${PHOTON_CONTROLLER_AGENT_PARAMS}
 }
 
