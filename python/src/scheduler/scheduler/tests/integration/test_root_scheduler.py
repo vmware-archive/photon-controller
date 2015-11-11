@@ -32,6 +32,7 @@ from agent.tests.common_helper_functions import _wait_on_code
 from agent.tests.common_helper_functions import _wait_for_configuration
 from agent.tests.zookeeper_utils import async_wait_for
 from agent.tests.zookeeper_utils import wait_for
+from agent.tests.zookeeper_utils import check_event
 from common.constants import ROOT_SCHEDULER_SERVICE
 from gen.chairman.ttypes import RegisterHostResultCode
 from gen.chairman.ttypes import ReportMissingRequest
@@ -519,6 +520,12 @@ class TestRootScheduler(BaseKazooTestCase):
                                    host_config.agent_id, self.zk_client,
                                    mem_fun=self.default_watch_function,
                                    timeout=15)
+
+        if not missing_deleted:
+            # Check again in case the watch wasn't effective
+            missing_deleted = check_event(EventType.DELETED, MISSING_PREFIX,
+                                          host_config.agent_id, self.zk_client,
+                                          mem_fun=self.default_watch_function)
         self.assertTrue(missing_deleted)
 
     def _test_leaf_scheduler_health_checker(self, kill):
