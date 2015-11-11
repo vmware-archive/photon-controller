@@ -52,6 +52,9 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * This resource is for image related API.
@@ -101,28 +104,36 @@ public class ImagesResource {
 
   private Task parseImageDataFromRequest(HttpServletRequest request) throws InternalException, ExternalException {
     Task task = null;
-    ImageReplicationType replicationType = null;
+
     ServletFileUpload fileUpload = new ServletFileUpload();
+    List<InputStream> dataStreams = new LinkedList<>();
+
     try {
+      ImageReplicationType replicationType = null;
+
       FileItemIterator iterator = fileUpload.getItemIterator(request);
       while (iterator.hasNext()) {
         FileItemStream item = iterator.next();
+
+        InputStream itemStream = item.openStream();
+        dataStreams.add(itemStream);
+
         if (item.isFormField()) {
           String fieldName = item.getFieldName();
           switch (fieldName.toUpperCase()) {
             case "IMAGEREPLICATION":
-              replicationType = ImageReplicationType.valueOf(Streams.asString(item.openStream()).toUpperCase());
+              replicationType = ImageReplicationType.valueOf(Streams.asString(itemStream).toUpperCase());
               break;
             default:
               logger.warn(String.format("The parameter '%s' is unknown in image upload.", fieldName));
           }
         } else {
           if (replicationType == null) {
-            throw new ImageUploadException("ImageReplicationType is required and should be encoded before image data " +
-                "in the image upload request. ");
+            throw new ImageUploadException(
+                "ImageReplicationType is required and should be encoded before image data in the upload request.");
           }
 
-          task = imageFeClient.create(item.openStream(), item.getName(), replicationType);
+          task = imageFeClient.create(itemStream, item.getName(), replicationType);
         }
       }
     } catch (IllegalArgumentException ex) {
@@ -131,6 +142,14 @@ public class ImagesResource {
       throw new ImageUploadException("Image upload IOException", ex);
     } catch (FileUploadException ex) {
       throw new ImageUploadException("Image upload FileUploadException", ex);
+    } finally {
+      for (InputStream stream : dataStreams) {
+        try {
+          stream.close();
+        } catch (IOException | NullPointerException ex) {
+          logger.warn("Unexpected exception closing data stream.", ex);
+        }
+      }
     }
 
     if (task == null) {
