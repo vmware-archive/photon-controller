@@ -256,10 +256,28 @@ public class DeploymentResourceTest extends ResourceTest {
         .build(deploymentId)
         .toString();
 
+    ClusterConfigurationSpec spec = new ClusterConfigurationSpec();
+    spec.setType(ClusterType.KUBERNETES);
+
     Response response = client()
         .target(uri)
         .request()
-        .post(Entity.entity(ClusterType.KUBERNETES, MediaType.APPLICATION_JSON_TYPE));
+        .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
     assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  public void testDeleteClusterConfigurationWithNullClusterType() throws Exception {
+    String uri = UriBuilder
+        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
+            DeploymentResourceRoutes.DELETE_CLUSTER_CONFIGURATION_ACTION)
+        .build(deploymentId)
+        .toString();
+
+    Response response = client()
+        .target(uri)
+        .request()
+        .post(Entity.entity(new ClusterConfigurationSpec(), MediaType.APPLICATION_JSON_TYPE));
+    assertThat(response.getStatus(), is(404));
   }
 }
