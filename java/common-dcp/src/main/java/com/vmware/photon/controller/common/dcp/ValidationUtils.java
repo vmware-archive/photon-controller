@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.dcp.validation.NotBlankValidator;
 import com.vmware.photon.controller.common.dcp.validation.NotEmptyValidator;
 import com.vmware.photon.controller.common.dcp.validation.NotNullValidator;
 import com.vmware.photon.controller.common.dcp.validation.PositiveValidator;
+import com.vmware.photon.controller.common.dcp.validation.RangeValidator;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnceValidator;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -36,6 +37,7 @@ public class ValidationUtils {
     PositiveValidator.validate(state);
     NotBlankValidator.validate(state);
     NotEmptyValidator.validate(state);
+    RangeValidator.validate(state);
   }
 
   public static void validatePatch(ServiceDocument startState, ServiceDocument patchState) {
