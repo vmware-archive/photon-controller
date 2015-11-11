@@ -15,11 +15,11 @@ package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
+import com.vmware.photon.controller.apife.exceptions.external.ClusterTypeNotConfiguredException;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
@@ -208,10 +208,14 @@ public class DeploymentResource {
   })
   public Response deleteClusterConfiguration(@Context Request request,
                                              @PathParam("id") String id,
-                                             @Validated ClusterType clusterType) throws ExternalException {
+                                             ClusterConfigurationSpec spec) throws ExternalException {
+    if (spec.getType() == null) {
+      throw new ClusterTypeNotConfiguredException(null);
+    }
+
     return generateCustomResponse(
         Response.Status.OK,
-        client.deleteClusterConfiguration(id, clusterType),
+        client.deleteClusterConfiguration(id, spec.getType()),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

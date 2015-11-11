@@ -31,6 +31,10 @@ public class ClusterTypeNotConfiguredException extends ExternalException {
 
   @Override
   public String getMessage() {
-    return this.clusterType.toString() + " cluster is not configured yet.";
+    if (clusterType != null) {
+      return this.clusterType.toString() + " cluster is not configured yet.";
+    } else {
+      return "A valid and non-null cluster type must be provided";
+    }
   }
 }
