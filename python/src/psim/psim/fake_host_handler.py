@@ -83,9 +83,9 @@ class Host(HostHandler):
         since the fake classes are shared by the integration tests.
         TODO: Cleanup
         """
-        hv = hypervisor.Hypervisor("fake", None, datastores, networks, None,
-                                   None, 10, overcommit['mem'],
-                                   overcommit['cpu'], False)
+        hv = hypervisor.Hypervisor("fake", None, datastores, networks,
+                                   datastores[0], None, 10, overcommit['mem'],
+                                   overcommit['cpu'], True)
         hv.hypervisor._uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS,
                                              str(id)))
         hv.hypervisor.disk_manager.capacity_map = self._get_capacity_map()
