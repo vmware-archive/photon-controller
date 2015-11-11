@@ -42,6 +42,22 @@ def extract_node_data(client, path, thrift_type):
     return t_type_instance
 
 
+def check_event(event_type, prefix,
+                node, zk_client, mem_fun="exists"):
+    """
+    :param timeout [int]: seconds
+    """
+    path = "%s/%s" % (prefix, node)
+    res = getattr(zk_client, mem_fun)(path)
+
+    if event_type == EventType.CREATED and res:
+        return True
+    elif event_type == EventType.DELETED and not res:
+        return True
+
+    return False
+
+
 def wait_for(event_type, prefix,
              node, zk_client, mem_fun="exists", timeout=10):
     """
