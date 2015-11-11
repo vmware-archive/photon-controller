@@ -11,6 +11,10 @@
 # under the License.
 
 
+class AlreadyLocked(Exception):
+    pass
+
+
 def lock_with(lock_name=None):
     """Decorator which locks the specific lock. If lock is not specified,
        use self.lock."""
@@ -35,6 +39,24 @@ def locked(func):
 
     def nested(self, *args, **kwargs):
         self.lock.acquire()
+        try:
+            return func(self, *args, **kwargs)
+        finally:
+            self.lock.release()
+
+    return nested
+
+
+def lock_non_blocking(func):
+    """Decorator which attempt to lock self.lock.
+
+    It throws AlreadyLock if unable to do so.
+    """
+
+    def nested(self, *args, **kwargs):
+        acquired = self.lock.acquire(False)
+        if not acquired:
+            raise AlreadyLocked()
         try:
             return func(self, *args, **kwargs)
         finally:

@@ -17,7 +17,7 @@ from hamcrest import *  # noqa
 from matchers import *  # noqa
 from mock import MagicMock
 
-from common.lock import locked, lock_with
+from common.lock import locked, lock_with, lock_non_blocking, AlreadyLocked
 
 
 class LockedClass:
@@ -35,6 +35,10 @@ class LockedClass:
 
     @lock_with()
     def lock_with_default(self):
+        pass
+
+    @lock_non_blocking
+    def lock_try_lock(self):
         pass
 
 
@@ -58,6 +62,13 @@ class TestCommonLock(unittest.TestCase):
         assert_that(obj.lock.acquire.called, is_(True))
         assert_that(obj.lock.release.called, is_(True))
 
+    def test_non_blocking_lock(self):
+        obj = LockedClass()
+        obj.lock.acquire.return_value = False
+
+        self.assertRaises(AlreadyLocked, obj.lock_try_lock)
+        assert_that(obj.lock.acquire.called, is_(True))
+        assert_that(obj.lock.release.called, is_(False))
 
 if __name__ == '__main__':
     unittest.main()
