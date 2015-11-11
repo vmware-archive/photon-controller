@@ -50,7 +50,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
 
         ds_list = ["datastore1", "datastore2", "datastore3",
                    "datastore4", "datastore5", "datastore6"]
-        ds_manager = EsxDatastoreManager(hypervisor, ds_list, "datastore2")
+        ds_manager = EsxDatastoreManager(hypervisor, ds_list, set(["datastore2"]))
 
         expected_call_args = []
         for ds in ds_list:
@@ -90,7 +90,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
                                                  type=DSType.OTHER,
                                                  tags=[])))
 
-        assert_that(ds_manager.image_datastore(), is_("id-2"))
+        assert_that(ds_manager.image_datastores(), is_(set(["id-2"])))
         assert_that(ds_manager.datastore_type("id-1"),
                     is_(DSType.LOCAL_VMFS))
         assert_that(ds_manager.datastore_type("id-2"),

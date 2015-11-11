@@ -27,18 +27,18 @@ from host.hypervisor.hypervisor import UpdateListener
 
 class EsxDatastoreManager(DatastoreManager, UpdateListener):
 
-    def __init__(self, hypervisor, datastores, image_datastore):
+    def __init__(self, hypervisor, datastores, image_datastores):
         self.lock = threading.Lock()
         self.logger = logging.getLogger(__name__)
         self._hypervisor = hypervisor
         self._configured_datastores = datastores
-        self._configured_image_datastore = image_datastore
+        self._configured_image_datastores = image_datastores
         self.ds_user_tags = common.services.get(ServiceName.DATASTORE_TAGS)
         self._initialize_datastores()
 
     @locked
     def _initialize_datastores(self):
-        self._image_datastore = None
+        self._image_datastores = set()
         self._datastores = []  # gen.resource.ttypes.Datastore list
         self._datastore_id_to_name_map = {}
 
@@ -61,8 +61,8 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
 
                 self.logger.info("Datastore %s uuid==%s" % (ds.name, ds.id))
                 datastore_mkdirs(self._hypervisor.vim_client, ds.name)
-                if ds.name == self._configured_image_datastore:
-                    self._image_datastore = ds.id
+                if ds.name in self._configured_image_datastores:
+                    self._image_datastores.add(ds.id)
                 self._datastores.append(ds)
                 self._datastore_id_to_name_map[ds.id] = ds.name
             except:
@@ -88,8 +88,8 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         return datastores
 
     @locked
-    def image_datastore(self):
-        return self._image_datastore
+    def image_datastores(self):
+        return self._image_datastores
 
     def datastore_nfc_ticket(self, datastore_name):
         ticket = self._hypervisor.vim_client.get_nfc_ticket_by_ds_name(
