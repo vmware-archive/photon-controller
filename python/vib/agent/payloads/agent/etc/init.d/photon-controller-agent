@@ -50,6 +50,8 @@ start() {
      export PYTHONPATH=$PHOTON_CONTROLLER_ROOT/$PYVER/site-packages
   else
      PYVER="2.7"
+     export PYTHONPATH=$PHOTON_CONTROLLER_ROOT/$PYVER/site-packages
+
      # Workaround for ESXi 6.0.0 build-3029758, in which python fails to load
      # setuptools by .pth. Add it directly to PYTHONPATH.
      PYTHONPATH=$PYTHONPATH:/lib/python$PYVER/site-packages/setuptools-0.6c11-py$PYVER.egg
