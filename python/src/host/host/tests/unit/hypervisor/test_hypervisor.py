@@ -44,6 +44,14 @@ class TestHypervisor(unittest.TestCase):
         Hypervisor("fake", "fake_availability_zone", [], [], "", 1234,
                    10, 1.0, 1.0, False)
 
+    def test_hypervisor_setter(self):
+        hypervisor = Hypervisor("fake", "fake_availability_zone", [], [], "",
+                                1234, 10, 1.0, 1.0, False)
+        hypervisor.set_cpu_overcommit(2.0)
+        assert_that(hypervisor.cpu_overcommit, equal_to(2.0))
+        hypervisor.set_memory_overcommit(3.0)
+        assert_that(hypervisor.memory_overcommit, equal_to(3.0))
+
     def test_unknown_hypervisor(self):
         self.assertRaises(ValueError, Hypervisor, "dummy", [],
                           "fake_availability_zone", [], "", 1234, 10, 1.0, 1.0,

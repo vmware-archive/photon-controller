@@ -214,10 +214,10 @@ class AgentConfig(object):
         if self._check_and_set_attr(self.CHAIRMAN, chairman_str):
             self._trigger_callbacks(self.CHAIRMAN, self.chairman_list)
 
-        reboot |= self._check_and_set_attr(
-            self.MEMORY_OVERCOMMIT, memory_overcommit)
-        reboot |= self._check_and_set_attr(
-            self.CPU_OVERCOMMIT, cpu_overcommit)
+        if self._check_and_set_attr(self.MEMORY_OVERCOMMIT, memory_overcommit):
+            self._trigger_callbacks(self.MEMORY_OVERCOMMIT, memory_overcommit)
+        if self._check_and_set_attr(self.CPU_OVERCOMMIT, cpu_overcommit):
+            self._trigger_callbacks(self.CPU_OVERCOMMIT, cpu_overcommit)
 
         image_datastore_for_vms = False
         if provision_req.image_datastore_info:

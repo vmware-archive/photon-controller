@@ -443,20 +443,33 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
 
     def test_config_change(self):
-        callback1 = mock.MagicMock()
-        callback2 = mock.MagicMock()
+        # Test chairman config change
+        chairman_callback1 = mock.MagicMock()
+        chairman_callback2 = mock.MagicMock()
 
         chairman_server = [
             ServerAddress("192.168.0.1", 8835),
             ServerAddress("192.168.0.2", 8835),
         ]
-        self.agent.on_config_change(self.agent.CHAIRMAN, callback1)
-        self.agent.on_config_change(self.agent.CHAIRMAN, callback2)
+        self.agent.on_config_change(self.agent.CHAIRMAN, chairman_callback1)
+        self.agent.on_config_change(self.agent.CHAIRMAN, chairman_callback2)
         provision = ProvisionRequest(chairman_server=chairman_server)
         self.agent.update_config(provision)
-        callback1.assert_called_once_with(chairman_server)
-        callback2.assert_called_once_with(chairman_server)
+        chairman_callback1.assert_called_once_with(chairman_server)
+        chairman_callback2.assert_called_once_with(chairman_server)
         self.assertFalse(self.agent.reboot_required)
+
+        # Test cpu_overcommit and memory_overcommit config change
+        cpu_callback = mock.MagicMock()
+        mem_callback = mock.MagicMock()
+
+        provision.cpu_overcommit = 5.0
+        provision.memory_overcommit = 6.0
+        self.agent.on_config_change(self.agent.CPU_OVERCOMMIT, cpu_callback)
+        self.agent.on_config_change(self.agent.MEMORY_OVERCOMMIT, mem_callback)
+        self.agent.update_config(provision)
+        cpu_callback.assert_called_once_with(5.0)
+        mem_callback.assert_called_once_with(6.0)
 
 
 if __name__ == "__main__":
