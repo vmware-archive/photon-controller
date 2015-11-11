@@ -379,6 +379,8 @@ class TestEsxImageManager(unittest.TestCase):
     ])
     def test_image_type(self, type, replication, expected_type,
                         expected_replication):
+
+        self.ds_manager.image_datastores.return_value = "ds1"
         with patch("host.hypervisor.esx.image_manager.os_image_manifest_path"
                    "") as manifest_path:
             tmpdir = file_util.mkdtemp(delete=True)
