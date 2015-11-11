@@ -45,6 +45,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * This resource is for ISO attach related API.
@@ -81,7 +84,10 @@ public class VmIsoAttachResource {
   private Task parseIsoDataFromRequest(HttpServletRequest request, String id)
       throws InternalException, ExternalException {
     Task task = null;
+
     ServletFileUpload fileUpload = new ServletFileUpload();
+    List<InputStream> dataStreams = new LinkedList<>();
+
     try {
       FileItemIterator iterator = fileUpload.getItemIterator(request);
       while (iterator.hasNext()) {
@@ -89,13 +95,24 @@ public class VmIsoAttachResource {
         if (item.isFormField()) {
           logger.warn(String.format("The parameter '%s' is unknown in attach ISO.", item.getFieldName()));
         } else {
-          task = vmFeClient.attachIso(id, item.openStream(), item.getName());
+          InputStream fileStream = item.openStream();
+          dataStreams.add(fileStream);
+
+          task = vmFeClient.attachIso(id, fileStream, item.getName());
         }
       }
     } catch (IOException ex) {
       throw new IsoUploadException("Iso upload IOException", ex);
     } catch (FileUploadException ex) {
       throw new IsoUploadException("Iso upload FileUploadException", ex);
+    } finally {
+      for (InputStream stream : dataStreams) {
+        try {
+          stream.close();
+        } catch (IOException | NullPointerException ex) {
+          logger.warn("Unexpected exception closing data stream.", ex);
+        }
+      }
     }
 
     if (task == null) {
