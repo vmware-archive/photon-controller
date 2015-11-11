@@ -141,3 +141,17 @@ class Hypervisor(object):
 
     def acquire_vim_ticket(self):
         return self.hypervisor.acquire_vim_ticket()
+
+    @property
+    def memory_overcommit(self):
+        return self.placement_manager.memory_overcommit
+
+    def set_memory_overcommit(self, value):
+        self.placement_manager.memory_overcommit = value
+
+    @property
+    def cpu_overcommit(self):
+        return self.placement_manager.cpu_overcommit
+
+    def set_cpu_overcommit(self, value):
+        self.placement_manager.cpu_overcommit = value

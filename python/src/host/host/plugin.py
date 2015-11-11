@@ -37,7 +37,15 @@ hv = hypervisor.Hypervisor(config.hypervisor,
                            config.cpu_overcommit,
                            config.image_datastore_for_vms,
                            config.multi_agent_id)
+
+# When datastore/network changes on the host, let chairman know
 hv.add_update_listener(registrant)
+
+# When configuration changes, notify hypervisor
+config.on_config_change(config.CPU_OVERCOMMIT, hv.set_cpu_overcommit)
+config.on_config_change(config.MEMORY_OVERCOMMIT, hv.set_memory_overcommit)
+
+# Register hypervisor in services
 common.services.register(ServiceName.HYPERVISOR, hv)
 
 # Create host handler

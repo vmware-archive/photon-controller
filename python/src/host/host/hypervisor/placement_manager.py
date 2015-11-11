@@ -143,6 +143,22 @@ class PlacementManager(object):
     def consume_vm_reservation(self, reservation_id):
         return self._consume(self._reserved_vms, reservation_id)
 
+    @property
+    def memory_overcommit(self):
+        return self._option.memory_overcommit
+
+    @memory_overcommit.setter
+    def memory_overcommit(self, value):
+        self._option.memory_overcommit = value
+
+    @property
+    def cpu_overcommit(self):
+        return self._option.cpu_overcommit
+
+    @cpu_overcommit.setter
+    def cpu_overcommit(self, value):
+        self._option.cpu_overcommit = value
+
     def place(self, vm, disks):
         """Place specified resources.
 
