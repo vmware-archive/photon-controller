@@ -671,8 +671,8 @@ class HostHandlerTestCase(unittest.TestCase):
         state.set_mode(MODE.NORMAL)
         handler.hypervisor.placement_manager = MagicMock()
         handler._select_datastore_for_vm_create = MagicMock(return_value="ds1")
-        handler.hypervisor.datastore_manager.image_datastore = MagicMock(
-            return_value="image_ds")
+        handler.hypervisor.datastore_manager.image_datastores = MagicMock(
+            return_value=set("image_ds"))
         handler.hypervisor.image_manager.get_image_id_from_disks = MagicMock(
             return_value="image_id")
 
@@ -682,6 +682,7 @@ class HostHandlerTestCase(unittest.TestCase):
         pm.consume_vm_reservation.return_value = vm
         dm = handler.hypervisor.datastore_manager
         dm.datastore_type.return_value = DatastoreType.EXT3
+        dm.image_datastores.return_value = set(["image_ds"])
         im = handler.hypervisor.image_manager
         request = MagicMock()
         response = handler.create_vm(request)
@@ -737,6 +738,8 @@ class HostHandlerTestCase(unittest.TestCase):
         handler._datastores_for_image = MagicMock()
         handler.hypervisor.datastore_manager.datastore_type.\
             return_value = DatastoreType.EXT3
+        handler.hypervisor.datastore_manager.image_datastores = MagicMock(
+            return_value=set("ds2"))
         im = handler.hypervisor.image_manager
         im.get_image_refcount_filename.return_value = \
             os.path.join(self.agent_conf_dir, vm.id)

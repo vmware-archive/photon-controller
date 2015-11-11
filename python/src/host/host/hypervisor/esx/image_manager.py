@@ -218,7 +218,9 @@ class EsxImageManager(ImageManager):
         return os_vmdk_path(datastore_id, image_id, IMAGE_FOLDER_NAME)
 
     def image_size(self, image_id):
-        image_ds = self._ds_manager.image_datastore()
+        # TODO(mmutsuzaki) We should iterate over all the image datastores
+        # until we find one that has the image.
+        image_ds = list(self._ds_manager.image_datastores())[0]
         image_path = os_vmdk_flat_path(image_ds, image_id, IMAGE_FOLDER_NAME)
 
         return os.path.getsize(image_path)
@@ -247,7 +249,9 @@ class EsxImageManager(ImageManager):
         if image_id == "ttylinux":
             return ImageType.CLOUD, ImageReplication.EAGER
 
-        image_ds = self._ds_manager.image_datastore()
+        # TODO(mmutsuzaki) We should iterate over all the image datastores
+        # until we find one that has the image.
+        image_ds = list(self._ds_manager.image_datastores())[0]
         manifest_path = os_image_manifest_path(image_ds, image_id)
         if not os.path.isfile(manifest_path):
             self._logger.info("Manifest file %s not found" % manifest_path)
