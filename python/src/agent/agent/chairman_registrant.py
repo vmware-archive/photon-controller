@@ -54,6 +54,9 @@ class ChairmanRegistrant(UpdateListener):
         self.thread = None
         self.stop_thread = False
 
+    def update_chairman_list(self, chairman_list):
+        self.chairman_list = chairman_list
+
     def trigger_chairman_update(self):
         """Trigger register/unregister"""
         with self._trigger_condition:
