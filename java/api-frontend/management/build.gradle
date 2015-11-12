@@ -1,6 +1,11 @@
 apply plugin: 'application'
 apply plugin: 'thrift'
 
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
+
 mainClassName = 'com.vmware.photon.controller.apife.ApiFeService'
 
 dependencies {
@@ -76,4 +81,30 @@ test {
   useTestNG() {
     excludeGroups 'flaky'
   }
+}
+
+distTar << extractRelease(this, 'management')
+
+task dockerfile(type: Dockerfile) {
+  dependsOn distTar
+  destFile = file('build/container/Dockerfile')
+  from 'photon/servicebase'
+  copyFile('release/', '/usr/lib/esxcloud/management-api/')
+}
+
+task container(type: DockerBuildImage) {
+  dependsOn dockerfile, ':containers:servicebase'
+  inputDir = dockerfile.destFile.parentFile
+  tag = 'photon/management-api'
+}
+
+task removeContainer(type: DockerRemoveImage) {
+  targetImageId { container.tag }
+}
+
+task start(type: VagrantSsh) {
+  mustRunAfter container
+  description = "Start management-api inside devbox"
+  boxDir = devboxDir
+  sshCommand = "start-management-api 2>&1 | tee -a start-management-api.log"
 }
