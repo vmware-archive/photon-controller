@@ -619,13 +619,16 @@ public class ProvisionHostTaskService extends StatefulService {
     }
 
     DeployerContext deployerContext = HostUtils.getDeployerContext(this);
+    String logPrefix = SCRIPT_NAME + "-" +
+        hostState.hostAddress + "-" + ServiceUtils.getIDFromDocumentSelfLink(currentState.documentSelfLink);
 
-    File scriptLogFile = new File(deployerContext.getScriptLogDirectory(), SCRIPT_NAME + "-" +
-        hostState.hostAddress + "-" + ServiceUtils.getIDFromDocumentSelfLink(currentState.documentSelfLink) + ".log");
+    File scriptStdoutFile = new File(deployerContext.getScriptLogDirectory(), logPrefix + ".stdout.log");
+    File scriptStderrFile = new File(deployerContext.getScriptLogDirectory(), logPrefix + ".stderr.log");
 
     ScriptRunner scriptRunner = new ScriptRunner.Builder(command, deployerContext.getScriptTimeoutSec())
         .directory(deployerContext.getScriptDirectory())
-        .redirectOutput(ProcessBuilder.Redirect.to(scriptLogFile))
+        .redirectOutput(ProcessBuilder.Redirect.to(scriptStdoutFile))
+        .redirectError(ProcessBuilder.Redirect.to(scriptStderrFile))
         .build();
 
     ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(scriptRunner);
@@ -636,7 +639,7 @@ public class ProvisionHostTaskService extends StatefulService {
         if (result == null) {
           failTask(new NullPointerException(SCRIPT_NAME + " returned null"));
         } else if (result != 0) {
-          logScriptErrorAndFail(hostState, result, scriptLogFile);
+          logScriptErrorAndFail(hostState, result, scriptStdoutFile, scriptStderrFile);
         } else {
           sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_INSTALLATION);
         }
@@ -649,11 +652,12 @@ public class ProvisionHostTaskService extends StatefulService {
     });
   }
 
-  private void logScriptErrorAndFail(HostService.State hostState, Integer result, File scriptLogFile) {
+  private void logScriptErrorAndFail(HostService.State hostState, Integer result, File scriptStdoutFile, File scriptStderrFile) {
 
     try {
       ServiceUtils.logSevere(this, SCRIPT_NAME + " returned " + result.toString());
-      ServiceUtils.logSevere(this, "Script output: " + FileUtils.readFileToString(scriptLogFile));
+      ServiceUtils.logSevere(this, "Script stdout:\n" + FileUtils.readFileToString(scriptStdoutFile));
+      ServiceUtils.logSevere(this, "Script stderr:\n" + FileUtils.readFileToString(scriptStderrFile));
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
     }
