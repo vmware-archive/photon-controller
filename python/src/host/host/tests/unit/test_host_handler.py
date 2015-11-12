@@ -149,6 +149,7 @@ class HostHandlerTestCase(unittest.TestCase):
         self.hostname = "localhost"
 
         self._config = MagicMock()
+        self._config.hypervisor = "fake"
         self._config.agent_id = stable_uuid("agent_id")
         self._config.availability_zone_id = "Fake_zone"
         self._config.hostname = "localhost"
@@ -192,8 +193,7 @@ class HostHandlerTestCase(unittest.TestCase):
         request = ConfigureRequest(
             "fake-scheduler", Roles())
 
-        hv = Hypervisor("fake", "fake_availability_zone", [], [],
-                        "", 1234, 10, 1.0, 1.0, False)
+        hv = Hypervisor(self._config)
         handler = HostHandler(hv)
         assert_that(requests, is_(empty()))
 
@@ -209,8 +209,7 @@ class HostHandlerTestCase(unittest.TestCase):
         assert_that(requests[0].scheduler, equal_to(request.scheduler))
 
     def test_get_resources(self):
-        hv = Hypervisor("fake", "fake_availability_zone", [], [],
-                        "", 1234, 10, 1.0, 1.0, False)
+        hv = Hypervisor(self._config)
         handler = HostHandler(hv)
         request = GetResourcesRequest()
 
@@ -225,8 +224,10 @@ class HostHandlerTestCase(unittest.TestCase):
 
         agent_id = stable_uuid("agent_id")
         image_ds = "ds1"
-        hv = Hypervisor("fake", agent_id, [image_ds], [], "image_ds",
-                        1234, 10, 1.0, 1.0, False)
+        self._config.agent_id = agent_id
+        self._config.datastores = [image_ds]
+        self._config.image_datastores = "image_ds"
+        hv = Hypervisor(self._config)
         _config = MagicMock()
         _config.image_datastore = image_ds
         _config.management_only = True
