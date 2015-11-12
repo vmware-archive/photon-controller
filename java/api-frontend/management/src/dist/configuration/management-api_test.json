@@ -1,6 +1,25 @@
 {
-  "REGISTRATION_ADDRESS": "127.0.0.1",
-  "LOG_DIRECTORY": "/vagrant/log",
-  "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
-  "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=39000,suspend=n"
+  "serviceName": "ManagementApi",
+  "cpuCount": 2,
+  "memoryMb": 1024,
+  "diskGb": 1,
+  "isReplicated": true,
+  "isPrivileged": false,
+  "containerImage": "photon/management-api",
+  "containerName": "management-api",
+  "portBindings": {
+    "9000": 9000
+  },
+  "volumeBindings": {
+    "/var/log": "/var/log",
+    "/vagrant/log/management-api": "/vagrant/log",
+    "/devbox_data/tmp": "/devbox_data/tmp",
+    "/var/esxcloud": "/var/esxcloud"
+  },
+  "dynamicParameters": {
+    "REGISTRATION_ADDRESS": "127.0.0.1",
+    "LOG_DIRECTORY": "/vagrant/log",
+    "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
+    "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=39000,suspend=n"
+  }
 }
