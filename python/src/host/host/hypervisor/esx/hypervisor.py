@@ -32,30 +32,27 @@ from host.hypervisor.esx.system import EsxSystem
 class EsxHypervisor(object):
     """Manage ESX Hypervisor."""
 
-    def __init__(self, availability_zone_id, datastores, networks,
-                 image_datastore, wait_timeout=10,
-                 disable_large_pages=False):
+    def __init__(self, agent_config):
         self.logger = logging.getLogger(__name__)
 
         # If VimClient's housekeeping thread failed to update its own cache,
         # call errback to commit suicide. Watchdog will bring up the agent
         # again.
         errback = lambda: suicide()
-        self.vim_client = VimClient(wait_timeout=wait_timeout,
+        self.vim_client = VimClient(wait_timeout=agent_config.wait_timeout,
                                     errback=errback)
         atexit.register(lambda client: client.disconnect(), self.vim_client)
-
-        self.availability_zone_id = availability_zone_id
 
         self._uuid = self.vim_client.host_uuid
 
         # Enable/Disable large page support. If this host is removed
         # from the deployment, large page support will need to be
         # explicitly updated by the user.
+        disable_large_pages = agent_config.memory_overcommit > 1.0
         self.vim_client.set_large_page_support(disable=disable_large_pages)
 
         self.datastore_manager = EsxDatastoreManager(
-            self, datastores, [image_datastore])
+            self, agent_config.datastores, [agent_config.image_datastore])
         # datastore manager needs to update the cache when there is a change.
         self.vim_client.add_update_listener(self.datastore_manager)
         self.vm_manager = EsxVmManager(self.vim_client, self.datastore_manager)
@@ -63,7 +60,8 @@ class EsxHypervisor(object):
                                            self.datastore_manager)
         self.image_manager = EsxImageManager(self.vim_client,
                                              self.datastore_manager)
-        self.network_manager = EsxNetworkManager(self.vim_client, networks)
+        self.network_manager = EsxNetworkManager(self.vim_client,
+                                                 agent_config.networks)
         self.system = EsxSystem(self.vim_client)
         self.image_manager.monitor_for_cleanup()
         atexit.register(self.image_manager.cleanup)

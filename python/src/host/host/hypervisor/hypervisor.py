@@ -52,25 +52,17 @@ class Hypervisor(object):
     Based on which hypervisor the agent was configured to use, this will setup
     the proper modules.
     """
-    def __init__(self, hypervisor_type, availability_zone_id,
-                 datastores, networks, image_datastore, port, wait_timeout,
-                 memory_overcommit, cpu_overcommit,
-                 image_datastore_for_vms, multi_agent_id=None):
-
+    def __init__(self, agent_config):
         self._logger = logging.getLogger(__name__)
+        self._config = agent_config
 
-        if hypervisor_type == "esx":
+        if self._config.hypervisor == "esx":
             from esx.hypervisor import EsxHypervisor
             # This will throw an error if it can't connect to the local vim.
-            self.hypervisor = EsxHypervisor(availability_zone_id, datastores,
-                                            networks, image_datastore,
-                                            wait_timeout,
-                                            memory_overcommit > 1.0)
-        elif hypervisor_type == "fake":
+            self.hypervisor = EsxHypervisor(agent_config)
+        elif self._config.hypervisor == "fake":
             from fake.hypervisor import FakeHypervisor
-            self.hypervisor = FakeHypervisor(availability_zone_id, datastores,
-                                             networks, image_datastore,
-                                             port, multi_agent_id)
+            self.hypervisor = FakeHypervisor(agent_config)
         else:
             raise ValueError("Invalid hypervisor")
 
@@ -87,9 +79,10 @@ class Hypervisor(object):
         self.network_manager = self.hypervisor.network_manager
         self.system = self.hypervisor.system
 
-        placement_option = PlacementOption(memory_overcommit, cpu_overcommit,
-                                           image_datastore_for_vms)
-        self.placement_manager = PlacementManager(self, placement_option)
+        options = PlacementOption(agent_config.memory_overcommit,
+                                  agent_config.cpu_overcommit,
+                                  agent_config.image_datastore_for_vms)
+        self.placement_manager = PlacementManager(self, options)
 
         self.image_monitor = ImageMonitor(self.datastore_manager,
                                           self.image_manager,
