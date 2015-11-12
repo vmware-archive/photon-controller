@@ -180,6 +180,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         req.image_datastore_info = ImageDatastore(
             name=image_datastore,
             used_for_vms=used_for_vms)
+        req.image_datastores = set([req.image_datastore_info])
         req.management_only = True
         if host_id:
             req.host_id = host_id

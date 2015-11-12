@@ -158,10 +158,14 @@ class BaseDiskPlacementEngine(DiskPlaceEngine):
         self._option = option
 
     def placeable_datastores(self):
-        if self._option.image_datastore_for_vms:
-            return self.datastore_manager.get_datastore_ids()
-        else:
-            return self.datastore_manager.vm_datastores()
+        datastores = self.datastore_manager.vm_datastores()
+        for image_ds in self._option.image_datastores:
+            if image_ds["used_for_vms"]:
+                dsid = self.datastore_manager.normalize(image_ds["name"])
+                datastores.append(dsid)
+        self._logger.debug("Placeable datastores: %s, image datastores: %s" %
+                           (datastores, self._option.image_datastores))
+        return datastores
 
     def get_datastore_constraint(self, disk):
         """Place a disk in datastore based on the datastore constraints

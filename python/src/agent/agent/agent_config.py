@@ -367,7 +367,10 @@ class AgentConfig(object):
     @property
     @locked
     def image_datastores(self):
-        return getattr(self._options, self.IMAGE_DATASTORES)
+        image_datastores = getattr(self._options, self.IMAGE_DATASTORES)
+        if image_datastores is None:
+            return []
+        return image_datastores
 
     @property
     @locked
@@ -543,6 +546,13 @@ class AgentConfig(object):
                           action="store_true", default=False,
                           help="The image datastore can be used for placing " +
                                "vms")
+        # Note that we don't support this command-line option. It's defined
+        # here so that self._options get initialized with the image_datastores
+        # attribute. Eventually we should get rid of all the command-line
+        # options and always boot from config.json.
+        parser.add_option("--image-datastores", dest=self.IMAGE_DATASTORES,
+                          type="string",
+                          help="List of image datastores")
 
         # Thread pool configuration for services.
         parser.add_option("--host-service-threads",
@@ -675,8 +685,8 @@ class AgentConfig(object):
         config.json:
 
         > "image_datastores": [
-        >     {"name": "ds1", "used_for_vm": True},
-        >     {"name": "ds2", "used_for_vm": False}
+        >     {"name": "ds1", "used_for_vms": True},
+        >     {"name": "ds2", "used_for_vms": False}
         > ]
         """
         return [{"name": ds.name, "used_for_vms": ds.used_for_vms}
