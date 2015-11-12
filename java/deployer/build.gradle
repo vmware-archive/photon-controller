@@ -1,7 +1,14 @@
 apply plugin: 'application'
 apply plugin: 'thrift'
 
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
+import java.nio.file.Files
+
 mainClassName = 'com.vmware.photon.controller.deployer.Main'
+
 
 dependencies {
   compile project(':api-client')
@@ -61,4 +68,31 @@ tasks.withType(Test) {
   scanForTestClasses = false
   include "**/*Test.class"
   exclude "**/helpers/*.class"
+}
+
+distTar << extractRelease(this, project.name)
+
+task dockerfile(type: Dockerfile) {
+  dependsOn distTar
+  destFile = file("build/container/Dockerfile")
+  from "photon/servicebase"
+  copyFile("release/", "/usr/lib/esxcloud/deployer/")
+  runCommand "tdnf install -y openssh && tdnf install -y sshpass"
+}
+
+task container(type: DockerBuildImage) {
+  dependsOn dockerfile, ":containers:servicebase"
+  inputDir = dockerfile.destFile.parentFile
+  tag = "photon/deployer"
+}
+
+task removeContainer(type: DockerRemoveImage) {
+  targetImageId { container.tag }
+}
+
+task start(type: VagrantSsh) {
+  mustRunAfter container
+  description = "Start ${project.name} inside devbox"
+  boxDir = devboxDir
+  sshCommand = "start-${project.name} 2>&1 | tee -a start-${project.name}.log"
 }
