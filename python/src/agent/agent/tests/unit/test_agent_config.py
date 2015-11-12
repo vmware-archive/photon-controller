@@ -135,9 +135,7 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent._options.datastores,
                     equal_to(["datastore1"]))
         # testing that uuid.uuid5 doesn't blowup
-        FakeHypervisor(self.agent._options.availability_zone,
-                       self.agent._options.datastores,
-                       [], None, 1234)
+        FakeHypervisor(self.agent)
 
     def test_persistence(self):
         """

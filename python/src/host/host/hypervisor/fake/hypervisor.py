@@ -33,21 +33,21 @@ class FakeHypervisor(object):
 
     """Manage Fake Hypervisor."""
 
-    def __init__(self, availability_zone_id, datastores, networks,
-                 image_datastore, port, multi_agent_id=None):
+    def __init__(self, agent_config):
         self.logger = logging.getLogger(__name__)
-        self.availability_zone_id = availability_zone_id
-        self._multi_agent_id = multi_agent_id
+        self._multi_agent_id = agent_config.multi_agent_id
         prefix = socket.gethostname()
-        suffix = str(port)
+        suffix = str(agent_config.host_port)
         self._uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, prefix + suffix))
 
         tempdir = mkdtemp(prefix='disk', delete=True)
         self.disk_manager = FakeDiskManager(self,
                                             os.path.join(tempdir, 'disk'))
         self.vm_manager = FakeVmManager(self)
-        self.network_manager = FakeNetworkManager(self, networks)
+        self.network_manager = FakeNetworkManager(self, agent_config.networks)
         self.system = FakeSystem(self)
+        datastores = agent_config.datastores
+        image_datastore = agent_config.image_datastore
         self.datastore_manager = FakeDatastoreManager(self.system, datastores,
                                                       image_datastore)
         self.image_manager = FakeImageManager(self, image_datastore)
@@ -68,7 +68,7 @@ class FakeHypervisor(object):
 
     @property
     def multi_agent_id(self):
-        return self._multi_agent_id
+        return self._config.multi_agent_id
 
     def normalized_load(self):
         return 42
