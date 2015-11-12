@@ -1,4 +1,1 @@
-{
-  "ZOOKEEPER_DATA_DIRECTORY": "/var/esxcloud/data/zookeeper",
-  "ZOOKEEPER_MYID": "1"
-}
+../../../../containers/zookeeper/config/zookeeper_test.json
