@@ -19,9 +19,8 @@ import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.SecurityGroupEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -33,12 +32,13 @@ import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import org.apache.commons.collections.ListUtils;
+import org.junit.AfterClass;
 import org.mockito.Mock;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -50,11 +50,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.notNullValue;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
@@ -62,31 +60,69 @@ import java.util.stream.Collectors;
  */
 public class TenantDcpBackendTest {
 
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
+
   @Test
   private void dummy() {
+  }
+
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
   }
 
   /**
    * Tests for creating tenant.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class CreateTest extends BaseDaoTest {
-    private ApiFeDcpRestClient dcpClient;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class CreateTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private TenantBackend tenantBackend;
 
     @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
     private DeploymentBackend deploymentBackend;
-
-    @Inject
-    private ResourceTicketBackend resourceTicketBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
 
     private TenantCreateSpec spec;
 
@@ -94,22 +130,7 @@ public class TenantDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          TenantServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new TenantServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      tenantBackend = new TenantDcpBackend(
-          dcpClient, taskBackend, deploymentBackend, resourceTicketBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       spec = new TenantCreateSpec();
       spec.setName("t1");
@@ -119,19 +140,19 @@ public class TenantDcpBackendTest {
           .enabled(true)
           .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
           .build());
+      deploymentSpec.setImageDatastore("dummy-image-data-store-name");
 
       spec.setSecurityGroups(Arrays.asList(new String[]{"adminGrp1", "securityGroup2"}));
-
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
+      commonHostDocumentsCleanup();
+    }
 
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -199,58 +220,35 @@ public class TenantDcpBackendTest {
   /**
    * Tests for querying project.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class QueryTest extends BaseDaoTest {
-    private ApiFeDcpRestClient dcpClient;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class QueryTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private TenantBackend tenantBackend;
-
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private DeploymentBackend deploymentBackend;
-
-    @Inject
-    private ResourceTicketBackend resourceTicketBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
 
     private TenantCreateSpec spec;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          TenantServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new TenantServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      tenantBackend = new TenantDcpBackend(
-          dcpClient, taskBackend, deploymentBackend, resourceTicketBackend, tombstoneBackend);
-
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
       spec = new TenantCreateSpec();
       spec.setName("t1");
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
+      commonHostDocumentsCleanup();
+    }
 
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -298,58 +296,38 @@ public class TenantDcpBackendTest {
   /**
    * Tests for deleting tenant.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class DeleteTest extends BaseDaoTest {
-    private ApiFeDcpRestClient dcpClient;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class DeleteTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private TenantBackend tenantBackend;
-
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private DeploymentBackend deploymentBackend;
 
     @Mock
     private ResourceTicketBackend resourceTicketBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
 
     private TenantCreateSpec spec;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          TenantServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new TenantServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      tenantBackend = new TenantDcpBackend(
-          dcpClient, taskBackend, deploymentBackend, resourceTicketBackend, tombstoneBackend);
-
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
       spec = new TenantCreateSpec();
       spec.setName("t1");
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
+      commonHostDocumentsCleanup();
+    }
 
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -384,43 +362,23 @@ public class TenantDcpBackendTest {
   /**
    * Tests for updating the security groups.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class SecurityGroupsTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class SecurityGroupsTest {
 
     @Inject
-    private TaskBackend taskBackend;
-    @Inject
-    private DeploymentBackend deploymentBackend;
-    @Inject
-    private ResourceTicketBackend resourceTicketBackend;
-    @Inject
-    private TombstoneBackend tombstoneBackend;
+    private BasicServiceHost basicServiceHost;
 
-    private BasicServiceHost host;
-    private ApiFeDcpRestClient dcpClient;
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private TenantBackend tenantBackend;
+
     private String tenantId;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          TenantServiceFactory.SELF_LINK,
-          10,
-          10);
-
-      host.startServiceSynchronously(new TenantServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      tenantBackend = new TenantDcpBackend(
-          dcpClient, taskBackend, deploymentBackend, resourceTicketBackend, tombstoneBackend);
-
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
       TenantCreateSpec spec = new TenantCreateSpec();
       spec.setName("t1");
 
@@ -433,12 +391,12 @@ public class TenantDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
+      commonHostDocumentsCleanup();
+    }
 
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
