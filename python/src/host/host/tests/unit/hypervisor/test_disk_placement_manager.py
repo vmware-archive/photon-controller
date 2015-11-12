@@ -92,11 +92,14 @@ class TestDiskPlacementManager(unittest.TestCase):
     def test_optimal_place_engine(self, result, ratio, disk_sizes,
                                   use_image_ds):
         # Create optimal place engine
-        option = PlacementOption(1, 1, use_image_ds)
+        image_datastore = "datastore_id_1"
+        image_datastores = [{"name": image_datastore,
+                             "used_for_vms": use_image_ds}]
+        option = PlacementOption(1, 1, image_datastores)
         ds_map = {"datastore_id_1": DatastoreInfo(1 * 1024, 0),
                   "datastore_id_2": DatastoreInfo(2 * 1024, 0),
                   "datastore_id_3": DatastoreInfo(3 * 1024, 0)}
-        ds_mgr = self.create_datastore_manager(ds_map, "datastore_id_1")
+        ds_mgr = self.create_datastore_manager(ds_map, image_datastore)
 
         engine = OptimalPlaceEngine(ds_mgr, option)
         ds = engine.placeable_datastores()
@@ -135,11 +138,14 @@ class TestDiskPlacementManager(unittest.TestCase):
     def test_best_effort_place_engine(self, result, ratio, disk_sizes, places,
                                       use_image_ds):
         # Create best effort place engine
-        option = PlacementOption(1, 1, use_image_ds)
-        ds_map = {"ds1": DatastoreInfo(10, 0),
+        image_datastore = "ds1"
+        image_datastores = [{"name": image_datastore,
+                             "used_for_vms": use_image_ds}]
+        option = PlacementOption(1, 1, image_datastores)
+        ds_map = {image_datastore: DatastoreInfo(10, 0),
                   "ds2": DatastoreInfo(20, 0),
                   "ds3": DatastoreInfo(30, 0)}
-        ds_mgr = self.create_datastore_manager(ds_map, "ds1")
+        ds_mgr = self.create_datastore_manager(ds_map, image_datastore)
         engine = BestEffortPlaceEngine(ds_mgr, option)
         ds = engine.placeable_datastores()
         selector = DatastoreSelector.init_datastore_selector(ds_mgr, ds)
@@ -165,11 +171,14 @@ class TestDiskPlacementManager(unittest.TestCase):
 
     def test_constraint_place_engine(self):
         # Create constraint place engine
-        option = PlacementOption(1, 1, True)
-        ds_map = {"ds1": DatastoreInfo(10, 0),
+        image_datastore = "ds1"
+        image_datastores = [{"name": image_datastore,
+                             "used_for_vms": True}]
+        option = PlacementOption(1, 1, image_datastores)
+        ds_map = {image_datastore: DatastoreInfo(10, 0),
                   "ds2": DatastoreInfo(20, 0),
                   "ds3": DatastoreInfo(30, 0)}
-        ds_mgr = self.create_datastore_manager(ds_map, "ds1")
+        ds_mgr = self.create_datastore_manager(ds_map, image_datastore)
         engine = ConstraintDiskPlaceEngine(ds_mgr, option)
         ds = engine.placeable_datastores()
         selector = DatastoreSelector.init_datastore_selector(ds_mgr, ds)
@@ -209,9 +218,12 @@ class TestDiskPlacementManager(unittest.TestCase):
 
     def test_constraint_place_engine_cannot_fit(self):
         # Create constraint place engine
-        option = PlacementOption(1, 1, True)
-        ds_map = {"ds1": DatastoreInfo(5, 0)}
-        ds_mgr = self.create_datastore_manager(ds_map, "ds1")
+        image_datastore = "ds1"
+        image_datastores = [{"name": image_datastore,
+                             "used_for_vms": True}]
+        option = PlacementOption(1, 1, image_datastores)
+        ds_map = {image_datastore: DatastoreInfo(5, 0)}
+        ds_mgr = self.create_datastore_manager(ds_map, image_datastore)
         engine = ConstraintDiskPlaceEngine(ds_mgr, option)
         ds = engine.placeable_datastores()
         selector = DatastoreSelector.init_datastore_selector(ds_mgr, ds)
@@ -229,9 +241,12 @@ class TestDiskPlacementManager(unittest.TestCase):
 
     def test_constraint_place_engine_constraint_violated(self):
         # Create constraint place engine
-        option = PlacementOption(1, 1, True)
-        ds_map = {"ds1": DatastoreInfo(5, 0)}
-        ds_mgr = self.create_datastore_manager(ds_map, "ds1")
+        image_datastore = "ds1"
+        image_datastores = [{"name": image_datastore,
+                             "used_for_vms": True}]
+        option = PlacementOption(1, 1, image_datastores)
+        ds_map = {image_datastore: DatastoreInfo(5, 0)}
+        ds_mgr = self.create_datastore_manager(ds_map, image_datastores)
         engine = ConstraintDiskPlaceEngine(ds_mgr, option)
         ds = engine.placeable_datastores()
         selector = DatastoreSelector.init_datastore_selector(ds_mgr, ds)
