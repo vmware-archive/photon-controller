@@ -4,8 +4,8 @@
 unset PYTHONPATH
 
 ESX_VERSION=${ESX_VERSION:-5.5.0}
-TOPLEVEL=$(git rev-parse --show-toplevel)
-REVISION=$(git rev-parse HEAD)
+TOPLEVEL=${GIT_ROOT:-$(git rev-parse --show-toplevel)}
+REVISION=${GIT_REVISION:-$(git rev-parse HEAD)}
 
 DIRTY=""
 set +x

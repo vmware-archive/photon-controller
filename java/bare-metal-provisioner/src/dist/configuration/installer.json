@@ -1,0 +1,7 @@
+{
+  "BARE-METAL-PROVISIONER_XENON_STORAGE_PATH": "/etc/esxcloud/bare-metal-provisioner/sandbox_21000",
+  "LOG_DIRECTORY": "/var/log/esxcloud",
+  "BARE-METAL-PROVISIONER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/bare-metal-provisioner",
+  "VM_IP": "127.0.0.1",
+  "ZOOKEEPER_QUORUM": "127.0.0.1:2181"
+}

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 tools=$(readlink -nf $(dirname $0))
 source $tools/common.sh
