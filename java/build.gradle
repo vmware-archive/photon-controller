@@ -40,6 +40,10 @@ subprojects {
     repositories {
       mavenLocal()
       mavenCentral()
+      jcenter()
+    }
+    dependencies {
+      classpath 'com.bmuschko:gradle-docker-plugin:2.6.1'
     }
   }
 
