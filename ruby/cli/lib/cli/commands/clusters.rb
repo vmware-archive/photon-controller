@@ -257,7 +257,7 @@ module EsxCloud::Cli
       def list_vms(args = [])
         id = shift_keyword_arg(args)
         if id.blank?
-          usage_error("Please provide deployment id")
+          usage_error("Please provide cluster id")
         end
         initialize_client
 
