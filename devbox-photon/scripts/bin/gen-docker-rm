@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Similar to gen-docker-start, but generates a "docker rm" command
+infile=$1
+
+containerName=$(jq -r '.containerName | @sh' "$infile")
+# Strip single quotes that come from jq output
+containerName=${containerName//"'"/}
+
+cmd="docker rm -f $containerName"
+
+echo -e "$cmd"
