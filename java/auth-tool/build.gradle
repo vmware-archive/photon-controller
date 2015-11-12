@@ -2,12 +2,12 @@ apply plugin: 'application'
 
 mainClassName = 'com.vmware.photon.controller.auth.Main'
 
-task copyJar(type: Copy) {
-  from "$buildDir/libs"
-  into '../../ruby/cli/assets'
+assemble.doLast {
+  copy {
+    from "${jar.archivePath}"
+    into "${gitRoot}/ruby/cli/assets/"
+  }
 }
-
-assemble.dependsOn copyJar
 
 dependencies {
   compile project(':common-auth')
