@@ -350,13 +350,20 @@ class EsxVmConfig(object):
         :param controller_key
         :type: int device key
         """
-        if with_vm:
-            vm_folder = cfg_spec.files.vmPathName
-            vmdk_file = os.path.join(vm_folder, cfg_spec.name,
-                                     "%s.vmdk" % disk_id)
+        if disk_id:
+            if with_vm:
+                vm_folder = cfg_spec.files.vmPathName
+                vmdk_file = os.path.join(vm_folder, cfg_spec.name,
+                                         "%s.vmdk" % disk_id)
+            else:
+                vmdk_file = vmdk_path(datastore, disk_id,
+                                      folder=disk_root_folder)
         else:
-            vmdk_file = vmdk_path(datastore, disk_id,
-                                  folder=disk_root_folder)
+            # For a vm config spec used during VM mporting, the vmdk
+            # backing file path is just a placeholder for a disk that is
+            # destined for a folder in datastore specified. Hence, while
+            # it has to be set, it can be left empty.
+            vmdk_file = ""
 
         backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(
             fileName=vmdk_file,
@@ -742,6 +749,19 @@ class EsxVmConfig(object):
         guest = filled_metadata.get('guestOS', 'otherGuest')
         spec = EsxVmConfigSpec(vm_id, guest, memory, cpus, vm_path,
                                filled_metadata)
+        return spec
+
+    def create_spec_for_import(self, vm_id, image_id, datastore, memory, cpus):
+        """ create a vm config spec for import a VM
+
+        The VM will be created in a random directory under the destination host
+        datastore's tmp image folder, with the VM named the same as that of the
+        id of the image disk we we planning to send over via this import.
+        """
+        vm_path = datastore_path(datastore,
+                                 os.path.join(TMP_IMAGE_FOLDER_NAME, vm_id))
+        spec = EsxVmConfigSpec(image_id, "otherGuest", memory, cpus, vm_path,
+                               None)
         return spec
 
     def update_spec(self):
