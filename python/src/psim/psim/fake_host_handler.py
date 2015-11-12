@@ -83,9 +83,18 @@ class Host(HostHandler):
         since the fake classes are shared by the integration tests.
         TODO: Cleanup
         """
-        hv = hypervisor.Hypervisor("fake", None, datastores, networks,
-                                   datastores[0], None, 10, overcommit['mem'],
-                                   overcommit['cpu'], True)
+        config_dir = mkdtemp(delete=True)
+        config = AgentConfig("localhost", [
+                             "--config-path", config_dir,
+                             "--hypervisor", "fake",
+                             "--datastores",  datastores,
+                             "--image-datastore", datastores[0],
+                             "--vm-network", networks,
+                             "--memory-overcommit", overcommit["mem"],
+                             "--cpu-overcommit", overcommit["cpu"],
+                             "--image-datastore-for-vms",
+                             ])
+        hv = hypervisor.Hypervisor(config)
         hv.hypervisor._uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS,
                                              str(id)))
         hv.hypervisor.disk_manager.capacity_map = self._get_capacity_map()

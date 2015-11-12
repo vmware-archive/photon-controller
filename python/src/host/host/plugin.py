@@ -26,17 +26,7 @@ except Exception as e:
     raise ImportError(e)
 
 # Create the hypervisor object
-hv = hypervisor.Hypervisor(config.hypervisor,
-                           config.availability_zone,
-                           config.datastores,
-                           config.networks,
-                           config.image_datastore,
-                           config.host_port,
-                           config.wait_timeout,
-                           config.memory_overcommit,
-                           config.cpu_overcommit,
-                           config.image_datastore_for_vms,
-                           config.multi_agent_id)
+hv = hypervisor.Hypervisor(config)
 
 # When datastore/network changes on the host, let chairman know
 hv.add_update_listener(registrant)
