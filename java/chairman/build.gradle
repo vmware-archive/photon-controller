@@ -1,6 +1,9 @@
 apply plugin: 'application'
 apply plugin: 'thrift'
 
+import java.nio.file.Files
+import java.util.regex.Pattern
+
 mainClassName = 'com.vmware.photon.controller.chairman.Main'
 
 dependencies {
