@@ -24,6 +24,7 @@ tags
 
 
 .ruby
+*.gem
 
 tmp/
 ruby/common/test_files/deployment/dcmap.yml
