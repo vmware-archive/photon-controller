@@ -19,10 +19,9 @@ import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.steps.ImageUploadStepCmd;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.ImageSettingsEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -34,12 +33,13 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpClient;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import org.junit.AfterClass;
 import org.mockito.Mock;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -53,18 +53,57 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 
 
 /**
  * Test {@link ImageBackend}.
  */
 public class ImageDcpBackendTest {
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
+
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
 
   private static ImageEntity prepareImageUpload(ImageBackend imageBackend, InputStream inputStream,
                                                 String imageFileName, String imageName,
@@ -130,45 +169,31 @@ public class ImageDcpBackendTest {
    * Tests {@link ImageDcpBackend#deriveImage(ImageCreateSpec,
    * ImageEntity)}.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class DeriveImageUploadTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class DeriveImageUploadTest {
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private ImageBackend imageBackend;
-    private ApiFeDcpRestClient dcpClient;
-    private BasicServiceHost host;
-    @Inject
-    private TaskBackend taskBackend;
-    @Inject
-    private EntityLockBackend entityLockBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          ImageServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new ImageServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      imageBackend = new ImageDcpBackend(dcpClient, null, taskBackend, entityLockBackend, null);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -198,48 +223,36 @@ public class ImageDcpBackendTest {
   /**
    * Tests for creating a image.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class PrepareImageUploadTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class PrepareImageUploadTest {
 
     private static String imageName;
-    private ImageBackend imageBackend;
-    private ApiFeDcpRestClient dcpClient;
-    private BasicServiceHost host;
-    @Inject
-    private TaskBackend taskBackend;
-    @Inject
-    private EntityLockBackend entityLockBackend;
+
     @Mock
     private InputStream inputStream;
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private ImageBackend imageBackend;
+
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          ImageServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new ImageServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      imageBackend = new ImageDcpBackend(dcpClient, null, taskBackend, entityLockBackend, null);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -281,7 +294,6 @@ public class ImageDcpBackendTest {
       String testImage = UUID.randomUUID().toString();
       imageBackend.prepareImageUpload(inputStream, testImage, ImageReplicationType.ON_DEMAND);
       imageBackend.prepareImageUpload(inputStream, testImage, ImageReplicationType.ON_DEMAND);
-      flushSession();
 
       assertThat(imageBackend.getAll().size(), is(currentCountOfImages + 2));
     }
@@ -290,52 +302,36 @@ public class ImageDcpBackendTest {
   /**
    * Tests for deleting an image.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class ImageDeleteTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class ImageDeleteTest {
 
     private static String imageName;
-    private ImageBackend imageBackend;
-    private ApiFeDcpRestClient dcpClient;
-    private BasicServiceHost host;
-    @Inject
-    private TaskBackend taskBackend;
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-    @Inject
-    private EntityLockBackend entityLockBackend;
-    @Mock
-    private VmBackend vmBackend;
+
     @Mock
     private InputStream inputStream;
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private ImageBackend imageBackend;
+
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          ImageServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new ImageServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      imageBackend = new ImageDcpBackend(dcpClient, vmBackend, taskBackend, entityLockBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -380,52 +376,36 @@ public class ImageDcpBackendTest {
   /**
    * Tests for updating an Image.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class ImageUpdateTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class ImageUpdateTest {
 
     private static String imageName;
-    private ImageBackend imageBackend;
-    private ApiFeDcpRestClient dcpClient;
-    private BasicServiceHost host;
-    @Inject
-    private TaskBackend taskBackend;
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-    @Inject
-    private EntityLockBackend entityLockBackend;
-    @Inject
-    private VmBackend vmBackend;
+
     @Mock
     private InputStream inputStream;
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private ImageBackend imageBackend;
+
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          ImageServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new ImageServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      imageBackend = new ImageDcpBackend(dcpClient, vmBackend, taskBackend, entityLockBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -476,52 +456,36 @@ public class ImageDcpBackendTest {
   /**
    * Tests for getting tasks related to an Image.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class ImageTasksTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class ImageTasksTest {
 
     private static String imageName;
-    private ImageBackend imageBackend;
-    private ApiFeDcpRestClient dcpClient;
-    private BasicServiceHost host;
-    @Inject
-    private TaskBackend taskBackend;
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-    @Inject
-    private EntityLockBackend entityLockBackend;
-    @Inject
-    private VmBackend vmBackend;
+
     @Mock
     private InputStream inputStream;
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private ImageBackend imageBackend;
+
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          ImageServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new ImageServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      imageBackend = new ImageDcpBackend(dcpClient, vmBackend, taskBackend, entityLockBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
