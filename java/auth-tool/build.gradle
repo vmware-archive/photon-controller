@@ -3,8 +3,9 @@ apply plugin: 'application'
 mainClassName = 'com.vmware.photon.controller.auth.Main'
 
 task copyJar(type: Copy) {
-  from "$buildDir/libs"
-  into '../../ruby/cli/assets'
+  dependsOn jar
+  from "${jar.archivePath}"
+  into "${gitRoot}/ruby/cli/assets/"
 }
 
 assemble.dependsOn copyJar

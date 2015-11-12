@@ -1,6 +1,1 @@
-{
-  "ZOOKEEPER_DATA_DIRECTORY": "/var/esxcloud/data/zookeeper",
-  "ZOOKEEPER_STANDALONE" : true,
-  "ZOOKEEPER_MYID": "1",
-  "PAUSE_APIFE_BACKGROUND": "1"
-}
+../../../../containers/zookeeper/config/installer.json
