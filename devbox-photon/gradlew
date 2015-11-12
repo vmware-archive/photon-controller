@@ -1,0 +1,3 @@
+#!/bin/bash -e
+# Gradle wrapper wrapper
+(cd ../java && ./gradlew "$@")
