@@ -1,0 +1,10 @@
+#!/bin/bash -xe
+# Run all start service scripts
+start-zookeeper
+start-haproxy
+start-cloud-store
+start-root-scheduler
+start-housekeeper
+start-deployer
+start-management-api
+check-services
