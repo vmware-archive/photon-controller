@@ -38,6 +38,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
@@ -301,10 +302,13 @@ public class EntityLockCleanerServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "Success")
-    public void testSuccess(int totalEntityLocks, int unreleasedEntityLocks, int hostCount) throws Throwable {
+    public void testSuccess(int totalEntityLocks, int unreleasedEntityLocks, int hostCount)
+        throws Throwable {
       machine = TestEnvironment.create(hostCount);
       seedTestEnvironment(machine, totalEntityLocks, unreleasedEntityLocks);
 
+      // All entity locks being created should be found when entityLockDeleteWatermarkTime is 0
+      request.entityLockDeleteWatermarkTime = 0;
       EntityLockCleanerService.State response = machine.callServiceAndWaitForState(
           EntityLockCleanerFactoryService.SELF_LINK,
           request,
@@ -313,8 +317,21 @@ public class EntityLockCleanerServiceTest {
 
       assertThat(response.unreleasedEntityLocks,
           is(Integer.min(unreleasedEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
+
       assertThat(response.deletedEntityLocks,
           is(Integer.min(unreleasedEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
+
+
+      // No entity locks should be deleted when entityLockDeleteWatermarkTime is MAX_VALUE
+      request.entityLockDeleteWatermarkTime = Integer.MAX_VALUE;
+      response = machine.callServiceAndWaitForState(
+          EntityLockCleanerFactoryService.SELF_LINK,
+          request,
+          EntityLockCleanerService.State.class,
+          (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
+
+      assertThat(response.unreleasedEntityLocks, is(0));
+      assertThat(response.deletedEntityLocks, is(0));
       freeTestEnvironment(machine);
     }
 
