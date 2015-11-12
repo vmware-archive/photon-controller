@@ -301,10 +301,13 @@ public class EntityLockCleanerServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "Success")
-    public void testSuccess(int totalEntityLocks, int unreleasedEntityLocks, int hostCount) throws Throwable {
+    public void testSuccess(int totalEntityLocks, int unreleasedEntityLocks, int hostCount)
+        throws Throwable {
       machine = TestEnvironment.create(hostCount);
       seedTestEnvironment(machine, totalEntityLocks, unreleasedEntityLocks);
 
+      // All entity locks being created should be found when entityLockDeleteWatermarkTimeInMicros is 0
+      request.entityLockDeleteWatermarkTimeInMicros = 0L;
       EntityLockCleanerService.State response = machine.callServiceAndWaitForState(
           EntityLockCleanerFactoryService.SELF_LINK,
           request,
@@ -313,8 +316,21 @@ public class EntityLockCleanerServiceTest {
 
       assertThat(response.unreleasedEntityLocks,
           is(Integer.min(unreleasedEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
+
       assertThat(response.deletedEntityLocks,
           is(Integer.min(unreleasedEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
+
+
+      // No entity locks should be deleted when entityLockDeleteWatermarkTimeInMicros is MAX_VALUE
+      request.entityLockDeleteWatermarkTimeInMicros = Long.MAX_VALUE;
+      response = machine.callServiceAndWaitForState(
+          EntityLockCleanerFactoryService.SELF_LINK,
+          request,
+          EntityLockCleanerService.State.class,
+          (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
+
+      assertThat(response.unreleasedEntityLocks, is(0));
+      assertThat(response.deletedEntityLocks, is(0));
       freeTestEnvironment(machine);
     }
 
