@@ -336,7 +336,8 @@ class EsxVmConfig(object):
         self._logger = logging.getLogger(__name__)
 
     def _add_disk(self, cfg_spec, datastore, disk_id, controller_key,
-                  size_mb=None, parent_id=None, create=False, with_vm=False):
+                  size_mb=None, parent_id=None, create=False, with_vm=False,
+                  disk_root_folder=DISK_FOLDER_NAME):
         """Create a spec for adding a virtual disk.
 
         If with_vm is true, the disk is created in the vm folder, otherwise,
@@ -354,11 +355,13 @@ class EsxVmConfig(object):
             vmdk_file = os.path.join(vm_folder, cfg_spec.name,
                                      "%s.vmdk" % disk_id)
         else:
-            vmdk_file = vmdk_path(datastore, disk_id)
+            vmdk_file = vmdk_path(datastore, disk_id,
+                                  folder=disk_root_folder)
 
         backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(
             fileName=vmdk_file,
-            diskMode=vim.vm.device.VirtualDiskOption.DiskMode.persistent
+            diskMode=vim.vm.device.VirtualDiskOption.DiskMode.persistent,
+            thinProvisioned=True
         )
 
         if parent_id:
@@ -380,8 +383,9 @@ class EsxVmConfig(object):
             if not parent_id:
                 # for any non-child disk we create, update its
                 # vmdk uuid to match the disk's id
-                # (child disk picks up it's uuid from its parent).
-                disk.backing.uuid = uuid_to_vmdk_uuid(disk_id)
+                # (child disk picks up its uuid from its parent).
+                if disk_id:
+                    disk.backing.uuid = uuid_to_vmdk_uuid(disk_id)
             self.create_device(cfg_spec, disk)
         else:
             self.add_device(cfg_spec, disk)
@@ -403,12 +407,14 @@ class EsxVmConfig(object):
             controller_type = scsi_virtual_dev_to_vim_adapter_map.get(
                 cfg_spec._metadata[device_key], controller_type)
 
+        bus_number = GetFreeBusNumber(self._cfg_opts,
+                                      vim.vm.device.VirtualSCSIController,
+                                      cfg_info, cfg_spec)
+
         controller = controller_type(
             key=GetFreeKey(cfg_spec),
             sharedBus=vim.vm.device.VirtualSCSIController.Sharing.noSharing,
-            busNumber=GetFreeBusNumber(self._cfg_opts,
-                                       vim.vm.device.VirtualSCSIController,
-                                       cfg_info, cfg_spec),
+            busNumber=bus_number,
             unitNumber=-1)
         self.add_device(cfg_spec, controller)
         return controller
@@ -447,7 +453,8 @@ class EsxVmConfig(object):
             controller = self._add_scsi_controller(cfg_spec, cfg_info)
         return controller
 
-    def add_scsi_disk(self, cfg_info, cfg_spec, datastore, disk_id):
+    def add_scsi_disk(self, cfg_info, cfg_spec, datastore, disk_id,
+                      disk_is_image=False):
         """Add a scsi disk spec to the config spec given the current vm
            info. The method adds a scsi controller if there is one that
            is not already present.
@@ -461,8 +468,12 @@ class EsxVmConfig(object):
         :param disk_id: vmdk id
         :type disk_id: str
         """
-        controller = self._find_or_add_scsi_controller(cfg_spec, cfg_info)
-        self._add_disk(cfg_spec, datastore, disk_id, controller.key)
+        controller = self._find_or_add_scsi_controller(
+            cfg_spec, cfg_info)
+        folder = IMAGE_FOLDER_NAME if disk_is_image else DISK_FOLDER_NAME
+
+        self._add_disk(cfg_spec, datastore, disk_id, controller.key,
+                       disk_root_folder=folder)
 
     def create_empty_disk(self, cfg_spec, datastore, disk_id, size_mb):
         """Add a create empty scsi disk spec to the config spec. The method
@@ -627,6 +638,17 @@ class EsxVmConfig(object):
                 dev.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo):
             raise TypeError("device is not ISO-backed")
         self.remove_device(spec, dev)
+
+    def remove_all_disks(self, spec, cfg_info):
+        """Updates the config spec to remove all virtual disks from a VM.
+        :param spec: vim.vm.ConfigSpec object to append the disk device change
+        :param cfg_info: The VM's ConfigInfo object
+        :rtype: the updated config spec
+        """
+        devices = self.get_devices_from_config(cfg_info)
+        disk_devs = self.find_devices(devices, vim.vm.device.VirtualDisk)
+        for dev in disk_devs:
+            self.remove_device(spec, dev)
 
     def customize_serial_ports(self, spec):
         """Add virtual serial ports to this create spec if necessary.
