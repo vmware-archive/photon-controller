@@ -1,4 +1,10 @@
 apply plugin: 'application'
+apply plugin: 'com.bmuschko.docker-remote-api'
+
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
 
 mainClassName = 'com.vmware.photon.controller.cloudstore.Main'
 
@@ -53,4 +59,30 @@ test {
   useTestNG() {
     excludeGroups 'flaky'
   }
+}
+
+distTar << extractRelease(this, 'cloud-store')
+
+task dockerfile(type: Dockerfile) {
+  dependsOn distTar
+  destFile = file('build/container/Dockerfile')
+  from 'photon/servicebase'
+  copyFile('release/', '/usr/lib/esxcloud/cloud-store/')
+}
+
+task container(type: DockerBuildImage) {
+  dependsOn dockerfile, ':containers:servicebase'
+  inputDir = dockerfile.destFile.parentFile
+  tag = 'photon/cloud-store'
+}
+
+task removeContainer(type: DockerRemoveImage) {
+  targetImageId { container.tag }
+}
+
+task start(type: VagrantSsh) {
+  mustRunAfter container
+  description = "Start ${project.name} inside devbox"
+  boxDir = devboxDir
+  sshCommand = "start-${project.name} 2>&1 | tee -a start-${project.name}.log"
 }
