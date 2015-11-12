@@ -79,11 +79,10 @@ class PlacementOption(object):
     """The options for placement manager
     """
 
-    def __init__(self, memory_overcommit, cpu_overcommit,
-                 image_datastore_for_vms=False):
+    def __init__(self, memory_overcommit, cpu_overcommit, image_datastores):
         self.memory_overcommit = memory_overcommit
         self.cpu_overcommit = cpu_overcommit
-        self.image_datastore_for_vms = image_datastore_for_vms
+        self.image_datastores = image_datastores
 
 
 class PlacementManager(object):
@@ -548,10 +547,12 @@ class PlacementManager(object):
         return score
 
     def _placeable_datastores(self):
-        if self._option.image_datastore_for_vms:
-            return self._datastore_manager.get_datastore_ids()
-        else:
-            return self._datastore_manager.vm_datastores()
+        datastores = self._datastore_manager.vm_datastores()
+        for image_ds in self._option.image_datastores:
+            if image_ds["used_for_vms"]:
+                dsid = self._datastore_manager.normalize(image_ds["name"])
+                datastores.append(dsid)
+        return datastores
 
     def _optimal_datastore(self):
         free = 0
