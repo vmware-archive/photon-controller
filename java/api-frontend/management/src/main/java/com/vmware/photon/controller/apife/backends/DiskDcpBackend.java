@@ -26,6 +26,7 @@ import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
@@ -38,6 +39,7 @@ import com.vmware.photon.controller.apife.entities.LocalityEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
+import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
@@ -209,9 +211,21 @@ public class DiskDcpBackend implements DiskBackend {
   private TaskEntity createTask(String kind, String diskId) throws ExternalException {
     BaseDiskEntity diskEntity = find(kind, diskId);
 
-    TaskEntity task = taskBackend.createQueuedTask(diskEntity, Operation.CREATE_DISK);
-    taskBackend.getStepBackend().createQueuedStep(task, diskEntity, Operation.RESERVE_RESOURCE);
-    taskBackend.getStepBackend().createQueuedStep(task, diskEntity, Operation.CREATE_DISK);
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
+    entityList.add(diskEntity);
+
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.RESERVE_RESOURCE);
+
+    step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.CREATE_DISK);
+
+    TaskEntity task = taskBackend.createTaskWithSteps(diskEntity, Operation.CREATE_DISK, false, stepEntities);
 
     task.getLockableEntityIds().add(diskEntity.getId());
     return task;
@@ -362,8 +376,17 @@ public class DiskDcpBackend implements DiskBackend {
     if (validate) {
       DiskStateChecks.checkOperationState(disk, Operation.DELETE_DISK);
     }
-    TaskEntity task = taskBackend.createQueuedTask(disk, Operation.DELETE_DISK);
-    taskBackend.getStepBackend().createQueuedStep(task, disk, Operation.DELETE_DISK);
+
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
+    entityList.add(disk);
+
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.DELETE_DISK);
+
+    TaskEntity task = taskBackend.createTaskWithSteps(disk, Operation.DELETE_DISK, false, stepEntities);
     task.getLockableEntityIds().add(disk.getId());
     return task;
   }
