@@ -58,10 +58,10 @@ class Host(HostHandler):
                                                 overcommit)
 
         # need agent_config for create/delete vm.
-        agent_config = AgentConfig("localhost", ["--config-path", conf_dir,
-                                                 "--hostname", "localhost",
-                                                 "--port", "1234",
-                                                 "--host-id", id])
+        agent_config = AgentConfig(["--config-path", conf_dir,
+                                    "--hostname", "localhost",
+                                    "--port", "1234",
+                                    "--host-id", id])
         common.services.register(ServiceName.AGENT_CONFIG, agent_config)
         super(Host, self).__init__(self.hv)
 
@@ -84,16 +84,15 @@ class Host(HostHandler):
         TODO: Cleanup
         """
         config_dir = mkdtemp(delete=True)
-        config = AgentConfig("localhost", [
-                             "--config-path", config_dir,
-                             "--hypervisor", "fake",
-                             "--datastores",  datastores,
-                             "--image-datastore", datastores[0],
-                             "--vm-network", networks,
-                             "--memory-overcommit", overcommit["mem"],
-                             "--cpu-overcommit", overcommit["cpu"],
-                             "--image-datastore-for-vms",
-                             ])
+        config = AgentConfig(["--config-path", config_dir,
+                              "--hypervisor", "fake",
+                              "--datastores",  datastores,
+                              "--image-datastore", datastores[0],
+                              "--vm-network", networks,
+                              "--memory-overcommit", overcommit["mem"],
+                              "--cpu-overcommit", overcommit["cpu"],
+                              "--image-datastore-for-vms",
+                              ])
         hv = hypervisor.Hypervisor(config)
         hv.hypervisor._uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS,
                                              str(id)))
