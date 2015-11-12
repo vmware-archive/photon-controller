@@ -20,7 +20,7 @@
   </system-requires>
   <file-list>
   </file-list>
-  <acceptance-level>community</acceptance-level>
+  <acceptance-level>certified</acceptance-level>
   <live-install-allowed>true</live-install-allowed>
   <live-remove-allowed>true</live-remove-allowed>
   <cimom-restart>false</cimom-restart>
