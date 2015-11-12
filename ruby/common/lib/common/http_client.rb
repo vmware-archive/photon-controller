@@ -37,13 +37,13 @@ module EsxCloud
 
       @conn = Faraday.new(:url => @endpoint, :proxy => proxy, :ssl => ssl_options) do |faraday|
         faraday.request(:url_encoded)
-        faraday.adapter(:net_http)
+        faraday.adapter(Faraday.default_adapter)
       end
 
       @up_conn = Faraday.new(:url => @endpoint, :proxy => proxy, :ssl => ssl_options) do |faraday|
-        faraday.request(:multipart)
         faraday.request(:url_encoded)
-        faraday.adapter(:net_http)
+        faraday.request(:multipart)
+        faraday.adapter(Faraday.default_adapter)
       end
 
       @access_token = access_token
@@ -151,7 +151,6 @@ module EsxCloud
         end
       end
 
-      Config.logger.debug response.inspect
       Config.logger.debug("Response: #{response.status} #{response.body}")
       HttpResponse.new(response.status, response.body, response.headers)
     end
