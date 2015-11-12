@@ -1,4 +1,5 @@
 apply plugin: 'idea'
+apply from: 'buildSrc/src/main/groovy/com/vmware/photon/controller/gradle/utils.gradle'
 
 ext {
   versions = [
@@ -31,6 +32,13 @@ buildscript {
   repositories {
     mavenLocal()
     mavenCentral()
+    jcenter()
+    maven { url 'http://dl.bintray.com/vermeulen-mp/gradle-plugins' }
+  }
+  dependencies {
+    classpath 'com.bmuschko:gradle-docker-plugin:2.6.5'
+    classpath 'com.wiredforcode:gradle-spawn-plugin:0.6.0'
+    classpath 'com.bmuschko:gradle-vagrant-plugin:2.0'
   }
 }
 
@@ -38,6 +46,8 @@ subprojects {
   apply plugin: 'checkstyle'
   apply plugin: 'idea'
   apply plugin: 'java'
+  apply plugin: 'com.bmuschko.docker-remote-api'
+  apply plugin: 'com.bmuschko.vagrant-base'
 
   def requiredJavaVersion = JavaVersion.VERSION_1_8;
   sourceCompatibility = requiredJavaVersion
@@ -48,7 +58,15 @@ subprojects {
     repositories {
       mavenLocal()
       mavenCentral()
+      jcenter()
     }
+    dependencies {
+      classpath 'com.bmuschko:gradle-docker-plugin:2.6.1'
+    }
+  }
+
+  docker {
+    url = dockerUrl()
   }
 
   repositories {
@@ -87,9 +105,10 @@ subprojects {
 
   task checkJavaVersion << {
     def installedJavaVersion = JavaVersion.current();
-    if (installedJavaVersion != requiredJavaVersion)
-      throw new IllegalStateException("Unsupported Java version; required is " + requiredJavaVersion
-          + ", but found " + installedJavaVersion);
+    if (installedJavaVersion != requiredJavaVersion) {
+      throw new IllegalStateException(
+          "Unsupported Java version; required is $requiredJavaVersion, but found $installedJavaVersion");
+    }
   }
 
   compileJava.dependsOn(checkJavaVersion);
@@ -97,7 +116,6 @@ subprojects {
   test {
     useTestNG()
     testLogging.events "failed", "passed"
-//    jvmArgs '-XX:-UseSplitVerifier'
     jvmArgs '-noverify'
   }
 }
@@ -114,3 +132,7 @@ idea {
     languageLevel = '1.8'
   }
 }
+
+ext.gitRoot = "git rev-parse --show-toplevel".execute().text.trim()
+ext.devboxDir = file("${gitRoot}/devbox-photon")
+
