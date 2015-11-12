@@ -16,6 +16,8 @@ from mock import MagicMock
 from mock import PropertyMock
 from mock import patch
 
+from agent.agent_config import AgentConfig
+from common.file_util import mkdtemp
 from host.tests.unit.services_helper import ServicesHelper
 from host.hypervisor.hypervisor import UpdateListener
 from host.hypervisor.esx.hypervisor import EsxHypervisor
@@ -28,6 +30,9 @@ class TestUnitEsxHypervisor(unittest.TestCase):
     def setUp(self):
         self.services_helper = ServicesHelper()
         self.hv = None
+        self.agent_config_dir = mkdtemp(delete=True)
+        self.agent_config = AgentConfig("localhost", ["--config-path",
+                                        self.agent_config_dir])
 
     def tearDown(self):
         if self.hv:
@@ -76,12 +81,12 @@ class TestUnitEsxHypervisor(unittest.TestCase):
         # EsxHypervisor and verify that no keep alive thread is started
         creds_mock.side_effect = AcquireCredentialsException()
         self.assertRaises(AcquireCredentialsException,
-                          EsxHypervisor, "availability_zone", [], [], None)
+                          EsxHypervisor, self.agent_config)
         assert_that(update_mock.called, is_(False))
 
         creds_mock.side_effect = None
 
-        self.hv = EsxHypervisor("availability_zone", [], [], None)
+        self.hv = EsxHypervisor(self.agent_config)
 
         assert_that(update_mock.called, is_(True))
 
@@ -127,7 +132,7 @@ class TestUnitEsxHypervisor(unittest.TestCase):
 
         # Add listeners to the hypervisor and verify that the listeners get
         # notified immediately.
-        self.hv = EsxHypervisor("availability_zone", [], [], None)
+        self.hv = EsxHypervisor(self.agent_config)
         for listener in listeners:
             self.hv.add_update_listener(listener)
             assert_that(listener.nw_updated, is_(True))
