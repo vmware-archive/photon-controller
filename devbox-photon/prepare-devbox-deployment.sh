@@ -43,17 +43,17 @@ fi
 
 export NO_RESTART_ALWAYS=1
 
-vagrant destroy -f
+cd ../java && ./gradlew :devbox:destroy :devbox:buildAll :devbox:startAll
 
 vagrant up
 
-vagrant ssh -c "docker tag devbox/zookeeper esxcloud/zookeeper"
-vagrant ssh -c "docker tag devbox/haproxy esxcloud/haproxy"
-vagrant ssh -c "docker tag devbox/deployer esxcloud/deployer"
-vagrant ssh -c "docker tag devbox/cloud_store esxcloud/cloud-store"
-vagrant ssh -c "docker tag devbox/management_api esxcloud/management-api"
-vagrant ssh -c "docker tag devbox/root_scheduler esxcloud/root-scheduler"
-vagrant ssh -c "docker tag devbox/housekeeper esxcloud/housekeeper"
+vagrant ssh -c "docker tag photon/zookeeper esxcloud/zookeeper"
+vagrant ssh -c "docker tag photon/haproxy esxcloud/haproxy"
+vagrant ssh -c "docker tag photon/deployer esxcloud/deployer"
+vagrant ssh -c "docker tag photon/cloud-store esxcloud/cloud-store"
+vagrant ssh -c "docker tag photon/management-api esxcloud/management-api"
+vagrant ssh -c "docker tag photon/root-scheduler esxcloud/root-scheduler"
+vagrant ssh -c "docker tag photon/housekeeper esxcloud/housekeeper"
 
 mgmt_ui_container_url="https://ci.ec.eng.vmware.com/view/UI/job/ec-ui-mgmt-publish-docker-image-develop/lastSuccessfulBuild/artifact/ci/docker-image/esxcloud-management-ui.tar"
 container_tar=$(basename "$mgmt_ui_container_url")
@@ -64,9 +64,9 @@ vagrant ssh -c "rm -f \"$container_tar\""
 #
 # Copy the config files and scripts
 #
-vagrant ssh -c "sudo docker cp devbox_deployer_container:/etc/esxcloud-deployer/ /etc/"
+vagrant ssh -c "sudo docker cp deployer:/etc/esxcloud-deployer/ /etc/"
 vagrant ssh -c "sudo mkdir -p /usr/lib/esxcloud/deployer/"
-vagrant ssh -c "sudo docker cp devbox_deployer_container:/usr/lib/esxcloud/deployer/scripts/ /usr/lib/esxcloud/deployer/"
+vagrant ssh -c "sudo docker cp deployer:/usr/lib/esxcloud/deployer/scripts/ /usr/lib/esxcloud/deployer/"
 vagrant ssh -c "sudo chmod +x /usr/lib/esxcloud/deployer/scripts/"
 
 photon_vm=$(VBoxManage list runningvms | grep devbox-photon_photon | sed 's/"\(.*\)".*/\1/')
