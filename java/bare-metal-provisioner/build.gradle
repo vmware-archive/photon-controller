@@ -1,5 +1,10 @@
 apply plugin: 'application'
 
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
+
 mainClassName = 'com.vmware.photon.controller.provisioner.Main'
 
 dependencies {
@@ -47,23 +52,14 @@ tasks.withType(Test) {
   exclude "**/helpers/*.class"
 }
 
-tasks.create(name: 'buildSlingshot', type: Exec) {
-  println 'Building Slingshot'
-
+task buildSlingshot(type: Exec) {
   workingDir '../../go/bmp-adapters/src/main/go'
 
   executable 'make'
   args 'build'
-
-  standardOutput = new ByteArrayOutputStream()
-  ext.output = {
-    return standardOutput.toString()
-  }
 }
 
-tasks.create(name: 'copySlingshot', type: Copy, dependsOn: buildSlingshot) {
-  println 'Copying Slingshot binary'
-
+task copySlingshot(type: Copy, dependsOn: buildSlingshot) {
   from('../../go/bmp-adapters/src/main/go/bin') {
     include 'go-bmp*'
   }
@@ -73,3 +69,30 @@ tasks.create(name: 'copySlingshot', type: Copy, dependsOn: buildSlingshot) {
 
 compileJava.dependsOn(buildSlingshot)
 compileJava.dependsOn(copySlingshot)
+
+
+distTar << extractRelease(this, 'bare-metal-provisioner')
+
+task dockerfile(type: Dockerfile) {
+  dependsOn distTar
+  destFile = file("build/container/Dockerfile")
+  from "photon/servicebase"
+  copyFile("release/", "/usr/lib/esxcloud/bare-metal-provisioner/")
+}
+
+task container(type: DockerBuildImage) {
+  dependsOn dockerfile, ":containers:servicebase"
+  inputDir = dockerfile.destFile.parentFile
+  tag = "photon/bare-metal-provisioner"
+}
+
+task removeContainer(type: DockerRemoveImage) {
+  targetImageId { container.tag }
+}
+
+task start(type: VagrantSsh) {
+  mustRunAfter container
+  description = "Start ${project.name} inside devbox"
+  boxDir = devboxDir
+  sshCommand = "start-${project.name} 2>&1 | tee -a start-${project.name}.log"
+}

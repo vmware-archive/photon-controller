@@ -1,11 +1,33 @@
 {
-  "USE_PHOTON_DHCP": "false",
-  "GO_LOG_VERBOSITY": "2",
-  "VM_IP": "localhost",
-  "BARE-METAL-PROVISIONER_BIND_ADDRESS": "0.0.0.0",
-  "BARE-METAL-PROVISIONER_XENON_STORAGE_PATH": "/etc/esxcloud/bare-metal-provisioner/sandbox_21000",
-  "LOG_DIRECTORY": "/vagrant/log",
-  "BARE-METAL-PROVISIONER_PORT": 21000,
-  "BARE-METAL-PROVISIONER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/bare-metal-provisioner",
-  "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=29500,suspend=n"
+  "serviceName": "BareMetalProvisioner",
+  "cpuCount": 4,
+  "memoryMb": 4096,
+  "diskGb": 8,
+  "isReplicated": false,
+  "isPrivileged": false,
+  "useHostNetwork": true,
+  "containerImage": "photon/bare-metal-provisioner",
+  "containerName": "bare-metal-provisioner",
+  "portBindings": {
+    "21000": 21000,
+    "21001": 21001,
+    "67": "67/udp",
+    "68": "68/udp",
+    "69": "69/udp",
+    "70": "70/udp"
+  },
+  "volumeBindings": {
+    "/var/log": "/var/log"
+  },
+  "dynamicParameters": {
+    "USE_PHOTON_DHCP": "false",
+    "GO_LOG_VERBOSITY": "2",
+    "VM_IP": "localhost",
+    "BARE-METAL-PROVISIONER_BIND_ADDRESS": "0.0.0.0",
+    "BARE-METAL-PROVISIONER_XENON_STORAGE_PATH": "/etc/esxcloud/bare-metal-provisioner/sandbox_21000",
+    "LOG_DIRECTORY": "/vagrant/log",
+    "BARE-METAL-PROVISIONER_PORT": 21000,
+    "BARE-METAL-PROVISIONER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/bare-metal-provisioner",
+    "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=29500,suspend=n"
+  }
 }
