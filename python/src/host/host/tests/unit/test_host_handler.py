@@ -155,7 +155,6 @@ class HostHandlerTestCase(unittest.TestCase):
         self._config.hostname = "localhost"
         self._config.host_port = 1234
         self._config.reboot_required = False
-        common.services.register(ServiceName.AGENT_CONFIG, self._config)
 
     def tearDown(self):
         common.services.reset()
@@ -233,7 +232,6 @@ class HostHandlerTestCase(unittest.TestCase):
         _config.management_only = True
         _config.reboot_required = False
         _config.host_id = stable_uuid("host_id")
-        common.services.register(ServiceName.AGENT_CONFIG, _config)
         handler = HostHandler(hv)
 
         config_response = handler.get_host_config(GetConfigRequest())

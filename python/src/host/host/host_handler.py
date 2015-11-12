@@ -22,7 +22,6 @@ import uuid
 
 from common.log import log_duration
 
-from common import services
 from common.photon_thrift.decorators import error_handler
 from common.photon_thrift.decorators import log_request
 from common.lock import lock_with
@@ -180,7 +179,8 @@ class HostHandler(Host.Iface):
         self._configure_lock = threading.Lock()
         self._logger = logging.getLogger(__name__)
 
-        agent_config = common.services.get(ServiceName.AGENT_CONFIG)
+        self._hypervisor = hypervisor
+        agent_config = self._hypervisor.agent_config
         self._agent_id = agent_config.host_id
         self._address = ServerAddress(host=agent_config.hostname,
                                       port=agent_config.host_port)
@@ -188,7 +188,6 @@ class HostHandler(Host.Iface):
         # XXX We should just get this info from the hypervisor object
         self._availability_zone = agent_config.availability_zone
 
-        self._hypervisor = hypervisor
         self._generation = 0
         self._configuration_observers = []
 
@@ -264,7 +263,7 @@ class HostHandler(Host.Iface):
         response.result = GetConfigResultCode.OK
 
         config = HostConfig()
-        agent_config = common.services.get(ServiceName.AGENT_CONFIG)
+        agent_config = self._hypervisor.agent_config
         config.agent_id = agent_config.host_id
         config.availability_zone = self._availability_zone
         config.management_only = agent_config.management_only
@@ -1876,7 +1875,7 @@ class HostHandler(Host.Iface):
         """
         Get the current status of the agent
         """
-        agent_config = services.get(ServiceName.AGENT_CONFIG)
+        agent_config = self._hypervisor.agent_config
         if agent_config.reboot_required:
             return AgentStatusResponse(AgentStatusCode.RESTARTING)
         return AgentStatusResponse(AgentStatusCode.OK)
