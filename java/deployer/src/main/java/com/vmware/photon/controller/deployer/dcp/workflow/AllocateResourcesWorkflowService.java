@@ -24,6 +24,7 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -43,6 +44,7 @@ import com.vmware.photon.controller.deployer.dcp.task.CreateTenantTaskFactorySer
 import com.vmware.photon.controller.deployer.dcp.task.CreateTenantTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -551,10 +553,23 @@ public class AllocateResourcesWorkflowService extends StatefulService {
           if (null != exs && !exs.isEmpty()) {
             failTask(exs);
           } else {
-            sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+            updateDeploymentState(currentState);
           }
         })
         .sendWith(this);
+  }
+
+  private void updateDeploymentState(final State currentState) {
+    DeploymentService.State deploymentService = new DeploymentService.State();
+    deploymentService.projectId = ServiceUtils.getIDFromDocumentSelfLink(currentState.projectServiceLink);
+    MiscUtils.updateDeploymentState(this, deploymentService, (operation, throwable) -> {
+      if (throwable != null) {
+        failTask(throwable);
+        return;
+      }
+
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+    });
   }
 
   private State applyPatch(State startState, State patchState) {

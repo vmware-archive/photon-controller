@@ -496,6 +496,7 @@ public class AllocateResourcesWorkflowServiceTest {
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           CreateManagementVmTaskServiceTest.class.getResource(configFilePath).getPath())
           .getDeployerContext();
+      TestHelper.createDeploymentService(cloudStoreMachine);
     }
 
     @BeforeMethod

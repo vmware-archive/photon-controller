@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp.util;
 
+import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.Utils;
@@ -23,10 +24,14 @@ import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmNetworks;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
+import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
 
 import com.google.common.util.concurrent.FutureCallback;
@@ -36,6 +41,7 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -211,5 +217,46 @@ public class MiscUtils {
     }
 
     return querySpecification;
+  }
+
+  public static void updateDeploymentState(Service service, DeploymentService.State deploymentServiceState, Operation
+      .CompletionHandler completionHandler) {
+
+    if (deploymentServiceState.documentSelfLink != null) {
+      updateDeploymentState(service, deploymentServiceState.documentSelfLink, deploymentServiceState,
+          completionHandler);
+      return;
+    }
+
+    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) service.getHost()).getCloudStoreHelper();
+
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(DeploymentService.State.class));
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query = kindClause;
+    cloudStoreHelper.queryEntities(service, querySpecification, (operation, throwable) -> {
+      if (throwable != null) {
+        completionHandler.handle(operation, throwable);
+        return;
+      }
+
+      try {
+        Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+        QueryTaskUtils.logQueryResults(service, documentLinks);
+        checkState(documentLinks.size() == 1);
+        updateDeploymentState(service, documentLinks.iterator().next(), deploymentServiceState, completionHandler);
+      } catch (Throwable t) {
+        completionHandler.handle(operation, t);
+      }
+    });
+  }
+
+  public static void updateDeploymentState(Service service, String deploymentServiceLink, DeploymentService.State
+      deploymentServiceState, Operation
+      .CompletionHandler completionHandler) {
+    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) service.getHost()).getCloudStoreHelper();
+    cloudStoreHelper.patchEntity(service, deploymentServiceLink, deploymentServiceState, completionHandler);
   }
 }

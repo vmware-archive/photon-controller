@@ -37,6 +37,7 @@ import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowService;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -807,6 +808,8 @@ public class CreateIsoTaskServiceTest {
           new CreateManagementPlaneLayoutWorkflowService.State();
 
       workflowStartState.taskPollDelay = 10;
+      workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
+
 
       CreateManagementPlaneLayoutWorkflowService.State serviceState =
           testEnvironment.callServiceAndWaitForState(
