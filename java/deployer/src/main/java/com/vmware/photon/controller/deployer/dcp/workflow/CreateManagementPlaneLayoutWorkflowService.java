@@ -19,6 +19,7 @@ import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -110,6 +111,16 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
     @DefaultBoolean(value = false)
     @Immutable
     public Boolean isAuthEnabled;
+
+    /**
+     * This value represents the query specification which can be used to identify the hosts to create vms on.
+     */
+    @Immutable
+    public QueryTask.QuerySpecification hostQuerySpecification;
+
+    @Immutable
+    @DefaultBoolean(value = true)
+    public Boolean isNewDeployment;
   }
 
   public CreateManagementPlaneLayoutWorkflowService() {
@@ -250,25 +261,30 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
   }
 
   private void createContainerTemplates(State currentState) {
-
-    OperationJoin
-        .create(HostUtils.getContainersConfig(this).getContainerSpecs().values().stream()
-            .filter(spec -> currentState.isLoadbalancerEnabled
-                || !spec.getType().equals(ContainersConfig.ContainerType.LoadBalancer.name()))
-            .filter(spec -> currentState.isAuthEnabled
-                || !spec.getType().equals(ContainersConfig.ContainerType.Lightwave.name()))
-            .map(spec -> buildTemplateStartState(spec))
-            .map(templateStartState -> Operation.createPost(this, ContainerTemplateFactoryService.SELF_LINK)
-                .setBody(templateStartState)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs.values().iterator().next());
-          } else {
-            TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED,
-                TaskState.SubStage.ALLOCATE_DOCKER_VMS, null));
-          }
-        })
-        .sendWith(this);
+    if (currentState.isNewDeployment) {
+      OperationJoin
+          .create(HostUtils.getContainersConfig(this).getContainerSpecs().values().stream()
+              .filter(spec -> currentState.isLoadbalancerEnabled
+                  || !spec.getType().equals(ContainersConfig.ContainerType.LoadBalancer.name()))
+              .filter(spec -> currentState.isAuthEnabled
+                  || !spec.getType().equals(ContainersConfig.ContainerType.Lightwave.name()))
+              .map(spec -> buildTemplateStartState(spec))
+              .map(templateStartState -> Operation.createPost(this, ContainerTemplateFactoryService.SELF_LINK)
+                  .setBody(templateStartState)))
+          .setCompletion((ops, exs) -> {
+            if (null != exs && !exs.isEmpty()) {
+              failTask(exs.values().iterator().next());
+            } else {
+              TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED,
+                  TaskState.SubStage.ALLOCATE_DOCKER_VMS, null));
+            }
+          })
+          .sendWith(this);
+    } else {
+      ServiceUtils.logInfo(this, "Not a new deployment, moving to next stage");
+      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED,
+          TaskState.SubStage.ALLOCATE_DOCKER_VMS, null));
+    }
   }
 
   private ContainerTemplateService.State buildTemplateStartState(ContainersConfig.Spec spec) {
@@ -337,6 +353,7 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
         };
 
     CreateVmSpecLayoutTaskService.State requestState = new CreateVmSpecLayoutTaskService.State();
+    requestState.hostQuerySpecification = currentState.hostQuerySpecification;
     requestState.taskPollDelay = currentState.taskPollDelay;
 
     TaskUtils.startTaskAsync(
@@ -381,6 +398,7 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
 
     CreateContainerSpecLayoutTaskService.State requestState = new
         CreateContainerSpecLayoutTaskService.State();
+    requestState.hostQuerySpecification = currentState.hostQuerySpecification;
     requestState.taskPollDelay = currentState.taskPollDelay;
 
     TaskUtils.startTaskAsync(

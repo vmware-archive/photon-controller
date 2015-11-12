@@ -33,6 +33,7 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowService;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -613,6 +614,7 @@ public class AllocateHostResourceTaskServiceTest {
           new CreateManagementPlaneLayoutWorkflowService.State();
 
       workflowStartState.isAuthEnabled = true;
+      workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
 
       CreateManagementPlaneLayoutWorkflowService.State serviceState =
           machine.callServiceAndWaitForState(

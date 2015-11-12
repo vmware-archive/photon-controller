@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
@@ -490,6 +491,7 @@ public class BuildContainersConfigurationWorkflowServiceTest {
 
       CreateManagementPlaneLayoutWorkflowService.State workflowStartState =
           new CreateManagementPlaneLayoutWorkflowService.State();
+      workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
 
       workflowStartState.taskPollDelay = 10;
 
