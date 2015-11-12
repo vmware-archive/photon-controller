@@ -73,6 +73,8 @@ public class ContainersConfig {
     @NotNull
     private String containerImage;
 
+    private String containerName;
+
     private Map<String, String> volumeBindings;
 
     private Map<Integer, Integer> portBindings;
@@ -137,12 +139,20 @@ public class ContainersConfig {
       this.isPrivileged = isPrivileged;
     }
 
-    public String getContainerImage() {
+     public String getContainerImage() {
       return containerImage;
     }
 
     public void setContainerImage(String containerImage) {
       this.containerImage = containerImage;
+    }
+
+    public String getContainerName() {
+      return containerName;
+    }
+
+    public void setContainerName(String containerName) {
+      this.containerName = containerName;
     }
 
     public Map<String, String> getVolumeBindings() {

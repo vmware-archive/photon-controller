@@ -1,0 +1,31 @@
+// This does not build the actual agent, but instead provides Gradle tasks
+// for building the agent inside of a running devbox via Vagrant plugin.
+import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
+
+ext {
+  virtualBoxDir = file('../../../devbox-photon')
+}
+
+task buildVib(type: VagrantSsh) {
+  description = 'Build agent VIB inside devbox'
+  boxDir = virtualBoxDir
+  sshCommand = 'build-agent-vib 2>&1 | tee -a build-agent-vib.log'
+}
+
+task start(type: VagrantSsh) {
+  mustRunAfter buildVib
+  description = 'Start agent inside devbox'
+  boxDir = virtualBoxDir
+  sshCommand = 'start-agent 2>&1 | tee -a start-agent.log'
+}
+
+task stop(type: VagrantSsh) {
+  description = 'Stop agent inside devbox'
+  boxDir = virtualBoxDir
+  sshCommand = 'stop-agent 2>&1 | tee -a stop-agent.log'
+}
+
+task restart() {
+  dependsOn stop
+  finalizedBy start
+}

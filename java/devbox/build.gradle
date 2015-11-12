@@ -1,0 +1,43 @@
+// Tasks executed against devbox
+import com.bmuschko.gradle.vagrant.tasks.*
+
+ext {
+  virtualBoxDir = file('../../devbox-photon')
+}
+
+task up(type: VagrantUp) {
+  boxDir = virtualBoxDir
+}
+
+task destroy(type: VagrantDestroy) {
+  boxDir = virtualBoxDir
+}
+
+task halt(type: VagrantHalt) {
+  boxDir = virtualBoxDir
+}
+
+task reload(type: VagrantReload) {
+  boxDir = virtualBoxDir
+}
+
+task status(type: VagrantStatus) {
+  boxDir = virtualBoxDir
+}
+
+task renew() {
+  dependsOn destroy
+  finalizedBy up
+}
+
+task buildAll() {
+  dependsOn up, ":containers:all", ":devbox:agent:buildVib"
+  mustRunAfter up
+}
+
+task startAll(type: VagrantSsh) {
+  mustRunAfter buildAll
+  description = 'Start all containers inside devbox'
+  boxDir = virtualBoxDir
+  sshCommand = 'start-all 2>&1 | tee -a start-all.log'
+}
