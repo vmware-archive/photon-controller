@@ -25,6 +25,7 @@ import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -43,6 +44,7 @@ import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -416,11 +418,24 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
           if (null != exs && !exs.isEmpty()) {
             failTask(exs);
           } else {
-            TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED,
-                TaskState.SubStage.ALLOCATE_RESOURCES));
+            updateDeploymentState(currentState, imageServiceLink);
           }
         })
         .sendWith(this);
+  }
+
+  private void updateDeploymentState(State currentState, String imageServiceLink) {
+    DeploymentService.State deploymentService = new DeploymentService.State();
+    deploymentService.imageId = ServiceUtils.getIDFromDocumentSelfLink(imageServiceLink);
+    MiscUtils.updateDeploymentState(this, deploymentService, (operation, throwable) -> {
+      if (throwable != null) {
+        failTask(throwable);
+        return;
+      }
+
+      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED,
+          TaskState.SubStage.ALLOCATE_RESOURCES));
+    });
   }
 
   private void allocateResources(final State currentState) {
@@ -588,7 +603,6 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.isAuthEnabled = currentState.isAuthEnabled;
     startState.taskPollDelay = currentState.taskPollDelay;
-
     TaskUtils.startTaskAsync(
         this,
         CreateContainersWorkflowFactoryService.SELF_LINK,

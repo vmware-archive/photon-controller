@@ -481,6 +481,7 @@ public class BatchCreateManagementWorkflowServiceTest {
     private Task taskReturnedByCreateResourceTicket;
     private Task taskReturnedByCreateProject;
 
+    private String deploymentServiceLink;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
@@ -490,6 +491,8 @@ public class BatchCreateManagementWorkflowServiceTest {
 
       dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
+
+      deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
     }
 
     @AfterClass
@@ -606,6 +609,7 @@ public class BatchCreateManagementWorkflowServiceTest {
       startState.controlFlags = 0;
       startState.childPollInterval = 10;
       startState.taskPollDelay = 10;
+      startState.deploymentServiceLink = deploymentServiceLink;
 
       DeployerConfig deployerConfig = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath());
@@ -640,8 +644,6 @@ public class BatchCreateManagementWorkflowServiceTest {
       machine = createTestEnvironment(deployerContext, listeningExecutorService, apiClientFactory,
           dockerProvisionerFactory, healthCheckHelperFactory, serviceConfiguratorFactory, containersConfig, hostCount);
 
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
-
       mockSuccessFulCreateManagementVmWorkFlow();
 
       BatchCreateManagementWorkflowService.State finalState =
@@ -658,8 +660,6 @@ public class BatchCreateManagementWorkflowServiceTest {
     public void testEndToEndFailsWhenUploadImageFails(Integer hostCount) throws Throwable {
       machine = createTestEnvironment(deployerContext, listeningExecutorService, apiClientFactory,
           dockerProvisionerFactory, healthCheckHelperFactory, serviceConfiguratorFactory, containersConfig, hostCount);
-
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
 
       BatchCreateManagementWorkflowService.State finalState =
           machine.callServiceAndWaitForState(
@@ -679,7 +679,6 @@ public class BatchCreateManagementWorkflowServiceTest {
     }
 
     private void mockSuccessFulCreateManagementVmWorkFlow() throws Throwable {
-      TestHelper.createDeploymentService(cloudStoreMachine);
       mockSuccessfulUploadImage();
       mockSuccessfulAllocateResources();
       mockSuccessfulCreateIso();

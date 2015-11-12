@@ -26,6 +26,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
+import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
@@ -86,6 +87,10 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
     @NotNull
     @Immutable
     public String deploymentServiceLink;
+
+    @Immutable
+    @DefaultBoolean(value = true)
+    public Boolean isNewDeployment;
   }
 
   public BuildContainersConfigurationWorkflowService() {
@@ -204,6 +209,7 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
     BuildRuntimeConfigurationTaskService.State startState = new BuildRuntimeConfigurationTaskService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.containerServiceLink = documentLinkIterator.next();
+    startState.isNewDeployment = currentState.isNewDeployment;
 
     TaskUtils.startTaskAsync(this,
         BuildRuntimeConfigurationTaskFactoryService.SELF_LINK,
