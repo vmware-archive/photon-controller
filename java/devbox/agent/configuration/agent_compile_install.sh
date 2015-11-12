@@ -23,4 +23,5 @@ rm -rf $INSTALL_PATH
 mkdir -p $INSTALL_PATH
 
 virtualenv $INSTALL_PATH
-. $INSTALL_PATH/bin/activate; pip install -q -f file://${RELEASE_PATH} photon.controller.agent
+. $INSTALL_PATH/bin/activate
+pip install -q -f file://${RELEASE_PATH} photon.controller.agent
