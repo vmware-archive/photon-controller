@@ -31,7 +31,7 @@ class TestHypervisor(unittest.TestCase):
         self.services_helper = ServicesHelper()
         self.mock_options = MagicMock()
         self.agent_config_dir = mkdtemp(delete=True)
-        self.agent_config = AgentConfig("localhost", ["--config-path",
+        self.agent_config = AgentConfig(["--config-path",
                                         self.agent_config_dir,
                                         "--hypervisor", "esx"])
 
@@ -47,7 +47,7 @@ class TestHypervisor(unittest.TestCase):
                         si_mock, connect_mock):
         user_mock.return_value = "user"
         password_mock.return_value = "password"
-        self.agent_config = AgentConfig("localhost", ["--config-path",
+        self.agent_config = AgentConfig(["--config-path",
                                         self.agent_config_dir,
                                         "--hypervisor", "fake"])
         Hypervisor(self.agent_config)
@@ -61,7 +61,7 @@ class TestHypervisor(unittest.TestCase):
         assert_that(hypervisor.memory_overcommit, equal_to(3.0))
 
     def test_unknown_hypervisor(self):
-        self.agent_config = AgentConfig("localhost", ["--config-path",
+        self.agent_config = AgentConfig(["--config-path",
                                         self.agent_config_dir,
                                         "--hypervisor", "dummy"])
         self.assertRaises(ValueError, Hypervisor, self.agent_config)
@@ -81,7 +81,7 @@ class TestHypervisor(unittest.TestCase):
             disable=False)
         vim_client.reset_mock()
 
-        self.agent_config = AgentConfig("localhost", ["--config-path",
+        self.agent_config = AgentConfig(["--config-path",
                                         self.agent_config_dir,
                                         "--memory-overcommit", "1.5"])
         hypervisor = Hypervisor(self.agent_config)
