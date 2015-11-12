@@ -112,6 +112,10 @@ class Hypervisor(object):
     def config(self):
         return self.hypervisor.config
 
+    @property
+    def agent_config(self):
+        return self._config
+
     def check_image(self, image_id, datastore_id):
         return self.hypervisor.check_image(image_id, datastore_id)
 

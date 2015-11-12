@@ -57,13 +57,6 @@ class Host(HostHandler):
                                                 [network.values[0] for
                                                  network in networks],
                                                 overcommit)
-
-        # need agent_config for create/delete vm.
-        agent_config = AgentConfig(["--config-path", conf_dir,
-                                    "--hostname", "localhost",
-                                    "--port", "1234",
-                                    "--host-id", id])
-        common.services.register(ServiceName.AGENT_CONFIG, agent_config)
         super(Host, self).__init__(self.hv)
 
     def get_info(self):
@@ -86,6 +79,10 @@ class Host(HostHandler):
         """
         config = MagicMock(AgentConfig.__class__)
         config.hypervisor = "fake"
+        config.hostname = "localhost"
+        config.port = 1234
+        config.availability_zone = "az1"
+        config.host_id = self.id
         config.datastores = datastores
         config.image_datastores = datastores[0]
         config.networks = networks
