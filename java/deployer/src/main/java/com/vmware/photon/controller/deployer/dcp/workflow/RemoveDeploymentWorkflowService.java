@@ -695,7 +695,10 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
 
                   @Override
                   public void onFailure(Throwable t) {
-                    failTask(t);
+                    // Log and ignore
+                    logError(t);
+
+                    finishedCallback.onSuccess(null);
                   }
                 };
 
@@ -1077,6 +1080,11 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
    * @param e
    */
   private void failTask(Throwable e) {
+    logError(e);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, e));
+  }
+
+  private void logError(Throwable e) {
     ServiceUtils.logSevere(this, e);
     StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
     StringBuilder sb = new StringBuilder();
@@ -1084,7 +1092,6 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
       sb.append(se).append("\n");
     }
     ServiceUtils.logInfo(this, "Stack trace %s", sb.toString());
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, e));
   }
 
   /**
