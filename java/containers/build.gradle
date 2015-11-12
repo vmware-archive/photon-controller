@@ -1,0 +1,56 @@
+apply plugin: 'com.bmuschko.docker-remote-api'
+
+import com.bmuschko.gradle.docker.tasks.container.*
+import com.bmuschko.gradle.docker.tasks.image.*
+
+def getDockerUrl() {
+  // TODO: docker-machine is Docker Toolbox only, make work on Linux
+  def result = "docker-machine env default".execute().text.trim()
+  def matcher = result =~ /(?ms).*DOCKER_HOST="tcp:\/\/(?<url>[\d\.:]+)".*/
+  if(!matcher.matches()) {
+    assert false, "Unable to find URL for local Docker endpoint"
+  }
+  return matcher.group("url")
+}
+
+docker {
+  // Default for Docker Toolbox
+  url = "https://${getDockerUrl()}"
+}
+
+task servicebase(type: DockerBuildImage) {
+  inputDir = file("servicebase")
+  tag = "photon/servicebase"
+}
+
+task haproxy(type: DockerBuildImage) {
+  dependsOn servicebase
+  inputDir = file("haproxy")
+  tag = "photon/haproxy"
+}
+
+task zookeeper(type: DockerBuildImage) {
+  dependsOn servicebase
+  inputDir = file("zookeeper")
+  tag = "photon/zookeeper"
+}
+
+task all() {
+  dependsOn zookeeper, haproxy
+}
+
+task removeZookeeper(type: DockerRemoveImage) {
+  targetImageId { zookeeper.tag }
+}
+
+task removeHaproxy(type: DockerRemoveImage) {
+  targetImageId { haproxy.tag }
+}
+
+task removeServicebase(type: DockerRemoveImage) {
+  targetImageId { servicebase.tag }
+}
+
+task clean() {
+  dependsOn removeZookeeper, removeHaproxy, removeServicebase
+}
