@@ -1,1 +1,1 @@
-../../../../dist/configuration-zookeeper/README.md
+../../../../../../containers/zookeeper/README.md
