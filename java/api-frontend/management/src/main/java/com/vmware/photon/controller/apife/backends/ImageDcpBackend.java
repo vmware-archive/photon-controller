@@ -21,9 +21,10 @@ import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.apife.commands.steps.ImageUploadStepCmd;
+import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.ImageSettingsEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -289,21 +290,33 @@ public class ImageDcpBackend implements ImageBackend {
   }
 
   private TaskEntity uploadTask(InputStream inputStream, ImageEntity image) throws ExternalException {
-    TaskEntity task = taskBackend.createQueuedTask(image, Operation.CREATE_IMAGE);
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
+    entityList.add(image);
 
-    StepEntity step = taskBackend.getStepBackend().createQueuedStep(task, image, Operation.UPLOAD_IMAGE);
-    step.createOrUpdateTransientResource(ImageUploadStepCmd.INPUT_STREAM, inputStream);
-    task.getLockableEntityIds().add(image.getId());
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.createOrUpdateTransientResource(IsoUploadStepCmd.INPUT_STREAM, inputStream);
+    step.addResources(entityList);
+    step.setOperation(Operation.UPLOAD_IMAGE);
 
     switch (image.getReplicationType()) {
       case EAGER:
-        taskBackend.getStepBackend().createQueuedStep(task, image, Operation.REPLICATE_IMAGE);
+        step = new StepEntity();
+        stepEntities.add(step);
+        step.addResources(entityList);
+        step.setOperation(Operation.REPLICATE_IMAGE);
         break;
       case ON_DEMAND:
         break;
       default:
         throw new ExternalException("Image Replication Type not supported " + image.getReplicationType());
     }
+
+    TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.CREATE_IMAGE, false, stepEntities);
+
+    task.getLockableEntityIds().add(image.getId());
+
     return task;
   }
 
@@ -330,11 +343,24 @@ public class ImageDcpBackend implements ImageBackend {
   }
 
   private TaskEntity deleteTask(ImageEntity image) throws ExternalException {
-    TaskEntity task = taskBackend.createQueuedTask(image, Operation.DELETE_IMAGE);
-    taskBackend.getStepBackend().createQueuedStep(task, image, Operation.DELETE_IMAGE);
+    List<StepEntity> stepEntities = new ArrayList<>();
+    List<BaseEntity> entityList = new ArrayList<>();
+    entityList.add(image);
+
+
+    StepEntity step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.DELETE_IMAGE);
+
+    step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.DELETE_IMAGE_REPLICAS);
+
+    TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.DELETE_IMAGE, false, stepEntities);
     task.getLockableEntityIds().add(image.getId());
 
-    taskBackend.getStepBackend().createQueuedStep(task, image, Operation.DELETE_IMAGE_REPLICAS);
     return task;
   }
 
