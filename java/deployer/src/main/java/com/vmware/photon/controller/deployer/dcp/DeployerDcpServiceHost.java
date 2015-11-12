@@ -74,6 +74,7 @@ import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactorySer
 import com.vmware.photon.controller.deployer.dcp.task.WaitForDockerTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.WaitForServiceTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AllocateResourcesWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.BatchCreateManagementWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.BuildContainersConfigurationWorkflowFactoryService;
@@ -189,6 +190,7 @@ public class DeployerDcpServiceHost
 
       // Workflow services
       AddCloudHostWorkflowFactoryService.class,
+      AddManagementHostWorkflowFactoryService.class,
       AllocateResourcesWorkflowFactoryService.class,
       BatchCreateManagementWorkflowFactoryService.class,
       BuildContainersConfigurationWorkflowFactoryService.class,

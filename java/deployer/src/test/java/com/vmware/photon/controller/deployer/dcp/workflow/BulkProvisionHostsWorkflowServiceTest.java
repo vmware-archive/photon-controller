@@ -15,14 +15,10 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -32,6 +28,7 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -490,21 +487,8 @@ public class BulkProvisionHostsWorkflowServiceTest {
       TestHelper.setContainersConfig(deployerConfig);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
 
-      QueryTask.Query kindClause = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(HostService.State.class));
-
-      QueryTask.Query usageTagClause = new QueryTask.Query()
-          .setTermPropertyName(QueryTask.QuerySpecification.buildCollectionItemName(
-              HostService.State.FIELD_NAME_USAGE_TAGS))
-          .setTermMatchValue(UsageTag.MGMT.name());
-
-      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-      querySpecification.query.addBooleanClause(kindClause);
-      querySpecification.query.addBooleanClause(usageTagClause);
-
       startState = buildValidStartState(null, null);
-      startState.querySpecification = querySpecification;
+      startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
       startState.controlFlags = null;
       startState.taskPollDelay = 10;
     }
@@ -558,6 +542,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
       CreateManagementPlaneLayoutWorkflowService.State workflowStartState =
           new CreateManagementPlaneLayoutWorkflowService.State();
+      workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
 
       CreateManagementPlaneLayoutWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(

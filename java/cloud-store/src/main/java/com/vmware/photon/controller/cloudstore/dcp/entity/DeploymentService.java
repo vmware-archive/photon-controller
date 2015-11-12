@@ -169,13 +169,11 @@ public class DeploymentService extends StatefulService {
     /**
      * This value represents the list of chairman servers.
      */
-    @WriteOnce
     public Set<String> chairmanServerList;
 
     /**
      * This value represents the zookeeper quorum.
      */
-    @WriteOnce
     public String zookeeperQuorum;
 
     /**
