@@ -1,13 +1,37 @@
 {
-  "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
-  "LOG_DIRECTORY": "/vagrant/log",
-  "APIFE_PORT": 9000,
-  "TENANT_NAME": "mgmt-tenant",
-  "PROJECT_NAME": "mgmt-project",
-  "RESOURCE_TICKET_NAME": "mgmt-res-ticket",
-  "MAX_MEMORY_GB": 64,
-  "MAX_VM_COUNT": 20,
-  "DEPLOYER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/deployer",
-  "VIB_DIRECTORY": "/var/esxcloud/packages",
-  "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=28000,suspend=n"
+  "serviceName": "Deployer",
+  "cpuCount": 2,
+  "memoryMb": 2048,
+  "diskGb": 8,
+  "isReplicated": true,
+  "isPrivileged": false,
+  "containerImage": "photon/deployer",
+  "containerName": "deployer",
+  "portBindings": {
+    "18000": 18000,
+    "18001": 18001
+  },
+  "volumeBindings": {
+    "/var/log": "/var/log",
+    "/var/esxcloud/packages":"/var/esxcloud/packages",
+    "/etc/esxcloud-deployer":"/etc/esxcloud-deployer",
+    "/devbox_data/java/deployer/src/main/resources/scripts":"/usr/lib/esxcloud/deployer/scripts",
+    "/devbox_data/java/cluster-manager/backend/src/main/resources/scripts":"/usr/lib/esxcloud/deployer/scripts/clusters",
+    "/vagrant/log/deployer": "/vagrant/log",
+    "/devbox_data/tmp": "/devbox_data/tmp",
+    "/var/esxcloud": "/var/esxcloud"
+  },
+  "dynamicParameters": {
+    "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
+    "LOG_DIRECTORY": "/vagrant/log",
+    "APIFE_PORT": 9000,
+    "TENANT_NAME": "mgmt-tenant",
+    "PROJECT_NAME": "mgmt-project",
+    "RESOURCE_TICKET_NAME": "mgmt-res-ticket",
+    "MAX_MEMORY_GB": 64,
+    "MAX_VM_COUNT": 20,
+    "DEPLOYER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/deployer",
+    "VIB_DIRECTORY": "/var/esxcloud/packages",
+    "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=28000,suspend=n"
+  }
 }
