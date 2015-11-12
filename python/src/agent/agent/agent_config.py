@@ -78,15 +78,12 @@ class AgentConfig(object):
 
     # List of attributes persisted to config.json by default
 
-    def __init__(self, hostname_hint=None, args=None):
+    def __init__(self, args=None):
         """
         Constructor
-        hostname_hint: A hint for a hostname determined by reading the esx host
-        configuration.
         args: The opt args
         """
         self.lock = threading.RLock()
-        self._hostname_hint = hostname_hint
         self._logger = logging.getLogger(__name__)
         # Read the command line options
         self._parse_options(args)
@@ -257,10 +254,6 @@ class AgentConfig(object):
                                      str(self._options))
             self._reboot_required = True
 
-    def set_hostname_hint(self, hostname):
-        """ Set the hostname hint as read from esx. """
-        self._hostname_hint = hostname
-
     @property
     @locked
     def availability_zone(self):
@@ -287,7 +280,7 @@ class AgentConfig(object):
     def hostname(self):
         if hasattr(self._options, self.HOSTNAME):
             return getattr(self._options, self.HOSTNAME)
-        return self._hostname_hint
+        return "localhost"
 
     @property
     @locked

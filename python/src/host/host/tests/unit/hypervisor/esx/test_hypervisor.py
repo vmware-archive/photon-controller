@@ -31,7 +31,7 @@ class TestUnitEsxHypervisor(unittest.TestCase):
         self.services_helper = ServicesHelper()
         self.hv = None
         self.agent_config_dir = mkdtemp(delete=True)
-        self.agent_config = AgentConfig("localhost", ["--config-path",
+        self.agent_config = AgentConfig(["--config-path",
                                         self.agent_config_dir])
 
     def tearDown(self):
