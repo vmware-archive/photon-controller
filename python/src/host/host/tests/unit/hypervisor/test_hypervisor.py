@@ -19,6 +19,8 @@ from mock import patch
 
 from host.tests.unit.services_helper import ServicesHelper
 
+from agent.agent_config import AgentConfig
+from common.file_util import mkdtemp
 from host.hypervisor.hypervisor import Hypervisor
 from host.hypervisor.esx.vim_client import Credentials, VimClient
 
@@ -28,6 +30,10 @@ class TestHypervisor(unittest.TestCase):
     def setUp(self):
         self.services_helper = ServicesHelper()
         self.mock_options = MagicMock()
+        self.agent_config_dir = mkdtemp(delete=True)
+        self.agent_config = AgentConfig("localhost", ["--config-path",
+                                        self.agent_config_dir,
+                                        "--hypervisor", "esx"])
 
     def tearDown(self):
         self.services_helper.teardown()
@@ -41,21 +47,26 @@ class TestHypervisor(unittest.TestCase):
                         si_mock, connect_mock):
         user_mock.return_value = "user"
         password_mock.return_value = "password"
-        Hypervisor("fake", "fake_availability_zone", [], [], "", 1234,
-                   10, 1.0, 1.0, False)
+        self.agent_config = AgentConfig("localhost", ["--config-path",
+                                        self.agent_config_dir,
+                                        "--hypervisor", "fake"])
+        Hypervisor(self.agent_config)
 
     def test_hypervisor_setter(self):
-        hypervisor = Hypervisor("fake", "fake_availability_zone", [], [], "",
-                                1234, 10, 1.0, 1.0, False)
+        self.agent_config = AgentConfig("localhost", ["--config-path",
+                                        self.agent_config_dir,
+                                        "--hypervisor", "fake"])
+        hypervisor = Hypervisor(self.agent_config)
         hypervisor.set_cpu_overcommit(2.0)
         assert_that(hypervisor.cpu_overcommit, equal_to(2.0))
         hypervisor.set_memory_overcommit(3.0)
         assert_that(hypervisor.memory_overcommit, equal_to(3.0))
 
     def test_unknown_hypervisor(self):
-        self.assertRaises(ValueError, Hypervisor, "dummy", [],
-                          "fake_availability_zone", [], "", 1234, 10, 1.0, 1.0,
-                          False)
+        self.agent_config = AgentConfig("localhost", ["--config-path",
+                                        self.agent_config_dir,
+                                        "--hypervisor", "dummy"])
+        self.assertRaises(ValueError, Hypervisor, self.agent_config)
 
     @patch("host.hypervisor.esx.vm_config.GetEnv")
     @patch(
@@ -65,16 +76,17 @@ class TestHypervisor(unittest.TestCase):
     def test_large_page_disable(self, vim_client_mock,
                                 monitor_mock, get_env_mock):
         vim_client_mock.return_value = MagicMock()
-        hypervisor = Hypervisor("esx", "fake_availability_zone", [], [], "",
-                                1234, 10, 1.0, 1.0, False)
+        hypervisor = Hypervisor(self.agent_config)
         vim_client = hypervisor.hypervisor.vim_client
         assert_that(vim_client.set_large_page_support.called, is_(True))
         vim_client.set_large_page_support.assert_called_once_with(
             disable=False)
         vim_client.reset_mock()
 
-        hypervisor = Hypervisor("esx", "fake_availability_zone", [], [], "",  # noqa
-                                1234, 10, 1.5, 1.0, False)
+        self.agent_config = AgentConfig("localhost", ["--config-path",
+                                        self.agent_config_dir,
+                                        "--memory-overcommit", "1.5"])
+        hypervisor = Hypervisor(self.agent_config)
         vim_client = hypervisor.hypervisor.vim_client
         assert_that(vim_client.set_large_page_support.called, is_(True))
         vim_client.set_large_page_support.assert_called_once_with(disable=True)
