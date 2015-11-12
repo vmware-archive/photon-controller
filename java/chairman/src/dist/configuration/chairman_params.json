@@ -1,0 +1,34 @@
+{
+  "DEPLOYER_REGISTRATION_ADDRESS": "172.31.253.66",
+  "CHAIRMAN_REGISTRATION_ADDRESS": "172.31.253.66",
+  "CLOUD-STORE_REGISTRATION_ADDRESS": "172.31.253.66",
+  "ROOT-SCHEDULER_REGISTRATION_ADDRESS": "172.31.253.66",
+  "HOUSEKEEPER_REGISTRATION_ADDRESS": "172.31.253.66",
+  "MANAGEMENT-API_REGISTRATION_ADDRESS": "172.31.253.66",
+  "TASK_EXPIRATION_THRESHOLD": "3 minutes",
+  "TASK_EXPIRATION_SCAN_INTERVAL": "3 minutes",
+  "SHARED_SECRET": "b0fb472c-86ca-4df3-b878-ab68f6258ec5",
+  "ENABLE_AUTH": false,
+  "DB_HOST": "172.31.253.66",
+  "USE_ESX_STORE": false,
+  "DATASTORE": "devbox_datastore",
+  "DEPLOYMENT_ID": "",
+  "LOAD_BALANCER_SERVERS": [
+    {
+      "serverName": "devbox-management-api",
+      "serverAddress": "172.31.253.66:9000"
+    }
+  ],
+  "ZOOKEEPER_INSTANCES": [
+    {
+      "zookeeperInstance": "server.1=172.31.253.66:2888:3888"
+    }
+  ],
+  "APIFE_IP": "172.31.253.66",
+  "ZOOKEEPER_QUORUM": "localhost:2181",
+  "ENABLE_SYSLOG": false,
+  "VM_IP": "localhost",
+  "LOG_DIRECTORY": "/vagrant/log",
+  "CHAIRMAN_INSTALL_DIRECTORY": "/usr/lib/esxcloud/chairman",
+  "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=23000,suspend=n"
+}
