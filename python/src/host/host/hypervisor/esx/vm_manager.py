@@ -323,7 +323,7 @@ class EsxVmManager(VmManager):
             return False
 
     @log_duration
-    def add_disk(self, cspec, datastore, disk_id, info):
+    def add_disk(self, cspec, datastore, disk_id, info, disk_is_image=False):
         """Add an existing disk to a VM
         :param cspec: config spec
         :type cspec: ConfigSpec
@@ -338,8 +338,19 @@ class EsxVmManager(VmManager):
             # New VM just generate a base config.
             info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
 
-        # We don't support IDE disks for now
-        self.vm_config.add_scsi_disk(info, cspec, datastore, disk_id)
+        self.vm_config.add_scsi_disk(info, cspec, datastore, disk_id,
+                                     disk_is_image=disk_is_image)
+        return cspec
+
+    @log_duration
+    def remove_all_disks(self, cspec, info):
+        """Removes all disks from the vm's config
+        :param cspec: config spec
+        :type cspec: ConfigSpec
+        :param info: VM's config info
+        :type info: ConfigInfo
+        """
+        self.vm_config.remove_all_disks(cspec, info)
         return cspec
 
     def remove_disk(self, spec, datastore, disk_id, info):

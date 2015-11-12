@@ -14,12 +14,16 @@ import httplib
 import logging
 import os
 import re
+import time
 
 from common.photon_thrift.direct_client import DirectClient
 from gen.host import Host
 from gen.host.ttypes import HttpTicketRequest
 from gen.host.ttypes import HttpTicketResultCode
 from gen.host.ttypes import HttpOp
+from host.hypervisor.esx.vm_config import EsxVmConfig
+from host.hypervisor.esx.vm_manager import EsxVmManager
+from pyVmomi import vim
 
 
 CHUNK_SIZE = 65536
@@ -36,13 +40,22 @@ class HttpTransferException(Exception):
                                                        self.reason)
 
 
+class NfcLeaseInitiatizationTimeout(Exception):
+    """ Timed out waiting for the HTTP NFC lease to initialize. """
+    pass
+
+
+class NfcLeaseInitiatizationError(Exception):
+    """ Error waiting for the HTTP NFC lease to initialize. """
+    pass
+
+
 class HttpTransferer(object):
     """ Class for handling HTTP-based data transfers between ESX hosts. """
 
     def __init__(self, vim_client):
         self._logger = logging.getLogger(__name__)
         self._vim_client = vim_client
-        self._shadow_vm_id = "shadow_%s" % self._vim_client.host_uuid
 
     def _open_connection(self, host, protocol):
         if protocol == "http":
@@ -141,3 +154,121 @@ class HttpTransferer(object):
         with open(path, "wb") as file:
             for data in self._get_response_data(read_fp):
                 file.write(data)
+
+
+class HttpNfcTransferer(HttpTransferer):
+    """ Class for handling HTTP-based disk transfers between ESX hosts.
+
+    This class employs the ImportVApp and ExportVM APIs to transfer
+    VMDKs efficiently to another host. A shadow VM is created and used in the
+    initial export of the VMDK into the stream optimized format needed by
+    ImportVApp.
+
+    """
+
+    LEASE_INITIALIZATION_WAIT_SECS = 10
+
+    def __init__(self, vim_client, image_datastore, host_name="localhost"):
+        super(HttpNfcTransferer, self).__init__(vim_client)
+        self._shadow_vm_id = "shadow_%s" % self._vim_client.host_uuid
+        self._lease_url_host_name = host_name
+        self._image_datastore = image_datastore
+        self._vm_config = EsxVmConfig(self._vim_client)
+        self._vm_manager = EsxVmManager(self._vim_client, None)
+
+    def _get_disk_url_from_lease(self, lease):
+        for dev_url in lease.info.deviceUrl:
+            self._logger.debug("%s -> %s" % (dev_url.key, dev_url.url))
+            return dev_url.url
+
+    def _wait_for_lease(self, lease):
+        retries = HttpNfcTransferer.LEASE_INITIALIZATION_WAIT_SECS
+        state = None
+        while retries > 0:
+            state = lease.state
+            if state != vim.HttpNfcLease.State.initializing:
+                break
+            retries -= 1
+            time.sleep(1)
+
+        if retries == 0:
+            self._logger.debug("Nfc lease initialization timed out")
+            raise NfcLeaseInitiatizationTimeout()
+        if state == vim.HttpNfcLease.State.error:
+            self._logger.debug("Fail to initialize nfc lease: %s" %
+                               str(lease.error))
+            raise NfcLeaseInitiatizationError()
+
+    def _ensure_host_in_url(self, url, actual_host):
+
+        # URLs from vApp export/import leases have '*' as placeholder
+        # for host names that has to be replaced with the actual
+        # host on which the resource resides.
+        protocol, host, selector = self._split_url(url)
+        if host.find("*") != -1:
+            host = host.replace("*", actual_host)
+        return "%s://%s%s" % (protocol, host, selector)
+
+    def _export_shadow_vm(self):
+        """ Initiates the Export VM operation.
+
+        The lease created as part of ExportVM contains, among other things,
+        the url to the stream-optimized disk of the image currently associated
+        with the VM being exported.
+        """
+        vm = self._vim_client.get_vm_obj_in_cache(self._shadow_vm_id)
+        lease = vm.ExportVm()
+        self._wait_for_lease(lease)
+        return lease, self._get_disk_url_from_lease(lease)
+
+    def _ensure_shadow_vm(self):
+        """ Creates a shadow vm specifically for use by this host if absent.
+
+        The shadow VM created is used to facilitate host-to-host transfer
+        of any image accessible on this host to another datastore not directly
+        accessible from this host.
+        """
+        vm_id = self._shadow_vm_id
+        if self._vm_manager.has_vm(vm_id):
+            self._logger.debug("shadow vm exists")
+            return
+
+        spec = self._vm_config.create_spec(vm_id=vm_id,
+                                           datastore=self._image_datastore,
+                                           memory=32,
+                                           cpus=1)
+        try:
+            self._vm_manager.create_vm(vm_id, spec)
+        except Exception:
+            self._logger.exception("Error creating vm with id %s" % vm_id)
+            raise
+
+    def _configure_shadow_vm_with_disk(self, image_id):
+        """ Reconfigures the shadow vm to contain only one image disk. """
+        try:
+            spec = self._vm_manager.update_vm_spec()
+            info = self._vm_manager.get_vm_config(self._shadow_vm_id)
+            self._vm_manager.remove_all_disks(spec, info)
+            self._vm_manager.add_disk(spec, self._image_datastore, image_id,
+                                      info, disk_is_image=True)
+            self._vm_manager.update_vm(self._shadow_vm_id, spec)
+        except Exception:
+            self._logger.exception(
+                "Error configuring shadow vm with image %s" % image_id)
+            raise
+
+    def _get_image_stream_from_shadow_vm(self, image_id):
+        """ Obtain a handle to the streamOptimized disk from shadow vm.
+
+        The stream-optimized disk is obtained via configuring a shadow
+        VM with the image disk we are interested in and exporting the
+        reconfigured shadow VM.
+
+        """
+
+        self._ensure_shadow_vm()
+        self._configure_shadow_vm_with_disk(image_id)
+        lease, disk_url = self._export_shadow_vm()
+        disk_url = self._ensure_host_in_url(disk_url,
+                                            self._lease_url_host_name)
+        return lease, disk_url
