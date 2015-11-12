@@ -15,12 +15,17 @@ import logging
 import os
 import re
 import time
+import uuid
 
 from common.photon_thrift.direct_client import DirectClient
 from gen.host import Host
 from gen.host.ttypes import HttpTicketRequest
 from gen.host.ttypes import HttpTicketResultCode
 from gen.host.ttypes import HttpOp
+from gen.host.ttypes import ServiceTicketRequest
+from gen.host.ttypes import ServiceTicketResultCode
+from gen.host.ttypes import ServiceType
+from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import EsxVmConfig
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from pyVmomi import vim
@@ -53,9 +58,13 @@ class NfcLeaseInitiatizationError(Exception):
 class HttpTransferer(object):
     """ Class for handling HTTP-based data transfers between ESX hosts. """
 
-    def __init__(self, vim_client):
+    def __init__(self, vim_client, image_datastore, host_name="localhost"):
         self._logger = logging.getLogger(__name__)
         self._vim_client = vim_client
+        self._image_datastore = image_datastore
+        self._vm_config = EsxVmConfig(self._vim_client)
+        self._vm_manager = EsxVmManager(self._vim_client, None)
+        self._shadow_vm_id = "shadow_%s" % self._vim_client.host_uuid
 
     def _open_connection(self, host, protocol):
         if protocol == "http":
@@ -169,12 +178,21 @@ class HttpNfcTransferer(HttpTransferer):
     LEASE_INITIALIZATION_WAIT_SECS = 10
 
     def __init__(self, vim_client, image_datastore, host_name="localhost"):
-        super(HttpNfcTransferer, self).__init__(vim_client)
-        self._shadow_vm_id = "shadow_%s" % self._vim_client.host_uuid
+        super(HttpNfcTransferer, self).__init__(vim_client, image_datastore)
         self._lease_url_host_name = host_name
-        self._image_datastore = image_datastore
-        self._vm_config = EsxVmConfig(self._vim_client)
-        self._vm_manager = EsxVmManager(self._vim_client, None)
+
+    def _get_remote_connections(self, host, port):
+        agent_client = DirectClient("Host", Host.Client, host, port)
+        agent_client.connect()
+        request = ServiceTicketRequest(service_type=ServiceType.VIM)
+        response = agent_client.get_service_ticket(request)
+        if response.result != ServiceTicketResultCode.OK:
+            self._logger.info("Get service ticket failed. Response = %s" %
+                              str(response))
+            raise ValueError("No ticket")
+        vim_client = VimClient(
+            host=host, ticket=response.vim_ticket, auto_sync=False)
+        return agent_client, vim_client
 
     def _get_disk_url_from_lease(self, lease):
         for dev_url in lease.info.deviceUrl:
@@ -272,3 +290,64 @@ class HttpNfcTransferer(HttpTransferer):
         disk_url = self._ensure_host_in_url(disk_url,
                                             self._lease_url_host_name)
         return lease, disk_url
+
+    def _create_import_vm_spec(self, image_id, datastore):
+        vm_name = "h2h_%s" % str(uuid.uuid4())
+        spec = self._vm_config.create_spec_for_import(vm_id=vm_name,
+                                                      image_id=image_id,
+                                                      datastore=datastore,
+                                                      memory=32,
+                                                      cpus=1)
+
+        # Just specify a tiny capacity in the spec for now; the eventual vm
+        # disk will be based on what is uploaded via the http nfc url.
+        spec = self._vm_manager.create_empty_disk(spec, datastore, None,
+                                                  size_mb=1)
+
+        import_spec = vim.vm.VmImportSpec(configSpec=spec)
+        return import_spec
+
+    def _get_url_from_import_vm(self, dst_vim_client, import_spec):
+        vm_folder = dst_vim_client.vm_folder
+        root_rp = dst_vim_client.root_resource_pool
+        lease = root_rp.ImportVApp(import_spec, vm_folder)
+        self._wait_for_lease(lease)
+        disk_url = self._get_disk_url_from_lease(lease)
+        disk_url = self._ensure_host_in_url(disk_url, dst_vim_client.host)
+        return lease, disk_url
+
+    def send_image_to_host(self, image_id, destination_datastore, host, port,
+                           intermediate_file_path=None):
+        read_lease, disk_url = self._get_image_stream_from_shadow_vm(image_id)
+
+        # Save stream-optimized disk to a unique path locally for now.
+        # TODO(vui) Switch to chunked transfers to handle not knowing content
+        # length in the full streaming mode.
+
+        if intermediate_file_path:
+            tmp_path = intermediate_file_path
+        else:
+            tmp_path = "/vmfs/volumes/%s/%s_transfer.vmdk" % (
+                self._image_datastore, self._shadow_vm_id)
+        try:
+            self.download_file(disk_url, tmp_path)
+        finally:
+            read_lease.Complete()
+
+        spec = self._create_import_vm_spec(image_id, destination_datastore)
+
+        agent_client, vim_client = self._get_remote_connections(host, port)
+        try:
+            write_lease, disk_url = self._get_url_from_import_vm(vim_client,
+                                                                 spec)
+            try:
+                self.upload_file(tmp_path, disk_url)
+            finally:
+                write_lease.Complete()
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+        finally:
+            agent_client.close()
+            vim_client.disconnect()

@@ -16,6 +16,7 @@ import os
 import re
 import tempfile
 import unittest
+import uuid
 
 from hamcrest import *  # noqa
 from nose.plugins.skip import SkipTest
@@ -137,3 +138,14 @@ class TestHttpTransfer(unittest.TestCase):
                     assert_that(matches, not(empty()))
         finally:
             lease.Complete()
+
+    def test_send_image_to_host(self):
+        image_id = "ttylinux"
+        tmp_vmdk_path = "/tmp/test_send_image_%s.vmdk" % str(uuid.uuid4())
+        self.http_transferer.send_image_to_host(
+            image_id, self.image_datastore, self.host, self.agent_port,
+            intermediate_file_path=tmp_vmdk_path)
+
+        vim_vm = self.vim_client.get_vm(image_id)
+        vim_task = vim_vm.Destroy()
+        self.vim_client.wait_for_task(vim_task)
