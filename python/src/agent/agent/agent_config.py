@@ -367,7 +367,7 @@ class AgentConfig(object):
     @property
     @locked
     def image_datastores(self):
-        return getattr(self._options, self.IMAGE_DATASTORES)
+        return getattr(self._options, self.IMAGE_DATASTORES, [])
 
     @property
     @locked
@@ -675,8 +675,8 @@ class AgentConfig(object):
         config.json:
 
         > "image_datastores": [
-        >     {"name": "ds1", "used_for_vm": True},
-        >     {"name": "ds2", "used_for_vm": False}
+        >     {"name": "ds1", "used_for_vms": True},
+        >     {"name": "ds2", "used_for_vms": False}
         > ]
         """
         return [{"name": ds.name, "used_for_vms": ds.used_for_vms}

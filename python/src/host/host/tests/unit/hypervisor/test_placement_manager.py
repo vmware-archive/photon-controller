@@ -793,10 +793,11 @@ class PMBuilder(object):
             self.ds_with_image = self.ds_map.keys()
         else:
             self.ds_with_image = ds_with_image
-        self.im_ds_for_vm = im_ds_for_vm
         self.image_size = image_size
         self._ds_name_id_map = ds_name_id_map
         self.vm_networks = vm_networks
+        self.image_datastores = [{"name": image_ds,
+                                  "used_for_vms": im_ds_for_vm}]
 
     def normalize(self, ds_name_or_id):
         if self._ds_name_id_map and \
@@ -840,7 +841,7 @@ class PMBuilder(object):
 
         placement_option = PlacementOption(self.mem_overcommit,
                                            self.cpu_overcommit,
-                                           self.im_ds_for_vm)
+                                           self.image_datastores)
         return PlacementManager(hypervisor, placement_option)
 
     def datastore_info(self, datastore_id):
