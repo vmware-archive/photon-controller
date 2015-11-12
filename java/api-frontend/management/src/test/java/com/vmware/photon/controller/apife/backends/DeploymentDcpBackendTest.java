@@ -24,9 +24,9 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
+import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -41,11 +41,13 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationSe
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import com.google.inject.Inject;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.ListUtils;
+import org.junit.AfterClass;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -60,6 +62,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -72,29 +75,48 @@ public class DeploymentDcpBackendTest {
 
   private static ApiFeDcpRestClient dcpClient;
   private static BasicServiceHost host;
-  private static DeploymentBackend deploymentBackend;
   private static DeploymentCreateSpec deploymentCreateSpec;
 
-  private static void commonSetup(TaskBackend taskBackend,
-                                  EntityLockBackend entityLockBackend,
-                                  TenantBackend tenantBackend,
-                                  TombstoneBackend tombstoneBackend) throws Throwable {
-    host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-        BasicServiceHost.BIND_PORT,
-        null,
-        DeploymentServiceFactory.SELF_LINK,
-        10, 10);
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
 
-    host.startServiceSynchronously(new DeploymentServiceFactory(), null);
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
 
-    StaticServerSet serverSet = new StaticServerSet(
-        new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-    dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-    deploymentBackend = new DeploymentDcpBackend(dcpClient,
-        taskBackend,
-        entityLockBackend,
-        tombstoneBackend,
-        tenantBackend);
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
+
+  private static void commonDataSetup() throws Throwable {
 
     deploymentCreateSpec = new DeploymentCreateSpec();
     deploymentCreateSpec.setImageDatastore("imageDatastore");
@@ -112,14 +134,6 @@ public class DeploymentDcpBackendTest {
         .build());
   }
 
-  private static void commonTearDown() throws Throwable {
-    if (host != null) {
-      BasicServiceHost.destroy(host);
-    }
-
-    dcpClient.stop();
-  }
-
   @Test(enabled = false)
   private void dummy() {
   }
@@ -127,8 +141,17 @@ public class DeploymentDcpBackendTest {
   /**
    * Tests for the create deployment.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class PrepareCreateTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class PrepareCreateTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private DeploymentBackend deploymentBackend;
 
     @Inject
     private TaskBackend taskBackend;
@@ -136,22 +159,20 @@ public class DeploymentDcpBackendTest {
     @Inject
     private EntityLockBackend entityLockBackend;
 
-    @Inject
-    private TenantBackend tenantBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(taskBackend, entityLockBackend, tenantBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -159,9 +180,6 @@ public class DeploymentDcpBackendTest {
       TaskEntity taskEntity = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       assertThat(taskEntity, is(notNullValue()));
       assertThat(taskEntity.getId(), is(notNullValue()));
-
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
 
       // verify the task is created correctly
       taskEntity = taskBackend.findById(taskEntity.getId());
@@ -201,9 +219,6 @@ public class DeploymentDcpBackendTest {
       Assert.assertNotNull(taskEntity);
       Assert.assertNotNull(taskEntity.getId());
 
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
-
       try {
         deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
         fail("should have failed creating second deployment.");
@@ -215,27 +230,27 @@ public class DeploymentDcpBackendTest {
   /**
    * Tests for the prepareDeploy method.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class PrepareDeployTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class PrepareDeployTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private DeploymentBackend deploymentBackend;
 
     private DeploymentEntity entity;
 
     @Inject
     private TaskBackend taskBackend;
 
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private TenantBackend tenantBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(taskBackend, entityLockBackend, tenantBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       entity = deploymentBackend.findById(task.getEntityId());
@@ -243,8 +258,12 @@ public class DeploymentDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test(dataProvider = "DeploySuccess")
@@ -256,9 +275,6 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getId(), is(notNullValue()));
       assertThat(taskEntity.getLockableEntityIds().size(), is(1));
       assertThat(taskEntity.getLockableEntityIds().get(0), is(taskEntity.getEntityId()));
-
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
 
       // verify the task is created correctly
       taskEntity = taskBackend.findById(taskEntity.getId());
@@ -308,8 +324,17 @@ public class DeploymentDcpBackendTest {
   /**
    * Tests for setting admin groups functions.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class SetAdminGroupsTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class SetAdminGroupsTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private DeploymentBackend deploymentBackend;
 
     private DeploymentEntity initialDeploymentEntity;
 
@@ -317,18 +342,12 @@ public class DeploymentDcpBackendTest {
     private TaskBackend taskBackend;
 
     @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
     private TenantBackend tenantBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(taskBackend, entityLockBackend, tenantBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       initialDeploymentEntity = deploymentBackend.findById(task.getEntityId());
@@ -336,8 +355,12 @@ public class DeploymentDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -449,27 +472,24 @@ public class DeploymentDcpBackendTest {
   /**
    * Tests for pause resume system.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class PauseResumeSystemTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class PauseResumeSystemTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private DeploymentBackend deploymentBackend;
 
     private DeploymentEntity initialDeploymentEntity;
 
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private TenantBackend tenantBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(taskBackend, entityLockBackend, tenantBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       initialDeploymentEntity = deploymentBackend.findById(task.getEntityId());
@@ -477,14 +497,18 @@ public class DeploymentDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
     public void testPauseSystemFail() throws Throwable {
       try {
-        TaskEntity taskEntity = deploymentBackend.pauseSystem(initialDeploymentEntity.getId());
+        deploymentBackend.pauseSystem(initialDeploymentEntity.getId());
         fail("Should have failed since the deployment is not in READY state.");
       } catch (InvalidOperationStateException e) {
         assertThat(e.getMessage(), startsWith("Invalid operation PAUSE_SYSTEM for deployment"));
@@ -511,7 +535,7 @@ public class DeploymentDcpBackendTest {
     @Test
     public void testResumeSystemFail() throws Throwable {
       try {
-        TaskEntity taskEntity = deploymentBackend.resumeSystem(initialDeploymentEntity.getId());
+        deploymentBackend.resumeSystem(initialDeploymentEntity.getId());
         fail("Should have failed since the deployment is not in READY state.");
       } catch (InvalidOperationStateException e) {
         assertThat(e.getMessage(), startsWith("Invalid operation RESUME_SYSTEM for deployment"));
@@ -539,30 +563,24 @@ public class DeploymentDcpBackendTest {
   /**
    * Tests {@link DeploymentDcpBackend#toApiRepresentation(String)}.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class ToApiRepresentationTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class ToApiRepresentationTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
 
     @Inject
     private DeploymentBackend deploymentBackend;
-
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private TenantBackend tenantBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
 
     private DeploymentEntity entity;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(taskBackend, entityLockBackend, tenantBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       entity = deploymentBackend.findById(task.getEntityId());
@@ -570,8 +588,12 @@ public class DeploymentDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -602,30 +624,24 @@ public class DeploymentDcpBackendTest {
   /**
    * Tests for the updateState method.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class UpdateStateTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class UpdateStateTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
 
     private DeploymentEntity entity;
 
     @Inject
     private DeploymentBackend deploymentBackend;
 
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private TenantBackend tenantBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(taskBackend, entityLockBackend, tenantBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       entity = deploymentBackend.findById(task.getEntityId());
@@ -633,8 +649,12 @@ public class DeploymentDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -649,8 +669,14 @@ public class DeploymentDcpBackendTest {
   /**
    * Tests for the tombstone method.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class TombstoneTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class TombstoneTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
 
     private DeploymentEntity entity;
 
@@ -658,21 +684,12 @@ public class DeploymentDcpBackendTest {
     private DeploymentBackend deploymentBackend;
 
     @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private TenantBackend tenantBackend;
-
-    @Inject
     private TombstoneBackend tombstoneBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(taskBackend, entityLockBackend, tenantBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       entity = deploymentBackend.findById(task.getEntityId());
@@ -680,8 +697,12 @@ public class DeploymentDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -703,27 +724,28 @@ public class DeploymentDcpBackendTest {
   /**
    * Tests for the prepareDelete method.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class PrepareDeleteTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class PrepareDeleteTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private DeploymentBackend deploymentBackend;
 
     private DeploymentEntity entity;
 
     @Inject
     private TaskBackend taskBackend;
 
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private TenantBackend tenantBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(taskBackend, entityLockBackend, tenantBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       entity = deploymentBackend.findById(task.getEntityId());
@@ -731,19 +753,19 @@ public class DeploymentDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
     }
 
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
     @Test(dataProvider = "DeleteSuccess")
     public void testDeleteSuccess(DeploymentState state) throws Throwable {
       deploymentBackend.updateState(entity, state);
       TaskEntity taskEntity = deploymentBackend.prepareDeleteDeployment(entity.getId());
       assertThat(taskEntity, is(notNullValue()));
       assertThat(taskEntity.getId(), is(notNullValue()));
-
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
 
       // verify the task is created correctly
       taskEntity = taskBackend.findById(taskEntity.getId());
@@ -792,26 +814,27 @@ public class DeploymentDcpBackendTest {
   /**
    * Tests for the prepareDestroy method.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class PrepareDestroyTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class PrepareDestroyTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private DeploymentBackend deploymentBackend;
+
     private DeploymentEntity entity;
 
     @Inject
     private TaskBackend taskBackend;
 
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private TenantBackend tenantBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(taskBackend, entityLockBackend, tenantBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       entity = deploymentBackend.findById(task.getEntityId());
@@ -819,8 +842,12 @@ public class DeploymentDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test(dataProvider = "DestroySuccess")
@@ -831,9 +858,6 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getId(), is(notNullValue()));
       assertThat(taskEntity.getLockableEntityIds().size(), is(1));
       assertThat(taskEntity.getLockableEntityIds().get(0), is(taskEntity.getEntityId()));
-
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
 
       // verify the task is created correctly
       taskEntity = taskBackend.findById(taskEntity.getId());
@@ -877,30 +901,29 @@ public class DeploymentDcpBackendTest {
   /**
    * Tests for the depoymentmigration methods.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class PrepareMigrateDeploymentTest extends BaseDaoTest {
-    private DeploymentEntity entity;
-    private DeploymentEntity entity2;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class PrepareMigrateDeploymentTest {
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private DeploymentBackend deploymentBackend;
+
+    private DeploymentEntity entity;
     private BasicServiceHost host2;
     private ApiFeDcpRestClient dcpClient2;
 
     @Inject
     private TaskBackend taskBackend;
 
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private TenantBackend tenantBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(taskBackend, entityLockBackend, tenantBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       entity = deploymentBackend.findById(task.getEntityId());
@@ -918,27 +941,42 @@ public class DeploymentDcpBackendTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host2.getPreferredAddress(), host2.getPort()));
-      dcpClient2 = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-      DeploymentDcpBackend deploymentBackend2 = new DeploymentDcpBackend(dcpClient2,
-          taskBackend,
-          entityLockBackend,
-          tombstoneBackend,
-          tenantBackend);
+      ApiFeDcpRestClient dcpClient2 = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpClient2.start();
 
-      TaskEntity task = deploymentBackend2.prepareCreateDeployment(deploymentCreateSpec);
-      entity2 = deploymentBackend2.findById(task.getEntityId());
+      DeploymentService.State deployment2 = new DeploymentService.State();
+      deployment2.state = DeploymentState.NOT_DEPLOYED;
+      deployment2.imageDataStoreName = deploymentCreateSpec.getImageDatastore();
+      deployment2.ntpEndpoint = deploymentCreateSpec.getNtpEndpoint();
+      deployment2.syslogEndpoint = deploymentCreateSpec.getSyslogEndpoint();
+      deployment2.imageDataStoreUsedForVMs = deploymentCreateSpec.isUseImageDatastoreForVms();
+      deployment2.oAuthEnabled = deploymentCreateSpec.getAuth().getEnabled();
+      deployment2.oAuthServerAddress = deploymentCreateSpec.getAuth().getEndpoint();
+      deployment2.oAuthServerPort = deploymentCreateSpec.getAuth().getPort();
+      deployment2.oAuthTenantName = deploymentCreateSpec.getAuth().getTenant();
+      deployment2.oAuthUserName = deploymentCreateSpec.getAuth().getUsername();
+      deployment2.oAuthPassword = deploymentCreateSpec.getAuth().getPassword();
+      deployment2.oAuthSecurityGroups = new ArrayList<>(deploymentCreateSpec.getAuth().getSecurityGroups());
+
+      dcpClient2.postAndWait(DeploymentServiceFactory.SELF_LINK, deployment2);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
 
       if (host2 != null) {
         BasicServiceHost.destroy(host2);
       }
 
-      dcpClient2.stop();
+      if (dcpClient2 != null) {
+        dcpClient2.stop();
+      }
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -950,9 +988,6 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getId(), is(notNullValue()));
       assertThat(taskEntity.getLockableEntityIds().size(), is(1));
       assertThat(taskEntity.getLockableEntityIds().get(0), is(taskEntity.getEntityId()));
-
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
 
       // verify the task is created correctly
       taskEntity = taskBackend.findById(taskEntity.getId());
@@ -977,9 +1012,6 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getLockableEntityIds().size(), is(1));
       assertThat(taskEntity.getLockableEntityIds().get(0), is(taskEntity.getEntityId()));
 
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
-
       // verify the task is created correctly
       taskEntity = taskBackend.findById(taskEntity.getId());
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
@@ -997,47 +1029,31 @@ public class DeploymentDcpBackendTest {
   /**
    * Tests for the configureCluster method.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class ConfigureClusterTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class ConfigureClusterTest {
 
     @Inject
-    private TaskBackend taskBackend;
+    private BasicServiceHost basicServiceHost;
 
     @Inject
-    private EntityLockBackend entityLockBackend;
+    private ApiFeDcpRestClient apiFeDcpRestClient;
 
     @Inject
-    private TenantBackend tenantBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
+    private DeploymentBackend deploymentBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          ClusterConfigurationServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new ClusterConfigurationServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-      deploymentBackend = new DeploymentDcpBackend(dcpClient,
-          taskBackend,
-          entityLockBackend,
-          tombstoneBackend,
-          tenantBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -1063,8 +1079,6 @@ public class DeploymentDcpBackendTest {
         assertThat(configuration.getType(), is(clusterType));
         assertThat(configuration.getImageId(), is("imageId" + clusterType.toString()));
 
-        // clear the session so that subsequent reads are fresh queries
-        flushSession();
       }
     }
 
@@ -1074,9 +1088,6 @@ public class DeploymentDcpBackendTest {
       configurationSpec.setType(ClusterType.KUBERNETES);
       configurationSpec.setImageId("imageId");
       deploymentBackend.configureCluster(configurationSpec);
-
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
 
       try {
         deploymentBackend.configureCluster(configurationSpec);
