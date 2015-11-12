@@ -34,6 +34,7 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
+import com.vmware.photon.controller.common.dcp.validation.DefaultLong;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import static com.vmware.dcp.common.OperationJoin.JoinedCompletionHandler;
 import static com.vmware.dcp.common.OperationJoin.create;
@@ -51,6 +52,7 @@ import java.util.Map;
 public class EntityLockCleanerService extends StatefulService {
 
   public static final Integer ENTITY_LOCK_DEFAULT_PAGE_LIMIT = 1000;
+  private static final String DOCUMENT_UPDATE_TIME_MICROS = "documentUpdateTimeMicros";
 
   public EntityLockCleanerService() {
     super(State.class);
@@ -156,7 +158,7 @@ public class EntityLockCleanerService extends StatefulService {
       switch (current.taskState.stage) {
         case STARTED:
           final State finishPatch = new State();
-          processUnreleasedEntityLocks(finishPatch);
+          processUnreleasedEntityLocks(finishPatch, current);
           break;
 
         case FAILED:
@@ -181,10 +183,10 @@ public class EntityLockCleanerService extends StatefulService {
    *
    * @param finishPatch
    */
-  private void processUnreleasedEntityLocks(final State finishPatch) {
+  private void processUnreleasedEntityLocks(final State finishPatch, final State current) {
     Operation queryEntityLocksPagination = Operation
         .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
-        .setBody(buildEntityLockQuery());
+        .setBody(buildEntityLockQuery(current));
 
     Operation getFirstPageOfEntityLocks = Operation.createGet(null);
 
@@ -211,28 +213,43 @@ public class EntityLockCleanerService extends StatefulService {
             failTask(throwable.values().iterator().next());
             return;
           }
-          Operation op = ops.get(getFirstPageOfEntityLocks.getId());
-          List<EntityLockService.State> entityLockList =
-              parseEntityLockQueryResults(op.getBody(QueryTask.class));
+          if (getFirstPageOfEntityLocks.getUri() != null) {
+            Operation op = ops.get(getFirstPageOfEntityLocks.getId());
 
-          if (entityLockList.size() == 0) {
-            ServiceUtils.logInfo(EntityLockCleanerService.this, "No entityLocks found.");
-            finishTask(finishPatch);
-            return;
+            List<EntityLockService.State> entityLockList =
+                parseEntityLockQueryResults(op.getBody(QueryTask.class));
+
+            if (entityLockList.size() == 0) {
+              ServiceUtils.logInfo(EntityLockCleanerService.this, "No entityLocks found.");
+              finishTask(finishPatch);
+              return;
+            }
+
+            deleteUnreleasedEntityLocks(finishPatch, entityLockList);
           }
-          deleteUnreleasedEntityLocks(finishPatch, entityLockList);
         })
         .sendWith(this);
   }
 
-  private QueryTask buildEntityLockQuery() {
+  private QueryTask buildEntityLockQuery(final State current) {
+    Long durationInMicros = Utils.getNowMicrosUtc() - current.entityLockDeleteWatermarkTimeInMicros;
+
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
         .setTermMatchValue(Utils.buildKind(EntityLockService.State.class));
 
     QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
 
-    querySpec.query = kindClause;
+    QueryTask.NumericRange range = QueryTask.NumericRange.createLessThanRange(durationInMicros);
+    range.precisionStep = Integer.MAX_VALUE;
+    QueryTask.Query timeClause = new QueryTask.Query()
+        .setTermPropertyName(DOCUMENT_UPDATE_TIME_MICROS)
+        .setNumericRange(range);
+
+    querySpec.query
+        .addBooleanClause(kindClause)
+        .addBooleanClause(timeClause);
+
     querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
     querySpec.resultLimit = ENTITY_LOCK_DEFAULT_PAGE_LIMIT;
     return QueryTask.create(querySpec).setDirect(true);
@@ -271,7 +288,7 @@ public class EntityLockCleanerService extends StatefulService {
 
       Collection<Operation> deleteOperations = getDeleteOperationsForEntityLocks(ops);
 
-      finishPatch.unreleasedEntityLocks = deleteOperations.size();
+      finishPatch.danglingEntityLocks = deleteOperations.size();
       if (deleteOperations.size() == 0) {
         ServiceUtils.logInfo(this, "No unreleased entityLocks found.");
         finishPatch.deletedEntityLocks = 0;
@@ -291,10 +308,10 @@ public class EntityLockCleanerService extends StatefulService {
       TaskService.State task = op.getBody(TaskService.State.class);
       if (task.state != TaskService.State.TaskState.QUEUED &&
           task.state != TaskService.State.TaskState.STARTED) {
-          ServiceUtils.logSevere(this, "Deleting a dangling EntityLock. Investigation needed on associated " +
-                  "TaskService. EntityLock Id: %s, TaskService documentSelfLink:  %s",
-              task.entityId,
-              task.documentSelfLink);
+        ServiceUtils.logSevere(this, "Deleting a dangling EntityLock. Investigation needed on associated " +
+            "TaskService. EntityLock Id: %s, TaskService documentSelfLink:  %s",
+            task.entityId,
+            task.documentSelfLink);
         Operation deleteOperation = Operation
             .createDelete(UriUtils.buildUri(getHost(), EntityLockServiceFactory.SELF_LINK + "/" + task.entityId))
             .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
@@ -320,9 +337,11 @@ public class EntityLockCleanerService extends StatefulService {
   private List<EntityLockService.State> parseEntityLockQueryResults(QueryTask result) {
     List<EntityLockService.State> entityLockList = new LinkedList<>();
 
-    for (Map.Entry<String, Object> doc : result.results.documents.entrySet()) {
-      entityLockList.add(
-          Utils.fromJson(doc.getValue(), EntityLockService.State.class));
+    if (result != null && result.results != null && result.results.documentCount > 0) {
+      for (Map.Entry<String, Object> doc : result.results.documents.entrySet()) {
+        entityLockList.add(
+            Utils.fromJson(doc.getValue(), EntityLockService.State.class));
+      }
     }
 
     return entityLockList;
@@ -421,7 +440,7 @@ public class EntityLockCleanerService extends StatefulService {
      * The number of entity locks to delete.
      */
     @DefaultInteger(value = 0)
-    public Integer unreleasedEntityLocks;
+    public Integer danglingEntityLocks;
 
     /**
      * The number of entity locks that were deleted successfully.
@@ -434,5 +453,12 @@ public class EntityLockCleanerService extends StatefulService {
      */
     @DefaultBoolean(value = false)
     public Boolean isSelfProgressionDisabled;
+
+    /**
+     * Duration that controls how old the entity locks should be for cleaning.
+     */
+    @DefaultLong(value = 0)
+    public Long entityLockDeleteWatermarkTimeInMicros;
+
   }
 }

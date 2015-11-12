@@ -162,7 +162,7 @@ public class EntityLockCleanerServiceTest {
       return new Object[][]{
           {"taskState", state},
           {"isSelfProgressionDisabled", false},
-          {"unreleasedEntityLocks", 0},
+          {"danglingEntityLocks", 0},
           {"deletedEntityLocks", 0}
       };
     }
@@ -301,20 +301,49 @@ public class EntityLockCleanerServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "Success")
-    public void testSuccess(int totalEntityLocks, int unreleasedEntityLocks, int hostCount) throws Throwable {
+    public void testSuccessOnNewEntityLocks(int totalEntityLocks, int danglingEntityLocks, int hostCount)
+        throws Throwable {
       machine = TestEnvironment.create(hostCount);
-      seedTestEnvironment(machine, totalEntityLocks, unreleasedEntityLocks);
+      seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks);
 
+      // No entity locks should be deleted when entityLockDeleteWatermarkTimeInMicros is NowMicrosUtc
+      request.entityLockDeleteWatermarkTimeInMicros = Utils.getNowMicrosUtc();
       EntityLockCleanerService.State response = machine.callServiceAndWaitForState(
           EntityLockCleanerFactoryService.SELF_LINK,
           request,
           EntityLockCleanerService.State.class,
           (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
 
-      assertThat(response.unreleasedEntityLocks,
-          is(Integer.min(unreleasedEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
+      assertThat(response.danglingEntityLocks, is(0));
+      assertThat(response.deletedEntityLocks, is(0));
+
+      freeTestEnvironment(machine);
+    }
+
+    /**
+     * Tests clean success scenarios.
+     *
+     * @param hostCount
+     * @throws Throwable
+     */
+    @Test(dataProvider = "Success")
+    public void testSuccessOnOldEntityLocks(int totalEntityLocks, int danglingEntityLocks, int hostCount)
+        throws Throwable {
+      machine = TestEnvironment.create(hostCount);
+      seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks);
+
+      // All entity locks being created should be found when entityLockDeleteWatermarkTimeInMicros is 0
+      request.entityLockDeleteWatermarkTimeInMicros = 0L;
+      EntityLockCleanerService.State response = machine.callServiceAndWaitForState(
+          EntityLockCleanerFactoryService.SELF_LINK,
+          request,
+          EntityLockCleanerService.State.class,
+          (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
+      assertThat(response.danglingEntityLocks,
+          is(Integer.min(danglingEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
       assertThat(response.deletedEntityLocks,
-          is(Integer.min(unreleasedEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
+          is(Integer.min(danglingEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
+
       freeTestEnvironment(machine);
     }
 
@@ -344,14 +373,14 @@ public class EntityLockCleanerServiceTest {
 
     private void seedTestEnvironment(TestEnvironment env,
                                      int totalEntityLocks,
-                                     int unreleasedEntityLocks) throws Throwable {
+                                     int danglingEntityLocks) throws Throwable {
       for (int i = 0; i < totalEntityLocks; i++) {
         // create task
         TaskService.State newTask = new TaskService.State();
         newTask.entityId = "entity-id" + i;
         newTask.state = (i % 2 == 0) ? STARTED : QUEUED;
 
-        if (i < unreleasedEntityLocks) {
+        if (i < danglingEntityLocks) {
           newTask.state = (i % 2 == 0) ? COMPLETED : ERROR;
         }
 
