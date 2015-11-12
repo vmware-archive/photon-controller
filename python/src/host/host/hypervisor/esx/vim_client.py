@@ -26,6 +26,7 @@ from datetime import datetime
 from datetime import timedelta
 
 from common.blocking_dict import BlockingDict
+from common.cache import cached
 from common.lock import lock_with
 from common.log import log_duration_with
 from gen.agent.ttypes import TaskCache
@@ -319,6 +320,7 @@ class VimClient(object):
         return host.GetRootResourcePool(self._si)
 
     @property
+    @cached()
     @hostd_error_handler
     def vm_folder(self):
         """Get the default vm folder for this host.
@@ -526,6 +528,7 @@ class VimClient(object):
 
         return vm
 
+    @cached()
     @hostd_error_handler
     def get_datastore_folder(self):
         """Get the datastore folder for this host.
@@ -626,6 +629,7 @@ class VimClient(object):
             self.current_version = update.version
         return update
 
+    @cached()
     @hostd_error_handler
     def get_network_folder(self):
         """Get the network folder for this host.
