@@ -59,7 +59,7 @@ Vagrant.configure("2") do |config|
     photon.vm.guest = :photon
     photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-28"
     photon.vm.box_url = ENV['DEVBOX_URL'] ||
-        "https://bintray.com/artifact/download/vmware-esxcloud/public/28/resource/photon-devbox.box"
+        "https://bintray.com/artifact/download/photon-controller/public/28/resource/photon-devbox.box"
 
     unless ENV["NO_PORT_FORWARDING"]
       # Load Balancer

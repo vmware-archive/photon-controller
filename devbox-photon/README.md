@@ -42,7 +42,7 @@ Dev Box configuration and startup code is located in the Dev Box directory (`<co
 
 #### Setting Vagrant box name and location
 
-Dev Box Vagrant box file is located at `https://bintray.com/artifact/download/vmware-esxcloud/public/<build #>/resource/photon-devbox.box`. It is downloaded on-demand and cached locally. It is also associated with a name. Both name and URL can be redirected by using environment variables (`DEVBOX_NAME` and `DEVBOX_URL`).
+Dev Box Vagrant box file is located at `https://bintray.com/artifact/download/photon-controller/public/<build #>/resource/photon-devbox.box`. It is downloaded on-demand and cached locally. It is also associated with a name. Both name and URL can be redirected by using environment variables (`DEVBOX_NAME` and `DEVBOX_URL`).
 
 ### Checking Dev Box status
 
