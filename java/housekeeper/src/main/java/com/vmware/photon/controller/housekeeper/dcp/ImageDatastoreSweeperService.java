@@ -40,6 +40,7 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotBlank;
+import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.GetDeletedImagesResponse;
@@ -773,28 +774,28 @@ public class ImageDatastoreSweeperService extends StatefulService {
     /**
      * The rate at which to scan datastore for unused images.
      */
-    @Positive(acceptNull = true)
+    @Positive
     @Immutable
     public Long scanRate;
 
     /**
      * The timeout for the unused images scan.
      */
-    @Positive(acceptNull = true)
+    @Positive
     @Immutable
     public Long scanTimeout;
 
     /**
      * The rate at which to delete images from a datastore.
      */
-    @Positive(acceptNull = true)
+    @Positive
     @Immutable
     public Long sweepRate;
 
     /**
      * The timeout for the delete images operation.
      */
-    @Positive(acceptNull = true)
+    @Positive
     @Immutable
     public Long sweepTimeout;
 
@@ -820,6 +821,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
     /**
      * The timestamp indicating when the reference images were retrieved.
      */
+    @NotNull
     @Positive
     @Immutable
     public Long imageCreateWatermarkTime;
@@ -828,6 +830,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
      * The timestamp indicating how long images need to be found as un-used before we should delete them
      * from the local datastore.
      */
+    @NotNull
     @Positive
     @Immutable
     public Long imageDeleteWatermarkTime;

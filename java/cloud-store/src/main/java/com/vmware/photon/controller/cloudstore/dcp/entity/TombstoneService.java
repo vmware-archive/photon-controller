@@ -106,6 +106,7 @@ public class TombstoneService extends StatefulService {
      * Milliseconds since epoch of when this tombstone was created.
      */
     @Immutable
+    @NotNull
     @Positive
     public Long tombstoneTime;
   }

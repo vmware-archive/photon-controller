@@ -37,8 +37,7 @@ public enum PositiveValidator {
             continue;
           }
 
-          boolean acceptNull = ((Positive) annotation).acceptNull();
-          checkState((null == field.get(state) && acceptNull) || 0 < ((Number) field.get(state)).longValue(),
+          checkState(null == field.get(state) || 0 < ((Number) field.get(state)).longValue(),
               String.format("%s must be greater than zero", field.getName()));
 
         }
