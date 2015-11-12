@@ -1,0 +1,17 @@
+#!/bin/bash -xe
+dir=/etc/esxcloud-deployer/configurations/haproxy
+sudo mkdir -p $dir
+sudo cp -a /devbox_data/java/containers/haproxy/config/* $dir
+
+dir=/etc/esxcloud-deployer/configurations/zookeeper
+sudo mkdir -p $dir
+sudo cp -a /devbox_data/java/containers/zookeeper/config/* $dir
+
+dir=/etc/esxcloud-deployer/configurations/lightwave
+sudo mkdir -p $dir
+sudo cp -a /devbox_data/java/deployer/src/dist/configuration-lightwave/* $dir
+
+dir=/etc/esxcloud-deployer/configurations/management-ui
+sudo mkdir -p $dir
+sudo cp -a /devbox_data/java/deployer/src/dist/configuration-management-ui/* $dir
+
