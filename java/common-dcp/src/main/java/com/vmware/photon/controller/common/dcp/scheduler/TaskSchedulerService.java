@@ -30,6 +30,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.NotBlank;
+import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 
 import java.util.concurrent.TimeUnit;
@@ -306,6 +307,7 @@ public class TaskSchedulerService extends StatefulService {
     @NotBlank
     public String schedulerServiceClassName;
 
+    @NotNull
     @Positive
     public Integer tasksLimits;
   }

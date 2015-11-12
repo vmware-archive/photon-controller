@@ -34,6 +34,7 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
+import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 
 import java.net.URI;
@@ -514,6 +515,7 @@ public class TombstoneCleanerService extends StatefulService {
      * Age after which tombstones and associated task entities will be deleted. (milliseconds)
      */
     @Immutable
+    @NotNull
     @Positive
     public Long tombstoneExpirationAge;
 

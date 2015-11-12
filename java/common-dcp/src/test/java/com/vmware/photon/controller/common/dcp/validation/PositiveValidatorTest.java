@@ -25,22 +25,22 @@ public class PositiveValidatorTest {
 
   @Test
   public void passesOnValidDocument() {
-    validator.validate(new AnnotatedDocument(1, 1L));
+    validator.validate(new AnnotatedDocument(1));
   }
 
   @Test
   public void passesOnValidDocumentNullIsValid() {
-    validator.validate(new AnnotatedDocument(1, null));
+    validator.validate(new AnnotatedDocument(null));
   }
 
   @Test(expectedExceptions = IllegalStateException.class)
   public void failsOnInvalidDocumentNonNullableHasError() {
-    validator.validate(new AnnotatedDocument(-1, 1L));
+    validator.validate(new AnnotatedDocument(-1));
   }
 
-  @Test(expectedExceptions = IllegalStateException.class)
-  public void failsOnInvalidDocumentNullableHasError() {
-    validator.validate(new AnnotatedDocument(1, -1L));
+  @Test
+  public void passesOnValidDocumentNullable() {
+    validator.validate(new NotAnnotatedDocument(null));
   }
 
   @Test
@@ -60,12 +60,8 @@ public class PositiveValidatorTest {
     @Positive
     public Integer value;
 
-    @Positive(acceptNull = true)
-    public Long value2;
-
-    AnnotatedDocument(Integer value, Long value2) {
+    AnnotatedDocument(Integer value) {
       this.value = value;
-      this.value2 = value2;
     }
   }
 
@@ -75,7 +71,7 @@ public class PositiveValidatorTest {
   public static class NotAnnotatedDocument extends ServiceDocument {
     public Integer value;
 
-    NotAnnotatedDocument(int value) {
+    NotAnnotatedDocument(Integer value) {
       this.value = value;
     }
   }
