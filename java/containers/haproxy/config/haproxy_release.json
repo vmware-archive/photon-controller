@@ -1,0 +1,22 @@
+{
+  "serviceName": "LoadBalancer",
+  "cpuCount": 1,
+  "memoryMb": 1024,
+  "diskGb": 1,
+  "isReplicated": false,
+  "isPrivileged": true,
+  "useHostNetwork": true,
+  "containerImage": "esxcloud/haproxy",
+  "portBindings": {
+    "28080": 28080,
+    "443": 443,
+    "80": 80,
+    "4343": 4343
+  },
+  "volumeBindings": {
+    "/var/log": "/var/log"
+  },
+  "dynamicParameters": {
+    "LOG_DIRECTORY": "/var/log"
+  }
+}
