@@ -85,14 +85,7 @@ public class DeploymentWorkFlowServiceClient {
 
     DeploymentWorkflowService.State state = new DeploymentWorkflowService.State();
     state.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + request.getDeployment().getId();
-
-    state.esxCloudManagementVmImageFile = deployerConfig.getManagementImageFile();
-    state.isLoadBalancerEnabled = true;
-    state.isAuthEnabled = request.getDeployment().isAuthEnabled();
-    state.ntpEndpoint = request.getDeployment().getNtpEndpoint();
-    if (request.getDeployment().isSetLoadBalancerEnabled()) {
-      state.isLoadBalancerEnabled = request.getDeployment().isLoadBalancerEnabled();
-    }
+    state.managementVmImageFile = deployerConfig.getManagementImageFile();
 
     Operation post = Operation
         .createPost(UriUtils.buildUri(dcpHost, DeploymentWorkflowFactoryService.SELF_LINK, null))

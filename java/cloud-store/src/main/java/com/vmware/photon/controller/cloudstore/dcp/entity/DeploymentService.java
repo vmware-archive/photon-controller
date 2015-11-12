@@ -112,6 +112,18 @@ public class DeploymentService extends StatefulService {
     public Boolean imageDataStoreUsedForVMs;
 
     /**
+     * Id of image entity in cloudstore.
+     */
+    @WriteOnce
+    public String imageId;
+
+    /**
+     * Id of project created for this deployment.
+     */
+    @WriteOnce
+    public String projectId;
+
+    /**
      * This value represents the NTP endpoint for the deployment.
      */
     @Immutable
@@ -173,13 +185,11 @@ public class DeploymentService extends StatefulService {
     /**
      * This value represents the list of chairman servers.
      */
-    @WriteOnce
     public Set<String> chairmanServerList;
 
     /**
      * This value represents the zookeeper quorum.
      */
-    @WriteOnce
     public String zookeeperQuorum;
 
     /**

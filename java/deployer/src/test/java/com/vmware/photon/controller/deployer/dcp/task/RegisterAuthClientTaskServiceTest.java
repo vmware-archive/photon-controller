@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowService;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
@@ -453,6 +454,7 @@ public class RegisterAuthClientTaskServiceTest {
 
       CreateManagementPlaneLayoutWorkflowService.State workflowStartState =
           new CreateManagementPlaneLayoutWorkflowService.State();
+      workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
 
       CreateManagementPlaneLayoutWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(
