@@ -1,6 +1,9 @@
 apply plugin: 'application'
 apply plugin: 'thrift'
 
+import com.bmuschko.gradle.docker.tasks.container.*
+import com.bmuschko.gradle.docker.tasks.image.*
+
 mainClassName = 'com.vmware.photon.controller.apife.ApiFeService'
 
 dependencies {
@@ -77,4 +80,22 @@ test {
   useTestNG() {
     excludeGroups 'flaky'
   }
+}
+
+distTar << extractRelease(this, 'management')
+
+task dockerfile(type: Dockerfile) {
+  destFile = file('build/container/Dockerfile')
+  from 'photon/servicebase'
+  copyFile('release/', '/usr/lib/esxcloud/management-api/')
+}
+
+task container(type: DockerBuildImage) {
+  dependsOn dockerfile, ':containers:servicebase'
+  inputDir = dockerfile.destFile.parentFile
+  tag = 'photon/management-api'
+}
+
+task removeContainer(type: DockerRemoveImage) {
+  targetImageId { container.tag }
 }

@@ -1,0 +1,37 @@
+// Tasks executed against devbox
+import com.bmuschko.gradle.vagrant.tasks.*
+
+ext {
+  virtualBoxDir = file('../../devbox-photon')
+}
+
+task up(type: VagrantUp) {
+  boxDir = virtualBoxDir
+}
+
+task destroy(type: VagrantDestroy) {
+  boxDir = virtualBoxDir
+}
+
+task halt(type: VagrantHalt) {
+  boxDir = virtualBoxDir
+}
+
+// Equivalent to halt and then up
+task reload(type: VagrantReload) {
+  boxDir = virtualBoxDir
+}
+
+task status(type: VagrantStatus) {
+  boxDir = virtualBoxDir
+}
+
+task renew() {
+  dependsOn destroy
+  finalizedBy up
+}
+
+task buildAll() {
+  dependsOn up
+  finalizedBy ":containers:all"
+}
