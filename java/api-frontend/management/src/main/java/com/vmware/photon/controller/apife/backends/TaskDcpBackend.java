@@ -158,20 +158,23 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   @Override
   public TaskEntity createCompletedTask(BaseEntity entity, Operation operation) {
     TaskService.State taskServiceState = new TaskService.State();
-    taskServiceState.entityId = entity.getId();
-    taskServiceState.entityKind = entity.getKind();
+    if (entity != null) {
+      taskServiceState.entityId = entity.getId();
+      taskServiceState.entityKind = entity.getKind();
+
+      // auto-link infrastructure tasks to their project
+      if (entity instanceof InfrastructureEntity) {
+        InfrastructureEntity infrastructureEntity = (InfrastructureEntity) entity;
+        String projectId = infrastructureEntity.getProjectId();
+        taskServiceState.projectId = projectId;
+      }
+    }
+
     taskServiceState.state = TaskService.State.TaskState.COMPLETED;
     taskServiceState.operation = operation;
     taskServiceState.startedTime = DateTime.now().toDate();
     taskServiceState.endTime = taskServiceState.startedTime;
     taskServiceState.queuedTime = taskServiceState.startedTime;
-
-    // auto-link infrastructure tasks to their project
-    if (entity instanceof InfrastructureEntity) {
-      InfrastructureEntity infrastructureEntity = (InfrastructureEntity) entity;
-      String projectId = infrastructureEntity.getProjectId();
-      taskServiceState.projectId = projectId;
-    }
 
     com.vmware.dcp.common.Operation result = dcpClient.postAndWait(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);

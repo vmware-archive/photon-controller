@@ -24,7 +24,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFacto
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
@@ -84,7 +83,7 @@ public class EntityLockDcpBackend implements EntityLockBackend {
       //check if the lock is being re-acquired by the same task, if yes then nothing needs to be done
       EntityLockService.State lock = null;
       try {
-        lock = getByEntityIdOrThrow(entityId);
+        lock = getByEntityId(entityId);
       } catch (DocumentNotFoundException ex) {
         String errorMessage = String.format(
             "Failed to create lock for entityid {%s} and taskid {%s} because an existing lock was detected but it " +
@@ -122,22 +121,18 @@ public class EntityLockDcpBackend implements EntityLockBackend {
     task.setLockableEntityIds(failedToDeleteLockableEntityIds);
   }
 
-  private EntityLockService.State getByEntityIdOrThrow(String entityId) throws DocumentNotFoundException {
+  private EntityLockService.State getByEntityId(String entityId) throws DocumentNotFoundException {
     Operation operation = dcpClient.getAndWait(EntityLockServiceFactory.SELF_LINK + "/" + entityId);
     return operation.getBody(EntityLockService.State.class);
   }
 
   @Override
   public Boolean lockExistsForEntityId(String entityId) {
-    throw new UnsupportedOperationException();
-  }
-
-  private List<String> findDocumentsByTaskId(String taskId) {
-    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
-    if (!taskId.isEmpty()) {
-      termsBuilder.put("taskId", taskId);
+    try {
+      getByEntityId(entityId);
+      return true;
+    } catch (DocumentNotFoundException ex) {
+      return false;
     }
-
-    return dcpClient.queryDocumentsForLinks(EntityLockService.State.class, termsBuilder.build());
   }
 }
