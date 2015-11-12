@@ -48,8 +48,7 @@ class TestUnitAgent(unittest.TestCase):
                                       AgentConfig.DEFAULT_CONFIG_PATH,
                                       AgentConfig.DEFAULT_CONFIG_FILE)
 
-        self.agent = AgentConfig("localhost", ["--config-path",
-                                               self.agent_conf_dir])
+        self.agent = AgentConfig(["--config-path", self.agent_conf_dir])
 
     def tearDown(self):
         self.remove_conf()
@@ -161,8 +160,7 @@ class TestUnitAgent(unittest.TestCase):
         self.agent._persist_config()
 
         # Simulate an agent restart.
-        new_agent = AgentConfig("localhost",
-                                ["--config-path", self.agent_conf_dir])
+        new_agent = AgentConfig(["--config-path", self.agent_conf_dir])
         self.assertEqual(new_agent.chairman_list, [ServerAddress("h1", 13000),
                                                    ServerAddress("h2", 13000)])
         self.assertEqual(new_agent.memory_overcommit, 1.5)
