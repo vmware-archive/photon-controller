@@ -1,8 +1,27 @@
 {
-  "REGISTRATION_ADDRESS": "localhost",
-  "ZOOKEEPER_QUORUM": "localhost:2181",
-  "LOG_DIRECTORY": "/vagrant/log",
-  "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler",
-  "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13011",
-  "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=23010,suspend=n"
+  "serviceName": "RootScheduler",
+  "cpuCount": 1,
+  "memoryMb": 1024,
+  "diskGb": 1,
+  "isReplicated": true,
+  "isPrivileged": false,
+  "containerImage": "photon/root-scheduler",
+  "containerName": "root-scheduler",
+  "portBindings": {
+    "13010": 13010
+  },
+  "volumeBindings": {
+    "/var/log": "/var/log",
+    "/vagrant/log/root-scheduler": "/vagrant/log",
+    "/devbox_data/tmp": "/devbox_data/tmp",
+    "/var/esxcloud": "/var/esxcloud"
+  },
+  "dynamicParameters": {
+    "REGISTRATION_ADDRESS": "localhost",
+    "ZOOKEEPER_QUORUM": "localhost:2181",
+    "LOG_DIRECTORY": "/vagrant/log",
+    "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler",
+    "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13011",
+    "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=23010,suspend=n"
+  }
 }

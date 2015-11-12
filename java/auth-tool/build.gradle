@@ -45,6 +45,12 @@ jar {
   baseName = "${project.archivesBaseName}-runnable-full"
 }
 
+task copyJarForTests(type: Copy) {
+  dependsOn jar
+  from "${jar.archivePath}"
+  into "${gitRoot}/ruby/cli/assets/"
+}
+
 tasks.withType(Test) {
   scanForTestClasses = false
   include "**/*Test.class"

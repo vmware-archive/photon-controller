@@ -1,1 +1,1 @@
-../../../../dist/configuration-haproxy/run.sh
+../../../../../../containers/haproxy/config/run.sh
