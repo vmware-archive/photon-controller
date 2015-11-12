@@ -39,8 +39,7 @@ class HealthCheckerTestCase(unittest.TestCase):
         agent_config.host_id = "local-id"
         agent_config.reboot_required = False
         common.services.register(ServiceName.AGENT_CONFIG, agent_config)
-        self.conf = AgentConfig("localhost",
-                                ["--config-path", tempfile.mkdtemp()])
+        self.conf = AgentConfig(["--config-path", tempfile.mkdtemp()])
 
     def test_stop(self):
         """Make sure start() starts threads and stop() stops them"""
