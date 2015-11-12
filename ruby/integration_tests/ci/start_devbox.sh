@@ -1,39 +1,24 @@
-#!/bin/bash -e
-set -x
+#!/bin/bash -ex
 
-if [ -z "$DEVBOX" ]; then
-  export DEVBOX=$WORKSPACE/devbox-photon
-  echo Assume DEVBOX at $DEVBOX
-fi
+export WORKSPACE=${WORKSPACE:=$(git rev-parse --show-toplevel)}
+export DEVBOX=${DEVBOX:="$WORKSPACE/devbox-photon"}
+export TESTS=${TESTS:="$WORKSPACE/ruby/integration_tests"}
 if [ ! -d "$DEVBOX" ]; then fail "$DEVBOX is not accessible"; fi
 
-checklist="PUBLIC_NETWORK_IP\
-  PUBLIC_NETWORK_NETMASK\
-  PUBLIC_NETWORK_GATEWAY\
-  BRIDGE_NETWORK"
-
-
-for var in $checklist
-do
-  if [ -z "$(printenv $var)" ]
-    then
-      echo Cannot start devbox. $var is not defined.
-      echo This list of properties must be defined. $checklist
-      exit 1
+# Only continue if all these environment variables are defined
+checklist=(PUBLIC_NETWORK_IP PUBLIC_NETWORK_NETMASK PUBLIC_NETWORK_GATEWAY BRIDGE_NETWORK)
+for var in "${checklist[@]}"; do
+  if [ -z "$(printenv "$var")" ]; then
+    echo Cannot start devbox. "$var" is not defined.
+    echo This list of env vars must be defined: "${checklist[@]}"
+    exit 1
   fi
 done
 
-# Now installing devbox
-cd $DEVBOX
-(
-  # Using custom HOME so 'puppet install' processes don't step on each other
-  export HOME=/tmp/devbox$WORKSPACE_INDEX
-  mkdir -p $HOME
-  ./update_dependencies.sh
-)
+cd "$DEVBOX"
 
-vagrant destroy -f
-rm -rf $DEVBOX/log/*
+# Installs vagrant-guests-photon
+./update_dependencies.sh
 
 # Exporting deployment id generated randomly used to create deployment document in cloudstore:seed
 if [ "$(uname)" == "Darwin" ]; then
@@ -42,35 +27,19 @@ else
   export RANDOM_GENERATED_DEPLOYMENT_ID=$(shuf -i 1000000000-10000000000 -n 1)
 fi
 
-if [ "$DEPLOYER_TEST" ]
-then
+if [ -n "$DEPLOYER_TEST" ]; then
   ./prepare-devbox-deployment.sh
-else
-  vagrant up
-  # seed the database
-  (
-    cd $TESTS
-    bundle exec rake cloudstore:seed
-  )
+  exit $?
 fi
 
-# Setup auth-token tool
-if [ -n "$ENABLE_AUTH" ]
-then
-    echo "Copy auth-tool from within vagrant box"
-    vagrant ssh -c "mkdir -p /devbox_data/ruby/cli/assets/ && cd /devbox_data/ruby/cli/assets/ && sudo rm -f ./auth*.jar && sudo cp /esxcloud/java/auth-tool/build/libs/auth*.jar ." -- -T
-fi
+# Start fresh devbox and build services
+rm -rf "$DEVBOX/log/"
+./gradlew :devbox:renew
 
-# Register real agent to devbox
+# Seed cloudstore with deployment
+(cd "$TESTS" && bundle exec rake cloudstore:seed)
+
+# Seed deployment with host
 if [ -n "$REAL_AGENT" ]; then
-  echo vagrant ssh -c "sudo WORKSPACE=/esxcloud DEVBOX_PHOTON=1 /esxcloud/python/misc/register_agent $ESX_IP $PUBLIC_NETWORK_IP:13000 $ESX_DATASTORE" -- -T
-
-  if [ -z "$DEPLOYER_TEST" ]; then
-    (
-      cd $TESTS
-      bundle exec rake seed:host
-    )
-  fi
+  (cd "$TESTS" && bundle exec rake seed:host)
 fi
-# sleep 30 seconds to wait for root-scheduler to get live child
-sleep 30
