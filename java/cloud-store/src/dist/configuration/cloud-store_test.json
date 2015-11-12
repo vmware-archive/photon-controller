@@ -1,8 +1,28 @@
 {
-  "CLOUD-STORE_BIND_ADDRESS": "0.0.0.0",
-  "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
-  "LOG_DIRECTORY": "/vagrant/log",
-  "CLOUD-STORE_PORT": 19000,
-  "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
-  "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=29000,suspend=n"
+  "serviceName": "CloudStore",
+  "cpuCount": 4,
+  "memoryMb": 4096,
+  "diskGb": 8,
+  "isReplicated": true,
+  "isPrivileged": false,
+  "containerImage": "photon/cloud-store",
+  "containerName": "cloud-store",
+  "portBindings": {
+    "19000": 19000,
+    "19001": 19001
+  },
+  "volumeBindings": {
+    "/var/log": "/var/log",
+    "/vagrant/log/cloud-store": "/vagrant/log",
+    "/devbox_data/tmp": "/devbox_data/tmp",
+    "/var/esxcloud": "/var/esxcloud"
+  },
+  "dynamicParameters": {
+    "CLOUD-STORE_BIND_ADDRESS": "0.0.0.0",
+    "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
+    "LOG_DIRECTORY": "/vagrant/log",
+    "CLOUD-STORE_PORT": 19000,
+    "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
+    "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=29000,suspend=n"
+  }
 }
