@@ -35,6 +35,7 @@ import com.vmware.photon.controller.deployer.dcp.constant.ServiceFileConstants;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowService;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
@@ -806,6 +807,8 @@ public class CreateContainerTaskServiceTest {
 
       CreateManagementPlaneLayoutWorkflowService.State workflowStartState =
           new CreateManagementPlaneLayoutWorkflowService.State();
+      workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
+
 
       CreateManagementPlaneLayoutWorkflowService.State finalState =
           machine.callServiceAndWaitForState(

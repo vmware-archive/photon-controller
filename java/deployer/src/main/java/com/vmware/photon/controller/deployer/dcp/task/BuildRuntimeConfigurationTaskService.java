@@ -32,6 +32,7 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
@@ -141,6 +142,10 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     @Immutable
     @DefaultInteger(value = 0)
     public Integer controlFlags;
+
+    @Immutable
+    @DefaultBoolean(value = true)
+    public Boolean isNewDeployment;
   }
 
   public BuildRuntimeConfigurationTaskService() {
@@ -465,11 +470,20 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       case Deployer:
         containerState.dynamicParameters.put(ENV_DEPLOYER_REGISTRATION_ADDRESS, vmIpAddress);
         containerState.dynamicParameters.put(ENV_SHARED_SECRET, sharedSecret);
+
+        List<ContainersConfig.ContainerType> containerTypes = null;
+        if (currentState.isNewDeployment) {
+          containerTypes = Arrays.asList(
+              ContainersConfig.ContainerType.Zookeeper,
+              ContainersConfig.ContainerType.LoadBalancer);
+        } else {
+          containerTypes = Arrays.asList(
+              ContainersConfig.ContainerType.Zookeeper);
+        }
+
         scheduleQueriesForGeneratingRuntimeState(
             currentState, vmIpAddress, containerTemplateState, containerState,
-            Arrays.asList(
-                ContainersConfig.ContainerType.Zookeeper,
-                ContainersConfig.ContainerType.LoadBalancer));
+            containerTypes);
         break;
 
       case Housekeeper:
@@ -658,7 +672,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           containerState.dynamicParameters.put(ENV_ESX_HOST, esxHypervisorState.hostAddress);
 
           List<ContainersConfig.ContainerType> containerList = null;
-          if (isAuthEnabled) {
+          if (isAuthEnabled && currentState.isNewDeployment) {
             containerList = Arrays.asList(
               ContainersConfig.ContainerType.Zookeeper,
               ContainersConfig.ContainerType.Lightwave

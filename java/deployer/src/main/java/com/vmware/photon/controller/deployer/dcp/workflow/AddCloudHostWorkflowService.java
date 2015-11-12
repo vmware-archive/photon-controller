@@ -22,7 +22,6 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -37,6 +36,7 @@ import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -237,7 +237,7 @@ public class AddCloudHostWorkflowService extends StatefulService {
     startState.deploymentServiceLink = deploymentServiceLink;
     startState.chairmanServerList = chairmanServerList;
     startState.usageTag = UsageTag.CLOUD.name();
-    startState.querySpecification = generateQuerySpecification(currentState.hostServiceLink);
+    startState.querySpecification = MiscUtils.generateHostQuerySpecification(currentState.hostServiceLink, null);
 
     TaskUtils.startTaskAsync(
         this,
@@ -247,21 +247,6 @@ public class AddCloudHostWorkflowService extends StatefulService {
         BulkProvisionHostsWorkflowService.State.class,
         currentState.taskPollDelay,
         callback);
-  }
-
-  private QueryTask.QuerySpecification generateQuerySpecification(String hostServiceLink) {
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(HostService.State.class));
-
-    QueryTask.Query nameClause = new QueryTask.Query()
-        .setTermPropertyName(HostService.State.FIELD_NAME_SELF_LINK)
-        .setTermMatchValue(hostServiceLink);
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(nameClause);
-    return querySpecification;
   }
 
   private State applyPatch(State currentState, State patchState) {

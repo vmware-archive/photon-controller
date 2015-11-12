@@ -14,27 +14,19 @@
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.DeploymentState;
-import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
-import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
-import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
@@ -42,11 +34,7 @@ import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.DeployerModule;
-import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
-import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
-import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
@@ -69,12 +57,9 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * This class implements a DCP service representing the end-to-end deployment workflow.
@@ -98,11 +83,7 @@ public class DeploymentWorkflowService extends StatefulService {
      * This enum represents the possible sub-states for this task.
      */
     public enum SubStage {
-      CREATE_MANAGEMENT_PLANE_LAYOUT,
-      BUILD_RUNTIME_CONFIGURATION,
-      PROVISION_MANAGEMENT_HOSTS,
-      CREATE_MANAGEMENT_PLANE,
-      PROVISION_CLOUD_HOSTS,
+      ADD_HOSTS,
       ALLOCATE_CM_RESOURCES,
       MIGRATE_DEPLOYMENT_DATA
     }
@@ -115,11 +96,11 @@ public class DeploymentWorkflowService extends StatefulService {
   public static class State extends ServiceDocument {
 
     /**
-     * This value represents the file name of the EsxCloud management VM image.
+     * This value represents the file name of the management VM image.
      */
     @NotNull
     @Immutable
-    public String esxCloudManagementVmImageFile;
+    public String managementVmImageFile;
 
     /**
      * This value represents the file name of the Kubernetes VM image.
@@ -171,42 +152,11 @@ public class DeploymentWorkflowService extends StatefulService {
     public Integer taskPollDelay;
 
     /**
-     * This value represents the list of chairman servers used by the {@link ProvisionHostWorkflowService}.
-     */
-    @WriteOnce
-    public Set<String> chairmanServerList;
-
-    /**
-     * This value represents the list of zookeeper servers.
-     */
-    @WriteOnce
-    public String zookeeperQuorum;
-
-    /**
      * This value represents the link to the {@link DeploymentService.State} entity.
      */
     @WriteOnce
     public String deploymentServiceLink;
 
-    /**
-     * This value represents if we are deploying our loadbalancer container.
-     */
-    @Immutable
-    @DefaultBoolean(value = true)
-    public Boolean isLoadBalancerEnabled;
-
-    /**
-     * This value represents if we deploy with authentication enabled.
-     */
-    @Immutable
-    @DefaultBoolean(value = false)
-    public Boolean isAuthEnabled;
-
-    /**
-     * This value represents the NTP server to be set in the VM.
-     */
-    @Immutable
-    public String ntpEndpoint;
   }
 
   public DeploymentWorkflowService() {
@@ -245,7 +195,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT;
+      startState.taskState.subStage = TaskState.SubStage.ADD_HOSTS;
       startState.taskSubStates.set(0, TaskState.TaskStage.STARTED);
     }
 
@@ -301,11 +251,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
     if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
       switch (currentState.taskState.subStage) {
-        case CREATE_MANAGEMENT_PLANE_LAYOUT:
-        case BUILD_RUNTIME_CONFIGURATION:
-        case PROVISION_MANAGEMENT_HOSTS:
-        case CREATE_MANAGEMENT_PLANE:
-        case PROVISION_CLOUD_HOSTS:
+        case ADD_HOSTS:
         case ALLOCATE_CM_RESOURCES:
         case MIGRATE_DEPLOYMENT_DATA:
           break;
@@ -413,20 +359,8 @@ public class DeploymentWorkflowService extends StatefulService {
    */
   private void processStartedState(final State currentState) throws Throwable {
     switch (currentState.taskState.subStage) {
-      case CREATE_MANAGEMENT_PLANE_LAYOUT:
-        processCreateManagementPlaneLayout(currentState);
-        break;
-      case BUILD_RUNTIME_CONFIGURATION:
-        processBuildRuntimeConfiguration(currentState);
-        break;
-      case PROVISION_MANAGEMENT_HOSTS:
-        processProvisionManagementHosts(currentState);
-        break;
-      case CREATE_MANAGEMENT_PLANE:
-        processCreateManagementPlane(currentState);
-        break;
-      case PROVISION_CLOUD_HOSTS:
-        processProvisionCloudHosts(currentState);
+      case ADD_HOSTS:
+        addHosts(currentState);
         break;
       case ALLOCATE_CM_RESOURCES:
         allocateClusterManagerResources(currentState);
@@ -436,401 +370,14 @@ public class DeploymentWorkflowService extends StatefulService {
     }
   }
 
-  private void processCreateManagementPlaneLayout(State currentState) throws Throwable {
-    processAllocateComponents(currentState);
-  }
-
-  private void processAllocateComponents(final State currentState) throws Throwable {
-
-    ServiceUtils.logInfo(this, "Generating manifest");
+  private void addHosts(final State currentState) {
+    ServiceUtils.logInfo(this, "Adding management hosts, provisioning cloud hosts..");
     final Service service = this;
 
-    FutureCallback<CreateManagementPlaneLayoutWorkflowService.State> callback
-        = new FutureCallback<CreateManagementPlaneLayoutWorkflowService.State>() {
-      @Override
-      public void onSuccess(@Nullable CreateManagementPlaneLayoutWorkflowService.State result) {
-        switch (result.taskState.stage) {
-          case FINISHED:
-            TaskUtils.sendSelfPatch(service, buildPatch(
-                TaskState.TaskStage.STARTED,
-                TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
-                null));
-            break;
-          case FAILED:
-            State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-            patchState.taskState.failure = result.taskState.failure;
-            TaskUtils.sendSelfPatch(service, patchState);
-            break;
-          case CANCELLED:
-            TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-            break;
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-
-    CreateManagementPlaneLayoutWorkflowService.State startState = createAllocateComplenentsWorkflowState(currentState);
-
-    TaskUtils.startTaskAsync(
-        this,
-        CreateManagementPlaneLayoutWorkflowFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        CreateManagementPlaneLayoutWorkflowService.State.class,
-        currentState.taskPollDelay,
-        callback);
-  }
-
-  private CreateManagementPlaneLayoutWorkflowService.State createAllocateComplenentsWorkflowState(State currentState) {
-    CreateManagementPlaneLayoutWorkflowService.State state = new CreateManagementPlaneLayoutWorkflowService.State();
-    state.taskPollDelay = currentState.taskPollDelay;
-    state.isLoadbalancerEnabled = currentState.isLoadBalancerEnabled;
-    state.isAuthEnabled = currentState.isAuthEnabled;
-    return state;
-  }
-
-  private void processBuildRuntimeConfiguration(final State currentState) throws Throwable {
-    ServiceUtils.logInfo(this, "Building runtime configuration");
-    final Service service = this;
-
-    FutureCallback<BuildContainersConfigurationWorkflowService.State> callback
-        = new FutureCallback<BuildContainersConfigurationWorkflowService.State>() {
-      @Override
-      public void onSuccess(@Nullable BuildContainersConfigurationWorkflowService.State result) {
-        switch (result.taskState.stage) {
-          case FINISHED:
-            TaskUtils.sendSelfPatch(service, buildPatch(
-                TaskState.TaskStage.STARTED,
-                TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
-                null));
-            break;
-          case FAILED:
-            State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-            patchState.taskState.failure = result.taskState.failure;
-            TaskUtils.sendSelfPatch(service, patchState);
-            break;
-          case CANCELLED:
-            TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-            break;
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-
-    BuildContainersConfigurationWorkflowService.State startState = buildConfigurationWorkflowState(currentState);
-
-    TaskUtils.startTaskAsync(
-        this,
-        BuildContainersConfigurationWorkflowFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        BuildContainersConfigurationWorkflowService.State.class,
-        currentState.taskPollDelay,
-        callback);
-  }
-
-  private BuildContainersConfigurationWorkflowService.State buildConfigurationWorkflowState(State currentState) {
-    BuildContainersConfigurationWorkflowService.State startState = new BuildContainersConfigurationWorkflowService
-        .State();
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.taskPollDelay = currentState.taskPollDelay;
-    return startState;
-  }
-
-  private void processProvisionManagementHosts(State currentState) throws Throwable {
-    if (null == currentState.chairmanServerList) {
-      queryChairmanContainerTemplate(currentState);
-    } else {
-      bulkProvisionManagementHosts(currentState);
-    }
-  }
-
-  private void queryChairmanContainerTemplate(final State currentState) {
-
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ContainerTemplateService.State.class));
-
-    QueryTask.Query nameClause = new QueryTask.Query()
-        .setTermPropertyName(ContainerTemplateService.State.FIELD_NAME_NAME)
-        .setTermMatchValue(ContainersConfig.ContainerType.Chairman.name());
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(nameClause);
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion((operation, throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
-
-          try {
-            Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
-            QueryTaskUtils.logQueryResults(DeploymentWorkflowService.this, documentLinks);
-            checkState(1 == documentLinks.size());
-            queryChairmanContainers(currentState, documentLinks.iterator().next());
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        });
-
-    sendRequest(queryPostOperation);
-  }
-
-  private void queryChairmanContainers(final State currentState, String containerTemplateServiceLink) {
-
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ContainerService.State.class));
-
-    QueryTask.Query containerTemplateServiceLinkClause = new QueryTask.Query()
-        .setTermPropertyName(ContainerService.State.FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK)
-        .setTermMatchValue(containerTemplateServiceLink);
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(containerTemplateServiceLinkClause);
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
+    FutureCallback<AddManagementHostWorkflowService.State> callback =
+        new FutureCallback<AddManagementHostWorkflowService.State>() {
           @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(DeploymentWorkflowService.this, documentLinks);
-              checkState(documentLinks.size() > 0);
-              getChairmanContainerEntities(currentState, documentLinks);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        });
-
-    sendRequest(queryPostOperation);
-  }
-
-  private void getChairmanContainerEntities(final State currentState, Collection<String> documentLinks) {
-
-    if (documentLinks.isEmpty()) {
-      throw new DcpRuntimeException("Document links set is empty");
-    }
-
-    OperationJoin
-        .create(documentLinks.stream().map(documentLink -> Operation.createGet(this, documentLink)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
-
-          try {
-            Set<String> vmServiceLinks = ops.values().stream()
-                .map(operation -> operation.getBody(ContainerService.State.class).vmServiceLink)
-                .collect(Collectors.toSet());
-            getChairmanVmEntities(currentState, vmServiceLinks);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void getChairmanVmEntities(final State currentState, Set<String> vmServiceLinks) {
-
-    if (vmServiceLinks.isEmpty()) {
-      throw new DcpRuntimeException("VM service links set is empty");
-    }
-
-    OperationJoin
-        .create(vmServiceLinks.stream().map(vmServiceLink -> Operation.createGet(this, vmServiceLink)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
-
-          try {
-            Set<String> chairmanIpAddresses = ops.values().stream()
-                .map(operation -> operation.getBody(VmService.State.class).ipAddress + ":" + CHAIRMAN_PORT)
-                .collect(Collectors.toSet());
-
-            String zookeeperQuorum = MiscUtils.generateReplicaList(
-                ops.values().stream().map(operation -> operation.getBody(VmService.State.class).ipAddress)
-                    .collect(Collectors.toList()),
-                ZOOKEEPER_PORT);
-
-            State patchState = buildPatch(
-                TaskState.TaskStage.STARTED,
-                TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
-                null);
-
-            patchState.chairmanServerList = chairmanIpAddresses;
-            patchState.zookeeperQuorum = zookeeperQuorum;
-            patchDeploymentService(currentState, patchState);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void patchDeploymentService(final State currentState, final State patchState) {
-    final Service service = this;
-
-    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
-      if (null != throwable) {
-        failTask(throwable);
-      } else {
-        TaskUtils.sendSelfPatch(service, patchState);
-      }
-    };
-
-    DeploymentService.State deploymentService = new DeploymentService.State();
-    deploymentService.chairmanServerList = patchState.chairmanServerList;
-    deploymentService.zookeeperQuorum = patchState.zookeeperQuorum;
-
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.patchEntity(this, currentState.deploymentServiceLink, deploymentService, completionHandler);
-  }
-
-  private void bulkProvisionManagementHosts(final State currentState) throws Throwable {
-
-    ServiceUtils.logInfo(this, "Bulk provisioning management hosts");
-
-    final Service service = this;
-
-    FutureCallback<BulkProvisionHostsWorkflowService.State> callback =
-        new FutureCallback<BulkProvisionHostsWorkflowService.State>() {
-          @Override
-          public void onSuccess(@Nullable BulkProvisionHostsWorkflowService.State result) {
-            switch (result.taskState.stage) {
-              case FINISHED:
-                TaskUtils.sendSelfPatch(service, buildPatch(
-                    TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
-                    null));
-                break;
-              case FAILED:
-                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                patchState.taskState.failure = result.taskState.failure;
-                TaskUtils.sendSelfPatch(service, patchState);
-                break;
-              case CANCELLED:
-                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-                break;
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-
-    BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.chairmanServerList = currentState.chairmanServerList;
-    startState.usageTag = UsageTag.MGMT.name();
-    startState.taskPollDelay = currentState.taskPollDelay;
-
-    TaskUtils.startTaskAsync(
-        this,
-        BulkProvisionHostsWorkflowFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        BulkProvisionHostsWorkflowService.State.class,
-        currentState.taskPollDelay,
-        callback);
-  }
-
-  private void processCreateManagementPlane(final State currentState) throws Throwable {
-
-    ServiceUtils.logInfo(this, "Bulk provisioning management plane");
-
-    final Service service = this;
-
-    FutureCallback<BatchCreateManagementWorkflowService.State> callback =
-        new FutureCallback<BatchCreateManagementWorkflowService.State>() {
-          @Override
-          public void onSuccess(@Nullable BatchCreateManagementWorkflowService.State result) {
-            switch (result.taskState.stage) {
-              case FINISHED:
-                TaskUtils.sendSelfPatch(service, buildPatch(
-                    TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.PROVISION_CLOUD_HOSTS,
-                    null));
-                break;
-              case FAILED:
-                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                patchState.taskState.failure = result.taskState.failure;
-                TaskUtils.sendSelfPatch(service, patchState);
-                break;
-              case CANCELLED:
-                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-                break;
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-
-    BatchCreateManagementWorkflowService.State startState = new BatchCreateManagementWorkflowService.State();
-    startState.imageFile = currentState.esxCloudManagementVmImageFile;
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.isAuthEnabled = currentState.isAuthEnabled;
-    startState.taskPollDelay = currentState.taskPollDelay;
-    startState.ntpEndpoint = currentState.ntpEndpoint;
-
-    TaskUtils.startTaskAsync(
-        this,
-        BatchCreateManagementWorkflowFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        BatchCreateManagementWorkflowService.State.class,
-        currentState.taskPollDelay,
-        callback);
-  }
-
-  private void processProvisionCloudHosts(final State currentState) throws Throwable {
-
-    ServiceUtils.logInfo(this, "Bulk provisioning cloud hosts");
-
-    checkState(null != currentState.chairmanServerList);
-
-    final Service service = this;
-
-    FutureCallback<BulkProvisionHostsWorkflowService.State> callback =
-        new FutureCallback<BulkProvisionHostsWorkflowService.State>() {
-          @Override
-          public void onSuccess(@Nullable BulkProvisionHostsWorkflowService.State result) {
+          public void onSuccess(@Nullable AddManagementHostWorkflowService.State result) {
             switch (result.taskState.stage) {
               case FINISHED:
                 TaskUtils.sendSelfPatch(service, buildPatch(
@@ -855,18 +402,18 @@ public class DeploymentWorkflowService extends StatefulService {
           }
         };
 
-    BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
+    AddManagementHostWorkflowService.State startState =
+        new AddManagementHostWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.chairmanServerList = currentState.chairmanServerList;
-    startState.usageTag = UsageTag.CLOUD.name();
-    startState.taskPollDelay = currentState.taskPollDelay;
+    startState.managementVmImageFile = currentState.managementVmImageFile;
+    startState.isNewDeployment = true;
 
     TaskUtils.startTaskAsync(
         this,
-        BulkProvisionHostsWorkflowFactoryService.SELF_LINK,
+        AddManagementHostWorkflowFactoryService.SELF_LINK,
         startState,
         (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        BulkProvisionHostsWorkflowService.State.class,
+        AddManagementHostWorkflowService.State.class,
         currentState.taskPollDelay,
         callback);
   }
@@ -923,13 +470,32 @@ public class DeploymentWorkflowService extends StatefulService {
   private void migrateDeploymentData(State currentState) {
     ServiceUtils.logInfo(this, "Migrating deployment data");
 
+    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
+    cloudStoreHelper.getEntity(this, currentState.deploymentServiceLink, new Operation.CompletionHandler() {
+      @Override
+      public void handle(Operation completedOp, Throwable failure) {
+        if (failure != null) {
+          failTask(failure);
+        }
+
+        try {
+          DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
+          migrateDeploymentData(currentState, deploymentState.zookeeperQuorum);
+        } catch (Throwable t) {
+          failTask(t);
+        }
+      }
+    });
+  }
+
+  private void migrateDeploymentData(State currentState, String zookeeperQuorum) {
     ZookeeperClient zookeeperClient
         = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
     Set<InetSocketAddress> localServers = zookeeperClient.getServers(
         HostUtils.getDeployerContext(this).getZookeeperQuorum(),
         DeployerModule.DEPLOYER_SERVICE_NAME);
     Set<InetSocketAddress> remoteServers
-        = zookeeperClient.getServers(currentState.zookeeperQuorum, DeployerModule.DEPLOYER_SERVICE_NAME);
+        = zookeeperClient.getServers(zookeeperQuorum, DeployerModule.DEPLOYER_SERVICE_NAME);
 
     final AtomicInteger latch = new AtomicInteger(DeployerDcpServiceHost.FACTORY_SERVICES.length);
     final List<Throwable> errors = new BlockingArrayQueue<>();
@@ -960,7 +526,7 @@ public class DeploymentWorkflowService extends StatefulService {
                 if (!errors.isEmpty()) {
                   failTask(ExceptionUtils.createMultiException(errors));
                 } else {
-                  migrateCloudStore(currentState);
+                  migrateCloudStore(currentState, zookeeperQuorum);
                 }
               }
             }
@@ -977,7 +543,7 @@ public class DeploymentWorkflowService extends StatefulService {
     }
   }
 
-  private void migrateCloudStore(State currentState) {
+  private void migrateCloudStore(State currentState, String zookeeperQuorum) {
     ServiceUtils.logInfo(this, "Migrating data to management plane cloudstore");
 
     ZookeeperClient zookeeperClient
@@ -986,7 +552,7 @@ public class DeploymentWorkflowService extends StatefulService {
         HostUtils.getDeployerContext(this).getZookeeperQuorum(),
         DeployerModule.CLOUDSTORE_SERVICE_NAME);
     Set<InetSocketAddress> remoteServers
-        = zookeeperClient.getServers(currentState.zookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
+        = zookeeperClient.getServers(zookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
 
 
     final AtomicInteger latch = new AtomicInteger(CloudStoreDcpHost.FACTORY_SERVICES.length);
@@ -1088,11 +654,6 @@ public class DeploymentWorkflowService extends StatefulService {
   private void failTask(Throwable e) {
     ServiceUtils.logSevere(this, e);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, e));
-  }
-
-  private void failTask(Map<Long, Throwable> exs) {
-    exs.values().forEach(e -> ServiceUtils.logSevere(this, e));
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, exs.values().iterator().next()));
   }
 
   /**
