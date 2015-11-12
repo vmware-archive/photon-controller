@@ -12,6 +12,7 @@
 
 import os
 import uuid
+from mock import MagicMock
 
 from agent.agent_config import AgentConfig
 import common
@@ -83,16 +84,19 @@ class Host(HostHandler):
         since the fake classes are shared by the integration tests.
         TODO: Cleanup
         """
-        config_dir = mkdtemp(delete=True)
-        config = AgentConfig(["--config-path", config_dir,
-                              "--hypervisor", "fake",
-                              "--datastores",  datastores,
-                              "--image-datastore", datastores[0],
-                              "--vm-network", networks,
-                              "--memory-overcommit", overcommit["mem"],
-                              "--cpu-overcommit", overcommit["cpu"],
-                              "--image-datastore-for-vms",
-                              ])
+        config = MagicMock(AgentConfig.__class__)
+        config.hypervisor = "fake"
+        config.datastores = datastores
+        config.image_datastores = datastores[0]
+        config.networks = networks
+        config.memory_overcommit = overcommit["mem"]
+        config.cpu_overcommit = overcommit["cpu"]
+        config.image_datastore = datastores[0]
+        config.image_datastore_for_vm = True
+        config.image_datastores = [{"name": datastores[0],
+                                    "used_for_vms": True}]
+        config.multi_agent_id = None
+        config.host_port = "localhost:1234"
         hv = hypervisor.Hypervisor(config)
         hv.hypervisor._uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS,
                                              str(id)))
