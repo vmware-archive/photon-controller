@@ -1,3 +1,5 @@
+include 'devbox'
+include 'devbox:agent'
 include 'api'
 include 'api-client'
 include 'api-frontend:api-frontend-common'
@@ -19,4 +21,8 @@ include 'root-scheduler'
 include 'swagger-ui'
 include 'swagger-jersey'
 include 'nfc-client'
+<<<<<<< d9f353b840ca4c45b2ebc21686317649fc5c961d
 include 'bare-metal-provisioner'
+=======
+include 'containers'
+>>>>>>> Gradle based container build
