@@ -31,6 +31,7 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
@@ -569,6 +570,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
               startState,
               CreateManagementPlaneLayoutWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+      finalState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       validateContainerServices();
@@ -585,6 +587,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
               startState,
               CreateManagementPlaneLayoutWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+      finalState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.failure.message, containsString("containerImage cannot be null"));
@@ -601,6 +604,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
               startState,
               CreateManagementPlaneLayoutWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+      finalState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.failure.message, containsString("Found 0 hosts with usageTag: MGMT"));
@@ -662,6 +666,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
     CreateManagementPlaneLayoutWorkflowService.State startState =
         new CreateManagementPlaneLayoutWorkflowService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    startState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
 
     if (null != taskStage) {
       startState.taskState = new CreateManagementPlaneLayoutWorkflowService.TaskState();

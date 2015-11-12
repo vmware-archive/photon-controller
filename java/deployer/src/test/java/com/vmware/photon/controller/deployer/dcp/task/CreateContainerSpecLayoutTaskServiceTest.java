@@ -34,6 +34,7 @@ import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
@@ -573,6 +574,8 @@ public class CreateContainerSpecLayoutTaskServiceTest {
     CreateContainerSpecLayoutTaskService.State startState = new CreateContainerSpecLayoutTaskService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
     startState.taskPollDelay = DeployerDefaults.DEFAULT_TASK_POLL_DELAY;
+    startState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null,
+        UsageTag.MGMT.name());
     return startState;
   }
 
@@ -580,6 +583,8 @@ public class CreateContainerSpecLayoutTaskServiceTest {
     CreateContainerSpecLayoutTaskService.State startState = buildValidStartState();
     startState.taskState = new TaskState();
     startState.taskState.stage = taskStage;
+    startState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null,
+        UsageTag.MGMT.name());
     return startState;
   }
 }
