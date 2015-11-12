@@ -30,22 +30,20 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
+import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.ProjectNotFoundException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DiskServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import org.powermock.core.classloader.annotations.Mock;
+import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
@@ -55,18 +53,59 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 import static org.testng.AssertJUnit.fail;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 
 /**
  * Tests {@link DiskDcpBackend}.
  */
 public class DiskDcpBackendTest {
+
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
+
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
+
 
   @Test
   private void dummy() {
@@ -75,10 +114,17 @@ public class DiskDcpBackendTest {
   /**
    * Tests for creating disk.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class CreateTest extends BaseDaoTest {
-    private ApiFeDcpRestClient dcpClient;
-    private DiskBackend diskBackend;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class CreateTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private DiskDcpBackend diskDcpBackend;
 
     @Inject
     private ResourceTicketBackend resourceTicketBackend;
@@ -92,44 +138,13 @@ public class DiskDcpBackendTest {
     @Inject
     private TenantBackend tenantBackend;
 
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private AttachedDiskBackend attachedDiskBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
-
     private String tenantId;
     private DiskCreateSpec spec;
     private String projectId;
-    private String flavorId;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          DiskServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new DiskServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      diskBackend = new DiskDcpBackend(dcpClient, projectBackend, flavorBackend, resourceTicketBackend,
-          taskBackend, entityLockBackend, attachedDiskBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),
@@ -162,8 +177,7 @@ public class DiskDcpBackendTest {
       flavorCreateSpec.setName("test-flavor");
       flavorCreateSpec.setKind(PersistentDisk.KIND);
       flavorCreateSpec.setCost(ImmutableList.of(new QuotaLineItem(UUID.randomUUID().toString(), 2.0, QuotaUnit.COUNT)));
-      TaskEntity flavorTaskEntity = flavorBackend.createFlavor(flavorCreateSpec);
-      flavorId = flavorTaskEntity.getEntityId();
+      flavorBackend.createFlavor(flavorCreateSpec);
 
       flavorCreateSpec.setName("test-flavor-ephemeral-disk");
       flavorCreateSpec.setKind(EphemeralDisk.KIND);
@@ -184,23 +198,22 @@ public class DiskDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
     public void testCreateDisk() throws Exception {
-      TaskEntity taskEntity = diskBackend.prepareDiskCreate(projectId, spec);
+      TaskEntity taskEntity = diskDcpBackend.prepareDiskCreate(projectId, spec);
       assertThat(taskEntity.getEntityId(), notNullValue());
       assertThat(taskEntity.getEntityKind(), is(PersistentDisk.KIND));
       assertThat(taskEntity.getSteps().size(), is(2));
 
-      PersistentDiskEntity persistentDiskEntity = (PersistentDiskEntity) diskBackend.find(PersistentDisk.KIND,
+      PersistentDiskEntity persistentDiskEntity = (PersistentDiskEntity) diskDcpBackend.find(PersistentDisk.KIND,
           taskEntity.getEntityId());
       assertThat(persistentDiskEntity.getName(), is(spec.getName()));
       assertThat(persistentDiskEntity.getCapacityGb(), is(spec.getCapacityGb()));
@@ -226,7 +239,7 @@ public class DiskDcpBackendTest {
       createSpec.setCapacityGb(2);
       createSpec.setFlavor("test-flavor-ephemeral-disk");
 
-      BaseDiskEntity diskEntity = diskBackend.create(projectId, createSpec);
+      BaseDiskEntity diskEntity = diskDcpBackend.create(projectId, createSpec);
 
       assertThat(diskEntity.getName(), is(createSpec.getName()));
       assertThat(diskEntity.getCapacityGb(), is(createSpec.getCapacityGb()));
@@ -239,7 +252,7 @@ public class DiskDcpBackendTest {
     @Test
     public void testCreateDiskInvalidProjectId() throws Exception {
       try {
-        diskBackend.prepareDiskCreate("invalid-project", spec);
+        diskDcpBackend.prepareDiskCreate("invalid-project", spec);
         fail("should have failed with TenantNotFoundException.");
       } catch (ProjectNotFoundException e) {
         assertThat(e.getMessage(), is("Project invalid-project not found"));
@@ -250,9 +263,15 @@ public class DiskDcpBackendTest {
   /**
    * Tests for updating disk.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class UpdateTest extends BaseDaoTest {
-    private ApiFeDcpRestClient dcpClient;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class UpdateTest {
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private DiskBackend diskBackend;
 
     @Inject
@@ -267,44 +286,14 @@ public class DiskDcpBackendTest {
     @Inject
     private TenantBackend tenantBackend;
 
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private AttachedDiskBackend attachedDiskBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
-
     private String tenantId;
     private DiskCreateSpec spec;
     private String projectId;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
 
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          DiskServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new DiskServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      diskBackend = new DiskDcpBackend(dcpClient, projectBackend, flavorBackend,
-          resourceTicketBackend, taskBackend, entityLockBackend, attachedDiskBackend,
-          tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),
@@ -353,13 +342,12 @@ public class DiskDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -388,9 +376,15 @@ public class DiskDcpBackendTest {
   /**
    * Tests for querying disk.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class QueryTest extends BaseDaoTest {
-    private ApiFeDcpRestClient dcpClient;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class QueryTest {
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private DiskBackend diskBackend;
 
     @Inject
@@ -405,43 +399,14 @@ public class DiskDcpBackendTest {
     @Inject
     private TenantBackend tenantBackend;
 
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private AttachedDiskBackend attachedDiskBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
-
     private String tenantId;
     private DiskCreateSpec spec;
     private String projectId;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
 
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          DiskServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new DiskServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      diskBackend = new DiskDcpBackend(dcpClient, projectBackend, flavorBackend, resourceTicketBackend,
-          taskBackend, entityLockBackend, attachedDiskBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),
@@ -486,13 +451,12 @@ public class DiskDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -560,9 +524,15 @@ public class DiskDcpBackendTest {
   /**
    * Tests for deleting disk.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class DeleteTest extends BaseDaoTest {
-    private ApiFeDcpRestClient dcpClient;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class DeleteTest {
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private DiskBackend diskBackend;
 
     @Inject
@@ -578,18 +548,7 @@ public class DiskDcpBackendTest {
     private TenantBackend tenantBackend;
 
     @Inject
-    private TaskBackend taskBackend;
-
-    @Mock
-    private EntityLockBackend entityLockBackend;
-
-    @Inject
-    private AttachedDiskBackend attachedDiskBackend;
-
-    @Inject
     private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
 
     private String tenantId;
     private DiskCreateSpec spec;
@@ -597,23 +556,8 @@ public class DiskDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
 
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          DiskServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new DiskServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      diskBackend = new DiskDcpBackend(dcpClient, projectBackend, flavorBackend, resourceTicketBackend,
-          taskBackend, entityLockBackend, attachedDiskBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),
@@ -657,13 +601,12 @@ public class DiskDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
