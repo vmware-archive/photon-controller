@@ -46,7 +46,7 @@ if [ "$DEPLOYER_TEST" ]
 then
   ./prepare-devbox-deployment.sh
 else
-  vagrant up
+  cd ../java && ./gradlew :devbox:buildAll :devbox:startAll
   # seed the database
   (
     cd $TESTS

@@ -1,4 +1,1 @@
-{
-  "LOG_DIRECTORY": "/vagrant/log",
-  "LOAD_BALANCER_HTTPS_PORT" : 443
-}
+../../../../containers/haproxy/config/haproxy_test.json
