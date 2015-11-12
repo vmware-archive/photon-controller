@@ -32,6 +32,7 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
@@ -141,6 +142,13 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
      */
     @Immutable
     public String ntpEndpoint;
+
+    /**
+     * Saves the whether this is run as part of new deployment or add management host.
+     */
+    @Immutable
+    @DefaultBoolean(value = true)
+    public Boolean isNewDeployment;
   }
 
   public BatchCreateManagementWorkflowService() {
@@ -588,7 +596,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.isAuthEnabled = currentState.isAuthEnabled;
     startState.taskPollDelay = currentState.taskPollDelay;
-
+    startState.isNewDeployment = currentState.isNewDeployment;
     TaskUtils.startTaskAsync(
         this,
         CreateContainersWorkflowFactoryService.SELF_LINK,

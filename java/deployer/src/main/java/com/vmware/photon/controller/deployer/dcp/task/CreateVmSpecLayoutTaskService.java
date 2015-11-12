@@ -49,7 +49,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Implements allocation of docker vms to all management hosts.
+ * Implements allocation of docker vms to management hosts given by hostQuerySpecification.
  */
 public class CreateVmSpecLayoutTaskService extends StatefulService {
 
@@ -81,6 +81,12 @@ public class CreateVmSpecLayoutTaskService extends StatefulService {
      */
     @Immutable
     public Integer taskPollDelay;
+
+    /**
+     * This value represents the query specification which can be used to identify the hosts to create vms on.
+     */
+    @Immutable
+    public QueryTask.QuerySpecification hostQuerySpecification;
   }
 
   public CreateVmSpecLayoutTaskService() {
@@ -191,39 +197,26 @@ public class CreateVmSpecLayoutTaskService extends StatefulService {
    */
   private void scheduleQueryManagementHosts(final State currentState) {
 
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(HostService.State.class));
-
-    QueryTask.Query usageTagClause = new QueryTask.Query()
-        .setTermPropertyName(QueryTask.QuerySpecification.buildCollectionItemName(
-            HostService.State.FIELD_NAME_USAGE_TAGS))
-        .setTermMatchValue(UsageTag.MGMT.name());
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(usageTagClause);
-
     CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.queryEntities(this, querySpecification, new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+    cloudStoreHelper.queryEntities(this, currentState.hostQuerySpecification, new Operation.CompletionHandler() {
+          @Override
+          public void handle(Operation operation, Throwable throwable) {
+            if (null != throwable) {
+              failTask(throwable);
+              return;
+            }
 
-        try {
-          Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
-          QueryTaskUtils.logQueryResults(CreateVmSpecLayoutTaskService.this, documentLinks);
-          getHostEntities(currentState, documentLinks);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    });
+            try {
+              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              QueryTaskUtils.logQueryResults(CreateVmSpecLayoutTaskService.this, documentLinks);
+              getHostEntities(currentState, documentLinks);
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
+        });
   }
-
+  
   private void getHostEntities(final State currentState, Collection<String> documentLinks) {
     if (null == documentLinks || documentLinks.size() == 0) {
       throw new RuntimeException("Found 0 hosts with usageTag: " + UsageTag.MGMT.name());

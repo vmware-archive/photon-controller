@@ -27,6 +27,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
+import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
@@ -119,6 +120,13 @@ public class CreateContainersWorkflowService extends StatefulService {
     @NotNull
     @Immutable
     public Boolean isAuthEnabled;
+
+    /**
+     * Saves the whether this is run as part of new deployment or add management host.
+     */
+    @Immutable
+    @DefaultBoolean(value = true)
+    public Boolean isNewDeployment;
   }
 
   public CreateContainersWorkflowService() {
@@ -285,8 +293,7 @@ public class CreateContainersWorkflowService extends StatefulService {
             TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER);
         break;
       case CREATE_LOAD_BALANCER_CONTAINER:
-        createContainers(currentState, Arrays.asList(
-                ContainersConfig.ContainerType.LoadBalancer),
+        createLoadBalancerContainer(currentState,
             TaskState.TaskStage.FINISHED, null);
         break;
     }
@@ -336,7 +343,7 @@ public class CreateContainersWorkflowService extends StatefulService {
       final TaskState.TaskStage nextStage, final TaskState.SubStage nextSubStage) {
     final Service service = this;
 
-    if (currentState.isAuthEnabled) {
+    if (currentState.isAuthEnabled && currentState.isNewDeployment) {
       ServiceUtils.logInfo(service, "Stage %s starting, authentication is enabled",
         TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
       createContainers(currentState, Arrays.asList(ContainersConfig.ContainerType.Lightwave),
@@ -345,6 +352,30 @@ public class CreateContainersWorkflowService extends StatefulService {
     } else {
       ServiceUtils.logInfo(service, "Stage %s completed, authentication is not enabled",
         TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
+      TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
+    }
+  }
+
+  /**
+   * This method checks if this is a new deployment and if yes, starts deployment of loadbalancer container.
+   *
+   * @param currentState Current state object
+   * @param nextStage Next stage to set
+   * @param nextSubStage Next substage to set
+   */
+  private void createLoadBalancerContainer(final State currentState,
+                                        final TaskState.TaskStage nextStage, final TaskState.SubStage nextSubStage) {
+    final Service service = this;
+
+    if (currentState.isNewDeployment) {
+      ServiceUtils.logInfo(service, "Stage %s starting, lb is created for new deployment",
+          TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER);
+      createContainers(currentState, Arrays.asList(ContainersConfig.ContainerType.LoadBalancer),
+          nextStage,
+          nextSubStage);
+    } else {
+      ServiceUtils.logInfo(service, "Stage %s completed, lb is not created for new deployment",
+          TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER);
       TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
     }
   }

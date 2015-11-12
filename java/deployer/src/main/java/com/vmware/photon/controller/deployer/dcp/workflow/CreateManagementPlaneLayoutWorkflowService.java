@@ -19,6 +19,7 @@ import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -110,6 +111,12 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
     @DefaultBoolean(value = false)
     @Immutable
     public Boolean isAuthEnabled;
+
+    /**
+     * This value represents the query specification which can be used to identify the hosts to create vms on.
+     */
+    @Immutable
+    public QueryTask.QuerySpecification hostQuerySpecification;
   }
 
   public CreateManagementPlaneLayoutWorkflowService() {
@@ -337,6 +344,7 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
         };
 
     CreateVmSpecLayoutTaskService.State requestState = new CreateVmSpecLayoutTaskService.State();
+    requestState.hostQuerySpecification = currentState.hostQuerySpecification;
     requestState.taskPollDelay = currentState.taskPollDelay;
 
     TaskUtils.startTaskAsync(
@@ -381,6 +389,7 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
 
     CreateContainerSpecLayoutTaskService.State requestState = new
         CreateContainerSpecLayoutTaskService.State();
+    requestState.hostQuerySpecification = currentState.hostQuerySpecification;
     requestState.taskPollDelay = currentState.taskPollDelay;
 
     TaskUtils.startTaskAsync(

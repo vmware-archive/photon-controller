@@ -24,7 +24,6 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
-import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -101,6 +100,12 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
      */
     @Immutable
     public Integer taskPollDelay;
+
+    /**
+     * This value represents the query specification which can be used to identify the hosts to create vms on.
+     */
+    @Immutable
+    public QueryTask.QuerySpecification hostQuerySpecification;
   }
 
   public CreateContainerSpecLayoutTaskService() {
@@ -207,23 +212,8 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
   }
 
   private void retrieveManagementHosts(State currentState) {
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(HostService.State.class));
-
-    String usageTagsKey = QueryTask.QuerySpecification.buildCollectionItemName(
-        HostService.State.FIELD_NAME_USAGE_TAGS);
-
-    QueryTask.Query mgmtUsageTagClause = new QueryTask.Query()
-        .setTermPropertyName(usageTagsKey)
-        .setTermMatchValue(UsageTag.MGMT.name());
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(mgmtUsageTagClause);
-
     CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.queryEntities(this, querySpecification, (operation, throwable) -> {
+    cloudStoreHelper.queryEntities(this, currentState.hostQuerySpecification, (operation, throwable) -> {
       if (throwable != null) {
         failTask(throwable);
         return;

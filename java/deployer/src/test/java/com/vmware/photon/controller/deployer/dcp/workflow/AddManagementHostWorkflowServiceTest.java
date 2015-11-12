@@ -16,6 +16,7 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.dcp.common.ServiceHost;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
@@ -25,7 +26,6 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -41,11 +41,6 @@ import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
-import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketService;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskService;
@@ -76,13 +71,13 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.testng.Assert.fail;
 
 import javax.annotation.Nullable;
 
@@ -93,7 +88,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -103,30 +97,45 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
- * This class implements tests for the {@link DeploymentWorkflowService} class.
+ * This class implements tests for the {@link AddManagementHostWorkflowService} class.
  */
-public class DeploymentWorkflowServiceTest {
+public class AddManagementHostWorkflowServiceTest {
 
-  public static DeploymentWorkflowService.State buildValidStartState(
-      @Nullable TaskState.TaskStage startStage,
-      @Nullable DeploymentWorkflowService.TaskState.SubStage startSubStage) {
+  private AddManagementHostWorkflowService addManagementHostWorkflowService;
+  private TestHost testHost;
 
-    DeploymentWorkflowService.State startState = new DeploymentWorkflowService.State();
-    startState.managementVmImageFile = "ESX_CLOUD_MANAGEMENT_VM_IMAGE_FILE";
+  /**
+   * This method is a dummy test case which forces IntelliJ to recognize the
+   * current class as a test class.
+   */
+  @Test
+  private void dummy() {
+  }
+
+  /**
+   * This method creates a new State object which is sufficient to create a new
+   * AddManagementHostTaskService instance.
+   */
+  private AddManagementHostWorkflowService.State buildValidStartState(TaskState.TaskStage stage,
+        @Nullable AddManagementHostWorkflowService.TaskState.SubStage startSubStage) {
+    AddManagementHostWorkflowService.State startState = new AddManagementHostWorkflowService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    startState.hostServiceLink = "hostServiceLink1";
+    startState.managementVmImageFile = "MANAGEMENT_VM_IMAGE_FILE";
+    startState.isNewDeployment = false;
+    startState.deploymentServiceLink = "deploymentServiceLink";
 
-    if (null != startStage) {
-      startState.taskState = new DeploymentWorkflowService.TaskState();
-      startState.taskState.stage = startStage;
+    if (null != stage) {
+      startState.taskState = new AddManagementHostWorkflowService.TaskState();
+      startState.taskState.stage = stage;
       startState.taskState.subStage = startSubStage;
 
-      if (TaskState.TaskStage.CREATED != startStage) {
-        startState.taskSubStates = new ArrayList<>(DeploymentWorkflowService.TaskState.SubStage.values().length);
-        for (DeploymentWorkflowService.TaskState.SubStage s : DeploymentWorkflowService.TaskState.SubStage.values()) {
+      if (TaskState.TaskStage.CREATED != stage) {
+        startState.taskSubStates = new ArrayList<>(AddManagementHostWorkflowService.TaskState.SubStage.values().length);
+        for (AddManagementHostWorkflowService.TaskState.SubStage s :
+            AddManagementHostWorkflowService.TaskState.SubStage.values()) {
           if (null == startSubStage || startSubStage.ordinal() > s.ordinal()) {
             startState.taskSubStates.add(s.ordinal(), TaskState.TaskStage.FINISHED);
           } else if (startSubStage.ordinal() == s.ordinal()) {
@@ -137,33 +146,33 @@ public class DeploymentWorkflowServiceTest {
         }
       }
     }
-
     return startState;
   }
 
-  @Test(enabled = false)
-  private void dummy() {
-  }
-
   /**
-   * This class implements tests for the constructor.
+   * This class implements tests for the initial service state.
    */
   public class InitializationTest {
 
-    private DeploymentWorkflowService deploymentWorkflowService;
-
     @BeforeMethod
     public void setUpTest() {
-      deploymentWorkflowService = new DeploymentWorkflowService();
+      addManagementHostWorkflowService = new AddManagementHostWorkflowService();
+    }
+
+    @AfterMethod
+    public void tearDownTest() {
+      addManagementHostWorkflowService = null;
     }
 
     @Test
     public void testCapabilities() {
 
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
-          Service.ServiceOption.PERSISTENCE);
+          Service.ServiceOption.OWNER_SELECTION,
+          Service.ServiceOption.PERSISTENCE,
+          Service.ServiceOption.REPLICATION);
 
-      assertThat(deploymentWorkflowService.getOptions(), is(expected));
+      assertThat(addManagementHostWorkflowService.getOptions(), is(expected));
     }
   }
 
@@ -172,10 +181,6 @@ public class DeploymentWorkflowServiceTest {
    */
   public class HandleStartTest {
 
-    private DeploymentWorkflowService deploymentWorkflowService;
-    private boolean serviceCreated = false;
-    private TestHost testHost;
-
     @BeforeClass
     public void setUpClass() throws Throwable {
       testHost = TestHost.create();
@@ -183,14 +188,15 @@ public class DeploymentWorkflowServiceTest {
 
     @BeforeMethod
     public void setUpTest() {
-      deploymentWorkflowService = new DeploymentWorkflowService();
+      addManagementHostWorkflowService = new AddManagementHostWorkflowService();
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      if (serviceCreated) {
+      try {
         testHost.deleteServiceSynchronously();
-        serviceCreated = false;
+      } catch (ServiceHost.ServiceNotFoundException e) {
+        // Exceptions are expected in the case where a service instance was not successfully created.
       }
     }
 
@@ -200,17 +206,12 @@ public class DeploymentWorkflowServiceTest {
     }
 
     @Test(dataProvider = "ValidStartStages")
-    public void testValidStartStage(
+    public void testValidStartStagestestValidStartStage(
         @Nullable TaskState.TaskStage startStage,
-        @Nullable DeploymentWorkflowService.TaskState.SubStage startSubStage)
-        throws Throwable {
-      startService(buildValidStartState(startStage, startSubStage));
-
-      DeploymentWorkflowService.State serviceState =
-          testHost.getServiceState(DeploymentWorkflowService.State.class);
-
-      assertThat(serviceState.taskState, notNullValue());
-      assertThat(serviceState.taskState.stage, notNullValue());
+        @Nullable AddManagementHostWorkflowService.TaskState.SubStage startSubStage) throws Throwable {
+      AddManagementHostWorkflowService.State startState = buildValidStartState(startStage, startSubStage);
+      Operation startOperation = testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);
+      assertThat(startOperation.getStatusCode(), is(200));
     }
 
     @DataProvider(name = "ValidStartStages")
@@ -218,7 +219,8 @@ public class DeploymentWorkflowServiceTest {
       return new Object[][]{
           {null, null},
           {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+          {TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
@@ -228,16 +230,16 @@ public class DeploymentWorkflowServiceTest {
     @Test(dataProvider = "AutoProgressedStartStages")
     public void testAutoProgressedStartStage(
         @Nullable TaskState.TaskStage startStage,
-        @Nullable DeploymentWorkflowService.TaskState.SubStage startSubStage)
+        @Nullable AddManagementHostWorkflowService.TaskState.SubStage startSubStage)
         throws Throwable {
-      startService(buildValidStartState(startStage, startSubStage));
-
-      DeploymentWorkflowService.State serviceState =
-          testHost.getServiceState(DeploymentWorkflowService.State.class);
+      AddManagementHostWorkflowService.State startState = buildValidStartState(startStage, startSubStage);
+      testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);
+      AddManagementHostWorkflowService.State serviceState =
+          testHost.getServiceState(AddManagementHostWorkflowService.State.class);
 
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
       assertThat(serviceState.taskState.subStage,
-          is(DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS));
+          is(AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT));
     }
 
     @DataProvider(name = "AutoProgressedStartStages")
@@ -245,18 +247,19 @@ public class DeploymentWorkflowServiceTest {
       return new Object[][]{
           {null, null},
           {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+          {TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
       };
     }
 
     @Test(dataProvider = "TerminalStartStages")
     public void testTerminalStartStage(TaskState.TaskStage startStage) throws Throwable {
-      DeploymentWorkflowService.State startState = buildValidStartState(startStage, null);
+      AddManagementHostWorkflowService.State startState = buildValidStartState(startStage, null);
       startState.controlFlags = null;
-      startService(startState);
+      testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);
 
-      DeploymentWorkflowService.State serviceState =
-          testHost.getServiceState(DeploymentWorkflowService.State.class);
+      AddManagementHostWorkflowService.State serviceState =
+          testHost.getServiceState(AddManagementHostWorkflowService.State.class);
 
       assertThat(serviceState.taskState.stage, is(startStage));
       assertThat(serviceState.taskState.subStage, nullValue());
@@ -271,26 +274,68 @@ public class DeploymentWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = IllegalStateException.class)
-    public void testFailureRequiredFieldMissing(String fieldName) throws Throwable {
-      DeploymentWorkflowService.State startState = buildValidStartState(null, null);
-      startState.getClass().getDeclaredField(fieldName).set(startState, null);
-      startService(startState);
+    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "fieldNamesWithMissingValue")
+    public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
+      AddManagementHostWorkflowService.State startState = buildValidStartState(null, null);
+      Field declaredField = startState.getClass().getDeclaredField(fieldName);
+      declaredField.set(startState, null);
+
+      testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);
     }
 
-    @DataProvider(name = "RequiredFieldNames")
-    public Object[][] getRequiredFieldNames() {
+    @DataProvider(name = "fieldNamesWithMissingValue")
+    public Object[][] getFieldNamesWithMissingValue() {
       return TestHelper.toDataProvidersList(
           ReflectionUtils.getAttributeNamesWithAnnotation(
-              DeploymentWorkflowService.State.class, NotNull.class));
+              AddManagementHostWorkflowService.State.class,
+              NotNull.class));
+    }
+
+    @Test(dataProvider = "TaskPollDelayValues")
+    public void testTaskPollDelayValues(Integer taskPollDelay, Integer expectedValue) throws Throwable {
+      AddManagementHostWorkflowService.State startState = buildValidStartState(null, null);
+      startState.taskPollDelay = taskPollDelay;
+      Operation startOperation = testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);
+      assertThat(startOperation.getStatusCode(), is(200));
+      AddManagementHostWorkflowService.State savedState = testHost.getServiceState(
+          AddManagementHostWorkflowService.State.class);
+      assertThat(savedState.taskPollDelay, is(expectedValue));
+    }
+
+    @DataProvider(name = "TaskPollDelayValues")
+    public Object[][] getTaskPollDelayValues() {
+      return new Object[][]{
+          {null, new Integer(testHost.getDeployerContext().getTaskPollDelay())},
+          {new Integer(500), new Integer(500)},
+      };
+    }
+
+    @Test(dataProvider = "InvalidTaskPollDelayValues")
+    public void testFailureInvalidTaskPollDelayValues(int taskPollDelay) throws Throwable {
+      AddManagementHostWorkflowService.State startState = buildValidStartState(null, null);
+      startState.taskPollDelay = taskPollDelay;
+      try {
+        testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);
+        fail("Service start should throw in response to illegal taskPollDelay values");
+      } catch (IllegalStateException e) {
+        assertThat(e.getMessage(), is("taskPollDelay must be greater than zero"));
+      }
+    }
+
+    @DataProvider(name = "InvalidTaskPollDelayValues")
+    public Object[][] getInvalidTaskPollDelayValues() {
+      return new Object[][]{
+          {0},
+          {-10},
+      };
     }
 
     @Test(dataProvider = "InvalidTaskSubStates", expectedExceptions = IllegalStateException.class)
     public void testFailureInvalidSubStateList(List<TaskState.TaskStage> taskSubStates) throws Throwable {
-      DeploymentWorkflowService.State startState = buildValidStartState(TaskState.TaskStage.STARTED,
-          DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS);
+      AddManagementHostWorkflowService.State startState = buildValidStartState(TaskState.TaskStage.STARTED,
+          AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT);
       startState.taskSubStates = taskSubStates;
-      startService(startState);
+      testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);
     }
 
     @DataProvider(name = "InvalidTaskSubStates")
@@ -305,20 +350,12 @@ public class DeploymentWorkflowServiceTest {
       };
     }
 
-    private void startService(DeploymentWorkflowService.State startState) throws Throwable {
-      Operation startOperation = testHost.startServiceSynchronously(deploymentWorkflowService, startState);
-      assertThat(startOperation.getStatusCode(), is(200));
-      serviceCreated = true;
-    }
   }
 
   /**
    * This class implements tests for the handlePatch method.
    */
   public class HandlePatchTest {
-
-    private DeploymentWorkflowService deploymentWorkflowService;
-    private TestHost testHost;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
@@ -327,7 +364,7 @@ public class DeploymentWorkflowServiceTest {
 
     @BeforeMethod
     public void setUpTest() {
-      deploymentWorkflowService = new DeploymentWorkflowService();
+      addManagementHostWorkflowService = new AddManagementHostWorkflowService();
     }
 
     @AfterMethod
@@ -340,193 +377,262 @@ public class DeploymentWorkflowServiceTest {
       TestHost.destroy(testHost);
     }
 
-    @Test(dataProvider = "ValidStageTransitions")
-    public void testValidStageTransition(
+    @Test(dataProvider = "ValidStageUpdates")
+    public void testValidStageUpdates(
         TaskState.TaskStage startStage,
-        @Nullable DeploymentWorkflowService.TaskState.SubStage startSubStage,
+        @Nullable AddManagementHostWorkflowService.TaskState.SubStage startSubStage,
         TaskState.TaskStage patchStage,
-        @Nullable DeploymentWorkflowService.TaskState.SubStage patchSubStage)
+        @Nullable AddManagementHostWorkflowService.TaskState.SubStage patchSubStage)
         throws Throwable {
-      DeploymentWorkflowService.State startState = buildValidStartState(startStage, startSubStage);
-      Operation startOperation = testHost.startServiceSynchronously(deploymentWorkflowService, startState);
+      AddManagementHostWorkflowService.State startState = buildValidStartState(startStage, startSubStage);
+      Operation startOperation = testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      DeploymentWorkflowService.State patchState =
-          DeploymentWorkflowService.buildPatch(patchStage, patchSubStage, null);
+      AddManagementHostWorkflowService.State patchState = AddManagementHostWorkflowService.buildPatch(patchStage,
+          patchSubStage, null);
 
       Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
+          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
           .setBody(patchState);
 
-      Operation result = testHost.sendRequestAndWait(patchOperation);
-      assertThat(result.getStatusCode(), is(200));
-
-      DeploymentWorkflowService.State serviceState =
-          testHost.getServiceState(DeploymentWorkflowService.State.class);
-
-      assertThat(serviceState.taskState.stage, is(patchStage));
-      assertThat(serviceState.taskState.subStage, is(patchSubStage));
+      Operation patchResult = testHost.sendRequestAndWait(patchOperation);
+      assertThat(patchResult.getStatusCode(), is(200));
+      AddManagementHostWorkflowService.State savedState = testHost.getServiceState(
+          AddManagementHostWorkflowService.State.class);
+      assertThat(savedState.taskState.stage, is(patchStage));
+      assertThat(savedState.taskState.subStage, is(patchSubStage));
     }
 
-    @DataProvider(name = "ValidStageTransitions")
-    public Object[][] getValidStageTransitions() {
+    @DataProvider(name = "ValidStageUpdates")
+    public Object[][] getValidStageUpdates() {
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
-
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
               TaskState.TaskStage.STARTED,
-              DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
-              TaskState.TaskStage.CANCELLED, null},
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
 
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
+          {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
+          {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
+          {TaskState.TaskStage.CREATED, null,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
+              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
+              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
+              TaskState.TaskStage.CANCELLED, null},
+
+      };
+    }
+
+    @Test(dataProvider = "InvalidStageUpdates", expectedExceptions = IllegalStateException.class)
+    public void testInvalidStageUpdates(
+        TaskState.TaskStage startStage,
+        @Nullable AddManagementHostWorkflowService.TaskState.SubStage startSubStage,
+        TaskState.TaskStage patchStage,
+        @Nullable AddManagementHostWorkflowService.TaskState.SubStage patchSubStage)
+        throws Throwable {
+      AddManagementHostWorkflowService.State startState = buildValidStartState(startStage, startSubStage);
+      Operation startOperation = testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);
+      assertThat(startOperation.getStatusCode(), is(200));
+
+      AddManagementHostWorkflowService.State patchState = AddManagementHostWorkflowService.buildPatch(patchStage,
+          patchSubStage, null);
+      Operation patchOperation = Operation
+          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
+
+     testHost.sendRequestAndWait(patchOperation);
+    }
+
+    @DataProvider(name = "InvalidStageUpdates")
+    public Object[][] getInvalidStageUpdates() {
+      return new Object[][]{
+          {TaskState.TaskStage.CREATED, null,
+              TaskState.TaskStage.CREATED, null},
+
+          {TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
+              TaskState.TaskStage.CREATED, null},
+
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
+              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
+
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
+
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
+
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
+
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.CANCELLED, null},
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = IllegalStateException.class)
-    public void testInvalidStageTransition(
-        TaskState.TaskStage startStage,
-        @Nullable DeploymentWorkflowService.TaskState.SubStage startSubStage,
-        TaskState.TaskStage patchStage,
-        @Nullable DeploymentWorkflowService.TaskState.SubStage patchSubStage)
-        throws Throwable {
-      DeploymentWorkflowService.State startState = buildValidStartState(startStage, startSubStage);
-      Operation startOperation = testHost.startServiceSynchronously(deploymentWorkflowService, startState);
+    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "fieldNamesWithInvalidValue")
+    public void testInvalidStateFieldValue(String fieldName) throws Throwable {
+      AddManagementHostWorkflowService.State startState = buildValidStartState(null, null);
+      Operation startOperation = testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      DeploymentWorkflowService.State patchState =
-          DeploymentWorkflowService.buildPatch(patchStage, patchSubStage, null);
-
-      Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
-          .setBody(patchState);
-
-      testHost.sendRequestAndWait(patchOperation);
-    }
-
-    @DataProvider(name = "InvalidStageTransitions")
-    public Object[][] getInvalidStageTransitions() {
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.CREATED, null},
-
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
-              TaskState.TaskStage.CREATED, null},
-
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
-
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
-
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.CANCELLED, null},
-      };
-    }
-
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "ImmutableFieldNames")
-    public void testInvalidPatchStateValue(String fieldName) throws Throwable {
-      DeploymentWorkflowService.State startState = buildValidStartState(null, null);
-      Operation startOperation = testHost.startServiceSynchronously(deploymentWorkflowService, startState);
-      assertThat(startOperation.getStatusCode(), is(200));
-
-      DeploymentWorkflowService.State patchState =
-          DeploymentWorkflowService.buildPatch(
-              TaskState.TaskStage.STARTED,
-              DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
-              null);
-
+      AddManagementHostWorkflowService.State patchState = AddManagementHostWorkflowService.buildPatch(
+          TaskState.TaskStage.STARTED,
+          AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT, null);
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
 
       Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
+          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
           .setBody(patchState);
-
       testHost.sendRequestAndWait(patchOperation);
     }
 
-    @DataProvider(name = "ImmutableFieldNames")
-    public Object[][] getAttributeNames() {
+    @DataProvider(name = "fieldNamesWithInvalidValue")
+    public Object[][] getFieldNamesWithInvalidValue() {
       return TestHelper.toDataProvidersList(
           ReflectionUtils.getAttributeNamesWithAnnotation(
-              DeploymentWorkflowService.State.class, Immutable.class));
+              AddManagementHostWorkflowService.State.class,
+              Immutable.class));
     }
   }
 
   /**
-   * This class implements end-to-end tests for the deployment workflow.
+   * End-to-end tests for the add management host task.
    */
   public class EndToEndTest {
 
@@ -548,7 +654,7 @@ public class DeploymentWorkflowServiceTest {
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private ServiceConfiguratorFactory serviceConfiguratorFactory;
 
-    private DeploymentWorkflowService.State startState;
+    private AddManagementHostWorkflowService.State startState;
     private TestEnvironment localDeployer;
     private TestEnvironment remoteDeployer;
     private AuthClientHandler.ImplicitClient implicitClient;
@@ -682,19 +788,19 @@ public class DeploymentWorkflowServiceTest {
       FileUtils.deleteDirectory(storageDirectory);
     }
 
-    @DataProvider(name = "HostCountsWithAuthInfo")
-    public Object[][] getHostCountsWithAuthInfo() {
+    @DataProvider(name = "HostWithTagWithAuthInfo")
+    public Object[][] getHostsWithAuthInfo() {
       return new Object[][]{
-          {1, 1, 1, true},
-          //{1, 1, 1, false},
-          //{1, 2, 11, true},
-          //{1, 2, 11, false},
+          {true, false, true},
+          {true, false, false},
+          {false, true, true},
+          {false, true, false},
 
       };
     }
 
-    @Test(dataProvider = "HostCountsWithAuthInfo")
-    public void testSuccess(Integer mgmtHostCount, Integer mixedHostCount, Integer cloudHostCount,
+    @Test(dataProvider = "HostWithTagWithAuthInfo")
+    public void testSuccess(Boolean isMgmtHost, Boolean isMixedHost,
                             Boolean isAuthEnabled) throws Throwable {
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(hostClientFactory, true);
@@ -706,42 +812,32 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
       createTestEnvironment(1);
 
-      for (int i = 0; i < mgmtHostCount; i++) {
-        createHostService(Collections.singleton(UsageTag.MGMT.name()));
-      }
-
-      for (int i = 0; i < mixedHostCount; i++) {
-        createHostService(new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
-      }
-
-      for (int i = 0; i < cloudHostCount; i++) {
-        createHostService(Collections.singleton(UsageTag.CLOUD.name()));
+      if (isMgmtHost) {
+        HostService.State mgmtHost = createHostService(Collections.singleton(UsageTag.MGMT.name()));
+        startState.hostServiceLink = mgmtHost.documentSelfLink;
+      } else {
+        HostService.State mgmtHost = createHostService(new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag
+            .MGMT.name())));
+        startState.hostServiceLink = mgmtHost.documentSelfLink;
       }
 
       startState.deploymentServiceLink = createDeploymentServiceLink(localStore, isAuthEnabled);
 
-      DeploymentWorkflowService.State finalState =
+      AddManagementHostWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
-              DeploymentWorkflowFactoryService.SELF_LINK,
+              AddManagementHostWorkflowFactoryService.SELF_LINK,
               startState,
-              DeploymentWorkflowService.State.class,
+              AddManagementHostWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
 
-      verifyDeploymentServiceState();
-      verifyVmServiceStates(mgmtHostCount + mixedHostCount);
+      verifyVmServiceStates(1);
       verifyContainerTemplateServiceStates(isAuthEnabled);
       verifyContainerServiceStates();
-      verifyTenantServiceState();
-      verifyResourceTicketServiceState();
-      verifyProjectServiceState();
-      verifyImageServiceState();
-      verifyFlavorServiceStates();
-
     }
 
-    private void createHostService(Set<String> usageTags) throws Throwable {
+    private HostService.State createHostService(Set<String> usageTags) throws Throwable {
       HostService.State hostStartState = TestHelper.getHostServiceStartState(usageTags, HostState.CREATING);
       if (usageTags.contains(UsageTag.MGMT.name())) {
         DeployerDcpServiceHost remoteHost = remoteDeployer.getHosts()[0];
@@ -750,7 +846,7 @@ public class DeploymentWorkflowServiceTest {
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_DEPLOYER_DCP_PORT,
             Integer.toString(remoteHost.getPort()));
       }
-      TestHelper.createHostService(localStore, hostStartState);
+      return TestHelper.createHostService(localStore, hostStartState);
     }
 
     private String createDeploymentServiceLink(
@@ -788,11 +884,11 @@ public class DeploymentWorkflowServiceTest {
 
       startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled);
 
-      DeploymentWorkflowService.State finalState =
+      AddManagementHostWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
-              DeploymentWorkflowFactoryService.SELF_LINK,
+              AddManagementHostWorkflowFactoryService.SELF_LINK,
               startState,
-              DeploymentWorkflowService.State.class,
+              AddManagementHostWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
@@ -817,11 +913,11 @@ public class DeploymentWorkflowServiceTest {
 
       startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled);
 
-      DeploymentWorkflowService.State finalState =
+      AddManagementHostWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
-              DeploymentWorkflowFactoryService.SELF_LINK,
+              AddCloudHostWorkflowFactoryService.SELF_LINK,
               startState,
-              DeploymentWorkflowService.State.class,
+              AddManagementHostWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
@@ -846,34 +942,14 @@ public class DeploymentWorkflowServiceTest {
 
       startState.deploymentServiceLink = createDeploymentServiceLink(localStore, true);
 
-      DeploymentWorkflowService.State finalState =
+      AddManagementHostWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
-              DeploymentWorkflowFactoryService.SELF_LINK,
+              AddManagementHostWorkflowFactoryService.SELF_LINK,
               startState,
-              DeploymentWorkflowService.State.class,
+              AddManagementHostWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-    }
-
-    private void verifyDeploymentServiceState() throws Throwable {
-      verifySingletonServiceState(
-          DeploymentService.State.class,
-          (state) -> {
-            assertThat(state.imageDataStoreName, is("IMAGE_DATASTORE_NAME"));
-            assertThat(state.imageDataStoreUsedForVMs, is(true));
-            assertThat(state.ntpEndpoint, is("NTP_ENDPOINT"));
-            if (state.oAuthEnabled) {
-              assertThat(state.oAuthServerAddress, is("0.0.0.0"));
-              assertThat(state.oAuthServerPort, is(443));
-            } else {
-              assertThat(state.oAuthServerAddress, is("OAUTH_ENDPOINT"));
-              assertThat(state.oAuthServerPort, is(500));
-            }
-            assertThat(state.syslogEndpoint, is("SYSLOG_ENDPOINT"));
-            assertThat(state.chairmanServerList, is(notNullValue()));
-            return true;
-          }, remoteStore);
     }
 
     private void verifyVmServiceStates(int expectedVmEntityNumber) throws Throwable {
@@ -936,7 +1012,7 @@ public class DeploymentWorkflowServiceTest {
 
         assertThat(finalState.name, is(spec.getType()));
         assertThat(finalState.cpuCount, is(spec.getCpuCount()));
-        assertThat(finalState.memoryMb, is(spec.getMemoryMb()));
+        assertThat(finalState.memoryGb, is(spec.getMemoryGb()));
         assertThat(finalState.diskGb, is(spec.getDiskGb()));
         assertThat(finalState.isReplicated, is(spec.getIsReplicated()));
         assertThat(finalState.containerImage, is(spec.getContainerImage()));
@@ -993,71 +1069,6 @@ public class DeploymentWorkflowServiceTest {
           assertThat(containerStateNumberIfReplicated, is(1));
         }
       }
-    }
-
-    private void verifyTenantServiceState() throws Throwable {
-      verifySingletonServiceState(
-          TenantService.State.class,
-          (state) -> {
-            assertThat(state.tenantName, is(Constants.TENANT_NAME));
-            assertThat(state.tenantId, is("CREATE_TENANT_ENTITY_ID"));
-            return true;
-          }, localDeployer);
-    }
-
-    private void verifyResourceTicketServiceState() throws Throwable {
-      verifySingletonServiceState(
-          ResourceTicketService.State.class,
-          (state) -> {
-            assertThat(state.resourceTicketName, is(Constants.RESOURCE_TICKET_NAME));
-            assertThat(state.resourceTicketId, is("CREATE_RESOURCE_TICKET_ENTITY_ID"));
-            return true;
-          }, localDeployer);
-    }
-
-    private void verifyProjectServiceState() throws Throwable {
-      verifySingletonServiceState(
-          ProjectService.State.class,
-          (state) -> {
-            assertThat(state.projectName, is(Constants.PROJECT_NAME));
-            assertThat(state.projectId, is("CREATE_PROJECT_ENTITY_ID"));
-            return true;
-          }, localDeployer);
-    }
-
-    private void verifyImageServiceState() throws Throwable {
-      List<ImageService.State> states = queryForServiceStates(ImageService.State.class, localDeployer);
-      assertThat(states.size(), is(1));
-
-      assertThat(states.stream().filter(
-          s -> s.imageFile.contains("ESX_CLOUD_MANAGEMENT_VM_IMAGE_FILE")).count(), is(1L));
-      assertThat(states.stream().filter(
-              s -> s.imageFile.contains("ESX_CLOUD_MANAGEMENT_VM_IMAGE_FILE")).findFirst().get().imageId,
-          is("MANAGEMENT_UPLOAD_IMAGE_ENTITY_ID"));
-    }
-
-    private void verifyFlavorServiceStates() throws Throwable {
-      List<FlavorService.State> states = queryForServiceStates(FlavorService.State.class, localDeployer);
-      List<VmService.State> vmStates = queryForServiceStates(VmService.State.class, localDeployer);
-
-      // For each VmService entity we should create one and only one FlavorService entity.
-      assertThat(states.size(), is(vmStates.size()));
-
-      for (final FlavorService.State state : states) {
-        Collection<VmService.State> vmStatesForFlavor = vmStates.stream()
-            .filter(vmState -> vmState.flavorServiceLink.equals(state.documentSelfLink))
-            .collect(Collectors.toList());
-
-        assertThat(vmStatesForFlavor.size(), is(1));
-      }
-    }
-
-    private <T extends ServiceDocument> void verifySingletonServiceState(Class<T> classType, Predicate<T> predicate,
-                                                                         MultiHostEnvironment<?> multiHostEnvironment)
-        throws Throwable {
-      List<T> states = queryForServiceStates(classType, multiHostEnvironment);
-      assertThat(states.size(), is(1));
-      predicate.test(states.get(0));
     }
 
     private <T extends ServiceDocument> List<T> queryForServiceStates(Class<T> classType,
