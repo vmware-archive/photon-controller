@@ -1,0 +1,60 @@
+// Tasks executed against devbox
+import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
+import com.bmuschko.gradle.vagrant.tasks.VagrantUp
+import com.bmuschko.gradle.vagrant.tasks.VagrantDestroy
+import com.bmuschko.gradle.vagrant.tasks.VagrantHalt
+import com.bmuschko.gradle.vagrant.tasks.VagrantReload
+import com.bmuschko.gradle.vagrant.tasks.VagrantStatus
+
+task destroy(type: VagrantDestroy) {
+  boxDir = devboxDir()
+}
+
+task up(type: VagrantUp) {
+  boxDir = devboxDir()
+  mustRunAfter destroy
+}
+
+task halt(type: VagrantHalt) {
+  boxDir = devboxDir()
+}
+
+task reload(type: VagrantReload) {
+  boxDir = devboxDir()
+}
+
+task status(type: VagrantStatus) {
+  boxDir = devboxDir()
+}
+
+task renew() {
+  dependsOn destroy
+  finalizedBy up
+}
+
+// Ensures left over data such as cloud-store sandboxes are removed
+task cleanAll() {
+  dependsOn(
+    ":cloud-store:clean",
+    ":deployer:clean",
+    ":housekeeper:clean",
+    ":api-frontend:management:clean",
+    ":root-scheduler:clean"
+  )
+}
+
+task buildAll() {
+  dependsOn cleanAll, up, ":containers:all", ":devbox:agent:buildVib"
+  mustRunAfter up
+}
+
+task startAll(type: VagrantSsh) {
+  mustRunAfter buildAll
+  description = 'Start all containers inside devbox'
+  boxDir = devboxDir()
+  sshCommand = 'start-all 2>&1 | tee -a start-all.log'
+  // Only start fake agent when REAL_AGENT is not defined
+  if (!System.getenv('REAL_AGENT')?.trim()) {
+    dependsOn ":devbox:agent:start"
+  }
+}
