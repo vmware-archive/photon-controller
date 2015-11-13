@@ -51,8 +51,9 @@ class EsxHypervisor(object):
         disable_large_pages = agent_config.memory_overcommit > 1.0
         self.vim_client.set_large_page_support(disable=disable_large_pages)
 
+        image_datastores = [ds["name"] for ds in agent_config.image_datastores]
         self.datastore_manager = EsxDatastoreManager(
-            self, agent_config.datastores, [agent_config.image_datastore])
+            self, agent_config.datastores, image_datastores)
         # datastore manager needs to update the cache when there is a change.
         self.vim_client.add_update_listener(self.datastore_manager)
         self.vm_manager = EsxVmManager(self.vim_client, self.datastore_manager)
