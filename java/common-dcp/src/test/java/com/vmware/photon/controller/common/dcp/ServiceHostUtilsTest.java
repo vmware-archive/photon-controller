@@ -480,7 +480,7 @@ public class ServiceHostUtilsTest {
     @Test
     public void testInvalidServicesParam() throws Throwable {
       try {
-        ServiceHostUtils.startServices(mock(BasicServiceHost.class), null);
+        ServiceHostUtils.startServices(mock(BasicServiceHost.class), (Class[]) null);
         fail("did not validate that services param is not null");
       } catch (IllegalArgumentException ex) {
         assertThat(ex.getMessage(), is("services cannot be null"));
