@@ -65,5 +65,7 @@ public interface DeploymentBackend {
 
   TaskEntity deleteClusterConfiguration(ClusterType clusterType) throws ExternalException;
 
+  List<ClusterConfiguration> getClusterConfigurations() throws ExternalException;
+
   DeploymentEntity findById(String id) throws DeploymentNotFoundException;
 }
