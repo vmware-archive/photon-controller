@@ -172,6 +172,14 @@ g2)') do |g|
           puts "    Current data migration cycles progress:  #{deployment.migration.data_migration_cycle_progress} / #{deployment.migration.data_migration_cycle_size}"
           puts "    Vib upload progress:                     #{deployment.migration.vibs_uploaded} / #{deployment.migration.vibs_uploaded + deployment.migration.vibs_uploading}"
         end
+        if deployment.cluster_configurations == nil || deployment.cluster_configurations.length == 0
+          puts
+          puts "  No cluster is supported"
+        else
+          puts
+          puts "  Supported Cluster Types:"
+          deployment.cluster_configurations.map { |cc| puts "    #{cc.type}" }
+        end
       end
 
       usage "deployment list_vms <id>"

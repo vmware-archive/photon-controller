@@ -35,7 +35,6 @@ import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.Constants;
 
@@ -121,8 +120,10 @@ public class DeploymentFeClient {
     return task;
   }
 
-  public Deployment get(String id) throws DeploymentNotFoundException {
-    return deploymentBackend.toApiRepresentation(id);
+  public Deployment get(String id) throws ExternalException {
+    Deployment deployment = deploymentBackend.toApiRepresentation(id);
+    deployment.setClusterConfigurations(deploymentBackend.getClusterConfigurations());
+    return deployment;
   }
 
   public Task setSecurityGroups(String id, List<String> securityGroups) throws ExternalException {
