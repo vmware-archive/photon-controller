@@ -237,6 +237,37 @@ g2)') do |g|
         end
       end
 
+      usage "deployment delete_cluster_configuration <id> [<options>]"
+      desc "Deletes a cluster configuration of certain cluster type associated with the deployment"
+      def delete_cluster_configuration(args = [])
+        type = nil
+
+        opts_parser = OptionParser.new do |opts|
+          opts.on("-k", "--type TYPE",
+                  "Cluster type. Accepted values are KUBERNETES, MESOS, or SWARM") { |v| type = v }
+        end
+        id = shift_keyword_arg(args)
+        parse_options(args, opts_parser)
+
+        usage_error("Please provide deployment id") if id.blank?
+        usage_error("Please provide cluster type") if type.blank?
+        usage_error("Unsupported cluster type #{type}") unless %w(KUBERNETES MESOS SWARM).include? type
+
+        if confirmed?
+          initialize_client
+          spec = EsxCloud::ClusterConfigurationSpec.new(
+              type,
+              nil)
+
+          EsxCloud::Deployment.delete_cluster_configuration(id, spec)
+
+          puts green("''#{type}' cluster configuration is deleted for deployment '#{id}'")
+        else
+          puts yellow("OK, canceled")
+        end
+
+      end
+
       private
 
       def parse_deployment_creation_arguments(args)

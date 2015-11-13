@@ -50,6 +50,13 @@ module EsxCloud
       Config.client.configure_cluster(deployment_id, spec.to_hash)
     end
 
+    # @param [String] deployment_id
+    # @param [ClusterConfigurationSpec] spec
+    # @return [Boolean]
+    def self.delete_cluster_configuration(deployment_id, spec)
+      Config.client.delete_cluster_configuration(deployment_id, spec.to_hash)
+    end
+
     # @param [String] json
     # @return [Deployment]
     def self.create_from_json(json)

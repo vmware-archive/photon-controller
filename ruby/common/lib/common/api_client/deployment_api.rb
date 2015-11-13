@@ -201,6 +201,19 @@ module EsxCloud
         ClusterConfiguration.create_from_json(response.body)
       end
 
+      # @param [String] deployment_id
+      # @param [String] payload
+      # @return [Boolean]
+      def delete_cluster_configuration(deployment_id, payload)
+        puts payload
+        response = @http_client.post_json("#{DEPLOYMENTS_ROOT}/#{deployment_id}/delete_cluster_configuration", payload)
+
+        check_response("Delete cluster configuration for deployment '#{deployment_id}'", response, 201)
+
+        poll_response(response)
+        true
+      end
+
     end
   end
 end
