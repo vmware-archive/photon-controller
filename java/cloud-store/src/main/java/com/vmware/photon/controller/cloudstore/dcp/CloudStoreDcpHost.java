@@ -27,6 +27,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.PortGroupServiceFactory;
@@ -80,6 +81,7 @@ public class CloudStoreDcpHost
   public static final Class[] FACTORY_SERVICES = {
       FlavorServiceFactory.class,
       ImageServiceFactory.class,
+      ImageReplicationServiceFactory.class,
       HostServiceFactory.class,
       NetworkServiceFactory.class,
       DatastoreServiceFactory.class,
@@ -144,6 +146,7 @@ public class CloudStoreDcpHost
   public boolean isReady() {
     return checkServiceAvailable(FlavorServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageServiceFactory.SELF_LINK)
+        && checkServiceAvailable(ImageReplicationServiceFactory.SELF_LINK)
         && checkServiceAvailable(HostServiceFactory.SELF_LINK)
         && checkServiceAvailable(NetworkServiceFactory.SELF_LINK)
         && checkServiceAvailable(DatastoreServiceFactory.SELF_LINK)
