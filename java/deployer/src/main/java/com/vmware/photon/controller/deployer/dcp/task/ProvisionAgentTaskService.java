@@ -300,7 +300,7 @@ public class ProvisionAgentTaskService extends StatefulService {
       hostClient.provision(
           hostState.availabilityZone != null ? hostState.availabilityZone : AVAILABILITY_ZONE,
           dataStores,
-          deploymentState.imageDataStoreName,
+          deploymentState.imageDataStoreNames.iterator().next(),
           deploymentState.imageDataStoreUsedForVMs,
           networks,
           hostState.hostAddress,

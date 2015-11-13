@@ -64,8 +64,9 @@ module EsxCloud
         end
 
         def image_settings
+          datastore = ENV["ESX_DATASTORE"] || "datastore1"
           {
-            imageDataStoreName: ENV["ESX_DATASTORE"] || "datastore1",
+            imageDataStoreNames: [datastore],
             imageDataStoreUsedForVMs: true
           }
         end

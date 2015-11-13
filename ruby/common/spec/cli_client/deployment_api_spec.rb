@@ -25,13 +25,12 @@ describe EsxCloud::CliClient do
 
   context "when auth is not enabled" do
     let(:spec) do
-      EsxCloud::DeploymentCreateSpec.new("d", EsxCloud::AuthInfo.new(false), "0.0.0.1", "0.0.0.2", true)
+      EsxCloud::DeploymentCreateSpec.new(['d'], EsxCloud::AuthInfo.new(false), "0.0.0.1", "0.0.0.2", true)
     end
 
     it "creates an api deployment" do
       deployment = double(EsxCloud::Deployment, id: "d1")
       deployments = double(EsxCloud::DeploymentList, items: [deployment])
-
       expect(client).to receive(:run_cli)
                         .with("deployment create -i 'd' -s '0.0.0.1' -n '0.0.0.2' -v")
       expect(client).to receive(:find_all_api_deployments).and_return(deployments)
@@ -42,7 +41,7 @@ describe EsxCloud::CliClient do
 
   context "when auth is enabled" do
     let(:spec) do
-      EsxCloud::DeploymentCreateSpec.new("d",
+      EsxCloud::DeploymentCreateSpec.new(['d'],
                                          EsxCloud::AuthInfo.new(true, '0.0.0.0', '8080', 't', 'u', 'p', ['sg1', 'sg2']),
                                          "0.0.0.1",
                                          "0.0.0.2",

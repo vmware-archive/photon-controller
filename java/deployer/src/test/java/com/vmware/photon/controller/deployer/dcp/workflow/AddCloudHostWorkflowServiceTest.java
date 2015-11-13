@@ -496,7 +496,7 @@ public class AddCloudHostWorkflowServiceTest {
 
     private void createDeploymentServiceEntity() throws Throwable {
       DeploymentService.State state = new DeploymentService.State();
-      state.imageDataStoreName = "datastore";
+      state.imageDataStoreNames = Collections.singleton("datastore");
       state.imageDataStoreUsedForVMs = true;
       state.ntpEndpoint = "ntpEndpoint";
       state.oAuthEnabled = false;

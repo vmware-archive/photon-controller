@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Deployment entity.
@@ -50,7 +51,7 @@ public class DeploymentEntity extends BaseEntity {
 
   private String ntpEndpoint;
 
-  private String imageDatastore;
+  private Set<String> imageDatastores;
 
   private boolean useImageDatastoreForVms;
 
@@ -166,12 +167,12 @@ public class DeploymentEntity extends BaseEntity {
     this.ntpEndpoint = endpoint;
   }
 
-  public String getImageDatastore() {
-    return this.imageDatastore;
+  public Set<String> getImageDatastores() {
+    return this.imageDatastores;
   }
 
-  public void setImageDatastore(String datastore) {
-    this.imageDatastore = datastore;
+  public void setImageDatastores(Set<String> datastores) {
+    this.imageDatastores = datastores;
   }
 
   public boolean getUseImageDatastoreForVms() {
@@ -227,7 +228,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getOauthPassword(), other.getOauthPassword())
         && ListUtils.isEqualList(this.getOauthSecurityGroups(), other.getOauthSecurityGroups())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
-        && Objects.equals(this.getImageDatastore(), other.getImageDatastore())
+        && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.getUseImageDatastoreForVms(), other.getUseImageDatastoreForVms())
         && Objects.equals(this.getLoadBalancerEnabled(), other.getLoadBalancerEnabled())
         && Objects.equals(this.getMigrationProgress(), other.getMigrationProgress())
@@ -248,7 +249,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("oauthPassword", this.getOauthPassword())
         .add("oauthSecurityGroups", StringUtils.join(this.getOauthSecurityGroups(), ','))
         .add("ntpEndpoint", this.getNtpEndpoint())
-        .add("imageDatastore", this.getImageDatastore())
+        .add("imageDatastore", this.getImageDatastores())
         .add("useImageDatastoreForVms", this.getUseImageDatastoreForVms())
         .add("operationId", this.getOperationId())
         .add("loadBalancerEnabled", this.getLoadBalancerEnabled())

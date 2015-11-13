@@ -44,6 +44,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
+import java.util.Collections;
 
 /**
  * Tests {@link DeploymentResource}.
@@ -74,7 +75,7 @@ public class DeploymentResourceTest extends ResourceTest {
   public void testGetDeploymentById() throws Exception {
     Deployment deployment = new Deployment();
     deployment.setId(deploymentId);
-    deployment.setImageDatastore("imageDatastore");
+    deployment.setImageDatastores(Collections.singleton("imageDatastore"));
     deployment.setSyslogEndpoint("0.0.0.0");
     deployment.setNtpEndpoint("0.0.0.1");
     deployment.setAuth(new AuthInfoBuilder().build());
