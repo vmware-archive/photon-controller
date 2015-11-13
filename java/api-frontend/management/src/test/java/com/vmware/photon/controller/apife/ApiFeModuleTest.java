@@ -33,45 +33,31 @@ import com.vmware.photon.controller.apife.auth.fetcher.Vm;
 import com.vmware.photon.controller.apife.auth.fetcher.VmSecurityGroupFetcher;
 import com.vmware.photon.controller.apife.backends.AttachedDiskBackend;
 import com.vmware.photon.controller.apife.backends.AttachedDiskDcpBackend;
-import com.vmware.photon.controller.apife.backends.AttachedDiskSqlBackend;
 import com.vmware.photon.controller.apife.backends.DatastoreBackend;
 import com.vmware.photon.controller.apife.backends.DatastoreDcpBackend;
-import com.vmware.photon.controller.apife.backends.DatastoreSqlBackend;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
-import com.vmware.photon.controller.apife.backends.DeploymentSqlBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.DiskDcpBackend;
-import com.vmware.photon.controller.apife.backends.DiskSqlBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockDcpBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.FlavorDcpBackend;
-import com.vmware.photon.controller.apife.backends.FlavorSqlBackend;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.HostDcpBackend;
-import com.vmware.photon.controller.apife.backends.HostSqlBackend;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.ImageDcpBackend;
-import com.vmware.photon.controller.apife.backends.ImageSqlBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.NetworkDcpBackend;
-import com.vmware.photon.controller.apife.backends.NetworkSqlBackend;
 import com.vmware.photon.controller.apife.backends.ResourceTicketBackend;
 import com.vmware.photon.controller.apife.backends.ResourceTicketDcpBackend;
-import com.vmware.photon.controller.apife.backends.ResourceTicketSqlBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
-import com.vmware.photon.controller.apife.backends.StepLockSqlBackend;
-import com.vmware.photon.controller.apife.backends.StepSqlBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TaskDcpBackend;
-import com.vmware.photon.controller.apife.backends.TaskSqlBackend;
 import com.vmware.photon.controller.apife.backends.TombstoneBackend;
 import com.vmware.photon.controller.apife.backends.TombstoneDcpBackend;
-import com.vmware.photon.controller.apife.backends.TombstoneSqlBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.VmDcpBackend;
-import com.vmware.photon.controller.apife.backends.VmSqlBackend;
 import com.vmware.photon.controller.apife.config.ApiFeConfiguration;
 import com.vmware.photon.controller.apife.config.ApiFeConfigurationTest;
 import com.vmware.photon.controller.apife.config.AuthConfig;
@@ -394,76 +380,13 @@ public class ApiFeModuleTest {
    */
   public class TestBackendInjection {
     /**
-     * Test that backends can be injected successfully.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testSqlBackendInjection() throws Throwable {
-      ApiFeModule apiFeModule = new ApiFeModule();
-      ApiFeConfiguration apiFeConfiguration = ConfigurationUtils.parseConfiguration(
-          ApiFeConfigurationTest.class.getResource("/config_min.yml").getPath()
-      );
-
-      apiFeModule.setConfiguration(apiFeConfiguration);
-
-      Injector injector = Guice.createInjector(
-          new HibernateTestModule());
-
-      apiFeModule.setSessionFactory(injector.getInstance(SessionFactory.class));
-
-      ZookeeperModule zookeeperModule = new ZookeeperModule();
-      zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
-
-      injector = Guice.createInjector(
-          apiFeModule,
-          zookeeperModule,
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bindScope(RequestScoped.class, Scopes.NO_SCOPE);
-            }
-          });
-
-      DcpBackendDummyClient dcpBackendDummyClient = injector.getInstance(DcpBackendDummyClient.class);
-      assertThat(dcpBackendDummyClient.flavorBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.flavorBackend, instanceOf(FlavorSqlBackend.class));
-      assertThat(dcpBackendDummyClient.imageBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.imageBackend, instanceOf(ImageSqlBackend.class));
-      assertThat(dcpBackendDummyClient.taskBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.taskBackend, instanceOf(TaskSqlBackend.class));
-      assertThat(dcpBackendDummyClient.networkBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.networkBackend, instanceOf(NetworkSqlBackend.class));
-      assertThat(dcpBackendDummyClient.datastoreBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.datastoreBackend, instanceOf(DatastoreSqlBackend.class));
-      assertThat(dcpBackendDummyClient.stepBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.stepBackend, instanceOf(StepSqlBackend.class));
-      assertThat(dcpBackendDummyClient.entityLockBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.entityLockBackend, instanceOf(StepLockSqlBackend.class));
-      assertThat(dcpBackendDummyClient.resourceTicketBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.resourceTicketBackend, instanceOf(ResourceTicketSqlBackend.class));
-      assertThat(dcpBackendDummyClient.diskBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.diskBackend, instanceOf(DiskSqlBackend.class));
-      assertThat(dcpBackendDummyClient.attachedDiskBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.attachedDiskBackend, instanceOf(AttachedDiskSqlBackend.class));
-      assertThat(dcpBackendDummyClient.vmBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.vmBackend, instanceOf(VmSqlBackend.class));
-      assertThat(dcpBackendDummyClient.hostBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.hostBackend, instanceOf(HostSqlBackend.class));
-      assertThat(dcpBackendDummyClient.deploymentBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.deploymentBackend, instanceOf(DeploymentSqlBackend.class));
-      assertThat(dcpBackendDummyClient.tombstoneBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.tombstoneBackend, instanceOf(TombstoneSqlBackend.class));
-    }
-
-    /**
      * Test that DCP backends can be injected successfully.
      *
      * @throws Throwable
      */
     @Test
     public void testDcpBackendInjection() throws Throwable {
-      ApiFeModule apiFeModule = new ApiFeModule(true);
+      ApiFeModule apiFeModule = new ApiFeModule();
       ApiFeConfiguration apiFeConfiguration = ConfigurationUtils.parseConfiguration(
           ApiFeConfigurationTest.class.getResource("/config.yml").getPath()
       );
