@@ -451,7 +451,7 @@ public class TombstoneCleanerService extends StatefulService {
         .setTermMatchValue(Utils.buildKind(TombstoneService.State.class));
 
     QueryTask.NumericRange range = QueryTask.NumericRange.createLessThanRange(
-        System.currentTimeMillis() - current.tombstoneExpirationAge);
+        System.currentTimeMillis() - current.tombstoneExpirationAgeMillis);
     range.precisionStep = Integer.MAX_VALUE;
     QueryTask.Query ageClause = new QueryTask.Query()
         .setTermPropertyName(TombstoneService.State.FIELD_NAME_TOMBSTONE_TIME)
@@ -517,7 +517,7 @@ public class TombstoneCleanerService extends StatefulService {
     @Immutable
     @NotNull
     @Positive
-    public Long tombstoneExpirationAge;
+    public Long tombstoneExpirationAgeMillis;
 
     /**
      * The number of tombstones to delete.

@@ -38,17 +38,17 @@ public class TaskTriggerService extends StatefulService {
   /**
    * Timeout value for the owner selection operation.
    */
-  private static final long OWNER_SELECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+  private static final long OWNER_SELECTION_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
 
   /**
    * Default value for the maintenance interval. (1 minute)
    */
-  protected static final int DEFAULT_MAINTENANCE_INTERVAL = 60 * 1000;
+  protected static final int DEFAULT_MAINTENANCE_INTERVAL_MILLIS = 60 * 1000;
 
   /**
    * Default value to set the triggered tasks expiration age. (5 hours)
    */
-  protected static final int DEFAULT_TASK_EXPIRATION_AGE_IN_MS = 5 * 60 * 60 * 1000;
+  protected static final int DEFAULT_TASK_EXPIRATION_AGE_MILLIS = 5 * 60 * 60 * 1000;
 
   /**
    * Default constructor.
@@ -57,8 +57,8 @@ public class TaskTriggerService extends StatefulService {
     super(State.class);
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
     super.toggleOption(ServiceOption.PERIODIC_MAINTENANCE, true);
-    super.setMaintenanceIntervalMicros(
-        TimeUnit.MILLISECONDS.toMicros(DEFAULT_MAINTENANCE_INTERVAL));
+    super.toggleOption(ServiceOption.PERSISTENCE, true);
+    super.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(DEFAULT_MAINTENANCE_INTERVAL_MILLIS));
   }
 
   @Override
@@ -70,8 +70,7 @@ public class TaskTriggerService extends StatefulService {
     this.validateState(s);
 
     // set the maintenance interval to match the value in the state.
-    this.setMaintenanceIntervalMicros(
-       TimeUnit.MILLISECONDS.toMicros(DEFAULT_MAINTENANCE_INTERVAL));
+    this.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(s.triggerIntervalMillis));
 
     start.complete();
   }
@@ -117,7 +116,7 @@ public class TaskTriggerService extends StatefulService {
 
     Operation selectOwnerOp = Operation
         .createPost(null)
-        .setExpiration(ServiceUtils.computeExpirationTime(OWNER_SELECTION_TIMEOUT))
+        .setExpiration(ServiceUtils.computeExpirationTime(OWNER_SELECTION_TIMEOUT_MILLIS))
         .setCompletion(handler);
     getHost().selectOwner(null, getSelfLink(), selectOwnerOp);
   }
@@ -170,7 +169,7 @@ public class TaskTriggerService extends StatefulService {
     try {
       Type stateType = Class.forName(current.triggerStateClassName);
       ServiceDocument postState = Utils.fromJson(current.serializedTriggerState, stateType);
-      postState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(current.taskExpirationAge);
+      postState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(current.taskExpirationAgeMillis);
 
       Operation post = Operation
           .createPost(UriUtils.buildUri(getHost(), current.factoryServiceLink))
@@ -202,18 +201,25 @@ public class TaskTriggerService extends StatefulService {
     ServiceUtils.logSevere(this, e);
   }
 
-
   /**
    * Class defines the durable state of the TaskTriggerService.
    */
   public static class State extends ServiceDocument {
 
     /**
+     * The time interval to trigger the service. (This value will be used to set the
+     * maintenance interval on the service.)
+     */
+    @DefaultInteger(value = DEFAULT_MAINTENANCE_INTERVAL_MILLIS)
+    @Positive
+    public Integer triggerIntervalMillis;
+
+    /**
      * The expiration age of triggered tasks.
      */
-    @DefaultInteger(value = DEFAULT_TASK_EXPIRATION_AGE_IN_MS)
+    @DefaultInteger(value = DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
     @Positive
-    public Integer taskExpirationAge;
+    public Integer taskExpirationAgeMillis;
 
     /**
      * The initial state to trigger the task service with.
