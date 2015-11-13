@@ -13,6 +13,7 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationJoin;
 import com.vmware.dcp.common.OperationSequence;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
@@ -31,6 +32,7 @@ import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -83,15 +85,15 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
     OperationSequence.create(copyStateTaskQuery, uploadVibTaskQuery)
       .setCompletion((op, t) -> {
         if (t != null && !t.isEmpty()) {
-          ServiceUtils.logSevere(this,  ExceptionUtils.createMultiException(t.values()));
+          ServiceUtils.logSevere(this, ExceptionUtils.createMultiException(t.values()));
           get.fail(t.get(copyStateTaskQuery.getId()));
           return;
         }
 
         Map<String, Integer> finishedCopyStateCounts
-          = countFinishedCopyStateTaskServices(copyStateTaskQuery, op);
+            = countFinishedCopyStateTaskServices(copyStateTaskQuery, op);
         List<UploadVibTaskService.State> documents
-          = extractDocuments(op.get(uploadVibTaskQuery.getId()), UploadVibTaskService.State.class);
+            = extractDocuments(op.get(uploadVibTaskQuery.getId()), UploadVibTaskService.State.class);
         long vibsUploaded = countTasks(documents, task -> task.taskState.stage == TaskStage.FINISHED);
         long vibsUploading = countTasks(
             documents,
@@ -116,10 +118,10 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
     Map<String, Integer> map = new HashMap<>();
     sourceFactories.stream().forEach(factoryLink -> map.put(appendIfNotExists(factoryLink, "/"), 0));
     copyStateTasks.stream().forEach(state -> {
-        if (state.taskState.stage == TaskStage.FINISHED && map.containsKey(state.sourceFactoryLink)) {
-          Integer count = map.get(state.sourceFactoryLink);
-          map.put(state.sourceFactoryLink, count + 1);
-        }
+      if (state.taskState.stage == TaskStage.FINISHED && map.containsKey(state.sourceFactoryLink)) {
+        Integer count = map.get(state.sourceFactoryLink);
+        map.put(state.sourceFactoryLink, count + 1);
+      }
     });
     return map;
   }
@@ -173,9 +175,9 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
   private void triggerStatusCollection() {
     Operation updateQuery = generateDataMigrationStatusUpdateTaskQuery();
 
-    Operation.CompletionHandler joinedGetCompletionHandler = (o, t) -> {
-      if (t != null) {
-        ServiceUtils.logSevere(this, t);
+    OperationJoin.JoinedCompletionHandler joinedGetCompletionHandler = (o, failures) -> {
+      if (failures != null && failures.size() > 0) {
+        ServiceUtils.logSevere(this, failures.values());
       }
     };
 
@@ -189,17 +191,14 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
         return;
       }
 
-      Operation joinedGet = null;
+      List<Operation> opList = new ArrayList<Operation>(resultDocuments.size());
       for (State state : resultDocuments) {
-        Operation get = Operation.createGet(this, state.deploymentServiceLink);
-        if (joinedGet == null) {
-          joinedGet = get;
-        } else {
-          joinedGet.joinWith(get);
-        }
+        opList.add(Operation.createGet(this, state.deploymentServiceLink));
       }
-      joinedGet.setCompletion(joinedGetCompletionHandler);
-      sendRequest(joinedGet);
+
+      OperationJoin.create(opList)
+        .setCompletion(joinedGetCompletionHandler)
+        .sendWith(this);
     });
     sendRequest(updateQuery);
   }

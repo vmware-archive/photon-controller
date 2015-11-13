@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationJoin;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
@@ -239,13 +240,14 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
 
   private void retrieveManagementHosts(State currentState, Set<String> hostLinks) {
     CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntities(this, hostLinks, (operation, throwable) -> {
-      if (throwable != null) {
-        failTask(throwable);
+    cloudStoreHelper.getEntities(this, hostLinks, (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+      if (failures != null && failures.size() > 0) {
+        failTask(failures.values().iterator().next());
         return;
       }
+
       Map<String, HostService.State> hosts = new HashMap<>();
-      for (Operation getOperation : operation.getJoinedOperations()) {
+      for (Operation getOperation : ops.values()) {
         HostService.State host = getOperation.getBody(HostService.State.class);
         hosts.put(host.documentSelfLink, host);
       }
@@ -262,35 +264,40 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
     final Operation vmQueryPostOperation = createVmQuery(forwardingService);
     final Operation containerTemplateQueryPostOperation = createContainerTemplateQuery(currentState, forwardingService);
 
-    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
-      if (null != throwable) {
-        failTask(throwable);
-        return;
-      }
+    OperationJoin.JoinedCompletionHandler completionHandler =
+        (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+          if (failures != null && failures.size() > 0) {
+            failTask(failures.values().iterator().next());
+            return;
+          }
 
-      try {
-        NodeGroupBroadcastResponse vmQueryResponse = operation
-            .getJoinedOperation(vmQueryPostOperation).getBody(NodeGroupBroadcastResponse.class);
-        Set<String> vmLinks = QueryTaskUtils.getBroadcastQueryResults(vmQueryResponse);
-        QueryTaskUtils.logQueryResults(CreateContainerSpecLayoutTaskService.this, vmLinks);
-        if (vmLinks.isEmpty()) {
-          throw new DcpRuntimeException("Found 0 VmService entities representing docker vms");
-        }
+          try {
+            NodeGroupBroadcastResponse vmQueryResponse =
+                ops.get(vmQueryPostOperation.getId()).getBody(NodeGroupBroadcastResponse.class);
+            Set<String> vmLinks = QueryTaskUtils.getBroadcastQueryResults(vmQueryResponse);
+            QueryTaskUtils.logQueryResults(CreateContainerSpecLayoutTaskService.this, vmLinks);
+            if (vmLinks.isEmpty()) {
+              throw new DcpRuntimeException("Found 0 VmService entities representing docker vms");
+            }
 
-        NodeGroupBroadcastResponse containerTemplateQueryResponse = operation
-            .getJoinedOperation(containerTemplateQueryPostOperation).getBody(NodeGroupBroadcastResponse.class);
-        Set<String> containerTemplateLinks = QueryTaskUtils.getBroadcastQueryResults(containerTemplateQueryResponse);
-        QueryTaskUtils.logQueryResults(CreateContainerSpecLayoutTaskService.this, containerTemplateLinks);
-        if (containerTemplateLinks.isEmpty()) {
-          throw new DcpRuntimeException(
-              String.format("Found 0 container templates"));
-        }
-          retrieveVms(currentState, managementHosts, vmLinks, containerTemplateLinks);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      };
-    sendRequest(vmQueryPostOperation.joinWith(containerTemplateQueryPostOperation).setCompletion(completionHandler));
+            NodeGroupBroadcastResponse containerTemplateQueryResponse =
+                ops.get(containerTemplateQueryPostOperation.getId()).getBody(NodeGroupBroadcastResponse.class);
+            Set<String> containerTemplateLinks =
+                QueryTaskUtils.getBroadcastQueryResults(containerTemplateQueryResponse);
+            QueryTaskUtils.logQueryResults(CreateContainerSpecLayoutTaskService.this, containerTemplateLinks);
+            if (containerTemplateLinks.isEmpty()) {
+              throw new DcpRuntimeException(
+                  String.format("Found 0 container templates"));
+            }
+            retrieveVms(currentState, managementHosts, vmLinks, containerTemplateLinks);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        };
+
+    OperationJoin.create(vmQueryPostOperation, containerTemplateQueryPostOperation)
+        .setCompletion(completionHandler)
+        .sendWith(this);
   }
 
   private void createVmContainerAllocations(
@@ -389,28 +396,29 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
       Map<String, HostService.State> managementHosts,
       Set<String> vmLinks,
       Set<String> containerTemplateLinks) {
-    Operation join = null;
+
+    List<Operation> opList = new ArrayList<>(vmLinks.size());
     for (String vmLink : vmLinks) {
-      Operation get = Operation.createGet(this, vmLink).forceRemote();
-      if (join == null) {
-        join = get;
-      } else {
-        join.joinWith(get);
-      }
+      opList.add(Operation.createGet(this, vmLink).forceRemote());
     }
 
-    sendRequest(join.setCompletion((operation, throwable) -> {
-      if (throwable != null) {
-        failTask(throwable);
-        return;
-      }
-      Set<VmService.State> vms = new HashSet<>();
-      for (Operation getOperation : operation.getJoinedOperations()) {
-        VmService.State vm = getOperation.getBody(VmService.State.class);
-        vms.add(vm);
-      }
-      retrieveContainerTemplates(currentState, managementHosts, vms, containerTemplateLinks);
-    }));
+    OperationJoin.create(opList)
+        .setCompletion(
+            (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+              if (failures != null && failures.size() > 0) {
+                failTask(failures.values().iterator().next());
+                return;
+              }
+
+              Set<VmService.State> vms = new HashSet<>();
+              for (Operation getOperation : ops.values()) {
+                VmService.State vm = getOperation.getBody(VmService.State.class);
+                vms.add(vm);
+              }
+
+              retrieveContainerTemplates(currentState, managementHosts, vms, containerTemplateLinks);
+            })
+        .sendWith(this);
   }
 
   private void retrieveContainerTemplates(
@@ -418,28 +426,29 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
       Map<String, HostService.State> managementHosts,
       Set<VmService.State> vms,
       Set<String> containerTemplateLinks) {
-    Operation join = null;
+
+    List<Operation> opList = new ArrayList<>(containerTemplateLinks.size());
     for (String containerTemplateLink : containerTemplateLinks) {
-      Operation get = Operation.createGet(this, containerTemplateLink).forceRemote();
-      if (join == null) {
-        join = get;
-      } else {
-        join.joinWith(get);
-      }
+      opList.add(Operation.createGet(this, containerTemplateLink).forceRemote());
     }
 
-    sendRequest(join.setCompletion((operation, throwable) -> {
-      if (throwable != null) {
-        failTask(throwable);
-        return;
-      }
-      Set<ContainerTemplateService.State> containerTemplates = new HashSet<>();
-      for (Operation getOperation : operation.getJoinedOperations()) {
-        ContainerTemplateService.State template = getOperation.getBody(ContainerTemplateService.State.class);
-        containerTemplates.add(template);
-      }
-      createVmContainerAllocations(currentState, managementHosts, vms, containerTemplates);
-    }));
+    OperationJoin.create(opList)
+        .setCompletion(
+            (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+              if (failures != null && failures.size() > 0) {
+                failTask(failures.values().iterator().next());
+                return;
+              }
+
+              Set<ContainerTemplateService.State> containerTemplates = new HashSet<>();
+              for (Operation getOperation : ops.values()) {
+                ContainerTemplateService.State template = getOperation.getBody(ContainerTemplateService.State.class);
+                containerTemplates.add(template);
+              }
+
+              createVmContainerAllocations(currentState, managementHosts, vms, containerTemplates);
+            })
+        .sendWith(this);
   }
 
   private List<String> computeValidVms(
