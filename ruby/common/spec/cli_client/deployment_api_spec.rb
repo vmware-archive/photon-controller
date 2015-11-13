@@ -127,4 +127,10 @@ describe EsxCloud::CliClient do
 
     client.configure_cluster("foo", "payload")
   end
+
+  it "deletes cluster configuration for deployment" do
+    expect(@api_client).to receive(:delete_cluster_configuration).with("foo", "payload")
+
+    client.delete_cluster_configuration("foo", "payload")
+  end
 end

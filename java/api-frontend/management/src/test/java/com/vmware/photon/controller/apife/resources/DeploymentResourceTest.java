@@ -263,7 +263,7 @@ public class DeploymentResourceTest extends ResourceTest {
         .target(uri)
         .request()
         .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(201));
   }
 
   @Test

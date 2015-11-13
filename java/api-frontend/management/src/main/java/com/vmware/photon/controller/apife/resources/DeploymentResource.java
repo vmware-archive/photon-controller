@@ -204,17 +204,18 @@ public class DeploymentResource {
   @Path(DeploymentResourceRoutes.DELETE_CLUSTER_CONFIGURATION_ACTION)
   @ApiOperation(value = "Delete cluster configuration for a give cluster type", response = Task.class)
   @ApiResponses(value = {
-      @ApiResponse(code = 200, message = "Cluster configuration is deleted")
+      @ApiResponse(code = 201, message = "Task created, cluster configuration delete process can be fetched " +
+                   "via the task")
   })
   public Response deleteClusterConfiguration(@Context Request request,
                                              @PathParam("id") String id,
                                              ClusterConfigurationSpec spec) throws ExternalException {
-    if (spec.getType() == null) {
+    if (spec == null || spec.getType() == null) {
       throw new ClusterTypeNotConfiguredException(null);
     }
 
     return generateCustomResponse(
-        Response.Status.OK,
+        Response.Status.CREATED,
         client.deleteClusterConfiguration(id, spec.getType()),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);

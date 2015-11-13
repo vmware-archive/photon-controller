@@ -228,4 +228,15 @@ describe EsxCloud::ApiClient do
     expect(client.configure_cluster("foo", "payload")).to eq configuration
   end
 
+  it "deletes cluster configuration for deployment" do
+    expect(@http_client).to receive(:post_json)
+                            .with("/deployments/foo/delete_cluster_configuration", "payload")
+                            .and_return(task_created("randomid"))
+    expect(@http_client).to receive(:get)
+                            .with(URL_HOST + "/tasks/randomid")
+                            .and_return(task_done("randomid", "entity_id"))
+    finished = client.delete_cluster_configuration("foo", "payload")
+    expect(finished).to eq(true)
+  end
+
 end
