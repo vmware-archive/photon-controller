@@ -20,8 +20,6 @@ import com.vmware.photon.controller.common.dcp.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskStateBuilderConfig;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerService;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * Builder that generates the states for a TaskTriggerService meant to periodically trigger
  * TombstoneCleanerService instances.
@@ -36,30 +34,14 @@ public class TombstoneCleanerTriggerBuilder implements TaskStateBuilder {
   /**
    * Default age after which to expire a tombstone. (24h)
    */
-  public static final long DEFAULT_TOMBSTONE_EXPIRATION_AGE_MILLIS = ((Long) TimeUnit.HOURS.toMillis(24)).intValue();
-
-  /**
-   * Default age after which to expire a task. (5h)
-   */
-  public static final int DEFAULT_TASK_EXPIRATION_AGE_MILLIS = ((Long) TimeUnit.HOURS.toMillis(5)).intValue();
-
-  /**
-   * Default interval for tombstone cleaner service. (1m)
-   */
-  public static final int DEFAULT_CLEANER_TRIGGER_INTERVAL_MILLIS = ((Long) TimeUnit.MINUTES.toMillis(1)).intValue();
+  protected static final long DEFAULT_TOMBSTONE_EXPIRATION_AGE = 24 * 60 * 60 * 1000;
 
   @Override
   public TaskTriggerService.State build(TaskStateBuilderConfig config) {
     TaskTriggerService.State state = new TaskTriggerService.State();
-
-    state.taskExpirationAgeMillis = DEFAULT_TASK_EXPIRATION_AGE_MILLIS;
-    state.triggerIntervalMillis = DEFAULT_CLEANER_TRIGGER_INTERVAL_MILLIS;
-
     if (null != config && config instanceof Config) {
-      state.taskExpirationAgeMillis = ((Config) config).getTaskExpirationAgeMillis();
-      state.triggerIntervalMillis = ((Config) config).getTriggerIntervalMillis();
+      state.taskExpirationAge = ((Config) config).getTaskExpirationAge();
     }
-
     state.serializedTriggerState = buildStartState(config);
     state.triggerStateClassName = TombstoneCleanerService.State.class.getName();
     state.factoryServiceLink = TombstoneCleanerFactoryService.SELF_LINK;
@@ -70,9 +52,9 @@ public class TombstoneCleanerTriggerBuilder implements TaskStateBuilder {
   private String buildStartState(TaskStateBuilderConfig config) {
     TombstoneCleanerService.State state = new TombstoneCleanerService.State();
 
-    state.tombstoneExpirationAgeMillis = DEFAULT_TOMBSTONE_EXPIRATION_AGE_MILLIS;
+    state.tombstoneExpirationAge = DEFAULT_TOMBSTONE_EXPIRATION_AGE;
     if (null != config && config instanceof Config) {
-      state.tombstoneExpirationAgeMillis = ((Config) config).getTombstoneExpirationAgeMillis();
+      state.tombstoneExpirationAge = ((Config) config).getTombstoneExpirationAge();
     }
 
     return Utils.toJson(state);
@@ -83,34 +65,21 @@ public class TombstoneCleanerTriggerBuilder implements TaskStateBuilder {
    */
   public static class Config implements TaskStateBuilderConfig {
 
-    private Long tombstoneExpirationAgeMillis;
+    private Long tombstoneExpirationAge;
 
-    private int taskExpirationAgeMillis;
+    private int taskExpirationAge;
 
-    private int triggerIntervalMillis;
-
-    public Config(Long tombstoneExpirationAgeMillis, int taskExpirationAgeMillis, int triggerIntervalMillis) {
-      this.tombstoneExpirationAgeMillis = tombstoneExpirationAgeMillis;
-      this.taskExpirationAgeMillis = taskExpirationAgeMillis;
-      this.triggerIntervalMillis = triggerIntervalMillis;
+    public Config(Long tombstoneExpirationAge, int taskExpirationAge) {
+      this.tombstoneExpirationAge = tombstoneExpirationAge;
+      this.taskExpirationAge = taskExpirationAge;
     }
 
-    public Config() {
-      this.tombstoneExpirationAgeMillis = DEFAULT_TOMBSTONE_EXPIRATION_AGE_MILLIS;
-      this.taskExpirationAgeMillis = DEFAULT_TASK_EXPIRATION_AGE_MILLIS;
-      this.triggerIntervalMillis = DEFAULT_CLEANER_TRIGGER_INTERVAL_MILLIS;
+    public Long getTombstoneExpirationAge() {
+      return tombstoneExpirationAge;
     }
 
-    public Long getTombstoneExpirationAgeMillis() {
-      return tombstoneExpirationAgeMillis;
-    }
-
-    public int getTaskExpirationAgeMillis() {
-      return taskExpirationAgeMillis;
-    }
-
-    public int getTriggerIntervalMillis() {
-      return triggerIntervalMillis;
+    public int getTaskExpirationAge() {
+      return taskExpirationAge;
     }
   }
 }

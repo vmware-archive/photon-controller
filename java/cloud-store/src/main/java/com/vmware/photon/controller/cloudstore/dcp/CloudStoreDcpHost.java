@@ -55,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Class to initialize a DCP host for cloud-store.
@@ -67,14 +68,10 @@ public class CloudStoreDcpHost
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
 
   private static final Object[][] TASK_TRIGGERS = new Object[][]{
-      {
-          new TombstoneCleanerTriggerBuilder(),
-          new TombstoneCleanerTriggerBuilder.Config()
-      },
-      {
-          new EntityLockCleanerTriggerBuilder(),
-          new TombstoneCleanerTriggerBuilder.Config()
-      },
+      {new TombstoneCleanerTriggerBuilder(),
+          new TombstoneCleanerTriggerBuilder.Config(TimeUnit.HOURS.toMillis(6),
+              ((Long) TimeUnit.HOURS.toMillis(5)).intValue())},
+      {new EntityLockCleanerTriggerBuilder(), null},
   };
 
   public static final Class[] FACTORY_SERVICES = {
@@ -179,9 +176,12 @@ public class CloudStoreDcpHost
   }
 
   private void startTaskTriggerServices() {
-    registerForServiceAvailability((operation, throwable) -> {
-      for (Object[] params : TASK_TRIGGERS) {
-        startTriggerService(params);
+    registerForServiceAvailability(new Operation.CompletionHandler() {
+      @Override
+      public void handle(Operation operation, Throwable throwable) {
+        for (Object[] params : TASK_TRIGGERS) {
+          startTriggerService(params);
+        }
       }
     }, TaskTriggerFactoryService.SELF_LINK);
   }

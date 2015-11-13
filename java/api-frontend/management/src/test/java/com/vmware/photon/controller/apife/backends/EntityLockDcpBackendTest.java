@@ -20,19 +20,19 @@ import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
-import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.db.HibernateTestModule;
+import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
 import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.IsoEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
-import com.google.inject.Inject;
-import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -42,54 +42,14 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import java.net.InetSocketAddress;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 
 /**
  * Tests {@link EntityLockDcpBackend}.
  */
 public class EntityLockDcpBackendTest {
-
-  private static ApiFeDcpRestClient dcpClient;
-  private static BasicServiceHost host;
-
-  private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
-    host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
-
-    if (host == null) {
-      throw new IllegalStateException(
-          "host is not expected to be null in this test setup");
-    }
-
-    if (dcpClient == null) {
-      throw new IllegalStateException(
-          "dcpClient is not expected to be null in this test setup");
-    }
-
-    if (!host.isReady()) {
-      throw new IllegalStateException(
-          "host is expected to be in started state, current state=" + host.getState());
-    }
-  }
-
-  private static void commonHostDocumentsCleanup() throws Throwable {
-    if (host != null) {
-      ServiceHostUtils.deleteAllDocuments(host, "test-host");
-    }
-  }
-
-  private static void commonHostAndClientTeardown() throws Throwable {
-    if (dcpClient != null) {
-      dcpClient.stop();
-      dcpClient = null;
-    }
-
-    if (host != null) {
-      host.destroy();
-      host = null;
-    }
-  }
 
   @Test
   private void dummy() {
@@ -98,23 +58,32 @@ public class EntityLockDcpBackendTest {
   /**
    * Tests for setTaskLock.
    */
-  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
-  public static class SetTaskLockTest {
+  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
+  public static class SetTaskLockTest extends BaseDaoTest {
 
-    @Inject
-    private BasicServiceHost basicServiceHost;
-
-    @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
-
-    @Inject
     private EntityLockDcpBackend entityLockDcpBackend;
+    private ApiFeDcpRestClient dcpClient;
 
+    private BasicServiceHost host;
     private TaskEntity taskEntity;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      super.setUp();
+
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          EntityLockServiceFactory.SELF_LINK,
+          10, 10);
+
+      host.startServiceSynchronously(new EntityLockServiceFactory(), null);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+
+      entityLockDcpBackend = new EntityLockDcpBackend(dcpClient);
 
       taskEntity = new TaskEntity();
       taskEntity.setId("task-id");
@@ -122,12 +91,13 @@ public class EntityLockDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      commonHostDocumentsCleanup();
-    }
+      super.tearDown();
 
-    @AfterClass
-    public static void afterClassCleanup() throws Throwable {
-      commonHostAndClientTeardown();
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      dcpClient.stop();
     }
 
     @DataProvider(name = "getEntities")
@@ -207,22 +177,31 @@ public class EntityLockDcpBackendTest {
   /**
    * Tests for cleaning lock.
    */
-  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
-  public static class ClearLocksTest {
-    @Inject
-    private BasicServiceHost basicServiceHost;
-
-    @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
-
-    @Inject
+  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
+  public static class ClearLocksTest extends BaseDaoTest {
     private EntityLockDcpBackend entityLockDcpBackend;
+    private ApiFeDcpRestClient dcpClient;
 
+    private BasicServiceHost host;
     private TaskEntity taskEntity;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      super.setUp();
+
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          EntityLockServiceFactory.SELF_LINK,
+          10, 10);
+
+      host.startServiceSynchronously(new EntityLockServiceFactory(), null);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+
+      entityLockDcpBackend = new EntityLockDcpBackend(dcpClient);
 
       taskEntity = new TaskEntity();
       taskEntity.setId("task-id");
@@ -230,12 +209,13 @@ public class EntityLockDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      commonHostDocumentsCleanup();
-    }
+      super.tearDown();
 
-    @AfterClass
-    public static void afterClassCleanup() throws Throwable {
-      commonHostAndClientTeardown();
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      dcpClient.stop();
     }
 
     @Test

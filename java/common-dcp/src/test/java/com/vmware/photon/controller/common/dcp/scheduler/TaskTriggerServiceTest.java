@@ -55,7 +55,7 @@ public class TaskTriggerServiceTest {
     state.factoryServiceLink = TestServiceWithStageFactory.SELF_LINK;
     state.serializedTriggerState = Utils.toJson(nestedState);
     state.triggerStateClassName = nestedState.getClass().getTypeName();
-    state.taskExpirationAgeMillis = 5 * 60 * 60 * 1000;
+    state.taskExpirationAge = 5 * 60 * 60 * 1000;
 
     return state;
   }
@@ -83,11 +83,10 @@ public class TaskTriggerServiceTest {
     public void testServiceOptions() {
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
           Service.ServiceOption.INSTRUMENTATION,
-          Service.ServiceOption.PERIODIC_MAINTENANCE,
-          Service.ServiceOption.PERSISTENCE);
+          Service.ServiceOption.PERIODIC_MAINTENANCE);
       assertThat(service.getOptions(), is(expected));
       assertThat(service.getMaintenanceIntervalMicros(),
-          is(TimeUnit.MILLISECONDS.toMicros(TaskTriggerService.DEFAULT_MAINTENANCE_INTERVAL_MILLIS)));
+          is(TimeUnit.MILLISECONDS.toMicros(TaskTriggerService.DEFAULT_MAINTENANCE_INTERVAL)));
     }
   }
 
@@ -125,11 +124,11 @@ public class TaskTriggerServiceTest {
       assertThat(savedState.documentSelfLink, is(selfLink));
       assertThat(Utils.toJson(savedState.serializedTriggerState), is(Utils.toJson(startState.serializedTriggerState)));
       assertThat(savedState.factoryServiceLink, is(startState.factoryServiceLink));
-      assertThat(savedState.taskExpirationAgeMillis, is(startState.taskExpirationAgeMillis));
+      assertThat(savedState.taskExpirationAge, is(startState.taskExpirationAge));
 
       ServiceConfiguration config = host.getServiceState(ServiceConfiguration.class, selfLink + "/config");
       assertThat(config.maintenanceIntervalMicros,
-          is(TimeUnit.MILLISECONDS.toMicros(TaskTriggerService.DEFAULT_MAINTENANCE_INTERVAL_MILLIS)));
+          is(TimeUnit.MILLISECONDS.toMicros(TaskTriggerService.DEFAULT_MAINTENANCE_INTERVAL)));
     }
 
     /**
@@ -186,7 +185,7 @@ public class TaskTriggerServiceTest {
     @DataProvider(name = "AutoInitializedFields")
     public Object[][] getAutoInitializedFieldsParams() {
       return new Object[][]{
-          {"taskExpirationAgeMillis", TaskTriggerService.DEFAULT_TASK_EXPIRATION_AGE_MILLIS}
+          {"taskExpirationAge", TaskTriggerService.DEFAULT_TASK_EXPIRATION_AGE_IN_MS}
       };
     }
   }
@@ -290,8 +289,8 @@ public class TaskTriggerServiceTest {
     @DataProvider(name = "PositiveFields")
     public Object[][] getPositiveFieldsParams() {
       return new Object[][]{
-          {"taskExpirationAgeMillis", 0},
-          {"taskExpirationAgeMillis", -10}
+          {"taskExpirationAge", 0},
+          {"taskExpirationAge", -10}
       };
     }
 
@@ -302,15 +301,10 @@ public class TaskTriggerServiceTest {
      */
     @Test
     public void testTriggerPatch() throws Throwable {
-      TaskTriggerService.State state = new TaskTriggerService.State();
-      state.triggerIntervalMillis = 10;
       Operation op = Operation
           .createPatch(UriUtils.buildUri(host, selfLink, null))
-          .setBody(state);
+          .setBody(new TaskTriggerService.State());
       Operation result = host.sendRequestAndWait(op);
-      TaskTriggerService.State newServiceState = result.getBody(TaskTriggerService.State.class);
-      assertThat(newServiceState.triggerIntervalMillis, is(10));
-
       assertThat(result.getStatusCode(), is(200));
 
       ServiceDocumentQueryResult doc = host.waitForState(
