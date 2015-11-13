@@ -24,7 +24,6 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.clients.DiskFeClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
-import com.vmware.photon.controller.apife.db.dao.TaskDao;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -82,9 +81,6 @@ public class ProjectDisksResourceTest extends ResourceTest {
 
   @Mock
   private TaskCommandFactory taskCommandFactory;
-
-  @Mock
-  private TaskDao taskDao;
 
   private DiskCreateSpec spec;
 

@@ -15,7 +15,6 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
-import com.vmware.photon.controller.apife.backends.EntityFactory;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
@@ -44,8 +43,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
-
 /**
  * Tests {@link DeploymentCreateStepCmd}.
  */
@@ -67,10 +64,7 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
     taskCommand = mock(TaskCommand.class);
     deploymentBackend = mock(DeploymentBackend.class);
 
-    deploymentEntity = EntityFactory.buildDeploymentEntity(
-        DeploymentState.CREATING, true, "192.168.0.1", 443, "t", "u", "p",
-        Arrays.asList(new String[] {"adminGroup1", "adminGroup2"}), "ntp",
-        "syslog", "imageDatastore", true);
+    deploymentEntity = new DeploymentEntity();
     StepEntity step = new StepEntity();
     step.setId("id");
     step.addResource(deploymentEntity);

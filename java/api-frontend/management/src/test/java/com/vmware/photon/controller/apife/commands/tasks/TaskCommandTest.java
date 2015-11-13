@@ -14,40 +14,52 @@
 package com.vmware.photon.controller.apife.commands.tasks;
 
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.QuotaLineItem;
+import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.apife.backends.BackendTestModule;
+import com.vmware.photon.controller.apife.TestModule;
+import com.vmware.photon.controller.apife.backends.DcpBackendTestHelper;
+import com.vmware.photon.controller.apife.backends.DcpBackendTestModule;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
+import com.vmware.photon.controller.apife.backends.FlavorDcpBackend;
+import com.vmware.photon.controller.apife.backends.FlavorLoader;
+import com.vmware.photon.controller.apife.backends.ProjectDcpBackend;
+import com.vmware.photon.controller.apife.backends.ResourceTicketDcpBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
-import com.vmware.photon.controller.apife.commands.BaseCommandTest;
+import com.vmware.photon.controller.apife.backends.TenantDcpBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.CommandTestModule;
 import com.vmware.photon.controller.apife.commands.steps.StepCommand;
 import com.vmware.photon.controller.apife.commands.steps.StepCommandFactory;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.ProjectDao;
-import com.vmware.photon.controller.apife.db.dao.TenantDao;
-import com.vmware.photon.controller.apife.db.dao.VmDao;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
+import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
-import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.apife.entities.TenantEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import org.junit.AfterClass;
 import org.mockito.InOrder;
-import org.mockito.Mock;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
@@ -59,73 +71,145 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
 import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 /**
  * Tests {@link TaskCommand}.
  */
-@Guice(modules = {HibernateTestModule.class, BackendTestModule.class, CommandTestModule.class})
-public class TaskCommandTest extends BaseCommandTest {
+@Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
+public class TaskCommandTest {
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
+
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
+
+  @Inject
+  private BasicServiceHost basicServiceHost;
+
+  @Inject
+  private ApiFeDcpRestClient apiFeDcpRestClient;
+
   public TestTaskCommand testTaskCommand;
-  @Mock
+
   RootSchedulerClient rootSchedulerClient;
-  @Mock
+
   HousekeeperClient housekeeperClient;
 
-  @Mock
   DeployerClient deployerClient;
 
-  @Mock
+  @Inject
   private EntityLockBackend entityLockBackend;
 
   @Inject
-  TenantDao tenantDao;
-
-  @Inject
-  ProjectDao projectDao;
-
-  @Inject
-  VmDao vmDao;
-  @Inject
   StepBackend stepBackend;
-  @Mock
+
   private StepCommandFactory stepCommandFactory;
+
   @Inject
   private TaskBackend taskBackend;
-  @Mock
+
   private HostClient hostClient;
 
   private TaskEntity task;
-  private TenantEntity tenant;
-  private ProjectEntity project;
-  private VmEntity vm;
 
   private FindResponse findResponse;
 
+  @Inject
+  private TenantDcpBackend tenantDcpBackend;
+
+  @Inject
+  private ResourceTicketDcpBackend resourceTicketDcpBackend;
+
+  @Inject
+  private ProjectDcpBackend projectDcpBackend;
+
+  @Inject
+  private FlavorDcpBackend flavorDcpBackend;
+
+  @Inject
+  private FlavorLoader flavorLoader;
+
+  @AfterClass
+  public static void afterClassCleanup() throws Throwable {
+    commonHostAndClientTeardown();
+  }
+
   @BeforeMethod
   public void setUp() throws Exception {
-    super.setUp();
+    rootSchedulerClient = mock(RootSchedulerClient.class);
+    housekeeperClient = mock(HousekeeperClient.class);
+    deployerClient = mock(DeployerClient.class);
+    stepCommandFactory = mock(StepCommandFactory.class);
+    hostClient = mock(HostClient.class);
 
-    tenant = new TenantEntity();
-    tenant.setName("t1");
+    commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
-    project = new ProjectEntity();
-    project.setName("p1");
-    project.setTenantId(tenant.getId());
+    String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
 
-    vm = new VmEntity();
-    vm.setProjectId(project.getId());
-    vm.setName("vm-1");
+    QuotaLineItem ticketLimit = new QuotaLineItem("vm.cost", 100, QuotaUnit.COUNT);
+    DcpBackendTestHelper.createTenantResourceTicket(resourceTicketDcpBackend,
+        tenantId, "rt1", ImmutableList.of(ticketLimit));
 
-    tenant = tenantDao.create(tenant);
-    project = projectDao.create(project);
-    vm = vmDao.create(vm);
+    QuotaLineItem projectLimit = new QuotaLineItem("vm.cost", 10, QuotaUnit.COUNT);
+    String projectId = DcpBackendTestHelper.createProject(projectDcpBackend,
+        "p1", tenantId, "rt1", ImmutableList.of(projectLimit));
 
+    DcpBackendTestHelper.createFlavors(flavorDcpBackend, flavorLoader.getAllFlavors());
+
+    VmService.State vmState = new VmService.State();
+    vmState.name = "vm-1";
+    FlavorEntity flavorEntity = flavorDcpBackend.getEntityByNameAndKind("core-100", Vm.KIND);
+    vmState.flavorId = flavorEntity.getId();
+    vmState.imageId = UUID.randomUUID().toString();
+    vmState.projectId = projectId;
+    vmState.vmState = VmState.CREATING;
+    dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vmState);
+
+    VmEntity vm = new VmEntity();
     task = taskBackend.createQueuedTask(vm, Operation.CREATE_VM);
     task.setSteps(new ArrayList<StepEntity>());
     testTaskCommand = new TestTaskCommand(rootSchedulerClient, hostClient, housekeeperClient,
@@ -140,6 +224,11 @@ public class TaskCommandTest extends BaseCommandTest {
     serverAddress.setHost("0.0.0.0");
     serverAddress.setPort(0);
     findResponse.setAddress(serverAddress);
+  }
+
+  @AfterMethod
+  public void tearDown() throws Throwable {
+    commonHostDocumentsCleanup();
   }
 
   @Test

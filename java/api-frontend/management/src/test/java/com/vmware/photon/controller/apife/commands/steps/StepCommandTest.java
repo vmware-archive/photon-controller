@@ -15,19 +15,20 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.apife.backends.BackendTestModule;
+import com.vmware.photon.controller.apife.TestModule;
+import com.vmware.photon.controller.apife.backends.DcpBackendTestModule;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
-import com.vmware.photon.controller.apife.commands.BaseCommandTest;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 
 import com.google.inject.Inject;
-import org.mockito.Mock;
+import org.junit.AfterClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -35,6 +36,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
@@ -42,20 +44,47 @@ import java.util.UUID;
 /**
  * Tests {@link StepCommand}.
  */
-@Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-public class StepCommandTest extends BaseCommandTest {
+@Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+public class StepCommandTest {
+
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
+
   protected String reservationId = "r-00";
-  @Mock
+
   protected TaskCommand taskCommand;
+
   @Inject
   private StepBackend stepBackend;
   @Inject
   TaskBackend taskBackend;
   private StepEntity step;
 
+  @Inject
+  private BasicServiceHost basicServiceHost;
+
+  @Inject
+  private ApiFeDcpRestClient apiFeDcpRestClient;
+
+  @AfterClass
+  public static void afterClassCleanup() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
+
   @BeforeMethod
   public void setUp() throws Exception {
-    super.setUp();
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    taskCommand = mock(TaskCommand.class);
 
     VmEntity vm = new VmEntity();
     vm.setName("vm-1");
