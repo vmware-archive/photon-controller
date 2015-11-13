@@ -231,7 +231,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
     deployment.setId(deploymentEntity.getId());
     deployment.setState(deploymentEntity.getState());
-    deployment.setImageDatastore(deploymentEntity.getImageDatastore());
+    deployment.setImageDatastores(deploymentEntity.getImageDatastores());
     deployment.setSyslogEndpoint(deploymentEntity.getSyslogEndpoint());
     deployment.setNtpEndpoint(deploymentEntity.getNtpEndpoint());
     deployment.setUseImageDatastoreForVms(deploymentEntity.getUseImageDatastoreForVms());
@@ -374,7 +374,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     DeploymentService.State deployment = new DeploymentService.State();
 
     deployment.state = DeploymentState.NOT_DEPLOYED;
-    deployment.imageDataStoreName = spec.getImageDatastore();
+    deployment.imageDataStoreNames = spec.getImageDatastores();
     deployment.imageDataStoreUsedForVMs = spec.isUseImageDatastoreForVms();
     deployment.syslogEndpoint = spec.getSyslogEndpoint();
     deployment.ntpEndpoint = spec.getNtpEndpoint();
@@ -406,7 +406,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
     entity.setId(ServiceUtils.getIDFromDocumentSelfLink(deployment.documentSelfLink));
     entity.setState(deployment.state);
-    entity.setImageDatastore(deployment.imageDataStoreName);
+    entity.setImageDatastores(deployment.imageDataStoreNames);
     entity.setUseImageDatastoreForVms(deployment.imageDataStoreUsedForVMs);
     entity.setSyslogEndpoint(deployment.syslogEndpoint);
     entity.setNtpEndpoint(deployment.ntpEndpoint);

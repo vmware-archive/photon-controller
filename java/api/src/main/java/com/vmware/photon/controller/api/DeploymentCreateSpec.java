@@ -24,6 +24,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Deployment creation payload.
@@ -34,10 +35,10 @@ import java.util.Objects;
 public class DeploymentCreateSpec {
 
   @JsonProperty
-  @ApiModelProperty(value = "Image Datastore name", required = true)
+  @ApiModelProperty(value = "Image Datastore names", required = true)
   @NotNull
   @Size(min = 1)
-  private String imageDatastore;
+  private Set<String> imageDatastores;
 
   @JsonProperty
   @ApiModelProperty(value = "End point of Syslog")
@@ -62,12 +63,12 @@ public class DeploymentCreateSpec {
   @ApiModelProperty(value = "deploy load balancer")
   private boolean loadBalancerEnabled = true;
 
-  public String getImageDatastore() {
-    return imageDatastore;
+  public Set<String> getImageDatastores() {
+    return imageDatastores;
   }
 
-  public void setImageDatastore(String imageDatastore) {
-    this.imageDatastore = imageDatastore;
+  public void setImageDatastores(Set<String> imageDatastores) {
+    this.imageDatastores = imageDatastores;
   }
 
   public String getSyslogEndpoint() {
@@ -121,7 +122,7 @@ public class DeploymentCreateSpec {
 
     DeploymentCreateSpec other = (DeploymentCreateSpec) o;
 
-    return Objects.equals(getImageDatastore(), other.getImageDatastore()) &&
+    return Objects.equals(getImageDatastores(), other.getImageDatastores()) &&
         Objects.equals(getSyslogEndpoint(), other.getSyslogEndpoint()) &&
         Objects.equals(getNtpEndpoint(), other.getNtpEndpoint()) &&
         Objects.equals(isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms()) &&
@@ -132,7 +133,7 @@ public class DeploymentCreateSpec {
   @Override
   public int hashCode() {
     return java.util.Objects.hash(
-        imageDatastore,
+        imageDatastores,
         syslogEndpoint,
         ntpEndpoint,
         useImageDatastoreForVms,
@@ -143,7 +144,7 @@ public class DeploymentCreateSpec {
   @Override
   public String toString() {
     return com.google.common.base.Objects.toStringHelper(this)
-        .add("imageDatastore", imageDatastore)
+        .add("imageDatastores", imageDatastores)
         .add("syslogEndpoint", syslogEndpoint)
         .add("ntpEndpoint", ntpEndpoint)
         .add("useImageDatastoreForVms", useImageDatastoreForVms)

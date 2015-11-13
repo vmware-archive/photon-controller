@@ -52,6 +52,7 @@ import static org.hamcrest.Matchers.notNullValue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -140,8 +141,7 @@ public class TenantDcpBackendTest {
           .enabled(true)
           .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
           .build());
-      deploymentSpec.setImageDatastore("dummy-image-data-store-name");
-
+      deploymentSpec.setImageDatastores(Collections.singleton("dummy-image-data-store-name"));
       spec.setSecurityGroups(Arrays.asList(new String[]{"adminGrp1", "securityGroup2"}));
     }
 
