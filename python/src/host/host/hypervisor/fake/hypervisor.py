@@ -47,7 +47,11 @@ class FakeHypervisor(object):
         self.network_manager = FakeNetworkManager(self, agent_config.networks)
         self.system = FakeSystem(self)
         datastores = agent_config.datastores
-        image_datastore = agent_config.image_datastore
+        # For fake hypervisor, we assume there is always one image datastore.
+        if agent_config.image_datastores:
+            image_datastore = list(agent_config.image_datastores)[0]["name"]
+        else:
+            image_datastore = None
         self.datastore_manager = FakeDatastoreManager(self.system, datastores,
                                                       image_datastore)
         self.image_manager = FakeImageManager(self, image_datastore)
