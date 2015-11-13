@@ -153,6 +153,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
             // fall through
           case PAUSE_SOURCE_SYSTEM:
             startState.sourceDeploymentId = "deployment2";
+            startState.sourceZookeeperQuorum = "zkQuorum";
             break;
         }
       }
@@ -177,6 +178,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       switch (patchSubStage) {
         case PAUSE_SOURCE_SYSTEM:
           patchState.sourceDeploymentId = "deployment2";
+          patchState.sourceZookeeperQuorum = "zkQuorum";
           break;
         case RESUME_DESTINATION_SYSTEM:
         case MIGRATE_FINAL:
