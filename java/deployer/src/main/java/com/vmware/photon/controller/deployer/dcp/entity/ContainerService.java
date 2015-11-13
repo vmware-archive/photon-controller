@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.common.dcp.validation.Range;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 
 import java.util.Map;
@@ -40,6 +41,14 @@ public class ContainerService extends StatefulService {
     public static final String FIELD_NAME_VM_SERVICE_LINK = "vmServiceLink";
 
     /**
+     * Docker has a cpu shares constraint to restrict the maximum cpu allocation of a container in times of contention.
+     * The recommended min share value is 2 and max is 1024. If 0 is set as cpu share value, it is counted as 1024.
+     * https://docs.docker.com/engine/reference/run/#cpu-share-constraint
+     */
+    public static final int DOCKER_CPU_SHARES_MIN = 2;
+    public static final int DOCKER_CPU_SHARES_MAX = 1024;
+
+    /**
      * This value represents the relative path to the REST endpoint of the {@link ContainerTemplateService} object
      * representing the container template which was used to create the container.
      */
@@ -54,6 +63,20 @@ public class ContainerService extends StatefulService {
     @NotNull
     @Immutable
     public String vmServiceLink;
+
+    /**
+     * This value represents the amount of memory which will be set as the max limit to the container.
+     */
+    @WriteOnce
+    @Range(min = 1, max = Integer.MAX_VALUE)
+    public Integer memoryMb;
+
+    /**
+     * This value represents the cpu share constraint needed by docker for creating the container.
+     */
+    @WriteOnce
+    @Range(min = DOCKER_CPU_SHARES_MIN, max = DOCKER_CPU_SHARES_MAX)
+    public Integer cpuShares;
 
     /**
      * This value represents the dynamic parameters that has to be set inside the container.

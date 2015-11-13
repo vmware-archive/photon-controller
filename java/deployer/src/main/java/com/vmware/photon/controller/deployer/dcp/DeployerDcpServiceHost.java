@@ -42,6 +42,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketFactorySer
 import com.vmware.photon.controller.deployer.dcp.entity.TenantFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.BuildRuntimeConfigurationTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
@@ -155,6 +156,7 @@ public class DeployerDcpServiceHost
       // Task Services
       ValidateHostTaskFactoryService.class,
       AllocateClusterManagerResourcesTaskFactoryService.class,
+      AllocateHostResourceTaskFactoryService.class,
       BuildRuntimeConfigurationTaskFactoryService.class,
       ChangeHostModeTaskFactoryService.class,
       CopyStateTaskFactoryService.class,
