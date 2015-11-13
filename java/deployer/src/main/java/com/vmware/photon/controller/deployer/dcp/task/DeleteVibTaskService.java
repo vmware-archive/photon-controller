@@ -215,7 +215,7 @@ public class DeleteVibTaskService extends StatefulService {
     HttpFileServiceClient httpFileServiceClient = HostUtils.getHttpFileServiceClientFactory(this).create(
         hostState.hostAddress, hostState.userName, hostState.password);
     ListenableFutureTask<Integer> task = ListenableFutureTask.create(httpFileServiceClient.deleteFileFromDatastore(
-        deploymentState.imageDataStoreName, currentState.vibPath));
+        deploymentState.imageDataStoreNames.iterator().next(), currentState.vibPath));
     HostUtils.getListeningExecutorService(this).submit(task);
     Futures.addCallback(task, new FutureCallback<Integer>() {
       @Override

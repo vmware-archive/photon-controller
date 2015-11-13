@@ -27,8 +27,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.EnumSet;
-
 /**
  * This class implements tests for the {@link DeploymentService} class.
  */
@@ -36,7 +36,7 @@ public class DeploymentServiceTest {
 
   public DeploymentService.State buildServiceStartState() {
     DeploymentService.State startState = new DeploymentService.State();
-    startState.imageDataStoreName = "datastore1";
+    startState.imageDataStoreNames = Collections.singleton("datastore1");
     startState.imageDataStoreUsedForVMs = true;
     startState.state = DeploymentState.CREATING;
     return startState;
@@ -97,7 +97,7 @@ public class DeploymentServiceTest {
       assertThat(startOperation.getStatusCode(), is(200));
 
       DeploymentService.State savedState = testHost.getServiceState(DeploymentService.State.class);
-      assertThat(savedState.imageDataStoreName, is("datastore1"));
+      assertThat(savedState.imageDataStoreNames, is(Collections.singleton("datastore1")));
       assertThat(savedState.imageDataStoreUsedForVMs, is(true));
     }
 
@@ -112,7 +112,7 @@ public class DeploymentServiceTest {
     @DataProvider(name = "RequiredFieldNames")
     public Object[][] getRequiredFieldNames() {
       return new Object[][]{
-          {"imageDataStoreName"},
+          {"imageDataStoreNames"},
           {"imageDataStoreUsedForVMs"},
           {"state"},
       };

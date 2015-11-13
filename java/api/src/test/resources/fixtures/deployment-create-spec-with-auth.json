@@ -1,5 +1,7 @@
 {
-    "imageDatastore": "image-datastore",
+    "imageDatastores": [
+      "image-datastore"
+    ],
     "syslogEndpoint": "0.0.0.1",
     "ntpEndpoint": "0.0.0.2",
     "useImageDatastoreForVms": false,
