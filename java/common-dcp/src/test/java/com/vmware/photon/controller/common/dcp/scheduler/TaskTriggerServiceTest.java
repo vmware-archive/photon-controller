@@ -55,7 +55,7 @@ public class TaskTriggerServiceTest {
     state.factoryServiceLink = TestServiceWithStageFactory.SELF_LINK;
     state.serializedTriggerState = Utils.toJson(nestedState);
     state.triggerStateClassName = nestedState.getClass().getTypeName();
-    state.taskExpirationAge = 5 * 60 * 60 * 1000;
+    state.taskExpirationAgeMillis = 5 * 60 * 60 * 1000;
 
     return state;
   }
@@ -86,7 +86,7 @@ public class TaskTriggerServiceTest {
           Service.ServiceOption.PERIODIC_MAINTENANCE);
       assertThat(service.getOptions(), is(expected));
       assertThat(service.getMaintenanceIntervalMicros(),
-          is(TimeUnit.MILLISECONDS.toMicros(TaskTriggerService.DEFAULT_MAINTENANCE_INTERVAL)));
+          is(TimeUnit.MILLISECONDS.toMicros(TaskTriggerService.DEFAULT_MAINTENANCE_INTERVAL_MILLIS)));
     }
   }
 
@@ -124,11 +124,11 @@ public class TaskTriggerServiceTest {
       assertThat(savedState.documentSelfLink, is(selfLink));
       assertThat(Utils.toJson(savedState.serializedTriggerState), is(Utils.toJson(startState.serializedTriggerState)));
       assertThat(savedState.factoryServiceLink, is(startState.factoryServiceLink));
-      assertThat(savedState.taskExpirationAge, is(startState.taskExpirationAge));
+      assertThat(savedState.taskExpirationAgeMillis, is(startState.taskExpirationAgeMillis));
 
       ServiceConfiguration config = host.getServiceState(ServiceConfiguration.class, selfLink + "/config");
       assertThat(config.maintenanceIntervalMicros,
-          is(TimeUnit.MILLISECONDS.toMicros(TaskTriggerService.DEFAULT_MAINTENANCE_INTERVAL)));
+          is(TimeUnit.MILLISECONDS.toMicros(TaskTriggerService.DEFAULT_MAINTENANCE_INTERVAL_MILLIS)));
     }
 
     /**
@@ -185,7 +185,7 @@ public class TaskTriggerServiceTest {
     @DataProvider(name = "AutoInitializedFields")
     public Object[][] getAutoInitializedFieldsParams() {
       return new Object[][]{
-          {"taskExpirationAge", TaskTriggerService.DEFAULT_TASK_EXPIRATION_AGE_IN_MS}
+          {"taskExpirationAge", TaskTriggerService.DEFAULT_TASK_EXPIRATION_AGE_MILLIS}
       };
     }
   }
@@ -301,10 +301,15 @@ public class TaskTriggerServiceTest {
      */
     @Test
     public void testTriggerPatch() throws Throwable {
+      TaskTriggerService.State state = new TaskTriggerService.State();
+      state.triggerIntervalMillis = 10;
       Operation op = Operation
           .createPatch(UriUtils.buildUri(host, selfLink, null))
-          .setBody(new TaskTriggerService.State());
+          .setBody(state);
       Operation result = host.sendRequestAndWait(op);
+      TaskTriggerService.State newServiceState = result.getBody(TaskTriggerService.State.class);
+      assertThat(newServiceState.triggerIntervalMillis, is(10));
+
       assertThat(result.getStatusCode(), is(200));
 
       ServiceDocumentQueryResult doc = host.waitForState(

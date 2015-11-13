@@ -87,7 +87,7 @@ public class TombstoneCleanerTriggerBuilderTest {
       Type stateType = Class.forName(state.triggerStateClassName);
       TombstoneCleanerService.State triggerState = Utils.fromJson(state.serializedTriggerState, stateType);
       assertThat(triggerState.tombstoneExpirationAge,
-          is(TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE));
+          is(TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE_MILLIS));
     }
 
     /**
@@ -105,7 +105,7 @@ public class TombstoneCleanerTriggerBuilderTest {
       Type stateType = Class.forName(state.triggerStateClassName);
       TombstoneCleanerService.State triggerState = Utils.fromJson(state.serializedTriggerState, stateType);
       assertThat(triggerState.tombstoneExpirationAge,
-          is(TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE));
+          is(TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE_MILLIS));
     }
   }
 }
