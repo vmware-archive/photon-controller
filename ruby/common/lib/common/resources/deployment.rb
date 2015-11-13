@@ -12,7 +12,12 @@
 module EsxCloud
   class Deployment
 
+<<<<<<< HEAD
     attr_accessor :id, :state, :image_datastores, :auth, :syslog_endpoint, :ntp_endpoint, :use_image_datastore_for_vms, :loadbalancer_enabled, :migration
+=======
+    attr_accessor :id, :state, :image_datastore, :auth, :syslog_endpoint, :ntp_endpoint,
+                  :use_image_datastore_for_vms, :loadbalancer_enabled, :migration, :cluster_configurations
+>>>>>>> clustermanager: show supported cluster types when running "deployment show"
 
     # @param[DeploymentCreateSpec] spec
     # @return [Deployment]
@@ -70,9 +75,15 @@ module EsxCloud
         fail UnexpectedFormat, "Invalid Deployment hash: #{hash}"
       end
 
+      if hash["clusterConfigurations"] == nil
+        cluster_configurations = nil
+      else
+        cluster_configurations = hash["clusterConfigurations"].map { |cc| ClusterConfiguration.create_from_hash(cc)}
+      end
+
       new(hash["id"], hash["state"], hash["imageDatastores"], AuthInfo.create_from_hash(hash["auth"]),
           hash["syslogEndpoint"], hash["ntpEndpoint"], hash["useImageDatastoreForVms"], hash["loadBalancerEnabled"],
-          MigrationStatus.create_from_hash(hash["migrationStatus"]))
+          MigrationStatus.create_from_hash(hash["migrationStatus"]), cluster_configurations)
     end
 
     # @param [String] id
@@ -100,9 +111,14 @@ module EsxCloud
     # @param [Boolean] use_image_datastore_for_vms
     # @param [Boolean] loadbalancer_enabled
     # @param [MigrationStatus] migration_status
+<<<<<<< HEAD
     def initialize(id, state, image_datastores, auth,
+=======
+    # @param [List] cluster_configurations
+    def initialize(id, state, image_datastore, auth,
+>>>>>>> clustermanager: show supported cluster types when running "deployment show"
       syslog_endpoint = nil, ntp_endpoint = nil, use_image_datastore_for_vms = false, loadbalancer_enabled = true,
-      migration)
+      migration, cluster_configurations)
       @id = id
       @state = state
       @image_datastores = image_datastores
@@ -112,6 +128,7 @@ module EsxCloud
       @use_image_datastore_for_vms = use_image_datastore_for_vms
       @loadbalancer_enabled = loadbalancer_enabled
       @migration = migration
+      @cluster_configurations = cluster_configurations
     end
 
     def delete
@@ -128,7 +145,8 @@ module EsxCloud
         ntpEndpoint: @ntp_endpoint,
         useImageDatastoreForVms: @use_image_datastore_for_vms,
         loadbalancer_enabled: @loadbalancer_enabled,
-        migrationStatus: @migration
+        migrationStatus: @migration,
+        clusterConfigurations: @cluster_configurations
       }
     end
 
@@ -140,7 +158,8 @@ module EsxCloud
       @syslog_endpoint == other.syslog_endpoint &&
       @ntp_endpoint == other.ntp_endpoint &&
       @use_image_datastore_for_vms == other.use_image_datastore_for_vms &&
-      @migration == other.migration
+      @migration == other.migration &&
+      @cluster_configurations == other.cluster_configurations
     end
   end
 end
