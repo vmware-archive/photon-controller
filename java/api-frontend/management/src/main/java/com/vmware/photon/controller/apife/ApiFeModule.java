@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife;
 
+
 import com.vmware.photon.controller.api.common.RequestId;
 import com.vmware.photon.controller.apife.auth.fetcher.Cluster;
 import com.vmware.photon.controller.apife.auth.fetcher.ClusterSecurityGroupFetcher;
@@ -87,6 +88,10 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HousekeeperClientConfig;
 import com.vmware.photon.controller.common.dcp.DcpClient;
+import com.vmware.photon.controller.common.extensions.ExtensionLoader;
+import com.vmware.photon.controller.common.extensions.api.HostClearing;
+import com.vmware.photon.controller.common.extensions.config.Implementations;
+import com.vmware.photon.controller.common.extensions.exceptions.AmbiguousExtensionException;
 import com.vmware.photon.controller.common.metrics.DefaultMetricRegistry;
 import com.vmware.photon.controller.common.metrics.RpcMetricListener;
 import com.vmware.photon.controller.common.thrift.ClientPool;
@@ -376,6 +381,7 @@ public class ApiFeModule extends AbstractModule {
     bindBackends();
     bindAuthSecurityGroupFetchers();
     bindListener(Matchers.any(), new RpcMetricListener());
+    bindExtensions();
 
     //These factories should be built using reflection. Annotate clients and commands and inject them in a loop
     install(new FactoryModuleBuilder()
@@ -432,5 +438,29 @@ public class ApiFeModule extends AbstractModule {
     bind(SecurityGroupFetcher.class).annotatedWith(ResourceTicket.class).to(ResourceTicketSecurityGroupFetcher.class);
     bind(SecurityGroupFetcher.class).annotatedWith(Tenant.class).to(TenantSecurityGroupFetcher.class);
     bind(SecurityGroupFetcher.class).annotatedWith(Vm.class).to(VmSecurityGroupFetcher.class);
+  }
+
+  private void bindExtensions() {
+    String className = Implementations.nameToPath.get(Implementations.ExtensionName.HOST_CLEARING);
+    Class<?> clazz = loadExtension(Implementations.ExtensionName.HOST_CLEARING, className);
+    bind(HostClearing.class).to((Class<? extends HostClearing>) clazz);
+  }
+
+  private Class<?> loadExtension(Implementations.ExtensionName name, String className) {
+    if (className == null) {
+      logger.error("No class path for extension: {}", name);
+      throw new RuntimeException("No class path for extension: " + name);
+    }
+    Class<?> clazz;
+    try {
+      clazz = ExtensionLoader.load(className);
+    } catch (ClassNotFoundException e) {
+      logger.error("No class found for extension: {}, exception: {}", className, e);
+      throw new RuntimeException(e);
+    } catch (AmbiguousExtensionException e) {
+      logger.error("More than one class found for extension: {}, exception: {}", className, e);
+      throw new RuntimeException(e);
+    }
+    return clazz;
   }
 }

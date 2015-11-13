@@ -66,6 +66,8 @@ import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.lib.ImageStore;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HousekeeperClientConfig;
+import com.vmware.photon.controller.common.extensions.api.HostClearing;
+import com.vmware.photon.controller.common.extensions.impl.HostClearingImpl;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 
 import com.google.inject.AbstractModule;
@@ -181,6 +183,19 @@ public class ApiFeModuleTest {
       this.hostBackend = hostBackend;
       this.deploymentBackend = deploymentBackend;
       this.tombstoneBackend = tombstoneBackend;
+    }
+  }
+
+
+  /**
+   * Helper class used to test extension injection.
+   */
+  public static class DummyExtensions {
+    public HostClearing hostClearing;
+
+    @Inject
+    public DummyExtensions(HostClearing hostClearing) {
+      this.hostClearing = hostClearing;
     }
   }
 
@@ -433,6 +448,43 @@ public class ApiFeModuleTest {
       assertThat(dcpBackendDummyClient.hostBackend, instanceOf(HostDcpBackend.class));
       assertThat(dcpBackendDummyClient.deploymentBackend, notNullValue());
       assertThat(dcpBackendDummyClient.deploymentBackend, instanceOf(DeploymentDcpBackend.class));
+    }
+  }
+
+  /**
+   * Tests backend injection.
+   */
+  public class TestExtensionsInjection {
+    /**
+     * Test that extensions can be injected successfully.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testExtensionsInjection() throws Throwable {
+      ApiFeModule apiFeModule = new ApiFeModule();
+      ApiFeConfiguration apiFeConfiguration = ConfigurationUtils.parseConfiguration(
+          ApiFeConfigurationTest.class.getResource("/config.yml").getPath()
+      );
+
+      apiFeModule.setConfiguration(apiFeConfiguration);
+
+      ZookeeperModule zookeeperModule = new ZookeeperModule();
+      zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
+
+      Injector injector = Guice.createInjector(
+          apiFeModule,
+          zookeeperModule,
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              bindScope(RequestScoped.class, Scopes.NO_SCOPE);
+            }
+          });
+
+      DummyExtensions dummyExtensions = injector.getInstance(DummyExtensions.class);
+      assertThat(dummyExtensions.hostClearing, notNullValue());
+      assertThat(dummyExtensions.hostClearing, instanceOf(HostClearingImpl.class));
     }
   }
 

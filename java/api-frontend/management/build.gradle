@@ -14,6 +14,8 @@ dependencies {
   compile(project(':swagger-jersey'))
   compile(project(':nfc-client'))
   compile(project(':cluster-manager:service-documents'))
+  compile(project(':common-extensions'))
+  compile(project(':common-extensions-impl'))
 
   compile "com.google.inject.extensions:guice-assistedinject:${versions.guice}"
   compile "com.google.inject:guice:${versions.guice}"
