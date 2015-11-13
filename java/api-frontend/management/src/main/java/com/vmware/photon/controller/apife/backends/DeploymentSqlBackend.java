@@ -246,6 +246,12 @@ public class DeploymentSqlBackend implements DeploymentBackend {
 
   @Override
   @Transactional
+  public List<ClusterConfiguration> getClusterConfigurations() throws ExternalException {
+    throw new NotImplementedException();
+  }
+
+  @Override
+  @Transactional
   public List<Deployment> getAll() {
     return toApiRepresentation(deploymentDao.listAll());
   }

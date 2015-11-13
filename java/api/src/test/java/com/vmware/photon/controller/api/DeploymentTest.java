@@ -132,7 +132,7 @@ public class DeploymentTest {
               "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, " +
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443," +
               " tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, loadBalancerEnabled=true," +
-              " migrationProgress=null}";
+              " migrationProgress=null, clusterConfigurations=null}";
       Deployment deployment = createDeployment("image-datastore", "0.0.0.1", "0.0.0.2");
       assertThat(deployment.toString(), is(expectedString));
     }
