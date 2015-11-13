@@ -89,6 +89,7 @@ import static org.testng.AssertJUnit.assertTrue;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -326,7 +327,7 @@ public class VmDcpBackendTest {
       vmId = ServiceUtils.getIDFromDocumentSelfLink(createdVm.documentSelfLink);
 
       DeploymentCreateSpec deploymentCreateSpec = new DeploymentCreateSpec();
-      deploymentCreateSpec.setImageDatastore(UUID.randomUUID().toString());
+      deploymentCreateSpec.setImageDatastores(Collections.singleton(UUID.randomUUID().toString()));
       TaskEntity deploymentTask = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
 
       HostCreateSpec hostCreateSpec = new HostCreateSpec();

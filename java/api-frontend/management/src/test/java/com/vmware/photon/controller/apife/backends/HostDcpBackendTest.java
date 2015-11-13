@@ -45,6 +45,7 @@ import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -101,7 +102,7 @@ public class HostDcpBackendTest {
 
   private static DeploymentCreateSpec getDeploymentCreateSpec() {
     DeploymentCreateSpec deploymentCreateSpec = new DeploymentCreateSpec();
-    deploymentCreateSpec.setImageDatastore("imageDatastore");
+    deploymentCreateSpec.setImageDatastores(Collections.singleton("imageDatastore"));
     deploymentCreateSpec.setNtpEndpoint("ntp");
     deploymentCreateSpec.setSyslogEndpoint("syslog");
     deploymentCreateSpec.setUseImageDatastoreForVms(true);

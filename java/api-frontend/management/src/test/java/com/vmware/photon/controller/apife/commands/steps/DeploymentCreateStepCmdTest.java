@@ -34,6 +34,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -102,7 +103,9 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
       verify(deployerClient).deploy(deploymentArgumentCaptor.capture());
       Deployment deployment = deploymentArgumentCaptor.getValue();
       assertThat(deployment.getId(), is(deploymentEntity.getId()));
-      assertThat(deployment.getImageDatastore(), is(deploymentEntity.getImageDatastore()));
+      if (deploymentEntity.getImageDatastores() != null) {
+        assertTrue(deploymentEntity.getImageDatastores().contains(deployment.getImageDatastore()));
+      }
       assertThat(deployment.getNtpEndpoint(), is(deploymentEntity.getNtpEndpoint()));
       assertThat(deployment.getSyslogEnpoint(), is(deploymentEntity.getSyslogEndpoint()));
       assertThat(deployment.isAuthEnabled(), is(deploymentEntity.getAuthEnabled()));

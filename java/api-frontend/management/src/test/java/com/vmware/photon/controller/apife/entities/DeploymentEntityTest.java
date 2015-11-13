@@ -15,12 +15,14 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.DeploymentState;
 
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Tests {@link DeploymentEntity}.
@@ -56,7 +58,7 @@ public class DeploymentEntityTest {
       entity.setOauthPassword("password");
       entity.setOauthSecurityGroups(Arrays.asList(new String[]{"authGroup1, authGroup2"}));
       entity.setNtpEndpoint("http://ntp");
-      entity.setImageDatastore("datastore1");
+      entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
       entity.setOperationId("opid");
 
@@ -70,7 +72,7 @@ public class DeploymentEntityTest {
       assertThat(entity.getOauthPassword(), is("password"));
       assertThat(entity.getOauthSecurityGroups(), is(Arrays.asList(new String[]{"authGroup1, authGroup2"})));
       assertThat(entity.getNtpEndpoint(), is("http://ntp"));
-      assertThat(entity.getImageDatastore(), is("datastore1"));
+      Assert.assertTrue(entity.getImageDatastores().contains("datastore1"));
       assertThat(entity.getUseImageDatastoreForVms(), is(true));
       assertThat(entity.getOperationId(), is("opid"));
     }
@@ -92,7 +94,7 @@ public class DeploymentEntityTest {
       entity.setOauthPassword("p");
       entity.setOauthSecurityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}));
       entity.setNtpEndpoint("http://ntp");
-      entity.setImageDatastore("datastore1");
+      entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
     }
 

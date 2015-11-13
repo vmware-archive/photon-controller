@@ -58,11 +58,13 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 
@@ -117,7 +119,7 @@ public class DeploymentDcpBackendTest {
   private static void commonDataSetup() throws Throwable {
 
     deploymentCreateSpec = new DeploymentCreateSpec();
-    deploymentCreateSpec.setImageDatastore("imageDatastore");
+    deploymentCreateSpec.setImageDatastores(Collections.singleton("imageDatastore"));
     deploymentCreateSpec.setNtpEndpoint("ntp");
     deploymentCreateSpec.setSyslogEndpoint("syslog");
     deploymentCreateSpec.setUseImageDatastoreForVms(true);
@@ -196,7 +198,7 @@ public class DeploymentDcpBackendTest {
       DeploymentEntity deployment = deploymentBackend.findById(taskEntity.getEntityId());
       assertThat(deployment, notNullValue());
       assertThat(deployment.getState(), is(DeploymentState.NOT_DEPLOYED));
-      assertThat(deployment.getImageDatastore(), is("imageDatastore"));
+      assertTrue(deployment.getImageDatastores().contains("imageDatastore"));
       assertThat(deployment.getNtpEndpoint(), is("ntp"));
       assertThat(deployment.getOperationId(), nullValue());
       assertThat(deployment.getSyslogEndpoint(), is("syslog"));
@@ -601,7 +603,8 @@ public class DeploymentDcpBackendTest {
       assertThat(deployment.getState(), is(entity.getState()));
       assertThat(deployment.getNtpEndpoint(), is(entity.getNtpEndpoint()));
       assertThat(deployment.getSyslogEndpoint(), is(entity.getSyslogEndpoint()));
-      assertThat(deployment.getImageDatastore(), is(entity.getImageDatastore()));
+      assertThat(CollectionUtils.isEqualCollection(
+          deployment.getImageDatastores(), entity.getImageDatastores()), is(true));
       assertThat(deployment.isUseImageDatastoreForVms(), is(entity.getUseImageDatastoreForVms()));
       AuthInfo authInfo = deployment.getAuth();
       assertThat(authInfo.getEnabled(), is(entity.getAuthEnabled()));
@@ -926,10 +929,10 @@ public class DeploymentDcpBackendTest {
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       entity = deploymentBackend.findById(task.getEntityId());
-      createAnoterDeployment();
+      createAnotherDeployment();
     }
 
-    private void createAnoterDeployment() throws Throwable {
+    private void createAnotherDeployment() throws Throwable {
       host2 = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
           0,
           null,
@@ -945,7 +948,7 @@ public class DeploymentDcpBackendTest {
 
       DeploymentService.State deployment2 = new DeploymentService.State();
       deployment2.state = DeploymentState.NOT_DEPLOYED;
-      deployment2.imageDataStoreName = deploymentCreateSpec.getImageDatastore();
+      deployment2.imageDataStoreNames = deploymentCreateSpec.getImageDatastores();
       deployment2.ntpEndpoint = deploymentCreateSpec.getNtpEndpoint();
       deployment2.syslogEndpoint = deploymentCreateSpec.getSyslogEndpoint();
       deployment2.imageDataStoreUsedForVMs = deploymentCreateSpec.isUseImageDatastoreForVms();

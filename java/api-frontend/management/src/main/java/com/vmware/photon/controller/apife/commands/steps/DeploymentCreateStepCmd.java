@@ -98,7 +98,9 @@ public class DeploymentCreateStepCmd extends StepCommand {
   private Deployment buildDeployment(DeploymentEntity entity) {
     Deployment deployment = new Deployment();
     deployment.setId(entity.getId());
-    deployment.setImageDatastore(entity.getImageDatastore());
+    if (entity.getImageDatastores() != null && !entity.getImageDatastores().isEmpty()) {
+      deployment.setImageDatastore(entity.getImageDatastores().iterator().next());
+    }
     deployment.setUseImageDatastoreForVms(entity.getUseImageDatastoreForVms());
     deployment.setNtpEndpoint(entity.getNtpEndpoint());
     deployment.setSyslogEnpoint(entity.getSyslogEndpoint());
