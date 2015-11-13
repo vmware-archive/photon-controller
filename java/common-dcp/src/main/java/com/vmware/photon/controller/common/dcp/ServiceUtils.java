@@ -30,6 +30,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Random;
@@ -68,6 +69,12 @@ public class ServiceUtils {
 
   public static void logSevere(Service service, Throwable e) {
     LoggerFactory.getLogger(service.getClass()).error(getFmtMsg(service, "%s", Utils.toString(e)));
+  }
+
+  public static void logSevere(Service service, Collection<Throwable> errors) {
+    for (Throwable e : errors) {
+      logSevere(service, e);
+    }
   }
 
   public static void logWarning(Service service, String fmt, Object... args) {

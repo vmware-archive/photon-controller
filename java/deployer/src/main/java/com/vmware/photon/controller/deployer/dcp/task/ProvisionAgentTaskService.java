@@ -49,9 +49,9 @@ import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -199,35 +199,31 @@ public class ProvisionAgentTaskService extends StatefulService {
 
   private void retrieveDocuments(final State currentState) {
     CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntities(this, Arrays.asList(
-        currentState.deploymentServiceLink,
-        currentState.hostServiceLink), new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-
-        try {
-          DeploymentService.State deploymentState = null;
-          HostService.State hostState = null;
-          Collection<Operation> ops = operation.getJoinedOperations();
-          for (Operation op : ops) {
-            String link = op.getUri().toString();
-            if (link.contains(currentState.deploymentServiceLink)) {
-              deploymentState = op.getBody(DeploymentService.State.class);
-            }
-            if (link.contains(currentState.hostServiceLink)) {
-              hostState = op.getBody(HostService.State.class);
-            }
+    cloudStoreHelper.getEntities(this,
+        Arrays.asList(currentState.deploymentServiceLink, currentState.hostServiceLink),
+        (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+          if (failures != null && failures.size() > 0) {
+            failTask(failures.values().iterator().next());
+            return;
           }
-          processProvisionAgent(currentState, deploymentState, hostState, 0);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    });
+
+          try {
+            DeploymentService.State deploymentState = null;
+            HostService.State hostState = null;
+            for (Operation op : ops.values()) {
+              String link = op.getUri().toString();
+              if (link.contains(currentState.deploymentServiceLink)) {
+                deploymentState = op.getBody(DeploymentService.State.class);
+              }
+              if (link.contains(currentState.hostServiceLink)) {
+                hostState = op.getBody(HostService.State.class);
+              }
+            }
+            processProvisionAgent(currentState, deploymentState, hostState, 0);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        });
   }
 
   private boolean isManagementOnlyHost(final HostService.State hostState) {

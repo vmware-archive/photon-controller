@@ -42,7 +42,7 @@ import com.google.common.util.concurrent.ListenableFutureTask;
 import javax.annotation.Nullable;
 
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Map;
 
 /**
  * This class implements a DCP micro-service which performs the task of
@@ -181,35 +181,31 @@ public class DeleteVibTaskService extends StatefulService {
 
   private void processDeleteVib(final State currentState) {
     CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntities(this, Arrays.asList(
-        currentState.deploymentServiceLink,
-        currentState.hostServiceLink), new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-
-        try {
-          DeploymentService.State deploymentState = null;
-          HostService.State hostState = null;
-          Collection<Operation> ops = operation.getJoinedOperations();
-          for (Operation op : ops) {
-            String link = op.getUri().toString();
-            if (link.contains(currentState.deploymentServiceLink)) {
-              deploymentState = op.getBody(DeploymentService.State.class);
-            }
-            if (link.contains(currentState.hostServiceLink)) {
-              hostState = op.getBody(HostService.State.class);
-            }
+    cloudStoreHelper.getEntities(this,
+        Arrays.asList(currentState.deploymentServiceLink, currentState.hostServiceLink),
+        (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+          if (failures != null && failures.size() > 0) {
+            failTask(failures.values().iterator().next());
+            return;
           }
-          processDeleteVib(currentState, deploymentState, hostState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    });
+
+          try {
+            DeploymentService.State deploymentState = null;
+            HostService.State hostState = null;
+            for (Operation op : ops.values()) {
+              String link = op.getUri().toString();
+              if (link.contains(currentState.deploymentServiceLink)) {
+                deploymentState = op.getBody(DeploymentService.State.class);
+              }
+              if (link.contains(currentState.hostServiceLink)) {
+                hostState = op.getBody(HostService.State.class);
+              }
+            }
+            processDeleteVib(currentState, deploymentState, hostState);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        });
   }
 
   private void processDeleteVib(State currentState,

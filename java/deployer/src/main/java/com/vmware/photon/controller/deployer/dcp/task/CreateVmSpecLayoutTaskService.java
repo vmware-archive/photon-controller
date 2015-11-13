@@ -44,6 +44,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -205,31 +206,6 @@ public class CreateVmSpecLayoutTaskService extends StatefulService {
 
     CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
     cloudStoreHelper.queryEntities(this, querySpecification, new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(CreateVmSpecLayoutTaskService.this, documentLinks);
-              getHostEntities(currentState, documentLinks);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        });
-  }
-
-  private void getHostEntities(final State currentState, Collection<String> documentLinks) {
-    if (null == documentLinks || documentLinks.size() == 0) {
-      throw new RuntimeException("Found 0 hosts with usageTag: " + UsageTag.MGMT.name());
-    }
-
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntities(this, documentLinks, new Operation.CompletionHandler() {
       @Override
       public void handle(Operation operation, Throwable throwable) {
         if (null != throwable) {
@@ -238,15 +214,37 @@ public class CreateVmSpecLayoutTaskService extends StatefulService {
         }
 
         try {
-          List<HostService.State> hostStates = new ArrayList<>();
-          for (Operation getOperation : operation.getJoinedOperations()) {
-            HostService.State hostState = getOperation.getBody(HostService.State.class);
-            hostStates.add(hostState);
-          }
-          scheduleCreateManagementVmTasks(currentState, hostStates);
+          Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+          QueryTaskUtils.logQueryResults(CreateVmSpecLayoutTaskService.this, documentLinks);
+          getHostEntities(currentState, documentLinks);
         } catch (Throwable t) {
           failTask(t);
         }
+      }
+    });
+  }
+
+  private void getHostEntities(final State currentState, Collection<String> documentLinks) {
+    if (null == documentLinks || documentLinks.size() == 0) {
+      throw new RuntimeException("Found 0 hosts with usageTag: " + UsageTag.MGMT.name());
+    }
+
+    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
+    cloudStoreHelper.getEntities(this, documentLinks, (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+      if (failures != null && failures.size() > 0) {
+        failTask(failures.values().iterator().next());
+        return;
+      }
+
+      try {
+        List<HostService.State> hostStates = new ArrayList<>();
+        for (Operation getOperation : ops.values()) {
+          HostService.State hostState = getOperation.getBody(HostService.State.class);
+          hostStates.add(hostState);
+        }
+        scheduleCreateManagementVmTasks(currentState, hostStates);
+      } catch (Throwable t) {
+        failTask(t);
       }
     });
   }
