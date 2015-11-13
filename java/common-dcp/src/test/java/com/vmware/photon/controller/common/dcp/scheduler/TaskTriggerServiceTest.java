@@ -301,10 +301,15 @@ public class TaskTriggerServiceTest {
      */
     @Test
     public void testTriggerPatch() throws Throwable {
+      TaskTriggerService.State state = new TaskTriggerService.State();
+      state.triggerInterval = 10;
       Operation op = Operation
           .createPatch(UriUtils.buildUri(host, selfLink, null))
-          .setBody(new TaskTriggerService.State());
+          .setBody(state);
       Operation result = host.sendRequestAndWait(op);
+      TaskTriggerService.State newServiceState = result.getBody(TaskTriggerService.State.class);
+      assertThat(newServiceState.triggerInterval, is(10));
+
       assertThat(result.getStatusCode(), is(200));
 
       ServiceDocumentQueryResult doc = host.waitForState(

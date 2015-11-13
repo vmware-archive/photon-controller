@@ -57,8 +57,8 @@ public class TaskTriggerService extends StatefulService {
     super(State.class);
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
     super.toggleOption(ServiceOption.PERIODIC_MAINTENANCE, true);
-    super.setMaintenanceIntervalMicros(
-        TimeUnit.MILLISECONDS.toMicros(DEFAULT_MAINTENANCE_INTERVAL));
+    super.toggleOption(ServiceOption.PERSISTENCE, true);
+    super.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(DEFAULT_MAINTENANCE_INTERVAL));
   }
 
   @Override
@@ -70,8 +70,7 @@ public class TaskTriggerService extends StatefulService {
     this.validateState(s);
 
     // set the maintenance interval to match the value in the state.
-    this.setMaintenanceIntervalMicros(
-       TimeUnit.MILLISECONDS.toMicros(DEFAULT_MAINTENANCE_INTERVAL));
+    this.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(s.triggerInterval));
 
     start.complete();
   }
@@ -207,6 +206,14 @@ public class TaskTriggerService extends StatefulService {
    * Class defines the durable state of the TaskTriggerService.
    */
   public static class State extends ServiceDocument {
+
+    /**
+     * The time interval to trigger the service. (This value will be used to set the
+     * maintenance interval on the service.)
+     */
+    @DefaultInteger(value = DEFAULT_MAINTENANCE_INTERVAL)
+    @Positive
+    public Integer triggerInterval;
 
     /**
      * The expiration age of triggered tasks.
