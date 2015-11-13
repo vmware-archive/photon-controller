@@ -19,39 +19,44 @@ import com.vmware.photon.controller.api.ClusterCreateSpec;
 import com.vmware.photon.controller.api.ClusterResizeOperation;
 import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.api.ClusterType;
+import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.builders.AttachedDiskCreateSpecBuilder;
+import com.vmware.photon.controller.apife.TestModule;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.backends.clients.ClusterManagerClient;
 import com.vmware.photon.controller.apife.commands.CommandTestModule;
 import com.vmware.photon.controller.apife.commands.steps.ClusterDeleteStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.ClusterResizeStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.KubernetesClusterCreateStepCmd;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
-import com.vmware.photon.controller.apife.db.dao.ImageDao;
-import com.vmware.photon.controller.apife.db.dao.TaskDao;
-import com.vmware.photon.controller.apife.entities.ImageEntity;
-import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterNotFoundException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
+import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import org.mockito.Mock;
+import org.junit.AfterClass;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -65,6 +70,49 @@ import java.util.UUID;
  * Tests {@link ClusterBackend}.
  */
 public class ClusterBackendTest {
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
+
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
+
+
   @Test
   private void dummy() {
   }
@@ -86,23 +134,39 @@ public class ClusterBackendTest {
   /**
    * Tests for the create method.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class CreateClusterTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class CreateClusterTest {
     @Inject
-    private TaskDao taskDao;
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
     @Inject
     private TaskBackend taskBackend;
+
     @Inject
     private VmBackend vmBackend;
-    @Mock
+
     private ClusterManagerClient clusterManagerClient;
     private ClusterCreateSpec createSpec;
     private ClusterBackend clusterBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      clusterManagerClient = mock(ClusterManagerClient.class);
       clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     private static ClusterCreateSpec buildCreateSpec(ClusterType clusterType) {
@@ -134,11 +198,8 @@ public class ClusterBackendTest {
       assertEquals(createSpecActual.getName(), createSpec.getName());
       assertEquals(createSpecActual.getType(), createSpec.getType());
 
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
-
       // reload taskEntity from storage
-      taskEntity = taskDao.findById(taskEntity.getId()).get();
+      taskEntity = taskBackend.findById(taskEntity.getId());
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
@@ -167,11 +228,8 @@ public class ClusterBackendTest {
       assertEquals(createSpecActual.getName(), createSpec.getName());
       assertEquals(createSpecActual.getType(), createSpec.getType());
 
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
-
       // reload taskEntity from storage
-      taskEntity = taskDao.findById(taskEntity.getId()).get();
+      taskEntity = taskBackend.findById(taskEntity.getId());
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
@@ -201,11 +259,8 @@ public class ClusterBackendTest {
       assertEquals(createSpecActual.getName(), createSpec.getName());
       assertEquals(createSpecActual.getType(), createSpec.getType());
 
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
-
       // reload taskEntity from storage
-      taskEntity = taskDao.findById(taskEntity.getId()).get();
+      taskEntity = taskBackend.findById(taskEntity.getId());
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
@@ -221,22 +276,38 @@ public class ClusterBackendTest {
   /**
    * Tests for the delete method.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class DeleteClusterTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class DeleteClusterTest {
     @Inject
-    private TaskDao taskDao;
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
     @Inject
     private TaskBackend taskBackend;
+
     @Inject
-    private VmBackend vmBackend;
-    @Mock
+    private VmDcpBackend vmDcpBackend;
+
     private ClusterManagerClient clusterManagerClient;
     private ClusterBackend clusterBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      clusterManagerClient = mock(ClusterManagerClient.class);
+      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmDcpBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -258,11 +329,8 @@ public class ClusterBackendTest {
           .getTransientResource(ClusterDeleteStepCmd.CLUSTER_ID_RESOURCE_KEY);
       assertEquals(clusterIdToDelete, clusterId);
 
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
-
       // reload taskEntity from storage
-      taskEntity = taskDao.findById(taskEntity.getId()).get();
+      taskEntity = taskBackend.findById(taskEntity.getId());
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
@@ -284,22 +352,38 @@ public class ClusterBackendTest {
   /**
    * Tests for the resize method.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class ResizeClusterTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class ResizeClusterTest {
     @Inject
-    private TaskDao taskDao;
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
     @Inject
     private TaskBackend taskBackend;
+
     @Inject
-    private VmBackend vmBackend;
-    @Mock
+    private VmDcpBackend vmDcpBackend;
+
     private ClusterManagerClient clusterManagerClient;
     private ClusterBackend clusterBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      clusterManagerClient = mock(ClusterManagerClient.class);
+      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmDcpBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -328,11 +412,8 @@ public class ClusterBackendTest {
       assertEquals(resizeOperationReturned, resizeOperation);
 
 
-      // clear the session so that subsequent reads are fresh queries
-      flushSession();
-
       // reload taskEntity from storage
-      taskEntity = taskDao.findById(taskEntity.getId()).get();
+      taskEntity = taskBackend.findById(taskEntity.getId());
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
@@ -357,20 +438,38 @@ public class ClusterBackendTest {
   /**
    * Tests for the find method.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class, CommandTestModule.class})
-  public static class FindTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
+  public static class FindTest {
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
     @Inject
     private TaskBackend taskBackend;
+
     @Inject
     private VmBackend vmBackend;
-    @Mock
+
     private ClusterManagerClient clusterManagerClient;
     private ClusterBackend clusterBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      clusterManagerClient = mock(ClusterManagerClient.class);
       clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -401,19 +500,38 @@ public class ClusterBackendTest {
   /**
    * Tests for the findVms method.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class, CommandTestModule.class})
-  public static class FindVmTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
+  public static class FindVmTest {
 
-    ClusterBackend clusterBackend;
     @Inject
-    private EntityFactory entityFactory;
+    private BasicServiceHost basicServiceHost;
+
     @Inject
-    private VmSqlBackend vmSqlBackend;
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    private ClusterBackend clusterBackend;
+
+    @Inject
+    private VmDcpBackend vmDcpBackend;
+
     @Inject
     private TaskBackend taskBackend;
+
     @Inject
-    private ImageDao imageDao;
-    @Mock
+    private TenantDcpBackend tenantDcpBackend;
+
+    @Inject
+    private ResourceTicketDcpBackend resourceTicketDcpBackend;
+
+    @Inject
+    private ProjectDcpBackend projectDcpBackend;
+
+    @Inject
+    private FlavorDcpBackend flavorDcpBackend;
+
+    @Inject
+    private FlavorLoader flavorLoader;
+
     private ClusterManagerClient clusterManagerClient;
 
     private String projectId;
@@ -422,25 +540,52 @@ public class ClusterBackendTest {
 
     @BeforeMethod()
     public void setUp() throws Throwable {
-      super.setUp();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "vmware");
 
-      QuotaLineItemEntity ticketLimit = new QuotaLineItemEntity("vm.cost", 100, QuotaUnit.COUNT);
-      QuotaLineItemEntity projectLimit = new QuotaLineItemEntity("vm.cost", 10, QuotaUnit.COUNT);
+      QuotaLineItem ticketLimit = new QuotaLineItem("vm.cost", 100, QuotaUnit.COUNT);
+      DcpBackendTestHelper.createTenantResourceTicket(resourceTicketDcpBackend,
+          tenantId, "rt1", ImmutableList.of(ticketLimit));
 
-      String tenantId = entityFactory.createTenant("vmware").getId();
-      String ticketId = entityFactory.createTenantResourceTicket(tenantId, "rt1", ticketLimit);
-      projectId = entityFactory.createProject(tenantId, ticketId, "staging", projectLimit);
-      entityFactory.loadFlavors();
+      QuotaLineItem projectLimit = new QuotaLineItem("vm.cost", 10, QuotaUnit.COUNT);
+      projectId = DcpBackendTestHelper.createProject(projectDcpBackend,
+          "staging", tenantId, "rt1", ImmutableList.of(projectLimit));
 
-      ImageEntity image = new ImageEntity();
-      image.setName("image-1");
-      image.setState(ImageState.READY);
-      image.setSize(1024L * 1024);
-      image = imageDao.create(image);
-      flushSession();
-      imageId = image.getId();
+      DcpBackendTestHelper.createFlavors(flavorDcpBackend, flavorLoader.getAllFlavors());
 
-      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmSqlBackend);
+      ImageService.State imageServiceState = new ImageService.State();
+      imageServiceState.name = "image-1";
+      imageServiceState.state = ImageState.READY;
+      imageServiceState.size = 1024L * 1024L;
+      imageServiceState.replicationType = ImageReplicationType.EAGER;
+      imageServiceState.imageSettings = new ArrayList<>();
+      ImageService.State.ImageSetting imageSetting = new ImageService.State.ImageSetting();
+      imageSetting.name = "n1";
+      imageSetting.defaultValue = "v1";
+      imageServiceState.imageSettings.add(imageSetting);
+      imageSetting = new ImageService.State.ImageSetting();
+      imageSetting.name = "n2";
+      imageSetting.defaultValue = "v2";
+      imageServiceState.imageSettings.add(imageSetting);
+
+      com.vmware.dcp.common.Operation result = dcpClient.postAndWait(ImageServiceFactory.SELF_LINK, imageServiceState);
+
+      ImageService.State createdImageState = result.getBody(ImageService.State.class);
+
+      imageId = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+
+      clusterManagerClient = mock(ClusterManagerClient.class);
+      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmDcpBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -488,8 +633,9 @@ public class ClusterBackendTest {
       spec.setSourceImageId(imageId);
       spec.setAttachedDisks(ImmutableList.of(disk1));
       spec.setTags(ImmutableSet.of(ClusterUtil.createClusterTag(clusterId)));
-      String vmId = vmSqlBackend.create(projectId, spec).getId();
-      flushSession();
+
+      TaskEntity createdVmTaskEntity = vmDcpBackend.prepareVmCreate(projectId, spec);
+      String vmId = createdVmTaskEntity.getEntityId();
       return vmId;
     }
 
