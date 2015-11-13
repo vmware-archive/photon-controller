@@ -6,14 +6,14 @@ Photon Controller is designed to support:
 * **High Scale**: Manage tens of thousands of compute nodes in one deployment.
 * **High Churn**: Handle thousands of concurrent API requests.
 * **Multiple Tenants**: Allocate and manage resources for many users and groups in a single deployment.
-* **Container Frameworks**: Easily spin up instances of [Kubernetes](http://kubernetes.io), [Mesos](http://mesos.apache.org), and [Docker Swarm](https://docs.docker.com/swarm/) in seconds.
+* **Container Frameworks**: Easily spin up instances of [Kubernetes](http://kubernetes.io), [Mesos](http://mesos.apache.org), and [Docker Swarm](http://docs.docker.com/swarm/) in seconds.
 
 ## Participation
 
 If you'd like to become a part of the Photon Controller community, here are some ways to connect:
 
 * Visit us on [GitHub](http://vmware.github.io/photon-controller)
-* Join the Photon Controller [user group](http://fix.me) or [developers group](http://fix.me) on Google Groups -- coming soon
+* Join the [Photon Controller group](http://groups.google.com/group/photon-controller) on Google Groups
 * Ask questions using the "photon-controller" tag on [Stack Overflow](http://stackoverflow.com/)
 
 If you're looking to play with the code, keep reading.
@@ -23,7 +23,7 @@ If you're looking to play with the code, keep reading.
 The product is arranged in a single repository, with subdirectories arranged by language. See the individual READMEs for instructions on building the code.
 
 * [Devbox](devbox-photon/README.md): Devbox uses [Vagrant](http://vagrantup.com) to create a small standalone deployment of Photon Controller for test purposes.
-* [Java](java/README.md): Most of the Photon Controller management plane is written in Java, with many individual services implemented on top of the [Xenon framework](http://fix.me) -- coming soon.
+* [Java](java/README.md): Most of the Photon Controller management plane is written in Java, with many individual services implemented on top of the [Xenon framework](http://vmware.github.io/xenon) -- coming soon.
 * [Python](python/README.md): The ESX agent and its test and analysis collateral are implemented in Python.
 * [Ruby](ruby/README.md): The Photon Controller CLI is implemented in Ruby, as are the integration tests for the product.
   * **Note**: The Ruby CLI will soon be replaced with a Golang version.
@@ -31,9 +31,9 @@ The product is arranged in a single repository, with subdirectories arranged by 
 
 ## Development
 
-If you'd like to make changes to Photon Controller, you can submit pull requests on [GitHub](http://vmware.github.io/photon-controller).
+If you'd like to make changes to Photon Controller, you can submit pull requests on [GitHub](http://github.com/vmware/photon-controller).
 
-Contributors to Photon Controller must have signed and submitted a copy of the [Contributor License Agreement](http://fix.me) -- coming soon -- to osscontributions@vmware.com.
+Contributors to Photon Controller must have signed and submitted a copy of the [Contributor License Agreement](http://vmware.github.io/photon/assets/files/vmware_cla.pdf) to osscontributions@vmware.com.
 
 All pull requests satisfy the following criteria:
 
