@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.DiskState;
+import com.vmware.photon.controller.api.DiskType;
 import com.vmware.photon.controller.api.Flavor;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.FlavorState;
@@ -21,22 +23,23 @@ import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DiskService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import org.powermock.core.classloader.annotations.Mock;
+import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -47,19 +50,56 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.powermock.api.mockito.PowerMockito.spy;
-import static org.powermock.api.mockito.PowerMockito.when;
 import static org.testng.Assert.fail;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 
 /**
  * Tests {@link FlavorDcpBackend}.
  */
 public class FlavorDcpBackendTest {
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
+
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
 
   private static FlavorCreateSpec createTestFlavorSpec() {
     FlavorCreateSpec spec = new FlavorCreateSpec();
@@ -76,58 +116,35 @@ public class FlavorDcpBackendTest {
   /**
    * Tests for creating a Flavor.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class CreateTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class CreateTest {
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private FlavorBackend flavorBackend;
-    private ApiFeDcpRestClient dcpClient;
-
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private VmBackend vmBackend;
-
-    @Inject
-    private DiskBackend diskBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
 
     private FlavorCreateSpec spec;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          FlavorServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new FlavorServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      flavorBackend = new FlavorDcpBackend(dcpClient, taskBackend, vmBackend, diskBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       spec = createTestFlavorSpec();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test(dataProvider = "FlavorKind")
@@ -190,56 +207,34 @@ public class FlavorDcpBackendTest {
   /**
    * Tests for retrieving tasks related to a flavor.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class TaskTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class TaskTest {
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private FlavorBackend flavorBackend;
-    private ApiFeDcpRestClient dcpClient;
-
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private VmBackend vmBackend;
-    @Inject
-    private DiskBackend diskBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
 
     private FlavorCreateSpec spec;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          FlavorServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new FlavorServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      flavorBackend = new FlavorDcpBackend(dcpClient, taskBackend, vmBackend, diskBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       spec = createTestFlavorSpec();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -261,55 +256,34 @@ public class FlavorDcpBackendTest {
   /**
    * Tests for querying flavor.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class QueryFlavorTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class QueryFlavorTest {
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private FlavorBackend flavorBackend;
-    private ApiFeDcpRestClient dcpClient;
-
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private VmBackend vmBackend;
-    @Inject
-    private DiskBackend diskBackend;
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
 
     private FlavorCreateSpec spec;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          FlavorServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new FlavorServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      flavorBackend = new FlavorDcpBackend(dcpClient, taskBackend, vmBackend, diskBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       spec = createTestFlavorSpec();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -396,79 +370,35 @@ public class FlavorDcpBackendTest {
   /**
    * Tests for delete flavor.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class DeleteFlavorTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class DeleteFlavorTest {
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private FlavorBackend flavorBackend;
-    private ApiFeDcpRestClient dcpClient;
-    private BasicServiceHost host;
+
     private FlavorCreateSpec spec;
-    private DiskBackend diskBackend;
-
-    @Inject
-    private EntityFactory entityFactory;
-
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Mock
-    private VmBackend vmBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    @Mock
-    private ProjectBackend projectBackend;
-
-    @Mock
-    private ResourceTicketBackend resourceTicketBackend;
-
-    @Mock
-    private EntityLockBackend entityLockBackend;
-
-    @Mock
-    private AttachedDiskBackend attachedDiskBackend;
-
-    @Inject
-    private FlavorBackend originalEntityFactoryFlavorBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          FlavorServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new FlavorServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      diskBackend = spy(new DiskDcpBackend(dcpClient, projectBackend, flavorBackend,
-          resourceTicketBackend, taskBackend, entityLockBackend, attachedDiskBackend, tombstoneBackend));
-      flavorBackend = new FlavorDcpBackend(dcpClient, taskBackend, vmBackend, diskBackend, tombstoneBackend);
-
-      originalEntityFactoryFlavorBackend = entityFactory.getFlavorBackend();
-      entityFactory.setFlavorBackend(flavorBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       spec = createTestFlavorSpec();
-
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      entityFactory.setFlavorBackend(originalEntityFactoryFlavorBackend);
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -492,7 +422,14 @@ public class FlavorDcpBackendTest {
       TaskEntity taskEntity = flavorBackend.createFlavor(spec);
 
       String id = taskEntity.getEntityId();
-      when(diskBackend.existsUsingFlavor(id)).thenReturn(true);
+
+      DiskService.State diskState = new DiskService.State();
+      diskState.flavorId = id;
+      diskState.diskType = DiskType.PERSISTENT;
+      diskState.state = DiskState.ATTACHED;
+      diskState.name = "disk1";
+      diskState.projectId = "project1";
+      dcpClient.postAndWait(DiskServiceFactory.SELF_LINK, diskState);
 
       flavorBackend.prepareFlavorDelete(id);
 
@@ -521,7 +458,14 @@ public class FlavorDcpBackendTest {
       TaskEntity taskEntity = flavorBackend.createFlavor(spec);
       FlavorEntity flavorEntity = flavorBackend.getEntityById(taskEntity.getEntityId());
 
-      when(diskBackend.existsUsingFlavor(flavorEntity.getId())).thenReturn(true);
+      DiskService.State diskState = new DiskService.State();
+      diskState.flavorId = flavorEntity.getId();
+      diskState.diskType = DiskType.PERSISTENT;
+      diskState.state = DiskState.ATTACHED;
+      diskState.name = "disk1";
+      diskState.projectId = "project1";
+      dcpClient.postAndWait(DiskServiceFactory.SELF_LINK, diskState);
+
       flavorBackend.tombstone(flavorEntity);
 
       assertThat(flavorBackend.getEntityById(taskEntity.getEntityId()), notNullValue());
@@ -538,7 +482,15 @@ public class FlavorDcpBackendTest {
       TaskEntity taskEntity = flavorBackend.createFlavor(spec);
 
       String id = taskEntity.getEntityId();
-      when(diskBackend.existsUsingFlavor(id)).thenReturn(true);
+
+      DiskService.State diskState = new DiskService.State();
+      diskState.flavorId = id;
+      diskState.diskType = DiskType.PERSISTENT;
+      diskState.state = DiskState.ATTACHED;
+      diskState.name = "disk1";
+      diskState.projectId = "project1";
+      dcpClient.postAndWait(DiskServiceFactory.SELF_LINK, diskState);
+
       flavorBackend.prepareFlavorDelete(id);
 
       // check that flavor in PENDING_DELETE state
