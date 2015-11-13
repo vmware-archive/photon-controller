@@ -3,7 +3,9 @@
     "kind": "deployment",
     "syslogEndpoint": "0.0.0.1",
     "ntpEndpoint": "0.0.0.2",
-    "imageDatastore": "image-datastore",
+    "imageDatastores": [
+      "image-datastore"
+    ],
     "useImageDatastoreForVms": false,
     "state": "CREATING",
     "auth": {

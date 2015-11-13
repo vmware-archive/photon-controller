@@ -30,6 +30,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Tests {@link Deployment}.
@@ -37,12 +40,12 @@ import java.util.Arrays;
 public class DeploymentTest {
 
   private Deployment createDeployment(
-      String imageDatastore,
+      Set<String> imageDatastores,
       String syslogEndpoint,
       String ntpEndpoint) {
     Deployment deployment = new Deployment();
     deployment.setId("id");
-    deployment.setImageDatastore(imageDatastore);
+    deployment.setImageDatastores(imageDatastores);
     deployment.setSyslogEndpoint(syslogEndpoint);
     deployment.setNtpEndpoint(ntpEndpoint);
     deployment.setAuth(new AuthInfoBuilder()
@@ -85,8 +88,8 @@ public class DeploymentTest {
     @DataProvider(name = "validDeployments")
     public Object[][] getValidDeployments() {
       return new Object[][]{
-          {createDeployment("i", "0.0.0.1", "0.0.0.2")},
-          {createDeployment("i", null, null)},
+          {createDeployment(Collections.singleton("i"), "0.0.0.1", "0.0.0.2")},
+          {createDeployment(Collections.singleton("i"), null, null)},
       };
     }
 
@@ -100,12 +103,12 @@ public class DeploymentTest {
     public Object[][] getInvalidDeployments() {
       return new Object[][]{
           {createDeployment(null, "0.0.0.1", "0.0.0.2"),
-              "imageDatastore may not be null (was null)"},
-          {createDeployment("", "0.0.0.1", "0.0.0.2"),
-              "imageDatastore size must be between 1 and 2147483647 (was )"},
-          {createDeployment("i", "fake", "0.0.0.2"),
+              "imageDatastores may not be null (was null)"},
+          {createDeployment(new HashSet<String>(), "0.0.0.1", "0.0.0.2"),
+              "imageDatastores size must be between 1 and 2147483647 (was [])"},
+          {createDeployment(Collections.singleton("i"), "fake", "0.0.0.2"),
               "syslogEndpoint fake is invalid IP or Domain Address"},
-          {createDeployment("i", "0.0.0.2", "fake"),
+          {createDeployment(Collections.singleton("i"), "0.0.0.2", "fake"),
               "ntpEndpoint fake is invalid IP or Domain Address"},
       };
     }
@@ -128,12 +131,13 @@ public class DeploymentTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "Deployment{id=id, Kind=deployment, imageDatastore=image-datastore, syslogEndpoint=0.0.0.1, " +
+          "Deployment{id=id, Kind=deployment, imageDatastores=[image-datastore], syslogEndpoint=0.0.0.1, " +
               "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, " +
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443," +
               " tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, loadBalancerEnabled=true," +
               " migrationProgress=null}";
-      Deployment deployment = createDeployment("image-datastore", "0.0.0.1", "0.0.0.2");
+      Deployment deployment = createDeployment(
+          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2");
       assertThat(deployment.toString(), is(expectedString));
     }
   }
@@ -147,7 +151,8 @@ public class DeploymentTest {
 
     @Test
     public void testSerialization() throws Exception {
-      Deployment deployment = createDeployment("image-datastore", "0.0.0.1", "0.0.0.2");
+      Deployment deployment = createDeployment(
+          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2");
       deployment.setState(DeploymentState.CREATING);
       String json = jsonFixture(JSON_FILE);
 

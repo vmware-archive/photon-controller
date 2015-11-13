@@ -40,6 +40,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -62,7 +63,7 @@ public class DeploymentsResourceTest extends ResourceTest {
     spec = new DeploymentCreateSpec();
     spec.setNtpEndpoint("0.0.0.0");
     spec.setSyslogEndpoint("0.0.0.1");
-    spec.setImageDatastore("imageDatastore");
+    spec.setImageDatastores(Collections.singleton("imageDatastore"));
 
     addResource(new DeploymentsResource(deploymentFeClient));
   }
@@ -196,7 +197,7 @@ public class DeploymentsResourceTest extends ResourceTest {
   public void testGetDeploymentList() throws Throwable {
     Deployment deployment = new Deployment();
     deployment.setId("id");
-    deployment.setImageDatastore("imageDatastore");
+    deployment.setImageDatastores(Collections.singleton("imageDatastore"));
     deployment.setSyslogEndpoint("0.0.0.0");
     deployment.setNtpEndpoint("0.0.0.1");
     deployment.setAuth(new AuthInfoBuilder().build());

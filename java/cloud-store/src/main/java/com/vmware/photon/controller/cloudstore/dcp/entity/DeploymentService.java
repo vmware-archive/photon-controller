@@ -64,6 +64,11 @@ public class DeploymentService extends StatefulService {
     patch.complete();
   }
 
+  @Override
+  public ServiceDocument getDocumentTemplate() {
+    return ServiceUtils.getDocumentTemplateWithIndexedFields(super.getDocumentTemplate(), "imageDataStoreNames");
+  }
+
   private void validateState(State currentState) {
     ValidationUtils.validateState(currentState);
   }
@@ -97,8 +102,7 @@ public class DeploymentService extends StatefulService {
      * This value represents the name of the image data store.
      */
     @NotNull
-    @Immutable
-    public String imageDataStoreName;
+    public Set<String> imageDataStoreNames;
 
     /**
      * This value represents whether the image data store can be used to create VMs.

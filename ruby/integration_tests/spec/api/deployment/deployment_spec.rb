@@ -38,7 +38,7 @@ describe "deployment", management: true, devbox: true do
 
     let(:spec) do
       EsxCloud::DeploymentCreateSpec.new(
-        "image_datastore",
+        ["image_datastore"],
         EsxCloud::AuthInfo.new(false),
         "0.0.0.1",
         "0.0.0.2",
@@ -52,7 +52,7 @@ describe "deployment", management: true, devbox: true do
                         "InvalidAuthConfig" do
           let(:deployment_create_spec) do
             EsxCloud::DeploymentCreateSpec.new(
-              "image_datastore",
+              ["image_datastore"],
               EsxCloud::AuthInfo.new(true),
               "0.0.0.1",
               "0.0.0.2",
@@ -68,7 +68,7 @@ describe "deployment", management: true, devbox: true do
                         "InvalidAuthConfig" do
           let(:deployment_create_spec) do
             EsxCloud::DeploymentCreateSpec.new(
-              "image_datastore",
+              ["image_datastore"],
               EsxCloud::AuthInfo.new(false, '0.0.0.0','8080', 't', 'u', 'p', ['t\\securityGroup1']),
               "0.0.0.1",
               "0.0.0.2",
@@ -83,7 +83,7 @@ describe "deployment", management: true, devbox: true do
                       ["Image datastore name cannot be nil"],
                       "InvalidEntity" do
         let(:deployment_create_spec) do
-          spec.image_datastore = nil
+          spec.image_datastores = nil
           spec
         end
       end

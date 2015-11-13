@@ -29,8 +29,9 @@ module EsxCloud::Cli
           initialize_client
           oauth_security_groups =
               options[:oauth_security_groups].split(/\s*,\s*/) unless options[:oauth_security_groups].nil?
+          image_datastores = options[:image_datastores].split(/\s*,\s*/) unless  options[:image_datastores].nil?
           spec = EsxCloud::DeploymentCreateSpec.new(
-              options[:image_datastore],
+              image_datastores,
               EsxCloud::AuthInfo.new(
                   options[:auth_enabled],
                   options[:oauth_endpoint],
@@ -149,7 +150,7 @@ g2)') do |g|
         puts
         puts "  State:                        #{deployment.state}"
         puts
-        puts "  Image Datastore:              #{deployment.image_datastore}"
+        puts "  Image Datastores:             #{deployment.image_datastores}"
         puts "  Use image datastore for vms:  #{deployment.use_image_datastore_for_vms}"
         puts
         puts "  Auth Enabled:                 #{deployment.auth.enabled}"
@@ -272,7 +273,7 @@ g2)') do |g|
 
       def parse_deployment_creation_arguments(args)
         options = {
-            :image_datastore => nil,
+            :image_datastores => nil,
             :auth_enabled => false,
             :oauth_endpoint => nil,
             :oauth_port => nil,
@@ -288,8 +289,8 @@ g2)') do |g|
 
         opts_parser = OptionParser.new do |opts|
           opts.banner = "Usage: deployment create [options]"
-          opts.on('-i', '--image_datastore DATASTORE_NAME', 'Image Datastore Name') do |i|
-            options[:image_datastore] = i
+          opts.on('-i', '--image_datastores DATASTORE_NAMES', 'Comma-separated list of Image Datastores') do |i|
+            options[:image_datastores] = i
           end
           opts.on('-v', '--use_image_datastore_for_vms', 'Use Image Datastore For VMs') do |_|
             options[:use_image_datastore_for_vms] = true
@@ -332,7 +333,7 @@ g2)') do |g|
       end
 
       def read_deployment_arguments_inactively(options)
-        options[:image_datastore] ||= ask("Image Datastore Name: ")
+        options[:image_datastores] ||= ask("Image Datastore Names: ")
 
         if options[:auth_enabled]
           options[:oauth_endpoint] ||= ask("OAuth Endpoint: ")
@@ -357,8 +358,8 @@ g2)') do |g|
       end
 
       def validate_deployment_arguments(options)
-        if options[:image_datastore].blank?
-          usage_error("Image datastore name cannot be nil.")
+        if options[:image_datastores].blank?
+          usage_error("Image datastore names cannot be nil.")
         end
 
         if options[:auth_enabled]

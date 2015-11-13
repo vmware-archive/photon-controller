@@ -595,7 +595,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       final VmService.State vmState,
       final ContainerService.State containerState,
       final ContainerTemplateService.State containerTemplateState) {
-
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
             .createGet(currentState.deploymentServiceLink)
@@ -624,7 +623,8 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
                     }
 
                     // Set Image Datastore
-                    containerState.dynamicParameters.put(ENV_DATASTORE, deploymentState.imageDataStoreName);
+                    containerState.dynamicParameters.put(
+                        ENV_DATASTORE, deploymentState.imageDataStoreNames.iterator().next());
 
                     // Set Host Ip
                     setEsxHostIp(currentState, vmState, containerState, containerTemplateState,

@@ -95,6 +95,10 @@ module EsxCloud
       ENV["ESX_DATASTORE"] || "datastore1"
     end
 
+    def self.get_datastore_names
+      [get_datastore_name]
+    end
+
     def self.get_datastore_id
       ENV["ESX_DATASTORE_ID"]
     end
