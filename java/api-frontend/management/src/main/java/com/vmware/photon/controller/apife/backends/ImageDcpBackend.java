@@ -33,6 +33,9 @@ import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundExcep
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException.Type;
 import com.vmware.photon.controller.apife.exceptions.external.ImageUploadException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -45,6 +48,8 @@ import com.google.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import java.io.InputStream;
 import java.nio.file.Paths;
@@ -132,7 +137,6 @@ public class ImageDcpBackend implements ImageBackend {
     imageServiceState.replicationType = replicationType;
 
     com.vmware.dcp.common.Operation result = dcpClient.postAndWait(ImageServiceFactory.SELF_LINK, imageServiceState);
-
     ImageService.State createdState = result.getBody(ImageService.State.class);
 
     String id = ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);
@@ -248,6 +252,34 @@ public class ImageDcpBackend implements ImageBackend {
     }
 
     return convertToEntity(result.getBody(ImageService.State.class));
+  }
+
+  @Override
+  public void updateImageDatastore(String imageId, String imageDatastoreName) throws ExternalException {
+    checkNotNull(imageId, "imageId can not be null.");
+    checkNotNull(imageDatastoreName, "imageDatastoreName can not be null");
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    termsBuilder.put("name", imageDatastoreName);
+    termsBuilder.put("isImageDatastore", "true");
+    List<DatastoreService.State> datastores = dcpClient.queryDocuments(DatastoreService.State.class,
+        termsBuilder.build());
+    checkState(datastores.size() == 1, "more than one image datastore has the same name");
+
+    try {
+      ImageReplicationService.State imageReplicationServiceState = new ImageReplicationService.State();
+      imageReplicationServiceState.imageDatastoreId = datastores.get(0).id;
+      imageReplicationServiceState.imageId = imageId;
+      imageReplicationServiceState.documentSelfLink = imageId + "-" + datastores.get(0).id;
+
+      dcpClient.postAndWait(ImageReplicationServiceFactory.SELF_LINK, imageReplicationServiceState);
+      logger.info("ImageReplicationServiceState created with imageId {}, ImageDatastore {}", imageId,
+          datastores.get(0).id);
+    } catch (Exception e) {
+      if (e.getMessage().contains("handleServiceExistsPostCompletion")) {
+        return;
+      }
+      throw e;
+    }
   }
 
   private void patchImageService(String imageId, ImageService.State imageState)
@@ -374,7 +406,7 @@ public class ImageDcpBackend implements ImageBackend {
     image.setReplicationType(imageEntity.getReplicationType());
     image.setSettings(createImageSettingListApiRepresentation(imageEntity.getImageSettings()));
     if (imageEntity.getTotalDatastore() != null &&
-        imageEntity.getReplicatedDatastore() != null  &&
+        imageEntity.getReplicatedDatastore() != null &&
         imageEntity.getTotalDatastore() != 0) {
       String replicatedDatastoreRatio =
           (imageEntity.getReplicatedDatastore() * 100.00 / imageEntity.getTotalDatastore()) + "%";

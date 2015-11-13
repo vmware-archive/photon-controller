@@ -48,6 +48,8 @@ public interface ImageBackend {
 
   void updateSize(ImageEntity imageEntity, Long size) throws ExternalException;
 
+  void updateImageDatastore(String imageId, String imageDatastoreName) throws ExternalException;
+
   List<ImageEntity> getAll() throws ExternalException;
 
   Image toApiRepresentation(String id) throws ExternalException;

@@ -29,6 +29,9 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.ImageUploadException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
@@ -154,7 +157,7 @@ public class ImageDcpBackendTest {
     imageServiceState.replicationType = ImageReplicationType.EAGER;
     imageServiceState.size = imageSize;
     imageServiceState.totalDatastore = 10;
-    imageServiceState.totalImageDatastore =  7;
+    imageServiceState.totalImageDatastore = 7;
     imageServiceState.replicatedDatastore = 5;
     com.vmware.dcp.common.Operation result = dcpClient.postAndWait(ImageServiceFactory.SELF_LINK, imageServiceState);
     ImageService.State createdState = result.getBody(ImageService.State.class);
@@ -450,6 +453,63 @@ public class ImageDcpBackendTest {
       imageBackend.updateSize(imageEntity, newImageSize);
       imageEntity = imageBackend.findById(imageId);
       assertThat(imageEntity.getSize(), is(newImageSize));
+    }
+
+    @Test
+    public void testUpdateImageDatastore() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String imageDatastoreId = "image-datastore-id";
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+      ImageEntity imageEntity = imageBackend.findById(imageId);
+
+      DatastoreService.State datastoreState = new DatastoreService.State();
+      datastoreState.name = "image-datastore-name";
+      datastoreState.id = imageDatastoreId;
+      datastoreState.documentSelfLink = imageDatastoreId;
+      datastoreState.type = "type";
+      datastoreState.isImageDatastore = true;
+
+      dcpClient.postAndWait(DatastoreServiceFactory.SELF_LINK, datastoreState);
+
+      imageBackend.updateImageDatastore(imageEntity.getId(), "image-datastore-name");
+
+      final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put("imageId", imageEntity.getId());
+      List<ImageReplicationService.State> results = dcpClient.queryDocuments(ImageReplicationService.State.class,
+          termsBuilder.build());
+      assertThat(results.size(), is(1));
+      assertThat(results.get(0).imageDatastoreId, is(imageDatastoreId));
+    }
+
+    @Test
+    public void testUpdateImageDatastoreTwice() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String imageDatastoreId = "image-datastore-id";
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+      ImageEntity imageEntity = imageBackend.findById(imageId);
+
+      DatastoreService.State datastoreState = new DatastoreService.State();
+      datastoreState.name = "image-datastore-name";
+      datastoreState.id = imageDatastoreId;
+      datastoreState.documentSelfLink = imageDatastoreId;
+      datastoreState.type = "type";
+      datastoreState.isImageDatastore = true;
+      dcpClient.postAndWait(DatastoreServiceFactory.SELF_LINK, datastoreState);
+
+      imageBackend.updateImageDatastore(imageEntity.getId(), "image-datastore-name");
+
+      final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put("imageId", imageEntity.getId());
+      List<ImageReplicationService.State> results = dcpClient.queryDocuments(ImageReplicationService.State.class,
+          termsBuilder.build());
+      assertThat(results.size(), is(1));
+      assertThat(results.get(0).imageDatastoreId, is(imageDatastoreId));
+
+      imageBackend.updateImageDatastore(imageEntity.getId(), "image-datastore-name");
+      results = dcpClient.queryDocuments(ImageReplicationService.State.class,
+          termsBuilder.build());
+      assertThat(results.size(), is(1));
+      assertThat(results.get(0).imageDatastoreId, is(imageDatastoreId));
     }
   }
 
