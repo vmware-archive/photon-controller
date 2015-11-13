@@ -56,13 +56,18 @@ public class CloudStoreHelper {
   }
 
   public URI getCloudStoreURI(String path) {
-    URI uri = null;
     try {
-      uri = ServiceUtils.createUriFromServerSet(cloudStoreServerSet, path);
+      return ServiceUtils.createUriFromServerSet(cloudStoreServerSet, path);
     } catch (URISyntaxException uriSyntaxException) {
       throw new RuntimeException(uriSyntaxException);
     }
-    return uri;
+  }
+
+  public Operation createGet(String path) {
+    return Operation
+        .createGet(getCloudStoreURI(path))
+        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
+        .setReferer(this.localHostAddress);
   }
 
   public Operation createPost(String path) {
