@@ -22,19 +22,17 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
+import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
-import org.powermock.core.classloader.annotations.Mock;
+import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
@@ -45,50 +43,60 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 /**
  * Tests {@link HostDcpBackend}.
  */
-@Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
 public class HostDcpBackendTest {
 
   private static ApiFeDcpRestClient dcpClient;
   private static BasicServiceHost host;
-  private static HostBackend hostBackend;
 
   @Test
   private void dummy() {
   }
 
-  private static void commonSetup(TaskBackend taskBackend, EntityLockBackend entityLockBackend,
-                                  DeploymentBackend deploymentBackend, TombstoneBackend tombstoneBackend)
-      throws Throwable {
-    host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-        BasicServiceHost.BIND_PORT,
-        null,
-        HostServiceFactory.SELF_LINK,
-        10, 10);
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
 
-    host.startServiceSynchronously(new HostServiceFactory(), null);
-
-    StaticServerSet serverSet = new StaticServerSet(
-        new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-    dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-    hostBackend = new HostDcpBackend(dcpClient, taskBackend, entityLockBackend, deploymentBackend, tombstoneBackend);
-  }
-
-  private static void commonTearDown() throws Throwable {
-    if (host != null) {
-      BasicServiceHost.destroy(host);
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
     }
 
-    dcpClient.stop();
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
   }
 
   private static DeploymentCreateSpec getDeploymentCreateSpec() {
@@ -111,33 +119,27 @@ public class HostDcpBackendTest {
   /**
    * Tests for creating Hosts.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class CreateHostTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class CreateHostTest {
 
     @Inject
-    private EntityLockBackend entityLockBackend;
+    private BasicServiceHost basicServiceHost;
 
     @Inject
-    private TaskBackend taskBackend;
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private HostBackend hostBackend;
 
     @Inject
     private DeploymentBackend deploymentBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
 
     private HostCreateSpec hostCreateSpec;
     private String deploymentId;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(
-          taskBackend,
-          entityLockBackend,
-          deploymentBackend,
-          tombstoneBackend);
-
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
       hostCreateSpec = new HostCreateSpec();
       hostCreateSpec.setUsername("user");
       hostCreateSpec.setPassword("password");
@@ -157,8 +159,12 @@ public class HostDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -182,20 +188,20 @@ public class HostDcpBackendTest {
   /**
    * Tests for querying Hosts.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class QueryHostTest extends BaseDaoTest {
-
-    @Mock
-    private EntityLockBackend entityLockBackend;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class QueryHostTest {
 
     @Inject
-    private TaskBackend taskBackend;
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private HostBackend hostBackend;
 
     @Inject
     private DeploymentBackend deploymentBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
 
     private HostCreateSpec hostCreateSpec;
 
@@ -204,13 +210,7 @@ public class HostDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(
-          taskBackend,
-          entityLockBackend,
-          deploymentBackend,
-          tombstoneBackend);
-
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
       hostCreateSpec = new HostCreateSpec();
       hostCreateSpec.setUsername("user");
       hostCreateSpec.setPassword("password");
@@ -233,8 +233,12 @@ public class HostDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -301,20 +305,20 @@ public class HostDcpBackendTest {
   /**
    * Tests for updating Hosts.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class UpdateHostTest extends BaseDaoTest {
-
-    @Mock
-    private EntityLockBackend entityLockBackend;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class UpdateHostTest {
 
     @Inject
-    private TaskBackend taskBackend;
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private HostBackend hostBackend;
 
     @Inject
     private DeploymentBackend deploymentBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
 
     private HostCreateSpec hostCreateSpec;
 
@@ -323,12 +327,7 @@ public class HostDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(
-          taskBackend,
-          entityLockBackend,
-          deploymentBackend,
-          tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       hostCreateSpec = new HostCreateSpec();
       hostCreateSpec.setUsername("user");
@@ -353,8 +352,12 @@ public class HostDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -425,20 +428,20 @@ public class HostDcpBackendTest {
   /**
    * Tests for deleting and tombstoning Hosts.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class DeleteHostTest extends BaseDaoTest {
-
-    @Mock
-    private EntityLockBackend entityLockBackend;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class DeleteHostTest {
 
     @Inject
-    private TaskBackend taskBackend;
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private HostBackend hostBackend;
 
     @Inject
     private DeploymentBackend deploymentBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
 
     private HostCreateSpec hostCreateSpec;
 
@@ -447,12 +450,7 @@ public class HostDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(
-          taskBackend,
-          entityLockBackend,
-          deploymentBackend,
-          tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       hostCreateSpec = new HostCreateSpec();
       hostCreateSpec.setUsername("user");
@@ -477,8 +475,12 @@ public class HostDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -538,6 +540,5 @@ public class HostDcpBackendTest {
         assertThat(e.getMessage(), is("Host #" + hostId + " not found"));
       }
     }
-
   }
 }
