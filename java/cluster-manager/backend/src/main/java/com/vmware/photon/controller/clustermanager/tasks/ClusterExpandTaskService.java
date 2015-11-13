@@ -109,23 +109,25 @@ public class ClusterExpandTaskService extends StatefulService {
   }
 
   private void getCluster(final State currentState) throws IOException {
-    HostUtils.getCloudStoreHelper(this).getEntity(
-        this,
-        ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId,
-        (Operation operation, Throwable throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
+            .setCompletion(
+                (Operation operation, Throwable throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
 
-          ClusterService.State clusterDocument = operation.getBody(ClusterService.State.class);
+                  ClusterService.State clusterDocument = operation.getBody(ClusterService.State.class);
 
-          try {
-            initializeExpandCluster(currentState, clusterDocument);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        });
+                  try {
+                    initializeExpandCluster(currentState, clusterDocument);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   private void initializeExpandCluster(final State currentState,

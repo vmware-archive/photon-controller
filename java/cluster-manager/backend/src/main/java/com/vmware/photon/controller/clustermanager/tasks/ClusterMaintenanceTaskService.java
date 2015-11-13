@@ -17,7 +17,6 @@ import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
@@ -239,50 +238,52 @@ public class ClusterMaintenanceTaskService extends StatefulService {
   private void startMaintenance(State currentState, String clusterId) {
     ServiceUtils.logInfo(this, "Starting maintenance for clusterId: %s", clusterId);
 
-    HostUtils.getCloudStoreHelper(this).getEntity(
-        this,
-        getClusterDocumentLink(clusterId),
-        (Operation op, Throwable t) -> {
-          if (t != null) {
-            if (op.getStatusCode() == Operation.STATUS_CODE_NOT_FOUND) {
-              sendRequest(Operation
-                  .createDelete(UriUtils.buildUri(getHost(), getSelfLink()))
-                  .setBody(new ServiceDocument())
-                  .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
-                  .setReferer(getHost().getUri()));
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(getClusterDocumentLink(clusterId))
+            .setCompletion(
+                (Operation op, Throwable t) -> {
+                  if (t != null) {
+                    if (op.getStatusCode() == Operation.STATUS_CODE_NOT_FOUND) {
+                      sendRequest(Operation
+                          .createDelete(this, getSelfLink())
+                          .setBody(new ServiceDocument())
+                          .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
+                          .setReferer(getHost().getUri()));
 
-              return;
-            }
-            failTask(t);
-            return;
-          }
+                      return;
+                    }
+                    failTask(t);
+                    return;
+                  }
 
-          try {
-            ClusterService.State cluster = op.getBody(ClusterService.State.class);
-            switch (cluster.clusterState) {
-              case CREATING:
-              case RESIZING:
-              case READY:
-                performGarbageInspection(currentState, clusterId);
-                break;
+                  try {
+                    ClusterService.State cluster = op.getBody(ClusterService.State.class);
+                    switch (cluster.clusterState) {
+                      case CREATING:
+                      case RESIZING:
+                      case READY:
+                        performGarbageCollection(currentState, clusterId);
+                        break;
 
-              case PENDING_DELETE:
-                deleteCluster(clusterId);
-                break;
+                      case PENDING_DELETE:
+                        deleteCluster(clusterId);
+                        break;
 
-              case ERROR:
-                TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
-                break;
+                      case ERROR:
+                        TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
+                        break;
 
-              default:
-                failTask(new IllegalStateException(String.format(
-                    "Unknown clusterState. ClusterId: %s. ClusterState: %s", clusterId, cluster.clusterState)));
-                break;
-            }
-          } catch (Throwable e) {
-            failTask(e);
-          }
-        });
+                      default:
+                        failTask(new IllegalStateException(String.format(
+                            "Unknown clusterState. ClusterID: %s. ClusterState: %s", clusterId, cluster.clusterState)));
+                        break;
+                    }
+                  } catch (Throwable e) {
+                    failTask(e);
+                  }
+                }
+            ));
   }
 
   private void performGarbageInspection(final State currentState, final String clusterId) {

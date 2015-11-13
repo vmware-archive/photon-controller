@@ -113,18 +113,19 @@ public class GarbageInspectionTaskService extends StatefulService {
    * @param currentState
    */
   private void getClusterState(final State currentState) {
-    HostUtils.getCloudStoreHelper(this).getEntity(
-        this,
-        ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId,
-        (Operation operation, Throwable throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
-          ClusterService.State clusterState = operation.getBody(ClusterService.State.class);
-          getVmsFromApi(currentState, clusterState);
-        }
-    );
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
+            .setCompletion(
+                (Operation operation, Throwable throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+                  ClusterService.State clusterState = operation.getBody(ClusterService.State.class);
+                  getVmsFromApi(currentState, clusterState);
+                }
+            ));
   }
 
   /**

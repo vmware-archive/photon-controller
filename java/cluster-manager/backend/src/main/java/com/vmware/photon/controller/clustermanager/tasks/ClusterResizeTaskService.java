@@ -194,11 +194,10 @@ public class ClusterResizeTaskService extends StatefulService {
   }
 
   private void getClusterState(final ClusterResizeTask currentState, Operation.CompletionHandler completionHandler) {
-    HostUtils.getCloudStoreHelper(this).getEntity(
-        this,
-        ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId,
-        completionHandler
-    );
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
+            .setCompletion(completionHandler));
   }
 
   private void updateStates(final ClusterResizeTask currentState,

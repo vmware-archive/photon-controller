@@ -187,19 +187,21 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
    */
   private void retrieveClusterConfiguration(final KubernetesClusterCreateTask currentState,
                                             String clusterConfigurationLink) {
-    HostUtils.getCloudStoreHelper(this).getEntity(
-        this,
-        clusterConfigurationLink,
-        (Operation operation, Throwable throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(clusterConfigurationLink)
+            .setCompletion(
+                (Operation operation, Throwable throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
 
-          ClusterConfigurationService.State clusterConfiguration = operation.getBody(
-              ClusterConfigurationService.State.class);
-          createClusterService(currentState, clusterConfiguration.imageId);
-        });
+                  ClusterConfigurationService.State clusterConfiguration = operation.getBody(
+                      ClusterConfigurationService.State.class);
+                  createClusterService(currentState, clusterConfiguration.imageId);
+                }
+            ));
   }
 
   /**
