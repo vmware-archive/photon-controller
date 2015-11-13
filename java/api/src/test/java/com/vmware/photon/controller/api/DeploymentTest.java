@@ -136,7 +136,7 @@ public class DeploymentTest {
               "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, " +
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443," +
               " tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, loadBalancerEnabled=true," +
-              " migrationProgress=null}";
+              " migrationProgress=null, clusterConfigurations=null}";
       HashSet<String> imageDatastores = new HashSet<String>();
       imageDatastores.add("image-datastore1");
       imageDatastores.add("image-datastore2");
