@@ -109,7 +109,7 @@ public class DeploymentImageConfigUpdateStepCmd extends StepCommand {
   }
 
   private void updateDataStore() {
-    this.config.setDatastore(this.entity.getImageDatastore());
+    this.config.setDatastore(this.entity.getImageDatastores().iterator().next());
   }
 
   private void updateHost() throws ApiFeException {

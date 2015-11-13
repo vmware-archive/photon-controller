@@ -28,7 +28,10 @@ import static uk.co.datumedge.hamcrest.json.SameJSONAs.sameJSONAs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Tests {@link DeploymentCreateSpec}.
@@ -49,22 +52,22 @@ public class DeploymentCreateSpecTest {
       .build();
 
   private DeploymentCreateSpec createDeploymentCreateSpec(
-      String imageDatastore,
+      Set<String> imageDatastores,
       String syslogEndpoint,
       String ntpEndpoint) {
 
-    return createDeploymentCreateSpec(imageDatastore, syslogEndpoint, ntpEndpoint, new AuthInfoBuilder().build());
+    return createDeploymentCreateSpec(imageDatastores, syslogEndpoint, ntpEndpoint, new AuthInfoBuilder().build());
   }
 
   private DeploymentCreateSpec createDeploymentCreateSpec(
-      String imageDatastore,
+      Set<String> imageDatastores,
       String syslogEndpoint,
       String ntpEndpoint,
       AuthInfo authInfo) {
 
     DeploymentCreateSpec spec = new DeploymentCreateSpec();
 
-    spec.setImageDatastore(imageDatastore);
+    spec.setImageDatastores(imageDatastores);
     spec.setSyslogEndpoint(syslogEndpoint);
     spec.setNtpEndpoint(ntpEndpoint);
     spec.setAuth(authInfo);
@@ -89,10 +92,10 @@ public class DeploymentCreateSpecTest {
     @DataProvider(name = "validDeployments")
     public Object[][] getValidDeployments() {
       return new Object[][]{
-          {createDeploymentCreateSpec("i", "0.0.0.1", "0.0.0.2")},
-          {createDeploymentCreateSpec("i", null, null)},
-          {createDeploymentCreateSpec("i", "0.0.0.1", "0.0.0.2", enabledAuthInfo)},
-          {createDeploymentCreateSpec("i", "0.0.0.1", "0.0.0.2", disabledAuthInfo)}
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2")},
+          {createDeploymentCreateSpec(Collections.singleton("i"), null, null)},
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", enabledAuthInfo)},
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", disabledAuthInfo)}
       };
     }
 
@@ -106,14 +109,14 @@ public class DeploymentCreateSpecTest {
     public Object[][] getInvalidDeployments() {
       return new Object[][]{
           {createDeploymentCreateSpec(null, "0.0.0.1", "0.0.0.2"),
-              "imageDatastore may not be null (was null)"},
-          {createDeploymentCreateSpec("", "0.0.0.1", "0.0.0.2"),
-              "imageDatastore size must be between 1 and 2147483647 (was )"},
-          {createDeploymentCreateSpec("i", "fake", "0.0.0.2"),
+              "imageDatastores may not be null (was null)"},
+          {createDeploymentCreateSpec(new HashSet<String>(), "0.0.0.1", "0.0.0.2"),
+              "imageDatastores size must be between 1 and 2147483647 (was [])"},
+          {createDeploymentCreateSpec(Collections.singleton("i"), "fake", "0.0.0.2"),
               "syslogEndpoint fake is invalid IP or Domain Address"},
-          {createDeploymentCreateSpec("i", "0.0.0.2", "fake"),
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.2", "fake"),
               "ntpEndpoint fake is invalid IP or Domain Address"},
-          {createDeploymentCreateSpec("i", "0.0.0.1", "0.0.0.2", null),
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", null),
               "auth may not be null (was null)"}
       };
     }
@@ -143,7 +146,8 @@ public class DeploymentCreateSpecTest {
 
     @Test
     public void testSerializationWithAuth() throws Exception {
-      DeploymentCreateSpec spec = createDeploymentCreateSpec("image-datastore", "0.0.0.1", "0.0.0.2", enabledAuthInfo);
+      DeploymentCreateSpec spec = createDeploymentCreateSpec(
+          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2", enabledAuthInfo);
 
       String json = JsonHelpers.jsonFixture(JSON_FILE_WITH_AUTH);
 
@@ -153,7 +157,8 @@ public class DeploymentCreateSpecTest {
 
     @Test
     public void testSerializationWithoutAuth() throws Exception {
-      DeploymentCreateSpec spec = createDeploymentCreateSpec("image-datastore", "0.0.0.1", "0.0.0.2", disabledAuthInfo);
+      DeploymentCreateSpec spec = createDeploymentCreateSpec(
+          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2", disabledAuthInfo);
 
       String json = JsonHelpers.jsonFixture(JSON_FILE_WITHOUT_AUTH);
 

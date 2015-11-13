@@ -12,7 +12,7 @@
 module EsxCloud
   class Deployment
 
-    attr_accessor :id, :state, :image_datastore, :auth, :syslog_endpoint, :ntp_endpoint, :use_image_datastore_for_vms, :loadbalancer_enabled, :migration
+    attr_accessor :id, :state, :image_datastores, :auth, :syslog_endpoint, :ntp_endpoint, :use_image_datastore_for_vms, :loadbalancer_enabled, :migration
 
     # @param[DeploymentCreateSpec] spec
     # @return [Deployment]
@@ -66,11 +66,11 @@ module EsxCloud
     # @param [Hash] hash
     # @return [Deployment]
     def self.create_from_hash(hash)
-      unless hash.is_a?(Hash) && hash.keys.to_set.superset?(%w(id auth imageDatastore).to_set)
+      unless hash.is_a?(Hash) && hash.keys.to_set.superset?(%w(id auth imageDatastores).to_set)
         fail UnexpectedFormat, "Invalid Deployment hash: #{hash}"
       end
 
-      new(hash["id"], hash["state"], hash["imageDatastore"], AuthInfo.create_from_hash(hash["auth"]),
+      new(hash["id"], hash["state"], hash["imageDatastores"], AuthInfo.create_from_hash(hash["auth"]),
           hash["syslogEndpoint"], hash["ntpEndpoint"], hash["useImageDatastoreForVms"], hash["loadBalancerEnabled"],
           MigrationStatus.create_from_hash(hash["migrationStatus"]))
     end
@@ -93,19 +93,19 @@ module EsxCloud
 
     # @param [String] id
     # @param [String] state
-    # @param [String] image_datastore
+    # @param [Array<String>] image_datastores
     # @param [AuthInfo] auth
     # @param [String] syslog_endpoint
     # @param [String] ntp_endpoint
     # @param [Boolean] use_image_datastore_for_vms
     # @param [Boolean] loadbalancer_enabled
     # @param [MigrationStatus] migration_status
-    def initialize(id, state, image_datastore, auth,
+    def initialize(id, state, image_datastores, auth,
       syslog_endpoint = nil, ntp_endpoint = nil, use_image_datastore_for_vms = false, loadbalancer_enabled = true,
       migration)
       @id = id
       @state = state
-      @image_datastore = image_datastore
+      @image_datastores = image_datastores
       @auth = auth
       @syslog_endpoint = syslog_endpoint
       @ntp_endpoint = ntp_endpoint
@@ -122,7 +122,7 @@ module EsxCloud
       {
         id: @id,
         state: @state,
-        imageDatastore: @image_datastore,
+        imageDatastores: @image_datastores,
         auth: @auth.to_hash,
         syslogEndpoint: @syslog_endpoint,
         ntpEndpoint: @ntp_endpoint,
@@ -135,7 +135,7 @@ module EsxCloud
     def ==(other)
       @id == other.id &&
       @state == other.state &&
-      @image_datastore == other.image_datastore &&
+      @image_datastores == other.image_datastores &&
       @auth == other.auth &&
       @syslog_endpoint == other.syslog_endpoint &&
       @ntp_endpoint == other.ntp_endpoint &&

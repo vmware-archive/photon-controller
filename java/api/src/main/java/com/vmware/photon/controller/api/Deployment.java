@@ -25,6 +25,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Deployment API representation.
@@ -52,7 +53,7 @@ public class Deployment extends Base {
   @ApiModelProperty(value = "imageDatastore")
   @NotNull
   @Size(min = 1)
-  private String imageDatastore;
+  private Set<String> imageDatastores;
 
   @JsonProperty
   @ApiModelProperty(value = "useImageDatastoreForVms")
@@ -93,12 +94,12 @@ public class Deployment extends Base {
     this.ntpEndpoint = ntpEndpoint;
   }
 
-  public String getImageDatastore() {
-    return imageDatastore;
+  public Set<String> getImageDatastores() {
+    return imageDatastores;
   }
 
-  public void setImageDatastore(String imageDatastore) {
-    this.imageDatastore = imageDatastore;
+  public void setImageDatastores(Set<String> imageDatastores) {
+    this.imageDatastores = imageDatastores;
   }
 
   public boolean isUseImageDatastoreForVms() {
@@ -156,7 +157,7 @@ public class Deployment extends Base {
 
     return Objects.equals(this.getSyslogEndpoint(), other.getSyslogEndpoint())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
-        && Objects.equals(this.getImageDatastore(), other.getImageDatastore())
+        && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms())
         && Objects.equals(this.getAuth(), other.getAuth())
         && Objects.equals(this.isLoadBalancerEnabled(), other.isLoadBalancerEnabled())
@@ -169,7 +170,7 @@ public class Deployment extends Base {
         super.hashCode(),
         this.getSyslogEndpoint(),
         this.getNtpEndpoint(),
-        this.getImageDatastore(),
+        this.getImageDatastores(),
         this.isUseImageDatastoreForVms(),
         this.getAuth(),
         this.isLoadBalancerEnabled());
@@ -178,7 +179,7 @@ public class Deployment extends Base {
   @Override
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
     return super.toStringHelper()
-        .add("imageDatastore", imageDatastore)
+        .add("imageDatastores", imageDatastores)
         .add("syslogEndpoint", syslogEndpoint)
         .add("ntpEndpoint", ntpEndpoint)
         .add("useImageDatastoreForVms", useImageDatastoreForVms)

@@ -12,19 +12,19 @@
 module EsxCloud
   class DeploymentCreateSpec
 
-    attr_accessor :image_datastore, :auth, :syslog_endpoint, :ntp_endpoint, :use_image_datastore_for_vms,
+    attr_accessor :image_datastores, :auth, :syslog_endpoint, :ntp_endpoint, :use_image_datastore_for_vms,
                   :loadbalancer_enabled
 
-    # @param [String] image_datastore
+    # @param [Array<String>] image_datastores
     # @param [AuthInfo] auth
     # @param [String] syslog_endpoint
     # @param [String] ntp_endpoint
     # @param [Boolean] use_image_datastore_for_vms
-    def initialize(image_datastore, auth,
+    def initialize(image_datastores, auth,
       syslog_endpoint = nil, ntp_endpoint = nil, use_image_datastore_for_vms = false,
       loadbalancer_enabled = true)
       fail EsxCloud::UnexpectedFormat, "auth is class #{auth.class} instead of AuthInfo" unless auth.is_a?(AuthInfo)
-      @image_datastore = image_datastore
+      @image_datastores = image_datastores
       @auth = auth
       @syslog_endpoint = syslog_endpoint
       @ntp_endpoint = ntp_endpoint
@@ -34,7 +34,7 @@ module EsxCloud
 
     def to_hash
       {
-        imageDatastore: @image_datastore,
+        imageDatastores: @image_datastores,
         auth: @auth.to_hash,
         syslogEndpoint: @syslog_endpoint,
         ntpEndpoint: @ntp_endpoint,
@@ -43,7 +43,7 @@ module EsxCloud
     end
 
     def ==(other)
-      @image_datastore == other.image_datastore &&
+        @image_datastores == other.image_datastores &&
         @auth == other.auth &&
         @syslog_endpoint == other.syslog_endpoint &&
         @ntp_endpoint == other.ntp_endpoint &&

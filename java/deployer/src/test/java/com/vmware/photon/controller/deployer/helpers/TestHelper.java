@@ -56,6 +56,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -198,7 +199,7 @@ public class TestHelper {
 
   public static DeploymentService.State getDeploymentServiceStartState(boolean authEnabled) {
     DeploymentService.State startState = new DeploymentService.State();
-    startState.imageDataStoreName = "IMAGE_DATASTORE_NAME";
+    startState.imageDataStoreNames = Collections.singleton("IMAGE_DATASTORE_NAME");
     startState.imageDataStoreUsedForVMs = true;
     startState.state = DeploymentState.READY;
     startState.ntpEndpoint = "NTP_ENDPOINT";
