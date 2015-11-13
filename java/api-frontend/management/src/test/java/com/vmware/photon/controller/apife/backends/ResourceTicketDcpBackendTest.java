@@ -20,12 +20,10 @@ import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.Data;
+import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
-import com.vmware.photon.controller.apife.entities.TenantEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidResourceTicketSubdivideException;
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.apife.exceptions.external.QuotaException;
@@ -34,12 +32,13 @@ import com.vmware.photon.controller.apife.lib.QuotaCost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
@@ -52,85 +51,97 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.testng.Assert.fail;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 
 /**
  * Tests {@link ResourceTicketDcpBackend}.
  */
-@Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
 public class ResourceTicketDcpBackendTest {
 
   private static ApiFeDcpRestClient dcpClient;
   private static BasicServiceHost host;
-  private static ResourceTicketBackend resourceTicketBackend;
+
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
 
   @Test
   private void dummy() {
   }
 
-  private static void commonSetup(TenantBackend tenantBackend, TaskBackend taskBackend)
-      throws Throwable {
-    host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-        BasicServiceHost.BIND_PORT,
-        null,
-        ResourceTicketServiceFactory.SELF_LINK,
-        10, 10);
-
-    host.startServiceSynchronously(new ResourceTicketServiceFactory(), null);
-
-    StaticServerSet serverSet = new StaticServerSet(
-        new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-    dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-    com.google.inject.Guice.createInjector(
-        new HibernateTestModule(), new BackendTestModule());
-
-    resourceTicketBackend = new ResourceTicketDcpBackend(dcpClient, tenantBackend, taskBackend);
-  }
-
-  private static void commonTearDown() throws Throwable {
-    if (host != null) {
-      BasicServiceHost.destroy(host);
-    }
-
-    dcpClient.stop();
-  }
-
   /**
    * Tests for creating tickets.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class CreateTicketTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class CreateTicketTest {
 
     @Inject
-    private TenantBackend tenantBackend;
+    private BasicServiceHost basicServiceHost;
 
     @Inject
-    private TaskBackend taskBackend;
+    private ApiFeDcpRestClient apiFeDcpRestClient;
 
     @Inject
-    private EntityFactory entityFactory;
+    private ResourceTicketBackend resourceTicketBackend;
+
+    @Inject
+    private TenantDcpBackend tenantDcpBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(tenantBackend, taskBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
     public void testCreateTicket() throws Throwable {
-      TenantEntity tenantEntity = entityFactory.createTenant("t1");
-      final String tenantId = tenantEntity.getId();
+      final String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
 
       ResourceTicketCreateSpec spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
@@ -151,8 +162,7 @@ public class ResourceTicketDcpBackendTest {
 
     @Test
     public void testCreateTicketWhenNameIsAlreadyTaken() throws Throwable {
-      TenantEntity tenantEntity = entityFactory.createTenant("t1");
-      final String tenantId = tenantEntity.getId();
+      final String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
 
       ResourceTicketCreateSpec spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
@@ -171,40 +181,47 @@ public class ResourceTicketDcpBackendTest {
   /**
    * Tests for getting tickets.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class GetTicketTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class GetTicketTest {
 
     @Inject
-    private TenantBackend tenantBackend;
+    private BasicServiceHost basicServiceHost;
 
     @Inject
-    private TaskBackend taskBackend;
+    private ApiFeDcpRestClient apiFeDcpRestClient;
 
     @Inject
-    private EntityFactory entityFactory;
+    private ResourceTicketBackend resourceTicketBackend;
+
+    @Inject
+    private TenantDcpBackend tenantDcpBackend;
 
     private ResourceTicketEntity resourceTicketEntity;
-    private TenantEntity tenantEntity;
+    private String tenantId;
     private ResourceTicketCreateSpec spec;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(tenantBackend, taskBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
-      tenantEntity = entityFactory.createTenant("t1");
+      tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
+
       spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
       spec.setLimits(ImmutableList.of(new QuotaLineItem("vm", 10, QuotaUnit.COUNT)));
 
-      resourceTicketEntity = resourceTicketBackend.create(tenantEntity.getId(), spec);
+      resourceTicketEntity = resourceTicketBackend.create(tenantId, spec);
 
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -212,7 +229,7 @@ public class ResourceTicketDcpBackendTest {
       String resourceTicketId = resourceTicketEntity.getId();
       ResourceTicketEntity foundTicket = resourceTicketBackend.findById(resourceTicketId);
       assertThat(foundTicket.getName(), is(spec.getName()));
-      assertThat(foundTicket.getTenantId(), is(tenantEntity.getId()));
+      assertThat(foundTicket.getTenantId(), is(tenantId));
       assertThat(foundTicket.getLimits().size(), is(1));
 
       String key = spec.getLimits().get(0).getKey();
@@ -226,7 +243,7 @@ public class ResourceTicketDcpBackendTest {
     public void testFindByName() throws Throwable {
       ResourceTicketService.State resourceTicket = new ResourceTicketService.State();
       resourceTicket.name = UUID.randomUUID().toString();
-      resourceTicket.tenantId = tenantEntity.getId();
+      resourceTicket.tenantId = tenantId;
       resourceTicket.parentId = UUID.randomUUID().toString();
 
       dcpClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
@@ -242,7 +259,7 @@ public class ResourceTicketDcpBackendTest {
     public void testFindByNonExistingName() throws Throwable {
       ResourceTicketService.State resourceTicket = new ResourceTicketService.State();
       resourceTicket.name = UUID.randomUUID().toString();
-      resourceTicket.tenantId = tenantEntity.getId();
+      resourceTicket.tenantId = tenantId;
       resourceTicket.parentId = UUID.randomUUID().toString();
 
       dcpClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
@@ -276,7 +293,7 @@ public class ResourceTicketDcpBackendTest {
     public void testFilterByTenantIdAndName() throws Throwable {
       ResourceTicketService.State resourceTicket = new ResourceTicketService.State();
       resourceTicket.name = UUID.randomUUID().toString();
-      resourceTicket.tenantId = tenantEntity.getId();
+      resourceTicket.tenantId = tenantId;
       resourceTicket.parentId = UUID.randomUUID().toString();
 
       dcpClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
@@ -300,40 +317,46 @@ public class ResourceTicketDcpBackendTest {
   /**
    * Tests for deleting tickets.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class DeleteTicketTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class DeleteTicketTest {
 
     @Inject
-    private TenantBackend tenantBackend;
+    private BasicServiceHost basicServiceHost;
 
     @Inject
-    private TaskBackend taskBackend;
+    private ApiFeDcpRestClient apiFeDcpRestClient;
 
     @Inject
-    private EntityFactory entityFactory;
+    private ResourceTicketBackend resourceTicketBackend;
+
+    @Inject
+    private TenantDcpBackend tenantDcpBackend;
 
     private ResourceTicketEntity resourceTicketEntity;
-    private TenantEntity tenantEntity;
+    private String tenantId;
     private ResourceTicketCreateSpec spec;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(tenantBackend, taskBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
-      tenantEntity = entityFactory.createTenant("t1");
+      tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
       spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
       spec.setLimits(ImmutableList.of(new QuotaLineItem("vm", 10, QuotaUnit.COUNT)));
 
-      resourceTicketEntity = resourceTicketBackend.create(tenantEntity.getId(), spec);
+      resourceTicketEntity = resourceTicketBackend.create(tenantId, spec);
 
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -373,34 +396,39 @@ public class ResourceTicketDcpBackendTest {
   /**
    * Tests for patching tickets.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class PatchTicketTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class PatchTicketTest {
 
     @Inject
-    private TenantBackend tenantBackend;
+    private BasicServiceHost basicServiceHost;
 
     @Inject
-    private TaskBackend taskBackend;
+    private ApiFeDcpRestClient apiFeDcpRestClient;
 
     @Inject
-    private EntityFactory entityFactory;
+    private ResourceTicketBackend resourceTicketBackend;
+
+    @Inject
+    private TenantDcpBackend tenantDcpBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup(tenantBackend, taskBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
     public void testConsumeQuotaWithLimitsSpecified() throws Throwable {
-      TenantEntity tenantEntity = entityFactory.createTenant("t1");
-      final String tenantId = tenantEntity.getId();
+      final String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
 
       ResourceTicketCreateSpec spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
@@ -479,8 +507,7 @@ public class ResourceTicketDcpBackendTest {
 
     @Test(enabled = false) //disabled till DCP fix https://enatai-jira.eng.vmware.com/browse/DCP-727 is taken
     public void testConsumeQuotaAboveLimitsErrorDetails() throws Throwable {
-      TenantEntity tenantEntity = entityFactory.createTenant("t1");
-      final String tenantId = tenantEntity.getId();
+      final String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
 
       ResourceTicketCreateSpec spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
@@ -539,8 +566,7 @@ public class ResourceTicketDcpBackendTest {
 
     @Test
     public void testConsumeQuotaWithoutLimits() throws Throwable {
-      TenantEntity tenantEntity = entityFactory.createTenant("t1");
-      final String tenantId = tenantEntity.getId();
+      final String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
 
       ResourceTicketCreateSpec spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
@@ -589,8 +615,7 @@ public class ResourceTicketDcpBackendTest {
 
     @Test
     public void testReturnQuotaWithLimits() throws Throwable {
-      TenantEntity tenantEntity = entityFactory.createTenant("t1");
-      final String tenantId = tenantEntity.getId();
+      final String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
 
       ResourceTicketCreateSpec spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
@@ -699,8 +724,7 @@ public class ResourceTicketDcpBackendTest {
 
     @Test
     public void testReturnQuotaOfChildTicket() throws Throwable {
-      TenantEntity tenantEntity = entityFactory.createTenant("t1");
-      final String tenantId = tenantEntity.getId();
+      final String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
 
       ResourceTicketCreateSpec spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
@@ -754,8 +778,7 @@ public class ResourceTicketDcpBackendTest {
     @Test
     public void testSubdivideByLimits() throws ExternalException {
 
-      TenantEntity tenantEntity = entityFactory.createTenant("t1");
-      final String tenantId = tenantEntity.getId();
+      final String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
 
       ResourceTicketCreateSpec spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
@@ -775,9 +798,6 @@ public class ResourceTicketDcpBackendTest {
       ResourceTicketEntity tenantTicket = resourceTicketBackend.findById(tenantResourceTicketId);
 
       String projectTicketId = projectTicket.getId();
-
-      sessionFactory.getCurrentSession().flush();
-      sessionFactory.getCurrentSession().clear();
 
       projectTicket = resourceTicketBackend.findById(projectTicketId);
       assertThat(projectTicket, is(notNullValue()));
@@ -895,9 +915,7 @@ public class ResourceTicketDcpBackendTest {
 
     @Test
     public void testSubdivideByPercent() throws ExternalException {
-
-      TenantEntity tenantEntity = entityFactory.createTenant("t1");
-      final String tenantId = tenantEntity.getId();
+      final String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
 
       ResourceTicketCreateSpec spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
@@ -918,9 +936,6 @@ public class ResourceTicketDcpBackendTest {
       ResourceTicketEntity tenantTicket = resourceTicketBackend.findById(tenantResourceTicketId);
 
       String projectTicketId = projectTicket.getId();
-
-      sessionFactory.getCurrentSession().flush();
-      sessionFactory.getCurrentSession().clear();
 
       projectTicket = resourceTicketBackend.findById(projectTicketId);
       assertThat(projectTicket, is(notNullValue()));
