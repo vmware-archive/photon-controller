@@ -22,6 +22,7 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.db.Transactional;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.apife.commands.steps.ImageUploadStepCmd;
 import com.vmware.photon.controller.apife.db.dao.ImageDao;
 import com.vmware.photon.controller.apife.db.dao.ImageSettingsDao;
@@ -208,6 +209,12 @@ public class ImageSqlBackend implements ImageBackend {
 
     imageDao.update(imageEntity);
   }
+
+  @Override
+  public void updateImageDatastore(String imageId, String imageDatastoreId) throws ExternalException {
+    throw new NotImplementedException();
+  }
+
 
   @Transactional
   public List<Task> getTasks(String id, Optional<String> state) throws ExternalException {

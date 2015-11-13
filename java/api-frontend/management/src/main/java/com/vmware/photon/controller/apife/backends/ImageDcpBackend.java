@@ -33,6 +33,8 @@ import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundExcep
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException.Type;
 import com.vmware.photon.controller.apife.exceptions.external.ImageUploadException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -132,7 +134,6 @@ public class ImageDcpBackend implements ImageBackend {
     imageServiceState.replicationType = replicationType;
 
     com.vmware.dcp.common.Operation result = dcpClient.postAndWait(ImageServiceFactory.SELF_LINK, imageServiceState);
-
     ImageService.State createdState = result.getBody(ImageService.State.class);
 
     String id = ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);
@@ -248,6 +249,16 @@ public class ImageDcpBackend implements ImageBackend {
     }
 
     return convertToEntity(result.getBody(ImageService.State.class));
+  }
+
+  @Override
+  public void updateImageDatastore(String imageId, String imageDatastoreId) throws ExternalException {
+    ImageReplicationService.State imageReplicationServiceState = new ImageReplicationService.State();
+    imageReplicationServiceState.imageDatastoreId = imageDatastoreId;
+    imageReplicationServiceState.imageId = imageId;
+
+    dcpClient.postAndWait(ImageReplicationServiceFactory.SELF_LINK, imageReplicationServiceState);
+    logger.info("ImageReplicationServiceState created with imageId {}, ImageDatastoreId {}", imageId, imageDatastoreId);
   }
 
   private void patchImageService(String imageId, ImageService.State imageState)

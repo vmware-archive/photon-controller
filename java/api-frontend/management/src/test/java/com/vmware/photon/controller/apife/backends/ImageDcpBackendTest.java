@@ -29,6 +29,7 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.ImageUploadException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
@@ -450,6 +451,22 @@ public class ImageDcpBackendTest {
       imageBackend.updateSize(imageEntity, newImageSize);
       imageEntity = imageBackend.findById(imageId);
       assertThat(imageEntity.getSize(), is(newImageSize));
+    }
+
+    @Test
+    public void testUpdateImageDatastore() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+      ImageEntity imageEntity = imageBackend.findById(imageId);
+
+      imageBackend.updateImageDatastore(imageEntity.getId(), "image-datastore-id");
+
+      final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put("imageId", imageEntity.getId());
+      List<ImageReplicationService.State> results = dcpClient.queryDocuments(ImageReplicationService.State.class,
+          termsBuilder.build());
+      assertThat(results.size(), is(1));
+      assertThat(results.get(0).imageDatastoreId, is("image-datastore-id"));
     }
   }
 
