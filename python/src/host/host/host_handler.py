@@ -280,8 +280,11 @@ class HostHandler(Host.Iface):
         dm = self._hypervisor.datastore_manager
         config.datastores = dm.get_datastores()
         try:
-            config.image_datastore_id = \
-                dm.normalize(agent_config.image_datastore)
+            # TODO: deprecate image_datastore_id field.
+            image_datastores = dm.image_datastores()
+            if image_datastores:
+                config.image_datastore_id = list(image_datastores)[0]
+            config.image_datastore_ids = image_datastores
         except:
             self._logger.exception("Datastore ID not found for %s in %s" %
                                    (agent_config.image_datastore,

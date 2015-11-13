@@ -87,12 +87,9 @@ class Host(HostHandler):
         config = MagicMock(AgentConfig.__class__)
         config.hypervisor = "fake"
         config.datastores = datastores
-        config.image_datastores = datastores[0]
         config.networks = networks
         config.memory_overcommit = overcommit["mem"]
         config.cpu_overcommit = overcommit["cpu"]
-        config.image_datastore = datastores[0]
-        config.image_datastore_for_vm = True
         config.image_datastores = [{"name": datastores[0],
                                     "used_for_vms": True}]
         config.multi_agent_id = None

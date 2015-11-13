@@ -67,8 +67,6 @@ class AgentConfig(object):
     CHAIRMAN = "chairman"
     MEMORY_OVERCOMMIT = "memory_overcommit"
     CPU_OVERCOMMIT = "cpu_overcommit"
-    IMAGE_DATASTORE = "image_datastore"
-    IMAGE_DATASTORE_FOR_VMS = "image_datastore_for_vms"
     WAIT_TIMEOUT = "wait_timeout"
     MANAGEMENT_ONLY = "management_only"
     HOST_ID = "host_id"
@@ -173,13 +171,6 @@ class AgentConfig(object):
             if (cpu_overcommit < 1.0):
                 raise InvalidConfig("CPU Overcommit less than 1.0")
 
-        # Check if image_datastore_info is valid
-        if provision_req.image_datastore_info and provision_req.datastores:
-            if not self._check_image_datastore(
-                    [provision_req.image_datastore_info],
-                    provision_req.datastores):
-                raise InvalidConfig("image_datastore_info is not valid")
-
         # Check if image_datastores field is valid
         if provision_req.image_datastores and provision_req.datastores:
             if not self._check_image_datastore(
@@ -215,16 +206,6 @@ class AgentConfig(object):
             self._trigger_callbacks(self.MEMORY_OVERCOMMIT, memory_overcommit)
         if self._check_and_set_attr(self.CPU_OVERCOMMIT, cpu_overcommit):
             self._trigger_callbacks(self.CPU_OVERCOMMIT, cpu_overcommit)
-
-        image_datastore_for_vms = False
-        if provision_req.image_datastore_info:
-            reboot |= self._check_and_set_attr(
-                self.IMAGE_DATASTORE, provision_req.image_datastore_info.name)
-            image_datastore_for_vms = \
-                provision_req.image_datastore_info.used_for_vms
-
-        reboot |= self._check_and_set_attr(
-            self.IMAGE_DATASTORE_FOR_VMS, image_datastore_for_vms)
 
         if provision_req.image_datastores:
             image_datastores = self._convert_image_datastores(
@@ -361,21 +342,11 @@ class AgentConfig(object):
 
     @property
     @locked
-    def image_datastore(self):
-        return getattr(self._options, self.IMAGE_DATASTORE)
-
-    @property
-    @locked
     def image_datastores(self):
         image_datastores = getattr(self._options, self.IMAGE_DATASTORES)
         if image_datastores is None:
             return []
         return image_datastores
-
-    @property
-    @locked
-    def image_datastore_for_vms(self):
-        return getattr(self._options, self.IMAGE_DATASTORE_FOR_VMS)
 
     @property
     @locked
@@ -538,14 +509,6 @@ class AgentConfig(object):
                           help="Timeout for host notification before sending" +
                                "another request to host. Thus this also " +
                                "works as session keepalive interval.")
-        parser.add_option("--image-datastore", dest=self.IMAGE_DATASTORE,
-                          type="string",
-                          help="The datastore used only for images")
-        parser.add_option("--image-datastore-for-vms",
-                          dest=self.IMAGE_DATASTORE_FOR_VMS,
-                          action="store_true", default=False,
-                          help="The image datastore can be used for placing " +
-                               "vms")
         # Note that we don't support this command-line option. It's defined
         # here so that self._options get initialized with the image_datastores
         # attribute. Eventually we should get rid of all the command-line

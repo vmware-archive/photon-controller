@@ -56,9 +56,9 @@ if options.datastores:
 if options.networks:
     request.networks = options.networks.split(',')
 if options.image_datastore:
-    request.image_datastore_info = ImageDatastore(
+    request.image_datastores = set([ImageDatastore(
         name=options.image_datastore,
-        used_for_vms=options.image_datastore_for_vm)
+        used_for_vms=options.image_datastore_for_vm)])
 if options.address:
     host, port = options.address.split(':')
     request.address = ServerAddress(host, int(port))
