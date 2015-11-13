@@ -21,6 +21,10 @@ import com.vmware.photon.controller.common.dcp.OperationLatch;
  */
 public class DocumentNotFoundException extends DcpException {
 
+  public DocumentNotFoundException(Operation operation) {
+    super(operation);
+  }
+
   public DocumentNotFoundException(Operation operation, OperationLatch.OperationResult operationResult) {
     super(operation, operationResult);
   }

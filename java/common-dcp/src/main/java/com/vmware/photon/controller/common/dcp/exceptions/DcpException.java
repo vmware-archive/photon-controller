@@ -24,6 +24,12 @@ public class DcpException extends Throwable {
   private Operation requestedOperation;
   private OperationLatch.OperationResult operationResult;
 
+  public DcpException(Operation operation) {
+    super(operation.toString());
+
+    this.requestedOperation = operation;
+  }
+
   public DcpException(Operation requestedOperation, OperationLatch.OperationResult operationResult) {
       super(operationResult.completedOperation == null ?
               requestedOperation.toString() : operationResult.completedOperation.toString(),
