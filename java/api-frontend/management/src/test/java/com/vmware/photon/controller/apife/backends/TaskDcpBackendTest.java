@@ -17,38 +17,31 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
+import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
-import com.vmware.photon.controller.apife.db.dao.ProjectDao;
-import com.vmware.photon.controller.apife.db.dao.ResourceTicketDao;
-import com.vmware.photon.controller.apife.db.dao.TenantDao;
 import com.vmware.photon.controller.apife.entities.IsoEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
-import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.apife.entities.TenantEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidQueryParamsException;
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.apife.exceptions.external.TooManyRequestsException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import org.joda.time.DateTime;
+import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
@@ -62,25 +55,59 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
 
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 
 /**
  * Tests {@link TaskDcpBackend}.
  */
-@Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-public class TaskDcpBackendTest extends BaseDaoTest {
+public class TaskDcpBackendTest {
 
   private static VmEntity vmEntity;
   private static ProjectEntity projectEntity;
-  private static TaskBackend taskBackend;
-  private static StepBackend stepBackend;
+
   private static ApiFeDcpRestClient dcpClient;
   private static BasicServiceHost host;
-  private static EntityLockBackend entityLockBackend;
+
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
 
   @Test
   private void dummy() {
@@ -89,19 +116,32 @@ public class TaskDcpBackendTest extends BaseDaoTest {
   /**
    * Tests for creating tasks.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class CreateTaskTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class CreateTaskTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private TaskBackend taskBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -253,19 +293,36 @@ public class TaskDcpBackendTest extends BaseDaoTest {
   /**
    * Tests for patching tasks.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class PatchTaskTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class PatchTaskTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private TaskBackend taskBackend;
+
+    @Inject
+    private StepBackend stepBackend;
+
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -352,8 +409,6 @@ public class TaskDcpBackendTest extends BaseDaoTest {
 
     @Test
     public void testAddResourcePropertiesToTask() throws ExternalException {
-      flushSession();
-
       TaskEntity task = taskBackend.createQueuedTask(vmEntity, Operation.CREATE_VM);
 
       String properties = UUID.randomUUID().toString();
@@ -368,38 +423,32 @@ public class TaskDcpBackendTest extends BaseDaoTest {
   /**
    * Tests for get tasks.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class GetTaskTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class GetTaskTest {
 
     @Inject
-    private TenantDao tenantDao;
+    private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ProjectDao projectDao;
+    private ApiFeDcpRestClient apiFeDcpRestClient;
 
     @Inject
-    private ResourceTicketDao resourceTicketDao;
-
-    @Inject
-    private EntityFactory entityFactory;
-
-    private VmEntity vm;
-
-    private PersistentDiskEntity disk;
-
-    private ProjectEntity project;
-
+    private TaskBackend taskBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -442,42 +491,23 @@ public class TaskDcpBackendTest extends BaseDaoTest {
 
     @Test
     public void testFilter() throws Throwable {
-
-      entityFactory.loadFlavors();
-
-      TenantEntity tenant = new TenantEntity();
-      tenant.setName("bakkensoft");
-      tenantDao.create(tenant);
-
-      ResourceTicketEntity resourceTicketEntity = new ResourceTicketEntity();
-      resourceTicketEntity.setTenantId(tenant.getId());
-      resourceTicketEntity = resourceTicketDao.create(resourceTicketEntity);
-
-      project = new ProjectEntity();
-      project.setTenantId(tenant.getId());
-      project.setName("staging");
-      project.setResourceTicketId(resourceTicketEntity.getId());
-      projectDao.create(project);
-
-      vm = entityFactory.createVm(project.getId(), "core-100", "vm-1", VmState.CREATING, null);
-
-      disk = entityFactory.createPersistentDisk(project.getId(), "core-100", "disk-1", 2);
-
       List<Task> tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(), Optional
           .<String>absent());
 
       int initialTaskCount = tasks.size();
 
-      taskBackend.createQueuedTask(vm, Operation.CREATE_VM);
+      VmEntity vmEntity = new VmEntity();
+      vmEntity.setId(UUID.randomUUID().toString());
+      taskBackend.createQueuedTask(vmEntity, Operation.CREATE_VM);
 
-      tasks = taskBackend.filter(Optional.of(vm.getId()), Optional.of(Vm.KIND), Optional.<String>absent());
+      tasks = taskBackend.filter(Optional.of(vmEntity.getId()), Optional.of(Vm.KIND), Optional.<String>absent());
       assertThat(tasks.size(), is(1));
 
-      tasks = taskBackend.filter(Optional.of(vm.getId()), Optional.of(Vm.KIND),
+      tasks = taskBackend.filter(Optional.of(vmEntity.getId()), Optional.of(Vm.KIND),
           Optional.of(TaskEntity.State.QUEUED.toString()));
       assertThat(tasks.size(), is(1));
 
-      tasks = taskBackend.filter(Optional.of(vm.getId()), Optional.of(Vm.KIND),
+      tasks = taskBackend.filter(Optional.of(vmEntity.getId()), Optional.of(Vm.KIND),
           Optional.of(TaskEntity.State.COMPLETED.toString()));
       assertThat(tasks.size(), is(0));
 
@@ -485,7 +515,10 @@ public class TaskDcpBackendTest extends BaseDaoTest {
           Optional.of(TaskEntity.State.QUEUED.toString()));
       assertThat(tasks.size(), is(0));
 
-      taskBackend.createQueuedTask(disk, Operation.CREATE_DISK);
+      PersistentDiskEntity persistentDiskEntity = new PersistentDiskEntity();
+      persistentDiskEntity.setId(UUID.randomUUID().toString());
+
+      taskBackend.createQueuedTask(persistentDiskEntity, Operation.CREATE_DISK);
 
       // test with state only
       tasks = taskBackend.filter(
@@ -494,21 +527,23 @@ public class TaskDcpBackendTest extends BaseDaoTest {
 
       // test different capitalization of KIND
       tasks = taskBackend.filter(
-          Optional.of(disk.getId()),
+          Optional.of(persistentDiskEntity.getId()),
           Optional.of(PersistentDisk.KIND.toUpperCase()),
           Optional.of(TaskEntity.State.QUEUED.toString()));
       assertThat(tasks.size(), is(1));
 
       // test different capitalization for state
       tasks = taskBackend.filter(
-          Optional.of(disk.getId()),
+          Optional.of(persistentDiskEntity.getId()),
           Optional.of(PersistentDisk.KIND),
           Optional.of(TaskEntity.State.QUEUED.toString().toLowerCase()));
       assertThat(tasks.size(), is(1));
 
       // test with missing state and different capitalization of kind
       tasks = taskBackend.filter(
-          Optional.of(disk.getId()), Optional.of(PersistentDisk.KIND.toUpperCase()), Optional.<String>absent());
+          Optional.of(persistentDiskEntity.getId()),
+          Optional.of(PersistentDisk.KIND.toUpperCase()),
+          Optional.<String>absent());
       assertThat(tasks.size(), is(1));
 
       // test with all optional params missing
@@ -530,52 +565,37 @@ public class TaskDcpBackendTest extends BaseDaoTest {
 
     @Test
     public void testFilterInProject() throws Throwable {
-      entityFactory.loadFlavors();
-
-      TenantEntity tenant = new TenantEntity();
-      tenant.setName("bakkensoft");
-      tenantDao.create(tenant);
-
-      ResourceTicketEntity resourceTicketEntity = new ResourceTicketEntity();
-      resourceTicketEntity.setTenantId(tenant.getId());
-      resourceTicketEntity = resourceTicketDao.create(resourceTicketEntity);
-
-      project = new ProjectEntity();
-      project.setTenantId(tenant.getId());
-      project.setName("staging");
-      project.setResourceTicketId(resourceTicketEntity.getId());
-      projectDao.create(project);
-
-      vm = entityFactory.createVm(project.getId(), "core-100", "vm-1", VmState.CREATING, null);
-
       List<Task> tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(), Optional
           .<String>absent());
 
       int initialTaskCount = tasks.size();
 
+      String projectId = UUID.randomUUID().toString();
+
       int createdTaskCount = 3;
       for (int i = 0; i < createdTaskCount; i++) {
-        TaskEntity task = new TaskEntity();
-        task.setProjectId(project.getId());
-        taskBackend.createQueuedTask(vm, Operation.CREATE_VM);
+        VmEntity vmEntity = new VmEntity();
+        vmEntity.setId(UUID.randomUUID().toString());
+        vmEntity.setProjectId(projectId);
+        taskBackend.createQueuedTask(vmEntity, Operation.CREATE_VM);
       }
 
-      tasks = taskBackend.filterInProject(project.getId(),
+      tasks = taskBackend.filterInProject(projectId,
           Optional.<String>absent(), Optional.<String>absent());
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
 
-      tasks = taskBackend.filterInProject(project.getId(),
+      tasks = taskBackend.filterInProject(projectId,
           Optional.of("QUEUED"), Optional.<String>absent());
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
 
-      tasks = taskBackend.filterInProject(project.getId(),
+      tasks = taskBackend.filterInProject(projectId,
           Optional.<String>absent(), Optional.of("vm"));
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
 
-      tasks = taskBackend.filterInProject(project.getId(),
+      tasks = taskBackend.filterInProject(projectId,
           Optional.of("QUEUED"), Optional.of("vm"));
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
@@ -585,19 +605,32 @@ public class TaskDcpBackendTest extends BaseDaoTest {
   /**
    * Tests for deleting tasks.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class DeleteTaskTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class DeleteTaskTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private TaskBackend taskBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -613,19 +646,35 @@ public class TaskDcpBackendTest extends BaseDaoTest {
   /**
    * Tests for creating steps.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class CreateStepTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class CreateStepTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private TaskBackend taskBackend;
+
+    @Inject
+    private StepBackend stepBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -700,19 +749,35 @@ public class TaskDcpBackendTest extends BaseDaoTest {
   /**
    * Tests for get steps.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class GetStepTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class GetStepTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private TaskBackend taskBackend;
+
+    @Inject
+    private StepBackend stepBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -775,19 +840,35 @@ public class TaskDcpBackendTest extends BaseDaoTest {
   /**
    * Tests for updating steps.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class PatchStepTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class PatchStepTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private TaskBackend taskBackend;
+
+    @Inject
+    private StepBackend stepBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-      commonSetup();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
-      commonTearDown();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -919,26 +1000,7 @@ public class TaskDcpBackendTest extends BaseDaoTest {
     }
   }
 
-  private static void commonSetup() throws Throwable {
-    host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-        BasicServiceHost.BIND_PORT,
-        null,
-        TaskServiceFactory.SELF_LINK,
-        10, 10);
-
-    host.startServiceSynchronously(new TaskServiceFactory(), null);
-
-    StaticServerSet serverSet = new StaticServerSet(
-        new InetSocketAddress(host.getPreferredAddress(), (host.getPort())));
-    dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-    com.google.inject.Guice.createInjector(
-        new HibernateTestModule(), new BackendTestModule());
-
-    entityLockBackend = new EntityLockDcpBackend(dcpClient);
-    taskBackend = new TaskDcpBackend(dcpClient, entityLockBackend);
-    stepBackend = new TaskDcpBackend(dcpClient, entityLockBackend);
-
+  private static void commonDataSetup() throws Throwable {
     vmEntity = new VmEntity();
     vmEntity.setId(UUID.randomUUID().toString());
 
@@ -946,18 +1008,5 @@ public class TaskDcpBackendTest extends BaseDaoTest {
     projectEntity.setId(UUID.randomUUID().toString());
 
     vmEntity.setProjectId(projectEntity.getId());
-  }
-
-  private static void commonTearDown() throws Throwable {
-    if (host != null) {
-      BasicServiceHost.destroy(host);
-    }
-
-    dcpClient.stop();
-
-    taskBackend = null;
-    stepBackend = null;
-    vmEntity = null;
-    projectEntity = null;
   }
 }
