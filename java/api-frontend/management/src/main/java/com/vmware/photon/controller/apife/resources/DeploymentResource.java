@@ -20,7 +20,6 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterTypeNotConfiguredException;
-import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
@@ -66,7 +65,7 @@ public class DeploymentResource {
   @ApiOperation(value = "Find Deployment by id", response = Deployment.class)
   public Response get(@Context Request request,
                       @PathParam("id") String id)
-      throws DeploymentNotFoundException {
+      throws ExternalException {
     return generateCustomResponse(
         Response.Status.OK,
         client.get(id),

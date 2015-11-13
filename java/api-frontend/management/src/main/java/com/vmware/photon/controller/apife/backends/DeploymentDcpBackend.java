@@ -243,6 +243,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     deployment.setAuth(authInfo);
     deployment.setLoadBalancerEnabled(deploymentEntity.getLoadBalancerEnabled());
     deployment.setMigrationStatus(generateMigrationStatus(deploymentEntity));
+
     return deployment;
   }
 
@@ -296,13 +297,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
   @Override
   public ClusterConfiguration configureCluster(ClusterConfigurationSpec spec) throws ExternalException {
-    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
-    termsBuilder.put("clusterType", spec.getType().toString());
-
-    List<ClusterConfigurationService.State> existingState =
-        dcpClient.queryDocuments(ClusterConfigurationService.State.class, termsBuilder.build());
-
-    if (!existingState.isEmpty()) {
+    if (findClusterConfigurationByType(spec.getType()) != null) {
       throw new ClusterTypeAlreadyConfiguredException(spec.getType());
     }
 
@@ -326,9 +321,26 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
   @Override
   public TaskEntity deleteClusterConfiguration(ClusterType clusterType) throws ExternalException {
-    findClusterConfigurationByType(clusterType);
+    if (findClusterConfigurationByType(clusterType) == null) {
+      throw new ClusterTypeNotConfiguredException(clusterType);
+    }
+
     dcpClient.delete(getClusterConfigurationLink(clusterType), new ClusterConfigurationService.State());
     return taskBackend.createCompletedTask(null, Operation.DELETE_CLUSTER_CONFIGURATION);
+  }
+
+  @Override
+  public List<ClusterConfiguration> getClusterConfigurations() throws ExternalException {
+    List<ClusterConfiguration> clusterConfigurations = new ArrayList<>();
+    for (ClusterType clusterType : ClusterType.values()) {
+      ClusterConfiguration configuration = findClusterConfigurationByType(clusterType);
+
+      if (configuration != null) {
+        clusterConfigurations.add(configuration);
+      }
+    }
+
+    return clusterConfigurations;
   }
 
   @Override
@@ -514,7 +526,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
       return configuration;
     } catch (DocumentNotFoundException ex) {
-      throw new ClusterTypeNotConfiguredException(clusterType);
+      return null;
     }
   }
 
