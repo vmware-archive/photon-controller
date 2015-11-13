@@ -15,25 +15,20 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.TombstoneEntity;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
+import com.google.inject.Inject;
+import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-
-import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
 
 
 /**
@@ -41,55 +36,87 @@ import java.util.concurrent.Executors;
  */
 public class TombstoneDcpBackendTest {
 
-  private TombstoneDcpBackend backend;
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
 
-  private BasicServiceHost host;
-  private ApiFeDcpRestClient dcpClient;
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
 
   @Test(enabled = false)
   private void dummy() {
   }
 
-  protected void setUpCommon() throws Throwable {
-    host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS, BasicServiceHost.BIND_PORT,
-        null, TombstoneServiceFactory.SELF_LINK, 10, 10);
-    host.startServiceSynchronously(new TombstoneServiceFactory(), null);
-
-    StaticServerSet serverSet = new StaticServerSet(
-        new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-    dcpClient = spy(new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1)));
-
-    backend = new TombstoneDcpBackend(dcpClient);
-  }
-
-  protected void tearDownCommon() throws Throwable {
-    if (host != null) {
-      BasicServiceHost.destroy(host);
-    }
-
-    dcpClient.stop();
-  }
-
   /**
    * Tests for the create method.
    */
-  public class CreateTest {
+  @Guice(modules = {DcpBackendTestModule.class})
+  public static class CreateTest {
     String entityId = "entity-id";
     String entityKind = "entity-kind";
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private TombstoneBackend tombstoneBackend;
+
     @BeforeMethod
     public void setUp() throws Throwable {
-      setUpCommon();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      tearDownCommon();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
     public void testSuccess() {
-      TombstoneEntity entity = backend.create(entityKind, entityId);
+      TombstoneEntity entity = tombstoneBackend.create(entityKind, entityId);
       assertThat(entity.getId(), notNullValue());
       assertThat(entity.getEntityId(), is(entityId));
       assertThat(entity.getEntityKind(), is(entityKind));
@@ -99,23 +126,38 @@ public class TombstoneDcpBackendTest {
     @Test(expectedExceptions = RuntimeException.class,
         expectedExceptionsMessageRegExp = ".*entityId cannot be null.*")
     public void testError() {
-      backend.create(entityKind, null);
+      tombstoneBackend.create(entityKind, null);
     }
   }
 
   /**
    * Tests for the delete method.
    */
-  public class DeleteTest {
+  @Guice(modules = {DcpBackendTestModule.class})
+  public static class DeleteTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private TombstoneBackend tombstoneBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      setUpCommon();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      tearDownCommon();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -123,42 +165,56 @@ public class TombstoneDcpBackendTest {
       String id = "entity-id";
       String kind = "entity-kind";
 
-      TombstoneEntity entity = backend.create(kind, id);
+      TombstoneEntity entity = tombstoneBackend.create(kind, id);
       assertThat(entity, notNullValue());
-      assertThat(entity, is(backend.getByEntityId(id)));
+      assertThat(entity, is(tombstoneBackend.getByEntityId(id)));
 
-      backend.delete(entity);
-      assertThat(backend.getByEntityId(id), nullValue());
+      tombstoneBackend.delete(entity);
+      assertThat(tombstoneBackend.getByEntityId(id), nullValue());
     }
 
     @Test
-    public void testMissingDocument() {
+    public void testMissingDocumentNoOp() {
       TombstoneEntity entity = new TombstoneEntity();
       entity.setId("missing-id");
 
-      backend.delete(entity);
-      verify(dcpClient).deleteAndWait(eq(TombstoneServiceFactory.SELF_LINK + "/" + entity.getId()), any());
+      tombstoneBackend.delete(entity);
     }
   }
 
   /**
    * Tests for the getByEntityId method.
    */
-  public class GetByEntityIdTest {
+  @Guice(modules = {DcpBackendTestModule.class})
+  public static class GetByEntityIdTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private TombstoneBackend tombstoneBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      setUpCommon();
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      tearDownCommon();
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
     public void testNoDocuments() {
-      assertThat(backend.getByEntityId("missing-id"), nullValue());
+      assertThat(tombstoneBackend.getByEntityId("missing-id"), nullValue());
     }
 
     @Test
@@ -167,7 +223,7 @@ public class TombstoneDcpBackendTest {
       String kind = "entity-kind";
       buildTombstones(1, id, kind);
 
-      TombstoneEntity entity = backend.getByEntityId(id);
+      TombstoneEntity entity = tombstoneBackend.getByEntityId(id);
       assertThat(entity, notNullValue());
       assertThat(entity.getEntityId(), is(id));
       assertThat(entity.getEntityKind(), is(kind));
@@ -181,12 +237,12 @@ public class TombstoneDcpBackendTest {
       String kind = "entity-kind";
       buildTombstones(3, id, kind);
 
-      backend.getByEntityId(id);
+      tombstoneBackend.getByEntityId(id);
     }
 
     private void buildTombstones(int count, String id, String kind) {
       for (int i = 0; i < count; i++) {
-        backend.create(kind, id);
+        tombstoneBackend.create(kind, id);
       }
     }
   }
