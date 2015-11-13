@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.common.dcp;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationJoin;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.UriUtils;
@@ -27,7 +28,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Helper class to interact with a random cloud-store DCP host.
@@ -77,25 +80,23 @@ public class CloudStoreHelper {
     service.sendRequest(getOperation);
   }
 
-  public void getEntities(Service service, Collection<String> documentLinks,
-                          Operation.CompletionHandler completionHandler) {
+  public void getEntities(Service service,
+                          Collection<String> documentLinks,
+                          OperationJoin.JoinedCompletionHandler completionHandler) {
     URI uri = getCloudStoreURI(null);
-    Operation joinedOperation = null;
+
+    List<Operation> opList = new ArrayList<>(documentLinks.size());
     for (String documentLink : documentLinks) {
       Operation getOperation = Operation
           .createGet(UriUtils.buildUri(uri, documentLink))
           .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
           .setReferer(this.localHostAddress);
-
-      if (null == joinedOperation) {
-        joinedOperation = getOperation;
-      } else {
-        joinedOperation.joinWith(getOperation);
-      }
+      opList.add(getOperation);
     }
 
-    joinedOperation.setCompletion(completionHandler);
-    service.sendRequest(joinedOperation);
+    OperationJoin operationJoin = OperationJoin.create(opList);
+    operationJoin.setCompletion(completionHandler);
+    operationJoin.sendWith(service);
   }
 
   public void queryEntities(Service service, QueryTask.QuerySpecification querySpecification,
