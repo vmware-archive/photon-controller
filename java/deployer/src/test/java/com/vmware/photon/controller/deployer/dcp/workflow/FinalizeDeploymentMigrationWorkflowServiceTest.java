@@ -36,6 +36,7 @@ import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -45,12 +46,16 @@ import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
 
@@ -58,6 +63,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.apache.commons.io.FileUtils;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.annotations.AfterClass;
@@ -82,14 +88,18 @@ import static org.testng.Assert.fail;
 
 import javax.annotation.Nullable;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 /**
@@ -442,13 +452,13 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS,
               TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
-              TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
+              TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
+          {TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
               TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM},
           {TaskState.TaskStage.STARTED,
@@ -512,6 +522,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       testHost.sendRequestAndWait(patchOperation);
     }
 
+
     @DataProvider(name = "InvalidStageUpdates")
     public Object[][] getInvalidStageUpdates() {
       return new Object[][]{
@@ -531,29 +542,28 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM},
 
           {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
               TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS},
 
           {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
-
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
               TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
 
+          {TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
+              TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
 
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
@@ -661,6 +671,10 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
   public class EndToEndTest {
 
     private static final String configFilePath = "/config.yml";
+    private final File storageDirectory = new File("/tmp/deployAgent");
+    private final File scriptDirectory = new File("/tmp/deployAgent/scripts");
+    private final File scriptLogDirectory = new File("/tmp/deployAgent/logs");
+    private final File vibDirectory = new File("/tmp/deployAgent/vibs");
 
     private TestEnvironment sourceEnvironment;
     private TestEnvironment destinationEnvironment;
@@ -669,12 +683,22 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     private DeployerConfig deployerConfig;
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
+    private HttpFileServiceClientFactory httpFileServiceClientFactory;
+    private HostClientFactory hostClientFactory;
     private ApiClientFactory apiClientFactory;
     private FinalizeDeploymentMigrationWorkflowService.State startState;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
+      FileUtils.deleteDirectory(storageDirectory);
+      vibDirectory.mkdirs();
+      scriptDirectory.mkdirs();
+      scriptLogDirectory.mkdirs();
+      TestHelper.createSourceFile("esxcloud-" + UUID.randomUUID().toString() + ".vib", vibDirectory);
+      Files.createFile(Paths.get(scriptDirectory.getAbsolutePath(), "user-data.template"));
+      Files.createFile(Paths.get(scriptDirectory.getAbsolutePath(), "meta-data.template"));
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
+
       deployerConfig = spy(ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()));
       deployerContext = spy(deployerConfig.getDeployerContext());
@@ -687,6 +711,8 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
+      httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
+      hostClientFactory = mock(HostClientFactory.class);
     }
 
     @AfterMethod
@@ -714,6 +740,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     @AfterClass
     public void tearDownClass() throws Throwable {
       listeningExecutorService.shutdown();
+      FileUtils.deleteDirectory(storageDirectory);
     }
 
     private void createTestEnvironment() throws Throwable {
@@ -731,6 +758,8 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .apiClientFactory(apiClientFactory)
           .cloudServerSet(sourceCloudStore.getServerSet())
           .zookeeperServersetBuilderFactory(sourceZKFactory)
+          .httpFileServiceClientFactory(httpFileServiceClientFactory)
+          .hostClientFactory(hostClientFactory)
           .hostCount(1)
           .build();
 
@@ -738,8 +767,11 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .hostCount(1)
           .deployerContext(deployerContext)
           .apiClientFactory(apiClientFactory)
+          .listeningExecutorService(listeningExecutorService)
           .cloudServerSet(destinationCloudStore.getServerSet())
           .zookeeperServersetBuilderFactory(destinationZKFactory)
+          .httpFileServiceClientFactory(httpFileServiceClientFactory)
+          .hostClientFactory(hostClientFactory)
           .build();
 
       ZookeeperClient sourceZKBuilder = mock(ZookeeperClient.class);
@@ -880,6 +912,10 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     public void testSuccess() throws Throwable {
       createTestEnvironment();
       mockApiClient(true);
+      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
+      MockHelper.mockHostClient(hostClientFactory, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), DeployAgentTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
 
       // Create a host on source
       TestHelper.createHostService(sourceCloudStore, Collections.singleton(UsageTag.CLOUD.name()));

@@ -14,12 +14,16 @@
 package com.vmware.photon.controller.deployer.dcp.util;
 
 import com.vmware.dcp.common.Service;
+import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmNetworks;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -174,5 +178,38 @@ public class MiscUtils {
         callback.onFailure(throwable);
       }
     });
+  }
+
+  /**
+   * Returns a query specification for all hosts with given tag or for a specific host.
+   * @param hostServiceLink
+   * @return
+   */
+  public static QueryTask.QuerySpecification generateHostQuerySpecification(String hostServiceLink, String usageTags) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(HostService.State.class));
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+
+    if (hostServiceLink != null) {
+      QueryTask.Query nameClause = new QueryTask.Query()
+          .setTermPropertyName(HostService.State.FIELD_NAME_SELF_LINK)
+          .setTermMatchValue(hostServiceLink);
+
+      querySpecification.query.addBooleanClause(nameClause);
+    }
+
+    if (usageTags != null) {
+      QueryTask.Query usageTagClause = new QueryTask.Query()
+          .setTermPropertyName(QueryTask.QuerySpecification.buildCollectionItemName(
+              HostService.State.FIELD_NAME_USAGE_TAGS))
+          .setTermMatchValue(usageTags);
+
+      querySpecification.query.addBooleanClause(usageTagClause);
+    }
+
+    return querySpecification;
   }
 }
