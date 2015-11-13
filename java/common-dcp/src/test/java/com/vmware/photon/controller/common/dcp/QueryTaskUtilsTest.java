@@ -115,7 +115,7 @@ public class QueryTaskUtilsTest {
     @Test
     public void testNullAdditionalClauses() {
       try {
-        QueryTaskUtils.buildChildServiceQuerySpec("parentLink", Class.class, null);
+        QueryTaskUtils.buildChildServiceQuerySpec("parentLink", Class.class, (QueryTask.Query[]) null);
         fail("did not throw exception when 'additionalClauses' was 'null'");
       } catch (IllegalArgumentException ex) {
         assertThat(ex.getMessage(), is("additionalClauses cannot be null"));
@@ -319,7 +319,7 @@ public class QueryTaskUtilsTest {
     public void testEmptyTaskStageList() {
       try {
         QueryTaskUtils.buildTaskStatusQuerySpec(
-            Class.class, new TaskState.TaskStage[0]);
+            Class.class, (TaskState.TaskStage[]) null);
         fail("did not throw exception when stages param was not provided");
       } catch (IllegalArgumentException ex) {
         assertThat(ex.getMessage(), startsWith("stages.length must be >= 1"));
@@ -365,7 +365,7 @@ public class QueryTaskUtilsTest {
   public class BuildQuerySpecTest {
     @Test
     public void testWith2Clauses() {
-      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder();
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("key1", UUID.randomUUID().toString());
       termsBuilder.put("key2", UUID.randomUUID().toString());
 
@@ -382,7 +382,7 @@ public class QueryTaskUtilsTest {
 
     @Test
     public void testWith1Clause() {
-      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder();
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("key1", UUID.randomUUID().toString());
 
       QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(Object.class, termsBuilder.build());
@@ -396,7 +396,7 @@ public class QueryTaskUtilsTest {
 
     @Test
     public void testWith0Clauses() {
-      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder();
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
 
       QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(Object.class, termsBuilder.build());
 
@@ -414,9 +414,9 @@ public class QueryTaskUtilsTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testWithNullDocumentKind() {
-      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder();
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("key1", UUID.randomUUID().toString());
-      QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(null, termsBuilder.build());
+      QueryTaskUtils.buildQuerySpec(null, termsBuilder.build());
     }
   }
 }
