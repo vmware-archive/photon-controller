@@ -24,6 +24,7 @@ import com.wordnik.swagger.annotations.ApiModelProperty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -76,6 +77,10 @@ public class Deployment extends Base {
   @JsonProperty
   @ApiModelProperty(value = "Status of migration.")
   private MigrationStatus migrationStatus;
+
+  @JsonProperty
+  @ApiModelProperty(value = "List of cluster configurations associated with the deployment")
+  private List<ClusterConfiguration> clusterConfigurations;
 
   public String getSyslogEndpoint() {
     return syslogEndpoint;
@@ -141,6 +146,14 @@ public class Deployment extends Base {
     this.migrationStatus = migrationStatus;
   }
 
+  public List<ClusterConfiguration> getClusterConfigurations() {
+    return this.clusterConfigurations;
+  }
+
+  public void setClusterConfigurations(List<ClusterConfiguration> clusterConfigurations) {
+    this.clusterConfigurations = clusterConfigurations;
+  }
+
   @Override
   public String getKind() {
     return kind;
@@ -160,7 +173,8 @@ public class Deployment extends Base {
         && Objects.equals(this.isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms())
         && Objects.equals(this.getAuth(), other.getAuth())
         && Objects.equals(this.isLoadBalancerEnabled(), other.isLoadBalancerEnabled())
-        && Objects.equals(this.getMigrationStatus(), other.getMigrationStatus());
+        && Objects.equals(this.getMigrationStatus(), other.getMigrationStatus())
+        && Objects.equals(this.getClusterConfigurations(), other.getClusterConfigurations());
   }
 
   @Override
@@ -172,7 +186,8 @@ public class Deployment extends Base {
         this.getImageDatastore(),
         this.isUseImageDatastoreForVms(),
         this.getAuth(),
-        this.isLoadBalancerEnabled());
+        this.isLoadBalancerEnabled(),
+        this.getClusterConfigurations());
   }
 
   @Override
@@ -184,7 +199,8 @@ public class Deployment extends Base {
         .add("useImageDatastoreForVms", useImageDatastoreForVms)
         .add("auth", auth.toString())
         .add("loadBalancerEnabled", loadBalancerEnabled)
-        .add("migrationProgress", migrationStatus);
+        .add("migrationProgress", migrationStatus)
+        .add("clusterConfigurations", getClusterConfigurations());
   }
 
 }
