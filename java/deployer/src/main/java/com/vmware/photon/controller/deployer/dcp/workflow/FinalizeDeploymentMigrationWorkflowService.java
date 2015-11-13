@@ -83,8 +83,8 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     public enum SubStage {
       PAUSE_SOURCE_SYSTEM,
       STOP_MIGRATE_TASKS,
-      REINSTALL_AGENTS,
       MIGRATE_FINAL,
+      REINSTALL_AGENTS,
       RESUME_DESTINATION_SYSTEM,
     }
   }
@@ -206,11 +206,11 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
       case STOP_MIGRATE_TASKS:
         stopMigrateTasks(currentState);
         break;
-      case REINSTALL_AGENTS:
-        reinstallAgents(currentState);
-        break;
       case MIGRATE_FINAL:
         migrateFinal(currentState);
+        break;
+      case REINSTALL_AGENTS:
+        reinstallAgents(currentState);
         break;
       case RESUME_DESTINATION_SYSTEM:
         resumeDestinationSystem(currentState);
@@ -325,7 +325,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
   }
 
   private void stopMigrateTasks(State currentState) {
-    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.REINSTALL_AGENTS, null);
+    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.MIGRATE_FINAL, null);
     TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
   }
 
@@ -337,7 +337,8 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
           public void onSuccess(@Nullable BulkProvisionHostsWorkflowService.State result) {
             switch (result.taskState.stage) {
               case FINISHED:
-                State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.MIGRATE_FINAL, null);
+                State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RESUME_DESTINATION_SYSTEM
+                    , null);
                 TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
                 break;
               case FAILED:
@@ -376,7 +377,8 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         startState.taskState.subStage = BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB;
         startState.deploymentServiceLink = deploymentState.documentSelfLink;
         startState.chairmanServerList = deploymentState.chairmanServerList;
-        startState.usageTag = UsageTag.CLOUD.name();
+        startState.usageTag =  UsageTag.CLOUD.name();
+        startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, null);
         startState.taskPollDelay = currentState.taskPollDelay;
 
         TaskUtils.startTaskAsync(
@@ -460,7 +462,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
           }
           State patchState = buildPatch(
               TaskState.TaskStage.STARTED,
-              TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
+              TaskState.SubStage.REINSTALL_AGENTS,
               null);
           TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
         });
