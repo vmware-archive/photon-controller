@@ -54,7 +54,7 @@ public class TombstoneCleanerTriggerBuilderTest {
     private void setUp() {
       builder = new TombstoneCleanerTriggerBuilder();
       taskExpirationAge = 1 * 60 * 60 * 1000 * 5;
-      config = new TombstoneCleanerTriggerBuilder.Config(5 * 60 * 60 * 1000L, taskExpirationAge);
+      config = new TombstoneCleanerTriggerBuilder.Config(5 * 60 * 60 * 1000L, taskExpirationAge, 60 * 1000);
     }
 
     /**
@@ -65,14 +65,14 @@ public class TombstoneCleanerTriggerBuilderTest {
     @Test
     public void testSuccess() throws Throwable {
       TaskTriggerService.State state = builder.build(config);
-      assertThat(state.taskExpirationAge, is(taskExpirationAge));
+      assertThat(state.taskExpirationAgeMillis, is(taskExpirationAge));
 
       assertThat(state.triggerStateClassName, is(TombstoneCleanerService.State.class.getName()));
       assertThat(state.factoryServiceLink, Matchers.is(TombstoneCleanerFactoryService.SELF_LINK));
 
       Type stateType = Class.forName(state.triggerStateClassName);
       TombstoneCleanerService.State triggerState = Utils.fromJson(state.serializedTriggerState, stateType);
-      assertThat(triggerState.tombstoneExpirationAge, is(config.getTombstoneExpirationAge()));
+      assertThat(triggerState.tombstoneExpirationAgeMillis, is(config.getTombstoneExpirationAgeMillis()));
     }
 
     /**
@@ -86,8 +86,8 @@ public class TombstoneCleanerTriggerBuilderTest {
 
       Type stateType = Class.forName(state.triggerStateClassName);
       TombstoneCleanerService.State triggerState = Utils.fromJson(state.serializedTriggerState, stateType);
-      assertThat(triggerState.tombstoneExpirationAge,
-          is(TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE));
+      assertThat(triggerState.tombstoneExpirationAgeMillis,
+          is(TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE_MILLIS));
     }
 
     /**
@@ -104,8 +104,8 @@ public class TombstoneCleanerTriggerBuilderTest {
 
       Type stateType = Class.forName(state.triggerStateClassName);
       TombstoneCleanerService.State triggerState = Utils.fromJson(state.serializedTriggerState, stateType);
-      assertThat(triggerState.tombstoneExpirationAge,
-          is(TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE));
+      assertThat(triggerState.tombstoneExpirationAgeMillis,
+          is(TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE_MILLIS));
     }
   }
 }

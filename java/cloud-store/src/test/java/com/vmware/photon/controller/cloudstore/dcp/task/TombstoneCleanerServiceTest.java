@@ -59,7 +59,7 @@ public class TombstoneCleanerServiceTest {
   private TombstoneCleanerService.State buildValidStartupState() {
     TombstoneCleanerService.State state = new TombstoneCleanerService.State();
     state.isSelfProgressionDisabled = true;
-    state.tombstoneExpirationAge = 1 * 60 * 60 * 1000L;
+    state.tombstoneExpirationAgeMillis = 1 * 60 * 60 * 1000L;
     return state;
   }
 
@@ -127,7 +127,7 @@ public class TombstoneCleanerServiceTest {
 
       TombstoneCleanerService.State savedState = host.getServiceState(TombstoneCleanerService.State.class);
       assertThat(savedState.documentSelfLink, is(BasicServiceHost.SERVICE_URI));
-      assertThat(savedState.tombstoneExpirationAge, is(startState.tombstoneExpirationAge));
+      assertThat(savedState.tombstoneExpirationAgeMillis, is(startState.tombstoneExpirationAgeMillis));
 
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
           is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
@@ -155,8 +155,8 @@ public class TombstoneCleanerServiceTest {
     @DataProvider(name = "PositiveFields")
     public Object[][] getPositiveFieldsParams() {
       return new Object[][]{
-          {"tombstoneExpirationAge", 0L},
-          {"tombstoneExpirationAge", -1L}
+          {"tombstoneExpirationAgeMillis", 0L},
+          {"tombstoneExpirationAgeMillis", -1L}
       };
     }
 
@@ -313,7 +313,7 @@ public class TombstoneCleanerServiceTest {
     @DataProvider(name = "ImmutableFields")
     public Object[][] getImmutableFieldsParams() {
       return new Object[][]{
-          {"tombstoneExpirationAge", 10L}
+          {"tombstoneExpirationAgeMillis", 10L}
       };
     }
   }
@@ -373,7 +373,7 @@ public class TombstoneCleanerServiceTest {
           (TombstoneCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
 
       // check final state
-      assertThat(response.tombstoneExpirationAge, is(request.tombstoneExpirationAge));
+      assertThat(response.tombstoneExpirationAgeMillis, is(request.tombstoneExpirationAgeMillis));
       assertThat(response.staleTombstones, is(staleTombstones));
       assertThat(response.staleTasks, is(tasksPerTombstone * staleTombstones));
       assertThat(response.deletedTombstones, is(staleTombstones));
@@ -419,7 +419,7 @@ public class TombstoneCleanerServiceTest {
         tombstone.entityKind = "entity-kind";
         tombstone.tombstoneTime = System.currentTimeMillis();
         if (i < staleTombstones) {
-          tombstone.tombstoneTime -= (request.tombstoneExpirationAge + 10000);
+          tombstone.tombstoneTime -= (request.tombstoneExpirationAgeMillis + 10000);
         }
         env.sendPostAndWait(TombstoneServiceFactory.SELF_LINK, tombstone);
 
