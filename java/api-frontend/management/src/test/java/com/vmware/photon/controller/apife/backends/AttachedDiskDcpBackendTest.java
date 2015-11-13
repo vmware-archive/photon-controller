@@ -25,19 +25,18 @@ import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.ResourceTicketReservation;
 import com.vmware.photon.controller.api.TenantCreateSpec;
+import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
-import com.vmware.photon.controller.cloudstore.dcp.entity.AttachedDiskServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
@@ -48,16 +47,56 @@ import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.testng.FileAssert.fail;
 
-import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 
 /**
  * Tests {@link AttachedDiskDcpBackend}.
  */
 public class AttachedDiskDcpBackendTest {
+
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
+
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
 
   @Test
   private void dummy() {
@@ -66,13 +105,17 @@ public class AttachedDiskDcpBackendTest {
   /**
    * Tests for creating disk.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class CreateTest extends BaseDaoTest {
-    private ApiFeDcpRestClient dcpClient;
-    private AttachedDiskBackend attachedDiskBackend;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class CreateTest {
 
     @Inject
-    private DiskBackend diskBackend;
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private AttachedDiskBackend attachedDiskBackend;
 
     @Inject
     private ProjectBackend projectBackend;
@@ -86,33 +129,16 @@ public class AttachedDiskDcpBackendTest {
     @Inject
     private ResourceTicketBackend resourceTicketBackend;
 
-    private BasicServiceHost host;
-
     private String tenantId;
     private AttachedDiskCreateSpec spec;
     private String projectId;
-    private String flavorId;
+
     private VmEntity vmEntity;
     private PersistentDiskEntity persistentDiskEntity;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          AttachedDiskServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new AttachedDiskServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      attachedDiskBackend = new AttachedDiskDcpBackend(dcpClient, diskBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),
@@ -145,8 +171,7 @@ public class AttachedDiskDcpBackendTest {
       flavorCreateSpec.setName("test-flavor");
       flavorCreateSpec.setKind(EphemeralDisk.KIND);
       flavorCreateSpec.setCost(ImmutableList.of(new QuotaLineItem(UUID.randomUUID().toString(), 2.0, QuotaUnit.COUNT)));
-      TaskEntity flavorTaskEntity = flavorBackend.createFlavor(flavorCreateSpec);
-      flavorId = flavorTaskEntity.getEntityId();
+      flavorBackend.createFlavor(flavorCreateSpec);
 
       spec = new AttachedDiskCreateSpec();
       spec.setName("disk");
@@ -164,13 +189,12 @@ public class AttachedDiskDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -225,9 +249,16 @@ public class AttachedDiskDcpBackendTest {
   /**
    * Tests for deleting disk.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class DeleteTest extends BaseDaoTest {
-    private ApiFeDcpRestClient dcpClient;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class DeleteTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private AttachedDiskBackend attachedDiskBackend;
 
     @Inject
@@ -245,12 +276,10 @@ public class AttachedDiskDcpBackendTest {
     @Inject
     private ResourceTicketBackend resourceTicketBackend;
 
-    private BasicServiceHost host;
-
     private String tenantId;
     private DiskCreateSpec spec;
     private String projectId;
-    private String flavorId;
+
     private VmEntity vmEntity;
     private String diskId;
     private String diskId2;
@@ -258,22 +287,7 @@ public class AttachedDiskDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          AttachedDiskServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new AttachedDiskServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      attachedDiskBackend = new AttachedDiskDcpBackend(dcpClient, diskBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),
@@ -306,8 +320,7 @@ public class AttachedDiskDcpBackendTest {
       flavorCreateSpec.setName("test-flavor");
       flavorCreateSpec.setKind(EphemeralDisk.KIND);
       flavorCreateSpec.setCost(ImmutableList.of(new QuotaLineItem(UUID.randomUUID().toString(), 2.0, QuotaUnit.COUNT)));
-      TaskEntity flavorTaskEntity = flavorBackend.createFlavor(flavorCreateSpec);
-      flavorId = flavorTaskEntity.getEntityId();
+      flavorBackend.createFlavor(flavorCreateSpec);
 
       vmEntity = new VmEntity();
       vmEntity.setId("vm-id");
@@ -332,13 +345,12 @@ public class AttachedDiskDcpBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
