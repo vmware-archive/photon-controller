@@ -193,6 +193,27 @@ public class ZookeeperHostMonitor extends ZookeeperMonitor implements HostMonito
     return hostConfigs;
   }
 
+  /**
+   * Given a host uuid, this method returns all the registered datastores that have access to
+   * that host.
+   *
+   * @return a set of Datastore objects
+   */
+  public synchronized Set<Datastore> getDatastoresForHost(String hostId) {
+    Set<Datastore> datastores = new HashSet<>();
+
+    for (ChildData child : childrenCache.getCurrentData()) {
+      if (ZKPaths.getNodeFromPath(child.getPath()).equals(hostId)) {
+        HostConfig config = deserialize(hostId, child.getData());
+        for (Datastore ds : config.getDatastores()) {
+          datastores.add(ds);
+        }
+      }
+    }
+
+    return datastores;
+  }
+
 
   /**
    * Return all datastores of all the registered hosts.

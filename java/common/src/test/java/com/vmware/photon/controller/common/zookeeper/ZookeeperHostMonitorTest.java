@@ -305,6 +305,48 @@ public class ZookeeperHostMonitorTest {
   }
 
   @Test
+  public void testGetDatastoreForHost() throws Exception {
+    String sharedDs1 = "shared1";
+
+    List<String> dsList1 = new ArrayList<>();
+    List<String> dsList2 = new ArrayList<>();
+    List<String> dsList3 = new ArrayList<>();
+
+    dsList1.add(sharedDs1);
+
+    dsList2.add(sharedDs1);
+    dsList2.add("ds2");
+
+    dsList3.add("ds3");
+
+    HostConfig host1 = getHostConfig("host1", dsList1, "");
+    HostConfig host2 = getHostConfig("host2", dsList2, "");
+    HostConfig host3 = getHostConfig("host3", dsList3, "");
+
+    PathChildrenCacheEvent event1 = getMockedEvent("host1", host1, Type.CHILD_ADDED);
+    PathChildrenCacheEvent event2 = getMockedEvent("host2", host2, Type.CHILD_ADDED);
+    PathChildrenCacheEvent event3 = getMockedEvent("host3", host3, Type.CHILD_ADDED);
+
+    List<ChildData> currEvents = getChildDataFromEvents(event1, event2, event3);
+    when(mockCache.getCurrentData()).thenReturn(currEvents);
+
+    ZookeeperHostMonitor hostMonitor = new ZookeeperHostMonitor(zkClient, pathCache, executer);
+
+    Set<Datastore> datastores = hostMonitor.getDatastoresForHost("host1");
+    assertThat(datastores.size(), is(1));
+    assertThat(datastores.contains(new Datastore("shared1")), is(true));
+
+    datastores = hostMonitor.getDatastoresForHost("host2");
+    assertThat(datastores.size(), is(2));
+    assertThat(datastores.contains(new Datastore("shared1")), is(true));
+    assertThat(datastores.contains(new Datastore("ds2")), is(true));
+
+    datastores = hostMonitor.getDatastoresForHost("host3");
+    assertThat(datastores.size(), is(1));
+    assertThat(datastores.contains(new Datastore("ds3")), is(true));
+  }
+
+  @Test
   public void testGetAllDatastores() throws Exception {
     List<String> dsList1 = new ArrayList<>();
     List<String> dsList2 = new ArrayList<>();
