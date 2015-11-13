@@ -16,25 +16,30 @@ package com.vmware.photon.controller.apife.backends;
 import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.NetworkState;
+import com.vmware.photon.controller.api.QuotaLineItem;
+import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.VmState;
+import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
+import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.TombstoneEntity;
-import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import org.mockito.Mock;
+import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
@@ -43,21 +48,58 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
 import static org.testng.Assert.fail;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 
 /**
  * Tests {@link NetworkDcpBackend}.
  */
 public class NetworkDcpBackendTest {
+
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
+
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
 
   private static NetworkCreateSpec createNetworkCreateSpec() {
     NetworkCreateSpec spec = new NetworkCreateSpec();
@@ -77,51 +119,31 @@ public class NetworkDcpBackendTest {
   /**
    * Tests {@link NetworkDcpBackend#createNetwork(NetworkCreateSpec)}.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class CreateNetworkTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class CreateNetworkTest {
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private NetworkBackend networkBackend;
-    private ApiFeDcpRestClient dcpClient;
-
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private VmBackend vmBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          NetworkServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new NetworkServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      networkBackend = new NetworkDcpBackend(dcpClient, taskBackend, vmBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -169,51 +191,31 @@ public class NetworkDcpBackendTest {
   /**
    * Tests {@link NetworkDcpBackend#filter(com.google.common.base.Optional, com.google.common.base.Optional)}}.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class FilterTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class FilterTest {
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private NetworkBackend networkBackend;
-    private ApiFeDcpRestClient dcpClient;
-
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private VmBackend vmBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          NetworkServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new NetworkServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      networkBackend = new NetworkDcpBackend(dcpClient, taskBackend, vmBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -248,51 +250,31 @@ public class NetworkDcpBackendTest {
   /**
    * Tests {@link NetworkDcpBackend#toApiRepresentation(NetworkEntity)}.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class ToApiRepresentationTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class ToApiRepresentationTest {
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private NetworkBackend networkBackend;
-    private ApiFeDcpRestClient dcpClient;
-
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private VmBackend vmBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          NetworkServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new NetworkServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      networkBackend = new NetworkDcpBackend(dcpClient, taskBackend, vmBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -312,52 +294,46 @@ public class NetworkDcpBackendTest {
   /**
    * Tests {@link NetworkDcpBackend#prepareNetworkDelete(String)}.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class DeleteNetworkTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class DeleteNetworkTest {
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private NetworkBackend networkBackend;
-    private ApiFeDcpRestClient dcpClient;
 
     @Inject
-    private TaskBackend taskBackend;
-
-    @Mock
-    private VmBackend vmBackend;
+    private TenantDcpBackend tenantDcpBackend;
 
     @Inject
-    private TombstoneBackend tombstoneBackend;
+    private ResourceTicketDcpBackend resourceTicketDcpBackend;
 
-    private BasicServiceHost host;
+    @Inject
+    private ProjectDcpBackend projectDcpBackend;
+
+    @Inject
+    private FlavorDcpBackend flavorDcpBackend;
+
+    @Inject
+    private FlavorLoader flavorLoader;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      doReturn(new LinkedList<>()).when(vmBackend).filterByNetwork(any());
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          NetworkServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new NetworkServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-      networkBackend = new NetworkDcpBackend(dcpClient, taskBackend, vmBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -378,9 +354,6 @@ public class NetworkDcpBackendTest {
 
     @Test
     public void testWhenVmsAreAttached() throws Throwable {
-      // mimic Vms existing on the network
-      doReturn(ImmutableList.of(new VmEntity())).when(vmBackend).filterByNetwork(any());
-
       NetworkCreateSpec spec = createNetworkCreateSpec();
       TaskEntity task = networkBackend.createNetwork(spec);
       List<Network> networks = networkBackend.filter(
@@ -388,6 +361,29 @@ public class NetworkDcpBackendTest {
       assertThat(networks.size(), is(1));
 
       String networkId = task.getEntityId();
+
+      String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "vmware");
+
+      QuotaLineItem ticketLimit = new QuotaLineItem("vm.cost", 100, QuotaUnit.COUNT);
+      DcpBackendTestHelper.createTenantResourceTicket(resourceTicketDcpBackend,
+          tenantId, "rt1", ImmutableList.of(ticketLimit));
+
+      QuotaLineItem projectLimit = new QuotaLineItem("vm.cost", 10, QuotaUnit.COUNT);
+      String projectId = DcpBackendTestHelper.createProject(projectDcpBackend,
+          "staging", tenantId, "rt1", ImmutableList.of(projectLimit));
+
+      DcpBackendTestHelper.createFlavors(flavorDcpBackend, flavorLoader.getAllFlavors());
+
+      VmService.State vm = new VmService.State();
+      vm.name = UUID.randomUUID().toString();
+      FlavorEntity flavorEntity = flavorDcpBackend.getEntityByNameAndKind("core-100", Vm.KIND);
+      vm.flavorId = flavorEntity.getId();
+      vm.imageId = UUID.randomUUID().toString();
+      vm.projectId = projectId;
+      vm.vmState = VmState.CREATING;
+      vm.networks = new ArrayList<>();
+      vm.networks.add(networkId);
+      dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vm);
 
       networkBackend.prepareNetworkDelete(networkId);
       networks = networkBackend.filter(
@@ -405,9 +401,6 @@ public class NetworkDcpBackendTest {
 
     @Test
     public void testDeletePendingDeleteNetwork() throws Exception {
-      // mimic Vms existing on the network
-      doReturn(ImmutableList.of(new VmEntity())).when(vmBackend).filterByNetwork(any());
-
       NetworkCreateSpec spec = createNetworkCreateSpec();
       TaskEntity task = networkBackend.createNetwork(spec);
       List<Network> networks = networkBackend.filter(
@@ -415,6 +408,29 @@ public class NetworkDcpBackendTest {
       assertThat(networks.size(), is(1));
 
       String networkId = task.getEntityId();
+
+      String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "vmware");
+
+      QuotaLineItem ticketLimit = new QuotaLineItem("vm.cost", 100, QuotaUnit.COUNT);
+      DcpBackendTestHelper.createTenantResourceTicket(resourceTicketDcpBackend,
+          tenantId, "rt1", ImmutableList.of(ticketLimit));
+
+      QuotaLineItem projectLimit = new QuotaLineItem("vm.cost", 10, QuotaUnit.COUNT);
+      String projectId = DcpBackendTestHelper.createProject(projectDcpBackend,
+          "staging", tenantId, "rt1", ImmutableList.of(projectLimit));
+
+      DcpBackendTestHelper.createFlavors(flavorDcpBackend, flavorLoader.getAllFlavors());
+
+      VmService.State vm = new VmService.State();
+      vm.name = UUID.randomUUID().toString();
+      FlavorEntity flavorEntity = flavorDcpBackend.getEntityByNameAndKind("core-100", Vm.KIND);
+      vm.flavorId = flavorEntity.getId();
+      vm.imageId = UUID.randomUUID().toString();
+      vm.projectId = projectId;
+      vm.vmState = VmState.CREATING;
+      vm.networks = new ArrayList<>();
+      vm.networks.add(networkId);
+      dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vm);
 
       networkBackend.prepareNetworkDelete(networkId);
 
@@ -431,54 +447,52 @@ public class NetworkDcpBackendTest {
   /**
    * Tests {@link NetworkDcpBackend#tombstone(NetworkEntity)}.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class TombstoneTest extends BaseDaoTest {
-
-    private NetworkBackend networkBackend;
-    private ApiFeDcpRestClient dcpClient;
-
-    private NetworkEntity entity;
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class TombstoneTest {
 
     @Inject
-    private TaskBackend taskBackend;
+    private BasicServiceHost basicServiceHost;
 
-    @Mock
-    private VmBackend vmBackend;
+    private NetworkEntity entity;
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private NetworkBackend networkBackend;
+
+    @Inject
+    private TenantDcpBackend tenantDcpBackend;
+
+    @Inject
+    private ResourceTicketDcpBackend resourceTicketDcpBackend;
+
+    @Inject
+    private ProjectDcpBackend projectDcpBackend;
+
+    @Inject
+    private FlavorDcpBackend flavorDcpBackend;
+
+    @Inject
+    private FlavorLoader flavorLoader;
 
     @Inject
     private TombstoneBackend tombstoneBackend;
 
-    private BasicServiceHost host;
-
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      doReturn(new LinkedList<>()).when(vmBackend).filterByNetwork(any());
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS, BasicServiceHost.BIND_PORT,
-          null, NetworkServiceFactory.SELF_LINK, 10, 10);
-
-      host.startServiceSynchronously(new NetworkServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-      networkBackend = new NetworkDcpBackend(dcpClient, taskBackend, vmBackend, tombstoneBackend);
-
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
       TaskEntity task = networkBackend.createNetwork(createNetworkCreateSpec());
       entity = networkBackend.findById(task.getEntityId());
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -496,9 +510,28 @@ public class NetworkDcpBackendTest {
 
     @Test
     public void testWhenVmsAreAttached() throws Throwable {
-      // mimic Vms existing on the network
-      doReturn(ImmutableList.of(new VmEntity())).when(vmBackend).filterByNetwork(any());
+      String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "vmware");
 
+      QuotaLineItem ticketLimit = new QuotaLineItem("vm.cost", 100, QuotaUnit.COUNT);
+      DcpBackendTestHelper.createTenantResourceTicket(resourceTicketDcpBackend,
+          tenantId, "rt1", ImmutableList.of(ticketLimit));
+
+      QuotaLineItem projectLimit = new QuotaLineItem("vm.cost", 10, QuotaUnit.COUNT);
+      String projectId = DcpBackendTestHelper.createProject(projectDcpBackend,
+          "staging", tenantId, "rt1", ImmutableList.of(projectLimit));
+
+      DcpBackendTestHelper.createFlavors(flavorDcpBackend, flavorLoader.getAllFlavors());
+
+      VmService.State vm = new VmService.State();
+      vm.name = UUID.randomUUID().toString();
+      FlavorEntity flavorEntity = flavorDcpBackend.getEntityByNameAndKind("core-100", Vm.KIND);
+      vm.flavorId = flavorEntity.getId();
+      vm.imageId = UUID.randomUUID().toString();
+      vm.projectId = projectId;
+      vm.vmState = VmState.CREATING;
+      vm.networks = new ArrayList<>();
+      vm.networks.add(entity.getId());
+      dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vm);
       networkBackend.tombstone(entity);
       assertThat(tombstoneBackend.getByEntityId(entity.getId()), nullValue());
 
@@ -525,51 +558,31 @@ public class NetworkDcpBackendTest {
   /**
    * Tests {@link NetworkDcpBackend#updatePortGroups(String, java.util.List)}}.
    */
-  @Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-  public static class UpdatePortGroupsTest extends BaseDaoTest {
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class UpdatePortGroupsTest {
 
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
     private NetworkBackend networkBackend;
-    private ApiFeDcpRestClient dcpClient;
-
-    @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
-    private VmBackend vmBackend;
-
-    @Inject
-    private TombstoneBackend tombstoneBackend;
-
-    private BasicServiceHost host;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      super.setUp();
-
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
-          null,
-          NetworkServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new NetworkServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
-
-      networkBackend = new NetworkDcpBackend(dcpClient, taskBackend, vmBackend, tombstoneBackend);
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      super.tearDown();
+      commonHostDocumentsCleanup();
+    }
 
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      dcpClient.stop();
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -595,5 +608,4 @@ public class NetworkDcpBackendTest {
       networkBackend.updatePortGroups(UUID.randomUUID().toString(), null);
     }
   }
-
 }
