@@ -282,8 +282,11 @@ class HostHandler(Host.Iface):
         dm = self._hypervisor.datastore_manager
         config.datastores = dm.get_datastores()
         try:
-            config.image_datastore_id = \
-                dm.normalize(agent_config.image_datastore)
+            # TODO: deprecate image_datastore_id field.
+            image_datastores = dm.image_datastores()
+            if image_datastores:
+                config.image_datastore_id = list(image_datastores)[0]
+            config.image_datastore_ids = image_datastores
         except:
             self._logger.exception("Datastore ID not found for %s in %s" %
                                    (agent_config.image_datastore,
@@ -527,8 +530,11 @@ class HostHandler(Host.Iface):
             vm.disks)
         # TODO(mmutsuzaki) Iterate over all the image datastores until we find
         # one that has the image.
-        image_datastore = \
-            list(self.hypervisor.datastore_manager.image_datastores())[0]
+        image_datastores = self.hypervisor.datastore_manager.image_datastores()
+        if image_datastores:
+            image_datastore = list(image_datastores)[0]
+        else:
+            image_datastore = None
 
         if image_id and not self.hypervisor.image_manager.\
                 check_and_validate_image(image_id, datastore_id):

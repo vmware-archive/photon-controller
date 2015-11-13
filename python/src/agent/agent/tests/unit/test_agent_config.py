@@ -143,9 +143,7 @@ class TestUnitAgent(unittest.TestCase):
         self.agent._parse_options(["--chairman", "h1:13000, h2:13000",
                                    "--memory-overcommit", "1.5",
                                    "--datastore", ["datastore1"],
-                                   "--image-datastore", "datastore1",
                                    "--in-uwsim",
-                                   "--image-datastore-for-vms",
                                    "--config-path", self.agent_conf_dir,
                                    "--utilization-transfer-ratio", "0.5"])
 
@@ -153,8 +151,6 @@ class TestUnitAgent(unittest.TestCase):
                          [ServerAddress("h1", 13000),
                           ServerAddress("h2", 13000)])
         self.assertEqual(self.agent.memory_overcommit, 1.5)
-        self.assertEqual(self.agent.image_datastore, "datastore1")
-        self.assertEqual(self.agent.image_datastore_for_vms, True)
         self.assertEqual(self.agent.in_uwsim, True)
         self.assertEqual(self.agent.utilization_transfer_ratio, 0.5)
         self.agent._persist_config()
@@ -164,8 +160,6 @@ class TestUnitAgent(unittest.TestCase):
         self.assertEqual(new_agent.chairman_list, [ServerAddress("h1", 13000),
                                                    ServerAddress("h2", 13000)])
         self.assertEqual(new_agent.memory_overcommit, 1.5)
-        self.assertEqual(new_agent.image_datastore, "datastore1")
-        self.assertEqual(new_agent.image_datastore_for_vms, True)
         self.assertEqual(new_agent.in_uwsim, True)
         self.assertEqual(self.agent.utilization_transfer_ratio, 0.5)
 
@@ -177,17 +171,13 @@ class TestUnitAgent(unittest.TestCase):
                                    "--datastores", "ds1, ds2",
                                    "--vm-network", "VM Network",
                                    "--wait-timeout", "5",
-                                   "--chairman", "h1:1300, h2:1300",
-                                   "--image-datastore", "ds1",
-                                   "--image-datastore-for-vms"])
+                                   "--chairman", "h1:1300, h2:1300"])
         assert_that(self.agent.availability_zone, equal_to("test"))
         assert_that(self.agent.hostname, equal_to("localhost"))
         assert_that(self.agent.host_port, equal_to(1234))
         assert_that(self.agent.datastores, equal_to(["ds1", "ds2"]))
         assert_that(self.agent.networks, equal_to(["VM Network"]))
         assert_that(self.agent.wait_timeout, equal_to(5))
-        assert_that(self.agent.image_datastore, equal_to("ds1"))
-        assert_that(self.agent.image_datastore_for_vms, equal_to(True))
         assert_that(self.agent.chairman_list,
                     equal_to([ServerAddress("h1", 1300),
                               ServerAddress("h2", 1300)]))
@@ -221,7 +211,6 @@ class TestUnitAgent(unittest.TestCase):
         req.datastores = ["ds3", "ds4"]
         req.networks = ["Public"]
         req.memory_overcommit = 1.5
-        req.image_datastore_info = ImageDatastore("ds3", True)
         req.image_datastores = set([ImageDatastore("ds3", True)])
         addr = ServerAddress(host="localhost", port=2345)
         req.chairman_server = [ServerAddress("h1", 13000),
@@ -243,8 +232,6 @@ class TestUnitAgent(unittest.TestCase):
                               ServerAddress("h2", 13000)]))
         assert_that(self.agent.memory_overcommit,
                     equal_to(1.5))
-        assert_that(self.agent.image_datastore, equal_to("ds3"))
-        assert_that(self.agent.image_datastore_for_vms, equal_to(True))
         assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
         assert_that(self.agent.host_id, equal_to("host1"))
 
@@ -265,8 +252,6 @@ class TestUnitAgent(unittest.TestCase):
         self.assertEqual(self.agent.memory_overcommit, 1.0)
 
         self.assertFalse(self.agent.bootstrap_ready)
-        self.assertEqual(self.agent.image_datastore, "ds3")
-        self.assertEqual(self.agent.image_datastore_for_vms, False)
         assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
         assert_that(self.agent.host_id, equal_to(None))
 
@@ -296,7 +281,7 @@ class TestUnitAgent(unittest.TestCase):
         self.assertEqual(self.agent.memory_overcommit, 1.0)
 
         # input an invalid datastore for image.
-        req.image_datastore_info = ImageDatastore("ds5", False)
+        req.image_datastores = set([ImageDatastore("ds5", False)])
         req.memory_overcommit = 2.0
         self.assertRaises(InvalidConfig, self.agent.update_config, req)
 

@@ -155,6 +155,7 @@ class HostHandlerTestCase(unittest.TestCase):
         self._config.hostname = "localhost"
         self._config.host_port = 1234
         self._config.reboot_required = False
+        self._config.image_datastores = []
         common.services.register(ServiceName.AGENT_CONFIG, self._config)
 
     def tearDown(self):
@@ -226,24 +227,25 @@ class HostHandlerTestCase(unittest.TestCase):
         image_ds = "ds1"
         self._config.agent_id = agent_id
         self._config.datastores = [image_ds]
-        self._config.image_datastores = "image_ds"
+        self._config.image_datastores = [{"name": image_ds,
+                                          "used_for_vms": True}]
+        self._config.management_only = True
+        self._config.reboot_required = False
+        self._config.host_id = stable_uuid("host_id")
+        common.services.register(ServiceName.AGENT_CONFIG, self._config)
         hv = Hypervisor(self._config)
-        _config = MagicMock()
-        _config.image_datastore = image_ds
-        _config.management_only = True
-        _config.reboot_required = False
-        _config.host_id = stable_uuid("host_id")
-        common.services.register(ServiceName.AGENT_CONFIG, _config)
         handler = HostHandler(hv)
 
         config_response = handler.get_host_config(GetConfigRequest())
         host_config = config_response.hostConfig
-        assert_that(host_config.agent_id, equal_to(_config.host_id))
+        assert_that(host_config.agent_id, equal_to(self._config.host_id))
         assert_that(len(host_config.datastores), equal_to(1))
         assert_that(host_config.datastores[0].id,
                     equal_to(stable_uuid(image_ds)))
         assert_that(host_config.image_datastore_id,
                     equal_to(stable_uuid(image_ds)))
+        assert_that(host_config.image_datastore_ids,
+                    contains_inanyorder(stable_uuid(image_ds)))
 
         leaf_scheduler = SchedulerRole(stable_uuid("leaf scheduler"))
         leaf_scheduler.parent_id = stable_uuid("parent scheduler")

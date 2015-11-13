@@ -83,8 +83,6 @@ class ThinCopyTestCase(unittest.TestCase):
 
     def _provision_host(self, datastore):
         """ Provisions the agents on the remote hosts """
-        image_datastore = datastore
-
         req = ProvisionRequest()
         req.availability_zone = "test"
         req.datastores = [datastore]
@@ -92,9 +90,8 @@ class ThinCopyTestCase(unittest.TestCase):
         req.address = ServerAddress(host="localhost", port=8835)
         req.chairman_server = [ServerAddress("localhost", 13000)]
         req.memory_overcommit = 2.0
-        req.image_datastore_info = ImageDatastore(
-            name=image_datastore,
-            used_for_vms=True)
+        req.image_datastores = set([ImageDatastore(name=datastore,
+                                                   used_for_vms=True)])
         res = self.agent_client.provision(req)
 
         # This will trigger a restart if the agent config changes, which

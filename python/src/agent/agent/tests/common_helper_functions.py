@@ -421,9 +421,7 @@ class RuntimeUtils(object):
             "--availability-zone": "fake_availability_zone",
             "--heartbeat-interval-sec": "3",
             "--heartbeat-timeout-factor": "6",
-            "--image-datastore-for-vms": None,
             "--config-path": config_path,
             "--datastores": "ds1",
-            "--image-datastore": "ds1",
             "--logging-file": log_file,
         }

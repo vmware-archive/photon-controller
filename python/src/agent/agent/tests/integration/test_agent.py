@@ -79,7 +79,6 @@ class TestAgent(unittest.TestCase, AgentCommonTests):
         self.config = self.runtime.get_default_agent_config()
         self._datastores = ["datastore1", "datastore2"]
         self.config["--datastores"] = ",".join(self._datastores)
-        self.config["--image-datastore"] = self._datastores[0]
         res = self.runtime.start_agent(self.config)
         self.proc, self.host_client, self.control_client = res
         self.configure_host()
@@ -110,7 +109,6 @@ class TestAgent(unittest.TestCase, AgentCommonTests):
         self.runtime.stop_agent(self.proc)
         new_config = self.config.copy()
         new_config["--datastores"] = " ds1,ds2, ds3, ds4 "
-        new_config["--image-datastore"] = "ds1"
         res = self.runtime.start_agent(new_config)
         self.proc, self.host_client, self.control_client = res
 
