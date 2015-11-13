@@ -23,8 +23,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
-import com.vmware.photon.controller.common.dcp.validation.Range;
-import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 
 import java.util.Map;
 
@@ -39,8 +37,6 @@ public class ContainerTemplateService extends StatefulService {
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_NAME = "name";
-    public static final int DOCKER_CPU_SHARES_MIN = 2;
-    public static final int DOCKER_CPU_SHARES_MAX = 1024;
 
     /**
      * This value represents the name of the container template.
@@ -117,13 +113,6 @@ public class ContainerTemplateService extends StatefulService {
      */
     @Immutable
     public Map<String, String> environmentVariables;
-
-    /**
-     * This value represents the cpu share constraint needed by docker for creating the container.
-     */
-    @WriteOnce
-    @Range(min = DOCKER_CPU_SHARES_MIN, max = DOCKER_CPU_SHARES_MAX)
-    public Integer cpuShares;
   }
 
   public ContainerTemplateService() {

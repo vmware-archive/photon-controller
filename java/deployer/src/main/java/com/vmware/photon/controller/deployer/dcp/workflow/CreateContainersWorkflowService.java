@@ -42,7 +42,6 @@ import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
-
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;

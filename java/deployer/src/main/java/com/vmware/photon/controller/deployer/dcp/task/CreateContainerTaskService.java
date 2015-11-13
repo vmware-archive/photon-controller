@@ -339,7 +339,7 @@ public class CreateContainerTaskService extends StatefulService {
         try {
           ContainerTemplateService.State containerTemplateState = operation.getBody(ContainerTemplateService.State
               .class);
-          setVolumeBindings(currentState, vmState, containerTemplateState, deploymentState);
+          setVolumeBindings(currentState, vmState, containerTemplateState, deploymentState, containerState);
         } catch (Throwable t) {
           failTask(t);
         }
@@ -356,7 +356,8 @@ public class CreateContainerTaskService extends StatefulService {
   private void setVolumeBindings(final State currentState,
                                  final VmService.State vmState,
                                  final ContainerTemplateService.State containerTemplateState,
-                                 DeploymentService.State deploymentState) {
+                                 DeploymentService.State deploymentState,
+                                 ContainerService.State containerState) {
     ContainersConfig.ContainerType containerType =
         ContainersConfig.ContainerType.valueOf(containerTemplateState.name);
 
@@ -381,7 +382,7 @@ public class CreateContainerTaskService extends StatefulService {
       containerTemplateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + LIGHTWAVE_CONF_DIR);
     }
 
-    processCreateContainer(currentState, vmState.ipAddress, containerTemplateState, deploymentState);
+    processCreateContainer(currentState, vmState.ipAddress, containerTemplateState, deploymentState, containerState);
   }
 
   /**
@@ -393,10 +394,11 @@ public class CreateContainerTaskService extends StatefulService {
    *                     instance.
    * @param deploymentState
    */
-  private void processCreateContainer(
-      final State currentState,
-      final String vmIpAddress,
-      final ContainerTemplateService.State containerTemplateState, DeploymentService.State deploymentState) {
+  private void processCreateContainer(final State currentState,
+                                      final String vmIpAddress,
+                                      final ContainerTemplateService.State containerTemplateState,
+                                      DeploymentService.State deploymentState,
+                                      ContainerService.State containerState) {
 
     final Service service = this;
     ListenableFutureTask<String> futureTask = ListenableFutureTask.create(new Callable<String>() {
@@ -424,8 +426,8 @@ public class CreateContainerTaskService extends StatefulService {
         String containerId = dockerProvisioner.launchContainer(
             containerTemplateState.name,
             containerTemplateState.containerImage,
-            containerTemplateState.cpuShares,
-            containerTemplateState.memoryMb,
+            containerState.cpuShares,
+            containerState.memoryMb,
             containerTemplateState.volumeBindings,
             containerTemplateState.portBindings,
             containerTemplateState.volumesFrom,
