@@ -26,6 +26,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
+import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
@@ -135,6 +136,12 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
      */
     @WriteOnce
     public String sourceDeploymentId;
+
+    /**
+     * This value represents zookeeper quorum of the source system.
+     */
+    @WriteOnce
+    public String sourceZookeeperQuorum;
   }
 
   public FinalizeDeploymentMigrationWorkflowService() {
@@ -307,21 +314,43 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
   private void pauseSourceSystem(final String sourceDeploymentId, final State currentState) throws Throwable {
     ApiClient client = HostUtils.getApiClient(this, currentState.sourceLoadBalancerAddress);
 
-    FutureCallback<Task> callback = new FutureCallback<Task>() {
-      @Override
-      public void onSuccess(@Nullable Task result) {
-        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.STOP_MIGRATE_TASKS, null);
-        patchState.sourceDeploymentId = sourceDeploymentId;
-        TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
-      }
+    MiscUtils.getZookeeperQuorumFromSourceSystem(this, currentState.sourceLoadBalancerAddress,
+        sourceDeploymentId, currentState.taskPollDelay, new FutureCallback<List<String>>() {
+          @Override
+          public void onSuccess(@Nullable List<String> result) {
+            String zookeeperQuorum = MiscUtils.generateReplicaList(result, Integer.toString(ServicePortConstants
+                .ZOOKEEPER_PORT));
 
-      @Override
-      public void onFailure(Throwable throwable) {
-        failTask(throwable);
-      }
-    };
+            ServiceUtils.logInfo(FinalizeDeploymentMigrationWorkflowService.this,
+                "Zookeeper quorum %s", zookeeperQuorum);
 
-    client.getDeploymentApi().pauseSystemAsync(sourceDeploymentId, callback);
+            try {
+              client.getDeploymentApi().pauseSystemAsync(sourceDeploymentId, new FutureCallback<Task>() {
+                @Override
+                public void onSuccess(@Nullable Task result) {
+                  State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.STOP_MIGRATE_TASKS,
+                      null);
+                  patchState.sourceDeploymentId = sourceDeploymentId;
+                  patchState.sourceZookeeperQuorum = zookeeperQuorum;
+                  TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
+                }
+
+                @Override
+                public void onFailure(Throwable throwable) {
+                  failTask(throwable);
+                }
+              });
+
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        });
   }
 
   private void stopMigrateTasks(State currentState) {
@@ -393,14 +422,14 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     });
   }
 
-  private void migrateFinal(State currentState, String sourceZookeeperQuorum)  {
+  private void migrateFinal(State currentState)  {
     ZookeeperClient zookeeperClient
         = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
     Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
         HostUtils.getDeployerContext(this).getZookeeperQuorum(),
         DeployerModule.CLOUDSTORE_SERVICE_NAME);
     Set<InetSocketAddress> sourceServers
-        = zookeeperClient.getServers(sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
+        = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
 
     Set<Map.Entry<String, String>> factoryMap = HostUtils.getDeployerContext(this).getFactoryLinkMapEntries();
     final AtomicInteger latch = new AtomicInteger(factoryMap.size());
@@ -469,27 +498,6 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     sendRequest(delete);
   }
 
-  private void migrateFinal(State currentState) throws Throwable {
-    MiscUtils.getZookeeperQuorumFromSourceSystem(this, currentState.sourceLoadBalancerAddress,
-        currentState.sourceDeploymentId, currentState.taskPollDelay, new FutureCallback<List<String>>() {
-          @Override
-          public void onSuccess(@Nullable List<String> result) {
-            String zookeeperQuorum = MiscUtils.generateReplicaList(result, Integer.toString(ServicePortConstants
-                .ZOOKEEPER_PORT));
-
-            ServiceUtils.logInfo(FinalizeDeploymentMigrationWorkflowService.this,
-                "Zookeeper quorum %s", zookeeperQuorum);
-
-            migrateFinal(currentState, zookeeperQuorum);
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        });
-  }
-
   private void resumeDestinationSystem(final State currentState) throws Throwable {
     ApiClient client = HostUtils.getApiClient(this);
 
@@ -515,9 +523,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
       currentState.taskState = patchState.taskState;
     }
 
-    if (null != patchState.sourceDeploymentId) {
-      currentState.sourceDeploymentId = patchState.sourceDeploymentId;
-    }
+    PatchUtils.patchState(currentState, patchState);
     return currentState;
   }
 
