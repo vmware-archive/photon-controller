@@ -105,7 +105,6 @@ import io.dropwizard.migrations.MigrationsBundle;
 import io.dropwizard.server.DefaultServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.hibernate.EmptyInterceptor;
 import org.hibernate.cfg.Configuration;
@@ -163,12 +162,6 @@ public class ApiFeService extends Application<ApiFeConfiguration> {
 
   @Override
   public void initialize(Bootstrap<ApiFeConfiguration> bootstrap) {
-    boolean useDcpBackend = apiFeConfiguration != null && apiFeConfiguration.useDcpBackend();
-    if (!useDcpBackend) {
-      hibernateBundle = getHibernateBundle();
-      bootstrap.addBundle(hibernateBundle);
-    }
-
     bootstrap.addBundle(new MigrationsBundle<ApiFeConfiguration>() {
       @Override
       public DataSourceFactory getDataSourceFactory(ApiFeConfiguration configuration) {
@@ -178,15 +171,12 @@ public class ApiFeService extends Application<ApiFeConfiguration> {
 
     bootstrap.addBundle(new AssetsBundle("/assets", "/api/", "index.html"));
 
-    apiModule = new ApiFeModule(useDcpBackend);
+    apiModule = new ApiFeModule();
     zookeeperModule = new ZookeeperModule();
 
     apiModule.setConfiguration(apiFeConfiguration);
     zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
 
-    if (!useDcpBackend) {
-      apiModule.setSessionFactory(hibernateBundle.getSessionFactory());
-    }
     zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
 
     GuiceBundle<ApiFeConfiguration> guiceBundle = getGuiceBundle();

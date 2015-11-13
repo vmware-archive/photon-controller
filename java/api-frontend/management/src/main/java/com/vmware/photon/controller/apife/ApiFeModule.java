@@ -37,57 +37,40 @@ import com.vmware.photon.controller.apife.auth.fetcher.Vm;
 import com.vmware.photon.controller.apife.auth.fetcher.VmSecurityGroupFetcher;
 import com.vmware.photon.controller.apife.backends.AttachedDiskBackend;
 import com.vmware.photon.controller.apife.backends.AttachedDiskDcpBackend;
-import com.vmware.photon.controller.apife.backends.AttachedDiskSqlBackend;
 import com.vmware.photon.controller.apife.backends.AvailabilityZoneBackend;
 import com.vmware.photon.controller.apife.backends.AvailabilityZoneDcpBackend;
 import com.vmware.photon.controller.apife.backends.DatastoreBackend;
 import com.vmware.photon.controller.apife.backends.DatastoreDcpBackend;
-import com.vmware.photon.controller.apife.backends.DatastoreSqlBackend;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
-import com.vmware.photon.controller.apife.backends.DeploymentSqlBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.DiskDcpBackend;
-import com.vmware.photon.controller.apife.backends.DiskSqlBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockDcpBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.FlavorDcpBackend;
-import com.vmware.photon.controller.apife.backends.FlavorSqlBackend;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.HostDcpBackend;
-import com.vmware.photon.controller.apife.backends.HostSqlBackend;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.ImageDcpBackend;
-import com.vmware.photon.controller.apife.backends.ImageSqlBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.NetworkDcpBackend;
-import com.vmware.photon.controller.apife.backends.NetworkSqlBackend;
 import com.vmware.photon.controller.apife.backends.PortGroupBackend;
 import com.vmware.photon.controller.apife.backends.PortGroupDcpBackend;
-import com.vmware.photon.controller.apife.backends.PortGroupSqlBackend;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;
 import com.vmware.photon.controller.apife.backends.ProjectDcpBackend;
-import com.vmware.photon.controller.apife.backends.ProjectSqlBackend;
 import com.vmware.photon.controller.apife.backends.ResourceTicketBackend;
 import com.vmware.photon.controller.apife.backends.ResourceTicketDcpBackend;
-import com.vmware.photon.controller.apife.backends.ResourceTicketSqlBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
-import com.vmware.photon.controller.apife.backends.StepLockSqlBackend;
-import com.vmware.photon.controller.apife.backends.StepSqlBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TaskCommandExecutorService;
 import com.vmware.photon.controller.apife.backends.TaskDcpBackend;
-import com.vmware.photon.controller.apife.backends.TaskSqlBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.backends.TenantDcpBackend;
-import com.vmware.photon.controller.apife.backends.TenantSqlBackend;
 import com.vmware.photon.controller.apife.backends.TombstoneBackend;
 import com.vmware.photon.controller.apife.backends.TombstoneDcpBackend;
-import com.vmware.photon.controller.apife.backends.TombstoneSqlBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.VmDcpBackend;
-import com.vmware.photon.controller.apife.backends.VmSqlBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
@@ -151,16 +134,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class ApiFeModule extends AbstractModule {
   private static final Logger logger = LoggerFactory.getLogger(ApiFeModule.class);
-  private final boolean useDcpBackend;
   private SessionFactory sessionFactory;
   private ApiFeConfiguration configuration;
 
   public ApiFeModule() {
-    useDcpBackend = false;
-  }
-
-  public ApiFeModule(boolean useDcpBackend) {
-    this.useDcpBackend = useDcpBackend;
   }
 
   public void setConfiguration(ApiFeConfiguration configuration) {
@@ -438,47 +415,26 @@ public class ApiFeModule extends AbstractModule {
   }
 
   private void bindBackends() {
-    if (useDcpBackend) {
-      logger.info("Using cloud store DCP backend");
-      bind(DcpClient.class).to(ApiFeDcpRestClient.class);
-      bind(FlavorBackend.class).to(FlavorDcpBackend.class);
-      bind(AvailabilityZoneBackend.class).to(AvailabilityZoneDcpBackend.class);
-      bind(ImageBackend.class).to(ImageDcpBackend.class);
-      bind(NetworkBackend.class).to(NetworkDcpBackend.class);
-      bind(DatastoreBackend.class).to(DatastoreDcpBackend.class);
-      bind(PortGroupBackend.class).to(PortGroupDcpBackend.class);
-      bind(EntityLockBackend.class).to(EntityLockDcpBackend.class);
-      bind(TaskBackend.class).to(TaskDcpBackend.class);
-      bind(StepBackend.class).to(TaskDcpBackend.class); // Step backend was merged into Task backend
-      bind(ProjectBackend.class).to(ProjectDcpBackend.class);
-      bind(TenantBackend.class).to(TenantDcpBackend.class);
-      bind(ResourceTicketBackend.class).to(ResourceTicketDcpBackend.class);
-      bind(DiskBackend.class).to(DiskDcpBackend.class);
-      bind(AttachedDiskBackend.class).to(AttachedDiskDcpBackend.class);
-      bind(VmBackend.class).to(VmDcpBackend.class);
-      bind(TombstoneBackend.class).to(TombstoneDcpBackend.class);
-      bind(HostBackend.class).to(HostDcpBackend.class);
-      bind(DeploymentBackend.class).to(DeploymentDcpBackend.class);
-    } else {
-      logger.info("Using postgres SQL backend");
-      bind(FlavorBackend.class).to(FlavorSqlBackend.class);
-      bind(ImageBackend.class).to(ImageSqlBackend.class);
-      bind(NetworkBackend.class).to(NetworkSqlBackend.class);
-      bind(DatastoreBackend.class).to(DatastoreSqlBackend.class);
-      bind(PortGroupBackend.class).to(PortGroupSqlBackend.class);
-      bind(EntityLockBackend.class).to(StepLockSqlBackend.class);
-      bind(TaskBackend.class).to(TaskSqlBackend.class);
-      bind(StepBackend.class).to(StepSqlBackend.class);
-      bind(ProjectBackend.class).to(ProjectSqlBackend.class);
-      bind(TenantBackend.class).to(TenantSqlBackend.class);
-      bind(ResourceTicketBackend.class).to(ResourceTicketSqlBackend.class);
-      bind(DiskBackend.class).to(DiskSqlBackend.class);
-      bind(AttachedDiskBackend.class).to(AttachedDiskSqlBackend.class);
-      bind(VmBackend.class).to(VmSqlBackend.class);
-      bind(TombstoneBackend.class).to(TombstoneSqlBackend.class);
-      bind(HostBackend.class).to(HostSqlBackend.class);
-      bind(DeploymentBackend.class).to(DeploymentSqlBackend.class);
-    }
+    logger.info("Using cloud store DCP backend");
+    bind(DcpClient.class).to(ApiFeDcpRestClient.class);
+    bind(FlavorBackend.class).to(FlavorDcpBackend.class);
+    bind(AvailabilityZoneBackend.class).to(AvailabilityZoneDcpBackend.class);
+    bind(ImageBackend.class).to(ImageDcpBackend.class);
+    bind(NetworkBackend.class).to(NetworkDcpBackend.class);
+    bind(DatastoreBackend.class).to(DatastoreDcpBackend.class);
+    bind(PortGroupBackend.class).to(PortGroupDcpBackend.class);
+    bind(EntityLockBackend.class).to(EntityLockDcpBackend.class);
+    bind(TaskBackend.class).to(TaskDcpBackend.class);
+    bind(StepBackend.class).to(TaskDcpBackend.class); // Step backend was merged into Task backend
+    bind(ProjectBackend.class).to(ProjectDcpBackend.class);
+    bind(TenantBackend.class).to(TenantDcpBackend.class);
+    bind(ResourceTicketBackend.class).to(ResourceTicketDcpBackend.class);
+    bind(DiskBackend.class).to(DiskDcpBackend.class);
+    bind(AttachedDiskBackend.class).to(AttachedDiskDcpBackend.class);
+    bind(VmBackend.class).to(VmDcpBackend.class);
+    bind(TombstoneBackend.class).to(TombstoneDcpBackend.class);
+    bind(HostBackend.class).to(HostDcpBackend.class);
+    bind(DeploymentBackend.class).to(DeploymentDcpBackend.class);
   }
 
   private void bindTransactional() {

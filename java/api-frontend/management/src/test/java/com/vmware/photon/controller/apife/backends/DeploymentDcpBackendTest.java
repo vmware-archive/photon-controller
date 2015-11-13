@@ -26,7 +26,6 @@ import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -70,7 +69,6 @@ import java.util.concurrent.Executors;
 /**
  * Tests {@link DeploymentDcpBackend}.
  */
-@Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
 public class DeploymentDcpBackendTest {
 
   private static ApiFeDcpRestClient dcpClient;
