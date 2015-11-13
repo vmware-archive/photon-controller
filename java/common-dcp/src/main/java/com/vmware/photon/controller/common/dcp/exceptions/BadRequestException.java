@@ -21,6 +21,10 @@ import com.vmware.photon.controller.common.dcp.OperationLatch;
  */
 public class BadRequestException extends DcpException {
 
+  public BadRequestException(Operation operation) {
+    super(operation);
+  }
+
   public BadRequestException(Operation operation, OperationLatch.OperationResult operationResult) {
     super(operation, operationResult);
   }

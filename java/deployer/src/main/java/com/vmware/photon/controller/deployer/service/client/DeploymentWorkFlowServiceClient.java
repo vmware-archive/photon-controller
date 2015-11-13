@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationJoin;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
@@ -21,6 +22,7 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.common.dcp.OperationJoinLatch;
 import com.vmware.photon.controller.common.dcp.OperationLatch;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
@@ -53,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implements function to kick off a deployment workflow request.
@@ -121,29 +124,30 @@ public class DeploymentWorkFlowServiceClient {
     OperationLatch syncOp = new OperationLatch(queryOperation);
     dcpHost.sendRequest(queryOperation);
     Operation operation = syncOp.await();
-    Operation joinedOperation = null;
-    for (String documentLink : QueryTaskUtils.getQueryResultDocumentLinks(operation)) {
 
+    List<Operation> opList = new ArrayList<>();
+    for (String documentLink : QueryTaskUtils.getQueryResultDocumentLinks(operation)) {
       Operation getOperation = Operation
           .createGet(UriUtils.buildUri(dcpHost, documentLink))
           .forceRemote()
           .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH));
 
-      if (null == joinedOperation) {
-        joinedOperation = getOperation;
-      } else {
-        joinedOperation.joinWith(getOperation);
-      }
+      opList.add(getOperation);
     }
 
-    if (null != joinedOperation) {
-      syncOp = new OperationLatch(joinedOperation);
-      dcpHost.sendRequest(joinedOperation);
-      for (Operation getOperation : syncOp.await().getJoinedOperations()) {
-        DeploymentWorkflowService.State state = getOperation.getBody(DeploymentWorkflowService.State.class);
-        if (state.taskState.stage.ordinal() <= TaskState.TaskStage.STARTED.ordinal()) {
-          return true;
-        }
+    if (opList.size() == 0) {
+      return false;
+    }
+
+    OperationJoin join = OperationJoin.create(opList);
+    OperationJoinLatch joinSync = new OperationJoinLatch(join);
+    join.sendWith(dcpHost);
+    joinSync.await();
+
+    for (Operation getOperation : join.getOperations()) {
+      DeploymentWorkflowService.State state = getOperation.getBody(DeploymentWorkflowService.State.class);
+      if (state.taskState.stage.ordinal() <= TaskState.TaskStage.STARTED.ordinal()) {
+        return true;
       }
     }
 

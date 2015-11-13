@@ -49,9 +49,6 @@ subprojects {
     maven {
       url "http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave"
     }
-    maven {
-      url "https://enatai-repo.eng.vmware.com/nexus/content/repositories/snapshots"
-    }
   }
 
   checkstyle {

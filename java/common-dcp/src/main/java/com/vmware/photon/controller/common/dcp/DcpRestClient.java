@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.common.dcp;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationJoin;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
@@ -35,6 +36,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -128,7 +130,7 @@ public class DcpRestClient implements DcpClient {
   @Override
   public Collection<Operation> getAndWait(Collection<String> documentSelfLinks)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    Operation joinedOperation = null;
+    List<Operation> opList = new ArrayList<>(documentSelfLinks.size());
     for (String documentSelfLink : documentSelfLinks) {
       URI serviceUri = createUriUsingRandomAddress(documentSelfLink);
 
@@ -139,15 +141,12 @@ public class DcpRestClient implements DcpClient {
           .setExpiration(Utils.getNowMicrosUtc() + getGetOperationExpirationMicros())
           .setReferer(this.localHostAddress);
 
-      if (null == joinedOperation) {
-        joinedOperation = getOperation;
-      } else {
-        joinedOperation.joinWith(getOperation);
-      }
+      opList.add(getOperation);
     }
 
-    Operation returnedJoinedOperation = sendAndWait(joinedOperation);
-    return returnedJoinedOperation.getJoinedOperations();
+    OperationJoin join = OperationJoin.create(opList);
+    sendAndWait(join);
+    return join.getOperations();
   }
 
   @Override
@@ -294,6 +293,49 @@ public class DcpRestClient implements DcpClient {
     return null;
   }
 
+  /**
+   * This method sifts through errors from DCP operations into checked and unchecked(RuntimeExceptions)
+   * This is the default handling but it can be overridden by different clients based on their needs.
+   *
+   * @param join
+   * @return
+   * @throws DocumentNotFoundException
+   * @throws TimeoutException
+   */
+  @VisibleForTesting
+  protected void handleOperationResult(OperationJoin join)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+
+    Operation operation = join.getOperations().iterator().next();
+
+    Throwable failure = null;
+    if (join.getFailures() != null) {
+      failure = join.getFailures().get(operation.getId());
+    }
+    switch (operation.getStatusCode()) {
+      case Operation.STATUS_CODE_OK:
+        return;
+      case Operation.STATUS_CODE_NOT_FOUND:
+        throw new DocumentNotFoundException(operation);
+      case Operation.STATUS_CODE_TIMEOUT:
+        TimeoutException timeoutException;
+        if (failure instanceof TimeoutException) {
+          timeoutException = (TimeoutException) failure;
+        } else if (failure != null) {
+          timeoutException = new TimeoutException(failure.getMessage());
+          timeoutException.initCause(failure);
+        } else {
+          timeoutException = new TimeoutException();
+        }
+        handleTimeoutException(operation, timeoutException);
+        break;
+      case Operation.STATUS_CODE_BAD_REQUEST:
+        throw new BadRequestException(operation);
+      default:
+        handleUnknownError(operation);
+    }
+  }
+
   @VisibleForTesting
   protected void handleTimeoutException(Operation operation, TimeoutException timeoutException)
       throws TimeoutException {
@@ -344,6 +386,30 @@ public class DcpRestClient implements DcpClient {
     return completedOperation;
   }
 
+  protected OperationJoin sendAndWait(OperationJoin join)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+
+    logger.info("sendAndWait: STARTED OperationJoin {}",
+        createLogMessageWithBody(join.getOperations().iterator().next()));
+
+    try {
+      OperationJoinLatch sync = new OperationJoinLatch(join);
+      join.sendWith(client);
+      sync.await(DEFAULT_OPERATION_LATCH_TIMEOUT_MICROS, TimeUnit.MICROSECONDS);
+
+      Operation operation = join.getOperations().iterator().next();
+      logCompletedOperation(operation);
+      handleOperationResult(join);
+
+    } catch (TimeoutException timeoutException) {
+      handleTimeoutException(join.getOperations().iterator().next(), timeoutException);
+    } catch (InterruptedException interruptedException) {
+      handleInterruptedException(join.getOperations().iterator().next(), interruptedException);
+    }
+    //this maybe null due to client side exceptions caught above.
+    return join;
+  }
+
   @VisibleForTesting
   protected long getPostOperationExpirationMicros() {
     return postOperationExpirationMicros;
@@ -371,6 +437,10 @@ public class DcpRestClient implements DcpClient {
 
   protected int getPort(InetSocketAddress inetSocketAddress) {
     return inetSocketAddress.getPort();
+  }
+
+  private void handleUnknownError(Operation operation) {
+    throw new DcpRuntimeException(operation);
   }
 
   private void handleUnknownError(Operation operation, OperationLatch.OperationResult operationResult) {
