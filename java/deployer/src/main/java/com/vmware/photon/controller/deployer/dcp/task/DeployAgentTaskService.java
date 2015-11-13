@@ -217,7 +217,7 @@ public class DeployAgentTaskService extends StatefulService {
     command.add(hostState.password);
 
     String vibPath = VMFS_VOLUMES + "/" +
-        StringUtils.strip(deploymentState.imageDataStoreName, "/") + "/" +
+        StringUtils.strip(deploymentState.imageDataStoreNames.iterator().next(), "/") + "/" +
         StringUtils.strip(currentState.vibPath, "/");
 
     command.add(vibPath);

@@ -965,7 +965,8 @@ public class DeploymentWorkflowServiceTest {
       verifySingletonServiceState(
           DeploymentService.State.class,
           (state) -> {
-            assertThat(state.imageDataStoreName, is("IMAGE_DATASTORE_NAME"));
+            assertThat(state.imageDataStoreNames.size(), is(1));
+            assertThat(state.imageDataStoreNames.iterator().next(), is("IMAGE_DATASTORE_NAME"));
             assertThat(state.imageDataStoreUsedForVMs, is(true));
             assertThat(state.ntpEndpoint, is("NTP_ENDPOINT"));
             if (state.oAuthEnabled) {

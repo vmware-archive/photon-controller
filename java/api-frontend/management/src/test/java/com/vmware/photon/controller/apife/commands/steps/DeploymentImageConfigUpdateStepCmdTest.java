@@ -38,6 +38,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.util.Collections;
+
 /**
  * Tests {@link DeploymentImageConfigUpdateStepCmd}.
  */
@@ -67,7 +69,7 @@ public class DeploymentImageConfigUpdateStepCmdTest {
     entity = new DeploymentEntity();
     entity.setId("id");
     entity.setOperationId("opid");
-    entity.setImageDatastore("image-ds");
+    entity.setImageDatastores(Collections.singleton("image-ds"));
     StepEntity step = new StepEntity();
     step.setId("id");
     step.addResource(entity);
@@ -121,7 +123,7 @@ public class DeploymentImageConfigUpdateStepCmdTest {
       command.execute();
       verify(imageConfig, times(3)).setDatastore(any(String.class));
       verify(imageConfig, times(3)).setEndpoint(any(String.class));
-      Assert.assertEquals(imageConfig.getDatastore(), entity.getImageDatastore());
+      Assert.assertTrue(entity.getImageDatastores().contains(imageConfig.getDatastore()));
       Assert.assertEquals(imageConfig.getEndpoint(), "http://" + host.getAddress());
       Assert.assertEquals(imageConfig.getEndpointHostAddress(), host.getAddress());
     }
@@ -133,7 +135,7 @@ public class DeploymentImageConfigUpdateStepCmdTest {
       command.execute();
       verify(imageConfig, times(3)).setDatastore(any(String.class));
       verify(imageConfig, times(1)).setEndpoint(any(String.class));
-      Assert.assertEquals(imageConfig.getDatastore(), entity.getImageDatastore());
+      Assert.assertTrue(entity.getImageDatastores().contains(imageConfig.getDatastore()));
     }
 
     @Test
