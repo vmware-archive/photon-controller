@@ -244,6 +244,8 @@ class HostHandlerTestCase(unittest.TestCase):
                     equal_to(stable_uuid(image_ds)))
         assert_that(host_config.image_datastore_id,
                     equal_to(stable_uuid(image_ds)))
+        assert_that(host_config.image_datastore_ids,
+                    contains_inanyorder(stable_uuid(image_ds)))
 
         leaf_scheduler = SchedulerRole(stable_uuid("leaf scheduler"))
         leaf_scheduler.parent_id = stable_uuid("parent scheduler")
