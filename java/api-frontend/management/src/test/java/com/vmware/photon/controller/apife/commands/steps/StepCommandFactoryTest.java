@@ -14,15 +14,18 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.apife.backends.BackendTestModule;
+import com.vmware.photon.controller.apife.TestModule;
+import com.vmware.photon.controller.apife.backends.DcpBackendTestModule;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.CommandTestModule;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandTest;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
+import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 
 import com.google.inject.Inject;
+import org.junit.AfterClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -32,8 +35,12 @@ import static org.hamcrest.Matchers.is;
 /**
  * Tests {@link StepCommandFactory}.
  */
-@Guice(modules = {HibernateTestModule.class, BackendTestModule.class, CommandTestModule.class})
+@Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
 public class StepCommandFactoryTest {
+
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
+
   @Inject
   private StepCommandFactory stepCommandFactory;
 
@@ -41,8 +48,30 @@ public class StepCommandFactoryTest {
 
   private StepEntity step;
 
+  @Inject
+  private BasicServiceHost basicServiceHost;
+
+  @Inject
+  private ApiFeDcpRestClient apiFeDcpRestClient;
+
+  @AfterClass
+  public static void afterClassCleanup() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
+
   @BeforeMethod
   public void setUp() throws Exception {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
     step = new StepEntity();
     step.setId("Step ID");
     this.taskCommand = new TaskCommandTest().testTaskCommand;
