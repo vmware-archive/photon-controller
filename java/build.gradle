@@ -47,7 +47,7 @@ subprojects {
       url "http://oss.sonatype.org/content/repositories/snapshots/"
     }
     maven {
-      url "http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave"
+      url "http://dl.bintray.com/vmware/lightwave-maven"
     }
   }
 
