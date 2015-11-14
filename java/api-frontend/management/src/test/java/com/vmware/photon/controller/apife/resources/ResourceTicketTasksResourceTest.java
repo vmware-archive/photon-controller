@@ -17,7 +17,6 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.TaskFeClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
-import com.vmware.photon.controller.apife.db.dao.TaskDao;
 import com.vmware.photon.controller.apife.resources.routes.ResourceTicketResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -56,9 +55,6 @@ public class ResourceTicketTasksResourceTest extends ResourceTest {
 
   @Mock
   private TaskCommandFactory taskCommandFactory;
-
-  @Mock
-  private TaskDao taskDao;
 
   @Override
   protected void setUpResources() throws Exception {

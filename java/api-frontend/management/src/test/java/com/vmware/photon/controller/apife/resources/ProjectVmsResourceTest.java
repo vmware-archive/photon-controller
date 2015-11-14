@@ -22,7 +22,6 @@ import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.builders.AttachedDiskCreateSpecBuilder;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
-import com.vmware.photon.controller.apife.db.dao.TaskDao;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
@@ -67,9 +66,6 @@ public class ProjectVmsResourceTest extends ResourceTest {
 
   @Mock
   private VmFeClient vmFeClient;
-
-  @Mock
-  private TaskDao taskDao;
 
   private VmCreateSpec spec;
 
