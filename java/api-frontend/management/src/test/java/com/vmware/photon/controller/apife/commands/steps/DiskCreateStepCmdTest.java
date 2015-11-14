@@ -18,20 +18,18 @@ import com.vmware.photon.controller.api.EphemeralDisk;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
+import com.vmware.photon.controller.apife.backends.AttachedDiskBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
-import com.vmware.photon.controller.apife.backends.DiskSqlBackend;
+import com.vmware.photon.controller.apife.backends.DiskDcpBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
-import com.vmware.photon.controller.apife.backends.FlavorSqlBackend;
-import com.vmware.photon.controller.apife.backends.LocalityBackend;
+import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;
 import com.vmware.photon.controller.apife.backends.ResourceTicketBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TombstoneBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
-import com.vmware.photon.controller.apife.db.dao.AttachedDiskDao;
-import com.vmware.photon.controller.apife.db.dao.EphemeralDiskDao;
-import com.vmware.photon.controller.apife.db.dao.PersistentDiskDao;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
@@ -112,17 +110,15 @@ public class DiskCreateStepCmdTest extends PowerMockTestCase {
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(hostClient.getAgentId()).thenReturn("agent-id");
 
-    diskBackend = spy(new DiskSqlBackend(
-        mock(PersistentDiskDao.class),
-        mock(EphemeralDiskDao.class),
-        mock(ResourceTicketBackend.class),
-        mock(AttachedDiskDao.class),
+    diskBackend = spy(new DiskDcpBackend(
+        mock(ApiFeDcpRestClient.class),
         mock(ProjectBackend.class),
+        mock(FlavorBackend.class),
+        mock(ResourceTicketBackend.class),
         mock(TaskBackend.class),
         mock(EntityLockBackend.class),
-        mock(TombstoneBackend.class),
-        mock(LocalityBackend.class),
-        mock(FlavorSqlBackend.class)
+        mock(AttachedDiskBackend.class),
+        mock(TombstoneBackend.class)
     ));
     doNothing().when(diskBackend).updateState(
         Mockito.isA(BaseDiskEntity.class), Mockito.isA(DiskState.class));
