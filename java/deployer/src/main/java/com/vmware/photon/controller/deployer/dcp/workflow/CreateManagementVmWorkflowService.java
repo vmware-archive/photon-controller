@@ -21,7 +21,6 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -32,7 +31,6 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskService;
@@ -373,25 +371,24 @@ public class CreateManagementVmWorkflowService extends StatefulService {
    */
   private void getHostStateToCreateIso(final State currentState, final VmService.State vmState) {
 
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(vmState.hostServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
 
-        try {
-          HostService.State hostState = operation.getBody(HostService.State.class);
-          createIso(currentState, vmState, hostState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntity(this, vmState.hostServiceLink, completionHandler);
+                  try {
+                    HostService.State hostState = completedOp.getBody(HostService.State.class);
+                    createIso(currentState, vmState, hostState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   /**

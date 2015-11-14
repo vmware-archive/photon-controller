@@ -373,23 +373,25 @@ public class RegisterAuthClientTaskService extends StatefulService {
    * @param lbIpAddress IP address of the load balancer.
    */
   private void getDeploymentDocuments(final State currentState, final String lbIpAddress) throws Throwable {
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntity(this, currentState.deploymentServiceLink, new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
 
-        try {
-          DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
-          registerAuthClient(deploymentState, currentState.deploymentServiceLink, lbIpAddress);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    });
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
+
+                  try {
+                    DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
+                    registerAuthClient(deploymentState, currentState.deploymentServiceLink, lbIpAddress);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   /**

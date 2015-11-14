@@ -21,7 +21,6 @@ import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -31,7 +30,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.vmware.photon.controller.deployer.dcp.constant.ServiceFileConstants;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
@@ -266,23 +264,24 @@ public class CreateContainerTaskService extends StatefulService {
    */
   private void processGetDeploymentService(final State currentState, final ContainerService.State containerState) {
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntity(this, currentState.deploymentServiceLink, new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
 
-        try {
-          DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
-          processGetVmState(currentState, containerState, deploymentState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    });
+                  try {
+                    DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
+                    processGetVmState(currentState, containerState, deploymentState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   /**

@@ -31,6 +31,7 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 
 import javax.annotation.Nullable;
 
@@ -325,24 +326,26 @@ public class SetDatastoreTagsTaskService extends StatefulService {
     }
 
     private void getDatastore(final State currentState, final String datastoreServiceLink, AtomicInteger latch) {
-        CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-        cloudStoreHelper.getEntity(this, datastoreServiceLink, new Operation.CompletionHandler() {
-            @Override
-            public void handle(Operation operation, Throwable throwable) {
-                if (null != throwable) {
-                    failTask(throwable);
-                    return;
-                }
 
-                try {
-                    DatastoreService.State datastoreState = operation.getBody(DatastoreService.State.class);
-                    Set<String> tags = calculateTags(currentState, datastoreState);
-                    setTagsOnDatastore(currentState, datastoreServiceLink, tags, latch);
-                } catch (Throwable t) {
-                    failTask(t);
-                }
-            }
-        });
+        sendRequest(
+            HostUtils.getCloudStoreHelper(this)
+                .createGet(datastoreServiceLink)
+                .setCompletion(
+                    (completedOp, failure) -> {
+                        if (null != failure) {
+                            failTask(failure);
+                            return;
+                        }
+
+                        try {
+                            DatastoreService.State datastoreState = completedOp.getBody(DatastoreService.State.class);
+                            Set<String> tags = calculateTags(currentState, datastoreState);
+                            setTagsOnDatastore(currentState, datastoreServiceLink, tags, latch);
+                        } catch (Throwable t) {
+                            failTask(t);
+                        }
+                    }
+                ));
     }
 
     private Set<String> calculateTags(final State currentState, final DatastoreService.State datastoreState) {
