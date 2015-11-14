@@ -59,7 +59,6 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -166,8 +165,7 @@ public class HierarchyManagerTest extends PowerMockTestCase {
     networks.add(net3);
     datastores.add(datastore1);
     datastores.add(datastore2);
-    RegisterHostRequest request = ChairmanServiceTest.createRegReq(datastores, networks,
-        new HashSet<>(Arrays.asList("ds1")));
+    RegisterHostRequest request = ChairmanServiceTest.createRegReq(datastores, networks, "ds1");
     when(hierarchyUtils.getNetworks(request.getConfig())).thenReturn(new HashSet(networks));
     when(hierarchyUtils.getDatastores(request.getConfig())).thenReturn(new HashSet(datastores));
     hierarchyManager.onHostAdded("host1", request.getConfig());
@@ -212,9 +210,9 @@ public class HierarchyManagerTest extends PowerMockTestCase {
     String hostId1 = "host1";
     String hostId2 = "host2";
     RegisterHostRequest request = ChairmanServiceTest.createRegReq(hostId1, availabilityZone.getId(),
-        datastores, networks, "addr", 1234, new HashSet<>(Arrays.asList("DS1")));
+        datastores, networks, "addr", 1234, "DS1");
     RegisterHostRequest request2 = ChairmanServiceTest.createRegReq(hostId2, availabilityZone.getId(),
-        datastores, networks, "addr", 1234, new HashSet<>(Arrays.asList("DS1")));
+        datastores, networks, "addr", 1234, "DS1");
 
     hierarchyManager.onHostAdded(hostId1, request.getConfig());
     hierarchyManager.onHostAdded(hostId2, request2.getConfig());
@@ -262,9 +260,9 @@ public class HierarchyManagerTest extends PowerMockTestCase {
     String hostId1 = "host1";
     String hostId2 = "host2";
     RegisterHostRequest request = ChairmanServiceTest.createRegReq(hostId1, availabilityZone.getId(),
-        datastores, networks, "host", 1234, new HashSet<>(Arrays.asList("DS1")));
+        datastores, networks, "host", 1234, "DS1");
     RegisterHostRequest request2 = ChairmanServiceTest.createRegReq(hostId2, availabilityZone.getId(),
-        datastores, networks, "host", 1234, new HashSet<>(Arrays.asList("DS1")));
+        datastores, networks, "host", 1234, "DS1");
 
     doThrow(new Exception()).when(hierarchyUtils).writeRolesToZk(anyMapOf(String.class, byte[].class), any(int.class));
 
@@ -295,9 +293,9 @@ public class HierarchyManagerTest extends PowerMockTestCase {
     String hostId1 = "host1";
     String hostId2 = "host2";
     RegisterHostRequest request = ChairmanServiceTest.createRegReq(hostId1, availabilityZone.getId(),
-        datastores, networks, "host", 1234, new HashSet<>(Arrays.asList("DS1")));
+        datastores, networks, "host", 1234, "DS1");
     RegisterHostRequest request2 = ChairmanServiceTest.createRegReq(hostId2, availabilityZone.getId(),
-        datastores, networks, "host", 1234, new HashSet<>(Arrays.asList("DS1")));
+        datastores, networks, "host", 1234, "DS1");
 
     hierarchyManager.onHostAdded(hostId1, request.getConfig());
     hierarchyManager.onHostAdded(hostId2, request2.getConfig());
@@ -551,9 +549,9 @@ public class HierarchyManagerTest extends PowerMockTestCase {
     String hostId1 = "host1";
     String hostId2 = "host2";
     RegisterHostRequest request = ChairmanServiceTest.createRegReq(hostId1, availabilityZone.getId(),
-        datastores, networks, "host", 1234, new HashSet<>(Arrays.asList("DS1")));
+        datastores, networks, "host", 1234, "DS1");
     RegisterHostRequest request2 = ChairmanServiceTest.createRegReq(hostId2, availabilityZone.getId(),
-        datastores, networks, "host", 1234, new HashSet<>(Arrays.asList("DS1")));
+        datastores, networks, "host", 1234, "DS1");
 
     hierarchyManager.onHostAdded(hostId1, request.getConfig());
     hierarchyManager.onHostAdded(hostId2, request2.getConfig());

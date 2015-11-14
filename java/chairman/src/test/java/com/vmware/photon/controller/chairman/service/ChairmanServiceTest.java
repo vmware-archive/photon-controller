@@ -71,6 +71,7 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -113,18 +114,18 @@ public class ChairmanServiceTest extends PowerMockTestCase {
   private Set<Network> networks;
 
   public static RegisterHostRequest createRegReq(Set<Datastore> datastores) {
-    return createRegReq(datastores, new LinkedHashSet<>(), null);
+    return createRegReq(datastores, new HashSet<Network>(), null);
   }
 
   public static RegisterHostRequest createRegReq(Set<Datastore> datastores, Set<Network> networks,
-                                                 Set<String> imageDatastoreIds) {
+                                                 String imageDatastoreId) {
     return createRegReq("host", "DefaultAZ", datastores, networks, "192.168.0.1", 22,
-                        imageDatastoreIds);
+                        imageDatastoreId);
   }
 
   public static RegisterHostRequest createRegReq(String id, String fd, Set<Datastore> datastores,
                                                  Set<Network> networks, String addr, int port,
-                                                 Set<String> imageDatastoreIds) {
+                                                 String imageDatastoreId) {
     RegisterHostRequest request = new RegisterHostRequest();
 
     HostConfig hostConfig = new HostConfig();
@@ -145,7 +146,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
       }
       hostConfig.setDatastores(ds);
       // use the first datastore as the image datastore
-      hostConfig.setImage_datastore_ids(imageDatastoreIds);
+      hostConfig.setImage_datastore_id(imageDatastoreId);
     }
     if (!networks.isEmpty()) {
       ArrayList<com.vmware.photon.controller.resource.gen.Network> reqnetworks =
@@ -171,7 +172,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
   public void setUp() {
     service = new ChairmanService(hierarchyUtils, configDict, missingDict, dcpRestClient, buildInfo);
     this.datastores = new LinkedHashSet<>();
-    this.networks = new LinkedHashSet<>();
+    this.networks = new HashSet<>();
   }
 
   @Test
@@ -260,13 +261,13 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     ds1.id = "ds1";
     ds1.name = "ds1";
     ds1.type = "SHARED_VMFS";
-    ds1.tags = new LinkedHashSet<>();
+    ds1.tags = new HashSet<>();
 
     DatastoreService.State ds2 = new DatastoreService.State();
     ds2.id = "ds2";
     ds2.name = "ds2";
     ds2.type = "SHARED_VMFS";
-    ds2.tags = new LinkedHashSet<>();
+    ds2.tags = new HashSet<>();
 
     String dsLink1 = DatastoreServiceFactory.getDocumentLink(ds1.id);
     String dsLink2 = DatastoreServiceFactory.getDocumentLink(ds2.id);
@@ -283,7 +284,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     networks.add(new Network("nw1", Arrays.asList(NetworkType.VM)));
     networks.add(new Network("nw2", Arrays.asList(NetworkType.VM, NetworkType.VMOTION)));
     networks.add(new Network("nw3", Arrays.asList(NetworkType.MANAGEMENT, NetworkType.VMOTION)));
-    RegisterHostRequest request = createRegReq(datastores, networks, new LinkedHashSet<>(Arrays.asList("ds1", "ds2")));
+    RegisterHostRequest request = createRegReq(datastores, networks, "ds1");
     request.setId(hostId);
     request.getConfig().setAgent_id(hostId);
     RegisterHostResponse response = service.register_host(request);
@@ -295,20 +296,17 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     // Verify that patchAndWait gets called with "READY" state.
     ArgumentCaptor<String> arg1 = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<ServiceDocument> arg2 = ArgumentCaptor.forClass(ServiceDocument.class);
-    verify(dcpRestClient, times(3)).patchAndWait(arg1.capture(), arg2.capture());
+    verify(dcpRestClient, times(2)).patchAndWait(arg1.capture(), arg2.capture());
     assertThat(arg1.getAllValues().get(0), is(link));
     HostService.State newState = (HostService.State) (arg2.getAllValues().get(0));
     assertThat(newState.agentState, is(AgentState.ACTIVE));
     assertThat(newState.reportedDatastores, containsInAnyOrder("ds1", "ds2"));
     assertThat(newState.reportedNetworks, containsInAnyOrder("nw1", "nw2"));
-    assertThat(newState.reportedImageDatastores, containsInAnyOrder("ds1", "ds2"));
+    assertThat(newState.reportedImageDatastores, containsInAnyOrder("ds1"));
 
-    // Verify that the isImageDatastore flag gets set on ds1 and ds2.
+    // Verify that the isImageDatastore flag gets set on ds1.
     assertThat(arg1.getAllValues().get(1), is(dsLink1));
     DatastoreService.State newDsState = (DatastoreService.State) (arg2.getAllValues().get(1));
-    assertThat(newDsState.isImageDatastore, is(true));
-    assertThat(arg1.getAllValues().get(2), is(dsLink2));
-    newDsState = (DatastoreService.State) (arg2.getAllValues().get(2));
     assertThat(newDsState.isImageDatastore, is(true));
 
     // Verify that chairman attempted to create datastore documents.
@@ -333,7 +331,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
   @Test
   public void testSimpleRegistrationFail() throws Exception {
     datastores.add(new Datastore("ds1", DatastoreType.SHARED_VMFS));
-    RegisterHostRequest request = createRegReq(datastores, networks, new LinkedHashSet<>(Arrays.asList("ds1")));
+    RegisterHostRequest request = createRegReq(datastores, networks, "ds1");
     request.setId("host1");
     request.getConfig().setAgent_id("host1");
 
