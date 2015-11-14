@@ -22,7 +22,6 @@ import com.vmware.dcp.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -272,40 +271,37 @@ public class ImageReplicatorService extends StatefulService {
    * @param current
    */
   protected void updateTotalImageDatastore(final State current) {
-    try {
-      CloudStoreHelper cloudStoreHelper = ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper();
-      cloudStoreHelper.getEntity(this, ImageServiceFactory.SELF_LINK + "/" + current.image, (operation, throwable) -> {
-        if (throwable != null) {
-          failTask(throwable);
-          return;
-        }
-        try {
-          ImageService.State imageServiceState = new ImageService.State();
-          imageServiceState.totalImageDatastore = getZookeeperHostMonitor().getImageDatastores().size();
-          imageServiceState.totalDatastore = getZookeeperHostMonitor().getAllDatastores().size();
-          cloudStoreHelper.patchEntity(ImageReplicatorService.this,
-              operation.getBody(ImageService.State.class).documentSelfLink, imageServiceState,
-              (op, t) -> {
-                if (t != null) {
-                  failTask(t);
-                  return;
-                }
-              });
-          // move to next stage
-          if (!current.isSelfProgressionDisabled) {
-            State patch = ImageReplicatorService.this.buildPatch(
-                TaskState.TaskStage.STARTED, TaskState.SubStage.TRIGGER_COPIES, null);
+    sendRequest(
+        ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
+            .createGet(ImageServiceFactory.SELF_LINK + "/" + current.image)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (failure != null) {
+                    failTask(failure);
+                    return;
+                  }
 
-            sendSelfPatch(patch);
-          }
-        } catch (Throwable t) {
-          failTask(t);
-          return;
-        }
-      });
-    } catch (Exception e) {
-      failTask(e);
-    }
+                  try {
+                    ImageService.State imageServiceState = new ImageService.State();
+                    imageServiceState.totalImageDatastore = getZookeeperHostMonitor().getImageDatastores().size();
+                    imageServiceState.totalDatastore = getZookeeperHostMonitor().getAllDatastores().size();
+                    ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper().patchEntity(this,
+                        completedOp.getBody(ImageService.State.class).documentSelfLink, imageServiceState,
+                        (o, t) -> {
+                          if (t != null) {
+                            failTask(t);
+                            return;
+                          }
+                        });
+                    // move to next stage
+                    if (!current.isSelfProgressionDisabled) {
+                      sendSelfPatch(buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.TRIGGER_COPIES, null));
+                    }
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   /**
