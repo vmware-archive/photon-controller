@@ -54,7 +54,7 @@ def get_register_host_request(host, port, agent_id, networks, datastores,
                              address=ServerAddress(host, port=port),
                              networks=networks,
                              availability_zone=availability_zone,
-                             image_datastore_id=image_datastore,
+                             image_datastore_ids=set([image_datastore]),
                              management_only=management_only)
     return RegisterHostRequest(agent_id, host_config)
 

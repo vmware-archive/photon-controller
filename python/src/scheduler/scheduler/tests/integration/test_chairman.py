@@ -75,7 +75,7 @@ class TestChairman(BaseKazooTestCase):
                                  address=ServerAddress("127.0.0.1", port=port),
                                  networks=networks)
         host_config.availability_zone = "foo"
-        host_config.image_datastore_id = self.image_datastore
+        host_config.image_datastore_ids = set(self.image_datastore)
         return RegisterHostRequest(host_id, host_config)
 
     def report_missing(self):

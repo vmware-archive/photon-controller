@@ -349,7 +349,7 @@ class TestRootScheduler(BaseKazooTestCase):
         req1 = get_register_host_request(agent_host, agent_port,
                                          agent_id="h1", networks=[net1],
                                          datastores=[ds1],
-                                         image_datastore=None,
+                                         image_datastore=ds1.id,
                                          availability_zone="av1")
 
         rc = self.chairman_client.register_host(req1)
@@ -1191,12 +1191,13 @@ class TestRootScheduler(BaseKazooTestCase):
         server.start_server()
 
         # Register the agents
+        ds1 = Datastore("ds1", "ds1", DatastoreType.SHARED_VMFS)
         for i in xrange(num_agents):
             req = get_register_host_request(agent_host, agent_port,
                                             agent_id=str(i),
                                             networks=[],
-                                            datastores=[],
-                                            image_datastore=None,
+                                            datastores=[ds1],
+                                            image_datastore=ds1.id,
                                             availability_zone="av1")
             self.chairman_client.register_host(req)
 
@@ -1250,12 +1251,12 @@ class TestRootScheduler(BaseKazooTestCase):
         req1 = get_register_host_request(agent_host, agent_port,
                                          agent_id="h1", networks=[net1, net2],
                                          datastores=[ds1, ds2],
-                                         image_datastore=None,
+                                         image_datastore=ds1.id,
                                          availability_zone="av1")
         req2 = get_register_host_request(agent_host, agent_port,
                                          agent_id="h2", networks=[net1, net3],
                                          datastores=[ds2],
-                                         image_datastore=None,
+                                         image_datastore=ds1.id,
                                          availability_zone="av1")
 
         self.chairman_client.register_host(req1)
@@ -1295,7 +1296,7 @@ class TestRootScheduler(BaseKazooTestCase):
                                          agent_id="h2",
                                          networks=[net1, net3],
                                          datastores=[ds2, ds3],
-                                         image_datastore=None,
+                                         image_datastore=ds2.id,
                                          availability_zone="av1")
 
         self.chairman_client.register_host(req1)
@@ -1499,13 +1500,13 @@ class TestRootScheduler(BaseKazooTestCase):
         req1 = get_register_host_request(host, mgmt_port,
                                          agent_id="mgmt", networks=[net1],
                                          datastores=[ds1],
-                                         image_datastore=None,
+                                         image_datastore=ds1.id,
                                          availability_zone="av1",
                                          management_only=True)
         req2 = get_register_host_request(host, non_mgmt_port,
                                          agent_id="h1", networks=[net1],
                                          datastores=[ds1],
-                                         image_datastore=None,
+                                         image_datastore=ds1.id,
                                          availability_zone="av1",
                                          management_only=False)
 
