@@ -212,44 +212,42 @@ public class DeprovisionHostWorkflowService extends StatefulService {
   }
 
   private void handleStartedStage(final State currentState) {
-    final Service service = this;
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
 
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.hostServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
 
-        HostService.State hostState = operation.getBody(HostService.State.class);
-        if (hostState.state == HostState.CREATING ||
-            hostState.state == HostState.NOT_PROVISIONED ||
-            hostState.state == HostState.DELETED
-            ) {
-          ServiceUtils.logInfo(service, "The host is not provisioned but %s, returning....", hostState.state.name());
-          sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-          return;
-        }
+                  HostService.State hostState = completedOp.getBody(HostService.State.class);
+                  if (hostState.state == HostState.CREATING ||
+                      hostState.state == HostState.NOT_PROVISIONED ||
+                      hostState.state == HostState.DELETED) {
+                    ServiceUtils.logInfo(this, "The host is not provisioned but %s, returning....",
+                        hostState.state.name());
+                    sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+                    return;
+                  }
 
-        boolean ignoreError = hostState.state == HostState.ERROR;
-        if (ignoreError) {
-          ServiceUtils.logInfo(service, "We are ignoring deprovision errors since the host is in ERROR state");
-        }
+                  boolean ignoreError = hostState.state == HostState.ERROR;
+                  if (ignoreError) {
+                    ServiceUtils.logInfo(this, "We are ignoring deprovision errors since the host is in ERROR state");
+                  }
 
-        switch (currentState.taskState.subStage) {
-          case PUT_HOST_TO_DEPROVISION_MODE:
-            putHostToDeprovisionMode(currentState, ignoreError);
-            break;
-          case DELETE_AGENT:
-            handleDeleteAgent(currentState, ignoreError);
-            break;
-        }
-      }
-    };
-
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntity(this, currentState.hostServiceLink, completionHandler);
+                  switch (currentState.taskState.subStage) {
+                    case PUT_HOST_TO_DEPROVISION_MODE:
+                      putHostToDeprovisionMode(currentState, ignoreError);
+                      break;
+                    case DELETE_AGENT:
+                      handleDeleteAgent(currentState, ignoreError);
+                      break;
+                  }
+                }
+            ));
   }
 
   private void putHostToDeprovisionMode(State currentState, boolean ignoreError) {

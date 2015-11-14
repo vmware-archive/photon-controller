@@ -188,19 +188,21 @@ public class AddCloudHostWorkflowService extends StatefulService {
   }
 
   private void getDeploymentService(final State currentState, final String deploymentServiceLink) {
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntity(this, deploymentServiceLink, new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
 
-        DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
-        provisionCloudHost(currentState, deploymentServiceLink, deploymentState.chairmanServerList);
-      }
-    });
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(deploymentServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
+
+                  DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
+                  provisionCloudHost(currentState, deploymentServiceLink, deploymentState.chairmanServerList);
+                }
+            ));
   }
 
   private void provisionCloudHost(final State currentState, String deploymentServiceLink, Set<String>

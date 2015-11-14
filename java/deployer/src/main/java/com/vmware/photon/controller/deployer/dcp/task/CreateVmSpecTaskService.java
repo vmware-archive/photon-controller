@@ -22,7 +22,6 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -32,10 +31,10 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import static com.google.common.base.Preconditions.checkState;
@@ -188,21 +187,21 @@ public class CreateVmSpecTaskService extends StatefulService {
   }
 
   public void getVmIpAddress(final State currentState) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
 
-        HostService.State hostState = operation.getBody(HostService.State.class);
-        createVmService(currentState, hostState);
-      }
-    };
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.hostServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntity(this, currentState.hostServiceLink, completionHandler);
+                  HostService.State hostState = completedOp.getBody(HostService.State.class);
+                  createVmService(currentState, hostState);
+                }
+            ));
   }
 
   public void createVmService(final State currentState, HostService.State hostState) {
