@@ -74,17 +74,6 @@ public class CloudStoreHelper {
     return Operation.createPost(getCloudStoreURI(path));
   }
 
-  public void getEntity(Service service, String documentLink, Operation.CompletionHandler completionHandler) {
-    URI uri = getCloudStoreURI(null);
-    Operation getOperation = Operation
-        .createGet(UriUtils.buildUri(uri, documentLink))
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
-        .setReferer(this.localHostAddress)
-        .setCompletion(completionHandler);
-
-    service.sendRequest(getOperation);
-  }
-
   public void getEntities(Service service,
                           Collection<String> documentLinks,
                           OperationJoin.JoinedCompletionHandler completionHandler) {
