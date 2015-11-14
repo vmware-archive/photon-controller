@@ -353,8 +353,7 @@ public class HierarchyUtilsTest extends PowerMockTestCase {
   }
 
   private HostConfig getHostConfig(Host host) {
-    RegisterHostRequest req = ChairmanServiceTest.createRegReq(host.getDatastores(), host.getNetworks(),
-        new HashSet<>(Arrays.asList("DS1")));
+    RegisterHostRequest req = ChairmanServiceTest.createRegReq(host.getDatastores(), host.getNetworks(), "DS1");
     req.getConfig().setAgent_id(host.getId());
     return req.getConfig();
   }
