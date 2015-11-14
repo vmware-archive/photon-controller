@@ -14,84 +14,182 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.DiskState;
+import com.vmware.photon.controller.api.DiskType;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.PersistentDisk;
+import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
-import com.vmware.photon.controller.api.VmCreateSpec;
+import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
-import com.vmware.photon.controller.apife.db.dao.BaseDaoTest;
-import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
-import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
+import com.vmware.photon.controller.apife.TestModule;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DiskService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DiskServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
+import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import org.junit.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Tests {@link DiskBackend}.
  */
-@Guice(modules = {HibernateTestModule.class, BackendTestModule.class})
-public class VmDiskBackendTest extends BaseDaoTest {
+@Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+public class VmDiskBackendTest {
 
-  @Inject
-  private EntityFactory entityFactory;
+  private static ApiFeDcpRestClient dcpClient;
+  private static BasicServiceHost host;
+
+  private static String projectId;
+
+  private static void commonHostAndClientSetup(
+      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+    host = basicServiceHost;
+    dcpClient = apiFeDcpRestClient;
+
+    if (host == null) {
+      throw new IllegalStateException(
+          "host is not expected to be null in this test setup");
+    }
+
+    if (dcpClient == null) {
+      throw new IllegalStateException(
+          "dcpClient is not expected to be null in this test setup");
+    }
+
+    if (!host.isReady()) {
+      throw new IllegalStateException(
+          "host is expected to be in started state, current state=" + host.getState());
+    }
+  }
+
+  private static void commonHostDocumentsCleanup() throws Throwable {
+    if (host != null) {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+  }
+
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (dcpClient != null) {
+      dcpClient.stop();
+      dcpClient = null;
+    }
+
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
+  }
+
+  private static void commonDataSetup(
+      TenantDcpBackend tenantDcpBackend,
+      ResourceTicketDcpBackend resourceTicketDcpBackend,
+      ProjectDcpBackend projectDcpBackend,
+      FlavorDcpBackend flavorDcpBackend,
+      FlavorLoader flavorLoader) throws Throwable {
+    String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "vmware");
+
+    QuotaLineItem ticketLimit = new QuotaLineItem("vm.cost", 100, QuotaUnit.COUNT);
+    DcpBackendTestHelper.createTenantResourceTicket(resourceTicketDcpBackend,
+        tenantId, "rt1", ImmutableList.of(ticketLimit));
+
+    QuotaLineItem projectLimit = new QuotaLineItem("vm.cost", 10, QuotaUnit.COUNT);
+    projectId = DcpBackendTestHelper.createProject(projectDcpBackend,
+        "staging", tenantId, "rt1", ImmutableList.of(projectLimit));
+
+    DcpBackendTestHelper.createFlavors(flavorDcpBackend, flavorLoader.getAllFlavors());
+  }
 
   @Inject
   private VmBackend vmBackend;
 
   @Inject
-  private DiskBackend diskBackend;
-
-  @Inject
   private EntityLockBackend entityLockBackend;
 
-  private String projectId;
   private String vmId;
+
+  @Inject
+  private BasicServiceHost basicServiceHost;
+
+  @Inject
+  private ApiFeDcpRestClient apiFeDcpRestClient;
+
+  @Inject
+  private TenantDcpBackend tenantDcpBackend;
+
+  @Inject
+  private ResourceTicketDcpBackend resourceTicketDcpBackend;
+
+  @Inject
+  private ProjectDcpBackend projectDcpBackend;
+
+  @Inject
+  private FlavorDcpBackend flavorDcpBackend;
+
+  @Inject
+  private FlavorLoader flavorLoader;
 
   @BeforeMethod()
   public void setUp() throws Throwable {
-    super.setUp();
-    entityFactory.loadFlavors();
+    commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+    commonDataSetup(
+        tenantDcpBackend,
+        resourceTicketDcpBackend,
+        projectDcpBackend,
+        flavorDcpBackend,
+        flavorLoader);
 
-    QuotaLineItemEntity tenantLimit = new QuotaLineItemEntity("vm", 100, QuotaUnit.COUNT);
-    QuotaLineItemEntity projectLimit = new QuotaLineItemEntity("vm", 10, QuotaUnit.COUNT);
+    VmService.State vm = new VmService.State();
+    vm.name = "test-vm";
+    FlavorEntity flavorEntity = flavorDcpBackend.getEntityByNameAndKind("core-100", Vm.KIND);
+    vm.flavorId = flavorEntity.getId();
+    vm.imageId = UUID.randomUUID().toString();
+    vm.projectId = projectId;
+    vm.vmState = VmState.CREATING;
+    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vm);
+    VmService.State createdVm = result.getBody(VmService.State.class);
+    vmId = ServiceUtils.getIDFromDocumentSelfLink(createdVm.documentSelfLink);
+  }
 
-    String tenantId = entityFactory.createTenant("vmware").getId();
-    String ticketId = entityFactory.createTenantResourceTicket(tenantId, "rt1", tenantLimit);
-    projectId = entityFactory.createProject(tenantId, ticketId, "staging", projectLimit);
+  @AfterMethod
+  public void tearDown() throws Throwable {
+    commonHostDocumentsCleanup();
+  }
 
-    final VmCreateSpec spec = new VmCreateSpec();
-    spec.setName("test-vm");
-    spec.setFlavor("core-100");
-    VmEntity vm = entityFactory.createVm(projectId, "core-100", "test-vm");
-    vmId = vm.getId();
-
+  @AfterClass
+  public static void afterClassCleanup() throws Throwable {
+    commonHostAndClientTeardown();
   }
 
   @Test
   public void testDiskAttachSuccess() throws Exception {
     List<String> diskIdList = new ArrayList<>();
     diskIdList.add(createPersistentDisk("test-disk-name-1", DiskState.DETACHED));
-    flushSession();
     diskIdList.add(createPersistentDisk("test-disk-name-2", DiskState.DETACHED));
-    flushSession();
-    VmEntity vmEntity = vmBackend.findById(vmId);
+
     TaskEntity taskEntity = vmBackend.prepareVmDiskOperation(
         vmId, diskIdList, Operation.ATTACH_DISK);
     // Look up steps
@@ -102,40 +200,6 @@ public class VmDiskBackendTest extends BaseDaoTest {
     assertThat(stepEntity.getState(), is(StepEntity.State.QUEUED));
     List<BaseEntity> resourceEntities = stepEntity.getTransientResourceEntities();
     assertThat(resourceEntities.size(), is(3));
-
-    // Compare the lists
-    List<String> resourceEntityList = new ArrayList<>();
-    for (BaseEntity baseEntity : resourceEntities) {
-      resourceEntityList.add(baseEntity.getId());
-    }
-    resourceEntityList.removeAll(diskIdList);
-    // Only the VM is left
-    assertThat(resourceEntityList.size(), is(1));
-
-    // Test the stepLocks are in place
-    try {
-      // On the main VM
-      entityLockBackend.setStepLock(vmEntity, stepEntity);
-      fail("no stepLock for VM entity during disk attach");
-    } catch (Throwable e) {
-      assertThat(e instanceof ConcurrentTaskException, is(true));
-    }
-
-    try {
-      // On first DISK
-      entityLockBackend.setStepLock(resourceEntities.get(0), stepEntity);
-      fail("no stepLock for DISK entity during disk attach");
-    } catch (Throwable e) {
-      assertThat(e instanceof ConcurrentTaskException, is(true));
-    }
-
-    try {
-      // On second DISK
-      entityLockBackend.setStepLock(resourceEntities.get(1), stepEntity);
-      fail("no stepLock for DISK entity during disk attach");
-    } catch (Throwable e) {
-      assertThat(e instanceof ConcurrentTaskException, is(true));
-    }
   }
 
   @Test(expectedExceptions = DiskNotFoundException.class)
@@ -186,9 +250,18 @@ public class VmDiskBackendTest extends BaseDaoTest {
 
   private String createPersistentDisk(String name, DiskState state)
       throws ExternalException {
-    PersistentDiskEntity disk = entityFactory.createPersistentDisk(projectId, "core-200", name, 2);
-    diskBackend.updateState(disk, state);
-    return disk.getId();
-  }
 
+    FlavorEntity flavorEntity = flavorDcpBackend.getEntityByNameAndKind("core-200", PersistentDisk.KIND);
+    DiskService.State diskState = new DiskService.State();
+    diskState.flavorId = flavorEntity.getId();
+    diskState.diskType = DiskType.PERSISTENT;
+    diskState.state = state;
+    diskState.name = name;
+    diskState.projectId = projectId;
+    diskState.capacityGb = 2;
+
+    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(DiskServiceFactory.SELF_LINK, diskState);
+    diskState = result.getBody(DiskService.State.class);
+    return ServiceUtils.getIDFromDocumentSelfLink(diskState.documentSelfLink);
+  }
 }

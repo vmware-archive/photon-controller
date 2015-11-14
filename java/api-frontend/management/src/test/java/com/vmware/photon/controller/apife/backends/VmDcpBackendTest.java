@@ -714,8 +714,8 @@ public class VmDcpBackendTest {
       diskState.state = DiskState.ATTACHED;
 
       Operation result = dcpClient.postAndWait(DiskServiceFactory.SELF_LINK, diskState);
-      DiskService.State createdDiskStatec = result.getBody(DiskService.State.class);
-      String diskId = ServiceUtils.getIDFromDocumentSelfLink(createdDiskStatec.documentSelfLink);
+      DiskService.State createdDiskState = result.getBody(DiskService.State.class);
+      String diskId = ServiceUtils.getIDFromDocumentSelfLink(createdDiskState.documentSelfLink);
 
       List<String> disks = new ArrayList<>();
       disks.add(diskId);
