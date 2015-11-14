@@ -323,7 +323,7 @@ public class ImageHostToHostCopyServiceTest {
     public void testIgnoreDuplicatedSchedulerPatch() throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState(TaskState.TaskStage.STARTED));
 
-      ImageCopyService.State patchState = new ImageCopyService.State();
+      ImageHostToHostCopyService.State patchState = new ImageHostToHostCopyService.State();
       patchState.taskInfo = new TaskState();
       patchState.taskInfo.stage = TaskState.TaskStage.STARTED;
 
@@ -405,7 +405,7 @@ public class ImageHostToHostCopyServiceTest {
     public void testInvalidPatchUpdateImageField() throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState());
 
-      ImageCopyService.State patchState = new ImageCopyService.State();
+      ImageHostToHostCopyService.State patchState = new ImageHostToHostCopyService.State();
       patchState.image = "new-image-id";
 
       Operation patch = Operation
@@ -427,7 +427,7 @@ public class ImageHostToHostCopyServiceTest {
     public void testInvalidPatchSourceDataStore() throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState());
 
-      ImageCopyService.State patchState = new ImageCopyService.State();
+      ImageHostToHostCopyService.State patchState = new ImageHostToHostCopyService.State();
       patchState.sourceDataStore = "new-source";
 
       Operation patch = Operation
@@ -441,7 +441,7 @@ public class ImageHostToHostCopyServiceTest {
         assertThat(e.getMessage(), is("Source datastore cannot be changed."));
       }
 
-      ImageCopyService.State savedState = host.getServiceState(ImageCopyService.State.class);
+      ImageHostToHostCopyService.State savedState = host.getServiceState(ImageHostToHostCopyService.State.class);
       assertThat(savedState.sourceDataStore, is("source-datastore"));
     }
 
@@ -449,7 +449,7 @@ public class ImageHostToHostCopyServiceTest {
     public void testInvalidPatchDestinationDataStore() throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState());
 
-      ImageCopyService.State patchState = new ImageCopyService.State();
+      ImageHostToHostCopyService.State patchState = new ImageHostToHostCopyService.State();
       patchState.destinationDataStore = "new-destination";
 
       Operation patch = Operation
@@ -463,7 +463,7 @@ public class ImageHostToHostCopyServiceTest {
         assertThat(e.getMessage(), is("Destination datastore cannot be changed."));
       }
 
-      ImageCopyService.State savedState = host.getServiceState(ImageCopyService.State.class);
+      ImageHostToHostCopyService.State savedState = host.getServiceState(ImageHostToHostCopyService.State.class);
       assertThat(savedState.destinationDataStore, is("datastore1-inv"));
     }
   }
@@ -476,7 +476,7 @@ public class ImageHostToHostCopyServiceTest {
 
     private HostClientFactory hostClientFactory;
     private CloudStoreHelper cloudStoreHelper;
-    private ImageCopyService.State copyTask;
+    private ImageHostToHostCopyService.State copyTask;
     private ZookeeperHostMonitor zookeeperHostMonitor;
 
     @BeforeMethod
@@ -484,7 +484,7 @@ public class ImageHostToHostCopyServiceTest {
       hostClientFactory = mock(HostClientFactory.class);
       cloudStoreHelper = mock(CloudStoreHelper.class);
       // Build input.
-      copyTask = new ImageCopyService.State();
+      copyTask = new ImageHostToHostCopyService.State();
       copyTask.image = "WindowsRelease9.0";
       copyTask.sourceDataStore = "datastore0";
       copyTask.destinationDataStore = "datastore1";
@@ -526,13 +526,13 @@ public class ImageHostToHostCopyServiceTest {
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
 
       // Call Service.
-      ImageCopyService.State response = machine.callServiceAndWaitForState(
-          ImageCopyServiceFactory.SELF_LINK,
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
           copyTask,
-          ImageCopyService.State.class,
-          new Predicate<ImageCopyService.State>() {
+          ImageHostToHostCopyService.State.class,
+          new Predicate<ImageHostToHostCopyService.State>() {
             @Override
-            public boolean test(ImageCopyService.State state) {
+            public boolean test(ImageHostToHostCopyService.State state) {
               return state.taskInfo.stage == TaskState.TaskStage.FINISHED;
             }
           });
@@ -541,7 +541,6 @@ public class ImageHostToHostCopyServiceTest {
       assertThat(response.image, is(copyTask.image));
       assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
       assertThat(response.destinationDataStore, not(isEmptyOrNullString()));
-      assertThat(response.host, not(isEmptyOrNullString()));
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
@@ -584,13 +583,13 @@ public class ImageHostToHostCopyServiceTest {
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
 
       // Call Service.
-      ImageCopyService.State response = machine.callServiceAndWaitForState(
-          ImageCopyServiceFactory.SELF_LINK,
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
           copyTask,
-          ImageCopyService.State.class,
-          new Predicate<ImageCopyService.State>() {
+          ImageHostToHostCopyService.State.class,
+          new Predicate<ImageHostToHostCopyService.State>() {
             @Override
-            public boolean test(ImageCopyService.State state) {
+            public boolean test(ImageHostToHostCopyService.State state) {
               return state.taskInfo.stage == TaskState.TaskStage.FINISHED;
             }
           });
@@ -599,7 +598,6 @@ public class ImageHostToHostCopyServiceTest {
       assertThat(response.image, is(copyTask.image));
       assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
       assertThat(response.destinationDataStore, is(copyTask.sourceDataStore));
-      assertThat(response.host, not(isEmptyOrNullString()));
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
@@ -622,13 +620,13 @@ public class ImageHostToHostCopyServiceTest {
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
 
       // Call Service.
-      ImageCopyService.State response = machine.callServiceAndWaitForState(
-          ImageCopyServiceFactory.SELF_LINK,
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
           copyTask,
-          ImageCopyService.State.class,
-          new Predicate<ImageCopyService.State>() {
+          ImageHostToHostCopyService.State.class,
+          new Predicate<ImageHostToHostCopyService.State>() {
             @Override
-            public boolean test(ImageCopyService.State state) {
+            public boolean test(ImageHostToHostCopyService.State state) {
               return state.taskInfo.stage == TaskState.TaskStage.FAILED;
             }
           });
@@ -637,7 +635,6 @@ public class ImageHostToHostCopyServiceTest {
       assertThat(response.image, is(copyTask.image));
       assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
       assertThat(response.destinationDataStore, is(copyTask.destinationDataStore));
-      assertThat(response.host, nullValue());
       assertThat(response.taskInfo.failure.message, containsString("GetHostsForDatastore error"));
 
       // Check stats.
@@ -673,13 +670,13 @@ public class ImageHostToHostCopyServiceTest {
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
 
       // Call Service.
-      ImageCopyService.State response = machine.callServiceAndWaitForState(
-          ImageCopyServiceFactory.SELF_LINK,
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
           copyTask,
-          ImageCopyService.State.class,
-          new Predicate<ImageCopyService.State>() {
+          ImageHostToHostCopyService.State.class,
+          new Predicate<ImageHostToHostCopyService.State>() {
             @Override
-            public boolean test(ImageCopyService.State state) {
+            public boolean test(ImageHostToHostCopyService.State state) {
               return state.taskInfo.stage == TaskState.TaskStage.FAILED;
             }
           });
@@ -688,7 +685,6 @@ public class ImageHostToHostCopyServiceTest {
       assertThat(response.image, is(copyTask.image));
       assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
       assertThat(response.destinationDataStore, not(isEmptyOrNullString()));
-      assertThat(response.host, not(isEmptyOrNullString()));
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
@@ -735,13 +731,13 @@ public class ImageHostToHostCopyServiceTest {
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
 
       // Call Service.
-      ImageCopyService.State response = machine.callServiceAndWaitForState(
-          ImageCopyServiceFactory.SELF_LINK,
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
           copyTask,
-          ImageCopyService.State.class,
-          new Predicate<ImageCopyService.State>() {
+          ImageHostToHostCopyService.State.class,
+          new Predicate<ImageHostToHostCopyService.State>() {
             @Override
-            public boolean test(ImageCopyService.State state) {
+            public boolean test(ImageHostToHostCopyService.State state) {
               return state.taskInfo.stage == TaskState.TaskStage.FAILED;
             }
           });
@@ -750,7 +746,6 @@ public class ImageHostToHostCopyServiceTest {
       assertThat(response.image, is(copyTask.image));
       assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
       assertThat(response.destinationDataStore, not(isEmptyOrNullString()));
-      assertThat(response.host, not(isEmptyOrNullString()));
       assertThat(response.taskInfo.failure.message, containsString("copyImage error"));
 
       // Check stats.
