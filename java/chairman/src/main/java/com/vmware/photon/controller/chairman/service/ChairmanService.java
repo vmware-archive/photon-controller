@@ -62,7 +62,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -284,7 +283,7 @@ public class ChairmanService implements Chairman.Iface {
     setHostState(request.getId(), AgentState.ACTIVE,
         request.getConfig().getDatastores(),
         request.getConfig().getNetworks(),
-        Arrays.asList(request.getConfig().getImage_datastore_id()));
+        new ArrayList<>(request.getConfig().getImage_datastore_ids()));
     return response;
   }
 
