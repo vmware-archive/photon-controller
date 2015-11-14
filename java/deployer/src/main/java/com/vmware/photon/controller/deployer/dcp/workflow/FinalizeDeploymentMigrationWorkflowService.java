@@ -24,7 +24,6 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -36,7 +35,6 @@ import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.DeployerModule;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
@@ -331,6 +329,27 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
 
   private void reinstallAgents(State currentState) {
 
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(DeploymentServiceFactory.SELF_LINK + "/" + currentState.destinationDeploymentId)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
+
+                  try {
+                    reinstallAgents(currentState, completedOp.getBody(DeploymentService.State.class));
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
+  }
+
+  private void reinstallAgents(State currentState, DeploymentService.State deploymentState) {
+
     FutureCallback<BulkProvisionHostsWorkflowService.State> provisionCallback =
         new FutureCallback<BulkProvisionHostsWorkflowService.State>() {
           @Override
@@ -359,38 +378,24 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
           }
         };
 
-    String deploymentLink = DeploymentServiceFactory.SELF_LINK + "/" + currentState.destinationDeploymentId;
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntity(this, deploymentLink, new Operation.CompletionHandler() {
+    BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
+    startState.taskState = new BulkProvisionHostsWorkflowService.TaskState();
+    startState.taskState.stage = com.vmware.dcp.common.TaskState.TaskStage.STARTED;
+    startState.taskState.subStage = BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB;
+    startState.deploymentServiceLink = deploymentState.documentSelfLink;
+    startState.chairmanServerList = deploymentState.chairmanServerList;
+    startState.usageTag = UsageTag.CLOUD.name();
+    startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, null);
+    startState.taskPollDelay = currentState.taskPollDelay;
 
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-        DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
-
-        BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
-        startState.taskState = new BulkProvisionHostsWorkflowService.TaskState();
-        startState.taskState.stage = com.vmware.dcp.common.TaskState.TaskStage.STARTED;
-        startState.taskState.subStage = BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB;
-        startState.deploymentServiceLink = deploymentState.documentSelfLink;
-        startState.chairmanServerList = deploymentState.chairmanServerList;
-        startState.usageTag =  UsageTag.CLOUD.name();
-        startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, null);
-        startState.taskPollDelay = currentState.taskPollDelay;
-
-        TaskUtils.startTaskAsync(
-            FinalizeDeploymentMigrationWorkflowService.this,
-            BulkProvisionHostsWorkflowFactoryService.SELF_LINK,
-            startState,
-            (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-            BulkProvisionHostsWorkflowService.State.class,
-            currentState.taskPollDelay,
-            provisionCallback);
-      }
-    });
+    TaskUtils.startTaskAsync(
+        FinalizeDeploymentMigrationWorkflowService.this,
+        BulkProvisionHostsWorkflowFactoryService.SELF_LINK,
+        startState,
+        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+        BulkProvisionHostsWorkflowService.State.class,
+        currentState.taskPollDelay,
+        provisionCallback);
   }
 
   private void migrateFinal(State currentState, String sourceZookeeperQuorum)  {

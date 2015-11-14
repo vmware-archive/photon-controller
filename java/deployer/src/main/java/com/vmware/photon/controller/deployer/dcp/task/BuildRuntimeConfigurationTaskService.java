@@ -51,7 +51,6 @@ import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.gson.Gson;
-
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -361,45 +360,46 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       final ContainerService.State containerState,
       final ContainerTemplateService.State containerTemplateState) {
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntity(this, currentState.deploymentServiceLink, new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
 
-        try {
-          DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+                  try {
+                    DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
 
-          // Set syslog endpoint and ntp server
-          if (containerState.dynamicParameters == null) {
-            containerState.dynamicParameters = new HashMap<>();
-          }
+                    // Set syslog endpoint and ntp server
+                    if (containerState.dynamicParameters == null) {
+                      containerState.dynamicParameters = new HashMap<>();
+                    }
 
-          containerState.dynamicParameters.put(ENV_NTP_ENDPOINT, deploymentState.ntpEndpoint);
+                    containerState.dynamicParameters.put(ENV_NTP_ENDPOINT, deploymentState.ntpEndpoint);
 
-          if (null != deploymentState.syslogEndpoint) {
-            containerState.dynamicParameters.put(ENV_ENABLE_SYSLOG, "true");
-            containerState.dynamicParameters.put(ENV_SYSLOG_ENDPOINT, deploymentState.syslogEndpoint);
-          } else {
-            containerState.dynamicParameters.put(ENV_ENABLE_SYSLOG, "false");
-            containerState.dynamicParameters.put(ENV_SYSLOG_ENDPOINT, "");
-          }
+                    if (null != deploymentState.syslogEndpoint) {
+                      containerState.dynamicParameters.put(ENV_ENABLE_SYSLOG, "true");
+                      containerState.dynamicParameters.put(ENV_SYSLOG_ENDPOINT, deploymentState.syslogEndpoint);
+                    } else {
+                      containerState.dynamicParameters.put(ENV_ENABLE_SYSLOG, "false");
+                      containerState.dynamicParameters.put(ENV_SYSLOG_ENDPOINT, "");
+                    }
 
-          // Set load balancer port
-          int loadBalancerPort = deploymentState.oAuthEnabled ? ServicePortConstants.LOADBALANCER_HTTPS_PORT :
-              ServicePortConstants.LOADBALANCER_HTTP_PORT;
-          containerState.dynamicParameters.put(ENV_LOADBALANCER_PORT, String.valueOf(loadBalancerPort));
+                    // Set load balancer port
+                    int loadBalancerPort = deploymentState.oAuthEnabled ? ServicePortConstants.LOADBALANCER_HTTPS_PORT :
+                        ServicePortConstants.LOADBALANCER_HTTP_PORT;
+                    containerState.dynamicParameters.put(ENV_LOADBALANCER_PORT, String.valueOf(loadBalancerPort));
 
-          // Load state for particular services
-          loadRuntimeState(currentState, vmState, containerState, containerTemplateState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    });
+                    // Load state for particular services
+                    loadRuntimeState(currentState, vmState, containerState, containerTemplateState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   /**
@@ -531,27 +531,28 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         final VmService.State vmState,
         final ContainerService.State containerState,
         final ContainerTemplateService.State containerTemplateState) {
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntity(this, currentState.deploymentServiceLink, new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
 
-        try {
-          DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
-          containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
-          containerState.dynamicParameters.put(ENV_LIGHTWAVE_PASSWORD, deploymentState.oAuthPassword);
-          containerState.dynamicParameters.put(ENV_LIGHTWAVE_DOMAIN, deploymentState.oAuthTenantName);
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
 
-          patchDeploymentStateWithAuthParameters(currentState, vmState, containerState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    });
+                  try {
+                    DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
+                    containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
+                    containerState.dynamicParameters.put(ENV_LIGHTWAVE_PASSWORD, deploymentState.oAuthPassword);
+                    containerState.dynamicParameters.put(ENV_LIGHTWAVE_DOMAIN, deploymentState.oAuthTenantName);
+                    patchDeploymentStateWithAuthParameters(currentState, vmState, containerState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   /**
@@ -594,43 +595,46 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       final VmService.State vmState,
       final ContainerService.State containerState,
       final ContainerTemplateService.State containerTemplateState) {
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntity(this, currentState.deploymentServiceLink, new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
 
-        try {
-          DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
 
-          // Set Auth
-          containerState.dynamicParameters.put(ENV_ENABLE_AUTH,
-              deploymentState.oAuthEnabled.toString());
-          if (deploymentState.oAuthEnabled) {
-            containerState.dynamicParameters.put(ENV_SWAGGER_LOGIN_URL,
-                deploymentState.oAuthResourceLoginEndpoint);
-            containerState.dynamicParameters.put(ENV_SWAGGER_LOGOUT_URL,
-                deploymentState.oAuthLogoutEndpoint);
-            containerState.dynamicParameters.put(ENV_AUTH_SERVER_TENANT,
-                deploymentState.oAuthTenantName);
-            containerState.dynamicParameters.put(ENV_AUTH_SERVER_PORT,
-                String.valueOf(ServicePortConstants.LIGHTWAVE_PORT));
-          }
+                  try {
+                    DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
 
-          // Set Image Datastore
-          containerState.dynamicParameters.put(ENV_DATASTORE, deploymentState.imageDataStoreName);
+                    // Set Auth
+                    containerState.dynamicParameters.put(ENV_ENABLE_AUTH,
+                        deploymentState.oAuthEnabled.toString());
+                    if (deploymentState.oAuthEnabled) {
+                      containerState.dynamicParameters.put(ENV_SWAGGER_LOGIN_URL,
+                          deploymentState.oAuthResourceLoginEndpoint);
+                      containerState.dynamicParameters.put(ENV_SWAGGER_LOGOUT_URL,
+                          deploymentState.oAuthLogoutEndpoint);
+                      containerState.dynamicParameters.put(ENV_AUTH_SERVER_TENANT,
+                          deploymentState.oAuthTenantName);
+                      containerState.dynamicParameters.put(ENV_AUTH_SERVER_PORT,
+                          String.valueOf(ServicePortConstants.LIGHTWAVE_PORT));
+                    }
 
-          // Set Host Ip
-          setEsxHostIp(currentState, vmState, containerState, containerTemplateState, deploymentState.oAuthEnabled);
+                    // Set Image Datastore
+                    containerState.dynamicParameters.put(ENV_DATASTORE, deploymentState.imageDataStoreName);
 
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    });
+                    // Set Host Ip
+                    setEsxHostIp(currentState, vmState, containerState, containerTemplateState,
+                        deploymentState.oAuthEnabled);
+
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   /**
@@ -645,38 +649,38 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       final VmService.State vmState,
       final ContainerService.State containerState,
       final ContainerTemplateService.State containerTemplateState, boolean isAuthEnabled) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
 
-        try {
-          HostService.State esxHypervisorState = operation.getBody(HostService.State.class);
-          containerState.dynamicParameters.put(ENV_ESX_HOST, esxHypervisorState.hostAddress);
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(vmState.hostServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
 
-          List<ContainersConfig.ContainerType> containerList = null;
-          if (isAuthEnabled) {
-            containerList = Arrays.asList(
-              ContainersConfig.ContainerType.Zookeeper,
-              ContainersConfig.ContainerType.Lightwave
-              );
-          } else {
-            containerList = Arrays.asList(ContainersConfig.ContainerType.Zookeeper);
-          }
+                  try {
+                    HostService.State esxHypervisorState = completedOp.getBody(HostService.State.class);
+                    containerState.dynamicParameters.put(ENV_ESX_HOST, esxHypervisorState.hostAddress);
 
-          scheduleQueriesForGeneratingRuntimeState(
-              currentState, vmState.ipAddress, containerTemplateState, containerState, containerList);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
+                    List<ContainersConfig.ContainerType> containerList = null;
+                    if (isAuthEnabled) {
+                      containerList = Arrays.asList(
+                          ContainersConfig.ContainerType.Zookeeper,
+                          ContainersConfig.ContainerType.Lightwave
+                      );
+                    } else {
+                      containerList = Arrays.asList(ContainersConfig.ContainerType.Zookeeper);
+                    }
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntity(this, vmState.hostServiceLink, completionHandler);
+                    scheduleQueriesForGeneratingRuntimeState(
+                        currentState, vmState.ipAddress, containerTemplateState, containerState, containerList);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   /**
