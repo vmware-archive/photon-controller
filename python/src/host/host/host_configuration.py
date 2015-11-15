@@ -13,9 +13,8 @@
 
 class HostConfiguration():
     def __init__(self, availability_zone=None, scheduler=None,
-                 roles=None, vsan_cluster_config=None, host_id=None):
+                 roles=None, host_id=None):
         self.availability_zone = availability_zone
         self.scheduler = scheduler
         self.roles = roles
-        self.vsan_cluster_config = vsan_cluster_config
         self.host_id = host_id

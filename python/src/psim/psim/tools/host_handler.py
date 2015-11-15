@@ -19,13 +19,11 @@ class HostConfiguration(BaseHostConfiguration):
     """
     Introduce host id to HostConfiguration
     """
-    def __init__(
-        self,
-        a_host_id,
-        a_availability_zone=None,
-        a_scheduler=None,
-        a_roles=None,
-            a_vsan_cluster_config=None):
+    def __init__(self,
+                 a_host_id,
+                 a_availability_zone=None,
+                 a_scheduler=None,
+                 a_roles=None):
         """
         :param a_host_id: preserve host id
         :type a_host_id: string
@@ -36,8 +34,7 @@ class HostConfiguration(BaseHostConfiguration):
             self,
             a_availability_zone,
             a_scheduler,
-            a_roles,
-            a_vsan_cluster_config)
+            a_roles)
 
         self.host_id = a_host_id
 
