@@ -421,7 +421,8 @@ class TestUnitAgent(unittest.TestCase):
         self.agent._persist_config()
         self.agent._load_config()
         assert_that(self.agent.datastores, equal_to(["ds1", "ds2", "ds3"]))
-        assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
+        assert_that(self.agent.image_datastores,
+                    contains_inanyorder(*expected_image_ds))
 
     def test_config_change(self):
         # Test chairman config change
