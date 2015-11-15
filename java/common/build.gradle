@@ -31,8 +31,7 @@ dependencies {
       '../../thrift/scheduler.thrift',
       '../../thrift/server_address.thrift',
       '../../thrift/status.thrift',
-      '../../thrift/tracing.thrift',
-      '../../thrift/vsan_cluster.thrift')
+      '../../thrift/tracing.thrift')
 
   testCompile project(':common-tests')
 

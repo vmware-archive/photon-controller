@@ -231,7 +231,6 @@ class HostHandler(Host.Iface):
         config = HostConfiguration(self._availability_zone,
                                    leaf_scheduler,
                                    roles,
-                                   None,
                                    host_id)
         for observer in self._configuration_observers:
             observer(config)

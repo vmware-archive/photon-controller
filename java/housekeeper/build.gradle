@@ -21,7 +21,6 @@ dependencies {
       '../../thrift/root_scheduler.thrift',
       '../../thrift/roles.thrift',
       '../../thrift/flavors.thrift',
-      '../../thrift/vsan_cluster.thrift',
       '../../thrift/host.thrift',
       '../../thrift/tracing.thrift',
       '../../thrift/status.thrift')

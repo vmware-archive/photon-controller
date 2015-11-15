@@ -18,7 +18,6 @@ include 'resource.thrift'
 include 'roles.thrift'
 include 'server_address.thrift'
 include 'tracing.thrift'
-include 'vsan_cluster.thrift'
 
 // Place parameters
 // send the scheduler parameters along with the request
@@ -190,11 +189,8 @@ struct ConfigureRequest {
   // Assigned role configuration
   2: required roles.Roles roles
 
-  // Vsan configuration if applicable
-  3: optional vsan_cluster.VsanClusterConfig vsan_cluster_config
-
   // Host Id
-  4: optional string host_id
+  3: optional string host_id
 
   99: optional tracing.TracingInfo tracing_info
 }

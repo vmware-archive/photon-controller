@@ -20,7 +20,6 @@ include 'roles.thrift'
 include 'scheduler.thrift'
 include 'server_address.thrift'
 include 'tracing.thrift'
-include 'vsan_cluster.thrift'
 
 
 struct SetResourceTagsRequest {
