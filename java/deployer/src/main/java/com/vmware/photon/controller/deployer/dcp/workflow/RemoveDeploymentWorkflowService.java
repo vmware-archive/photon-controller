@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationJoin;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
@@ -34,7 +35,6 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -45,7 +45,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
@@ -65,6 +64,7 @@ import static com.google.common.base.Preconditions.checkState;
 import javax.annotation.Nullable;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -935,29 +935,19 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
 
   private void processDeleteFromDCP(Collection<String> documentLinks, boolean isCloudStoreEntity) {
 
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-      }
-    };
-
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    for (String documentLink : documentLinks) {
-      if (isCloudStoreEntity){
-        cloudStoreHelper.deleteEntity(this, documentLink, completionHandler);
-      } else {
-        Operation deleteOperation =
-            Operation.createDelete(UriUtils.buildUri(getHost(), documentLink))
-                .setBody(new ServiceDocument())
-                .setCompletion(completionHandler);
-        sendRequest(deleteOperation);
-      }
-    }
-
+    OperationJoin
+        .create(documentLinks.stream()
+            .map(documentLink -> isCloudStoreEntity ?
+                HostUtils.getCloudStoreHelper(this).createDelete(documentLink) :
+                Operation.createDelete(this, documentLink).setBody(new ServiceDocument())))
+        .setCompletion(
+            (ops, failures) -> {
+              if (null != failures && failures.size() > 0) {
+                failTask(failures);
+              }
+            }
+        )
+        .sendWith(this);
   }
 
   private QueryTask.QuerySpecification buildQuerySpecification(Class dcpEntityClass) {
@@ -1086,6 +1076,11 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
   private void failTask(Throwable e) {
     logError(e);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, e));
+  }
+
+  private void failTask(Map<Long, Throwable> failures) {
+    failures.values().forEach(failure -> logError(failure));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.values().iterator().next()));
   }
 
   private void logError(Throwable e) {

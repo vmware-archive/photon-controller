@@ -57,6 +57,14 @@ public class CloudStoreHelper {
     }
   }
 
+  public Operation createDelete(String path) {
+    return Operation
+        .createDelete(getCloudStoreURI(path))
+        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
+        .setBody(new ServiceDocument())
+        .setReferer(this.localHostAddress);
+  }
+
   public Operation createGet(String path) {
     return Operation
         .createGet(getCloudStoreURI(path))
@@ -72,17 +80,6 @@ public class CloudStoreHelper {
     return Operation
         .createPost(UriUtils.buildBroadcastRequestUri(getCloudStoreURI(path), selectorPath))
         .setReferer(this.localHostAddress);
-  }
-
-  public void deleteEntity(Service service, String documentLink, Operation.CompletionHandler completionHandler) {
-    URI uri = getCloudStoreURI(null);
-    Operation deleteOperation =
-        Operation.createDelete(UriUtils.buildUri(uri, documentLink))
-            .setBody(new ServiceDocument())
-            .setReferer(this.localHostAddress)
-            .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
-            .setCompletion(completionHandler);
-    service.sendRequest(deleteOperation);
   }
 
   public void patchEntity(Service service, String documentLink, Object body, Operation.CompletionHandler
