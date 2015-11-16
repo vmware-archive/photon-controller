@@ -14,13 +14,13 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationJoin;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -31,7 +31,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultUuid;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
@@ -46,7 +45,6 @@ import javax.annotation.Nullable;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -183,32 +181,29 @@ public class DeployAgentTaskService extends StatefulService {
   }
 
   private void processDeployAgent(final State currentState) {
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntities(this,
-        Arrays.asList(currentState.deploymentServiceLink, currentState.hostServiceLink),
-        (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
-          if (failures != null && failures.size() > 0) {
-            failTask(failures.values().iterator().next());
-            return;
-          }
 
-          try {
-            DeploymentService.State deploymentState = null;
-            HostService.State hostState = null;
-            for (Operation op : ops.values()) {
-              String link = op.getUri().toString();
-              if (link.contains(currentState.deploymentServiceLink)) {
-                deploymentState = op.getBody(DeploymentService.State.class);
+    Operation deploymentOp = HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymentServiceLink);
+    Operation hostOp = HostUtils.getCloudStoreHelper(this).createGet(currentState.hostServiceLink);
+
+    OperationJoin
+        .create(deploymentOp, hostOp)
+        .setCompletion(
+            (ops, failures) -> {
+              if (null != failures && failures.size() > 0) {
+                failTask(failures);
+                return;
               }
-              if (link.contains(currentState.hostServiceLink)) {
-                hostState = op.getBody(HostService.State.class);
+
+              try {
+                processDeployAgent(currentState,
+                    ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
+                    ops.get(hostOp.getId()).getBody(HostService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
               }
             }
-            processDeployAgent(currentState, deploymentState, hostState);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        });
+        )
+        .sendWith(this);
   }
 
   private void processDeployAgent(State currentState,
@@ -274,6 +269,11 @@ public class DeployAgentTaskService extends StatefulService {
   private void failTask(Throwable t) {
     ServiceUtils.logSevere(this, t);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, t));
+  }
+
+  private void failTask(Map<Long, Throwable> failures) {
+    failures.values().forEach(failure -> ServiceUtils.logSevere(this, failure));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, failures.values().iterator().next()));
   }
 
   @VisibleForTesting
