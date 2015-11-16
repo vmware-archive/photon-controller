@@ -43,7 +43,6 @@ module EsxCloud
         end
 
         cluster_id = (run_cli(cmd)).split("'")[1]
-
         find_cluster_by_id(cluster_id)
       end
 
