@@ -679,22 +679,24 @@ public class DeploymentWorkflowService extends StatefulService {
   }
 
   private void patchDeploymentService(final State currentState, final State patchState) {
-    final Service service = this;
-
-    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
-      if (null != throwable) {
-        failTask(throwable);
-      } else {
-        TaskUtils.sendSelfPatch(service, patchState);
-      }
-    };
 
     DeploymentService.State deploymentService = new DeploymentService.State();
     deploymentService.chairmanServerList = patchState.chairmanServerList;
     deploymentService.zookeeperQuorum = patchState.zookeeperQuorum;
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.patchEntity(this, currentState.deploymentServiceLink, deploymentService, completionHandler);
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createPatch(currentState.deploymentServiceLink)
+            .setBody(deploymentService)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                  } else {
+                    TaskUtils.sendSelfPatch(this, patchState);
+                  }
+                }
+            ));
   }
 
   private void bulkProvisionManagementHosts(final State currentState) throws Throwable {

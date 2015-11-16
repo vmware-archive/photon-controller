@@ -132,18 +132,23 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
       Map<String, Integer> finishedCopyStateCounts,
       long vibsUploaded,
       long vibsUploading) {
+
     DeploymentService.State patch = buildPatch(finishedCopyStateCounts, vibsUploaded, vibsUploading);
-    HostUtils.getCloudStoreHelper(this).patchEntity(this,
-        currentState.deploymentServiceLink,
-        patch,
-        (operation, throwable) -> {
-          if (throwable != null) {
-            ServiceUtils.logSevere(this, throwable);
-            get.fail(throwable);
-          } else {
-            get.setBody(currentState).complete();
-          }
-        });
+
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createPatch(currentState.deploymentServiceLink)
+            .setBody(buildPatch(finishedCopyStateCounts, vibsUploaded, vibsUploading))
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (failure != null) {
+                    ServiceUtils.logSevere(this, failure);
+                    get.fail(failure);
+                  } else {
+                    get.setBody(currentState).complete();
+                  }
+                }
+            ));
   }
 
   private String appendIfNotExists(String factoryLink, String string) {
