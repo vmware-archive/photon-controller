@@ -21,9 +21,8 @@ import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
+import com.vmware.photon.controller.common.dcp.validation.NotBlank;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-
-import org.hibernate.validator.constraints.NotBlank;
 
 /**
  * This class implements a DCP micro-service which provides a plain data object

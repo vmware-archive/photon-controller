@@ -15,32 +15,17 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToOne;
-
 /**
  * Locality entity for storing affinities.
  */
-@Entity(name = "Locality")
 public class LocalityEntity extends BaseEntity {
 
   private String kind;
 
   private String resourceId;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinTable(name = "locality_vm",
-      joinColumns = {@JoinColumn(name = "locality")},
-      inverseJoinColumns = {@JoinColumn(name = "vm")})
   private VmEntity vm;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinTable(name = "locality_disk",
-      joinColumns = {@JoinColumn(name = "locality")},
-      inverseJoinColumns = {@JoinColumn(name = "disk")})
   private PersistentDiskEntity disk;
 
   @Override

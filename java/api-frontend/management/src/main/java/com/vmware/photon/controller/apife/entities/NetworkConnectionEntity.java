@@ -15,12 +15,9 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
-import javax.persistence.Entity;
-
 /**
  * NetworkConnection entity.
  */
-@Entity(name = "NetworkConnection")
 public class NetworkConnectionEntity extends BaseEntity {
 
   public static final String KIND = "network-connection";

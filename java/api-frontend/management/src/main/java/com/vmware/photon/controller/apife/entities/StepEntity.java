@@ -19,18 +19,6 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 
 import com.google.common.base.Objects;
 import org.apache.commons.lang3.StringUtils;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
-
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToOne;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
-import javax.persistence.Transient;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -41,54 +29,24 @@ import java.util.Map;
 /**
  * Step entity.
  */
-@Entity(name = "Step")
-@NamedQueries({
-    @NamedQuery(
-        name = "Step.findByState",
-        query = "SELECT step FROM Step step WHERE step.state = :state"
-    ),
-    @NamedQuery(
-        name = "Step.findAllInTask",
-        query = "SELECT step FROM Step step WHERE step.task = :task"
-    ),
-    @NamedQuery(
-        name = "Step.findByStateInTask",
-        query = "SELECT step FROM Step step WHERE step.state = :state AND step.task = :task"
-    ),
-    @NamedQuery(
-        name = "Step.findByTaskIdAndOperation",
-        query = "SELECT step FROM Step step WHERE step.task = :task AND step.operation = :operation"
-    ),
-})
 public class StepEntity extends BaseEntity {
 
   public static final String KIND = "step";
   private int sequence;
 
-  @Enumerated(EnumType.STRING)
   private State state;
-  @Enumerated(EnumType.STRING)
   private Operation operation;
   private String options;
   private Date startedTime;
   private Date queuedTime;
   private Date endTime;
-  @ManyToOne(fetch = FetchType.LAZY)
   private TaskEntity task;
-  @OneToMany(mappedBy = "step")
-  @Cascade({CascadeType.ALL})
   private List<StepErrorEntity> errors = new ArrayList<>();
-  @OneToMany(mappedBy = "step")
-  @Cascade({CascadeType.ALL})
   private List<StepWarningEntity> warnings = new ArrayList<>();
-  @OneToMany(mappedBy = "step", fetch = FetchType.LAZY)
-  @Cascade({CascadeType.ALL})
   private List<StepResourceEntity> resources = new ArrayList<>();
-  @Transient
   private List<BaseEntity> transientResourceEntities = new ArrayList<>();
-  @Transient
   private Map<String, Object> transientResources = new HashMap<>();
-  @Transient
+  //Transient
   private boolean disabled = false;
 
   @Override

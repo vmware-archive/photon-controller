@@ -16,37 +16,12 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-
 /**
  * Tombstone entity.
  */
-@Entity(name = "Tombstone")
-@NamedQueries({
-    @NamedQuery(
-        name = "Tombstone.findByEntityKind",
-        query = "SELECT tombstone FROM Tombstone tombstone WHERE tombstone.entityKind = :entityKind"
-    ),
-    @NamedQuery(
-        name = "Tombstone.findByEntityId",
-        query = "SELECT tombstone FROM Tombstone tombstone WHERE tombstone.entityId = :entityId"
-    ),
-    @NamedQuery(
-        name = "Tombstone.listAll",
-        query = "SELECT tombstone FROM Tombstone tombstone"
-    ),
-    @NamedQuery(
-        name = "Tombstone.listByTimeOlderThan",
-        query = "SELECT tombstone FROM Tombstone tombstone WHERE tombstone.tombstoneTime < :date"
-    )
-})
 public class TombstoneEntity extends BaseEntity {
   public static final String KIND = "tombstone";
 
-  @Column(unique = true)
   private String entityId;
 
   private String entityKind;

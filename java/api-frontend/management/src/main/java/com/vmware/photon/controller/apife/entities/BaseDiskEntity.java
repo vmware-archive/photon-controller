@@ -16,20 +16,14 @@ package com.vmware.photon.controller.apife.entities;
 import com.vmware.photon.controller.api.DiskState;
 import com.vmware.photon.controller.apife.entities.base.InfrastructureEntity;
 
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.MappedSuperclass;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Base disk entity is a base class that both persistent and ephemeral disks extend.
  */
-@MappedSuperclass
 public abstract class BaseDiskEntity extends InfrastructureEntity {
 
-  @Enumerated(EnumType.STRING)
   private DiskState state;
 
   /**

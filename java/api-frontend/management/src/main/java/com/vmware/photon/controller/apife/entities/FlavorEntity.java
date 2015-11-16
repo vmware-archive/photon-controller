@@ -19,15 +19,6 @@ import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.entities.base.VisibleModelEntity;
 
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,34 +27,12 @@ import java.util.Set;
 /**
  * Flavor entity.
  */
-@Entity(name = "Flavor")
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"name", "kind"}))
-@NamedQueries({
-    @NamedQuery(
-        name = "Flavor.listAll",
-        query = "SELECT f from Flavor f"
-    ),
-    @NamedQuery(
-        name = "Flavor.findByNameAndKind",
-        query = "SELECT f FROM Flavor f WHERE f.name = :name AND f.kind = :kind"
-    ),
-    @NamedQuery(
-        name = "Flavor.findByName",
-        query = "SELECT f FROM Flavor f WHERE f.name = :name"
-    ),
-    @NamedQuery(
-        name = "Flavor.findByKind",
-        query = "SELECT f FROM Flavor f WHERE f.kind = :kind"
-    )
-})
 public class FlavorEntity extends VisibleModelEntity {
 
   private String kind;
 
-  @Enumerated(EnumType.STRING)
   private FlavorState state;
 
-  @ElementCollection
   private List<QuotaLineItemEntity> cost = new ArrayList<>();
 
   public String getKind() {

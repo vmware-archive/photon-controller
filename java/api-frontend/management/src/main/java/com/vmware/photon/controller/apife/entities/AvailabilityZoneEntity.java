@@ -18,34 +18,13 @@ import com.vmware.photon.controller.api.AvailabilityZoneState;
 import com.vmware.photon.controller.api.base.Named;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
-import org.hibernate.validator.constraints.NotBlank;
-
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-
 /**
  * AvailabilityZone entity.
  */
-@Entity(name = "AvailabilityZone")
-@NamedQueries({
-    @NamedQuery(
-        name = "AvailabilityZone.listAll",
-        query = "SELECT availabilityZone FROM AvailabilityZone availabilityZone"
-    ),
-    @NamedQuery(
-        name = "AvailabilityZone.findByName",
-        query = "SELECT availabilityZone FROM AvailabilityZone availabilityZone WHERE availabilityZone.name = :name"
-    )
-})
 public class AvailabilityZoneEntity extends BaseEntity implements Named {
 
-  @NotBlank
   private String name;
 
-  @Enumerated(EnumType.STRING)
   private AvailabilityZoneState state;
 
   public AvailabilityZoneEntity() {

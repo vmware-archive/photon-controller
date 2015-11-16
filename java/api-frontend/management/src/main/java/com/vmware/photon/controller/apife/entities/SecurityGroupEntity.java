@@ -13,14 +13,11 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import javax.persistence.Embeddable;
-
 import java.util.Objects;
 
 /**
  * Represent the security groups of a tenant or project.
  */
-@Embeddable
 public class SecurityGroupEntity {
   private String name;
   private boolean inherited;

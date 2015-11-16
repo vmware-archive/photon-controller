@@ -15,14 +15,11 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.QuotaUnit;
 
-import javax.persistence.Embeddable;
-
 import java.util.Objects;
 
 /**
  * This is the internal representation, which differs from external in that .unit is an Enum, not a String.
  */
-@Embeddable
 public class QuotaLineItemEntity {
 
   private static final double BYTES_PER_KB = 1024.0;

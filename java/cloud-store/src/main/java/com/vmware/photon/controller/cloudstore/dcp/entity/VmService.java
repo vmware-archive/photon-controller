@@ -27,9 +27,6 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -160,7 +157,6 @@ public class VmService extends StatefulService {
      * The state of the VM.
      */
     @NotNull
-    @Enumerated(EnumType.STRING)
     public VmState vmState;
 
     /**

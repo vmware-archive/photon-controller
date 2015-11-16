@@ -18,16 +18,6 @@ import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.apife.exceptions.external.StepNotFoundException;
 
 import com.google.common.base.Objects;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
-
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
-import javax.persistence.Transient;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -37,56 +27,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Task entity.
  */
-@Entity(name = "Task")
-@NamedQueries({
-    @NamedQuery(
-        name = "Task.findAll",
-        query = "SELECT task FROM Task task"
-    ),
-    @NamedQuery(
-        name = "Task.findByState",
-        query = "SELECT task FROM Task task WHERE task.state = :state"
-    ),
-    @NamedQuery(
-        name = "Task.findByEntity",
-        query = "SELECT task FROM Task task " +
-            "WHERE task.entityId = :entityId AND task.entityKind = :entityKind"
-    ),
-    @NamedQuery(
-        name = "Task.findByEntityAndState",
-        query = "SELECT task FROM Task task " +
-            "WHERE task.entityId = :entityId AND task.entityKind = :entityKind AND task.state = :state"
-    ),
-    @NamedQuery(
-        name = "Task.findAllInProject",
-        query = "SELECT task FROM Task task WHERE task.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "Task.findByKindInProject",
-        query = "SELECT task FROM Task task WHERE task.entityKind = :entityKind AND task.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "Task.findByStateInProject",
-        query = "SELECT task FROM Task task WHERE task.state = :state AND task.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "Task.findByKindAndStateInProject",
-        query = "SELECT task FROM Task task " +
-            "WHERE task.entityKind = :entityKind AND task.state = :state AND task.projectId = :projectId"
-    ),
-})
 public class TaskEntity extends BaseEntity {
 
   public static final String KIND = "task";
-  @Transient
+  //Transient
   private List<String> lockableEntityIds = new ArrayList<>();
-  @Transient
+  //Transient
   AtomicInteger nextStepSequence = new AtomicInteger();
   private String entityId;
   private String entityKind;
-  @Enumerated(EnumType.STRING)
   private State state;
-  @Enumerated(EnumType.STRING)
   private Operation operation;
   private Date startedTime;
   private Date queuedTime;
@@ -95,8 +45,6 @@ public class TaskEntity extends BaseEntity {
   private String resourceProperties;
 
   private String projectId;
-  @OneToMany(mappedBy = "task")
-  @Cascade({CascadeType.ALL})
   private List<StepEntity> steps = new ArrayList<>();
 
   public List<String> getLockableEntityIds() {

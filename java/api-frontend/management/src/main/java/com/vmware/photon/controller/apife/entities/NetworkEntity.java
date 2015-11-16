@@ -18,39 +18,17 @@ import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.base.Named;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
-import org.hibernate.validator.constraints.NotBlank;
-
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-
 /**
  * Network entity.
  */
-@Entity(name = "Network")
-@NamedQueries({
-    @NamedQuery(
-        name = "Network.listAll",
-        query = "SELECT network FROM Network network"
-    ),
-    @NamedQuery(
-        name = "Network.findByName",
-        query = "SELECT network FROM Network network WHERE network.name = :name"
-    )
-})
 public class NetworkEntity extends BaseEntity implements Named {
 
-  @NotBlank
   private String name;
 
   private String description;
 
-  @Enumerated(EnumType.STRING)
   private NetworkState state;
 
-  @NotBlank
   private String portGroups;
 
   public NetworkEntity() {

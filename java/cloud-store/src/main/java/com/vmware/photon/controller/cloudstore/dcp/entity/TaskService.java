@@ -24,9 +24,6 @@ import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -185,10 +182,8 @@ public class TaskService extends StatefulService {
 
     public String projectId;
 
-    @Enumerated(EnumType.STRING)
     public TaskState state;
 
-    @Enumerated(EnumType.STRING)
     public com.vmware.photon.controller.api.Operation operation;
 
     public Date startedTime;
@@ -224,9 +219,7 @@ public class TaskService extends StatefulService {
      */
     public static class Step {
       public int sequence;
-      @Enumerated(EnumType.STRING)
       public StepState state;
-      @Enumerated(EnumType.STRING)
       public com.vmware.photon.controller.api.Operation operation;
       public String options;
       public Date startedTime;

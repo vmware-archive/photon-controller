@@ -13,12 +13,9 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import javax.persistence.Entity;
-
 /**
  * Step error entity.
  */
-@Entity(name = "StepWarning")
 public class StepWarningEntity extends StepErrorBaseEntity {
 
 }

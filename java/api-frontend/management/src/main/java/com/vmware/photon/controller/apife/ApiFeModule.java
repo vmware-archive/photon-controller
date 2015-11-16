@@ -14,8 +14,6 @@
 package com.vmware.photon.controller.apife;
 
 import com.vmware.photon.controller.api.common.RequestId;
-import com.vmware.photon.controller.api.common.db.Transactional;
-import com.vmware.photon.controller.api.common.db.TransactionalInterceptor;
 import com.vmware.photon.controller.apife.auth.fetcher.Cluster;
 import com.vmware.photon.controller.apife.auth.fetcher.ClusterSecurityGroupFetcher;
 import com.vmware.photon.controller.apife.auth.fetcher.Deployment;
@@ -119,7 +117,6 @@ import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.servlet.RequestScoped;
 import org.apache.curator.framework.CuratorFramework;
-import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,7 +131,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class ApiFeModule extends AbstractModule {
   private static final Logger logger = LoggerFactory.getLogger(ApiFeModule.class);
-  private SessionFactory sessionFactory;
   private ApiFeConfiguration configuration;
 
   public ApiFeModule() {
@@ -176,16 +172,6 @@ public class ApiFeModule extends AbstractModule {
   @Singleton
   public AuthConfig getAuthConfig() {
     return configuration.getAuth();
-  }
-
-  @Provides
-  @Singleton
-  public SessionFactory getSessionFactory() {
-    return sessionFactory;
-  }
-
-  public void setSessionFactory(SessionFactory sessionFactory) {
-    this.sessionFactory = sessionFactory;
   }
 
   @Provides
@@ -388,7 +374,6 @@ public class ApiFeModule extends AbstractModule {
   protected void configure() {
 
     bindBackends();
-    bindTransactional();
     bindAuthSecurityGroupFetchers();
     bindListener(Matchers.any(), new RpcMetricListener());
 
@@ -435,12 +420,6 @@ public class ApiFeModule extends AbstractModule {
     bind(TombstoneBackend.class).to(TombstoneDcpBackend.class);
     bind(HostBackend.class).to(HostDcpBackend.class);
     bind(DeploymentBackend.class).to(DeploymentDcpBackend.class);
-  }
-
-  private void bindTransactional() {
-    TransactionalInterceptor interceptor = new TransactionalInterceptor();
-    requestInjection(interceptor);
-    bindInterceptor(Matchers.any(), Matchers.annotatedWith(Transactional.class), interceptor);
   }
 
   private void bindAuthSecurityGroupFetchers() {

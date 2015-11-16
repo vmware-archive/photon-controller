@@ -19,9 +19,6 @@ import com.vmware.photon.controller.api.constraints.URI;
 
 import static com.google.common.base.Objects.ToStringHelper;
 
-import javax.persistence.Entity;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
 import javax.validation.constraints.NotNull;
 
 import java.util.Objects;
@@ -29,17 +26,6 @@ import java.util.Objects;
 /**
  * Datastore entity.
  */
-@Entity(name = "Datastore")
-@NamedQueries({
-    @NamedQuery(
-        name = "Datastore.listAll",
-        query = "SELECT s from Datastore s"
-    ),
-    @NamedQuery(
-        name = "Datastore.listAllByTags",
-        query = "SELECT s FROM Datastore s WHERE s.tags = :tags"
-    ),
-})
 public class DatastoreEntity extends BaseEntity {
 
   public static final String KIND = "datastore";

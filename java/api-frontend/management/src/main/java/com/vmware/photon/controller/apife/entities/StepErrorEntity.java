@@ -13,11 +13,8 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import javax.persistence.Entity;
-
 /**
  * Step error entity.
  */
-@Entity(name = "StepError")
 public class StepErrorEntity extends StepErrorBaseEntity {
 }

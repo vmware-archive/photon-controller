@@ -15,17 +15,11 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-
 /**
  * ISO entity.
  * This entity is a model entity representing a ISO attached to a vm. The ISO can't exist without
  * attaching to a vm. ISO image is uploaded through API, and can only be attached to one vm.
  */
-@Entity(name = "Iso")
 public class IsoEntity extends BaseEntity {
 
   public static final String KIND = "iso";
@@ -34,8 +28,6 @@ public class IsoEntity extends BaseEntity {
 
   private Long size;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(nullable = true)
   private VmEntity vm;
 
   @Override
