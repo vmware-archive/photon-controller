@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationJoin;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
@@ -229,24 +230,29 @@ public class CreateVmSpecLayoutTaskService extends StatefulService {
       throw new RuntimeException("Found 0 hosts with usageTag: " + UsageTag.MGMT.name());
     }
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntities(this, documentLinks, (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
-      if (failures != null && failures.size() > 0) {
-        failTask(failures.values().iterator().next());
-        return;
-      }
+    OperationJoin
+        .create(documentLinks.stream()
+            .map(documentLink -> HostUtils.getCloudStoreHelper(this).createGet(documentLink)))
+        .setCompletion(
+            (ops, failures) -> {
+              if (null != failures && failures.size() > 0) {
+                failTask(failures);
+                return;
+              }
 
-      try {
-        List<HostService.State> hostStates = new ArrayList<>();
-        for (Operation getOperation : ops.values()) {
-          HostService.State hostState = getOperation.getBody(HostService.State.class);
-          hostStates.add(hostState);
-        }
-        scheduleCreateManagementVmTasks(currentState, hostStates);
-      } catch (Throwable t) {
-        failTask(t);
-      }
-    });
+              try {
+                List<HostService.State> hostStates = new ArrayList<>();
+                for (Operation getOperation : ops.values()) {
+                  HostService.State hostState = getOperation.getBody(HostService.State.class);
+                  hostStates.add(hostState);
+                }
+                scheduleCreateManagementVmTasks(currentState, hostStates);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }
+        )
+        .sendWith(this);
   }
 
   private void scheduleCreateManagementVmTasks(State currentState, List<HostService.State> managementHosts) {
@@ -319,6 +325,11 @@ public class CreateVmSpecLayoutTaskService extends StatefulService {
   private void failTask(Throwable e) {
     ServiceUtils.logSevere(this, e);
     TaskUtils.sendSelfPatch(this, buildPatch(com.vmware.dcp.common.TaskState.TaskStage.FAILED, e));
+  }
+
+  private void failTask(Map<Long, Throwable> failures) {
+    failures.values().forEach(failure -> ServiceUtils.logSevere(this, failure));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, failures.values().iterator().next()));
   }
 
   /**
