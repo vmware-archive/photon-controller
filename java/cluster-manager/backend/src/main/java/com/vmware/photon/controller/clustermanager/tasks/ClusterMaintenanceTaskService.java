@@ -157,17 +157,20 @@ public class ClusterMaintenanceTaskService extends StatefulService {
 
           ClusterService.State clusterPatchState = new ClusterService.State();
           clusterPatchState.clusterState = ClusterState.ERROR;
-          HostUtils.getCloudStoreHelper(this).patchEntity(
-              this,
-              getClusterDocumentLink(clusterId),
-              clusterPatchState,
-              (Operation operation, Throwable throwable) -> {
-                if (null != throwable) {
-                  // Ignore the failure. Otherwise if we fail the maintenance task we may end up
-                  // in a dead loop.
-                  ServiceUtils.logSevere(this, "Failed to patch cluster to ERROR: %s", throwable.toString());
-                }
-              });
+
+          sendRequest(
+              HostUtils.getCloudStoreHelper(this)
+                  .createPatch(getClusterDocumentLink(clusterId))
+                  .setBody(clusterPatchState)
+                  .setCompletion(
+                      (Operation operation, Throwable throwable) -> {
+                        if (null != throwable) {
+                          // Ignore the failure. Otherwise if we fail the maintenance task we may end up
+                          // in a dead loop.
+                          ServiceUtils.logSevere(this, "Failed to patch cluster to ERROR: %s", throwable.toString());
+                        }
+                      }
+                  ));
 
           maintenanceOperation = MaintenanceOperation.SKIP;
         }
@@ -178,17 +181,20 @@ public class ClusterMaintenanceTaskService extends StatefulService {
 
         ClusterService.State clusterPatchState = new ClusterService.State();
         clusterPatchState.clusterState = ClusterState.ERROR;
-        HostUtils.getCloudStoreHelper(this).patchEntity(
-            this,
-            getClusterDocumentLink(clusterId),
-            clusterPatchState,
-            (Operation operation, Throwable throwable) -> {
-              if (null != throwable) {
-                // Ignore the failure. Otherwise if we fail the maintenance task we may end up
-                // in a dead loop.
-                ServiceUtils.logSevere(this, "Failed to patch cluster to ERROR: %s", throwable.toString());
-              }
-            });
+
+        sendRequest(
+            HostUtils.getCloudStoreHelper(this)
+                .createPatch(getClusterDocumentLink(clusterId))
+                .setBody(clusterPatchState)
+                .setCompletion(
+                    (Operation operation, Throwable throwable) -> {
+                      if (null != throwable) {
+                        // Ignore the failure. Otherwise if we fail the maintenance task we may end up
+                        // in a dead loop.
+                        ServiceUtils.logSevere(this, "Failed to patch cluster to ERROR: %s", throwable.toString());
+                      }
+                    }
+                ));
 
         maintenanceOperation = MaintenanceOperation.SKIP;
       }
@@ -491,19 +497,22 @@ public class ClusterMaintenanceTaskService extends StatefulService {
   private void updateStates(String clusterId,
                             ClusterService.State clusterPatch,
                             State patch) {
-    HostUtils.getCloudStoreHelper(this).patchEntity(
-        this,
-        getClusterDocumentLink(clusterId),
-        clusterPatch,
-        (Operation operation, Throwable throwable) -> {
-          if (null != throwable) {
-            // Ignore the failure. Otherwise if we fail the maintenance task may end up
-            // in a dead loop.
-            ServiceUtils.logSevere(this, "Failed to patch cluster to READY: %s", throwable.toString());
-          }
 
-          TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this, patch);
-        });
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createPatch(getClusterDocumentLink(clusterId))
+            .setBody(clusterPatch)
+            .setCompletion(
+                (Operation operation, Throwable throwable) -> {
+                  if (null != throwable) {
+                    // Ignore the failure. Otherwise if we fail the maintenance task may end up
+                    // in a dead loop.
+                    ServiceUtils.logSevere(this, "Failed to patch cluster to READY: %s", throwable.toString());
+                  }
+
+                  TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this, patch);
+                }
+            ));
   }
 
 

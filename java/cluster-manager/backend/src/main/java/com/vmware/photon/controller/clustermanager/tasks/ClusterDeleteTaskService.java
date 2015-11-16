@@ -137,19 +137,21 @@ public class ClusterDeleteTaskService extends StatefulService {
     ClusterService.State patchDocument = new ClusterService.State();
     patchDocument.clusterState = ClusterState.PENDING_DELETE;
 
-    HostUtils.getCloudStoreHelper(this).patchEntity(
-        this,
-        getClusterDocumentLink(currentState),
-        patchDocument,
-        (Operation operation, Throwable throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createPatch(getClusterDocumentLink(currentState))
+            .setBody(patchDocument)
+            .setCompletion(
+                (Operation operation, Throwable throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
 
-          ClusterDeleteTask patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_VMS);
-          TaskUtils.sendSelfPatch(ClusterDeleteTaskService.this, patchState);
-        });
+                  ClusterDeleteTask patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_VMS);
+                  TaskUtils.sendSelfPatch(ClusterDeleteTaskService.this, patchState);
+                }
+            ));
   }
 
   /**
