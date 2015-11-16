@@ -142,7 +142,7 @@ public class StepCommandFactory {
       case DELETE_IMAGE_REPLICAS:
         return new ImageReplicasDeleteStepCmd(taskCommand, stepBackend, stepEntity);
       case UPLOAD_IMAGE:
-        return new ImageUploadStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore);
+        return new ImageUploadStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore, imageConfig);
       case REPLICATE_IMAGE:
         return new ImageReplicateStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore);
       case UPLOAD_ISO:
