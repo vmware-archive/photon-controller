@@ -19,11 +19,7 @@ import com.vmware.photon.controller.api.constraints.IPv4;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
 
 import com.google.common.base.Objects.ToStringHelper;
-import org.hibernate.validator.constraints.NotBlank;
 
-import javax.persistence.Entity;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
 import javax.validation.constraints.NotNull;
 
 import java.util.Objects;
@@ -31,22 +27,10 @@ import java.util.Objects;
 /**
  * PortGroup entity.
  */
-@Entity(name = "PortGroup")
-@NamedQueries({
-    @NamedQuery(
-        name = "PortGroup.listAll",
-        query = "SELECT n from PortGroup n"
-    ),
-    @NamedQuery(
-        name = "PortGroup.listAllByUsage",
-        query = "SELECT n FROM PortGroup n WHERE n.usageTags like :usageTag"
-    ),
-})
 public class PortGroupEntity extends BaseEntity {
 
   public static final String KIND = "portGroupEntity";
 
-  @NotBlank
   private String portGroupName;
 
   @IPv4

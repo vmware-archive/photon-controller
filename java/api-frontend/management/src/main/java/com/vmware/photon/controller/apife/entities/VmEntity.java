@@ -20,19 +20,6 @@ import com.vmware.photon.controller.apife.entities.base.InfrastructureEntity;
 import com.vmware.photon.controller.apife.exceptions.external.MoreThanOneHostAffinityException;
 
 import com.google.common.base.Objects;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
-
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
-import javax.persistence.Transient;
-import javax.validation.constraints.NotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,67 +29,21 @@ import java.util.Map;
 /**
  * VM entity.
  */
-@Entity(name = "Vm")
-@NamedQueries({
-    @NamedQuery(
-        name = "Vm.findAll",
-        query = "SELECT vm FROM Vm vm WHERE vm.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "Vm.listAll",
-        query = "SELECT vm FROM Vm vm"
-    ),
-    @NamedQuery(
-        name = "Vm.findByName",
-        query = "SELECT vm FROM Vm vm WHERE vm.name = :name AND vm.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "Vm.findByTag",
-        query = "SELECT vm FROM Vm vm INNER JOIN vm.tags tag" +
-            " WHERE tag.value = :value AND vm.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "Vm.findByFlavor",
-        query = "SELECT vm FROM Vm vm WHERE vm.flavorId = :flavorId"
-    ),
-    @NamedQuery(
-        name = "Vm.findByImage",
-        query = "SELECT vm FROM Vm vm " +
-            "WHERE vm.imageId = :imageId "
-    ),
-    @NamedQuery(
-        name = "Vm.listAllByHostIp",
-        query = "SELECT vm FROM Vm vm WHERE vm.host = :hostIp"
-    ),
-    @NamedQuery(
-        name = "Vm.countVmsByHostIp",
-        query = "SELECT COUNT (vm) FROM Vm vm WHERE vm.host = :hostIp"
-    )
-})
 public class VmEntity extends InfrastructureEntity {
 
-  @Enumerated(EnumType.STRING)
   private VmState state;
 
-  @Transient
+  //Transient
   private List<AttachedDiskEntity> attachedDisks = new ArrayList<>();
 
-  @OneToMany(mappedBy = "vm", fetch = FetchType.LAZY)
-  @Cascade(CascadeType.ALL)
   private List<LocalityEntity> affinities = new ArrayList<>();
 
   private String imageId;
 
-  @OneToMany(mappedBy = "vm", fetch = FetchType.LAZY)
   private List<IsoEntity> isos = new ArrayList<>();
 
-  @NotNull
-  @ElementCollection(fetch = FetchType.EAGER)
-  @Cascade(CascadeType.ALL)
   private Map<String, String> metadata = new HashMap<>();
 
-  @ElementCollection(fetch = FetchType.EAGER)
-  @Cascade(CascadeType.ALL)
   private List<String> networks = new ArrayList<>();
 
   private String agent;
@@ -122,13 +63,13 @@ public class VmEntity extends InfrastructureEntity {
 
   private String datastoreName;
 
-  @Transient
+  //Transient
   private Map<String, String> environment = new HashMap<>();
 
   /**
    * Warnings related to vm entity.
    */
-  @Transient
+  //Transient
   private List<Throwable> warnings = new ArrayList<>();
 
   @Override

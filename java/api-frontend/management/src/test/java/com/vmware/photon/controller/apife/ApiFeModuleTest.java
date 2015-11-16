@@ -75,7 +75,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.servlet.RequestScoped;
-import org.hibernate.SessionFactory;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -396,8 +395,6 @@ public class ApiFeModuleTest {
       Injector injector = Guice.createInjector(
           new HibernateTestModule());
 
-      apiFeModule.setSessionFactory(injector.getInstance(SessionFactory.class));
-
       ZookeeperModule zookeeperModule = new ZookeeperModule();
       zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
 
@@ -463,8 +460,6 @@ public class ApiFeModuleTest {
 
       Injector injector = Guice.createInjector(
           new HibernateTestModule());
-
-      apiFeModule.setSessionFactory(injector.getInstance(SessionFactory.class));
 
       ZookeeperModule zookeeperModule = new ZookeeperModule();
       zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());

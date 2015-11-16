@@ -16,9 +16,6 @@ package com.vmware.photon.controller.api.common.entities.base;
 import com.vmware.photon.controller.api.base.Named;
 import com.vmware.photon.controller.api.common.entities.TaggableEntity;
 
-import javax.persistence.ManyToMany;
-import javax.persistence.MappedSuperclass;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,11 +23,9 @@ import java.util.Set;
  * Base class for model entities that can be exposed to user on their own
  * and thus should be named and taggable.
  */
-@MappedSuperclass
 public abstract class VisibleModelEntity extends ModelEntity implements Named, TaggableEntity {
   private String name;
 
-  @ManyToMany
   private Set<TagEntity> tags;
 
   public String getName() {

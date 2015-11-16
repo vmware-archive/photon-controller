@@ -13,13 +13,10 @@
 
 package com.vmware.photon.controller.api.common.entities.base;
 
-import javax.persistence.MappedSuperclass;
-
 /**
  * Base class for entities that don't correlate with an infrastructure object. Things like
  * disk attachments fall into this category as they represent the intended relation between
  * infrastructure objects.
  */
-@MappedSuperclass
 public abstract class ModelEntity extends BaseEntity {
 }

@@ -15,18 +15,6 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.common.entities.base.VisibleModelEntity;
 
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
-
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
-import javax.persistence.Transient;
-import javax.persistence.UniqueConstraint;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -34,27 +22,13 @@ import java.util.Set;
 /**
  * Tenant entity.
  */
-@Entity(name = "Tenant")
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
-@NamedQueries({
-    @NamedQuery(
-        name = "Tenant.listAll",
-        query = "SELECT t from Tenant t"
-    ),
-    @NamedQuery(
-        name = "Tenant.findByName",
-        query = "SELECT t FROM Tenant t WHERE t.name = :name"
-    )
-})
 public class TenantEntity extends VisibleModelEntity {
 
   public static final String KIND = "tenant";
 
-  @Transient
+  //Transient
   private Set<String> groups;
 
-  @ElementCollection(fetch = FetchType.EAGER)
-  @Cascade(CascadeType.ALL)
   private List<SecurityGroupEntity> securityGroups = new ArrayList<>();
 
   @Override

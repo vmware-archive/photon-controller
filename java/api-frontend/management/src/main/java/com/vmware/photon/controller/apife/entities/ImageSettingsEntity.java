@@ -15,44 +15,21 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
-import org.hibernate.validator.constraints.NotBlank;
 import static com.google.common.base.Objects.ToStringHelper;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
 
 import java.util.Objects;
 
 /**
  * ImageSettings entity.
  */
-@Entity(name = "ImageSettings")
-@Table(name = "image_settings")
-@NamedQueries({
-    @NamedQuery(
-        name = "ImageSettings.listAll",
-        query = "SELECT s FROM ImageSettings s"
-    )
-})
 public class ImageSettingsEntity extends BaseEntity {
 
   public static final String KIND = "imageSettingsEntity";
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "image", nullable = false)
   private ImageEntity image;
 
-  @NotBlank
-  @Column(name = "name")
   private String name;
 
-  @Column(name = "default_value")
   private String defaultValue;
 
   @Override

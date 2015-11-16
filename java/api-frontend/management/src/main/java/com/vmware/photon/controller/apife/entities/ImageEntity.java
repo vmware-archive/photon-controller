@@ -19,17 +19,6 @@ import com.vmware.photon.controller.api.base.Named;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
 import com.google.common.base.Objects.ToStringHelper;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,17 +29,6 @@ import java.util.Objects;
 /**
  * Image Entity.
  */
-@Entity(name = "Image")
-@NamedQueries({
-    @NamedQuery(
-        name = "Image.listAll",
-        query = "SELECT image FROM Image image"
-    ),
-    @NamedQuery(
-        name = "Image.findByName",
-        query = "SELECT image FROM Image image WHERE image.name = :name"
-    )
-})
 public class ImageEntity extends BaseEntity implements Named {
 
   public static final String KIND = "image";
@@ -65,15 +43,10 @@ public class ImageEntity extends BaseEntity implements Named {
 
   private Integer replicatedDatastore;
 
-  @OneToMany(mappedBy = "image", fetch = FetchType.LAZY)
-  @Cascade({CascadeType.DELETE})
   private List<ImageSettingsEntity> imageSettings = new ArrayList<>();
 
-  @Enumerated(EnumType.STRING)
   private ImageState state;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
   private ImageReplicationType replicationType = ImageReplicationType.EAGER;
 
   @Override

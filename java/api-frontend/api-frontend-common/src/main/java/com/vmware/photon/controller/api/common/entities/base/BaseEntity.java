@@ -14,23 +14,14 @@
 package com.vmware.photon.controller.api.common.entities.base;
 
 import com.google.common.base.Objects.ToStringHelper;
-import org.hibernate.annotations.GenericGenerator;
-
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
 
 import java.util.Objects;
 
 /**
  * Base class for all DB entities.
  */
-@MappedSuperclass
 public abstract class BaseEntity implements Cloneable {
 
-  @Id
-  @GeneratedValue(generator = "uuid")
-  @GenericGenerator(name = "uuid", strategy = "uuid2")
   private String id;
 
   public abstract String getKind();

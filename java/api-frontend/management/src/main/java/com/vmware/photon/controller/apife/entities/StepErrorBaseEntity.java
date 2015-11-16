@@ -18,29 +18,19 @@ import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
 import com.google.common.base.Objects;
 
-import javax.persistence.ElementCollection;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.MappedSuperclass;
-
 import java.util.Map;
 
 /**
  * Step error entity.
  */
-@MappedSuperclass
 public class StepErrorBaseEntity extends BaseEntity {
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(nullable = false)
   private StepEntity step;
 
   private String code;
 
   private String message;
 
-  @ElementCollection
   private Map<String, String> data;
 
   @Override

@@ -18,19 +18,6 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.constraints.DomainOrIP;
 
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
-import org.hibernate.validator.constraints.NotBlank;
-
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.validation.constraints.NotNull;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -38,40 +25,22 @@ import java.util.Objects;
 /**
  * Host entity.
  */
-@Entity(name = "Host")
-@NamedQueries({
-    @NamedQuery(
-        name = "Host.listAll",
-        query = "SELECT h FROM Host h"
-    ),
-    @NamedQuery(
-        name = "Host.listAllByUsage",
-        query = "SELECT h FROM Host h WHERE h.usageTags LIKE :usageTag"
-    ),
-})
 public class HostEntity extends BaseEntity {
   public static final String KIND = Host.KIND;
 
-  @Enumerated(EnumType.STRING)
   private HostState state;
 
   @DomainOrIP
   private String address;
 
-  @NotBlank
   private String username;
 
-  @NotBlank
   private String password;
 
   private String availabilityZone;
 
-  @NotNull
-  @ElementCollection(fetch = FetchType.EAGER)
-  @Cascade(CascadeType.ALL)
   private Map<String, String> metadata = new HashMap<String, String>();
 
-  @NotNull
   private String usageTags;
 
   private String esxVersion;

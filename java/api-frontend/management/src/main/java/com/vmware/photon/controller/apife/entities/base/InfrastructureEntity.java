@@ -20,11 +20,6 @@ import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 
 import com.google.common.base.Objects;
-import org.hibernate.validator.constraints.NotEmpty;
-
-import javax.persistence.ElementCollection;
-import javax.persistence.ManyToMany;
-import javax.persistence.MappedSuperclass;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -36,23 +31,19 @@ import java.util.Set;
  * Common properties include name, flavor, tags.
  * All infrastructure entities belong to {@link com.vmware.photon.controller.apife.entities.ProjectEntity}.
  */
-@MappedSuperclass
 public abstract class InfrastructureEntity extends BaseEntity
     implements Named, TaggableEntity {
 
   // todo(markl): discuss the need/desire to persist cost. we easily compute cost
   // todo(markl): from the findById/flavor, but since the cost can change, the cost charged
   // todo(markl): on creation is persisted: https://www.pivotaltracker.com/story/show/48188449
-  @ElementCollection
   protected List<QuotaLineItemEntity> cost = new ArrayList<>();
   private String name;
 
   private String flavorId;
 
-  @NotEmpty
   private String projectId;
 
-  @ManyToMany
   private Set<TagEntity> tags;
 
   public String getName() {

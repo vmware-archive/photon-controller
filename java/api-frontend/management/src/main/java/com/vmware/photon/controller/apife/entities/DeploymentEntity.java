@@ -20,17 +20,6 @@ import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.google.common.base.Objects.ToStringHelper;
 import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
-
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Transient;
 
 import java.util.List;
 import java.util.Map;
@@ -39,16 +28,8 @@ import java.util.Objects;
 /**
  * Deployment entity.
  */
-@Entity(name = "Deployment")
-@NamedQueries({
-    @NamedQuery(
-        name = "Deployment.listAll",
-        query = "SELECT d from Deployment d"
-    )
-})
 public class DeploymentEntity extends BaseEntity {
 
-  @Enumerated(EnumType.STRING)
   private DeploymentState state;
 
   private String syslogEndpoint;
@@ -65,8 +46,6 @@ public class DeploymentEntity extends BaseEntity {
 
   private String oauthPassword;
 
-  @ElementCollection(fetch = FetchType.EAGER)
-  @Cascade(CascadeType.ALL)
   private List<String> oauthSecurityGroups;
 
   private String ntpEndpoint;
@@ -75,13 +54,11 @@ public class DeploymentEntity extends BaseEntity {
 
   private boolean useImageDatastoreForVms;
 
-  @Transient
+  //Transient
   private String operationId;
 
   private boolean loadBalancerEnabled;
 
-  @ElementCollection(fetch = FetchType.EAGER)
-  @Cascade(CascadeType.ALL)
   private Map<String, Integer> migrationProgress;
 
   private long vibsUploaded;

@@ -15,33 +15,13 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
-import org.hibernate.validator.constraints.NotEmpty;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-
 /**
  * Step Lock Entity.
  */
-@Entity(name = "StepLock")
-@NamedQueries({
-    @NamedQuery(
-        name = "StepLock.findByEntity",
-        query = "SELECT stepLock FROM StepLock stepLock WHERE stepLock.entityId = :entityId"
-    ),
-    @NamedQuery(
-        name = "StepLock.findBySteps",
-        query = "SELECT stepLock FROM StepLock stepLock WHERE stepLock.stepId in :stepIds"
-    )
-})
 public class StepLockEntity extends BaseEntity {
 
-  @Column(unique = true, nullable = false)
   private String entityId;
 
-  @NotEmpty
   private String stepId;
 
   @Override

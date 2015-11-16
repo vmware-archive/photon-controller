@@ -15,45 +15,14 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.PersistentDisk;
 
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
-
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Persistent disk entity.
  */
-@Entity(name = "PersistentDisk")
-@NamedQueries({
-    @NamedQuery(
-        name = "PersistentDisk.findAll",
-        query = "SELECT disk FROM PersistentDisk disk WHERE disk.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "PersistentDisk.findByName",
-        query = "SELECT disk FROM PersistentDisk disk WHERE disk.name = :name AND disk.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "PersistentDisk.findByTag",
-        query = "SELECT disk FROM PersistentDisk disk INNER JOIN disk.tags tag " +
-            "WHERE tag.value = :value AND disk.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "PersistentDisk.findByFlavor",
-        query = "SELECT disk FROM PersistentDisk disk WHERE disk.flavorId = :flavorId "
-    )
-})
 public class PersistentDiskEntity extends BaseDiskEntity {
 
-  @OneToMany(mappedBy = "disk", fetch = FetchType.LAZY)
-  @Cascade(CascadeType.ALL)
   private List<LocalityEntity> affinities = new ArrayList<>();
 
   private String agent;

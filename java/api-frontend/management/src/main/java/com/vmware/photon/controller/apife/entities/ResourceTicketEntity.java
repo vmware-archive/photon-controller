@@ -17,13 +17,6 @@ import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.ResourceTicket;
 import com.vmware.photon.controller.api.common.entities.base.VisibleModelEntity;
 
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -61,33 +54,6 @@ import java.util.Set;
  * TODO(markl): extend resource ticket: include white/blacklists: https://www.pivotaltracker.com/story/show/48531861
  * TODO(markl): extend resource ticket: include forced tags:
  */
-@Entity(name = "ResourceTicket")
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"tenantId", "name"}))
-@NamedQueries({
-    @NamedQuery(
-        name = "ResourceTicket.findAll",
-        query = "SELECT resourceTicket FROM ResourceTicket resourceTicket WHERE resourceTicket.tenantId = :tenant"
-    ),
-    @NamedQuery(
-        name = "ResourceTicket.findByName",
-        query = "SELECT resourceTicket FROM ResourceTicket resourceTicket " +
-            "WHERE resourceTicket.name = :name AND resourceTicket.tenantId = :tenant"
-    ),
-    @NamedQuery(
-        name = "ResourceTicket.listAll",
-        query = "SELECT resourceTicket FROM ResourceTicket resourceTicket"
-    ),
-    @NamedQuery(
-        name = "ResourceTicket.findByTag",
-        query = "SELECT resourceTicket FROM ResourceTicket resourceTicket INNER JOIN resourceTicket.tags tag " +
-            "WHERE tag.value = :value"
-    ),
-    @NamedQuery(
-        name = "ResourceTicket.findByParent",
-        query = "SELECT resourceTicket FROM ResourceTicket resourceTicket " +
-            "WHERE resourceTicket.parentId = :parentId "
-    )
-})
 public class ResourceTicketEntity extends VisibleModelEntity {
 
   public static final String KIND = "resource-ticket";
@@ -101,10 +67,8 @@ public class ResourceTicketEntity extends VisibleModelEntity {
   private String parentId;
 
   // maps to track usage/limits and provide direct lookup
-  @ElementCollection
   private Map<String, QuotaLineItemEntity> limitMap = new HashMap<>();
 
-  @ElementCollection
   private Map<String, QuotaLineItemEntity> usageMap = new HashMap<>();
 
   @Override

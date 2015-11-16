@@ -15,37 +15,12 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.EphemeralDisk;
 
-import javax.persistence.Entity;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Transient;
-
 /**
  * Ephemeral disk entity.
  */
-@Entity(name = "EphemeralDisk")
-@NamedQueries({
-    @NamedQuery(
-        name = "EphemeralDisk.findAll",
-        query = "SELECT disk FROM EphemeralDisk disk WHERE disk.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "EphemeralDisk.findByName",
-        query = "SELECT disk FROM EphemeralDisk disk WHERE disk.name = :name AND disk.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "EphemeralDisk.findByTag",
-        query = "SELECT disk FROM EphemeralDisk disk INNER JOIN disk.tags tag " +
-            "WHERE tag.value = :value AND disk.projectId = :projectId"
-    ),
-    @NamedQuery(
-        name = "EphemeralDisk.findByFlavor",
-        query = "SELECT disk FROM EphemeralDisk disk WHERE disk.flavorId = :flavorId "
-    )
-})
 public class EphemeralDiskEntity extends BaseDiskEntity {
 
-  @Transient
+  //Transient
   private String agent;
 
   @Override

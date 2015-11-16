@@ -15,22 +15,11 @@ package com.vmware.photon.controller.api.common.entities.base;
 
 import com.vmware.photon.controller.api.Tag;
 
-import javax.persistence.Entity;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-
 import java.util.Objects;
 
 /**
  * Tag entity.
  */
-@Entity(name = "Tag")
-@NamedQueries({
-    @NamedQuery(
-        name = "Tag.findByValue",
-        query = "SELECT tag FROM Tag tag WHERE tag.value = :value"
-    )
-})
 public class TagEntity extends ModelEntity {
 
   private String value;

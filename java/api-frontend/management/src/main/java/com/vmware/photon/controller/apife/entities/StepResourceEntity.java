@@ -15,19 +15,11 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-
 /**
  * Step resource entity.
  */
-@Entity(name = "StepResource")
 public class StepResourceEntity extends BaseEntity {
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(nullable = false)
   private StepEntity step;
 
   private String entityId;

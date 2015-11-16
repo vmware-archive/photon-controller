@@ -19,32 +19,12 @@ import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import javax.persistence.Entity;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Transient;
-
 /**
  * Attached disk entity.
  * This entity is a model entity representing a disk that's attached to a vm. The vm and disk objects
  * are real infrastructure entities that have a real, project level quota cost associated with them.
  * The attached disk entity tracks which vm in a project a given disk is attached do.
  */
-@Entity(name = "AttachedDisk")
-@NamedQueries({
-    @NamedQuery(
-        name = "AttachedDisk.findByPersistentDisk",
-        query = "SELECT disk FROM AttachedDisk disk WHERE disk.persistentDiskId = :diskId"
-    ),
-    @NamedQuery(
-        name = "AttachedDisk.findByEphemeralDisk",
-        query = "SELECT disk FROM AttachedDisk disk WHERE disk.ephemeralDiskId = :diskId"
-    ),
-    @NamedQuery(
-        name = "AttachedDisk.findByVmId",
-        query = "SELECT disk FROM AttachedDisk disk WHERE disk.vmId = :vmId"
-    )
-})
 public class AttachedDiskEntity extends BaseEntity {
 
   private String kind;
@@ -55,12 +35,10 @@ public class AttachedDiskEntity extends BaseEntity {
 
   private String persistentDiskId;
 
-  @Transient
   private PersistentDiskEntity transientPersistentDisk;
 
   private String ephemeralDiskId;
 
-  @Transient
   private EphemeralDiskEntity transientEphemeralDisk;
 
   @Override
