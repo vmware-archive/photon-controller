@@ -26,19 +26,19 @@ class Counter:
         self.count = 0
         self.lock = threading.Lock()
 
-    @cached(tty=0.1)
+    @cached(ttl=0.1)
     def get_count_cached(self):
         self.count += 1
         return self.count
 
-    @cached(tty=0.1)
+    @cached(ttl=0.1)
     @locked
     def get_count_cache_and_lock(self):
         self.count += 1
         return self.count
 
     @locked
-    @cached(tty=0.1)
+    @cached(ttl=0.1)
     def get_count_lock_and_cache(self):
         self.count += 1
         return self.count

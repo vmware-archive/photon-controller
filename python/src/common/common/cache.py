@@ -17,7 +17,7 @@ import time
 CACHE_LIMIT = 100
 
 
-def cached(tty=10):
+def cached(ttl=0):
     """ A simple implementation for caching results of methods. Results are
     saved in dict based on method and args of the method (kwargs is also
     expected). The expiration of cache will not be triggered automatically,
@@ -33,7 +33,7 @@ def cached(tty=10):
 
     class Sample:
 
-        @cached(tty=10)
+        @cached(ttl=10)
         def expensive_operation():
             sleep(1)  # simulate operation which takes a second to finish
             return some_value
@@ -44,7 +44,7 @@ def cached(tty=10):
     sleep(10)
     s.expensive_operation()  # take a second, because cache is expired.
 
-    :param tty: cache time of seconds to live. tty<=0 mean cache never expires.
+    :param ttl: cache time of seconds to live. ttl<=0 mean cache never expires.
     """
     # TODO(agui): LRU expire cache
     def decorated(func):
@@ -67,7 +67,7 @@ def cached(tty=10):
             value, last_updated = cache[key]
 
             # Cache hit and it's not expired yet
-            if tty <= 0 or last_updated + tty > now:
+            if ttl <= 0 or last_updated + ttl > now:
                 return value
 
             # Cache hit but expired, get result and renew the cache
