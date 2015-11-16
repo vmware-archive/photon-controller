@@ -24,7 +24,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -34,7 +33,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
@@ -373,20 +371,19 @@ public class ProvisionAgentTaskService extends StatefulService {
         patchState.cpuCount = hostConfig.getCpu_count();
       }
       if (hostConfig.isSetMemory_mb() || hostConfig.isSetCpu_count()) {
-        CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-        cloudStoreHelper.patchEntity(this, currentState.hostServiceLink, patchState,
-            new Operation.CompletionHandler() {
-              @Override
-              public void handle(Operation operation, Throwable throwable) {
-                if (null != throwable) {
-                  failTask(throwable);
-                  return;
-                }
-
-                sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-              }
-            }
-        );
+        sendRequest(
+            HostUtils.getCloudStoreHelper(this)
+                .createPatch(currentState.hostServiceLink)
+                .setBody(patchState)
+                .setCompletion(
+                    (completedOp, failure) -> {
+                      if (null != failure) {
+                        failTask(failure);
+                      } else {
+                        sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+                      }
+                    }
+                ));
       } else {
         sendStageProgressPatch(TaskState.TaskStage.FINISHED);
       }

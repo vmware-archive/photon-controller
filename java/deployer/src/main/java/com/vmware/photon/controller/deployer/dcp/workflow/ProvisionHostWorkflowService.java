@@ -20,7 +20,6 @@ import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -32,7 +31,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultUuid;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
@@ -370,18 +368,19 @@ public class ProvisionHostWorkflowService extends StatefulService {
                 HostService.State hostService = new HostService.State();
                 hostService.state = HostState.READY;
 
-                CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-                cloudStoreHelper.patchEntity(service, currentState.hostServiceLink, hostService, new Operation
-                    .CompletionHandler() {
-                  @Override
-                  public void handle(Operation operation, Throwable throwable) {
-                    if (throwable != null) {
-                      failTask(throwable);
-                      return;
-                    }
-                    TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED, null, null));
-                  }
-                });
+                sendRequest(
+                    HostUtils.getCloudStoreHelper(service)
+                        .createPatch(currentState.hostServiceLink)
+                        .setBody(hostService)
+                        .setCompletion(
+                            (completedOp, failure) -> {
+                              if (null != failure) {
+                                failTask(failure);
+                              } else {
+                                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+                              }
+                            }
+                        ));
 
                 break;
               case FAILED:
