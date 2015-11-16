@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmdkFormatException;
@@ -50,11 +51,14 @@ public class ImageUploadStepCmd extends StepCommand {
 
   private final ImageStore imageStore;
 
+  private final ImageConfig config;
+
   public ImageUploadStepCmd(TaskCommand taskCommand, StepBackend stepBackend, StepEntity step,
-                            ImageBackend imageBackend, ImageStore imageStore) {
+                            ImageBackend imageBackend, ImageStore imageStore, ImageConfig imageConfig) {
     super(taskCommand, stepBackend, step);
     this.imageBackend = imageBackend;
     this.imageStore = imageStore;
+    this.config = imageConfig;
   }
 
   @Override
@@ -74,6 +78,7 @@ public class ImageUploadStepCmd extends StepCommand {
       if (imageEntity.getReplicationType() == ImageReplicationType.ON_DEMAND) {
         imageBackend.updateState(imageEntity, ImageState.READY);
       }
+      imageBackend.updateImageDatastore(imageEntity.getId(), config.getDatastore());
     } catch (VmdkFormatException e) {
       imageBackend.updateState(imageEntity, ImageState.ERROR);
       throw new InvalidVmdkFormatException(e.getMessage());
