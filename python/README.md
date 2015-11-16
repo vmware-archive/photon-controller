@@ -17,6 +17,11 @@ newer version. Follow the following steps to install thrift:
 ```bash
 cd $( brew --prefix )
 git checkout -b thrift-0.9.1 a61e5573f1e2bf06698038802b653f4a005e0743
+# If the previous command failed with the following error:
+#   fatal: reference is not a tree: a61e5573f1e2bf06698038802b653f4a005e0743
+# It might mean the homebrew is a shallow clone. Run the following command
+# and try again:
+# git fetch --unshallow
 brew install thrift
 git checkout master
 git branch -d thrift-0.9.1
