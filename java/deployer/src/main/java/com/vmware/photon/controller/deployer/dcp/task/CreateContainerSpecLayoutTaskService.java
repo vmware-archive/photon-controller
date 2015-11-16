@@ -26,7 +26,6 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -37,7 +36,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
@@ -250,21 +248,27 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
   }
 
   private void retrieveManagementHosts(State currentState, Set<String> hostLinks) {
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.getEntities(this, hostLinks, (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
-      if (failures != null && failures.size() > 0) {
-        failTask(failures.values().iterator().next());
-        return;
-      }
 
-      Map<String, HostService.State> hosts = new HashMap<>();
-      for (Operation getOperation : ops.values()) {
-        HostService.State host = getOperation.getBody(HostService.State.class);
-        hosts.put(host.documentSelfLink, host);
-      }
+    OperationJoin
+        .create(hostLinks.stream()
+            .map(hostLink -> HostUtils.getCloudStoreHelper(this).createGet(hostLink)))
+        .setCompletion(
+            (ops, failures) -> {
+              if (failures != null && failures.size() > 0) {
+                failTask(failures);
+                return;
+              }
 
-      retrieveVms(currentState, hosts);
-    });
+              Map<String, HostService.State> hosts = new HashMap<>();
+              for (Operation getOperation : ops.values()) {
+                HostService.State host = getOperation.getBody(HostService.State.class);
+                hosts.put(host.documentSelfLink, host);
+              }
+
+              retrieveVms(currentState, hosts);
+            }
+        )
+        .sendWith(this);
   }
 
   private void retrieveVms(State currentState, Map<String, HostService.State> managementHosts) {
@@ -558,6 +562,11 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
   private void failTask(Throwable e) {
     ServiceUtils.logSevere(this, e);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, e));
+  }
+
+  private void failTask(Map<Long, Throwable> failures) {
+    failures.values().forEach(failure -> ServiceUtils.logSevere(this, failure));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, failures.values().iterator().next()));
   }
 
   /**
