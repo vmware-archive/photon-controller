@@ -74,6 +74,13 @@ public class CloudStoreHelper {
     return Operation.createPost(getCloudStoreURI(path));
   }
 
+  public Operation createPatch(String path) {
+    return Operation
+        .createPatch(getCloudStoreURI(path))
+        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
+        .setReferer(this.localHostAddress);
+  }
+
   public void getEntities(Service service,
                           Collection<String> documentLinks,
                           OperationJoin.JoinedCompletionHandler completionHandler) {

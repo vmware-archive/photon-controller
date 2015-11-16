@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationSequence;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.UriUtils;
@@ -22,6 +23,7 @@ import com.vmware.dcp.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -34,6 +36,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -267,43 +270,39 @@ public class ImageReplicatorService extends StatefulService {
 
 
   /**
-   * Gets image entitiy and sends patch to update total datastore and total image datastore field.
+   * Updates total datastore and total image datastore field in image entity stored in cloudstore.
    * @param current
    */
   protected void updateTotalImageDatastore(final State current) {
-
     try {
-      sendRequest(
-          ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
-              .createGet(ImageServiceFactory.SELF_LINK + "/" + current.image)
-              .setCompletion(
-                  (completedOp, failure) -> {
-                    if (failure != null) {
-                      failTask(failure);
-                      return;
-                    }
+      // build the image entity update patch
+      ImageService.State imageServiceState = new ImageService.State();
+      imageServiceState.totalImageDatastore = getZookeeperHostMonitor().getImageDatastores().size();
+      imageServiceState.totalDatastore = getZookeeperHostMonitor().getAllDatastores().size();
+      Operation imagePatch = getCloudStoreHelper()
+          .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
+          .setBody(imageServiceState);
 
-                    try {
-                      ImageService.State imageServiceState = new ImageService.State();
-                      imageServiceState.totalImageDatastore = getZookeeperHostMonitor().getImageDatastores().size();
-                      imageServiceState.totalDatastore = getZookeeperHostMonitor().getAllDatastores().size();
-                      ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper().patchEntity(this,
-                          completedOp.getBody(ImageService.State.class).documentSelfLink, imageServiceState,
-                          (o, t) -> {
-                            if (t != null) {
-                              failTask(t);
-                              return;
-                            }
-                          });
-                      // move to next stage
-                      if (!current.isSelfProgressionDisabled) {
-                        sendSelfPatch(buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.TRIGGER_COPIES, null));
-                      }
-                    } catch (Throwable t) {
-                      failTask(t);
-                    }
-                  }
-              ));
+      // create operation sequence
+      OperationSequence sequence = OperationSequence
+          .create(imagePatch)
+          .setCompletion(
+              (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+                if (failures != null && failures.size() > 0) {
+                  failTask(failures.values().iterator().next());
+                  return;
+                }
+              });
+
+      if (!current.isSelfProgressionDisabled) {
+        // move to next stage
+        Operation progress = this.buildSelfPatchOperation(
+            this.buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.TRIGGER_COPIES, null));
+
+        sequence.next(progress);
+      }
+
+      sequence.sendWith(this);
     } catch (Exception e) {
       failTask(e);
     }
@@ -393,6 +392,10 @@ public class ImageReplicatorService extends StatefulService {
 
   protected ZookeeperHostMonitor getZookeeperHostMonitor() {
     return ((ZookeeperHostMonitorProvider) getHost()).getZookeeperHostMonitor();
+  }
+
+  protected CloudStoreHelper getCloudStoreHelper() {
+    return ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper();
   }
 
   /**
@@ -555,10 +558,7 @@ public class ImageReplicatorService extends StatefulService {
    * @param s
    */
   private void sendSelfPatch(State s) {
-    Operation patch = Operation
-        .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
-        .setBody(s);
-    sendRequest(patch);
+    sendRequest(buildSelfPatchOperation(s));
   }
 
   /**
@@ -573,6 +573,18 @@ public class ImageReplicatorService extends StatefulService {
     }
 
     sendSelfPatch(buildPatch(stage, subStage, null));
+  }
+
+  /**
+   * Build an operation object that sends a patch to the service.
+   *
+   * @param s
+   * @return
+   */
+  private Operation buildSelfPatchOperation(State s) {
+    return Operation
+        .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
+        .setBody(s);
   }
 
   /**
