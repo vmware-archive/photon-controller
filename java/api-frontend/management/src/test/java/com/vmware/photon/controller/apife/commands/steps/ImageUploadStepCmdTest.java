@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidOvaException;
@@ -72,6 +73,8 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
   private static String imageId;
   private static long imageSize;
   private static OvaTestModule ova;
+  private static String datastoreName;
+
   @Mock
   private TaskCommand taskCommand;
   @Mock
@@ -80,6 +83,8 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
   private ImageBackend imageBackend;
   @Mock
   private ImageStore imageStore;
+  @Mock
+  private ImageConfig imageConfig;
   @Mock
   private Image image;
   private StepEntity step;
@@ -94,6 +99,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
     // Create VMDK stats.
     imageId = "image-1";
     imageSize = ova.vmdkContent.length();
+    datastoreName = "datastore";
   }
 
   @AfterClass
@@ -114,11 +120,12 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
     step.setId("step-1");
     step.addResource(imageEntity);
 
-    command = spy(new ImageUploadStepCmd(taskCommand, stepBackend, step, imageBackend, imageStore));
+    command = spy(new ImageUploadStepCmd(taskCommand, stepBackend, step, imageBackend, imageStore, imageConfig));
 
     when(imageStore.createImage(anyString())).thenReturn(image);
     doNothing().when(imageStore).finalizeImage(anyString());
     when(image.addDisk(anyString(), any(InputStream.class))).thenReturn(imageSize);
+    when(imageConfig.getDatastore()).thenReturn(datastoreName);
   }
 
   @AfterMethod
@@ -149,6 +156,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     doNothing().when(imageBackend).updateSettings(imageEntity, imageSettings);
     doNothing().when(imageBackend).updateSize(imageEntity, imageSize);
+    doNothing().when(imageBackend).updateImageDatastore(imageEntity.getId(), datastoreName);
 
     command.execute();
 
@@ -161,6 +169,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     verify(imageBackend).updateSettings(eq(imageEntity), any(Map.class));
     verify(imageBackend).updateSize(imageEntity, imageSize);
+    verify(imageBackend).updateImageDatastore(eq(imageEntity.getId()), anyString());
     if (replicationType == ImageReplicationType.ON_DEMAND) {
       verify(imageBackend).updateState(imageEntity, ImageState.READY);
     }
@@ -180,6 +189,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     doNothing().when(imageBackend).updateSettings(imageEntity, imageSettings);
     doNothing().when(imageBackend).updateSize(imageEntity, imageSize);
+    doNothing().when(imageBackend).updateImageDatastore(imageEntity.getId(), datastoreName);
 
     command.execute();
     // Do it twice, it should work.
@@ -195,6 +205,8 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     verify(imageBackend, times(2)).updateSettings(eq(imageEntity), any(Map.class));
     verify(imageBackend, times(2)).updateSize(imageEntity, imageSize);
+    verify(imageBackend, times(2)).updateImageDatastore(eq(imageEntity.getId()), anyString());
+
     if (replicationType == ImageReplicationType.ON_DEMAND) {
       verify(imageBackend, times(2)).updateState(imageEntity, ImageState.READY);
     }
