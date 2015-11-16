@@ -894,12 +894,19 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
     deleteDCPEntities(TenantService.State.class);
 
     ServiceUtils.logInfo(this, "Remove from cloud store..");
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.queryEntities(this, buildQuerySpecification(DatastoreService.class),
-        createCompletionHandlerForDeleteDCPEntities(true));
 
-    cloudStoreHelper.queryEntities(this, buildQuerySpecification(DeploymentService.class),
-        createCompletionHandlerForDeleteDCPEntities(true));
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(buildQuerySpecification(DatastoreService.class)).setDirect(true))
+            .setCompletion(createCompletionHandlerForDeleteDCPEntities(true)));
+
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(buildQuerySpecification(DeploymentService.class)).setDirect(true))
+            .setCompletion(createCompletionHandlerForDeleteDCPEntities(true)));
+
     callback.onSuccess(null);
   }
 
@@ -963,33 +970,30 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
 
   private void queryAndDeprovisionHosts(final State currentState) {
 
-    final Service service = this;
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.queryEntities(this, buildQuerySpecification(HostService.State.class),
-        new Operation.CompletionHandler() {
-              @Override
-              public void handle(Operation operation, Throwable throwable) {
-                if (null != throwable) {
-                  failTask(throwable);
-                  return;
-                }
-
-                try {
-                  Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
-                  QueryTaskUtils.logQueryResults(RemoveDeploymentWorkflowService.this, documentLinks);
-                  if (documentLinks.size() > 0) {
-                    deprovisionHosts(currentState, documentLinks);
-                  } else {
-                    TaskUtils.sendSelfPatch(service, buildPatch(
-                        TaskState.TaskStage.FINISHED,
-                        null,
-                        null));
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(buildQuerySpecification(HostService.State.class)).setDirect(true))
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
                   }
-                } catch (Throwable t) {
-                  failTask(t);
+
+                  try {
+                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                    QueryTaskUtils.logQueryResults(RemoveDeploymentWorkflowService.this, documentLinks);
+                    if (documentLinks.size() > 0) {
+                      deprovisionHosts(currentState, documentLinks);
+                    } else {
+                      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+                    }
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
                 }
-              }
-            });
+            ));
   }
 
   private void deprovisionHosts(final State currentState, Collection<String> documentLinks) throws Throwable {

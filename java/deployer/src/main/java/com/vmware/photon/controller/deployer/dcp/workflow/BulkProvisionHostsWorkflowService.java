@@ -20,9 +20,9 @@ import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -33,7 +33,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteVibTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
@@ -311,33 +310,35 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
 
   private void processUploadVibSubStage(final State currentState) {
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.queryEntities(this, currentState.querySpecification, new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(currentState.querySpecification).setDirect(true))
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
 
-        try {
-          NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-          Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
-          if (UsageTag.CLOUD.name().equals(currentState.usageTag)) {
-            if (documentLinks.isEmpty()) {
-              TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this,
-                  buildPatch(TaskState.TaskStage.FINISHED, null, null));
-              return;
-            }
-          } else {
-            checkState(documentLinks.size() > 0);
-          }
-          processUploadVibSubStage(currentState, documentLinks.iterator().next());
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    });
+                  try {
+                    NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
+                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+                    if (UsageTag.CLOUD.name().equals(currentState.usageTag)) {
+                      if (documentLinks.isEmpty()) {
+                        TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this,
+                            buildPatch(TaskState.TaskStage.FINISHED, null, null));
+                        return;
+                      }
+                    } else {
+                      checkState(documentLinks.size() > 0);
+                    }
+                    processUploadVibSubStage(currentState, documentLinks.iterator().next());
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   private void processUploadVibSubStage(State currentState, String hostServiceLink) {
@@ -393,33 +394,37 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
   }
 
   private void processProvisionHostsSubStage(final State currentState) {
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.queryEntities(this, currentState.querySpecification, new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
 
-        try {
-          NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-          Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
-          if (UsageTag.CLOUD.name().equals(currentState.usageTag)) {
-            if (documentLinks.isEmpty()) {
-              TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this,
-                  buildPatch(TaskState.TaskStage.FINISHED, null, null));
-              return;
-            }
-          } else {
-            checkState(documentLinks.size() > 0);
-          }
-          processHostQueryResults(currentState, documentLinks);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    });
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(currentState.querySpecification).setDirect(true))
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
+
+                  try {
+                    NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
+                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+                    if (UsageTag.CLOUD.name().equals(currentState.usageTag)) {
+                      if (documentLinks.isEmpty()) {
+                        TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this,
+                            buildPatch(TaskState.TaskStage.FINISHED, null, null));
+                        return;
+                      }
+                    } else {
+                      checkState(documentLinks.size() > 0);
+                    }
+                    processHostQueryResults(currentState, documentLinks);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+
+                }
+            ));
   }
 
   private void processHostQueryResults(State currentState, Set<String> documentLinks) {
@@ -453,8 +458,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
           }
         };
 
-
-
     ProvisionHostWorkflowService.State startState = new ProvisionHostWorkflowService.State();
     startState.vibPath = currentState.vibPath;
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
@@ -475,26 +478,28 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
   }
 
   private void processDeleteVibSubStage(final State currentState) {
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.queryEntities(this, currentState.querySpecification, new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
 
-            try {
-              NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-              Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
-              checkState(documentLinks.size() > 0);
-              processDeleteVibSubStage(currentState, documentLinks.iterator().next());
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        });
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(currentState.querySpecification).setDirect(true))
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
 
+                  try {
+                    NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
+                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+                    checkState(documentLinks.size() > 0);
+                    processDeleteVibSubStage(currentState, documentLinks.iterator().next());
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   private void processDeleteVibSubStage(State currentState, String hostServiceLink) {

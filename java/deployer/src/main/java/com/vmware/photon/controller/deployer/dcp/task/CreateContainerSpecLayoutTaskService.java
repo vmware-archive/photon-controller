@@ -26,7 +26,6 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -37,7 +36,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
@@ -207,6 +205,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
   }
 
   private void retrieveManagementHosts(State currentState) {
+
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
         .setTermMatchValue(Utils.buildKind(HostService.State.class));
@@ -221,21 +220,31 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(kindClause);
     querySpecification.query.addBooleanClause(mgmtUsageTagClause);
+    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.queryEntities(this, querySpecification, (operation, throwable) -> {
-      if (throwable != null) {
-        failTask(throwable);
-        return;
-      }
-      NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
-      if (documentLinks.isEmpty()) {
-        failTask(new DcpRuntimeException("No HostService.State documents found."));
-      } else {
-        retrieveManagementHosts(currentState, documentLinks);
-      }
-    });
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(queryTask)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
+                  try {
+                    NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
+                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+                    if (documentLinks.isEmpty()) {
+                      failTask(new DcpRuntimeException("No HostService.State documents found"));
+                    } else {
+                      retrieveManagementHosts(currentState, documentLinks);
+                    }
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   private void retrieveManagementHosts(State currentState, Set<String> hostLinks) {

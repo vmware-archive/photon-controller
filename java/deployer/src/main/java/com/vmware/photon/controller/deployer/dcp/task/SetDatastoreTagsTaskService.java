@@ -19,6 +19,7 @@ import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -266,33 +267,35 @@ public class SetDatastoreTagsTaskService extends StatefulService {
             querySpecification.query = kindClause;
         }
 
-        CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-        cloudStoreHelper.queryEntities(this, querySpecification, new Operation.CompletionHandler() {
-            @Override
-            public void handle(Operation operation, Throwable throwable) {
-                if (null != throwable) {
-                    failTask(throwable);
-                    return;
-                }
+        sendRequest(
+            HostUtils.getCloudStoreHelper(this)
+                .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+                .setBody(QueryTask.create(querySpecification).setDirect(true))
+                .setCompletion(
+                    (completedOp, failure) -> {
+                        if (null != failure) {
+                            failTask(failure);
+                            return;
+                        }
 
-                try {
-                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
-                    QueryTaskUtils.logQueryResults(SetDatastoreTagsTaskService.this, documentLinks);
-                    if (documentLinks.size() == 0) {
-                        throw new IllegalStateException("Could not find a datastore to match the query.");
+                        try {
+                            Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                            QueryTaskUtils.logQueryResults(SetDatastoreTagsTaskService.this, documentLinks);
+                            if (documentLinks.size() == 0) {
+                                throw new IllegalStateException("Could not find a datastore to match the query.");
+                            }
+
+                            final AtomicInteger latch = new AtomicInteger(documentLinks.size());
+
+                            for (String datastoreServiceLink : documentLinks) {
+                                getDatastore(currentState, datastoreServiceLink, latch);
+                            }
+
+                        } catch (Throwable t) {
+                            failTask(t);
+                        }
                     }
-
-                    final AtomicInteger latch = new AtomicInteger(documentLinks.size());
-
-                    for (String datastoreServiceLink : documentLinks) {
-                        getDatastore(currentState, datastoreServiceLink, latch);
-                    }
-
-                } catch (Throwable t) {
-                    failTask(t);
-                }
-            }
-        });
+                ));
     }
 
     private void addIdsQuery(QueryTask.QuerySpecification querySpecification, State currentState){

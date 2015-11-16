@@ -20,10 +20,10 @@ import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -34,7 +34,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 
@@ -158,6 +157,7 @@ public class AddCloudHostWorkflowService extends StatefulService {
   }
 
   private void getSuccessfulDeployment(final State currentState) {
+
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
         .setTermMatchValue(Utils.buildKind(DeploymentService.State.class));
@@ -165,26 +165,27 @@ public class AddCloudHostWorkflowService extends StatefulService {
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query = kindClause;
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.queryEntities(this, querySpecification, new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(querySpecification).setDirect(true))
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
 
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(AddCloudHostWorkflowService.this, documentLinks);
-              checkState(documentLinks.size() >= 1);
-              getDeploymentService(currentState, documentLinks.iterator().next());
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        }
-      );
+                  try {
+                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                    QueryTaskUtils.logQueryResults(AddCloudHostWorkflowService.this, documentLinks);
+                    checkState(documentLinks.size() >= 1);
+                    getDeploymentService(currentState, documentLinks.iterator().next());
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   private void getDeploymentService(final State currentState, final String deploymentServiceLink) {

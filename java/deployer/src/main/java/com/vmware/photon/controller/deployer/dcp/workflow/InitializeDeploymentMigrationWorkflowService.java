@@ -26,9 +26,9 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
@@ -39,7 +39,6 @@ import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.DeployerModule;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerService;
@@ -398,10 +397,13 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
   private void getAllHostsFromSourceSystem(final State currentState, Operation.CompletionHandler callback) throws
       URISyntaxException {
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    QueryTask.QuerySpecification allHostQuery = buildHostQuerySpecification();
-    URI uri = getRandomSourceCloudStoreURI(currentState);
-    cloudStoreHelper.queryEntities(uri, this, allHostQuery, callback);
+
+    sendRequest(Operation
+        .createPost(UriUtils.buildBroadcastRequestUri(
+            UriUtils.buildUri(getRandomSourceCloudStoreURI(currentState), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+        .setBody(QueryTask.create(buildHostQuerySpecification()).setDirect(true))
+        .setCompletion(callback));
   }
 
   private void uploadVibs(State currentState) throws Throwable {
