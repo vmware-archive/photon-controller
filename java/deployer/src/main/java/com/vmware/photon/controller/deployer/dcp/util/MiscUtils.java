@@ -17,6 +17,7 @@ import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.photon.controller.api.NetworkConnection;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
@@ -36,10 +37,10 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * This class implements miscellaneous utility functions.
@@ -155,8 +156,17 @@ public class MiscUtils {
                     VmNetworks vmNetworks = VmApi.parseVmNetworksFromTask(task);
 
                     checkState(vmNetworks.getNetworkConnections() != null);
-                    callback.onSuccess(vmNetworks.getNetworkConnections().stream()
-                        .map(connection -> connection.getIpAddress()).collect(Collectors.toList()));
+                    List<String> result = new ArrayList<>();
+                    // Get only the non-docker ips. For docker Ips, network is null
+                    Set<NetworkConnection> connections = vmNetworks.getNetworkConnections();
+                    for (NetworkConnection networkConnection : connections) {
+                      if (networkConnection.getNetwork() != null) {
+                        result.add(networkConnection.getIpAddress());
+                      }
+                    }
+                    ServiceUtils.logInfo(service, "Found " + result.size() + " vm ips");
+                    checkState(result.size() > 0);
+                    callback.onSuccess(result);
                     return;
                   } catch (Throwable t) {
                     callback.onFailure(t);
