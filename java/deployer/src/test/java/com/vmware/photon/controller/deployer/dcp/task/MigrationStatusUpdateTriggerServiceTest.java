@@ -219,7 +219,7 @@ public class MigrationStatusUpdateTriggerServiceTest {
     @Test(expectedExceptions = ProtocolException.class)
     public void failsWhenDeploymentDocumentNotFound() throws Throwable {
       startTestEnvironment();
-      startState.deploymentServiceLink = "fakeurl";
+      startState.deploymentServiceLink = "/fakeurl";
 
       Operation postResult = testEnvironment
           .sendPostAndWait(MigrationStatusUpdateTriggerFactoryService.SELF_LINK, startState);

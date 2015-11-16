@@ -25,7 +25,6 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -40,7 +39,6 @@ import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.configuration.LoadBalancerServer;
 import com.vmware.photon.controller.deployer.configuration.ZookeeperServer;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
@@ -579,24 +577,24 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     private void patchDeploymentStateWithAuthParameters(
         final State currentState, final VmService.State vmState, final ContainerService.State containerState) {
 
-    DeploymentService.State patchState = new DeploymentService.State();
-    patchState.oAuthServerAddress = vmState.ipAddress;
-    patchState.oAuthServerPort = ServicePortConstants.LIGHTWAVE_PORT;
+      DeploymentService.State patchState = new DeploymentService.State();
+      patchState.oAuthServerAddress = vmState.ipAddress;
+      patchState.oAuthServerPort = ServicePortConstants.LIGHTWAVE_PORT;
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.patchEntity(this, currentState.deploymentServiceLink, patchState,
-      new Operation.CompletionHandler() {
-        @Override
-        public void handle(Operation operation, Throwable throwable) {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
+      sendRequest(
+          HostUtils.getCloudStoreHelper(this)
+              .createPatch(currentState.deploymentServiceLink)
+              .setBody(patchState)
+              .setCompletion(
+                  (completedOp, failure) -> {
+                    if (null != failure) {
+                      failTask(failure);
+                      return;
+                    }
 
-          patchContainerWithDynamicParameters(currentState, containerState);
-        }
-      }
-    );
+                    patchContainerWithDynamicParameters(currentState, containerState);
+                  }
+              ));
   }
 
   /**

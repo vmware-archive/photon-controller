@@ -24,7 +24,6 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -598,27 +597,26 @@ public class AddManagementHostWorkflowService extends StatefulService {
         .sendWith(this);
   }
 
-  private void patchDeploymentService(final State currentState, Set<String> chairmanIpAddresses,
-                                      String zookeeperQuorum) {
-    State patchState = buildPatch(
-        TaskState.TaskStage.STARTED,
-        TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
-        null);
-
-    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
-      if (null != throwable) {
-        failTask(throwable);
-      } else {
-        TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, patchState);
-      }
-    };
+  private void patchDeploymentService(State currentState, Set<String> chairmanIpAddresses, String zookeeperQuorum) {
 
     DeploymentService.State deploymentService = new DeploymentService.State();
     deploymentService.chairmanServerList = chairmanIpAddresses;
     deploymentService.zookeeperQuorum = zookeeperQuorum;
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.patchEntity(this, currentState.deploymentServiceLink, deploymentService, completionHandler);
+    HostUtils.getCloudStoreHelper(this)
+        .createPatch(currentState.deploymentServiceLink)
+        .setBody(deploymentService)
+        .setCompletion(
+            (completedOp, failure) -> {
+              if (null != failure) {
+                failTask(failure);
+              } else {
+                TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED,
+                    TaskState.SubStage.CREATE_MANAGEMENT_PLANE, null));
+              }
+            }
+        )
+        .sendWith(this);
   }
 
   private void bulkProvisionManagementHosts(final State currentState, DeploymentService.State deploymentService) throws

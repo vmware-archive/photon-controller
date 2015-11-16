@@ -27,7 +27,6 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
@@ -266,9 +265,12 @@ public class MiscUtils {
   }
 
   public static void updateDeploymentState(Service service, String deploymentServiceLink, DeploymentService.State
-      deploymentServiceState, Operation
-      .CompletionHandler completionHandler) {
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) service.getHost()).getCloudStoreHelper();
-    cloudStoreHelper.patchEntity(service, deploymentServiceLink, deploymentServiceState, completionHandler);
+      deploymentServiceState, Operation.CompletionHandler completionHandler) {
+
+    HostUtils.getCloudStoreHelper(service)
+        .createPatch(deploymentServiceLink)
+        .setBody(deploymentServiceState)
+        .setCompletion(completionHandler)
+        .sendWith(service);
   }
 }
