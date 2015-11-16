@@ -82,7 +82,7 @@ public class CloudStoreHelper {
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setReferer(this.localHostAddress);
   }
-  
+
   public void queryEntities(Service service, QueryTask.QuerySpecification querySpecification,
                             Operation.CompletionHandler completionHandler) {
     URI uri = getCloudStoreURI(null);

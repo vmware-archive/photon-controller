@@ -20,6 +20,7 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
@@ -158,27 +159,31 @@ public class SwarmClusterCreateTaskService extends StatefulService {
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(kindClause);
     querySpecification.query.addBooleanClause(idClause);
+    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
-    HostUtils.getCloudStoreHelper(this).queryEntities(
-        this,
-        querySpecification,
-        (Operation operation, Throwable throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(queryTask)
+            .setCompletion(
+                (Operation operation, Throwable throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
 
-          NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-          Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
-          if (documentLinks.isEmpty()) {
-            failTask(new IllegalStateException(String.format(
-                "Cannot find cluster configuration for %s",
-                ClusterType.SWARM.toString())));
-            return;
-          }
+                  NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
+                  Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+                  if (documentLinks.isEmpty()) {
+                    failTask(new IllegalStateException(String.format(
+                        "Cannot find cluster configuration for %s",
+                        ClusterType.SWARM.toString())));
+                    return;
+                  }
 
-          retrieveClusterConfiguration(currentState, documentLinks.iterator().next());
-        });
+                  retrieveClusterConfiguration(currentState, documentLinks.iterator().next());
+                }
+            ));
   }
 
   /**
