@@ -21,9 +21,9 @@ import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -33,7 +33,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 
@@ -204,25 +203,27 @@ public class CreateVmSpecLayoutTaskService extends StatefulService {
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(kindClause);
     querySpecification.query.addBooleanClause(usageTagClause);
+    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.queryEntities(this, querySpecification, new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-
-        try {
-          Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
-          QueryTaskUtils.logQueryResults(CreateVmSpecLayoutTaskService.this, documentLinks);
-          getHostEntities(currentState, documentLinks);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    });
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(queryTask)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
+                  try {
+                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                    QueryTaskUtils.logQueryResults(CreateVmSpecLayoutTaskService.this, documentLinks);
+                    getHostEntities(currentState, documentLinks);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
   }
 
   private void getHostEntities(final State currentState, Collection<String> documentLinks) {
