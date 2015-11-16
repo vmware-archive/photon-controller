@@ -1,8 +1,8 @@
 dependencies {
   compile project(':common')
   compile project(':common-logging')
-
-  compile "com.vmware.dcp:dcp-common:0.2.0-20151114.004439-3"
+  
+  compile "com.vmware.dcp:dcp-common:0.2.0-20151115.181455-4"
   compile "commons-io:commons-io:2.4"
   compile "com.google.guava:guava:${versions.guava}"
 
