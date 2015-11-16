@@ -17,8 +17,6 @@ import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 
@@ -81,25 +79,6 @@ public class CloudStoreHelper {
         .createPatch(getCloudStoreURI(path))
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setReferer(this.localHostAddress);
-  }
-
-  public void queryEntities(Service service, QueryTask.QuerySpecification querySpecification,
-                            Operation.CompletionHandler completionHandler) {
-    URI uri = getCloudStoreURI(null);
-    queryEntities(uri, service, querySpecification, completionHandler);
-  }
-
-  public void queryEntities(URI uri, Service service, QueryTask.QuerySpecification querySpecification,
-                            Operation.CompletionHandler completionHandler) {
-    service.sendRequest(Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(uri, ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setReferer(this.localHostAddress)
-        .setBody(QueryTask
-            .create(querySpecification)
-            .setDirect(true))
-        .setCompletion(completionHandler));
   }
 
   public void deleteEntity(Service service, String documentLink, Operation.CompletionHandler completionHandler) {
