@@ -253,18 +253,18 @@ public class ClusterDeleteTaskService extends StatefulService {
    */
   private void deleteClusterDocument(final ClusterDeleteTask currentState) {
 
-    Operation.CompletionHandler completionHandler = (Operation operation, Throwable throwable) -> {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-        addClusterTombstone(currentState);
-      };
-
-    HostUtils.getCloudStoreHelper(this).deleteEntity(
-        this,
-        getClusterDocumentLink(currentState),
-        completionHandler);
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createDelete(getClusterDocumentLink(currentState))
+            .setCompletion(
+                (Operation operation, Throwable throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+                  addClusterTombstone(currentState);
+                }
+            ));
   }
 
   private void addClusterTombstone(final ClusterDeleteTask currentState) {
