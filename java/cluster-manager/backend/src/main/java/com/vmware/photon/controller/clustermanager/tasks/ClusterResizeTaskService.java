@@ -203,18 +203,21 @@ public class ClusterResizeTaskService extends StatefulService {
   private void updateStates(final ClusterResizeTask currentState,
                             final ClusterResizeTask patchState,
                             final ClusterService.State clusterPatchState) {
-    HostUtils.getCloudStoreHelper(this).patchEntity(
-        this,
-        ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId,
-        clusterPatchState,
-        (Operation operation, Throwable throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
 
-          TaskUtils.sendSelfPatch(ClusterResizeTaskService.this, patchState);
-        });
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createPatch(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
+            .setBody(clusterPatchState)
+            .setCompletion(
+                (Operation operation, Throwable throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+
+                  TaskUtils.sendSelfPatch(ClusterResizeTaskService.this, patchState);
+                }
+            ));
   }
 
   private void validateStartState(ClusterResizeTask startState) {

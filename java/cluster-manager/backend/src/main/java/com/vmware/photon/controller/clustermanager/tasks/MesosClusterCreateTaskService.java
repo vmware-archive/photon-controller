@@ -526,17 +526,19 @@ public class MesosClusterCreateTaskService extends StatefulService {
                             final MesosClusterCreateTask patchState,
                             final ClusterService.State clusterPatchState) {
 
-    HostUtils.getCloudStoreHelper(this).patchEntity(
-        this,
-        ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId,
-        clusterPatchState,
-        (Operation operation, Throwable throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createPatch(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
+            .setBody(clusterPatchState)
+            .setCompletion(
+                (Operation operation, Throwable throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
 
-          TaskUtils.sendSelfPatch(MesosClusterCreateTaskService.this, patchState);
-        });
+                  TaskUtils.sendSelfPatch(MesosClusterCreateTaskService.this, patchState);
+                }
+            ));
   }
 }
