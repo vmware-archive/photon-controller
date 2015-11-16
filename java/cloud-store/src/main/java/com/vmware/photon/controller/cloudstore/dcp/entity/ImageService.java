@@ -59,7 +59,7 @@ public class ImageService extends StatefulService {
                     DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT),
             this::handlePatchAdjustDatastoreReplicationCount, "AdjustReplicationCount");
 
-    OperationProcessingChain opProcessingChain = new OperationProcessingChain();
+    OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
     opProcessingChain.add(myRouter);
 
     setOperationProcessingChain(opProcessingChain);
