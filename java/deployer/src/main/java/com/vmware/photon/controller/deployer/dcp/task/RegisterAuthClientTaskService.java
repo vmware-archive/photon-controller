@@ -24,7 +24,6 @@ import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -35,7 +34,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -459,17 +457,19 @@ public class RegisterAuthClientTaskService extends StatefulService {
    * @param deploymentServicelink Link to the deployment service.
    */
   private void sendDeploymentPatch(DeploymentService.State deploymentPatchState, String deploymentServicelink) {
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.patchEntity(this, deploymentServicelink, deploymentPatchState, new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
 
-        sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-      }
-    });
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createPatch(deploymentServicelink)
+            .setBody(deploymentPatchState)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                  } else {
+                    sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+                  }
+                }
+            ));
   }
 }
