@@ -58,7 +58,7 @@ public class TaskService extends StatefulService {
             StepUpdate.class, "kind", StepUpdate.KIND),
         this::handleStepUpdatePatch, "Step Update");
 
-    OperationProcessingChain opProcessingChain = new OperationProcessingChain();
+    OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
     opProcessingChain.add(myRouter);
     setOperationProcessingChain(opProcessingChain);
     return opProcessingChain;
