@@ -177,6 +177,7 @@ public class DiskDcpBackend implements DiskBackend {
   public void updateState(BaseDiskEntity disk, DiskState state) throws DiskNotFoundException {
     DiskService.State diskServiceState = new DiskService.State();
     diskServiceState.state = state;
+    disk.setState(state);
     updateState(disk, diskServiceState);
   }
 
@@ -187,6 +188,9 @@ public class DiskDcpBackend implements DiskBackend {
     diskServiceState.state = state;
     diskServiceState.agent = agent;
     diskServiceState.datastore = datastore;
+    disk.setState(state);
+    disk.setAgent(agent);
+    disk.setDatastore(datastore);
     updateState(disk, diskServiceState);
   }
 
