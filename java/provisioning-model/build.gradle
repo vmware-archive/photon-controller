@@ -1,0 +1,39 @@
+apply plugin: 'java'
+
+dependencies {
+    compile project(':common')
+    compile project(':common-dcp')
+
+    compile "com.vmware.dcp:dcp-common:0.2.0-20151114.004439-3"
+
+    testCompile("org.apache.curator:curator-test:${versions.curator}") {
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+        exclude group: 'log4j', module: 'log4j'
+    }
+
+    testCompile 'org.hamcrest:hamcrest-all:1.3'
+    testCompile 'org.testng:testng:6.8'
+    testCompile "org.powermock:powermock-api-mockito:${versions.powermock}"
+    testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
+    testCompile(project(path: ':common', configuration: 'tests'))
+    testCompile(project(path: ':common-dcp', configuration: 'tests'))
+}
+
+jar {
+    baseName = 'provisioning-model'
+    manifest {
+        attributes 'Specification-Title': 'Provisioning Model used by Photon Controller Backend Services',
+                'Specification-Version': version,
+                'Built-By': System.getProperty('user.name'),
+                'Built-Date': new Date(),
+                'Built-JDK': System.getProperty('java.version'),
+                'Built-Gradle': gradle.gradleVersion,
+                'Git-Commit': "git rev-parse --short HEAD".execute().text.trim()
+    }
+}
+
+tasks.withType(Test) {
+    scanForTestClasses = false
+    include "**/*Test.class"
+    exclude "**/helpers/*.class"
+}
