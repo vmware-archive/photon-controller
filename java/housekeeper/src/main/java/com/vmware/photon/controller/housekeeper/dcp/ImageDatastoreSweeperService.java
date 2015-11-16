@@ -539,27 +539,32 @@ public class ImageDatastoreSweeperService extends StatefulService {
         ImageService.State.class, termsBuilder.build());
     spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
-    CloudStoreHelper cloudStoreHelper = ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.queryEntities(this, spec, (operation, throwable) -> {
-      if (throwable != null) {
-        failTask(throwable);
-        return;
-      }
-      NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-      List<ImageService.State> documents = QueryTaskUtils.getBroadcastQueryDocuments(ImageService.State.class,
-          queryResponse);
-      Map<String, ImageService.State> imageMap = new HashMap<>();
+    sendRequest(
+        ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(spec).setDirect(true))
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (failure != null) {
+                    failTask(failure);
+                    return;
+                  }
+                  NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
+                  List<ImageService.State> documents = QueryTaskUtils.getBroadcastQueryDocuments(
+                      ImageService.State.class, queryResponse);
+                  Map<String, ImageService.State> imageMap = new HashMap<>();
 
-      for (ImageService.State image : documents) {
-        imageMap.put(ServiceUtils.getIDFromDocumentSelfLink(image.documentSelfLink), image);
-      }
+                  for (ImageService.State image : documents) {
+                    imageMap.put(ServiceUtils.getIDFromDocumentSelfLink(image.documentSelfLink), image);
+                  }
 
-      try {
-        startImageDelete(current, inactiveImages, imageMap);
-      } catch (Exception e) {
-        failTask(e);
-      }
-    });
+                  try {
+                    startImageDelete(current, inactiveImages, imageMap);
+                  } catch (Exception e) {
+                    failTask(e);
+                  }
+                }
+            ));
   }
 
   /**
