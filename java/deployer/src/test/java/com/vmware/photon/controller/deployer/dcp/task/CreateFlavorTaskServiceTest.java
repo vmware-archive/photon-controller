@@ -461,7 +461,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false);
+      setupValidServiceDocuments(false, false);
 
       CreateFlavorTaskService.State finalState =
           machine.callServiceAndWaitForState(
@@ -490,7 +490,36 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(true);
+      setupValidServiceDocuments(true, false);
+
+      CreateFlavorTaskService.State finalState =
+          machine.callServiceAndWaitForState(
+              CreateFlavorTaskFactoryService.SELF_LINK,
+              startState,
+              CreateFlavorTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      TestHelper.assertTaskStateFinished(finalState.taskState);
+
+      VmService.State vmServiceFinalState =
+          machine.getServiceState(vmServiceState.documentSelfLink, VmService.State.class);
+      assertThat(vmServiceFinalState.flavorServiceLink, notNullValue());
+
+      FlavorService.State vmFlavorState =
+          cloudStoreMachine.getServiceState(vmServiceFinalState.flavorServiceLink, FlavorService.State.class);
+      assertThat(vmFlavorState.name, is("dummyName"));
+    }
+
+    @Test
+    public void testEndToEndSuccessWithHostConfig() throws Throwable {
+
+      setupCreateVmFlavorCall(false, taskReturnedByCreateVmFlavor);
+      setupGetCreateVmFlavorTaskCall(false, taskReturnedByGetCreateVmFlavorTask);
+      setupCreateDiskFlavorCall(false, taskReturnedByCreateDiskFlavor);
+      setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
+
+      machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
+      setupValidServiceDocuments(false, true);
 
       CreateFlavorTaskService.State finalState =
           machine.callServiceAndWaitForState(
@@ -513,7 +542,7 @@ public class CreateFlavorTaskServiceTest {
     @Test
     public void testEndToEndFailureZeroContainerService() throws Throwable {
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidVmServiceDocument(false);
+      setupValidVmServiceDocument(false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -534,7 +563,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false);
+      setupValidServiceDocuments(false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -555,7 +584,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false);
+      setupValidServiceDocuments(false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -576,7 +605,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false);
+      setupValidServiceDocuments(false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -596,7 +625,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(true, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false);
+      setupValidServiceDocuments(false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -616,7 +645,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false);
+      setupValidServiceDocuments(false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -636,7 +665,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false);
+      setupValidServiceDocuments(false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -656,7 +685,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false);
+      setupValidServiceDocuments(false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -676,7 +705,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, task);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false);
+      setupValidServiceDocuments(false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -698,7 +727,7 @@ public class CreateFlavorTaskServiceTest {
       };
     }
 
-    private void setupValidVmServiceDocument(boolean overwriteVmResource) throws Throwable {
+    private void setupValidVmServiceDocument(boolean overwriteVmResource, boolean addHostResource) throws Throwable {
 
       HostService.State hostStartState =
           TestHelper.getHostServiceStartState(Collections.singleton(UsageTag.MGMT.name()), HostState.READY);
@@ -706,6 +735,10 @@ public class CreateFlavorTaskServiceTest {
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE, "1");
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_GB_OVERWIRTE, "2");
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE, "3");
+      }
+      if (addHostResource) {
+        hostStartState.cpuCount = 8;
+        hostStartState.memoryMb = 8192;
       }
 
       HostService.State hostServiceState = TestHelper.createHostService(cloudStoreMachine, hostStartState);
@@ -725,8 +758,8 @@ public class CreateFlavorTaskServiceTest {
       TestHelper.createContainerService(machine, containerTemplateSavedState2, vmServiceState);
     }
 
-    private void setupValidServiceDocuments(boolean overwriteVmResource) throws Throwable {
-      setupValidVmServiceDocument(overwriteVmResource);
+    private void setupValidServiceDocuments(boolean overwriteVmResource, boolean addHostResource) throws Throwable {
+      setupValidVmServiceDocument(overwriteVmResource, addHostResource);
       setupValidContainerAndContainerTemplateDocuments();
     }
 

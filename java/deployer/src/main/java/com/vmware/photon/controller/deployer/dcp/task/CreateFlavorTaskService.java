@@ -214,7 +214,7 @@ public class CreateFlavorTaskService extends StatefulService {
 
                       createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryMb, finalDiskGb);
                     } else {
-                      queryContainerEntityLinks(currentState, vmState);
+                      queryContainerEntityLinks(currentState, vmState, hostState);
                     }
                   } catch (Throwable t) {
                     failTask(t);
@@ -223,7 +223,8 @@ public class CreateFlavorTaskService extends StatefulService {
             ));
   }
 
-  private void queryContainerEntityLinks(final State currentState, final VmService.State vmState) {
+  private void queryContainerEntityLinks(final State currentState, final VmService.State vmState, final HostService
+      .State hostState) {
 
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -254,7 +255,7 @@ public class CreateFlavorTaskService extends StatefulService {
             try {
               Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(CreateFlavorTaskService.this, documentLinks);
-              getContainerEntities(currentState, vmState, documentLinks);
+              getContainerEntities(currentState, vmState, hostState, documentLinks);
             } catch (Throwable t) {
               failTask(t);
             }
@@ -265,7 +266,10 @@ public class CreateFlavorTaskService extends StatefulService {
   }
 
   private void getContainerEntities(
-      final State currentState, final VmService.State vmState, Collection<String> documentLinks) {
+      final State currentState,
+      final VmService.State vmState,
+      final HostService.State hostState,
+      Collection<String> documentLinks) {
 
     if (documentLinks.isEmpty()) {
       throw new DcpRuntimeException("Document links is empty");
@@ -283,7 +287,7 @@ public class CreateFlavorTaskService extends StatefulService {
             List<String> containerTemplateServiceLinks = ops.values().stream()
                 .map(operation -> operation.getBody(ContainerService.State.class).containerTemplateServiceLink)
                 .collect(Collectors.toList());
-            getContainerTemplateEntities(currentState, vmState, containerTemplateServiceLinks);
+            getContainerTemplateEntities(currentState, vmState, hostState, containerTemplateServiceLinks);
           } catch (Throwable t) {
             failTask(t);
           }
@@ -291,8 +295,10 @@ public class CreateFlavorTaskService extends StatefulService {
         .sendWith(this);
   }
 
-  private void getContainerTemplateEntities(final State currentState, final VmService.State vmState,
-    final List<String> containerTemplateServiceLinks) {
+  private void getContainerTemplateEntities(final State currentState,
+                                            final VmService.State vmState,
+                                            final HostService.State hostState,
+                                            final List<String> containerTemplateServiceLinks) {
 
     if (containerTemplateServiceLinks.isEmpty()) {
       throw new DcpRuntimeException("Container template service links set is empty");
@@ -320,6 +326,13 @@ public class CreateFlavorTaskService extends StatefulService {
               finalDiskGb += containerTemplateState.diskGb;
             }
 
+            // If host memory and cpu count is set, consume them entirely for the management vm.
+            if (hostState.memoryMb != null) {
+              finalMemoryMb = hostState.memoryMb;
+            }
+            if (hostState.cpuCount != null) {
+              finalCpuCount = hostState.cpuCount;
+            }
             createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryMb, finalDiskGb);
           } catch (Throwable t) {
             failTask(t);
