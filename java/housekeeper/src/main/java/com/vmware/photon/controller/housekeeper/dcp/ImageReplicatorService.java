@@ -270,7 +270,8 @@ public class ImageReplicatorService extends StatefulService {
 
 
   /**
-   * Updates total datastore and total image datastore field in image entity stored in cloudstore.
+   * Gets image entity and sends patch to update total datastore and total image datastore field.
+   *
    * @param current
    */
   protected void updateTotalImageDatastore(final State current) {
