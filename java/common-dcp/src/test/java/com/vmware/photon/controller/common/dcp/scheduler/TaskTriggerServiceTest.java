@@ -133,6 +133,24 @@ public class TaskTriggerServiceTest {
     }
 
     /**
+     * Test that maintenance interval passed in the start state is applied.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testCustomMaintenanceInerval() throws Throwable {
+      TaskTriggerService.State startState = buildValidStartupState();
+      startState.triggerIntervalMillis = 25 * 60 * 1000;
+
+      Operation startOp = host.startServiceSynchronously(service, startState, selfLink);
+      assertThat(startOp.getStatusCode(), is(200));
+
+      ServiceConfiguration config = host.getServiceState(ServiceConfiguration.class, selfLink + "/config");
+      assertThat(config.maintenanceIntervalMicros,
+          is(TimeUnit.MILLISECONDS.toMicros(startState.triggerIntervalMillis)));
+    }
+
+    /**
      * Tests that exception is raised for all fields that expect a positive value.
      *
      * @param fieldName
@@ -291,25 +309,47 @@ public class TaskTriggerServiceTest {
     public Object[][] getPositiveFieldsParams() {
       return new Object[][]{
           {"taskExpirationAgeMillis", 0},
-          {"taskExpirationAgeMillis", -10}
+          {"taskExpirationAgeMillis", -10},
+          {"triggerIntervalMillis", 0},
+          {"triggerIntervalMillis", -10}
       };
     }
 
     /**
-     * Test patch that will trigger a service instance.
+     * Test that maintenance interval passed in the patch is stored and applied.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testUpdateMaintenanceInerval() throws Throwable {
+      TaskTriggerService.State patchState = new TaskTriggerService.State();
+      patchState.triggerIntervalMillis = 15 * 60 * 1000;
+
+      Operation patch = Operation
+          .createPatch(UriUtils.buildUri(host, selfLink, null))
+          .setBody(patchState);
+      Operation result = host.sendRequestAndWait(patch);
+
+      TaskTriggerService.State newServiceState = result.getBody(TaskTriggerService.State.class);
+      assertThat(newServiceState.triggerIntervalMillis, is(patchState.triggerIntervalMillis));
+
+      ServiceConfiguration config = host.getServiceState(ServiceConfiguration.class, selfLink + "/config");
+      assertThat(config.maintenanceIntervalMicros,
+          is(TimeUnit.MILLISECONDS.toMicros(patchState.triggerIntervalMillis)));
+    }
+
+    /**
+     * Test patch that will trigger a service instance. The patch sent in this test should be an "empty" patch
+     * to test that the patch sent by handle maintenance will work correctly.
      *
      * @throws Throwable
      */
     @Test
     public void testTriggerPatch() throws Throwable {
-      TaskTriggerService.State state = new TaskTriggerService.State();
-      state.triggerIntervalMillis = 10;
       Operation op = Operation
           .createPatch(UriUtils.buildUri(host, selfLink, null))
-          .setBody(state);
+          .setBody(new TaskSchedulerService.State());
       Operation result = host.sendRequestAndWait(op);
-      TaskTriggerService.State newServiceState = result.getBody(TaskTriggerService.State.class);
-      assertThat(newServiceState.triggerIntervalMillis, is(10));
 
       assertThat(result.getStatusCode(), is(200));
 
