@@ -107,6 +107,7 @@ class EsxVmManager(VmManager):
     """
 
     GUESTINFO_PREFIX = "guestinfo.esxcloud."
+    VMINFO_PREFIX = "photon_controller.vminfo."
     EXTRA_CONFIG_VNC_ENABLED = "RemoteDisplay.vnc.enabled"
     EXTRA_CONFIG_VNC_PORT = "RemoteDisplay.vnc.port"
     METADATA_EXTRA_CONFIG_KEYS = (
@@ -767,6 +768,21 @@ class EsxVmManager(VmManager):
             return True
 
         return False
+
+    def set_vminfo(self, spec, vminfo):
+        prefixed_vminfo = {}
+        for k, v in vminfo.iteritems():
+            prefixed_vminfo[self.VMINFO_PREFIX + k] = v
+        self.vm_config.set_extra_config(spec, prefixed_vminfo)
+
+    def get_vminfo(self, vm_id):
+        extras = self.get_vm_config(vm_id).extraConfig
+        vminfo = {}
+        for config in extras:
+            if config.key.startswith(self.VMINFO_PREFIX):
+                key = config.key[(len(self.VMINFO_PREFIX)):]
+                vminfo[key] = config.value
+        return vminfo
 
     def get_vm_config(self, vm_id):
         """ Get the config info of a VM. """
