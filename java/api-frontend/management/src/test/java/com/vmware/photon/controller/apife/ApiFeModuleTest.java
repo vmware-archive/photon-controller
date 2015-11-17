@@ -63,7 +63,6 @@ import com.vmware.photon.controller.apife.config.ApiFeConfigurationTest;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ConfigurationUtils;
 import com.vmware.photon.controller.apife.config.ImageConfig;
-import com.vmware.photon.controller.apife.db.HibernateTestModule;
 import com.vmware.photon.controller.apife.lib.ImageStore;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HousekeeperClientConfig;
@@ -392,13 +391,10 @@ public class ApiFeModuleTest {
 
       apiFeModule.setConfiguration(apiFeConfiguration);
 
-      Injector injector = Guice.createInjector(
-          new HibernateTestModule());
-
       ZookeeperModule zookeeperModule = new ZookeeperModule();
       zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
 
-      injector = Guice.createInjector(
+      Injector injector = Guice.createInjector(
           apiFeModule,
           zookeeperModule,
           new AbstractModule() {
@@ -458,13 +454,10 @@ public class ApiFeModuleTest {
 
       apiFeModule.setConfiguration(apiFeConfiguration);
 
-      Injector injector = Guice.createInjector(
-          new HibernateTestModule());
-
       ZookeeperModule zookeeperModule = new ZookeeperModule();
       zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
 
-      injector = Guice.createInjector(
+      Injector injector = Guice.createInjector(
           apiFeModule,
           zookeeperModule,
           new AbstractModule() {
