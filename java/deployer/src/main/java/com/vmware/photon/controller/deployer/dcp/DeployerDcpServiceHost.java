@@ -213,10 +213,10 @@ public class DeployerDcpServiceHost
   protected static final String PROVISION_HOST_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/workflow/provision-host";
 
-  private static final Map<String, TaskSchedulerServiceStateBuilder.Config> TASK_SCHEDULERS =
-      ImmutableMap.<String, TaskSchedulerServiceStateBuilder.Config>builder()
+  private static final Map<String, TaskSchedulerServiceStateBuilder> TASK_SCHEDULERS =
+      ImmutableMap.<String, TaskSchedulerServiceStateBuilder>builder()
           .put(PROVISION_HOST_SCHEDULER_SERVICE,
-              new TaskSchedulerServiceStateBuilder.Config(ProvisionHostWorkflowService.class, 1))
+              new TaskSchedulerServiceStateBuilder(ProvisionHostWorkflowService.class, 1))
           .build();
 
   private static final String DEPLOYER_URI = "deployer";
@@ -536,10 +536,9 @@ public class DeployerDcpServiceHost
     }, TaskSchedulerServiceFactory.SELF_LINK);
   }
 
-  private void startTaskSchedulerService(final String selfLink, TaskSchedulerServiceStateBuilder.Config config)
+  private void startTaskSchedulerService(final String selfLink, TaskSchedulerServiceStateBuilder builder)
       throws IllegalAccessException, InstantiationException {
-    TaskSchedulerServiceStateBuilder builder = new TaskSchedulerServiceStateBuilder();
-    TaskSchedulerService.State state = builder.build(config);
+    TaskSchedulerService.State state = builder.build();
     state.documentSelfLink = TaskSchedulerServiceStateBuilder.getSuffixFromSelfLink(selfLink);
 
     URI uri = UriUtils.buildUri(DeployerDcpServiceHost.this, TaskSchedulerServiceFactory.SELF_LINK, null);

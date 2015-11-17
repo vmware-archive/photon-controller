@@ -46,7 +46,6 @@ import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskStateBuilder;
-import com.vmware.photon.controller.common.dcp.scheduler.TaskStateBuilderConfig;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerFactoryService;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 
@@ -67,15 +66,14 @@ public class CloudStoreDcpHost
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreDcpHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
 
-  private static final Object[][] TASK_TRIGGERS = new Object[][]{
-      {
-          new TombstoneCleanerTriggerBuilder(),
-          new TombstoneCleanerTriggerBuilder.Config()
-      },
-      {
-          new EntityLockCleanerTriggerBuilder(),
-          new TombstoneCleanerTriggerBuilder.Config()
-      },
+  private static final TaskStateBuilder[] TASK_TRIGGERS = new TaskStateBuilder[]{
+      new TombstoneCleanerTriggerBuilder(
+          TombstoneCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          TombstoneCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS,
+          TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE_MILLIS),
+      new EntityLockCleanerTriggerBuilder(
+          EntityLockCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          EntityLockCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
   };
 
   public static final Class[] FACTORY_SERVICES = {
@@ -191,21 +189,14 @@ public class CloudStoreDcpHost
   }
 
   private void startTaskTriggerServices() {
-    registerForServiceAvailability((operation, throwable) -> {
-      for (Object[] params : TASK_TRIGGERS) {
-        startTriggerService(params);
+    registerForServiceAvailability((Operation operation, Throwable throwable) -> {
+      for (TaskStateBuilder builder : TASK_TRIGGERS) {
+        Operation post = Operation
+            .createPost(UriUtils.buildUri(this, TaskTriggerFactoryService.SELF_LINK))
+            .setBody(builder.build())
+            .setReferer(UriUtils.buildUri(this, ServiceUriPaths.CLOUDSTORE_ROOT));
+        this.sendRequest(post);
       }
     }, TaskTriggerFactoryService.SELF_LINK);
-  }
-
-  private void startTriggerService(Object[] params) {
-    TaskStateBuilder builder = (TaskStateBuilder) params[0];
-    TaskStateBuilderConfig config = (TaskStateBuilderConfig) params[1];
-
-    Operation post = Operation
-        .createPost(UriUtils.buildUri(this, TaskTriggerFactoryService.SELF_LINK))
-        .setBody(builder.build(config))
-        .setReferer(UriUtils.buildUri(this, ServiceUriPaths.CLOUDSTORE_ROOT));
-    this.sendRequest(post);
   }
 }
