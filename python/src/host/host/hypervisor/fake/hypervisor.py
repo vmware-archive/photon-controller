@@ -106,3 +106,6 @@ class FakeHypervisor(object):
 
     def receive_image(self, image_id, datastore, imported_vm_name):
         pass
+
+    def set_memory_overcommit(self, memory_overcommit):
+        pass
