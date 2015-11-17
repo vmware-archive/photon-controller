@@ -201,7 +201,7 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
       }
     }
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK,
+    com.vmware.dcp.common.Operation result = dcpClient.post(ResourceTicketServiceFactory.SELF_LINK,
         resourceTicket);
 
     ResourceTicketService.State createdResourceTicket = result.getBody(ResourceTicketService.State.class);
@@ -254,7 +254,7 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
   @Override
   public void delete(String resourceTicketId) throws ResourceTicketNotFoundException {
     findById(resourceTicketId);
-    dcpClient.deleteAndWait(
+    dcpClient.delete(
         ResourceTicketServiceFactory.SELF_LINK + "/" + resourceTicketId,
         new ResourceTicketService.State());
   }
@@ -322,7 +322,7 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
       }
     }
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK,
+    com.vmware.dcp.common.Operation result = dcpClient.post(ResourceTicketServiceFactory.SELF_LINK,
         resourceTicket);
 
     ResourceTicketService.State createdResourceTicket = result.getBody(ResourceTicketService.State.class);
@@ -361,7 +361,7 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
   private void patchResourceTicketService(String resourceTicketId, ResourceTicketService.Patch patch)
       throws ResourceTicketNotFoundException {
     try {
-      dcpClient.patchAndWait(
+      dcpClient.patch(
           ResourceTicketServiceFactory.SELF_LINK + "/" + resourceTicketId,
           patch);
     } catch (DocumentNotFoundException e) {
@@ -393,7 +393,7 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
   private ResourceTicketService.State getResourceTicketStateById(String id) throws ResourceTicketNotFoundException {
     com.vmware.dcp.common.Operation result;
     try {
-      result = dcpClient.getAndWait(ResourceTicketServiceFactory.SELF_LINK + "/" + id);
+      result = dcpClient.get(ResourceTicketServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new ResourceTicketNotFoundException(id);
     }

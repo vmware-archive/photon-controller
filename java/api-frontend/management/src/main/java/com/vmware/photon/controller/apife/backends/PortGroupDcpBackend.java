@@ -75,7 +75,7 @@ public class PortGroupDcpBackend implements PortGroupBackend {
 
   private PortGroupService.State findById(String id) throws PortGroupNotFoundException {
     try {
-      com.vmware.dcp.common.Operation result = dcpClient.getAndWait(PortGroupServiceFactory.SELF_LINK + "/" + id);
+      com.vmware.dcp.common.Operation result = dcpClient.get(PortGroupServiceFactory.SELF_LINK + "/" + id);
       return result.getBody(PortGroupService.State.class);
     } catch (DocumentNotFoundException exception) {
       throw new PortGroupNotFoundException(id);

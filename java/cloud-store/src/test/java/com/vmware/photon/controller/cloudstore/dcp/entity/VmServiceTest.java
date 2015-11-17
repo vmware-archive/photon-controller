@@ -140,7 +140,7 @@ public class VmServiceTest {
      */
     @Test
     public void testStartState() throws Throwable {
-      Operation result = dcpRestClient.postAndWait(VmServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(VmServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       VmService.State createdState = result.getBody(VmService.State.class);
@@ -158,7 +158,7 @@ public class VmServiceTest {
       startState.vmState = VmState.CREATING;
 
       try {
-        dcpRestClient.postAndWait(VmServiceFactory.SELF_LINK, startState);
+        dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'name' was null");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("name cannot be null"));
@@ -174,7 +174,7 @@ public class VmServiceTest {
       startState.vmState = VmState.CREATING;
 
       try {
-        dcpRestClient.postAndWait(VmServiceFactory.SELF_LINK, startState);
+        dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'flavorId' was null");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("flavorId cannot be null"));
@@ -190,7 +190,7 @@ public class VmServiceTest {
       startState.vmState = VmState.CREATING;
 
       try {
-        dcpRestClient.postAndWait(VmServiceFactory.SELF_LINK, startState);
+        dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'projectId' was null");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("projectId cannot be null"));
@@ -206,7 +206,7 @@ public class VmServiceTest {
       startState.imageId = UUID.randomUUID().toString();
 
       try {
-        dcpRestClient.postAndWait(VmServiceFactory.SELF_LINK, startState);
+        dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'vmState' was null");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("vmState cannot be null"));
@@ -222,7 +222,7 @@ public class VmServiceTest {
       startState.vmState = VmState.CREATING;
 
       try {
-        dcpRestClient.postAndWait(VmServiceFactory.SELF_LINK, startState);
+        dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'imageId' was null");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("imageId cannot be null"));
@@ -260,7 +260,7 @@ public class VmServiceTest {
 
       host.startServiceSynchronously(new VmServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(VmServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(VmServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       createdState = result.getBody(VmService.State.class);
     }
@@ -284,9 +284,9 @@ public class VmServiceTest {
       VmService.State patchState = new VmService.State();
       patchState.vmState = VmState.STARTED;
 
-      dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+      dcpRestClient.patch(createdState.documentSelfLink, patchState);
 
-      Operation found = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      Operation found = dcpRestClient.get(createdState.documentSelfLink);
       VmService.State patchedState = found.getBody(VmService.State.class);
       assertThat(patchedState.vmState, is(patchState.vmState));
     }

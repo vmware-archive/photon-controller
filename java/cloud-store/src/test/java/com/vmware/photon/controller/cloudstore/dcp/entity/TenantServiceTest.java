@@ -140,7 +140,7 @@ public class TenantServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new TenantServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(TenantServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(TenantServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       TenantService.State createdState = result.getBody(TenantService.State.class);
@@ -199,7 +199,7 @@ public class TenantServiceTest {
 
       host.startServiceSynchronously(new TenantServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(TenantServiceFactory.SELF_LINK, startState);
+      Operation result = dcpRestClient.post(TenantServiceFactory.SELF_LINK, startState);
       assertThat(result.getStatusCode(), is(200));
 
       serviceLink = result.getBody(TenantService.State.class).documentSelfLink;
@@ -217,7 +217,7 @@ public class TenantServiceTest {
 
     @Test
     public void testPatchStateSuccess() throws Throwable {
-      Operation result = dcpRestClient.getAndWait(serviceLink);
+      Operation result = dcpRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       TenantService.State currState = result.getBody(TenantService.State.class);
@@ -228,10 +228,10 @@ public class TenantServiceTest {
       patchState.securityGroups.add(new SecurityGroup("adminGroup1", true));
       patchState.securityGroups.add(new SecurityGroup("adminGroup2", false));
 
-      result = dcpRestClient.patchAndWait(serviceLink, patchState);
+      result = dcpRestClient.patch(serviceLink, patchState);
       assertThat(result.getStatusCode(), is(200));
 
-      result = dcpRestClient.getAndWait(serviceLink);
+      result = dcpRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       TenantService.State stateAfterPatch = result.getBody(TenantService.State.class);
@@ -241,7 +241,7 @@ public class TenantServiceTest {
 
     @Test
     public void testIllegalPatch() throws Throwable {
-      Operation result = dcpRestClient.getAndWait(serviceLink);
+      Operation result = dcpRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       TenantService.State currState = result.getBody(TenantService.State.class);
@@ -254,7 +254,7 @@ public class TenantServiceTest {
       patchState.securityGroups.add(new SecurityGroup("adminGroup2", false));
 
       try {
-        dcpRestClient.patchAndWait(serviceLink, patchState);
+        dcpRestClient.patch(serviceLink, patchState);
         fail("Should have failed due to updating immutable field");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("name is immutable"));

@@ -142,7 +142,7 @@ public class ProjectServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new ProjectServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(ProjectServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(ProjectServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       ProjectService.State createdState = result.getBody(ProjectService.State.class);
@@ -226,7 +226,7 @@ public class ProjectServiceTest {
 
       host.startServiceSynchronously(new ProjectServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(ProjectServiceFactory.SELF_LINK, startState);
+      Operation result = dcpRestClient.post(ProjectServiceFactory.SELF_LINK, startState);
       assertThat(result.getStatusCode(), is(200));
 
       serviceLink = result.getBody(ProjectService.State.class).documentSelfLink;
@@ -244,7 +244,7 @@ public class ProjectServiceTest {
 
     @Test
     public void testPatchStateSuccess() throws Throwable {
-      Operation result = dcpRestClient.getAndWait(serviceLink);
+      Operation result = dcpRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       ProjectService.State currState = result.getBody(ProjectService.State.class);
@@ -255,10 +255,10 @@ public class ProjectServiceTest {
       patchState.securityGroups.add(new SecurityGroup("adminGroup1", true));
       patchState.securityGroups.add(new SecurityGroup("adminGroup2", false));
 
-      result = dcpRestClient.patchAndWait(serviceLink, patchState);
+      result = dcpRestClient.patch(serviceLink, patchState);
       assertThat(result.getStatusCode(), is(200));
 
-      result = dcpRestClient.getAndWait(serviceLink);
+      result = dcpRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       ProjectService.State stateAfterPatch = result.getBody(ProjectService.State.class);
@@ -268,7 +268,7 @@ public class ProjectServiceTest {
     @Test(expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = ".*name is immutable.*")
     public void testIllegalPatch() throws Throwable {
-      Operation result = dcpRestClient.getAndWait(serviceLink);
+      Operation result = dcpRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       ProjectService.State currState = result.getBody(ProjectService.State.class);
@@ -280,7 +280,7 @@ public class ProjectServiceTest {
       patchState.securityGroups.add(new SecurityGroup("adminGroup2", false));
       patchState.name = "cannot change the name";
 
-      dcpRestClient.patchAndWait(serviceLink, patchState);
+      dcpRestClient.patch(serviceLink, patchState);
     }
   }
 }

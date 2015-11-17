@@ -116,7 +116,7 @@ public class TenantDcpBackend implements TenantBackend {
     com.vmware.dcp.common.Operation result;
 
     try {
-      result = dcpClient.getAndWait(TenantServiceFactory.SELF_LINK + "/" + id);
+      result = dcpClient.get(TenantServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new TenantNotFoundException(id);
     }
@@ -139,9 +139,9 @@ public class TenantDcpBackend implements TenantBackend {
         SecurityGroupUtils.mergeSelfSecurityGroups(currSecurityGroups, securityGroups);
 
     tenantEntity.setSecurityGroups(result.getLeft()
-        .stream()
-        .map(g -> new SecurityGroupEntity(g.getName(), g.isInherited()))
-        .collect(Collectors.toList())
+            .stream()
+            .map(g -> new SecurityGroupEntity(g.getName(), g.isInherited()))
+            .collect(Collectors.toList())
     );
 
     TaskEntity taskEntity = taskBackend.createQueuedTask(tenantEntity, Operation.SET_TENANT_SECURITY_GROUPS);
@@ -164,7 +164,7 @@ public class TenantDcpBackend implements TenantBackend {
     patch.securityGroups = securityGroups;
 
     try {
-      dcpClient.patchAndWait(TenantServiceFactory.SELF_LINK + "/" + id, patch);
+      dcpClient.patch(TenantServiceFactory.SELF_LINK + "/" + id, patch);
     } catch (DocumentNotFoundException e) {
       throw new TenantNotFoundException(id);
     }
@@ -193,7 +193,7 @@ public class TenantDcpBackend implements TenantBackend {
     state.securityGroups =
         SecurityGroupUtils.mergeParentSecurityGroups(selfSecurityGroups, deploymentSecurityGroups).getLeft();
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(TenantServiceFactory.SELF_LINK, state);
+    com.vmware.dcp.common.Operation result = dcpClient.post(TenantServiceFactory.SELF_LINK, state);
     TenantService.State createdState = result.getBody(TenantService.State.class);
 
     String id = ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);
@@ -246,7 +246,7 @@ public class TenantDcpBackend implements TenantBackend {
       }
     }
 
-    dcpClient.deleteAndWait(TenantServiceFactory.SELF_LINK + "/" + tenantEntity.getId(),
+    dcpClient.delete(TenantServiceFactory.SELF_LINK + "/" + tenantEntity.getId(),
         new TenantService.State());
     logger.info("Project {} has been cleared", tenantEntity.getId());
 

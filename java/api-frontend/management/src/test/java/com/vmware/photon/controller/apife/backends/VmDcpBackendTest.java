@@ -198,7 +198,7 @@ public class VmDcpBackendTest {
     imageSetting.defaultValue = "v2";
     imageServiceState.imageSettings.add(imageSetting);
 
-    Operation result = dcpClient.postAndWait(ImageServiceFactory.SELF_LINK, imageServiceState);
+    Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
 
     createdImageState = result.getBody(ImageService.State.class);
 
@@ -321,7 +321,7 @@ public class VmDcpBackendTest {
       vm.tags.add("namespace1:predicate1=value1");
       vm.tags.add("namespace2:predicate2=value2");
 
-      Operation result = dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vm);
+      Operation result = dcpClient.post(VmServiceFactory.SELF_LINK, vm);
       createdVm = result.getBody(VmService.State.class);
       vmId = ServiceUtils.getIDFromDocumentSelfLink(createdVm.documentSelfLink);
 
@@ -713,7 +713,7 @@ public class VmDcpBackendTest {
       diskState.diskType = DiskType.PERSISTENT;
       diskState.state = DiskState.ATTACHED;
 
-      Operation result = dcpClient.postAndWait(DiskServiceFactory.SELF_LINK, diskState);
+      Operation result = dcpClient.post(DiskServiceFactory.SELF_LINK, diskState);
       DiskService.State createdDiskState = result.getBody(DiskService.State.class);
       String diskId = ServiceUtils.getIDFromDocumentSelfLink(createdDiskState.documentSelfLink);
 
@@ -1096,7 +1096,7 @@ public class VmDcpBackendTest {
       iso.setName(UUID.randomUUID().toString());
       vmState.isos = new ArrayList<>();
       vmState.isos.add(iso);
-      dcpClient.patchAndWait(VmServiceFactory.SELF_LINK + "/" + vm.getId(), vmState);
+      dcpClient.patch(VmServiceFactory.SELF_LINK + "/" + vm.getId(), vmState);
       assertThat(vmDcpBackend.isosAttached(vm).isEmpty(), is(false));
       vmDcpBackend.detachIso(vm);
       assertThat(vmDcpBackend.isosAttached(vm).isEmpty(), is(true));

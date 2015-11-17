@@ -114,7 +114,7 @@ public class AvailabilityZoneServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new AvailabilityZoneServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(AvailabilityZoneServiceFactory.SELF_LINK, testAvailabilityZone);
+      Operation result = dcpRestClient.post(AvailabilityZoneServiceFactory.SELF_LINK, testAvailabilityZone);
 
       assertThat(result.getStatusCode(), is(200));
       AvailabilityZoneService.State createdState = result.getBody(AvailabilityZoneService.State.class);

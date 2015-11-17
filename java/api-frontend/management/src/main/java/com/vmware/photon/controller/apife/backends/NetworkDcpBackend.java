@@ -85,7 +85,7 @@ public class NetworkDcpBackend implements NetworkBackend {
     state.portGroups = checkPortGroupsNotAddedToAnyNetwork(network.getPortGroups());
     state.state = NetworkState.READY;
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(NetworkServiceFactory.SELF_LINK, state);
+    com.vmware.dcp.common.Operation result = dcpClient.post(NetworkServiceFactory.SELF_LINK, state);
 
     NetworkService.State createdState = result.getBody(NetworkService.State.class);
 
@@ -134,7 +134,7 @@ public class NetworkDcpBackend implements NetworkBackend {
       return;
     }
 
-    dcpClient.deleteAndWait(
+    dcpClient.delete(
         NetworkServiceFactory.SELF_LINK + "/" + network.getId(),
         new NetworkService.State());
     tombstoneBackend.create(Network.KIND, network.getId());
@@ -195,7 +195,7 @@ public class NetworkDcpBackend implements NetworkBackend {
   private void patchNetworkService(String id, NetworkService.State networkState)
       throws NetworkNotFoundException {
     try {
-      dcpClient.patchAndWait(
+      dcpClient.patch(
           NetworkServiceFactory.SELF_LINK + "/" + id,
           networkState);
     } catch (DocumentNotFoundException e) {
@@ -223,7 +223,7 @@ public class NetworkDcpBackend implements NetworkBackend {
 
   private NetworkService.State getById(String id) throws NetworkNotFoundException {
     try {
-      com.vmware.dcp.common.Operation result = dcpClient.getAndWait(NetworkServiceFactory.SELF_LINK + "/" + id);
+      com.vmware.dcp.common.Operation result = dcpClient.get(NetworkServiceFactory.SELF_LINK + "/" + id);
       return result.getBody(NetworkService.State.class);
     } catch (DocumentNotFoundException exception) {
       throw new NetworkNotFoundException(id);

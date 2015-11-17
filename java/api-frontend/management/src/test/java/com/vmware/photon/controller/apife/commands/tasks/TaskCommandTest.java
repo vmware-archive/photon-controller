@@ -207,7 +207,7 @@ public class TaskCommandTest {
     vmState.imageId = UUID.randomUUID().toString();
     vmState.projectId = projectId;
     vmState.vmState = VmState.CREATING;
-    dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vmState);
+    dcpClient.post(VmServiceFactory.SELF_LINK, vmState);
 
     VmEntity vm = new VmEntity();
     task = taskBackend.createQueuedTask(vm, Operation.CREATE_VM);

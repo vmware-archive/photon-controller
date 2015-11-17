@@ -107,7 +107,7 @@ public class ClusterManagerClientTest {
       task.clusterName = spec.getName();
       operation.setBody(task);
 
-      when(clusterManagerDcpRestClient.postAndWait(any(String.class), any(KubernetesClusterCreateTask.class)))
+      when(clusterManagerDcpRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
           .thenReturn(operation);
       KubernetesClusterCreateTask createTask = clusterManagerClient.createKubernetesCluster("projectId", spec);
 
@@ -123,7 +123,7 @@ public class ClusterManagerClientTest {
       task.clusterName = spec.getName();
       operation.setBody(task);
 
-      when(clusterManagerDcpRestClient.postAndWait(any(String.class), any(KubernetesClusterCreateTask.class)))
+      when(clusterManagerDcpRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
           .thenReturn(operation);
       try {
         clusterManagerClient.createKubernetesCluster("projectId", spec);
@@ -143,7 +143,7 @@ public class ClusterManagerClientTest {
       task.clusterName = spec.getName();
       operation.setBody(task);
 
-      when(clusterManagerDcpRestClient.postAndWait(any(String.class), any(KubernetesClusterCreateTask.class)))
+      when(clusterManagerDcpRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
           .thenReturn(operation);
       try {
         clusterManagerClient.createKubernetesCluster("projectId", spec);
@@ -210,7 +210,7 @@ public class ClusterManagerClientTest {
       task.clusterName = spec.getName();
       operation.setBody(task);
 
-      when(clusterManagerDcpRestClient.postAndWait(any(String.class), any(MesosClusterCreateTask.class)))
+      when(clusterManagerDcpRestClient.post(any(String.class), any(MesosClusterCreateTask.class)))
           .thenReturn(operation);
       MesosClusterCreateTask createTask = clusterManagerClient.createMesosCluster("projectId", spec);
 
@@ -226,7 +226,7 @@ public class ClusterManagerClientTest {
       task.clusterName = spec.getName();
       operation.setBody(task);
 
-      when(clusterManagerDcpRestClient.postAndWait(any(String.class), any(MesosClusterCreateTask.class)))
+      when(clusterManagerDcpRestClient.post(any(String.class), any(MesosClusterCreateTask.class)))
           .thenReturn(operation);
       try {
         clusterManagerClient.createMesosCluster("projectId", spec);
@@ -245,7 +245,7 @@ public class ClusterManagerClientTest {
       task.clusterName = spec.getName();
       operation.setBody(task);
 
-      when(clusterManagerDcpRestClient.postAndWait(any(String.class), any(MesosClusterCreateTask.class)))
+      when(clusterManagerDcpRestClient.post(any(String.class), any(MesosClusterCreateTask.class)))
           .thenReturn(operation);
       try {
         clusterManagerClient.createMesosCluster("projectId", spec);
@@ -312,7 +312,7 @@ public class ClusterManagerClientTest {
       task.clusterName = spec.getName();
       operation.setBody(task);
 
-      when(clusterManagerDcpRestClient.postAndWait(any(String.class), any(SwarmClusterCreateTask.class)))
+      when(clusterManagerDcpRestClient.post(any(String.class), any(SwarmClusterCreateTask.class)))
           .thenReturn(operation);
       SwarmClusterCreateTask createTask = clusterManagerClient.createSwarmCluster("projectId", spec);
 
@@ -328,7 +328,7 @@ public class ClusterManagerClientTest {
       task.clusterName = spec.getName();
       operation.setBody(task);
 
-      when(clusterManagerDcpRestClient.postAndWait(any(String.class), any(SwarmClusterCreateTask.class)))
+      when(clusterManagerDcpRestClient.post(any(String.class), any(SwarmClusterCreateTask.class)))
           .thenReturn(operation);
       try {
         clusterManagerClient.createSwarmCluster("projectId", spec);
@@ -347,7 +347,7 @@ public class ClusterManagerClientTest {
       task.clusterName = spec.getName();
       operation.setBody(task);
 
-      when(clusterManagerDcpRestClient.postAndWait(any(String.class), any(SwarmClusterCreateTask.class)))
+      when(clusterManagerDcpRestClient.post(any(String.class), any(SwarmClusterCreateTask.class)))
           .thenReturn(operation);
       try {
         clusterManagerClient.createSwarmCluster("projectId", spec);
@@ -412,7 +412,7 @@ public class ClusterManagerClientTest {
 
     @Test
     public void testSuccess() throws DocumentNotFoundException, ExternalException {
-      when(apiFeDcpRestClient.getAndWait(any(String.class))).thenReturn(buildOperation());
+      when(apiFeDcpRestClient.get(any(String.class))).thenReturn(buildOperation());
 
       Cluster cluster = clusterManagerClient.getCluster(clusterId);
 
@@ -428,7 +428,7 @@ public class ClusterManagerClientTest {
 
     @Test(expectedExceptions = ClusterNotFoundException.class)
     public void testException() throws DocumentNotFoundException, ClusterNotFoundException {
-      when(apiFeDcpRestClient.getAndWait(any(String.class)))
+      when(apiFeDcpRestClient.get(any(String.class)))
           .thenThrow(mock(DocumentNotFoundException.class));
 
       clusterManagerClient.getCluster(clusterId);
@@ -449,7 +449,7 @@ public class ClusterManagerClientTest {
       Operation queryResult = new Operation();
       queryResult.setBody(queryResponse);
 
-      when(apiFeDcpRestClient.queryAndWait(any(QueryTask.QuerySpecification.class)))
+      when(apiFeDcpRestClient.postToBroadcastQueryService(any(QueryTask.QuerySpecification.class)))
           .thenReturn(queryResult);
 
       ClusterService.State clusterDocument = new ClusterService.State();

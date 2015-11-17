@@ -179,7 +179,7 @@ public class ChairmanService implements Chairman.Iface {
       datastoreState.tags = datastore.getTags();
       datastoreState.isImageDatastore = false;
       try {
-        dcpRestClient.postAndWait(DatastoreServiceFactory.SELF_LINK, datastoreState);
+        dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, datastoreState);
       } catch (BadRequestException ex) {
         logger.debug("Ignoring datastore document creation failure", ex);
       }
@@ -190,7 +190,7 @@ public class ChairmanService implements Chairman.Iface {
       String link = DatastoreServiceFactory.getDocumentLink(datastoreId);
       DatastoreService.State datastoreState = new DatastoreService.State();
       datastoreState.isImageDatastore = true;
-      dcpRestClient.patchAndWait(link, datastoreState);
+      dcpRestClient.patch(link, datastoreState);
     }
   }
 
@@ -248,7 +248,7 @@ public class ChairmanService implements Chairman.Iface {
           }
         }
       }
-      dcpRestClient.patchAndWait(link, hostState);
+      dcpRestClient.patch(link, hostState);
 
       // Update datastore state
       if (datastores != null && imageDatastores != null) {

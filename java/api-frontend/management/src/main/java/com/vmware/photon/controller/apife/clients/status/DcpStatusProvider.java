@@ -43,7 +43,7 @@ public class DcpStatusProvider implements StatusProvider {
   public Status getStatus() {
     try {
       dcpRestClient.start();
-      Operation operation = dcpRestClient.getAndWait(StatusService.SELF_LINK);
+      Operation operation = dcpRestClient.get(StatusService.SELF_LINK);
       return operation.getBody(Status.class);
     } catch (DocumentNotFoundException | TimeoutException ex) {
       logger.error("DCP REST call unreachable", ex);

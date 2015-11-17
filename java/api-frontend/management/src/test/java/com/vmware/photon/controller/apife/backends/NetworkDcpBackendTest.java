@@ -153,7 +153,7 @@ public class NetworkDcpBackendTest {
 
       String documentSelfLink = NetworkServiceFactory.SELF_LINK + "/" + taskEntity.getEntityId();
 
-      NetworkService.State savedState = dcpClient.getAndWait(documentSelfLink).getBody(NetworkService.State.class);
+      NetworkService.State savedState = dcpClient.get(documentSelfLink).getBody(NetworkService.State.class);
       assertThat(savedState.name, is(spec.getName()));
       assertThat(savedState.description, is(spec.getDescription()));
       assertThat(savedState.state, is(NetworkState.READY));
@@ -383,7 +383,7 @@ public class NetworkDcpBackendTest {
       vm.vmState = VmState.CREATING;
       vm.networks = new ArrayList<>();
       vm.networks.add(networkId);
-      dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vm);
+      dcpClient.post(VmServiceFactory.SELF_LINK, vm);
 
       networkBackend.prepareNetworkDelete(networkId);
       networks = networkBackend.filter(
@@ -430,7 +430,7 @@ public class NetworkDcpBackendTest {
       vm.vmState = VmState.CREATING;
       vm.networks = new ArrayList<>();
       vm.networks.add(networkId);
-      dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vm);
+      dcpClient.post(VmServiceFactory.SELF_LINK, vm);
 
       networkBackend.prepareNetworkDelete(networkId);
 
@@ -531,7 +531,7 @@ public class NetworkDcpBackendTest {
       vm.vmState = VmState.CREATING;
       vm.networks = new ArrayList<>();
       vm.networks.add(entity.getId());
-      dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vm);
+      dcpClient.post(VmServiceFactory.SELF_LINK, vm);
       networkBackend.tombstone(entity);
       assertThat(tombstoneBackend.getByEntityId(entity.getId()), nullValue());
 
@@ -593,13 +593,13 @@ public class NetworkDcpBackendTest {
 
       String documentSelfLink = NetworkServiceFactory.SELF_LINK + "/" + networkId;
 
-      NetworkService.State savedState = dcpClient.getAndWait(documentSelfLink).getBody(NetworkService.State.class);
+      NetworkService.State savedState = dcpClient.get(documentSelfLink).getBody(NetworkService.State.class);
       assertThat(savedState.portGroups, is(spec.getPortGroups()));
 
       List<String> portGroups = new ArrayList<>();
       portGroups.add("New PG1");
       networkBackend.updatePortGroups(networkId, portGroups);
-      savedState = dcpClient.getAndWait(documentSelfLink).getBody(NetworkService.State.class);
+      savedState = dcpClient.get(documentSelfLink).getBody(NetworkService.State.class);
       assertThat(savedState.portGroups, is(portGroups));
     }
 

@@ -51,10 +51,10 @@ public class ApiFeDcpRestClient extends DcpRestClient {
   }
 
   @Override
-  public Operation postAndWait(String serviceSelfLink, ServiceDocument body) {
+  public Operation post(String serviceSelfLink, ServiceDocument body) {
 
     try {
-      return super.postAndWait(serviceSelfLink, body);
+      return super.post(serviceSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new DcpRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
@@ -67,9 +67,9 @@ public class ApiFeDcpRestClient extends DcpRestClient {
   }
 
   @Override
-  public Operation getAndWait(String documentSelfLink) throws DocumentNotFoundException {
+  public Operation get(String documentSelfLink) throws DocumentNotFoundException {
     try {
-      return super.getAndWait(documentSelfLink);
+      return super.get(documentSelfLink);
     } catch (BadRequestException badRequestException) {
       throw new DcpRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
@@ -80,9 +80,9 @@ public class ApiFeDcpRestClient extends DcpRestClient {
   }
 
   @Override
-  public Operation deleteAndWait(String documentSelfLink, ServiceDocument body) {
+  public Operation delete(String documentSelfLink, ServiceDocument body) {
     try {
-      return super.deleteAndWait(documentSelfLink, body);
+      return super.delete(documentSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new DcpRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
@@ -95,9 +95,9 @@ public class ApiFeDcpRestClient extends DcpRestClient {
   }
 
   @Override
-  public Operation queryAndWait(QueryTask.QuerySpecification spec) {
+  public Operation postToBroadcastQueryService(QueryTask.QuerySpecification spec) {
     try {
-      return super.queryAndWait(spec);
+      return super.postToBroadcastQueryService(spec);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new DcpRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
@@ -110,10 +110,10 @@ public class ApiFeDcpRestClient extends DcpRestClient {
   }
 
   @Override
-  public Operation patchAndWait(String serviceSelfLink, ServiceDocument body)
+  public Operation patch(String serviceSelfLink, ServiceDocument body)
       throws DocumentNotFoundException {
     try {
-      return super.patchAndWait(serviceSelfLink, body);
+      return super.patch(serviceSelfLink, body);
     } catch (BadRequestException badRequestException) {
       throw new DcpRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
@@ -156,7 +156,7 @@ public class ApiFeDcpRestClient extends DcpRestClient {
   protected void handleTimeoutException(Operation operation, TimeoutException timeoutException) {
     //API-FE does not handle timeout exception currently hence converting it to RuntimeException
 
-    logger.warn("ApiFeDcpRestClient.sendAndWait: TIMEOUT Operation={}, Message={}",
+    logger.warn("ApiFeDcpRestClient.send: TIMEOUT Operation={}, Message={}",
         operation,
         timeoutException.getMessage());
     throw new RuntimeException(timeoutException);
@@ -165,7 +165,7 @@ public class ApiFeDcpRestClient extends DcpRestClient {
   @VisibleForTesting
   @Override
   protected void handleInterruptedException(Operation operation, InterruptedException interruptedException) {
-    logger.warn("ApiFeDcpRestClient.sendAndWait: INTERRUPTED Operation={}, Exception={}",
+    logger.warn("ApiFeDcpRestClient.send: INTERRUPTED Operation={}, Exception={}",
         operation,
         interruptedException);
 

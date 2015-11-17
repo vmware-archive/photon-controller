@@ -282,7 +282,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   @Override
   public void tombstone(DeploymentEntity deploymentEntity) {
     tombstoneBackend.create(deploymentEntity.getKind(), deploymentEntity.getId());
-    dcpClient.deleteAndWait(DeploymentServiceFactory.SELF_LINK + "/" + deploymentEntity.getId(),
+    dcpClient.delete(DeploymentServiceFactory.SELF_LINK + "/" + deploymentEntity.getId(),
         new DeploymentService.State());
   }
 
@@ -312,7 +312,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     state.documentSelfLink = spec.getType().toString().toLowerCase();
 
     com.vmware.dcp.common.Operation operation =
-        dcpClient.postAndWait(ClusterConfigurationServiceFactory.SELF_LINK, state);
+        dcpClient.post(ClusterConfigurationServiceFactory.SELF_LINK, state);
 
     state = operation.getBody(ClusterConfigurationService.State.class);
 
@@ -327,7 +327,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   @Override
   public TaskEntity deleteClusterConfiguration(ClusterType clusterType) throws ExternalException {
     findClusterConfigurationByType(clusterType);
-    dcpClient.deleteAndWait(getClusterConfigurationLink(clusterType), new ClusterConfigurationService.State());
+    dcpClient.delete(getClusterConfigurationLink(clusterType), new ClusterConfigurationService.State());
     return taskBackend.createCompletedTask(null, Operation.DELETE_CLUSTER_CONFIGURATION);
   }
 
@@ -340,7 +340,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
       DeploymentNotFoundException {
     com.vmware.dcp.common.Operation result;
     try {
-      result = dcpClient.patchAndWait(DeploymentServiceFactory.SELF_LINK + "/" + id, patch);
+      result = dcpClient.patch(DeploymentServiceFactory.SELF_LINK + "/" + id, patch);
     } catch (DocumentNotFoundException e) {
       throw new DeploymentNotFoundException(id);
     }
@@ -351,7 +351,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   private DeploymentService.State getDeploymentById(String id) throws DeploymentNotFoundException {
     com.vmware.dcp.common.Operation result;
     try {
-      result = dcpClient.getAndWait(DeploymentServiceFactory.SELF_LINK + "/" + id);
+      result = dcpClient.get(DeploymentServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new DeploymentNotFoundException(id);
     }
@@ -394,7 +394,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     deployment.loadBalancerEnabled = spec.getLoadBalancerEnabled();
 
     com.vmware.dcp.common.Operation operation =
-        dcpClient.postAndWait(DeploymentServiceFactory.SELF_LINK, deployment);
+        dcpClient.post(DeploymentServiceFactory.SELF_LINK, deployment);
 
     deployment = operation.getBody(DeploymentService.State.class);
 
@@ -505,7 +505,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   private ClusterConfiguration findClusterConfigurationByType(ClusterType clusterType) throws ExternalException {
     try {
       com.vmware.dcp.common.Operation operation =
-        dcpClient.getAndWait(getClusterConfigurationLink(clusterType));
+          dcpClient.get(getClusterConfigurationLink(clusterType));
       ClusterConfigurationService.State state = operation.getBody(ClusterConfigurationService.State.class);
 
       ClusterConfiguration configuration = new ClusterConfiguration();
