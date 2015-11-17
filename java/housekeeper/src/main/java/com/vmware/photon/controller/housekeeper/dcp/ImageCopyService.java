@@ -16,7 +16,6 @@ package com.vmware.photon.controller.housekeeper.dcp;
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
@@ -65,6 +64,7 @@ public class ImageCopyService extends StatefulService {
     State s = new State();
     s.taskInfo = new TaskState();
     s.taskInfo.stage = TaskState.TaskStage.STARTED;
+    s.taskInfo.subStage = TaskState.SubStage.RETRIEVE_HOST;
     return s;
   }
 
@@ -87,7 +87,7 @@ public class ImageCopyService extends StatefulService {
       validateState(s);
       start.setBody(s).complete();
 
-      sendStageProgressPatch(s, s.taskInfo.stage);
+      sendStageProgressPatch(s, s.taskInfo.stage, s.taskInfo.subStage);
     } catch (RuntimeException e) {
       ServiceUtils.logSevere(this, e);
       if (!OperationUtils.isCompleted(start)) {
@@ -162,10 +162,17 @@ public class ImageCopyService extends StatefulService {
     }
 
     checkState(current.taskInfo.stage.ordinal() < TaskState.TaskStage.FINISHED.ordinal(),
-        "Can not patch anymore when in final stage %s", current.taskInfo.stage);
-    if (patch.taskInfo != null && patch.taskInfo.stage != null) {
+        "Invalid stage update. Can not patch anymore when in final stage %s", current.taskInfo.stage);
+
+    if (patch.taskInfo != null) {
+      checkState(patch.taskInfo.stage != null, "Invalid stage update. 'stage' can not be null in patch");
       checkState(patch.taskInfo.stage.ordinal() >= current.taskInfo.stage.ordinal(),
-          "Can not revert to %s from %s", patch.taskInfo.stage, current.taskInfo.stage);
+          "Invalid stage update. Can not revert to %s from %s", patch.taskInfo.stage, current.taskInfo.stage);
+
+      if (patch.taskInfo.subStage != null && current.taskInfo.subStage != null) {
+        checkState(patch.taskInfo.subStage.ordinal() >= current.taskInfo.subStage.ordinal(),
+            "Invalid stage update. 'subStage' cannot move back.");
+      }
     }
 
     checkArgument(patch.parentLink == null, "ParentLink cannot be changed.");
@@ -180,14 +187,37 @@ public class ImageCopyService extends StatefulService {
    * @param current
    */
   protected void validateState(State current) {
-    checkNotNull(current.taskInfo);
-    checkNotNull(current.taskInfo.stage);
+    checkNotNull(current.taskInfo, "taskInfo cannot be null");
+    checkNotNull(current.taskInfo.stage, "stage cannot be null");
 
     checkNotNull(current.image, "image not provided");
     checkNotNull(current.sourceDataStore, "source datastore not provided");
     checkNotNull(current.destinationDataStore, "destination datastore not provided");
 
     checkState(current.documentExpirationTimeMicros > 0, "documentExpirationTimeMicros needs to be greater than 0");
+
+    switch (current.taskInfo.stage) {
+      case STARTED:
+        checkState(current.taskInfo.subStage != null, "subStage cannot be null");
+        switch (current.taskInfo.subStage) {
+          case RETRIEVE_HOST:
+            break;
+          case COPY_IMAGE:
+            checkArgument(current.host != null, "host not found");
+            break;
+          default:
+            checkState(false, "unsupported sub-state: " + current.taskInfo.subStage.toString());
+        }
+        break;
+      case CREATED:
+      case FAILED:
+      case FINISHED:
+      case CANCELLED:
+        checkState(current.taskInfo.subStage == null, "Invalid stage update. subStage must be null");
+        break;
+      default:
+        checkState(false, "cannot process patches in state: " + current.taskInfo.stage.toString());
+    }
   }
 
   protected void applyPatch(State currentState, State patchState) {
@@ -214,10 +244,16 @@ public class ImageCopyService extends StatefulService {
    * @param current
    */
   protected void handleStartedStage(final State current) {
-    if (current.host == null) {
-      getHostFromDataStore(current);
-    } else {
-      copyImage(current);
+    // Handle task sub-state.
+    switch (current.taskInfo.subStage) {
+      case RETRIEVE_HOST:
+        getHostFromDataStore(current);
+        break;
+      case COPY_IMAGE:
+        copyImage(current);
+        break;
+      default:
+        throw new IllegalStateException("Un-supported substage" + current.taskInfo.subStage.toString());
     }
   }
 
@@ -229,7 +265,7 @@ public class ImageCopyService extends StatefulService {
   private void copyImage(final State current) {
     if (current.sourceDataStore.equals(current.destinationDataStore)) {
       ServiceUtils.logInfo(this, "Skip copying image to source itself");
-      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
+      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
       return;
     }
 
@@ -241,10 +277,10 @@ public class ImageCopyService extends StatefulService {
           ServiceUtils.logInfo(ImageCopyService.this, "CopyImageResponse %s", r);
           switch (r.getResult()) {
             case OK:
-                sendPatchToIncrementImageReplicatedCount(current);
+              sendPatchToIncrementImageReplicatedCount(current);
               break;
             case DESTINATION_ALREADY_EXIST:
-              sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
+              sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
               break;
             case SYSTEM_ERROR:
               throw new SystemErrorException(r.getError());
@@ -274,6 +310,7 @@ public class ImageCopyService extends StatefulService {
 
   /**
    * Sends patch to update replicatedDatastore in image cloud store entity.
+   *
    * @param current
    */
   private void sendPatchToIncrementImageReplicatedCount(final State current) {
@@ -289,10 +326,10 @@ public class ImageCopyService extends StatefulService {
                       ServiceUtils.logWarning(this, "Could not increment replicatedDatastore for image %s by %s: %s",
                           current.image, requestBody.amount, t);
                     }
-                    sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
+                    sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
                   }
               ));
-    } catch (Exception e){
+    } catch (Exception e) {
       ServiceUtils.logSevere(this, "Exception thrown while sending patch to image service to increment count: %s",
           e);
     }
@@ -319,9 +356,13 @@ public class ImageCopyService extends StatefulService {
       HostConfig hostConfig = ServiceUtils.selectRandomItem(hostConfigSet);
 
       // Patch self with the host and data store information.
-      State state = new State();
-      state.host = hostConfig.getAddress().getHost();
-      this.sendSelfPatch(state);
+      if (!current.isSelfProgressionDisabled) {
+        ImageCopyService.State patch = buildPatch(com.vmware.dcp.common
+                .TaskState.TaskStage.STARTED,
+            TaskState.SubStage.COPY_IMAGE, null);
+        patch.host = hostConfig.getAddress().getHost();
+        this.sendSelfPatch(patch);
+      }
     } catch (Exception e) {
       failTask(e);
     }
@@ -334,7 +375,7 @@ public class ImageCopyService extends StatefulService {
    */
   private void failTask(Throwable e) {
     ServiceUtils.logSevere(this, e);
-    this.sendSelfPatch(buildPatch(TaskState.TaskStage.FAILED, e));
+    this.sendSelfPatch(buildPatch(TaskState.TaskStage.FAILED, null, e));
   }
 
   /**
@@ -353,13 +394,14 @@ public class ImageCopyService extends StatefulService {
    * Send a patch message to ourselves to update the execution stage.
    *
    * @param stage
+   * @param subStage
    */
-  private void sendStageProgressPatch(State current, TaskState.TaskStage stage) {
+  private void sendStageProgressPatch(State current, TaskState.TaskStage stage, TaskState.SubStage subStage) {
     if (current.isSelfProgressionDisabled) {
       return;
     }
 
-    sendSelfPatch(buildPatch(stage, null));
+    sendSelfPatch(buildPatch(stage, subStage, null));
   }
 
   /**
@@ -367,19 +409,39 @@ public class ImageCopyService extends StatefulService {
    * self patch.
    *
    * @param stage
+   * @param subStage
    * @param e
    * @return
    */
-  private State buildPatch(TaskState.TaskStage stage, Throwable e) {
-    State s = new ImageCopyService.State();
+  private State buildPatch(TaskState.TaskStage stage, TaskState.SubStage subStage, Throwable e) {
+    State s = new State();
     s.taskInfo = new TaskState();
     s.taskInfo.stage = stage;
+    s.taskInfo.subStage = subStage;
 
     if (e != null) {
       s.taskInfo.failure = Utils.toServiceErrorResponse(e);
     }
 
     return s;
+  }
+
+  /**
+   * Service execution stages.
+   */
+  public static class TaskState extends com.vmware.dcp.common.TaskState {
+    /**
+     * The execution substage.
+     */
+    public SubStage subStage;
+
+    /**
+     * Execution sub-stage.
+     */
+    public static enum SubStage {
+      RETRIEVE_HOST,
+      COPY_IMAGE,
+    }
   }
 
   /**

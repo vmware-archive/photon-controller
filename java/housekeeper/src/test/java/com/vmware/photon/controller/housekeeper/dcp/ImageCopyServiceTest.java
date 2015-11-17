@@ -56,6 +56,7 @@ import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -94,9 +95,21 @@ public class
     return state;
   }
 
+  private ImageCopyService.State buildValidStartupState(
+      ImageCopyService.TaskState.TaskStage stage,
+      ImageCopyService.TaskState.SubStage subStage) {
+    ImageCopyService.State state = buildValidStartupState();
+    state.taskInfo = new ImageCopyService.TaskState();
+    state.taskInfo.stage = stage;
+    state.taskInfo.subStage = subStage;
+    state.host = "host";
+
+    return state;
+  }
+
   private ImageCopyService.State buildValidStartupState(TaskState.TaskStage stage) {
     ImageCopyService.State state = buildValidStartupState();
-    state.taskInfo = new TaskState();
+    state.taskInfo = new ImageCopyService.TaskState();
     state.taskInfo.stage = stage;
 
     return state;
@@ -217,7 +230,7 @@ public class
     @Test
     public void testStartStateWithEmptyTaskInfo() throws Throwable {
       ImageCopyService.State startState = buildValidStartupState();
-      startState.taskInfo = new TaskState();
+      startState.taskInfo = new ImageCopyService.TaskState();
       host.startServiceSynchronously(service, startState);
 
       ImageCopyService.State savedState = host.getServiceState(ImageCopyService.State.class);
@@ -237,22 +250,24 @@ public class
     @DataProvider(name = "targetStages")
     public Object[][] getTargetStages() {
       return new Object[][]{
-          {TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CANCELLED}
+          {TaskState.TaskStage.STARTED, ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
+          {TaskState.TaskStage.STARTED, ImageCopyService.TaskState.SubStage.COPY_IMAGE},
+          {TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.CANCELLED, null}
       };
     }
 
     /**
      * Test that start stage is not changed on service start up. This is expected behaviour when
-     * initial state is STARTED, FINISHED or FAILED.
+     * initial state is STARTED (with sub stages), FINISHED or FAILED.
      *
      * @throws Throwable
      */
     @Test(dataProvider = "targetStages")
-    public void testStartStageIsNotChanged(TaskState.TaskStage targetStage) throws Throwable {
-      host.startServiceSynchronously(service, buildValidStartupState(targetStage));
+    public void testStartStageIsNotChanged(TaskState.TaskStage targetStage, ImageCopyService.TaskState.SubStage
+        substage) throws Throwable {
+      host.startServiceSynchronously(service, buildValidStartupState(targetStage, substage));
 
       ImageCopyService.State savedState = host.getServiceState(ImageCopyService.State.class);
       assertThat(savedState.taskInfo, notNullValue());
@@ -290,6 +305,23 @@ public class
       startState.image = "image1";
       startState.sourceDataStore = "source-datastore";
       host.startServiceSynchronously(service, startState);
+    }
+
+    /**
+     * Test start with missing substage in STARTED state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testMissingSubstage() throws Throwable {
+      ImageCopyService.State state = buildValidStartupState(ImageCopyService.TaskState.TaskStage.STARTED);
+
+      try {
+        host.startServiceSynchronously(service, state);
+        fail("Fail to catch missing substage");
+      } catch (IllegalStateException e) {
+        assertThat(e.getMessage(), containsString("subStage cannot be null"));
+      }
     }
 
     @Test(dataProvider = "ExpirationTime")
@@ -347,47 +379,15 @@ public class
       }
     }
 
-    /**
-     * Test patch operation with invalid stage update.
-     *
-     * @param startStage
-     * @param transitionStage
-     * @param errorMsg
-     * @throws Throwable
-     */
-    @Test(dataProvider = "invalidStageTransitions")
-    public void testInvalidStageUpdate(
-        TaskState.TaskStage startStage,
-        TaskState.TaskStage transitionStage,
-        String errorMsg)
-        throws Throwable {
-      host.startServiceSynchronously(service, buildValidStartupState(startStage));
-
-      ImageCopyService.State patchState = new ImageCopyService.State();
-      patchState.taskInfo = new TaskState();
-      patchState.taskInfo.stage = transitionStage;
-
-      Operation patchOp = spy(Operation
-          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-          .setBody(patchState));
-
-      try {
-        host.sendRequestAndWait(patchOp);
-      } catch (IllegalStateException ex) {
-        assertThat(ex.getMessage(), is(errorMsg));
-      }
-
-      ImageCopyService.State savedState = host.getServiceState(ImageCopyService.State.class);
-      assertThat(savedState.taskInfo.stage, is(startStage));
-    }
-
     @Test
     public void testIgnoreDuplicatedSchedulerPatch() throws Throwable {
-      host.startServiceSynchronously(service, buildValidStartupState(TaskState.TaskStage.STARTED));
+      host.startServiceSynchronously(service, buildValidStartupState(TaskState.TaskStage.STARTED,
+          ImageCopyService.TaskState.SubStage.RETRIEVE_HOST));
 
       ImageCopyService.State patchState = new ImageCopyService.State();
-      patchState.taskInfo = new TaskState();
+      patchState.taskInfo = new ImageCopyService.TaskState();
       patchState.taskInfo.stage = TaskState.TaskStage.STARTED;
+      patchState.taskInfo.subStage = ImageCopyService.TaskState.SubStage.RETRIEVE_HOST;
 
       Operation patchOp = spy(Operation
           .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
@@ -403,26 +403,8 @@ public class
 
       ImageCopyService.State savedState = host.getServiceState(ImageCopyService.State.class);
       assertThat(savedState.taskInfo.stage, is(TaskState.TaskStage.STARTED));
-    }
-
-    @DataProvider(name = "invalidStageTransitions")
-    public Object[][] getInvalidStageTransitions() {
-      return new Object[][]{
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CREATED,
-              "Can not revert to CREATED from STARTED"},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.STARTED,
-              "Can not patch anymore when in final stage FINISHED"},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.STARTED,
-              "Can not patch anymore when in final stage FAILED"},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.STARTED,
-              "Can not patch anymore when in final stage CANCELLED"},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FINISHED,
-              "Can not patch anymore when in final stage FINISHED"},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.FAILED,
-              "Can not patch anymore when in final stage FAILED"},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CANCELLED,
-              "Can not patch anymore when in final stage CANCELLED"},
-      };
+      assertThat(savedState.taskInfo.subStage,
+          is(ImageCopyService.TaskState.SubStage.RETRIEVE_HOST));
     }
 
     /**
@@ -433,33 +415,181 @@ public class
      * @param transitionStage
      * @throws Throwable
      */
-    @Test(dataProvider = "stageTransitions")
-    public void testUpdateStage(TaskState.TaskStage startStage, TaskState.TaskStage transitionStage)
-        throws Throwable {
-      host.startServiceSynchronously(service, buildValidStartupState(startStage));
+    /**
+     * This test verifies that legal stage transitions succeed.
+     *
+     * @throws Throwable
+     */
+    @Test(dataProvider = "ValidStageUpdates")
+    public void testValidStageUpdates(
+        final ImageCopyService.TaskState.TaskStage startStage,
+        final ImageCopyService.TaskState.SubStage startSubStage,
+        final ImageCopyService.TaskState.TaskStage targetStage,
+        final ImageCopyService.TaskState.SubStage targetSubStage
+    ) throws Throwable {
+      final int dataStoreCount = 0;
+      doReturn(new ZookeeperHostMonitorSuccessMock(0, 1, dataStoreCount)).when(service).getZookeeperHostMonitor();
+
+      ImageCopyService.State startState = buildValidStartupState(startStage, startSubStage);
+      host.startServiceSynchronously(service, startState);
 
       ImageCopyService.State patchState = new ImageCopyService.State();
-      patchState.taskInfo = new TaskState();
-      patchState.taskInfo.stage = transitionStage;
+      patchState.taskInfo = new ImageCopyService.TaskState();
+      patchState.taskInfo.stage = targetStage;
+      patchState.taskInfo.subStage = targetSubStage;
 
-      Operation patchOp = spy(Operation
+      Operation patchOp = Operation
           .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-          .setBody(patchState));
+          .setBody(patchState);
 
       Operation resultOp = host.sendRequestAndWait(patchOp);
       assertThat(resultOp.getStatusCode(), is(200));
 
       ImageCopyService.State savedState = host.getServiceState(ImageCopyService.State.class);
-      assertThat(savedState.taskInfo.stage, is(transitionStage));
+      assertThat(savedState.taskInfo.stage, is(targetStage));
+      assertThat(savedState.taskInfo.subStage, is(targetSubStage));
+
     }
 
-    @DataProvider(name = "stageTransitions")
-    public Object[][] getStageTransitions() {
+    @DataProvider(name = "ValidStageUpdates")
+    public Object[][] getValidStageUpdatesData() throws Throwable {
       return new Object[][]{
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CANCELLED}
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST,
+              ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST,
+              ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE},
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST,
+              ImageCopyService.TaskState.TaskStage.FINISHED, null},
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST,
+              ImageCopyService.TaskState.TaskStage.FAILED, null},
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST,
+              ImageCopyService.TaskState.TaskStage.CANCELLED, null},
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE,
+              ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE},
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE,
+              ImageCopyService.TaskState.TaskStage.FINISHED, null},
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE,
+              ImageCopyService.TaskState.TaskStage.FAILED, null},
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE,
+              ImageCopyService.TaskState.TaskStage.CANCELLED, null},
+      };
+    }
+
+    /**
+     * This test verifies that errors occur on illegal state transitions.
+     *
+     * @param startStage
+     * @param startSubStage
+     * @param targetStage
+     * @param targetSubStage
+     * @throws Throwable
+     */
+    @Test(dataProvider = "IllegalStageUpdate")
+    public void testIllegalStageUpdate(
+        final ImageCopyService.TaskState.TaskStage startStage,
+        final ImageCopyService.TaskState.SubStage startSubStage,
+        final ImageCopyService.TaskState.TaskStage targetStage,
+        final ImageCopyService.TaskState.SubStage targetSubStage)
+        throws Throwable {
+      ImageCopyService.State startState = buildValidStartupState(startStage, startSubStage);
+      host.startServiceSynchronously(service, startState);
+
+      ImageCopyService.State patchState = new ImageCopyService.State();
+      patchState.taskInfo = new ImageCopyService.TaskState();
+      patchState.taskInfo.stage = targetStage;
+      patchState.taskInfo.subStage = targetSubStage;
+
+      Operation patchOp = Operation
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
+
+      try {
+        host.sendRequestAndWait(patchOp);
+        fail("Transition from " + startStage + ":" + startSubStage +
+            " to " + targetStage + ":" + targetSubStage + " " + "did not fail.");
+      } catch (IllegalStateException e) {
+        assertThat(e.getMessage(), startsWith("Invalid stage update."));
+      }
+    }
+
+    @DataProvider(name = "IllegalStageUpdate")
+    public Object[][] getIllegalStageUpdateData() throws Throwable {
+      return new Object[][]{
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST,
+              ImageCopyService.TaskState.TaskStage.FINISHED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST,
+              null,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
+
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE,
+              ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE,
+              ImageCopyService.TaskState.TaskStage.FINISHED,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE},
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE,
+              null,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE},
+
+          {ImageCopyService.TaskState.TaskStage.FINISHED, null,
+              ImageCopyService.TaskState.TaskStage.CREATED, null},
+          {ImageCopyService.TaskState.TaskStage.FINISHED, null,
+              ImageCopyService.TaskState.TaskStage.STARTED, null},
+          {ImageCopyService.TaskState.TaskStage.FINISHED, null,
+              ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
+          {ImageCopyService.TaskState.TaskStage.FINISHED, null,
+              ImageCopyService.TaskState.TaskStage.FINISHED, null},
+          {ImageCopyService.TaskState.TaskStage.FINISHED, null,
+              ImageCopyService.TaskState.TaskStage.FINISHED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
+          {ImageCopyService.TaskState.TaskStage.FINISHED, null,
+              ImageCopyService.TaskState.TaskStage.FAILED, null},
+          {ImageCopyService.TaskState.TaskStage.FINISHED, null,
+              ImageCopyService.TaskState.TaskStage.FAILED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
+          {ImageCopyService.TaskState.TaskStage.FINISHED, null,
+              ImageCopyService.TaskState.TaskStage.CANCELLED, null},
+          {ImageCopyService.TaskState.TaskStage.FINISHED, null, null, null},
+
+          {ImageCopyService.TaskState.TaskStage.FAILED, null,
+              ImageCopyService.TaskState.TaskStage.CREATED, null},
+          {ImageCopyService.TaskState.TaskStage.FAILED, null,
+              ImageCopyService.TaskState.TaskStage.STARTED, null},
+          {ImageCopyService.TaskState.TaskStage.FAILED, null,
+              ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
+          {ImageCopyService.TaskState.TaskStage.FAILED, null,
+              ImageCopyService.TaskState.TaskStage.FINISHED, null},
+          {ImageCopyService.TaskState.TaskStage.FAILED, null,
+              ImageCopyService.TaskState.TaskStage.FINISHED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
+          {ImageCopyService.TaskState.TaskStage.FAILED, null,
+              ImageCopyService.TaskState.TaskStage.FAILED, null},
+          {ImageCopyService.TaskState.TaskStage.FAILED, null,
+              ImageCopyService.TaskState.TaskStage.FAILED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
+          {ImageCopyService.TaskState.TaskStage.FAILED, null,
+              ImageCopyService.TaskState.TaskStage.CANCELLED, null},
+          {ImageReplicatorService.TaskState.TaskStage.FAILED, null, null, null},
       };
     }
 
@@ -610,7 +740,7 @@ public class
       int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
       copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
 
-          // Call Service.
+      // Call Service.
       ImageCopyService.State response = machine.callServiceAndWaitForState(
           ImageCopyServiceFactory.SELF_LINK,
           copyTask,
@@ -859,7 +989,7 @@ public class
     }
 
     private com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State createNewImageEntity()
-      throws Throwable {
+        throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
