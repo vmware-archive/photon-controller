@@ -99,10 +99,10 @@ public class CloudStoreDcpHost
       TombstoneServiceFactory.class,
       ClusterServiceFactory.class,
       ClusterConfigurationServiceFactory.class,
-      EntityLockCleanerFactoryService.class,
       AvailabilityZoneServiceFactory.class,
 
       // Tasks
+      EntityLockCleanerFactoryService.class,
       TaskTriggerFactoryService.class,
       TombstoneCleanerFactoryService.class
   };
@@ -144,7 +144,9 @@ public class CloudStoreDcpHost
 
   @Override
   public boolean isReady() {
-    return checkServiceAvailable(FlavorServiceFactory.SELF_LINK)
+        // entities
+    return
+        checkServiceAvailable(FlavorServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageReplicationServiceFactory.SELF_LINK)
         && checkServiceAvailable(HostServiceFactory.SELF_LINK)
@@ -168,8 +170,15 @@ public class CloudStoreDcpHost
         && checkServiceAvailable(AvailabilityZoneServiceFactory.SELF_LINK)
 
         //tasks
+        && checkServiceAvailable(EntityLockCleanerFactoryService.SELF_LINK)
+        && checkServiceAvailable(TombstoneCleanerFactoryService.SELF_LINK)
+
+        // triggers
         && checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
-        && checkServiceAvailable(TombstoneCleanerFactoryService.SELF_LINK);
+        && checkServiceAvailable(
+        TaskTriggerFactoryService.SELF_LINK + EntityLockCleanerTriggerBuilder.TRIGGER_SELF_LINK)
+        && checkServiceAvailable(
+        TaskTriggerFactoryService.SELF_LINK + TombstoneCleanerTriggerBuilder.TRIGGER_SELF_LINK);
   }
 
   @Override

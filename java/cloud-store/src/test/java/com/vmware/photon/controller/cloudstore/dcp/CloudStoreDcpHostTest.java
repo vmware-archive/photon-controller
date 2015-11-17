@@ -38,8 +38,10 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactor
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.UpgradeHelper;
+import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.FlavorDeleteServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryService;
+import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.TombstoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -105,9 +107,11 @@ public class CloudStoreDcpHostTest {
 
       // triggers
       TaskTriggerFactoryService.SELF_LINK,
+      TaskTriggerFactoryService.SELF_LINK + EntityLockCleanerTriggerBuilder.TRIGGER_SELF_LINK,
       TaskTriggerFactoryService.SELF_LINK + TombstoneCleanerTriggerBuilder.TRIGGER_SELF_LINK,
 
       // tasks
+      EntityLockCleanerFactoryService.SELF_LINK,
       TombstoneCleanerFactoryService.SELF_LINK
   };
 
