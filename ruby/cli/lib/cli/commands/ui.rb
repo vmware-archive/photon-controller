@@ -191,6 +191,7 @@ module EsxCloud::Cli
         deployment_info = {}
         data.each do |vm, ips|
           vm.metadata.each do |key, value|
+            next if not key.start_with? "CONTAINER_"
             deployment_info[value] ||= {port: [], vm_ips: []}
             deployment_info[value][:port] << to_port(key)
             deployment_info[value][:vm_ips] << ips
