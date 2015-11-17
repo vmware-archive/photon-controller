@@ -13,9 +13,8 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.task.trigger;
 
-import com.vmware.dcp.common.Utils;
-import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryService;
-import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerService;
+import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
+import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerService;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerService;
 
 import org.hamcrest.Matchers;
@@ -24,15 +23,13 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import java.lang.reflect.Type;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests for {@link TombstoneCleanerTriggerBuilder}.
+ * Tests for {@link EntityLockCleanerTriggerBuilder}.
  */
-public class TombstoneCleanerTriggerBuilderTest {
-
-  TombstoneCleanerTriggerBuilder builder;
+public class EntityLockCleanerTriggerBuilderTest {
+  EntityLockCleanerTriggerBuilder builder;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -48,15 +45,13 @@ public class TombstoneCleanerTriggerBuilderTest {
 
     Long triggerInterval;
     Long taskExpirationAge;
-    Long tombstoneExpirationAge;
 
     @BeforeMethod
     private void setUp() {
       triggerInterval = TimeUnit.MINUTES.toMillis(30);
       taskExpirationAge = triggerInterval * 5;
-      tombstoneExpirationAge = TimeUnit.HOURS.toMillis(5);
 
-      builder = new TombstoneCleanerTriggerBuilder(triggerInterval, taskExpirationAge, tombstoneExpirationAge);
+      builder = new EntityLockCleanerTriggerBuilder(triggerInterval, taskExpirationAge);
     }
 
     /**
@@ -70,12 +65,8 @@ public class TombstoneCleanerTriggerBuilderTest {
       assertThat(state.triggerIntervalMillis, is(triggerInterval.intValue()));
       assertThat(state.taskExpirationAgeMillis, is(taskExpirationAge.intValue()));
 
-      assertThat(state.triggerStateClassName, is(TombstoneCleanerService.State.class.getName()));
-      assertThat(state.factoryServiceLink, Matchers.is(TombstoneCleanerFactoryService.SELF_LINK));
-
-      Type stateType = Class.forName(state.triggerStateClassName);
-      TombstoneCleanerService.State triggerState = Utils.fromJson(state.serializedTriggerState, stateType);
-      assertThat(triggerState.tombstoneExpirationAgeMillis, is(tombstoneExpirationAge));
+      assertThat(state.triggerStateClassName, is(EntityLockCleanerService.State.class.getName()));
+      assertThat(state.factoryServiceLink, Matchers.is(EntityLockCleanerFactoryService.SELF_LINK));
     }
   }
 }

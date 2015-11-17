@@ -17,7 +17,6 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerService;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskStateBuilder;
-import com.vmware.photon.controller.common.dcp.scheduler.TaskStateBuilderConfig;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerService;
 
 import java.util.concurrent.TimeUnit;
@@ -34,58 +33,47 @@ public class EntityLockCleanerTriggerBuilder implements TaskStateBuilder {
   public static final String TRIGGER_SELF_LINK = "/entitylock-cleaner";
 
   /**
-   * Default age after which to expire a task. (5h)
+   * Default interval for entity lock cleaner service. (5m)
    */
-  public static final int DEFAULT_TASK_EXPIRATION_AGE_MILLIS = ((Long) TimeUnit.HOURS.toMillis(5)).intValue();
+  public static final long DEFAULT_TRIGGER_INTERVAL_MILLIS = TimeUnit.MINUTES.toMillis(5);
 
   /**
-   * Default interval for entity lock cleaner service. (1h)
+   * Default age after which to expire a task.
    */
-  public static final int DEFAULT_CLEANER_TRIGGER_INTERVAL_MILLIS = ((Long) TimeUnit.HOURS.toMillis(1)).intValue();
+  public static final long DEFAULT_TASK_EXPIRATION_AGE_MILLIS = DEFAULT_TRIGGER_INTERVAL_MILLIS * 5;
+
+  /**
+   * Interval at which to trigger the lock cleanup in milliseconds.
+   */
+  private final Long triggerIntervalMillis;
+
+  /**
+   * Age at which the EntityLockCleanerService tasks should expire.
+   */
+  private final Long taskExpirationAgeMillis;
+
+  /**
+   * Constructor.
+   *
+   * @param triggerInterval   (in milliseconds)
+   * @param taskExpirationAge (in milliseconds)
+   */
+  public EntityLockCleanerTriggerBuilder(Long triggerInterval, Long taskExpirationAge) {
+    this.triggerIntervalMillis = triggerInterval;
+    this.taskExpirationAgeMillis = taskExpirationAge;
+  }
 
   @Override
-  public TaskTriggerService.State build(TaskStateBuilderConfig config) {
+  public TaskTriggerService.State build() {
     TaskTriggerService.State state = new TaskTriggerService.State();
 
-    state.taskExpirationAgeMillis = DEFAULT_TASK_EXPIRATION_AGE_MILLIS;
-    state.triggerIntervalMillis = DEFAULT_CLEANER_TRIGGER_INTERVAL_MILLIS;
-
-    if (null != config && config instanceof Config) {
-      state.taskExpirationAgeMillis = ((Config) config).getTaskExpirationAgeMillis();
-      state.triggerIntervalMillis = ((Config) config).getTriggerIntervalMillis();
-    }
-
+    state.taskExpirationAgeMillis = this.taskExpirationAgeMillis.intValue();
+    state.triggerIntervalMillis = this.triggerIntervalMillis.intValue();
     state.serializedTriggerState = Utils.toJson(new EntityLockCleanerService.State());
     state.triggerStateClassName = EntityLockCleanerService.State.class.getName();
     state.factoryServiceLink = EntityLockCleanerFactoryService.SELF_LINK;
     state.documentSelfLink = TRIGGER_SELF_LINK;
+
     return state;
-  }
-
-  /**
-   * Config information needed to create the start state for a TombstoneCleanerService.
-   */
-  public static class Config implements TaskStateBuilderConfig {
-    private int taskExpirationAgeMillis;
-
-    private int triggerIntervalMillis;
-
-    public Config(int taskExpirationAge, int triggerInterval) {
-      this.taskExpirationAgeMillis = taskExpirationAge;
-      this.triggerIntervalMillis = triggerInterval;
-    }
-
-    public Config() {
-      this.taskExpirationAgeMillis = DEFAULT_TASK_EXPIRATION_AGE_MILLIS;
-      this.triggerIntervalMillis = DEFAULT_CLEANER_TRIGGER_INTERVAL_MILLIS;
-    }
-
-    public int getTaskExpirationAgeMillis() {
-      return taskExpirationAgeMillis;
-    }
-
-    public int getTriggerIntervalMillis() {
-      return triggerIntervalMillis;
-    }
   }
 }
