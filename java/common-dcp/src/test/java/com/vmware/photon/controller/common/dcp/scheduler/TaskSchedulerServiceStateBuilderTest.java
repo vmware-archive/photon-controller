@@ -46,12 +46,9 @@ public class TaskSchedulerServiceStateBuilderTest {
    */
   public class BuildTest {
 
-    TaskSchedulerServiceStateBuilder.Config config;
-
     @BeforeMethod
     private void setUp() {
-      builder = new TaskSchedulerServiceStateBuilder();
-      config = new TaskSchedulerServiceStateBuilder.Config(TestServiceWithStage.class, 10);
+      builder = new TaskSchedulerServiceStateBuilder(TestServiceWithStage.class, 10);
     }
 
     /**
@@ -61,40 +58,9 @@ public class TaskSchedulerServiceStateBuilderTest {
      */
     @Test
     public void testSuccess() throws Throwable {
-      TaskSchedulerService.State state = builder.build(config);
+      TaskSchedulerService.State state = builder.build();
       assertThat(state.schedulerServiceClassName, is(TestServiceWithStage.class.getTypeName()));
       assertThat(state.tasksLimits, is(10));
-    }
-
-    /**
-     * Tests that default null config will throw exception.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testConfigNotProvided() throws Throwable {
-      try {
-        builder.build(null);
-      } catch (NullPointerException e) {
-        assertThat(e.getMessage(), is("config should not be null"));
-      }
-    }
-
-    /**
-     * Tests that empty config will throw exception.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testWrongConfigTypeProvided() throws Throwable {
-      TaskStateBuilderConfig config = new TaskStateBuilderConfig() {
-      };
-
-      try {
-        builder.build(config);
-      } catch (IllegalArgumentException e) {
-        assertThat(e.getMessage(), is("config should be an instance of TaskSchedulerServiceStateBuilder.Config"));
-      }
     }
   }
 }
