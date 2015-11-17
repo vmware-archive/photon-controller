@@ -38,7 +38,7 @@ public class TaskTriggerService extends StatefulService {
   /**
    * Timeout value for the owner selection operation.
    */
-  private static final long OWNER_SELECTION_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
+  private static final long OWNER_SELECTION_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(30);
 
   /**
    * Default value for the maintenance interval. (1 minute)
@@ -83,6 +83,12 @@ public class TaskTriggerService extends StatefulService {
     this.validatePatch(currentState, patchState);
     this.applyPatch(currentState, patchState);
     this.validateState(currentState);
+
+    // update the maintenance interval if we had a value for it in the patch
+    if (patchState.triggerIntervalMillis != null) {
+      this.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(patchState.triggerIntervalMillis));
+    }
+
     patch.complete();
 
     this.processPatch(currentState);
