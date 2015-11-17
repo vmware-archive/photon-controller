@@ -56,9 +56,9 @@ public class HousekeeperDcpServiceHost
   protected static final String IMAGE_DELETE_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/image-delete";
 
-  private static final Map<String, TaskSchedulerServiceStateBuilder.Config> TASK_SCHEDULERS = ImmutableMap.of(
-      IMAGE_COPY_SCHEDULER_SERVICE, new TaskSchedulerServiceStateBuilder.Config(ImageCopyService.class, 10),
-      IMAGE_DELETE_SCHEDULER_SERVICE, new TaskSchedulerServiceStateBuilder.Config(ImageDeleteService.class, 10)
+  private static final Map<String, TaskSchedulerServiceStateBuilder> TASK_SCHEDULERS = ImmutableMap.of(
+      IMAGE_COPY_SCHEDULER_SERVICE, new TaskSchedulerServiceStateBuilder(ImageCopyService.class, 10),
+      IMAGE_DELETE_SCHEDULER_SERVICE, new TaskSchedulerServiceStateBuilder(ImageDeleteService.class, 10)
   );
 
   private static final String TRIGGER_CLEANER_SERVICE_SUFFIX = "/singleton";
@@ -141,6 +141,7 @@ public class HousekeeperDcpServiceHost
 
   @Override
   public boolean isReady() {
+    // schedulers
     for (String selfLink : TASK_SCHEDULERS.keySet()) {
       if (!checkServiceAvailable(selfLink)) {
         return false;
@@ -200,10 +201,9 @@ public class HousekeeperDcpServiceHost
     }, TaskSchedulerServiceFactory.SELF_LINK);
   }
 
-  private void startTaskSchedulerService(final String selfLink, TaskSchedulerServiceStateBuilder.Config config)
+  private void startTaskSchedulerService(final String selfLink, TaskSchedulerServiceStateBuilder builder)
       throws IllegalAccessException, InstantiationException {
-    TaskSchedulerServiceStateBuilder builder = new TaskSchedulerServiceStateBuilder();
-    TaskSchedulerService.State state = builder.build(config);
+    TaskSchedulerService.State state = builder.build();
     state.documentSelfLink = TaskSchedulerServiceStateBuilder.getSuffixFromSelfLink(selfLink);
 
     URI uri = UriUtils.buildUri(HousekeeperDcpServiceHost.this, TaskSchedulerServiceFactory.SELF_LINK, null);

@@ -23,8 +23,7 @@ public interface TaskStateBuilder {
   /**
    * Generates the state of task service.
    *
-   * @param config
    * @return
    */
-  ServiceDocument build(TaskStateBuilderConfig config);
+  ServiceDocument build();
 }
