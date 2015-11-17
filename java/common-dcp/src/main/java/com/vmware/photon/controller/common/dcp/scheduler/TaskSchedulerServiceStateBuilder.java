@@ -18,7 +18,6 @@ import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -35,12 +34,27 @@ public class TaskSchedulerServiceStateBuilder implements TaskStateBuilder {
    */
   public static long triggerInterval = TimeUnit.SECONDS.toMicros(60); // 1 min
 
+  /**
+   * Class of the service to be triggered.
+   */
+  private Class<? extends StatefulService> serviceClass;
+
+  /**
+   * Maximum number of task to have running at one time.
+   */
+  private int maxRunningTasks;
+
+  public TaskSchedulerServiceStateBuilder(Class<? extends StatefulService> service, int maxRunningTasks) {
+    this.serviceClass = service;
+    this.maxRunningTasks = maxRunningTasks;
+  }
+
   @Override
-  public TaskSchedulerService.State build(TaskStateBuilderConfig config) {
-    checkServiceOptions(config);
+  public TaskSchedulerService.State build() {
+    checkServiceOptions();
     TaskSchedulerService.State state = new TaskSchedulerService.State();
-    state.schedulerServiceClassName = ((Config) config).getService().getName();
-    state.tasksLimits = ((Config) config).getTasksLimit();
+    state.schedulerServiceClassName = this.serviceClass.getName();
+    state.tasksLimits = this.maxRunningTasks;
 
     return state;
   }
@@ -56,45 +70,15 @@ public class TaskSchedulerServiceStateBuilder implements TaskStateBuilder {
     return (ServiceDocument) buildPatchMethod.invoke(null);
   }
 
-  private static void checkServiceOptions(TaskStateBuilderConfig config) {
-    checkConfig(config);
+  private void checkServiceOptions() {
     try {
-      Service instance = ((Config) config).getService().newInstance();
+      Service instance = this.serviceClass.newInstance();
       boolean hasRequiredOptions =
           instance.hasOption(Service.ServiceOption.REPLICATION) &&
               instance.hasOption(Service.ServiceOption.OWNER_SELECTION);
       checkArgument(hasRequiredOptions, "Service must have REPLICATED and OWNER_SELECTION options.");
     } catch (IllegalAccessException | InstantiationException e) {
       throw new RuntimeException("checkServiceOptions failed for config.");
-    }
-
-  }
-
-  private static void checkConfig(TaskStateBuilderConfig config) {
-    checkNotNull(config, "config should not be null");
-    checkArgument(config instanceof Config, "config should be an instance of TaskSchedulerServiceStateBuilder.Config");
-  }
-
-  /**
-   * Config information needed to create the start state for a TaskSchedulerService.
-   */
-  public static class Config implements TaskStateBuilderConfig {
-
-    private Class<? extends StatefulService> service;
-
-    private int tasksLimit;
-
-    public Config(Class<? extends StatefulService> service, int tasksLimit) {
-      this.service = service;
-      this.tasksLimit = tasksLimit;
-    }
-
-    public Class<? extends StatefulService> getService() {
-      return service;
-    }
-
-    public int getTasksLimit() {
-      return tasksLimit;
     }
 
   }
