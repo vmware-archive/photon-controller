@@ -141,6 +141,7 @@ class Hypervisor(object):
 
     def set_memory_overcommit(self, value):
         self.placement_manager.memory_overcommit = value
+        self.hypervisor.set_memory_overcommit(value)
 
     @property
     def cpu_overcommit(self):

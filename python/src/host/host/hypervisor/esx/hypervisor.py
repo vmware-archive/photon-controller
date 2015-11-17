@@ -45,12 +45,7 @@ class EsxHypervisor(object):
         atexit.register(lambda client: client.disconnect(), self.vim_client)
 
         self._uuid = self.vim_client.host_uuid
-
-        # Enable/Disable large page support. If this host is removed
-        # from the deployment, large page support will need to be
-        # explicitly updated by the user.
-        disable_large_pages = agent_config.memory_overcommit > 1.0
-        self.vim_client.set_large_page_support(disable=disable_large_pages)
+        self.set_memory_overcommit(agent_config.memory_overcommit)
 
         image_datastores = [ds["name"] for ds in agent_config.image_datastores]
         self.datastore_manager = EsxDatastoreManager(
@@ -121,3 +116,10 @@ class EsxHypervisor(object):
     def receive_image(self, image_id, datastore, imported_vm_name):
         self.image_manager.receive_image(
             image_id, datastore, imported_vm_name)
+
+    def set_memory_overcommit(self, memory_overcommit):
+        # Enable/Disable large page support. If this host is removed
+        # from the deployment, large page support will need to be
+        # explicitly updated by the user.
+        disable_large_pages = memory_overcommit > 1.0
+        self.vim_client.set_large_page_support(disable=disable_large_pages)
