@@ -187,7 +187,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         if host_id:
             req.host_id = host_id
         else:
-            req.host_id = str(uuid.uuid4())
+            req.host_id = self.host_id
         res = self.control_client.provision(req)
 
         # This will trigger a restart if the agent config changes, which
@@ -302,6 +302,10 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         self.configure_hosts()
         self.clear_datastore_tags()
         self.clear()
+
+    @classmethod
+    def setUpClass(cls):
+        cls.host_id = str(uuid.uuid4())
 
     def _close_agent_connections(self):
         self.host_client.close()
