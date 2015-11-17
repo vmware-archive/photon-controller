@@ -486,7 +486,7 @@ public class ImageReplicatorServiceTest {
      */
     private String buildImageCopyTask(ImageReplicatorService.TaskState.TaskStage stage) throws Throwable {
       ImageCopyService.State task = new ImageCopyService.State();
-      task.taskInfo = new ImageReplicatorService.TaskState();
+      task.taskInfo = new ImageCopyService.TaskState();
       task.taskInfo.stage = stage;
       task.parentLink = TestHost.SERVICE_URI;
       task.image = "image1";
