@@ -225,6 +225,8 @@ struct Vm {
   6: optional list<Disk> disks
   7: optional flavors.Flavor flavor_info
   8: optional list<ResourceConstraint> resource_constraints
+  9: optional string tenant_id
+  10: optional string project_id
 }
 
 // Resource
