@@ -52,7 +52,7 @@ public class DatastoreDcpBackendTest {
     datastore.tags = tags;
     datastore.documentSelfLink = "/" + datastore.id;
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(DatastoreServiceFactory.SELF_LINK, datastore);
+    com.vmware.dcp.common.Operation result = dcpClient.post(DatastoreServiceFactory.SELF_LINK, datastore);
     return result.getBody(DatastoreService.State.class);
   }
 

@@ -113,7 +113,7 @@ public class FlavorDcpBackend implements FlavorBackend {
     state.cost = costEntity;
     state.state = FlavorState.READY;
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(FlavorServiceFactory.SELF_LINK, state);
+    com.vmware.dcp.common.Operation result = dcpClient.post(FlavorServiceFactory.SELF_LINK, state);
 
     FlavorService.State createdState = result.getBody(FlavorService.State.class);
 
@@ -142,7 +142,7 @@ public class FlavorDcpBackend implements FlavorBackend {
     flavorState.state = FlavorState.PENDING_DELETE;
     flavorState.deleteRequestTime = System.currentTimeMillis();
     try {
-      dcpClient.patchAndWait(FlavorServiceFactory.SELF_LINK + "/" + flavorEntity.getId(),
+      dcpClient.patch(FlavorServiceFactory.SELF_LINK + "/" + flavorEntity.getId(),
           flavorState);
     } catch (DocumentNotFoundException e) {
       throw new FlavorNotFoundException(flavorEntity.getId());
@@ -218,7 +218,7 @@ public class FlavorDcpBackend implements FlavorBackend {
     }
 
     if (!flavorInUse) {
-      dcpClient.deleteAndWait(
+      dcpClient.delete(
           FlavorServiceFactory.SELF_LINK + "/" + flavor.getId(),
           new FlavorService.State());
 
@@ -253,7 +253,7 @@ public class FlavorDcpBackend implements FlavorBackend {
     com.vmware.dcp.common.Operation result;
 
     try {
-      result = dcpClient.getAndWait(FlavorServiceFactory.SELF_LINK + "/" + id);
+      result = dcpClient.get(FlavorServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new FlavorNotFoundException(id);
     }

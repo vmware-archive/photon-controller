@@ -51,7 +51,7 @@ public class TombstoneDcpBackend implements TombstoneBackend {
     state.entityKind = entityKind;
     state.tombstoneTime = System.currentTimeMillis();
 
-    Operation result = dcpClient.postAndWait(TombstoneServiceFactory.SELF_LINK, state);
+    Operation result = dcpClient.post(TombstoneServiceFactory.SELF_LINK, state);
     return toEntity(result.getBody(TombstoneService.State.class));
   }
 
@@ -63,7 +63,7 @@ public class TombstoneDcpBackend implements TombstoneBackend {
   @Override
   public void delete(TombstoneEntity tombstone) {
     logger.debug("Deleting tombstone {}", tombstone);
-    dcpClient.deleteAndWait(TombstoneServiceFactory.SELF_LINK + "/" + tombstone.getId(), new TombstoneService.State());
+    dcpClient.delete(TombstoneServiceFactory.SELF_LINK + "/" + tombstone.getId(), new TombstoneService.State());
     logger.debug("Deleted tombstone {}", tombstone);
   }
 

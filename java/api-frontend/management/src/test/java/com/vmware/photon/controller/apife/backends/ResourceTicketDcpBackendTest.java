@@ -246,7 +246,7 @@ public class ResourceTicketDcpBackendTest {
       resourceTicket.tenantId = tenantId;
       resourceTicket.parentId = UUID.randomUUID().toString();
 
-      dcpClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
+      dcpClient.post(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
 
       ResourceTicketEntity foundTicket = resourceTicketBackend.findByName(
           resourceTicket.tenantId, resourceTicket.name);
@@ -262,7 +262,7 @@ public class ResourceTicketDcpBackendTest {
       resourceTicket.tenantId = tenantId;
       resourceTicket.parentId = UUID.randomUUID().toString();
 
-      dcpClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
+      dcpClient.post(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
 
       String randomName = UUID.randomUUID().toString();
       try {
@@ -280,7 +280,7 @@ public class ResourceTicketDcpBackendTest {
       resourceTicket.tenantId = UUID.randomUUID().toString();
       resourceTicket.parentId = UUID.randomUUID().toString();
 
-      dcpClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
+      dcpClient.post(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
 
       List<ResourceTicketEntity> foundTickets = resourceTicketBackend.filterByParentId(
           resourceTicket.parentId);
@@ -296,7 +296,7 @@ public class ResourceTicketDcpBackendTest {
       resourceTicket.tenantId = tenantId;
       resourceTicket.parentId = UUID.randomUUID().toString();
 
-      dcpClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
+      dcpClient.post(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
 
       List<ResourceTicket> foundTickets = resourceTicketBackend.filter(
           resourceTicket.tenantId, Optional.of(resourceTicket.name));

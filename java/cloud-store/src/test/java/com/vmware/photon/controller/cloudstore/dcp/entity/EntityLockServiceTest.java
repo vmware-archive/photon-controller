@@ -114,7 +114,7 @@ public class EntityLockServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new EntityLockServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(EntityLockServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       EntityLockService.State createdState = result.getBody(EntityLockService.State.class);

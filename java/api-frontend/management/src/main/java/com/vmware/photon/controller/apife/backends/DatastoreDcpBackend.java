@@ -78,7 +78,7 @@ public class DatastoreDcpBackend implements DatastoreBackend{
 
   private DatastoreService.State findById(String id) throws DatastoreNotFoundException {
     try {
-      com.vmware.dcp.common.Operation result = dcpClient.getAndWait(DatastoreServiceFactory.SELF_LINK + "/" + id);
+      com.vmware.dcp.common.Operation result = dcpClient.get(DatastoreServiceFactory.SELF_LINK + "/" + id);
       return result.getBody(DatastoreService.State.class);
     } catch (DocumentNotFoundException exception) {
       throw new DatastoreNotFoundException(id);

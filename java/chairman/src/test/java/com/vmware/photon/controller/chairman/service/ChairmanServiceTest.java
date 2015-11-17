@@ -274,7 +274,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     hostState.agentState = AgentState.MISSING;
     Operation result = mock(Operation.class);
     when(result.getBody(HostService.State.class)).thenReturn(hostState);
-    when(dcpRestClient.getAndWait(link)).thenReturn(result);
+    when(dcpRestClient.get(link)).thenReturn(result);
 
     datastores.add(new Datastore(ds1.id, DatastoreType.SHARED_VMFS));
     datastores.add(new Datastore(ds2.id, DatastoreType.SHARED_VMFS));
@@ -292,10 +292,10 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     verify(configDict).write(hostId, serialize(request.getConfig()));
     verify(missingDict).write(hostId, null);
 
-    // Verify that patchAndWait gets called with "READY" state.
+    // Verify that patch gets called with "READY" state.
     ArgumentCaptor<String> arg1 = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<ServiceDocument> arg2 = ArgumentCaptor.forClass(ServiceDocument.class);
-    verify(dcpRestClient, times(3)).patchAndWait(arg1.capture(), arg2.capture());
+    verify(dcpRestClient, times(3)).patch(arg1.capture(), arg2.capture());
     assertThat(arg1.getAllValues().get(0), is(link));
     HostService.State newState = (HostService.State) (arg2.getAllValues().get(0));
     assertThat(newState.agentState, is(AgentState.ACTIVE));
@@ -314,7 +314,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     // Verify that chairman attempted to create datastore documents.
     arg1 = ArgumentCaptor.forClass(String.class);
     arg2 = ArgumentCaptor.forClass(ServiceDocument.class);
-    verify(dcpRestClient, times(2)).postAndWait(arg1.capture(), arg2.capture());
+    verify(dcpRestClient, times(2)).post(arg1.capture(), arg2.capture());
     DatastoreService.State actualDs1 = (DatastoreService.State) (arg2.getAllValues().get(0));
     DatastoreService.State actualDs2 = (DatastoreService.State) (arg2.getAllValues().get(1));
     assertThat(arg1.getAllValues(), contains(DatastoreServiceFactory.SELF_LINK, DatastoreServiceFactory.SELF_LINK));
@@ -351,8 +351,8 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     hostState.agentState = AgentState.ACTIVE;
     Operation result = mock(Operation.class);
     when(result.getBody(HostService.State.class)).thenReturn(hostState);
-    when(dcpRestClient.getAndWait(link1)).thenReturn(result);
-    when(dcpRestClient.getAndWait(link2)).thenReturn(result);
+    when(dcpRestClient.get(link1)).thenReturn(result);
+    when(dcpRestClient.get(link2)).thenReturn(result);
 
     List<String> hostIds = Lists.newArrayList("h1", "h2");
     List<String> schedulerIds = Lists.newArrayList("s1", "s2");
@@ -366,11 +366,11 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     assertThat(missingCapture.getValue().contains("s1"), is(true));
     assertThat(missingCapture.getValue().contains("s2"), is(true));
 
-    // Verify that patchAndWait gets called with "Missing" agentState.
+    // Verify that patch gets called with "Missing" agentState.
     ArgumentCaptor<ServiceDocument> arg = ArgumentCaptor.forClass(ServiceDocument.class);
-    verify(dcpRestClient).patchAndWait(eq(link1), arg.capture());
+    verify(dcpRestClient).patch(eq(link1), arg.capture());
     assertThat(((HostService.State) (arg.getValue())).agentState, is(AgentState.MISSING));
-    verify(dcpRestClient).patchAndWait(eq(link2), arg.capture());
+    verify(dcpRestClient).patch(eq(link2), arg.capture());
     assertThat(((HostService.State) (arg.getValue())).agentState, is(AgentState.MISSING));
   }
 
@@ -383,8 +383,8 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     hostState.agentState = AgentState.MISSING;
     Operation result = mock(Operation.class);
     when(result.getBody(HostService.State.class)).thenReturn(hostState);
-    when(dcpRestClient.getAndWait(link1)).thenReturn(result);
-    when(dcpRestClient.getAndWait(link2)).thenReturn(result);
+    when(dcpRestClient.get(link1)).thenReturn(result);
+    when(dcpRestClient.get(link2)).thenReturn(result);
 
     List<String> hostIds = Lists.newArrayList("h1", "h2");
     List<String> schedulerIds = Lists.newArrayList();
@@ -392,11 +392,11 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     ReportResurrectedRequest request = createResurrectedRequest(hostIds, schedulerIds);
     service.report_resurrected(request);
 
-    // Verify that patchAndWait gets called with "ERROR" state.
+    // Verify that patch gets called with "ERROR" state.
     ArgumentCaptor<ServiceDocument> arg = ArgumentCaptor.forClass(ServiceDocument.class);
-    verify(dcpRestClient).patchAndWait(eq(link1), arg.capture());
+    verify(dcpRestClient).patch(eq(link1), arg.capture());
     assertThat(((HostService.State) (arg.getValue())).agentState, is(AgentState.ACTIVE));
-    verify(dcpRestClient).patchAndWait(eq(link2), arg.capture());
+    verify(dcpRestClient).patch(eq(link2), arg.capture());
     assertThat(((HostService.State) (arg.getValue())).agentState, is(AgentState.ACTIVE));
   }
 

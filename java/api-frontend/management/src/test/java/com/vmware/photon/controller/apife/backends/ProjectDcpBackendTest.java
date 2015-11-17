@@ -561,7 +561,7 @@ public class ProjectDcpBackendTest {
       patch.securityGroups = new ArrayList<SecurityGroup>();
       patch.securityGroups.add(new SecurityGroup("adminGroup1", true));
 
-      dcpClient.patchAndWait(ProjectServiceFactory.SELF_LINK + "/" + projectId, patch);
+      dcpClient.patch(ProjectServiceFactory.SELF_LINK + "/" + projectId, patch);
 
       List<String> securityGroups = new ArrayList<>();
       securityGroups.add("adminGroup1");

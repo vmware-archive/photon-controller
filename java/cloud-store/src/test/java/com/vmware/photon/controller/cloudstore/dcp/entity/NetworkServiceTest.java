@@ -125,7 +125,7 @@ public class NetworkServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new NetworkServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(NetworkServiceFactory.SELF_LINK, testNetwork);
+      Operation result = dcpRestClient.post(NetworkServiceFactory.SELF_LINK, testNetwork);
 
       assertThat(result.getStatusCode(), is(200));
       NetworkService.State createdState = result.getBody(NetworkService.State.class);

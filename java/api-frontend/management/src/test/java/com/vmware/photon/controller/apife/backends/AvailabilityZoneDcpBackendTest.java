@@ -59,7 +59,7 @@ public class AvailabilityZoneDcpBackendTest {
   }
 
   private static String createTestAvailabilityZoneDocument(AvailabilityZoneService.State availabilityZone) {
-    Operation result = dcpClient.postAndWait(AvailabilityZoneServiceFactory.SELF_LINK, availabilityZone);
+    Operation result = dcpClient.post(AvailabilityZoneServiceFactory.SELF_LINK, availabilityZone);
     AvailabilityZoneService.State createdAvailabilityZone = result.getBody(AvailabilityZoneService.State.class);
     return ServiceUtils.getIDFromDocumentSelfLink(createdAvailabilityZone.documentSelfLink);
   }

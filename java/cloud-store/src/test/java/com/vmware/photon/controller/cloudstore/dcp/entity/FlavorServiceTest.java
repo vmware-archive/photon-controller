@@ -119,7 +119,7 @@ public class FlavorServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new FlavorServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(FlavorServiceFactory.SELF_LINK, testFlavor);
+      Operation result = dcpRestClient.post(FlavorServiceFactory.SELF_LINK, testFlavor);
 
       assertThat(result.getStatusCode(), is(200));
       FlavorService.State createdState = result.getBody(FlavorService.State.class);

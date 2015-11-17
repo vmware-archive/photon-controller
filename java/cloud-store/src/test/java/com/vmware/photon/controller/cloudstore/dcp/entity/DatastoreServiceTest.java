@@ -153,13 +153,13 @@ public class DatastoreServiceTest {
     public void testPatch() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result again.
-      result = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      result = dcpRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
@@ -168,7 +168,7 @@ public class DatastoreServiceTest {
       String tag = "ds1-newtype";
       patchState.tags = new HashSet<>(Arrays.asList(tag));
       patchState.isImageDatastore = true;
-      result = dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+      result = dcpRestClient.patch(createdState.documentSelfLink, patchState);
       DatastoreService.State patchedState = result.getBody(DatastoreService.State.class);
       assertThat(patchedState.tags, containsInAnyOrder(tag));
       assertThat(patchedState.isImageDatastore, is(true));
@@ -181,20 +181,20 @@ public class DatastoreServiceTest {
     public void testPatchId() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result again.
-      result = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      result = dcpRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Patching id should fail.
       DatastoreService.State patchState = new DatastoreService.State();
       patchState.id = "ds1-newid";
-      result = dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+      result = dcpRestClient.patch(createdState.documentSelfLink, patchState);
     }
 
     /**
@@ -204,20 +204,20 @@ public class DatastoreServiceTest {
     public void testPatchName() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result again.
-      result = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      result = dcpRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Patching name should fail.
       DatastoreService.State patchState = new DatastoreService.State();
       patchState.name = "ds1-newname";
-      result = dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+      result = dcpRestClient.patch(createdState.documentSelfLink, patchState);
     }
 
     /**
@@ -227,20 +227,20 @@ public class DatastoreServiceTest {
     public void testPatchType() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result again.
-      result = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      result = dcpRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Patching type should fail.
       DatastoreService.State patchState = new DatastoreService.State();
       patchState.type = "ds1-newtype";
-      result = dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+      result = dcpRestClient.patch(createdState.documentSelfLink, patchState);
     }
   }
 }

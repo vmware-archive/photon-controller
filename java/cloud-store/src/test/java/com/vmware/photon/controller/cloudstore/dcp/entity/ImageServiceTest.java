@@ -120,7 +120,7 @@ public class ImageServiceTest {
     @Test
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new ImageServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(ImageServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(ImageServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       ImageService.State createdState = result.getBody(ImageService.State.class);
@@ -140,7 +140,7 @@ public class ImageServiceTest {
       declaredField.set(testState, null);
 
       host.startServiceSynchronously(new ImageServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(ImageServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(ImageServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
 
       ImageService.State createdState = result.getBody(ImageService.State.class);

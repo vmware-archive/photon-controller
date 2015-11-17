@@ -141,7 +141,7 @@ public class DiskServiceTest {
      */
     @Test
     public void testStartState() throws Throwable {
-      Operation result = dcpRestClient.postAndWait(DiskServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       DiskService.State createdState = result.getBody(DiskService.State.class);
@@ -195,7 +195,7 @@ public class DiskServiceTest {
     public void testMissingProject() throws Throwable {
       testState.projectId = null;
       try {
-        dcpRestClient.postAndWait(DiskServiceFactory.SELF_LINK, testState);
+        dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did " +
             "not fail when 'projectId' was null");
       } catch (DcpRuntimeException e) {
@@ -212,7 +212,7 @@ public class DiskServiceTest {
     public void testMissingName() throws Throwable {
       testState.name = null;
       try {
-        dcpRestClient.postAndWait(DiskServiceFactory.SELF_LINK, testState);
+        dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'Name' was null");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("name cannot be null"));
@@ -228,7 +228,7 @@ public class DiskServiceTest {
     public void testMissingState() throws Throwable {
       testState.state = null;
       try {
-        dcpRestClient.postAndWait(DiskServiceFactory.SELF_LINK, testState);
+        dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'State' was null");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("state cannot be null"));
@@ -244,7 +244,7 @@ public class DiskServiceTest {
     public void testMissingDiskType() throws Throwable {
       testState.diskType = null;
       try {
-        dcpRestClient.postAndWait(DiskServiceFactory.SELF_LINK, testState);
+        dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'diskType' was null");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("diskType cannot be null"));
@@ -260,7 +260,7 @@ public class DiskServiceTest {
     public void testMissingFlavorId() throws Throwable {
       testState.flavorId = null;
       try {
-        dcpRestClient.postAndWait(DiskServiceFactory.SELF_LINK, testState);
+        dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'flavorId' was null");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("flavorId cannot be null"));
@@ -313,18 +313,18 @@ public class DiskServiceTest {
      */
     @Test
     public void testPatchSuccess() throws Throwable {
-      Operation createOperation = dcpRestClient.postAndWait(DiskServiceFactory.SELF_LINK, testState);
+      Operation createOperation = dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
       assertThat(createOperation.getStatusCode(), is(200));
       DiskService.State createdState = createOperation.getBody(DiskService.State.class);
 
       DiskService.State patchState = new DiskService.State();
       patchState.state = DiskState.ERROR;
 
-      Operation patchOperation = dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+      Operation patchOperation = dcpRestClient.patch(createdState.documentSelfLink, patchState);
       DiskService.State result = patchOperation.getBody(DiskService.State.class);
       assertThat(result.state, is(DiskState.ERROR));
 
-      patchOperation = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      patchOperation = dcpRestClient.get(createdState.documentSelfLink);
       result = patchOperation.getBody(DiskService.State.class);
       assertThat(result.state, is(DiskState.ERROR));
       assertThat(result.capacityGb, is(2));

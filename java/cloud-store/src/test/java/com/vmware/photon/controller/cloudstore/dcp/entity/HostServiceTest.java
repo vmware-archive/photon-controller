@@ -115,7 +115,7 @@ public class HostServiceTest {
     public void testStartState(Set<String> usageTags) throws Throwable {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       HostService.State testState = TestHelper.getHostServiceStartState(usageTags);
-      Operation result = dcpRestClient.postAndWait(HostServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
 
       HostService.State createdState = result.getBody(HostService.State.class);
@@ -288,7 +288,7 @@ public class HostServiceTest {
     @Test
     public void testPatch() throws Throwable {
       host.startServiceSynchronously(new HostServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(HostServiceFactory.SELF_LINK,
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
       assertThat(result.getStatusCode(), is(200));
       HostService.State createdState = result.getBody(HostService.State.class);
@@ -297,15 +297,15 @@ public class HostServiceTest {
       patchState.reportedDatastores = new HashSet<>();
       patchState.reportedDatastores.add("d1");
 
-      dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
-      HostService.State savedState = dcpRestClient.getAndWait(createdState.documentSelfLink)
+      dcpRestClient.patch(createdState.documentSelfLink, patchState);
+      HostService.State savedState = dcpRestClient.get(createdState.documentSelfLink)
           .getBody(HostService.State.class);
     }
 
     @Test
     public void testInvalidPatchWithHostAddress() throws Throwable {
       host.startServiceSynchronously(new HostServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(HostServiceFactory.SELF_LINK,
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
       assertThat(result.getStatusCode(), is(200));
       HostService.State createdState = result.getBody(HostService.State.class);
@@ -314,7 +314,7 @@ public class HostServiceTest {
       patchState.hostAddress = "something";
 
       try {
-        dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+        dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("hostAddress is immutable"));
@@ -324,7 +324,7 @@ public class HostServiceTest {
     @Test
     public void testInvalidPatchWithUsername() throws Throwable {
       host.startServiceSynchronously(new HostServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(HostServiceFactory.SELF_LINK,
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
       assertThat(result.getStatusCode(), is(200));
       HostService.State createdState = result.getBody(HostService.State.class);
@@ -333,7 +333,7 @@ public class HostServiceTest {
       patchState.userName = "something";
 
       try {
-        dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+        dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("userName is immutable"));
@@ -343,7 +343,7 @@ public class HostServiceTest {
     @Test
     public void testInvalidPatchWithPassword() throws Throwable {
       host.startServiceSynchronously(new HostServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(HostServiceFactory.SELF_LINK,
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
       assertThat(result.getStatusCode(), is(200));
       HostService.State createdState = result.getBody(HostService.State.class);
@@ -352,7 +352,7 @@ public class HostServiceTest {
       patchState.password = "something";
 
       try {
-        dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+        dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("password is immutable"));
@@ -362,7 +362,7 @@ public class HostServiceTest {
     @Test
     public void testInvalidPatchWithUsageTags() throws Throwable {
       host.startServiceSynchronously(new HostServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(HostServiceFactory.SELF_LINK,
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
       assertThat(result.getStatusCode(), is(200));
       HostService.State createdState = result.getBody(HostService.State.class);
@@ -371,7 +371,7 @@ public class HostServiceTest {
       patchState.usageTags = new HashSet<>();
 
       try {
-        dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+        dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("usageTags is immutable"));
@@ -381,7 +381,7 @@ public class HostServiceTest {
     @Test
     public void testInvalidPatchWithMetadata() throws Throwable {
       host.startServiceSynchronously(new HostServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(HostServiceFactory.SELF_LINK,
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
       assertThat(result.getStatusCode(), is(200));
       HostService.State createdState = result.getBody(HostService.State.class);
@@ -390,7 +390,7 @@ public class HostServiceTest {
       patchState.metadata = new HashMap<>();
 
       try {
-        dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+        dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("metadata is immutable"));
@@ -404,7 +404,7 @@ public class HostServiceTest {
     public void testPatchImageDatastores() throws Throwable {
       // Create a host document
       host.startServiceSynchronously(new HostServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(HostServiceFactory.SELF_LINK,
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
       assertThat(result.getStatusCode(), is(200));
       HostService.State createdState = result.getBody(HostService.State.class);
@@ -413,7 +413,7 @@ public class HostServiceTest {
       HostService.State patchState = new HostService.State();
       String newDs = "newds";
       patchState.reportedImageDatastores = new HashSet<>(Arrays.asList(newDs));
-      result = dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+      result = dcpRestClient.patch(createdState.documentSelfLink, patchState);
       assertThat(result.getStatusCode(), is(200));
       HostService.State patchedState = result.getBody(HostService.State.class);
       assertThat(patchedState.reportedImageDatastores, containsInAnyOrder(newDs));
@@ -422,7 +422,7 @@ public class HostServiceTest {
     @Test
     public void testPatchMemoryAndCpu() throws Throwable {
       host.startServiceSynchronously(new HostServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(HostServiceFactory.SELF_LINK,
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
       assertThat(result.getStatusCode(), is(200));
       HostService.State createdState = result.getBody(HostService.State.class);
@@ -431,8 +431,8 @@ public class HostServiceTest {
       patchState.memoryMb = 4096;
       patchState.cpuCount = 2;
 
-      dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
-      HostService.State savedState = dcpRestClient.getAndWait(createdState.documentSelfLink)
+      dcpRestClient.patch(createdState.documentSelfLink, patchState);
+      HostService.State savedState = dcpRestClient.get(createdState.documentSelfLink)
           .getBody(HostService.State.class);
       assertThat(savedState.cpuCount, is(2));
       assertThat(savedState.memoryMb, is(4096));

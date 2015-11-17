@@ -36,9 +36,9 @@ public class DcpRuntimeException extends RuntimeException {
     this.requestedOperation = operation;
   }
 
-  public DcpRuntimeException(Operation operation, OperationLatch.OperationResult operationResult) {
+  public DcpRuntimeException(Operation requestedOperation, OperationLatch.OperationResult operationResult) {
     super(operationResult.operationFailure);
-    this.requestedOperation = operation;
+    this.requestedOperation = requestedOperation;
     this.operationResult = operationResult;
   }
 

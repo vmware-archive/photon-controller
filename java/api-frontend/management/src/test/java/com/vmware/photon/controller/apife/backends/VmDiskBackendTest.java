@@ -169,7 +169,7 @@ public class VmDiskBackendTest {
     vm.imageId = UUID.randomUUID().toString();
     vm.projectId = projectId;
     vm.vmState = VmState.CREATING;
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vm);
+    com.vmware.dcp.common.Operation result = dcpClient.post(VmServiceFactory.SELF_LINK, vm);
     VmService.State createdVm = result.getBody(VmService.State.class);
     vmId = ServiceUtils.getIDFromDocumentSelfLink(createdVm.documentSelfLink);
   }
@@ -260,7 +260,7 @@ public class VmDiskBackendTest {
     diskState.projectId = projectId;
     diskState.capacityGb = 2;
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(DiskServiceFactory.SELF_LINK, diskState);
+    com.vmware.dcp.common.Operation result = dcpClient.post(DiskServiceFactory.SELF_LINK, diskState);
     diskState = result.getBody(DiskService.State.class);
     return ServiceUtils.getIDFromDocumentSelfLink(diskState.documentSelfLink);
   }

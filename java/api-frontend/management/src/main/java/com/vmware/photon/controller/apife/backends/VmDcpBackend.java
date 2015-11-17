@@ -318,7 +318,7 @@ public class VmDcpBackend implements VmBackend {
 
     tombstoneBackend.create(Vm.KIND, vm.getId());
 
-    dcpClient.deleteAndWait(VmServiceFactory.SELF_LINK + "/" + vm.getId(), new VmService.State());
+    dcpClient.delete(VmServiceFactory.SELF_LINK + "/" + vm.getId(), new VmService.State());
 
     for (AttachedDiskEntity attachedDisk : attachedDiskBackend.findByVmId(vm.getId())) {
       attachedDiskBackend.deleteAttachedDiskById(attachedDisk.getId());
@@ -693,7 +693,7 @@ public class VmDcpBackend implements VmBackend {
   private VmService.State getVmById(String id) throws VmNotFoundException {
     com.vmware.dcp.common.Operation result;
     try {
-      result = dcpClient.getAndWait(VmServiceFactory.SELF_LINK + "/" + id);
+      result = dcpClient.get(VmServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new VmNotFoundException(id);
     }
@@ -763,7 +763,7 @@ public class VmDcpBackend implements VmBackend {
 
     vm.affinities = spec.getAffinities();
 
-    com.vmware.dcp.common.Operation createOperation = dcpClient.postAndWait(VmServiceFactory.SELF_LINK, vm);
+    com.vmware.dcp.common.Operation createOperation = dcpClient.post(VmServiceFactory.SELF_LINK, vm);
     VmService.State createdVm = createOperation.getBody(VmService.State.class);
 
     VmEntity vmEntity = toVmEntity(createdVm);
@@ -1050,7 +1050,7 @@ public class VmDcpBackend implements VmBackend {
   private void patchVmService(String vmId, VmService.State vmServiceState)
       throws VmNotFoundException {
     try {
-      dcpClient.patchAndWait(VmServiceFactory.SELF_LINK + "/" + vmId, vmServiceState);
+      dcpClient.patch(VmServiceFactory.SELF_LINK + "/" + vmId, vmServiceState);
     } catch (DocumentNotFoundException e) {
       throw new VmNotFoundException(vmId);
     }

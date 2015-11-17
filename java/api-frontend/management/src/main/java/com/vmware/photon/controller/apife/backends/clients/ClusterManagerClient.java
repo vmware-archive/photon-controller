@@ -163,14 +163,14 @@ public class ClusterManagerClient {
     }
 
     // Post createSpec to KubernetesClusterCreateTaskService
-    Operation operation = dcpClient.postAndWait(
+    Operation operation = dcpClient.post(
         ServiceUriPaths.KUBERNETES_CLUSTER_CREATE_TASK_SERVICE, createTask);
     return operation.getBody(KubernetesClusterCreateTask.class);
   }
 
   public KubernetesClusterCreateTask getKubernetesClusterCreationStatus(String creationTaskLink)
       throws DocumentNotFoundException {
-    Operation operation = dcpClient.getAndWait(creationTaskLink);
+    Operation operation = dcpClient.get(creationTaskLink);
     return operation.getBody(KubernetesClusterCreateTask.class);
   }
 
@@ -227,14 +227,14 @@ public class ClusterManagerClient {
     }
 
     // Post createSpec to MesosClusterCreateTaskService
-    Operation operation = dcpClient.postAndWait(
+    Operation operation = dcpClient.post(
         ServiceUriPaths.MESOS_CLUSTER_CREATE_TASK_SERVICE, createTask);
     return operation.getBody(MesosClusterCreateTask.class);
   }
 
   public MesosClusterCreateTask getMesosClusterCreationStatus(String creationTaskLink)
       throws DocumentNotFoundException {
-    Operation operation = dcpClient.getAndWait(creationTaskLink);
+    Operation operation = dcpClient.get(creationTaskLink);
     return operation.getBody(MesosClusterCreateTask.class);
   }
 
@@ -290,14 +290,14 @@ public class ClusterManagerClient {
     }
 
     // Post createSpec to SwarmClusterCreateTaskService
-    Operation operation = dcpClient.postAndWait(
+    Operation operation = dcpClient.post(
         ServiceUriPaths.SWARM_CLUSTER_CREATE_TASK_SERVICE, createTask);
     return operation.getBody(SwarmClusterCreateTask.class);
   }
 
   public SwarmClusterCreateTask getSwarmClusterCreationStatus(String creationTaskLink)
       throws DocumentNotFoundException {
-    Operation operation = dcpClient.getAndWait(creationTaskLink);
+    Operation operation = dcpClient.get(creationTaskLink);
     return operation.getBody(SwarmClusterCreateTask.class);
   }
 
@@ -306,14 +306,14 @@ public class ClusterManagerClient {
     ClusterResizeTask resizeTask = new ClusterResizeTask();
     resizeTask.clusterId = clusterId;
     resizeTask.newSlaveCount = resizeOperation.getNewSlaveCount();
-    Operation operation = dcpClient.postAndWait(
+    Operation operation = dcpClient.post(
         ServiceUriPaths.CLUSTER_RESIZE_TASK_SERVICE, resizeTask);
     return operation.getBody(ClusterResizeTask.class);
   }
 
   public ClusterResizeTask getClusterResizeStatus(String resizeTaskLink)
       throws DocumentNotFoundException {
-    Operation operation = dcpClient.getAndWait(resizeTaskLink);
+    Operation operation = dcpClient.get(resizeTaskLink);
     return operation.getBody(ClusterResizeTask.class);
   }
 
@@ -321,7 +321,7 @@ public class ClusterManagerClient {
     String uri = ClusterServiceFactory.SELF_LINK + "/" + clusterId;
     com.vmware.dcp.common.Operation operation;
     try {
-      operation = apiFeDcpClient.getAndWait(uri);
+      operation = apiFeDcpClient.get(uri);
     } catch (DocumentNotFoundException ex) {
       throw new ClusterNotFoundException(clusterId);
     }
@@ -334,7 +334,7 @@ public class ClusterManagerClient {
     ClusterDeleteTask deleteTask = new ClusterDeleteTask();
     deleteTask.clusterId = clusterId;
 
-    Operation operation = dcpClient.postAndWait(
+    Operation operation = dcpClient.post(
         ServiceUriPaths.CLUSTER_DELETE_TASK_SERVICE, deleteTask);
 
     return operation.getBody(ClusterDeleteTask.class);
@@ -342,7 +342,7 @@ public class ClusterManagerClient {
 
   public ClusterDeleteTask getClusterDeletionStatus(String deletionTaskLink)
       throws DocumentNotFoundException {
-    Operation operation = dcpClient.getAndWait(deletionTaskLink);
+    Operation operation = dcpClient.get(deletionTaskLink);
     return operation.getBody(ClusterDeleteTask.class);
   }
 

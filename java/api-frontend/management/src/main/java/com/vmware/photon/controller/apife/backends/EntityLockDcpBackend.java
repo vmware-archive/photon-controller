@@ -70,7 +70,7 @@ public class EntityLockDcpBackend implements EntityLockBackend {
     state.documentSelfLink = entityId;
 
     try {
-      dcpClient.postAndWait(EntityLockServiceFactory.SELF_LINK, state);
+      dcpClient.post(EntityLockServiceFactory.SELF_LINK, state);
       logger.info("Entity Lock with entityId : {} and taskId: {} has been set", state.entityId, state.taskId);
     } catch (DcpRuntimeException e) {
       //re-throw any exception other than a conflict which indicated the lock already exists
@@ -111,7 +111,7 @@ public class EntityLockDcpBackend implements EntityLockBackend {
     for (String lockableEntityId : task.getLockableEntityIds()) {
       String lockUrl = EntityLockServiceFactory.SELF_LINK + "/" + lockableEntityId;
       try {
-        dcpClient.deleteAndWait(lockUrl, new EntityLockService.State());
+        dcpClient.delete(lockUrl, new EntityLockService.State());
         logger.info("Entity Lock with taskId : {} and url : {} has been cleared", task.getId(), lockUrl);
       } catch (Throwable swallowedException) {
         failedToDeleteLockableEntityIds.add(lockableEntityId);
@@ -122,7 +122,7 @@ public class EntityLockDcpBackend implements EntityLockBackend {
   }
 
   private EntityLockService.State getByEntityId(String entityId) throws DocumentNotFoundException {
-    Operation operation = dcpClient.getAndWait(EntityLockServiceFactory.SELF_LINK + "/" + entityId);
+    Operation operation = dcpClient.get(EntityLockServiceFactory.SELF_LINK + "/" + entityId);
     return operation.getBody(EntityLockService.State.class);
   }
 

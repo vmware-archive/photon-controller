@@ -117,7 +117,7 @@ public class TaskServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new TaskServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(TaskServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(TaskServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       TaskService.State createdState = result.getBody(TaskService.State.class);

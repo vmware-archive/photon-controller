@@ -86,7 +86,7 @@ public class DcpRestClientTest {
 
   private String createDocument(DcpRestClient dcpRestClient, ExampleService.ExampleServiceState exampleServiceState)
       throws Throwable {
-    Operation result = dcpRestClient.postAndWait(ExampleFactoryService.SELF_LINK, exampleServiceState);
+    Operation result = dcpRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
 
     assertThat(result.getStatusCode(), is(200));
     ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -150,9 +150,9 @@ public class DcpRestClientTest {
   }
 
   /**
-   * Tests for the postAndWait operation.
+   * Tests for the post operation.
    */
-  public class PostAndWaitTest {
+  public class PostTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       setUpHostAndClient();
@@ -175,7 +175,7 @@ public class DcpRestClientTest {
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       exampleServiceState.name = UUID.randomUUID().toString();
 
-      Operation result = dcpRestClient.postAndWait(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      Operation result = dcpRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
 
       assertThat(result.getStatusCode(), is(200));
       ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -190,7 +190,7 @@ public class DcpRestClientTest {
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       exampleServiceState.name = UUID.randomUUID().toString();
 
-      dcpRestClient.postAndWait(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      dcpRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
     }
 
     @Test(expectedExceptions = DcpRuntimeException.class)
@@ -200,14 +200,14 @@ public class DcpRestClientTest {
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       exampleServiceState.name = UUID.randomUUID().toString();
 
-      dcpRestClient.postAndWait(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      dcpRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
     }
   }
 
   /**
-   * Tests for the getAndWait operation.
+   * Tests for the get operation.
    */
-  public class GetAndWaitTest {
+  public class GetTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -233,7 +233,7 @@ public class DcpRestClientTest {
 
       String documentSelfLink = createDocument(exampleServiceState);
 
-      Operation result = dcpRestClient.getAndWait(documentSelfLink);
+      Operation result = dcpRestClient.get(documentSelfLink);
       assertThat(result.getStatusCode(), is(200));
 
       ExampleService.ExampleServiceState savedState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -242,35 +242,14 @@ public class DcpRestClientTest {
 
     @Test(expectedExceptions = DocumentNotFoundException.class)
     public void testGetOfNonExistingDocument() throws Throwable {
-      dcpRestClient.getAndWait(ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString());
-    }
-
-    @Test
-    public void testGetOfMultipleCreatedDocument() throws Throwable {
-      Map<String, ExampleService.ExampleServiceState> exampleServiceStateMap = new HashMap<>();
-
-      for (int i = 0; i < 5; i++) {
-        ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
-        exampleServiceState.name = UUID.randomUUID().toString();
-        String documentSelfLink = createDocument(exampleServiceState);
-
-        exampleServiceStateMap.put(documentSelfLink, exampleServiceState);
-      }
-
-      Collection<Operation> results = dcpRestClient.getAndWait(exampleServiceStateMap.keySet());
-      for (Operation result : results) {
-        ExampleService.ExampleServiceState savedState = result.getBody(ExampleService.ExampleServiceState.class);
-        ExampleService.ExampleServiceState expectedState = exampleServiceStateMap.get(savedState.documentSelfLink);
-
-        assertThat(savedState.name, is(equalTo(expectedState.name)));
-      }
+      dcpRestClient.get(ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString());
     }
   }
 
   /**
-   * Tests for the sendAndWait operation.
+   * Tests for the send operation.
    */
-  public class SendAndWaitTest {
+  public class SendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -311,8 +290,8 @@ public class DcpRestClientTest {
       doReturn(operationLatch).when(dcpRestClient).createOperationLatch(any(Operation.class));
 
       try {
-        dcpRestClient.sendAndWait(getOperation);
-        Assert.fail("sendAndWait should have thrown TimeoutException");
+        dcpRestClient.send(getOperation);
+        Assert.fail("send should have thrown TimeoutException");
       } catch (TimeoutException e) {
         assertThat(e.getMessage(), containsString(exceptionMessage));
       }
@@ -320,9 +299,9 @@ public class DcpRestClientTest {
   }
 
   /**
-   * Tests for the queryAndWait operation.
+   * Tests for the postToBroadcastQueryService operation.
    */
-  public class QueryAndWaitTest {
+  public class PostToBroadcastQueryServiceTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -361,7 +340,7 @@ public class DcpRestClientTest {
       spec.query.addBooleanClause(nameClause);
       spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
-      Operation result = dcpRestClient.queryAndWait(spec);
+      Operation result = dcpRestClient.postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
       Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(result);
@@ -386,7 +365,7 @@ public class DcpRestClientTest {
       spec.query = kindClause;
       spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
-      Operation result = dcpRestClient.queryAndWait(spec);
+      Operation result = dcpRestClient.postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
       Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(result);
@@ -395,9 +374,9 @@ public class DcpRestClientTest {
   }
 
   /**
-   * Tests for the patchAndWait operation.
+   * Tests for the patch operation.
    */
-  public class PatchAndWaitTest {
+  public class PatchTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -428,7 +407,7 @@ public class DcpRestClientTest {
       ExampleService.ExampleServiceState patchExampleServiceState = new ExampleService.ExampleServiceState();
       patchExampleServiceState.name = UUID.randomUUID().toString();
 
-      Operation result = dcpRestClient.patchAndWait(documentSelfLink, patchExampleServiceState);
+      Operation result = dcpRestClient.patch(documentSelfLink, patchExampleServiceState);
 
       assertThat(result.getStatusCode(), is(200));
 
@@ -436,7 +415,7 @@ public class DcpRestClientTest {
       assertThat(savedState.name, is(equalTo(patchExampleServiceState.name)));
       assertThat(savedState.counter, is(exampleServiceState.counter));
 
-      result = dcpRestClient.getAndWait(documentSelfLink);
+      result = dcpRestClient.get(documentSelfLink);
       assertThat(result.getStatusCode(), is(200));
 
       savedState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -447,7 +426,7 @@ public class DcpRestClientTest {
       ExampleService.ExampleServiceState patchExampleServiceState2 = new ExampleService.ExampleServiceState();
       patchExampleServiceState2.counter = 1L;
 
-      result = dcpRestClient.patchAndWait(documentSelfLink, patchExampleServiceState2);
+      result = dcpRestClient.patch(documentSelfLink, patchExampleServiceState2);
 
       assertThat(result.getStatusCode(), is(200));
 
@@ -455,7 +434,7 @@ public class DcpRestClientTest {
       assertThat(savedState.name, is(equalTo(patchExampleServiceState.name)));
       assertThat(savedState.counter, is(patchExampleServiceState2.counter));
 
-      result = dcpRestClient.getAndWait(documentSelfLink);
+      result = dcpRestClient.get(documentSelfLink);
       assertThat(result.getStatusCode(), is(200));
 
       savedState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -469,7 +448,7 @@ public class DcpRestClientTest {
       exampleServiceState.name = UUID.randomUUID().toString();
       exampleServiceState.counter = 0L;
 
-      dcpRestClient.patchAndWait(
+      dcpRestClient.patch(
           ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString(),
           exampleServiceState);
     }
@@ -622,7 +601,7 @@ public class DcpRestClientTest {
     }
 
     private String createDocument(ExampleService.ExampleServiceState exampleServiceState) throws Throwable {
-      Operation result = dcpRestClient.postAndWait(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      Operation result = dcpRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
 
       assertThat(result.getStatusCode(), is(200));
       ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -675,8 +654,8 @@ public class DcpRestClientTest {
         for (DcpRestClient dcpRestClient : dcpRestClients) {
           try {
             documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
-            dcpRestClient.getAndWait(documentSelfLink);
-            Assert.fail("getAndWait for a non-existing document should have failed");
+            dcpRestClient.get(documentSelfLink);
+            Assert.fail("get for a non-existing document should have failed");
           } catch (DocumentNotFoundException e) {
             assertThat(e.getMessage(), containsString(documentSelfLink));
           }
@@ -693,8 +672,8 @@ public class DcpRestClientTest {
           try {
             exampleServiceState.name = UUID.randomUUID().toString();
             documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
-            dcpRestClient.patchAndWait(documentSelfLink, exampleServiceState);
-            Assert.fail("patchAndWait for a non-existing document should have failed");
+            dcpRestClient.patch(documentSelfLink, exampleServiceState);
+            Assert.fail("patch for a non-existing document should have failed");
           } catch (DocumentNotFoundException e) {
             assertThat(e.getMessage(), containsString(documentSelfLink));
           }
@@ -707,7 +686,7 @@ public class DcpRestClientTest {
       for (int i = 0; i < MAX_ITERATIONS; i++) {
         for (DcpRestClient dcpRestClient : dcpRestClients) {
           String documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
-          dcpRestClient.deleteAndWait(documentSelfLink, null);
+          dcpRestClient.delete(documentSelfLink, null);
         }
       }
     }
@@ -727,7 +706,7 @@ public class DcpRestClientTest {
       for (int i = 0; i < MAX_ITERATIONS; i++) {
         for (int j = 0; j < dcpRestClients.length; j++) {
           for (int k = 0; k < dcpRestClients.length; k++) {
-            Operation result = dcpRestClients[k].getAndWait(documentSelfLinks[j]);
+            Operation result = dcpRestClients[k].get(documentSelfLinks[j]);
             ExampleService.ExampleServiceState savedState = result.getBody(ExampleService.ExampleServiceState.class);
             assertThat(savedState.name, is(equalTo(exampleServiceStates[j].name)));
           }
@@ -756,7 +735,7 @@ public class DcpRestClientTest {
 
       spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
-      Operation result = dcpRestClient.queryAndWait(spec);
+      Operation result = dcpRestClient.postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
       Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(result);
@@ -770,7 +749,7 @@ public class DcpRestClientTest {
       assertThat(results.get(0).documentSelfLink, is(equalTo(documentSelfLink)));
       assertThat(results.get(0).name, is(equalTo(exampleServiceState.name)));
 
-      result = dcpRestClient.getAndWait(results.get(0).documentSelfLink);
+      result = dcpRestClient.get(results.get(0).documentSelfLink);
       ExampleService.ExampleServiceState document = result.getBody(ExampleService.ExampleServiceState.class);
       assertThat(results.get(0).documentSelfLink, is(equalTo(document.documentSelfLink)));
     }
@@ -795,7 +774,7 @@ public class DcpRestClientTest {
       spec.query.addBooleanClause(kindClause);
       spec.query.addBooleanClause(nameClause);
 
-      Operation result = dcpRestClients[1].queryAndWait(spec);
+      Operation result = dcpRestClients[1].postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
       Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(result);
@@ -813,7 +792,7 @@ public class DcpRestClientTest {
       spec.query = kindClause;
       spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
-      Operation result = dcpRestClient.queryAndWait(spec);
+      Operation result = dcpRestClient.postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
       QueryTask queryResult = result.getBody(QueryTask.class);

@@ -69,7 +69,7 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
     AvailabilityZoneService.State state = new AvailabilityZoneService.State();
     state.name = availabilityZone.getName();
     state.state = AvailabilityZoneState.READY;
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(AvailabilityZoneServiceFactory.SELF_LINK, state);
+    com.vmware.dcp.common.Operation result = dcpClient.post(AvailabilityZoneServiceFactory.SELF_LINK, state);
     AvailabilityZoneService.State createdState = result.getBody(AvailabilityZoneService.State.class);
     AvailabilityZoneEntity availabilityZoneEntity = convertToEntity(createdState);
     return taskBackend.createCompletedTask(availabilityZoneEntity, Operation.CREATE_AVAILABILITYZONE);
@@ -113,7 +113,7 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
     availabilityZoneState.state = AvailabilityZoneState.PENDING_DELETE;
     availabilityZoneState.deleteRequestTime = System.currentTimeMillis();
     try {
-      dcpClient.patchAndWait(AvailabilityZoneServiceFactory.SELF_LINK + "/" + availabilityZoneEntity.getId(),
+      dcpClient.patch(AvailabilityZoneServiceFactory.SELF_LINK + "/" + availabilityZoneEntity.getId(),
           availabilityZoneState);
     } catch (DocumentNotFoundException e) {
       throw new AvailabilityZoneNotFoundException(availabilityZoneEntity.getId());
@@ -149,7 +149,7 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
     com.vmware.dcp.common.Operation result;
 
     try {
-      result = dcpClient.getAndWait(AvailabilityZoneServiceFactory.SELF_LINK + "/" + id);
+      result = dcpClient.get(AvailabilityZoneServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new AvailabilityZoneNotFoundException(id);
     }

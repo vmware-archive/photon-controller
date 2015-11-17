@@ -163,7 +163,7 @@ public class DiskDcpBackend implements DiskBackend {
       flavor = flavorBackend.getEntityById(diskEntity.getFlavorId());
     }
 
-    dcpClient.deleteAndWait(DiskServiceFactory.SELF_LINK + "/" + diskEntity.getId(),
+    dcpClient.delete(DiskServiceFactory.SELF_LINK + "/" + diskEntity.getId(),
         new DiskService.State());
     tombstoneBackend.create(kind, diskEntity.getId());
     if (flavor != null &&
@@ -303,7 +303,7 @@ public class DiskDcpBackend implements DiskBackend {
   private DiskService.State findById(String id) throws DiskNotFoundException {
     com.vmware.dcp.common.Operation result;
     try {
-      result = dcpClient.getAndWait(DiskServiceFactory.SELF_LINK + "/" + id);
+      result = dcpClient.get(DiskServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new DiskNotFoundException(id);
     }
@@ -340,7 +340,7 @@ public class DiskDcpBackend implements DiskBackend {
     String diskId = diskEntity.getId();
 
     try {
-      dcpClient.patchAndWait(DiskServiceFactory.SELF_LINK + "/" + diskId, state);
+      dcpClient.patch(DiskServiceFactory.SELF_LINK + "/" + diskId, state);
     } catch (DocumentNotFoundException e) {
       throw new DiskNotFoundException(diskEntity.getKind(), diskId);
     }
@@ -460,7 +460,7 @@ public class DiskDcpBackend implements DiskBackend {
       diskState.tags.add(tagText);
     }
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(DiskServiceFactory.SELF_LINK, diskState);
+    com.vmware.dcp.common.Operation result = dcpClient.post(DiskServiceFactory.SELF_LINK, diskState);
     DiskService.State createdState = result.getBody(DiskService.State.class);
 
     toBaseDiskEntity(disk, createdState);
