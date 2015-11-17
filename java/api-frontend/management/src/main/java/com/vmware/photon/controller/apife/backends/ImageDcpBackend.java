@@ -109,7 +109,7 @@ public class ImageDcpBackend implements ImageBackend {
     }
     imageServiceState.imageSettings = imageSettingsList;
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(ImageServiceFactory.SELF_LINK, imageServiceState);
+    com.vmware.dcp.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
 
     ImageService.State createdState = result.getBody(ImageService.State.class);
 
@@ -136,7 +136,7 @@ public class ImageDcpBackend implements ImageBackend {
     imageServiceState.state = ImageState.CREATING;
     imageServiceState.replicationType = replicationType;
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(ImageServiceFactory.SELF_LINK, imageServiceState);
+    com.vmware.dcp.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
     ImageService.State createdState = result.getBody(ImageService.State.class);
 
     String id = ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);
@@ -174,7 +174,7 @@ public class ImageDcpBackend implements ImageBackend {
 
     tombstoneBackend.create(ImageEntity.KIND, image.getId());
 
-    dcpClient.deleteAndWait(
+    dcpClient.delete(
         ImageServiceFactory.SELF_LINK + "/" + image.getId(),
         new ImageService.State());
   }
@@ -246,7 +246,7 @@ public class ImageDcpBackend implements ImageBackend {
   public ImageEntity findById(String id) throws ExternalException {
     com.vmware.dcp.common.Operation result;
     try {
-      result = dcpClient.getAndWait(ImageServiceFactory.SELF_LINK + "/" + id);
+      result = dcpClient.get(ImageServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new ImageNotFoundException(Type.ID, id);
     }
@@ -285,7 +285,7 @@ public class ImageDcpBackend implements ImageBackend {
   private void patchImageService(String imageId, ImageService.State imageState)
       throws ImageNotFoundException {
     try {
-      dcpClient.patchAndWait(
+      dcpClient.patch(
           ImageServiceFactory.SELF_LINK + "/" + imageId, imageState);
     } catch (DocumentNotFoundException e) {
       throw new ImageNotFoundException(Type.ID, imageId);

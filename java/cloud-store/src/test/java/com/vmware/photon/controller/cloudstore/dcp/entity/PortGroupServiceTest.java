@@ -135,7 +135,7 @@ public class PortGroupServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new PortGroupServiceFactory(), null);
       PortGroupService.State testState = buildValidState();
-      Operation result = dcpRestClient.postAndWait(PortGroupServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(PortGroupServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       PortGroupService.State createdState = result.getBody(PortGroupService.State.class);
@@ -197,7 +197,7 @@ public class PortGroupServiceTest {
     @Test
     public void testPatch() throws Throwable {
       host.startServiceSynchronously(new PortGroupServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(PortGroupServiceFactory.SELF_LINK, buildValidState());
+      Operation result = dcpRestClient.post(PortGroupServiceFactory.SELF_LINK, buildValidState());
       assertThat(result.getStatusCode(), is(200));
       PortGroupService.State createdState = result.getBody(PortGroupService.State.class);
 
@@ -206,8 +206,8 @@ public class PortGroupServiceTest {
       patchState.usageTags.add(UsageTag.MGMT);
       patchState.network = "network2";
 
-      dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
-      PortGroupService.State savedState = dcpRestClient.getAndWait(createdState.documentSelfLink).getBody
+      dcpRestClient.patch(createdState.documentSelfLink, patchState);
+      PortGroupService.State savedState = dcpRestClient.get(createdState.documentSelfLink).getBody
           (PortGroupService.State.class);
       assertThat(savedState.usageTags, notNullValue());
       assertThat(savedState.usageTags, is(patchState.usageTags));
@@ -217,7 +217,7 @@ public class PortGroupServiceTest {
     @Test
     public void testInvalidPatchWithName() throws Throwable {
       host.startServiceSynchronously(new PortGroupServiceFactory(), null);
-      Operation result = dcpRestClient.postAndWait(PortGroupServiceFactory.SELF_LINK, buildValidState());
+      Operation result = dcpRestClient.post(PortGroupServiceFactory.SELF_LINK, buildValidState());
       assertThat(result.getStatusCode(), is(200));
       PortGroupService.State createdState = result.getBody(PortGroupService.State.class);
 
@@ -225,7 +225,7 @@ public class PortGroupServiceTest {
       patchState.name = "something";
 
       try {
-        dcpRestClient.patchAndWait(createdState.documentSelfLink, patchState);
+        dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("name is immutable"));

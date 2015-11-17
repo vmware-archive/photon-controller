@@ -139,7 +139,7 @@ public class ResourceTicketServiceTest {
      */
     @Test
     public void testStartState() throws Throwable {
-      Operation result = dcpRestClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
@@ -172,7 +172,7 @@ public class ResourceTicketServiceTest {
     @Test
     public void testConsumeWithinLimits() throws Throwable {
 
-      Operation result = dcpRestClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
 
@@ -192,24 +192,24 @@ public class ResourceTicketServiceTest {
       costItem.setUnit(QuotaUnit.COUNT);
       patch.cost.put(costItem.getKey(), costItem);
 
-      dcpRestClient.patchAndWait(createdState.documentSelfLink, patch);
+      dcpRestClient.patch(createdState.documentSelfLink, patch);
 
-      Operation found = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      Operation found = dcpRestClient.get(createdState.documentSelfLink);
       ResourceTicketService.State patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1").getValue(), is(testState.limitMap.get("key1").getValue() / 2));
       assertThat(patchedState.usageMap.get("key2").getValue(), is(testState.limitMap.get("key1").getValue() / 2));
 
-      dcpRestClient.patchAndWait(createdState.documentSelfLink, patch);
+      dcpRestClient.patch(createdState.documentSelfLink, patch);
 
-      found = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      found = dcpRestClient.get(createdState.documentSelfLink);
       patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1").getValue(), is(testState.limitMap.get("key1").getValue()));
       assertThat(patchedState.usageMap.get("key2").getValue(), is(testState.limitMap.get("key1").getValue()));
 
       patch.cost.remove("key1");
-      dcpRestClient.patchAndWait(createdState.documentSelfLink, patch);
+      dcpRestClient.patch(createdState.documentSelfLink, patch);
 
-      found = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      found = dcpRestClient.get(createdState.documentSelfLink);
       patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1").getValue(), is(testState.limitMap.get("key1").getValue()));
       assertThat(patchedState.usageMap.get("key2").getValue(), is(testState.limitMap.get("key1").getValue() * 1.5));
@@ -222,7 +222,7 @@ public class ResourceTicketServiceTest {
      */
     @Test()
     public void testConsumeAboveLimits() throws Throwable {
-      Operation result = dcpRestClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
 
@@ -244,7 +244,7 @@ public class ResourceTicketServiceTest {
       patch.cost.put(costItem.getKey(), costItem);
 
       try {
-        dcpRestClient.patchAndWait(createdState.documentSelfLink, patch);
+        dcpRestClient.patch(createdState.documentSelfLink, patch);
         fail("resource ticket consume above limits should have failed");
       } catch (BadRequestException e) {
         ServiceErrorResponse serviceErrorResponse =
@@ -254,7 +254,7 @@ public class ResourceTicketServiceTest {
                 ", desiredUsage " + patch.cost.get("key1").toString()));
       }
 
-      Operation found = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      Operation found = dcpRestClient.get(createdState.documentSelfLink);
       ResourceTicketService.State patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1"), is(nullValue()));
       assertThat(patchedState.usageMap.get("key2"), is(nullValue()));
@@ -267,7 +267,7 @@ public class ResourceTicketServiceTest {
      */
     @Test
     public void testConsumeAboveLimitsErrorDetails() throws Throwable {
-      Operation result = dcpRestClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
 
@@ -282,7 +282,7 @@ public class ResourceTicketServiceTest {
       patch.cost.put(costItem.getKey(), costItem);
 
       try {
-        dcpRestClient.patchAndWait(createdState.documentSelfLink, patch);
+        dcpRestClient.patch(createdState.documentSelfLink, patch);
         fail("resource ticket consume above limits should have failed");
       } catch (BadRequestException e) {
         ResourceTicketService.QuotaErrorResponse quotaErrorResponse =
@@ -303,7 +303,7 @@ public class ResourceTicketServiceTest {
      */
     @Test()
     public void testInvalidPatchType() throws Throwable {
-      Operation result = dcpRestClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
 
@@ -317,7 +317,7 @@ public class ResourceTicketServiceTest {
       patch.cost.put(costItem.getKey(), costItem);
 
       try {
-        dcpRestClient.patchAndWait(createdState.documentSelfLink, patch);
+        dcpRestClient.patch(createdState.documentSelfLink, patch);
       } catch (DcpRuntimeException e) {
         assertThat(e.getOperationResult().operationFailure.getMessage(), containsString("PatchType {NONE} in " +
             "patchOperation"));
@@ -335,7 +335,7 @@ public class ResourceTicketServiceTest {
     @Test
     public void testReturnUsage() throws Throwable {
 
-      Operation result = dcpRestClient.postAndWait(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
 
@@ -355,17 +355,17 @@ public class ResourceTicketServiceTest {
       costItem.setUnit(QuotaUnit.COUNT);
       patch.cost.put(costItem.getKey(), costItem);
 
-      dcpRestClient.patchAndWait(createdState.documentSelfLink, patch);
+      dcpRestClient.patch(createdState.documentSelfLink, patch);
 
-      Operation found = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      Operation found = dcpRestClient.get(createdState.documentSelfLink);
       ResourceTicketService.State patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1").getValue(), is(testState.limitMap.get("key1").getValue() / 2));
       assertThat(patchedState.usageMap.get("key2").getValue(), is(testState.limitMap.get("key1").getValue() / 2));
 
       patch.patchtype = ResourceTicketService.Patch.PatchType.USAGE_RETURN;
-      dcpRestClient.patchAndWait(createdState.documentSelfLink, patch);
+      dcpRestClient.patch(createdState.documentSelfLink, patch);
 
-      found = dcpRestClient.getAndWait(createdState.documentSelfLink);
+      found = dcpRestClient.get(createdState.documentSelfLink);
       patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1").getValue(), is(0.0));
       assertThat(patchedState.usageMap.get("key2").getValue(), is(0.0));

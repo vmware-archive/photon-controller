@@ -153,7 +153,7 @@ public class FlavorDcpBackendTest {
       TaskEntity taskEntity = flavorBackend.createFlavor(spec);
       String documentSelfLink = FlavorServiceFactory.SELF_LINK + "/" + taskEntity.getEntityId();
 
-      FlavorService.State savedState = dcpClient.getAndWait(documentSelfLink).getBody(FlavorService.State.class);
+      FlavorService.State savedState = dcpClient.get(documentSelfLink).getBody(FlavorService.State.class);
       assertThat(savedState.name, is(spec.getName()));
       assertThat(savedState.kind, is(expectedKind));
       assertThat(savedState.state, is(FlavorState.READY));
@@ -429,7 +429,7 @@ public class FlavorDcpBackendTest {
       diskState.state = DiskState.ATTACHED;
       diskState.name = "disk1";
       diskState.projectId = "project1";
-      dcpClient.postAndWait(DiskServiceFactory.SELF_LINK, diskState);
+      dcpClient.post(DiskServiceFactory.SELF_LINK, diskState);
 
       flavorBackend.prepareFlavorDelete(id);
 
@@ -464,7 +464,7 @@ public class FlavorDcpBackendTest {
       diskState.state = DiskState.ATTACHED;
       diskState.name = "disk1";
       diskState.projectId = "project1";
-      dcpClient.postAndWait(DiskServiceFactory.SELF_LINK, diskState);
+      dcpClient.post(DiskServiceFactory.SELF_LINK, diskState);
 
       flavorBackend.tombstone(flavorEntity);
 
@@ -489,7 +489,7 @@ public class FlavorDcpBackendTest {
       diskState.state = DiskState.ATTACHED;
       diskState.name = "disk1";
       diskState.projectId = "project1";
-      dcpClient.postAndWait(DiskServiceFactory.SELF_LINK, diskState);
+      dcpClient.post(DiskServiceFactory.SELF_LINK, diskState);
 
       flavorBackend.prepareFlavorDelete(id);
 

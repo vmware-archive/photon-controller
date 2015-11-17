@@ -115,7 +115,7 @@ public class AttachedDiskServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new AttachedDiskServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(AttachedDiskServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(AttachedDiskServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       AttachedDiskService.State createdState = result.getBody(AttachedDiskService.State.class);

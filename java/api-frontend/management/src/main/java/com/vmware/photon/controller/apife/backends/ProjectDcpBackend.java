@@ -112,7 +112,7 @@ public class ProjectDcpBackend implements ProjectBackend {
     com.vmware.dcp.common.Operation result;
 
     try {
-      result = dcpClient.getAndWait(ProjectServiceFactory.SELF_LINK + "/" + id);
+      result = dcpClient.get(ProjectServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new ProjectNotFoundException(id);
     }
@@ -152,7 +152,7 @@ public class ProjectDcpBackend implements ProjectBackend {
     patch.securityGroups = securityGroups;
 
     try {
-      dcpClient.patchAndWait(ProjectServiceFactory.SELF_LINK + "/" + id, patch);
+      dcpClient.patch(ProjectServiceFactory.SELF_LINK + "/" + id, patch);
     } catch (DocumentNotFoundException e) {
       throw new ProjectNotFoundException(id);
     }
@@ -184,7 +184,7 @@ public class ProjectDcpBackend implements ProjectBackend {
     ResourceTicketEntity projectTicket = createProjectResourceTicket(tenantTicket, reservation);
     state.resourceTicketId = projectTicket.getId();
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(ProjectServiceFactory.SELF_LINK, state);
+    com.vmware.dcp.common.Operation result = dcpClient.post(ProjectServiceFactory.SELF_LINK, state);
 
     ProjectService.State createdState = result.getBody(ProjectService.State.class);
 
@@ -263,7 +263,7 @@ public class ProjectDcpBackend implements ProjectBackend {
 
     tombstoneBackend.create(projectEntity.getKind(), projectEntity.getId());
 
-    dcpClient.deleteAndWait(ProjectServiceFactory.SELF_LINK + "/" + projectEntity.getId(),
+    dcpClient.delete(ProjectServiceFactory.SELF_LINK + "/" + projectEntity.getId(),
         new ProjectService.State());
     logger.info("Project {} has been cleared", projectEntity.getId());
 

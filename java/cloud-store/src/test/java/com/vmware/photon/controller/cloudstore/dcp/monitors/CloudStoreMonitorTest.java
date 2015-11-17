@@ -50,183 +50,183 @@ import java.util.concurrent.Executors;
 
 public class CloudStoreMonitorTest {
 
-    private TestEnvironment cloudStoreMachine;
-    private DcpRestClient client;
-    private int scanPeriod = 1000;
-    private CloudStoreMonitor monitor;
-    private String defaultDatastoreType = "SHARED_VMFS";
+  private TestEnvironment cloudStoreMachine;
+  private DcpRestClient client;
+  private int scanPeriod = 1000;
+  private CloudStoreMonitor monitor;
+  private String defaultDatastoreType = "SHARED_VMFS";
 
-    @BeforeMethod
-    public void setUpTest() throws Throwable {
-      cloudStoreMachine = TestEnvironment.create(1);
-      client = new DcpRestClient(cloudStoreMachine.getServerSet(), Executors.newFixedThreadPool(1));
-      client.start();
-      monitor = new CloudStoreMonitor(client, Executors.newSingleThreadScheduledExecutor(),
-              scanPeriod);
+  @BeforeMethod
+  public void setUpTest() throws Throwable {
+    cloudStoreMachine = TestEnvironment.create(1);
+    client = new DcpRestClient(cloudStoreMachine.getServerSet(), Executors.newFixedThreadPool(1));
+    client.start();
+    monitor = new CloudStoreMonitor(client, Executors.newSingleThreadScheduledExecutor(),
+        scanPeriod);
+  }
+
+  @AfterMethod
+  public void tearDownTest() throws Throwable {
+    if (null != cloudStoreMachine) {
+      cloudStoreMachine.stop();
+      cloudStoreMachine = null;
     }
 
-    @AfterMethod
-    public void tearDownTest() throws Throwable {
-      if (null != cloudStoreMachine) {
-        cloudStoreMachine.stop();
-        cloudStoreMachine = null;
+    if (null != client) {
+      client.stop();
+      client = null;
+    }
+  }
+
+  @Test
+  public void testCloudStoreMonitor() throws Throwable {
+
+    HostService.State host1 = TestHelper.getHostServiceStartState();
+    Set<String> networks = new HashSet();
+    networks.add("Net1");
+    host1.reportedNetworks = networks;
+    Set<String> datastores = new HashSet();
+    String datastore1Id = "datastore1";
+    datastores.add(datastore1Id);
+    host1.reportedDatastores = datastores;
+
+    for (String ds : datastores) {
+      DatastoreService.State datastore = new DatastoreService.State();
+      datastore.id = ds;
+      datastore.name = ds;
+      datastore.type = defaultDatastoreType;
+      datastore.documentSelfLink = getDatastoreUri(ds);
+
+      client.post(DatastoreServiceFactory.SELF_LINK, datastore);
+    }
+
+    List<HostConfig> addedHosts = new ArrayList();
+    List<HostConfig> deletedHosts = new ArrayList();
+    List<String> missingHosts = new ArrayList();
+
+    monitor.addChangeListener(new HostChangeListener() {
+
+      public void onHostAdded(String id, HostConfig hostConfig) {
+        addedHosts.add(hostConfig);
       }
 
-      if (null != client) {
-        client.stop();
-        client = null;
+      public void onHostRemoved(String id, HostConfig hostConfig) {
+        deletedHosts.add(hostConfig);
       }
-    }
 
-    @Test
-    public void testCloudStoreMonitor() throws Throwable {
-
-        HostService.State host1 = TestHelper.getHostServiceStartState();
-        Set<String> networks = new HashSet();
-        networks.add("Net1");
-        host1.reportedNetworks = networks;
-        Set<String> datastores = new HashSet();
-        String datastore1Id = "datastore1";
-        datastores.add(datastore1Id);
-        host1.reportedDatastores = datastores;
-
-        for (String ds : datastores) {
-          DatastoreService.State datastore = new DatastoreService.State();
-          datastore.id = ds;
-          datastore.name = ds;
-          datastore.type = defaultDatastoreType;
-          datastore.documentSelfLink = getDatastoreUri(ds);
-
-          client.postAndWait(DatastoreServiceFactory.SELF_LINK, datastore);
-        }
-
-        List<HostConfig> addedHosts = new ArrayList();
-        List<HostConfig> deletedHosts =  new ArrayList();
-        List<String> missingHosts =  new ArrayList();
-
-        monitor.addChangeListener(new HostChangeListener() {
-
-            public void onHostAdded(String id, HostConfig hostConfig) {
-              addedHosts.add(hostConfig);
-            }
-
-            public void onHostRemoved(String id, HostConfig hostConfig) {
-              deletedHosts.add(hostConfig);
-            }
-
-            public void onHostUpdated(String id, HostConfig hostConfig) {
-              // no op
-            }
-
-            public void hostMissing(String id) {
-              missingHosts.add(id);
-            }
-        });
-
-        // Create host
-        host1.agentState = AgentState.ACTIVE;
-        String hostId = UUID.randomUUID().toString();
-        host1.documentSelfLink = getHostResUri(hostId);
-        client.postAndWait(HostServiceFactory.SELF_LINK, host1);
-
-        monitor.refreshCache();
-
-        HostConfig config = getHostConfig(host1);
-        assertThat(addedHosts.size(), is(1));
-        assertThat(addedHosts.get(0), is(config));
-        assertThat(deletedHosts.size(), is(0));
-        assertThat(missingHosts.size(), is(0));
-
-        // Update host. Adding a new datastore
-        DatastoreService.State datastore = new DatastoreService.State();
-        String newDs = "newds";
-        datastore.id = newDs;
-        datastore.name = newDs;
-        datastore.type = "SHARED_VMFS";
-        datastore.documentSelfLink = getDatastoreUri(newDs);
-        client.postAndWait(DatastoreServiceFactory.SELF_LINK, datastore);
-
-        HostService.State hostUpdate = new HostService.State();
-        hostUpdate.reportedDatastores = datastores;
-        hostUpdate.reportedDatastores.add(newDs);
-        client.patchAndWait(host1.documentSelfLink, hostUpdate);
-
-        monitor.refreshCache();
-
-        Datastore tDatastore = new Datastore();
-        tDatastore.setName(datastore.name);
-        tDatastore.setId(datastore.id);
-        tDatastore.setType(DatastoreType.valueOf(datastore.type));
-        config.addToDatastores(tDatastore);
-
-        assertThat(deletedHosts.size(), is(0));
-        assertThat(addedHosts.size(), is(2));
-        Set<Datastore> newSet = new HashSet(addedHosts.get(1).getDatastores());
-        Set<Datastore> expectedSet = new HashSet(config.getDatastores());
-        assertThat(newSet, is(expectedSet));
-        assertThat(missingHosts.size(), is(0));
-
-        // Mark host as missing
-        HostService.State hostMissing = new HostService.State();
-        hostMissing.agentState = AgentState.MISSING;
-        client.patchAndWait(host1.documentSelfLink, hostMissing);
-
-        monitor.refreshCache();
-
-        assertThat(addedHosts.size(), is(2));
-        assertThat(deletedHosts.size(), is(0));
-        assertThat(missingHosts.size(), is(1));
-        assertThat(missingHosts, contains(config.getAgent_id()));
-
-        // Mark host resurrected
-        HostService.State hostResurrected = new HostService.State();
-        hostResurrected.agentState = AgentState.ACTIVE;
-        client.patchAndWait(host1.documentSelfLink, hostResurrected);
-
-        monitor.refreshCache();
-
-        assertThat(addedHosts.size(), is(3));
-        assertThat(deletedHosts.size(), is(0));
-        assertThat(addedHosts.get(2).getAgent_id(), is(config.getAgent_id()));
-        assertThat(missingHosts.size(), is(1));
-
-        // Remove host
-        client.deleteAndWait(host1.documentSelfLink, null);
-        monitor.refreshCache();
-
-        assertThat(addedHosts.size(), is(3));
-        assertThat(deletedHosts.size(), is(1));
-        assertThat(missingHosts.size(), is(1));
-    }
-
-    private String getHostResUri(String id) {
-      return HostServiceFactory.SELF_LINK + "/" + id;
-    }
-
-    private String getDatastoreUri(String id) {
-      return DatastoreServiceFactory.SELF_LINK + "/" + id;
-    }
-
-    private HostConfig getHostConfig (HostService.State state) {
-       HostConfig config = new HostConfig();
-       String[] paths = state.documentSelfLink.split("/");
-       config.setAgent_id(paths[paths.length - 1]);
-       config.setAvailability_zone(CloudStoreMonitor.DEFAULT_AVAILABILITY_ZONE);
-       config.setAddress(new ServerAddress(state.hostAddress, CloudStoreMonitor.DEFAULT_AGENT_PORT));
-
-       for (String dsId : state.reportedDatastores) {
-         Datastore ds = new Datastore();
-         ds.setId(dsId);
-         ds.setName(dsId);
-         ds.setType(DatastoreType.valueOf(defaultDatastoreType));
-         config.addToDatastores(ds);
-       }
-
-      for (String networkId : state.reportedNetworks) {
-        Network net = new Network(networkId);
-        net.addToTypes(NetworkType.VM);
-        config.addToNetworks(net);
+      public void onHostUpdated(String id, HostConfig hostConfig) {
+        // no op
       }
-       return config;
+
+      public void hostMissing(String id) {
+        missingHosts.add(id);
+      }
+    });
+
+    // Create host
+    host1.agentState = AgentState.ACTIVE;
+    String hostId = UUID.randomUUID().toString();
+    host1.documentSelfLink = getHostResUri(hostId);
+    client.post(HostServiceFactory.SELF_LINK, host1);
+
+    monitor.refreshCache();
+
+    HostConfig config = getHostConfig(host1);
+    assertThat(addedHosts.size(), is(1));
+    assertThat(addedHosts.get(0), is(config));
+    assertThat(deletedHosts.size(), is(0));
+    assertThat(missingHosts.size(), is(0));
+
+    // Update host. Adding a new datastore
+    DatastoreService.State datastore = new DatastoreService.State();
+    String newDs = "newds";
+    datastore.id = newDs;
+    datastore.name = newDs;
+    datastore.type = "SHARED_VMFS";
+    datastore.documentSelfLink = getDatastoreUri(newDs);
+    client.post(DatastoreServiceFactory.SELF_LINK, datastore);
+
+    HostService.State hostUpdate = new HostService.State();
+    hostUpdate.reportedDatastores = datastores;
+    hostUpdate.reportedDatastores.add(newDs);
+    client.patch(host1.documentSelfLink, hostUpdate);
+
+    monitor.refreshCache();
+
+    Datastore tDatastore = new Datastore();
+    tDatastore.setName(datastore.name);
+    tDatastore.setId(datastore.id);
+    tDatastore.setType(DatastoreType.valueOf(datastore.type));
+    config.addToDatastores(tDatastore);
+
+    assertThat(deletedHosts.size(), is(0));
+    assertThat(addedHosts.size(), is(2));
+    Set<Datastore> newSet = new HashSet(addedHosts.get(1).getDatastores());
+    Set<Datastore> expectedSet = new HashSet(config.getDatastores());
+    assertThat(newSet, is(expectedSet));
+    assertThat(missingHosts.size(), is(0));
+
+    // Mark host as missing
+    HostService.State hostMissing = new HostService.State();
+    hostMissing.agentState = AgentState.MISSING;
+    client.patch(host1.documentSelfLink, hostMissing);
+
+    monitor.refreshCache();
+
+    assertThat(addedHosts.size(), is(2));
+    assertThat(deletedHosts.size(), is(0));
+    assertThat(missingHosts.size(), is(1));
+    assertThat(missingHosts, contains(config.getAgent_id()));
+
+    // Mark host resurrected
+    HostService.State hostResurrected = new HostService.State();
+    hostResurrected.agentState = AgentState.ACTIVE;
+    client.patch(host1.documentSelfLink, hostResurrected);
+
+    monitor.refreshCache();
+
+    assertThat(addedHosts.size(), is(3));
+    assertThat(deletedHosts.size(), is(0));
+    assertThat(addedHosts.get(2).getAgent_id(), is(config.getAgent_id()));
+    assertThat(missingHosts.size(), is(1));
+
+    // Remove host
+    client.delete(host1.documentSelfLink, null);
+    monitor.refreshCache();
+
+    assertThat(addedHosts.size(), is(3));
+    assertThat(deletedHosts.size(), is(1));
+    assertThat(missingHosts.size(), is(1));
+  }
+
+  private String getHostResUri(String id) {
+    return HostServiceFactory.SELF_LINK + "/" + id;
+  }
+
+  private String getDatastoreUri(String id) {
+    return DatastoreServiceFactory.SELF_LINK + "/" + id;
+  }
+
+  private HostConfig getHostConfig(HostService.State state) {
+    HostConfig config = new HostConfig();
+    String[] paths = state.documentSelfLink.split("/");
+    config.setAgent_id(paths[paths.length - 1]);
+    config.setAvailability_zone(CloudStoreMonitor.DEFAULT_AVAILABILITY_ZONE);
+    config.setAddress(new ServerAddress(state.hostAddress, CloudStoreMonitor.DEFAULT_AGENT_PORT));
+
+    for (String dsId : state.reportedDatastores) {
+      Datastore ds = new Datastore();
+      ds.setId(dsId);
+      ds.setName(dsId);
+      ds.setType(DatastoreType.valueOf(defaultDatastoreType));
+      config.addToDatastores(ds);
     }
+
+    for (String networkId : state.reportedNetworks) {
+      Network net = new Network(networkId);
+      net.addToTypes(NetworkType.VM);
+      config.addToNetworks(net);
+    }
+    return config;
+  }
 }

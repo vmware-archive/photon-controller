@@ -430,7 +430,7 @@ public class TenantDcpBackendTest {
       patch.securityGroups = new ArrayList<SecurityGroup>();
       patch.securityGroups.add(new SecurityGroup("adminGroup1", true));
 
-      dcpClient.patchAndWait(TenantServiceFactory.SELF_LINK + "/" + tenantId, patch);
+      dcpClient.patch(TenantServiceFactory.SELF_LINK + "/" + tenantId, patch);
 
       List<String> securityGroups = new ArrayList<>();
       securityGroups.add("adminGroup1");
@@ -463,7 +463,7 @@ public class TenantDcpBackendTest {
       patch.securityGroups.add(new SecurityGroup("adminGroup2", false));
       patch.securityGroups.add(new SecurityGroup("adminGroup3", true));
 
-      dcpClient.patchAndWait(TenantServiceFactory.SELF_LINK + "/" + tenantId, patch);
+      dcpClient.patch(TenantServiceFactory.SELF_LINK + "/" + tenantId, patch);
 
       // Tenant service saved all three security groups
       TenantEntity tenantEntity = tenantBackend.findById(tenantId);

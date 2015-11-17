@@ -172,7 +172,7 @@ public abstract class CloudStoreCache {
             try {
               StopWatch timer = new StopWatch();
               timer.start();
-              Operation op = dcpRestClient.getAndWait(expand(prefixPath));
+              Operation op = dcpRestClient.get(expand(prefixPath));
               timer.stop();
               long retrievalTime = timer.getTime() / 1000;
               ExpandQueryResponse resp = op.getBody(ExpandQueryResponse.class);

@@ -114,7 +114,7 @@ public class ImageReplicationServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new ImageReplicationServiceFactory(), null);
 
-      Operation result = dcpRestClient.postAndWait(ImageReplicationServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(ImageReplicationServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       ImageReplicationService.State createdState = result.getBody(ImageReplicationService.State.class);

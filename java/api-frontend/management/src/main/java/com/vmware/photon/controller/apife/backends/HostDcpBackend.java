@@ -136,7 +136,7 @@ public class HostDcpBackend implements HostBackend {
   public void tombstone(HostEntity hostEntity) {
     tombstoneBackend.create(hostEntity.getKind(), hostEntity.getId());
 
-    dcpClient.deleteAndWait(HostServiceFactory.SELF_LINK + "/" + hostEntity.getId(),
+    dcpClient.delete(HostServiceFactory.SELF_LINK + "/" + hostEntity.getId(),
         new HostService.State());
     logger.info("HostEntity {} has been cleared", hostEntity.getId());
   }
@@ -165,7 +165,7 @@ public class HostDcpBackend implements HostBackend {
     com.vmware.dcp.common.Operation result;
 
     try {
-      result = dcpClient.getAndWait(HostServiceFactory.SELF_LINK + "/" + id);
+      result = dcpClient.get(HostServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new HostNotFoundException(id);
     }
@@ -208,7 +208,7 @@ public class HostDcpBackend implements HostBackend {
     hostState.usageTags = new HashSet<>(hostCreateSpec.getUsageTags().stream().map(g -> g.name()).collect
         (Collectors.toList()));
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(HostServiceFactory.SELF_LINK, hostState);
+    com.vmware.dcp.common.Operation result = dcpClient.post(HostServiceFactory.SELF_LINK, hostState);
     HostService.State createdState = result.getBody(HostService.State.class);
     HostEntity hostEntity = toHostEntity(createdState);
     logger.info("Host {} has been created", hostEntity.getId());
@@ -299,7 +299,7 @@ public class HostDcpBackend implements HostBackend {
 
   private void updateHostDocument(String hostId, HostService.State state) throws HostNotFoundException {
     try {
-      dcpClient.patchAndWait(HostServiceFactory.SELF_LINK + "/" + hostId, state);
+      dcpClient.patch(HostServiceFactory.SELF_LINK + "/" + hostId, state);
     } catch (DocumentNotFoundException e) {
       throw new HostNotFoundException(hostId);
     }

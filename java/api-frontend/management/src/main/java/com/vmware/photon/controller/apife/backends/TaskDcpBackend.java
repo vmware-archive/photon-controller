@@ -148,7 +148,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     taskServiceState.operation = operation;
     taskServiceState.queuedTime = DateTime.now().toDate();
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(TaskServiceFactory.SELF_LINK, taskServiceState);
+    com.vmware.dcp.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
     TaskEntity task = convertToTaskEntity(createdState);
     logger.info("created task: {}", task);
@@ -176,7 +176,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     taskServiceState.endTime = taskServiceState.startedTime;
     taskServiceState.queuedTime = taskServiceState.startedTime;
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(TaskServiceFactory.SELF_LINK, taskServiceState);
+    com.vmware.dcp.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
     TaskEntity task = convertToTaskEntity(createdState);
     logger.info("created task: {}", task);
@@ -238,7 +238,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
       }
     }
 
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(TaskServiceFactory.SELF_LINK, taskServiceState);
+    com.vmware.dcp.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
     TaskEntity task = convertToTaskEntity(createdState);
     task.setSteps(stepEntities); // replacing steps to retain the transient properties
@@ -318,7 +318,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
   private void patchTaskService(String taskId, TaskService.State taskServiceState) throws TaskNotFoundException {
     try {
-      dcpClient.patchAndWait(TaskServiceFactory.SELF_LINK + "/" + taskId, taskServiceState);
+      dcpClient.patch(TaskServiceFactory.SELF_LINK + "/" + taskId, taskServiceState);
     } catch (DocumentNotFoundException e) {
       throw new TaskNotFoundException(taskId);
     }
@@ -327,7 +327,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   private void patchTaskServiceWithStepUpdate(String taskId, TaskService.StepUpdate stepUpdate) throws
       TaskNotFoundException {
     try {
-      dcpClient.patchAndWait(TaskServiceFactory.SELF_LINK + "/" + taskId, stepUpdate);
+      dcpClient.patch(TaskServiceFactory.SELF_LINK + "/" + taskId, stepUpdate);
     } catch (DocumentNotFoundException e) {
       throw new TaskNotFoundException(taskId);
     }
@@ -402,7 +402,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
   @Override
   public void delete(TaskEntity task) {
-    dcpClient.deleteAndWait(TaskServiceFactory.SELF_LINK + "/" + task.getId(), new TaskService.State());
+    dcpClient.delete(TaskServiceFactory.SELF_LINK + "/" + task.getId(), new TaskService.State());
   }
 
   @Override
@@ -575,7 +575,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   private TaskService.State getTaskStateById(String taskId) {
     com.vmware.dcp.common.Operation result;
     try {
-      result = dcpClient.getAndWait(TaskServiceFactory.SELF_LINK + "/" + taskId);
+      result = dcpClient.get(TaskServiceFactory.SELF_LINK + "/" + taskId);
     } catch (DocumentNotFoundException documentNotFoundException) {
       return null;
     }

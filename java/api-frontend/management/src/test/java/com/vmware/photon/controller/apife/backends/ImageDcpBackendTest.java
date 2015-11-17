@@ -159,7 +159,7 @@ public class ImageDcpBackendTest {
     imageServiceState.totalDatastore = 10;
     imageServiceState.totalImageDatastore = 7;
     imageServiceState.replicatedDatastore = 5;
-    com.vmware.dcp.common.Operation result = dcpClient.postAndWait(ImageServiceFactory.SELF_LINK, imageServiceState);
+    com.vmware.dcp.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
     ImageService.State createdState = result.getBody(ImageService.State.class);
     return ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);
   }

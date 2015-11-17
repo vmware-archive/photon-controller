@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -59,10 +58,10 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
   }
 
   @Override
-  public Operation postAndWait(String serviceSelfLink, ServiceDocument body) {
+  public Operation post(String serviceSelfLink, ServiceDocument body) {
 
     try {
-      return super.postAndWait(serviceSelfLink, body);
+      return super.post(serviceSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new DcpRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
@@ -75,9 +74,9 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
   }
 
   @Override
-  public Operation getAndWait(String documentSelfLink) throws DocumentNotFoundException {
+  public Operation get(String documentSelfLink) throws DocumentNotFoundException {
     try {
-      return super.getAndWait(documentSelfLink);
+      return super.get(documentSelfLink);
     } catch (BadRequestException badRequestException) {
       throw new DcpRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
@@ -88,9 +87,9 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
   }
 
   @Override
-  public Collection<Operation> getAndWait(Collection<String> documentSelfLinks) {
+  public Operation delete(String documentSelfLink, ServiceDocument body) {
     try {
-      return super.getAndWait(documentSelfLinks);
+      return super.delete(documentSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new DcpRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
@@ -103,9 +102,9 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
   }
 
   @Override
-  public Operation deleteAndWait(String documentSelfLink, ServiceDocument body) {
+  public Operation postToBroadcastQueryService(QueryTask.QuerySpecification spec) {
     try {
-      return super.deleteAndWait(documentSelfLink, body);
+      return super.postToBroadcastQueryService(spec);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new DcpRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
@@ -118,24 +117,9 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
   }
 
   @Override
-  public Operation queryAndWait(QueryTask.QuerySpecification spec) {
+  public Operation patch(String serviceSelfLink, ServiceDocument body) {
     try {
-      return super.queryAndWait(spec);
-    } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
-    } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
-    } catch (TimeoutException timeoutException) {
-      throw new RuntimeException(timeoutException);
-    } catch (InterruptedException interruptedException) {
-      throw new RuntimeException(interruptedException);
-    }
-  }
-
-  @Override
-  public Operation patchAndWait(String serviceSelfLink, ServiceDocument body) {
-    try {
-      return super.patchAndWait(serviceSelfLink, body);
+      return super.patch(serviceSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new DcpRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
@@ -180,7 +164,7 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
   protected void handleTimeoutException(Operation operation, TimeoutException timeoutException) {
     // Cluster Manager Client does not handle timeout exception currently hence converting it to RuntimeException
 
-    logger.warn("ClusterManagerDcpRestClient.sendAndWait: TIMEOUT Operation={}, Message={}",
+    logger.warn("ClusterManagerDcpRestClient.send: TIMEOUT Operation={}, Message={}",
         operation,
         timeoutException.getMessage());
     throw new RuntimeException(timeoutException);
@@ -189,7 +173,7 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
   @VisibleForTesting
   @Override
   protected void handleInterruptedException(Operation operation, InterruptedException interruptedException) {
-    logger.warn("ClusterManagerDcpRestClient.sendAndWait: INTERRUPTED Operation={}, Exception={}",
+    logger.warn("ClusterManagerDcpRestClient.send: INTERRUPTED Operation={}, Exception={}",
         operation,
         interruptedException);
 

@@ -21,7 +21,6 @@ import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundExcept
 
 import com.google.common.collect.ImmutableMap;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -33,23 +32,19 @@ public interface DcpClient {
 
   void stop();
 
-  Operation postAndWait(String serviceSelfLink, ServiceDocument body)
+  Operation post(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
-  Operation getAndWait(String documentSelfLink)
+  Operation get(String documentSelfLink)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
-  Collection<Operation> getAndWait(Collection<String> documentSelfLinks)
+  Operation postToBroadcastQueryService(QueryTask.QuerySpecification spec)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
-  Operation queryAndWait(QueryTask.QuerySpecification spec)
+  Operation delete(String documentSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
-
-  Operation deleteAndWait(String documentSelfLink, ServiceDocument body)
-      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
-
-  Operation patchAndWait(String serviceSelfLink, ServiceDocument body)
+  Operation patch(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
   <T extends ServiceDocument> List<T> queryDocuments(Class<T> documentType,

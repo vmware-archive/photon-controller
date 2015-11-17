@@ -440,7 +440,7 @@ public class DeploymentDcpBackendTest {
         expectedExceptionsMessageRegExp = ".*Auth is not enabled, and security groups cannot be set.*")
     public void testUpdateSecurityGroupsDisallowed() throws Exception {
 
-      dcpClient.deleteAndWait(DeploymentServiceFactory.SELF_LINK + "/" + initialDeploymentEntity.getId(),
+      dcpClient.delete(DeploymentServiceFactory.SELF_LINK + "/" + initialDeploymentEntity.getId(),
           new DeploymentService.State());
 
       deploymentCreateSpec.setAuth(new AuthInfoBuilder()
@@ -517,7 +517,7 @@ public class DeploymentDcpBackendTest {
     public void testPauseSystem() throws Throwable {
       DeploymentService.State patch = new DeploymentService.State();
       patch.state = DeploymentState.READY;
-      dcpClient.patchAndWait(DeploymentServiceFactory.SELF_LINK + "/" + initialDeploymentEntity.getId(), patch);
+      dcpClient.patch(DeploymentServiceFactory.SELF_LINK + "/" + initialDeploymentEntity.getId(), patch);
 
       TaskEntity taskEntity = deploymentBackend.pauseSystem(initialDeploymentEntity.getId());
       assertThat(taskEntity.getOperation(), is(Operation.PAUSE_SYSTEM));
@@ -544,7 +544,7 @@ public class DeploymentDcpBackendTest {
     public void testResumeSystem() throws Throwable {
       DeploymentService.State patch = new DeploymentService.State();
       patch.state = DeploymentState.READY;
-      dcpClient.patchAndWait(DeploymentServiceFactory.SELF_LINK + "/" + initialDeploymentEntity.getId(), patch);
+      dcpClient.patch(DeploymentServiceFactory.SELF_LINK + "/" + initialDeploymentEntity.getId(), patch);
 
       TaskEntity taskEntity = deploymentBackend.resumeSystem(initialDeploymentEntity.getId());
       assertThat(taskEntity.getOperation(), is(Operation.RESUME_SYSTEM));
@@ -957,7 +957,7 @@ public class DeploymentDcpBackendTest {
       deployment2.oAuthPassword = deploymentCreateSpec.getAuth().getPassword();
       deployment2.oAuthSecurityGroups = new ArrayList<>(deploymentCreateSpec.getAuth().getSecurityGroups());
 
-      dcpClient2.postAndWait(DeploymentServiceFactory.SELF_LINK, deployment2);
+      dcpClient2.post(DeploymentServiceFactory.SELF_LINK, deployment2);
     }
 
     @AfterMethod
@@ -1102,7 +1102,7 @@ public class DeploymentDcpBackendTest {
       state.imageId = "imageId";
       state.documentSelfLink = ClusterType.KUBERNETES.toString().toLowerCase();
 
-      dcpClient.postAndWait(ClusterConfigurationServiceFactory.SELF_LINK, state);
+      dcpClient.post(ClusterConfigurationServiceFactory.SELF_LINK, state);
 
       TaskEntity taskEntity = deploymentBackend.deleteClusterConfiguration(ClusterType.KUBERNETES);
       assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));
