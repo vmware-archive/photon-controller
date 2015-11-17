@@ -242,6 +242,12 @@ class FakeVmManager(VmManager):
         info._nics = new_nics
         return True
 
+    def set_vminfo(self, spec, vminfo):
+        spec.vminfo = vminfo
+
+    def get_vminfo(self, vm_id):
+        return self._get_vm(vm_id).fake_vm_spec.vminfo
+
     def _power_vm(self, vm_id, expected, state):
         vm = self._resources[vm_id]
         if vm.state != expected and vm.state != state:
@@ -444,7 +450,8 @@ class FakeUpdateSpec(object):
 
 class FakeVmSpec(FakeUpdateSpec):
     def __init__(self, name, memory, cpus, datastore, image_id, flavor, files,
-                 metadata=None, env={}, vnc_enabled=False, vnc_port=None):
+                 metadata=None, env={}, vnc_enabled=False, vnc_port=None,
+                 vminfo={}):
         super(FakeVmSpec, self).__init__()
         self.name = name
         self.memory = memory
@@ -458,6 +465,7 @@ class FakeVmSpec(FakeUpdateSpec):
         self.env = env
         self.vnc_enabled = vnc_enabled
         self.vnc_port = vnc_port
+        self.vminfo = vminfo
 
     def update(self, spec):
         assert(isinstance(spec, FakeUpdateSpec))

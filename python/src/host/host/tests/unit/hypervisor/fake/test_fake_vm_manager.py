@@ -49,3 +49,18 @@ class TestFakeVmManager(unittest.TestCase):
         # The following 2 asserts test equality of ports and expected
         assert_that(len(ports), equal_to(len(expected)))
         assert_that(len(ports), equal_to(len(expected.union(ports))))
+
+    def test_vminfo(self):
+        vmm = Fvm(MagicMock())
+        vm_id = str(uuid.uuid4())
+        flavor = Flavor("vm", [QuotaLineItem("vm.cpu", 1, Unit.COUNT),
+                               QuotaLineItem("vm.memory", 8, Unit.GB)])
+        vm_metadata = {
+            "project": "p1",
+            "vendor": "v1",
+        }
+        spec = vmm.create_vm_spec(vm_id, "ds-1", flavor, image_id="image_id")
+        vmm.set_vminfo(spec, vm_metadata)
+        vmm.create_vm(vm_id, spec)
+        got_metadata = vmm.get_vminfo(vm_id)
+        assert_that(got_metadata, equal_to(vm_metadata))
