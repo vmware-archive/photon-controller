@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.model.helpers;
 
 import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
+import com.vmware.photon.controller.model.resources.DiskFactoryService;
 import com.vmware.photon.controller.model.resources.ResourcePoolFactoryService;
 
 import org.apache.commons.io.FileUtils;
@@ -41,6 +42,7 @@ public abstract class BaseModelTest {
 
   public static final Class[] FACTORY_SERVICES = {
       ComputeDescriptionFactoryService.class,
+      DiskFactoryService.class,
       ResourcePoolFactoryService.class,
   };
 
