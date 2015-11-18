@@ -590,13 +590,14 @@ class HostHandlerTestCase(unittest.TestCase):
         mocked_consume_disk_reservation = MagicMock()
         mocked_consume_disk_reservation.side_effect = \
             local_consume_disk_reservation
-        handler.hypervisor.placement_manager.consume_disk_reservation = \
-            mocked_consume_disk_reservation
+        pm = handler.hypervisor.placement_manager
+        pm.consume_disk_reservation = mocked_consume_disk_reservation
 
         request = CreateDisksRequest()
         request.generation = 1
         request.reservation = "reservation_id_1"
         response = handler.create_disks(request)
+        pm.remove_disk_reservation.assert_called_once_with(request.reservation)
         assert_that(response.result is CreateDisksResultCode.OK)
         disk_errors = response.disk_errors
         assert_that(disk_errors is not None)
@@ -690,24 +691,29 @@ class HostHandlerTestCase(unittest.TestCase):
         request = MagicMock()
         response = handler.create_vm(request)
         assert_that(response.result, equal_to(CreateVmResultCode.OK))
+        pm.remove_vm_reservation.assert_called_once_with(request.reservation)
 
         # Test lazy image copy
         assert_that(im.copy_image.called, is_(False))
         im.check_and_validate_image.return_value = False
+        pm.remove_vm_reservation.reset_mock()
         response = handler.create_vm(request)
         assert_that(response.result, equal_to(CreateVmResultCode.OK))
+        pm.remove_vm_reservation.assert_called_once_with(request.reservation)
         im.copy_image.assert_called_once_with(
             "image_ds", "image_id", "ds1", "image_id"
         )
 
         # Test VM existed
         im.check_image.return_value = True
+        pm.remove_vm_reservation.reset_mock()
         handler.hypervisor.vm_manager.create_vm.side_effect = \
             VmAlreadyExistException
 
         response = handler.create_vm(request)
         assert_that(response.result, equal_to(
             CreateVmResultCode.VM_ALREADY_EXIST))
+        pm.remove_vm_reservation.assert_called_once_with(request.reservation)
 
         # Test invalid reservation
         class PlacementManagerInvalidReservation:
@@ -738,8 +744,8 @@ class HostHandlerTestCase(unittest.TestCase):
                               network_connection_spec=mock_net_spec)
         image_id = stable_uuid('image_id')
         handler = HostHandler(MagicMock())
-        handler.hypervisor.placement_manager.consume_vm_reservation.\
-            return_value = vm
+        pm = handler.hypervisor.placement_manager
+        pm.consume_vm_reservation.return_value = vm
         handler._datastores_for_image = MagicMock()
         handler.hypervisor.datastore_manager.datastore_type.\
             return_value = DatastoreType.EXT3
@@ -753,12 +759,14 @@ class HostHandlerTestCase(unittest.TestCase):
         # No placement descriptor
         vm.placement = None
         response = handler.create_vm(req)
+        pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
         assert_that(response.result,
                     equal_to(CreateVmResultCode.PLACEMENT_NOT_FOUND))
 
         # If vm reservation has placement datastore info, it should
         # be placed there
         handler.hypervisor.vm_manager.create_vm_spec.reset_mock()
+        pm.remove_vm_reservation.reset_mock()
         vm.placement = AgentResourcePlacement(AgentResourcePlacement.VM,
                                               "vm_ids",
                                               "ds2")
@@ -773,6 +781,7 @@ class HostHandlerTestCase(unittest.TestCase):
             spec, {handler.VMINFO_PROJECT_KEY: 'p1',
                    handler.VMINFO_TENANT_KEY: 't1'}
         )
+        pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
         assert_that(response.result, equal_to(CreateVmResultCode.OK))
 
         # Test create_vm honors vm.networks information
@@ -784,6 +793,7 @@ class HostHandlerTestCase(unittest.TestCase):
         handler.hypervisor.vm_manager.add_nic = add_nic_mock
 
         handler.hypervisor.vm_manager.create_vm_spec.reset_mock()
+        pm.remove_vm_reservation.reset_mock()
         spec = handler.hypervisor.vm_manager.create_vm_spec.return_value
         req = CreateVmRequest(reservation=mock_reservation)
         response = handler.create_vm(req)
@@ -792,6 +802,7 @@ class HostHandlerTestCase(unittest.TestCase):
         expected_networks = [call(spec, 'net_1'), call(spec, 'net_2')]
         assert_that(called_networks == expected_networks,
                     is_(True))
+        pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
         assert_that(response.result, equal_to(CreateVmResultCode.OK))
 
         # Host does not have the provisioned networks
@@ -799,10 +810,12 @@ class HostHandlerTestCase(unittest.TestCase):
         handler.hypervisor.network_manager.get_vm_networks.return_value = \
             ["net_1", "net_7"]
         handler.hypervisor.vm_manager.add_nic.reset_mock()
+        pm.remove_vm_reservation.reset_mock()
 
         req = CreateVmRequest(reservation=mock_reservation)
         response = handler.create_vm(req)
 
+        pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
         assert_that(response.result,
                     equal_to(CreateVmResultCode.NETWORK_NOT_FOUND))
 
@@ -1460,14 +1473,15 @@ class HostHandlerTestCase(unittest.TestCase):
     def test_register_vm(self, consume_reservation, register_vm, result):
         hypervisor = MagicMock()
         handler = HostHandler(hypervisor)
-        hypervisor.placement_manager.consume_vm_reservation.side_effect = \
-            consume_reservation
+        pm = hypervisor.placement_manager
+        pm.consume_vm_reservation.side_effect = consume_reservation
         hypervisor.vm_manager.register_vm.side_effect = register_vm
 
         request = RegisterVmRequest("vm_id", "ds_id", "reservation_id")
         response = handler.register_vm(request)
 
         assert_that(response.result, equal_to(result))
+        pm.remove_vm_reservation.assert_called_once_with(request.reservation)
 
 if __name__ == '__main__':
     unittest.main()
