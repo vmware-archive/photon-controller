@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -144,7 +145,7 @@ public class DeploymentCreateSpec {
   @Override
   public String toString() {
     return com.google.common.base.Objects.toStringHelper(this)
-        .add("imageDatastores", imageDatastores)
+        .add("imageDatastores", StringUtils.join(imageDatastores, ','))
         .add("syslogEndpoint", syslogEndpoint)
         .add("ntpEndpoint", ntpEndpoint)
         .add("useImageDatastoreForVms", useImageDatastoreForVms)

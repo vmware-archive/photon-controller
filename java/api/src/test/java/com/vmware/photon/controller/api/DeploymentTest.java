@@ -131,13 +131,17 @@ public class DeploymentTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "Deployment{id=id, Kind=deployment, imageDatastores=[image-datastore], syslogEndpoint=0.0.0.1, " +
+          "Deployment{id=id, Kind=deployment, imageDatastores=image-datastore1,image-datastore2, " +
+              "syslogEndpoint=0.0.0.1, " +
               "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, " +
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443," +
               " tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, loadBalancerEnabled=true," +
               " migrationProgress=null}";
+      HashSet<String> imageDatastores = new HashSet<String>();
+      imageDatastores.add("image-datastore1");
+      imageDatastores.add("image-datastore2");
       Deployment deployment = createDeployment(
-          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2");
+          imageDatastores, "0.0.0.1", "0.0.0.2");
       assertThat(deployment.toString(), is(expectedString));
     }
   }

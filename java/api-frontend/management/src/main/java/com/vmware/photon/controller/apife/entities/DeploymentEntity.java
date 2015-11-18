@@ -249,7 +249,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("oauthPassword", this.getOauthPassword())
         .add("oauthSecurityGroups", StringUtils.join(this.getOauthSecurityGroups(), ','))
         .add("ntpEndpoint", this.getNtpEndpoint())
-        .add("imageDatastore", this.getImageDatastores())
+        .add("imageDatastores", StringUtils.join(this.getImageDatastores(), ','))
         .add("useImageDatastoreForVms", this.getUseImageDatastoreForVms())
         .add("operationId", this.getOperationId())
         .add("loadBalancerEnabled", this.getLoadBalancerEnabled())
