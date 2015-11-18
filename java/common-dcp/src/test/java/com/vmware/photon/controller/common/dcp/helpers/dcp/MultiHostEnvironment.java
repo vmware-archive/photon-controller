@@ -26,6 +26,7 @@ import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.OperationLatch;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
@@ -240,7 +241,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
           type, serviceUri, test, host, waitIterationSleep, waitIterationCount, getEnvironmentCleanup());
       assertTrue(r != null);
       logger.info("host " + host.getState().id + " has owner " + r.documentOwner);
-      if (result != null && !DcpTestHelper.equals(type, result, r)) {
+      if (result != null && !ServiceUtils.compareDocuments(type, result, r)) {
         logger.info(String.format("current %s last %s", Utils.toJson(r), Utils.toJson(result)));
         throw new IllegalStateException("response is not consistent across node group");
       }
