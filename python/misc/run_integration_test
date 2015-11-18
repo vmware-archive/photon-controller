@@ -55,6 +55,7 @@ $SSH_PATH/copy-id --password $ESX_PWD root@$ESX_IP
 
 make vib DEBUG=1
 
+$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'rm /tmp/*.vib' || true
 $SSH_PATH/scp ./dist/photon-controller-agent-*.vib root@$ESX_IP:/tmp
 $SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'esxcli software vib remove -f -n photon-controller-agent' || true
 $SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'esxcli software vib install -f -v /tmp/photon-controller-agent-*.vib'
