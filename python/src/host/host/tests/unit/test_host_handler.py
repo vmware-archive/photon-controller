@@ -726,6 +726,8 @@ class HostHandlerTestCase(unittest.TestCase):
         vm = MagicMock()
         vm.id = str(uuid.uuid4())
         vm.networks = ["net_1", "net_2"]
+        vm.project_id = "p1"
+        vm.tenant_id = "t1"
 
         mock_env = MagicMock()
         mock_reservation = MagicMock()
@@ -767,6 +769,10 @@ class HostHandlerTestCase(unittest.TestCase):
             vm.id, "ds2", vm.flavor, metadata, mock_env, image_id=image_id)
         handler.hypervisor.vm_manager.create_vm.assert_called_once_with(
             vm.id, spec)
+        handler.hypervisor.vm_manager.set_vminfo.assert_called_once_with(
+            spec, {handler.VMINFO_PROJECT_KEY: 'p1',
+                   handler.VMINFO_TENANT_KEY: 't1'}
+        )
         assert_that(response.result, equal_to(CreateVmResultCode.OK))
 
         # Test create_vm honors vm.networks information

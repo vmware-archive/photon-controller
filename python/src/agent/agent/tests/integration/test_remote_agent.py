@@ -101,6 +101,7 @@ from gen.scheduler.ttypes import PlaceResultCode
 from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import vmdk_path
+from host.hypervisor.esx.vm_manager import EsxVmManager
 from pysdk import connect
 from pysdk import host
 from pysdk import task
@@ -292,7 +293,11 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
 
         # Connect to server and configure vim_client
         self.client_connections()
-        self.configure_vim_client()
+        self.vim_client = VimClient(host=self.server,
+                                    ticket=self._get_vim_ticket())
+        connect.SetSi(self.vim_client._si)
+
+        # Set host mode to normal
         self.set_host_mode(HostMode.NORMAL)
 
         # The first time setup is called the agent will restart.
@@ -359,10 +364,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
                             % resource.vm.id)
                 self.vim_delete_vm(resource.vm.id)
         self.clean_images()
-
-    def configure_vim_client(self):
-        self.vim_client = VimClient(host=self.server,
-                                    ticket=self._get_vim_ticket())
 
     def clean_images(self):
         """ Clean up images if there are any """
@@ -925,6 +926,14 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         vm_wrapper.delete(request=vm_wrapper.delete_request(force=True))
         for disk_id in disk_ids:
             vm_wrapper.find_disk(disk_id, expect=FindResultCode.NOT_FOUND)
+
+    def test_vminfo(self):
+        vm_wrapper = VmWrapper(self.host_client)
+        vm_id = vm_wrapper.create().vm.id
+        vm_manager = EsxVmManager(self.vim_client, None)
+        vminfo = vm_manager.get_vminfo(vm_id)
+        # p1/t1 is the default project/tenant
+        assert_that(vminfo, equal_to({"project": "p1", "tenant": "t1"}))
 
     def test_disk_uuids(self):
         # Create a vm without a root disk and blank disk then attach another

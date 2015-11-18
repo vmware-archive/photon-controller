@@ -141,7 +141,9 @@ class VmWrapper(object):
         return Vm(id=new_id(),
                   flavor="default",
                   flavor_info=Flavor(name="default", cost=cost),
-                  state=State.STOPPED)
+                  state=State.STOPPED,
+                  tenant_id="t1",
+                  project_id="p1")
 
     @staticmethod
     def create_request(res_id, env=None, network=None):
