@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.common.thrift;
 
-import static com.vmware.photon.controller.common.tests.matchers.RegexMatcher.containsMatch;
-
 import com.example.echo.EchoRequest;
 import com.example.echo.Echoer;
 import com.google.inject.Inject;
@@ -32,6 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.testng.Assert.assertTrue;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
@@ -145,7 +144,7 @@ public class EndToEndTest {
     latch.await(AWAIT_TIMEOUT, TimeUnit.SECONDS);
 
     assertThat(error[0], is(instanceOf(ClientPoolException.class)));
-    assertThat(error[0].getMessage(), containsMatch("Timeout"));
+    assertTrue(error[0].getMessage().contains("Timeout"), "Expecting 'Timeout' in error message");
     assertThat(result[0], is(nullValue()));
   }
 
@@ -194,7 +193,7 @@ public class EndToEndTest {
     latch.await(AWAIT_TIMEOUT, TimeUnit.SECONDS);
 
     assertThat(error[0], is(instanceOf(TimeoutException.class)));
-    assertThat(error[0].getMessage(), containsMatch("timed out"));
+    assertTrue(error[0].getMessage().contains("timed out"), "Expecting 'timed out' in error message");
     assertThat(result[0], is(nullValue()));
   }
 
