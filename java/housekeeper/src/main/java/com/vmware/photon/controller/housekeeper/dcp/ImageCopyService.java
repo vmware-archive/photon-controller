@@ -18,6 +18,9 @@ import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
+import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
@@ -26,6 +29,8 @@ import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
+import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
@@ -42,6 +47,9 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -203,6 +211,8 @@ public class ImageCopyService extends StatefulService {
           case UPDATE_SOURCE_IMAGE_DATASTORES:
             break;
           case UPDATE_HOST:
+            checkArgument(current.imageDatastores != null && current.imageDatastores.size() > 0,
+                "image datastore not found");
             break;
           case COPY_IMAGE:
             checkArgument(current.host != null, "host not found");
@@ -225,7 +235,8 @@ public class ImageCopyService extends StatefulService {
   protected void applyPatch(State currentState, State patchState) {
     if (patchState.taskInfo != null) {
       if (patchState.taskInfo.stage != currentState.taskInfo.stage) {
-        ServiceUtils.logInfo(this, "moving to stage %s", patchState.taskInfo.stage);
+        ServiceUtils.logInfo(this, "moving to stage %s, substage %s", patchState.taskInfo.stage,
+            patchState.taskInfo.subStage);
       }
 
       currentState.taskInfo = patchState.taskInfo;
@@ -233,6 +244,10 @@ public class ImageCopyService extends StatefulService {
 
     if (patchState.host != null) {
       currentState.host = patchState.host;
+    }
+
+    if (patchState.imageDatastores != null) {
+      currentState.imageDatastores = patchState.imageDatastores;
     }
 
     if (patchState.destinationDataStore != null) {
@@ -268,11 +283,6 @@ public class ImageCopyService extends StatefulService {
    * @param current
    */
   private void copyImage(final State current) {
-    if (current.sourceDataStore.equals(current.destinationDataStore)) {
-      ServiceUtils.logInfo(this, "Skip copying image to source itself");
-      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
-      return;
-    }
 
     AsyncMethodCallback callback = new AsyncMethodCallback() {
       @Override
@@ -377,8 +387,59 @@ public class ImageCopyService extends StatefulService {
    * @param current
    */
   private void updateSourceImageDatastores(final State current) {
-    this.sendStageProgressPatch(current, com.vmware.dcp.common.TaskState.TaskStage.STARTED,
-        TaskState.SubStage.UPDATE_HOST);
+    if (current.sourceDataStore.equals(current.destinationDataStore)) {
+      ServiceUtils.logInfo(this, "Skip copying image to source itself");
+      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
+      return;
+    }
+
+    List<String> imageDatastores = new ArrayList<>();
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(ImageReplicationService.State.class));
+
+    QueryTask.Query imageClause = new QueryTask.Query()
+        .setTermPropertyName("imageId")
+        .setTermMatchValue(current.image);
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.query.addBooleanClause(imageClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    sendRequest(
+        ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(querySpecification).setDirect(true))
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (throwable != null) {
+                    failTask(throwable);
+                    return;
+                  }
+                  NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
+                  List<ImageReplicationService.State> documentLinks = QueryTaskUtils
+                      .getBroadcastQueryDocuments(ImageReplicationService.State.class, queryResponse);
+                  for (ImageReplicationService.State state : documentLinks) {
+                    imageDatastores.add(state.imageDatastoreId);
+                  }
+
+                  if (imageDatastores.size() == 0) {
+                    failTask(new Exception("No image datastore has the image that needs to be copied."));
+                    return;
+                  }
+
+                  // Patch self with the host and data store information.
+                  if (!current.isSelfProgressionDisabled) {
+                    State patch = buildPatch(com.vmware.dcp.common
+                            .TaskState.TaskStage.STARTED,
+                        TaskState.SubStage.UPDATE_HOST, null);
+                    patch.imageDatastores = imageDatastores;
+                    this.sendSelfPatch(patch);
+                  }
+                }
+            ));
+
   }
 
   /**
@@ -439,65 +500,70 @@ public class ImageCopyService extends StatefulService {
     return s;
   }
 
+/**
+ * Service execution stages.
+ */
+public static class TaskState extends com.vmware.dcp.common.TaskState {
   /**
-   * Service execution stages.
+   * The execution substage.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
-    /**
-     * The execution substage.
-     */
-    public SubStage subStage;
-
-    /**
-     * Execution sub-stage.
-     */
-    public static enum SubStage {
-      UPDATE_SOURCE_IMAGE_DATASTORES,
-      UPDATE_HOST,
-      COPY_IMAGE,
-    }
-  }
+  public SubStage subStage;
 
   /**
-   * Durable service state data. Class encapsulating the data for image copy between data stores in esx cloud. What
-   * is specific to the ImageCopy concept is that in addition to <source, destination, object> it is possible to specify
-   * a host to perform the copy.
+   * Execution sub-stage.
    */
-  public static class State extends ServiceDocument {
-
-    /**
-     * Copy service stage.
-     */
-    public TaskState taskInfo;
-
-    /**
-     * URI of the sender of the copy, if not null notify of copy end.
-     */
-    public String parentLink;
-
-    /**
-     * Image to be copied.
-     */
-    public String image;
-
-    /**
-     * The store where the image is currently available.
-     */
-    public String sourceDataStore;
-
-    /**
-     * The store where the image will be copied to.
-     */
-    public String destinationDataStore;
-
-    /**
-     * Host with access to both source and destination stores.
-     */
-    public String host;
-
-    /**
-     * When isSelfProgressionDisabled is true, the service does not automatically update its stages.
-     */
-    public boolean isSelfProgressionDisabled;
+  public static enum SubStage {
+    UPDATE_SOURCE_IMAGE_DATASTORES,
+    UPDATE_HOST,
+    COPY_IMAGE,
   }
+}
+
+/**
+ * Durable service state data. Class encapsulating the data for image copy between data stores in esx cloud. What
+ * is specific to the ImageCopy concept is that in addition to <source, destination, object> it is possible to specify
+ * a host to perform the copy.
+ */
+public static class State extends ServiceDocument {
+
+  /**
+   * Copy service stage.
+   */
+  public TaskState taskInfo;
+
+  /**
+   * URI of the sender of the copy, if not null notify of copy end.
+   */
+  public String parentLink;
+
+  /**
+   * Image to be copied.
+   */
+  public String image;
+
+  /**
+   * The store where the image is currently available.
+   */
+  public String sourceDataStore;
+
+  /**
+   * The store where the image will be copied to.
+   */
+  public String destinationDataStore;
+
+  /**
+   * Host with access to both source and destination stores.
+   */
+  public String host;
+
+  /**
+   * When isSelfProgressionDisabled is true, the service does not automatically update its stages.
+   */
+  public boolean isSelfProgressionDisabled;
+
+  /**
+   * The image datastores where the image is currently available.
+   */
+  public List<String> imageDatastores;
+}
 }
