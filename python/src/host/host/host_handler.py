@@ -518,6 +518,14 @@ class HostHandler(Host.Iface):
         except InvalidReservationException:
             return CreateVmResponse(CreateVmResultCode.INVALID_RESERVATION,
                                     "Invalid VM reservation")
+
+        try:
+            return self._do_create_vm(request, vm)
+        finally:
+            pm.remove_vm_reservation(request.reservation)
+
+    def _do_create_vm(self, request, vm):
+
         try:
             datastore_id = self._select_datastore_for_vm_create(vm)
         except MissingPlacementDescriptorException, e:
@@ -631,10 +639,9 @@ class HostHandler(Host.Iface):
             self._logger.error("vm with id %s already exists" % vm.id)
             return CreateVmResponse(CreateVmResultCode.VM_ALREADY_EXIST,
                                     "Failed to create VM")
-        except Exception:
+        except Exception as e:
             self._logger.error("error creating vm with id %s" % vm.id)
-            import traceback
-            self._logger.error(traceback.format_exc())
+            self._logger.exception(e)
             return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR,
                                     "Failed to create VM")
 
@@ -651,11 +658,10 @@ class HostHandler(Host.Iface):
                 if self.hypervisor.vm_manager.set_guestinfo_ip(
                         spec, info, request.network_connection_spec):
                     self.hypervisor.vm_manager.update_vm(vm.id, spec)
-            except Exception:
+            except Exception as e:
                 self._logger.error(
                     "error to set the ip/mac address of vm with id %s" % vm.id)
-                import traceback
-                self._logger.error(traceback.format_exc())
+                self._logger.exception(e)
                 self.try_delete_vm(vm.id)
                 return CreateVmResponse(
                     CreateVmResultCode.SYSTEM_ERROR,
@@ -771,6 +777,10 @@ class HostHandler(Host.Iface):
             self._logger.warn("Invalid reservation: %s", request.reservation)
             return RegisterVmResponse(RegisterVmResultCode.INVALID_RESERVATION,
                                       str(e))
+        finally:
+            if request.reservation:
+                self.hypervisor.placement_manager.remove_vm_reservation(
+                    request.reservation)
         return RegisterVmResponse(RegisterVmResultCode.OK)
 
     @log_request
@@ -932,6 +942,7 @@ class HostHandler(Host.Iface):
                 continue
 
         response.result = CreateDisksResultCode.OK
+        pm.remove_disk_reservation(request.reservation)
         return response
 
     @log_duration
