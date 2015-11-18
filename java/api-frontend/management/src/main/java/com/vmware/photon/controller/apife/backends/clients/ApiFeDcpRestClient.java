@@ -19,6 +19,7 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.ServiceDocumentPage;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
@@ -134,6 +136,33 @@ public class ApiFeDcpRestClient extends DcpRestClient {
       throw new DcpRuntimeException(badRequestException);
     } catch (TimeoutException | InterruptedException exception) {
       throw new RuntimeException(exception);
+    }
+  }
+
+  @Override
+  public <T extends ServiceDocument> ServiceDocumentPage<T> queryDocuments(Class<T> documentType,
+                                                                           ImmutableMap<String, String> terms,
+                                                                           Optional<Integer> pageSize,
+                                                                           boolean expandContent) {
+    try {
+      return super.queryDocuments(documentType, terms, pageSize, expandContent);
+    } catch (DocumentNotFoundException | BadRequestException e) {
+      throw  new DcpRuntimeException(e);
+    } catch (TimeoutException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public <T extends ServiceDocument> ServiceDocumentPage<T> queryDocumentPage(Class<T> documentType,
+                                                                              String pageLink) {
+
+    try {
+      return super.queryDocumentPage(documentType, pageLink);
+    } catch (DocumentNotFoundException | BadRequestException e) {
+      throw  new DcpRuntimeException(e);
+    } catch (TimeoutException | InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
 

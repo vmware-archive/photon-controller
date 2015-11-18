@@ -16,9 +16,11 @@ package com.vmware.photon.controller.common.dcp;
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.OperationJoin;
 import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.common.http.netty.NettyHttpServiceClient;
+import com.vmware.dcp.services.common.ExampleService;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
@@ -31,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.InetSocketAddress;
@@ -40,7 +43,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -113,6 +118,20 @@ public class DcpRestClient implements DcpClient {
   }
 
   @Override
+  public Operation getAndWait(URI documentServiceUri)
+    throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+
+    Operation getOperation = Operation
+        .createGet(documentServiceUri)
+        .setUri(documentServiceUri)
+        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
+        .setExpiration(Utils.getNowMicrosUtc() + getGetOperationExpirationMicros())
+        .setReferer(this.localHostAddress);
+
+    return sendAndWait(getOperation);
+  }
+
+  @Override
   public Operation getAndWait(String documentSelfLink)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
     URI serviceUri = createUriUsingRandomAddress(documentSelfLink);
@@ -168,6 +187,7 @@ public class DcpRestClient implements DcpClient {
   @Override
   public Operation queryAndWait(QueryTask.QuerySpecification spec)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+
     URI serviceUri = UriUtils.buildBroadcastRequestUri(
         createUriUsingRandomAddress(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
         ServiceUriPaths.DEFAULT_NODE_SELECTOR);
@@ -181,6 +201,28 @@ public class DcpRestClient implements DcpClient {
         .setExpiration(Utils.getNowMicrosUtc() + getQueryOperationExpirationMicros())
         .setBody(query)
         .setReferer(this.localHostAddress);
+
+    return sendAndWait(queryOperation);
+  }
+
+  @Override
+  public Operation queryAndWait(QueryTask.QuerySpecification spec, boolean isDirect)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+
+    URI queryFactoryUri = createUriUsingRandomAddress(ServiceUriPaths.CORE_QUERY_TASKS);
+
+    QueryTask query = QueryTask.create(spec);
+    query.setDirect(isDirect);
+    query.documentSelfLink = UUID.randomUUID().toString();
+
+    Operation queryOperation = Operation
+        .createPost(queryFactoryUri)
+        .setUri(queryFactoryUri)
+        .setExpiration(Utils.getNowMicrosUtc() + getQueryOperationExpirationMicros())
+        .setBody(query)
+        .setReferer(this.localHostAddress);
+
+    URI queryServiceUri = UriUtils.extendUri(queryFactoryUri, query.documentSelfLink);
 
     return sendAndWait(queryOperation);
   }
@@ -224,6 +266,79 @@ public class DcpRestClient implements DcpClient {
     Operation result = queryAndWait(spec);
 
     return QueryTaskUtils.getQueryResultDocuments(documentType, result);
+  }
+
+  /**
+   * Executes a DCP query which queries for documents of type T.
+   * The query terms are optional.
+   * The pageSize is also optional. If it is not provided, the complete document will be retrieved.
+   *
+   * @param documentType
+   * @param terms
+   * @param pageSize
+   * @param <T>
+   * @return
+   * @throws BadRequestException
+   * @throws DocumentNotFoundException
+   * @throws TimeoutException
+   * @throws InterruptedException
+   */
+  @Override
+  public <T extends ServiceDocument> ServiceDocumentPage<T> queryDocuments(Class<T> documentType,
+                                                                           ImmutableMap<String, String> terms,
+                                                                           Optional<Integer> pageSize,
+                                                                           boolean expandContent)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+
+    checkNotNull(documentType, "Cannot query documents with null documentType");
+    if (pageSize.isPresent()) {
+      checkArgument(pageSize.get() >= 1, "Cannot query documents with a page size less than 1");
+    }
+
+    QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(documentType, terms);
+    spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.BROADCAST);
+    if (expandContent) {
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+    }
+    if (pageSize.isPresent()) {
+      spec.resultLimit = pageSize.get();
+    }
+
+    // Indirect call. DCP will not return the results. Instead the service URI
+    // established will be obtained here, and it will be used to get the results
+    // after the query is in FINISHED stage.
+    Operation result = queryAndWait(spec, false);
+    URI queryServiceUri = QueryTaskUtils.getServiceDocumentUri(result);
+
+    // Wait for the query task to finish and then retrieve the documents
+    result = waitForTaskToFinish(queryServiceUri);
+    return QueryTaskUtils.getQueryResults(ExampleService.ExampleServiceState.class, result);
+  }
+
+  /**
+   * Query a document page using the given page link.
+   *
+   * @param documentType
+   * @param pageLink
+   * @param <T>
+   * @return
+   * @throws BadRequestException
+   * @throws DocumentNotFoundException
+   * @throws TimeoutException
+   * @throws InterruptedException
+   */
+  @Override
+  public <T extends ServiceDocument> ServiceDocumentPage<T> queryDocumentPage(Class<T> documentType,
+                                                                              String pageLink)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+
+    checkNotNull(documentType, "Cannot query documents with null documentType");
+    checkNotNull(pageLink, "Cannot query documents with null pageLink");
+    checkArgument(!pageLink.isEmpty(), "Cannot query documents with empty pageLink");
+
+    Operation result = getAndWait(pageLink);
+
+    return QueryTaskUtils.getQueryResults(documentType, result);
   }
 
   /**
@@ -271,6 +386,7 @@ public class DcpRestClient implements DcpClient {
 
     switch (operationResult.completedOperation.getStatusCode()) {
       case Operation.STATUS_CODE_OK:
+      case Operation.STATUS_CODE_ACCEPTED:
         return operationResult.completedOperation;
       case Operation.STATUS_CODE_NOT_FOUND:
         throw new DocumentNotFoundException(operation, operationResult);
@@ -537,5 +653,26 @@ public class DcpRestClient implements DcpClient {
         operation.getUri(),
         operation.getReferer(),
         Utils.toJson(operation.getBodyRaw()));
+  }
+
+  private Operation waitForTaskToFinish(URI serviceUri)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+
+    Operation result = null;
+    do {
+      result = getAndWait(serviceUri);
+      TaskState.TaskStage taskStage = QueryTaskUtils.getServiceState(result);
+      if (taskStage == TaskState.TaskStage.FINISHED
+          || taskStage == TaskState.TaskStage.FAILED
+          || taskStage == TaskState.TaskStage.CANCELLED) {
+
+        return result;
+      }
+
+      Thread.sleep(100);
+    } while (Utils.getNowMicrosUtc() <= result.getExpirationMicrosUtc());
+
+    throw new TimeoutException(String.format("Timeout:{%s}, TimeUnit:{%s}", result.getExpirationMicrosUtc(),
+        TimeUnit.MICROSECONDS));
   }
 }

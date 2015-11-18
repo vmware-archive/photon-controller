@@ -16,7 +16,9 @@ package com.vmware.photon.controller.common.dcp;
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.dcp.common.ServiceDocumentQueryResult;
 import com.vmware.dcp.common.TaskState;
+import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
@@ -32,6 +34,7 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -164,6 +167,40 @@ public class QueryTaskUtils {
   }
 
   /**
+   * Get the documents returned by a regular Lucene query task.
+   *
+   * @param documentType
+   * @param queryResult
+   * @param <T>
+   * @return
+   */
+  public static <T extends ServiceDocument> ServiceDocumentPage getQueryResults(Class<T> documentType,
+                                                                                Operation queryResult) {
+
+    ServiceDocumentQueryResult result = queryResult.getBody(QueryTask.class).results;
+
+    ServiceDocumentPage<T> page = new ServiceDocumentPage<>();
+    Map<String, T> documents = new HashMap<>();
+
+    if (result.documents != null) {
+      result.documents.forEach((k, v) -> {
+        documents.put(k, Utils.fromJson(v, documentType));
+      });
+
+      page.setDocuments(documents);
+    }
+
+    if (result.documentLinks != null) {
+      page.setDocumentLinks(result.documentLinks);
+    }
+
+    page.setNextPageLink(result.nextPageLink);
+    page.setPrevPageLink(result.prevPageLink);
+
+    return page;
+  }
+
+  /**
    * Get the documents from a broadcast response.
    *
    * @param response
@@ -213,6 +250,34 @@ public class QueryTaskUtils {
     }
 
     return documentLinks;
+  }
+
+  /**
+   * Get the URI of the service document from the query response.
+   *
+   * This is to be used for "indirect" DCP calls. A call is returned as
+   * being accepted, and subsequent calls need to be issued to check
+   * if the service is finished.
+   *
+   * @param queryResult
+   * @return
+   */
+  public static <T extends ServiceDocument> URI getServiceDocumentUri(Operation queryResult) {
+    URI uri = queryResult.getUri();
+    QueryTask task = queryResult.getBody(QueryTask.class);
+
+    return UriUtils.buildUri(uri.getScheme(), uri.getHost(), uri.getPort(), task.documentSelfLink, null);
+  }
+
+  /**
+   * Extract the status of the task from the query result.
+   *
+   * @param queryResult
+   * @return
+   */
+  public static TaskState.TaskStage getServiceState(Operation queryResult) {
+    QueryTask task = queryResult.getBody(QueryTask.class);
+    return task.taskInfo.stage;
   }
 
   /**
