@@ -142,6 +142,12 @@ class PlacementManager(object):
     def consume_vm_reservation(self, reservation_id):
         return self._consume(self._reserved_vms, reservation_id)
 
+    def remove_disk_reservation(self, reservation_id):
+        return self._remove(self._reserved_disks, reservation_id)
+
+    def remove_vm_reservation(self, reservation_id):
+        return self._remove(self._reserved_vms, reservation_id)
+
     @property
     def memory_overcommit(self):
         return self._option.memory_overcommit
@@ -595,5 +601,9 @@ class PlacementManager(object):
         if reservation_id not in resources:
             raise InvalidReservationException()
         resource = resources[reservation_id]
-        del resources[reservation_id]
         return resource
+
+    @staticmethod
+    def _remove(resources, reservation_id):
+        if reservation_id in resources:
+            del resources[reservation_id]

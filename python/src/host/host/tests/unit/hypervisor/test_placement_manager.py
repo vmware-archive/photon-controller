@@ -176,8 +176,8 @@ class TestPlacementManager(unittest.TestCase):
                                  len(reservations)))
 
         for rid in reservations:
-            manager.consume_disk_reservation(rid)
-            manager.consume_vm_reservation(rid)
+            manager.remove_disk_reservation(rid)
+            manager.remove_vm_reservation(rid)
 
         assert_that(manager._storage_reserved(), equal_to(0))
         assert_that(manager._memory_reserved(), equal_to(0))
@@ -187,14 +187,14 @@ class TestPlacementManager(unittest.TestCase):
         assert_that(manager._storage_reserved(), equal_to(0))
         assert_that(manager._memory_reserved(),
                     equal_to(manager._vm_memory_mb(vm)))
-        manager.consume_vm_reservation(rid)
+        manager.remove_vm_reservation(rid)
 
         rid = manager.reserve(None, [disk])
         assert_that(manager._storage_reserved(),
                     equal_to(disk.capacity_gb))
         assert_that(manager._memory_reserved(),
                     equal_to(0))
-        manager.consume_disk_reservation(rid)
+        manager.remove_disk_reservation(rid)
 
     def test_place_vm_no_disks(self):
         manager = PMBuilder().build()
