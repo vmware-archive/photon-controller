@@ -130,6 +130,10 @@ class VmWrapper(object):
     def flavor(self):
         return self._vm.flavor
 
+    @property
+    def vm(self):
+        return self._vm
+
     def set_flavor(self, flavor):
         self._vm.flavor = flavor
 
@@ -141,7 +145,9 @@ class VmWrapper(object):
         return Vm(id=new_id(),
                   flavor="default",
                   flavor_info=Flavor(name="default", cost=cost),
-                  state=State.STOPPED)
+                  state=State.STOPPED,
+                  tenant_id="t1",
+                  project_id="p1")
 
     @staticmethod
     def create_request(res_id, env=None, network=None):
