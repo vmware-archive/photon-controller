@@ -20,13 +20,13 @@ import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.DatastoreNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidRefCountException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
@@ -371,18 +371,20 @@ public class ImageDeleteService extends StatefulService {
    * @param current
    */
   private void sendPatchToDecrementImageReplicatedCount(final State current) {
-    CloudStoreHelper cloudStoreHelper = ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper();
     ImageService.DatastoreCountRequest requestBody = constructDatastoreCountRequest(-1);
-    cloudStoreHelper.patchEntity(ImageDeleteService.this,
-        com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK + "/" + current.image,
-        requestBody,
-        (op, t) -> {
-          if (t != null) {
-            ServiceUtils.logWarning(this, "Could not decrement replicatedDatastore for image %s by %s: %s",
-                current.image, requestBody.amount, t);
-          }
-          sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
-        });
+    sendRequest(
+        ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
+            .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
+            .setBody(requestBody)
+            .setCompletion(
+                (op, t) -> {
+                  if (t != null) {
+                    ServiceUtils.logWarning(this, "Could not decrement replicatedDatastore for image %s by %s: %s",
+                        current.image, requestBody.amount, t);
+                  }
+                  sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
+                }
+            ));
   }
 
   private ImageService.DatastoreCountRequest constructDatastoreCountRequest(int adjustCount) {

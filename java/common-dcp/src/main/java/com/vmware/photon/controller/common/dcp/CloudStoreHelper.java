@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.common.dcp;
 
 import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
@@ -88,35 +87,4 @@ public class CloudStoreHelper {
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setReferer(this.localHostAddress);
   }
-
-  public void patchEntity(Service service, String documentLink, Object body, Operation.CompletionHandler
-      completionHandler) {
-    URI uri = getCloudStoreURI(null);
-    patchEntity(uri, service, documentLink, body, completionHandler);
-  }
-
-  public void patchEntity(URI uri, Service service, String documentLink, Object body, Operation
-      .CompletionHandler
-      completionHandler) {
-    Operation patchOperation = Operation
-        .createPatch(UriUtils.buildUri(uri, documentLink))
-        .setReferer(this.localHostAddress)
-        .setBody(body)
-        .setCompletion(completionHandler)
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING);
-    service.sendRequest(patchOperation);
-  }
-
-  public void postEntity(Service service, String documentLink, Object body,
-                         Operation.CompletionHandler completionHandler) {
-
-    URI uri = getCloudStoreURI(null);
-    Operation postOperation = Operation
-        .createPost(UriUtils.buildUri(uri, documentLink))
-        .setReferer(this.localHostAddress)
-        .setBody(body)
-        .setCompletion(completionHandler);
-    service.sendRequest(postOperation);
-  }
-
 }
