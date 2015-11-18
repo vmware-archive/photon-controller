@@ -53,6 +53,13 @@ start() {
 
   export PYTHONPATH=$PHOTON_CONTROLLER_ROOT/$PYVER/site-packages
 
+  # Remove empty folders in python path to guarantee a clean environment
+  for f in `ls $PHOTON_CONTROLLER_ROOT/$PYVER/site-packages`; do
+    if [ `ls $f | wc -l` -eq 0 ]; then
+      rmdir $f
+    fi
+  done
+
   # Workaround for ESXi 6.0.0 build-3029758, in which python fails to load
   # setuptools by .pth. Add it directly to PYTHONPATH.
   PYTHONPATH=/lib/python$PYVER/site-packages/setuptools-0.6c11-py$PYVER.egg:$PYTHONPATH
