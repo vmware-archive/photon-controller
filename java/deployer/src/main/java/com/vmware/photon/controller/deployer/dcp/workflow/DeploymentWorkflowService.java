@@ -26,7 +26,6 @@ import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -66,7 +65,6 @@ import static com.google.common.base.Preconditions.checkState;
 import javax.annotation.Nullable;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1018,32 +1016,28 @@ public class DeploymentWorkflowService extends StatefulService {
     }
   }
 
-  private void updateDeploymentServiceState(Set<InetSocketAddress> remoteCloudStoreServers, State currentState){
-    URI uri = null;
-    try {
-      uri = ServiceUtils.createUriFromServerSet(remoteCloudStoreServers, null);
-    } catch (URISyntaxException e) {
-      failTask(e);
-      return;
-    }
+  private void updateDeploymentServiceState(Set<InetSocketAddress> remoteCloudStoreServers, State currentState) {
 
     DeploymentService.State deploymentServiceState = new DeploymentService.State();
     deploymentServiceState.state = DeploymentState.READY;
 
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
-    cloudStoreHelper.patchEntity(uri, DeploymentWorkflowService.this, currentState
-        .deploymentServiceLink, deploymentServiceState, new Operation.CompletionHandler() {
-
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (throwable != null) {
-          failTask(throwable);
-          return;
-        }
-        TaskUtils.sendSelfPatch(DeploymentWorkflowService.this,
-            buildPatch(TaskState.TaskStage.FINISHED, null, null));
-      }
-    });
+    try {
+      sendRequest(Operation
+          .createPatch(ServiceUtils.createUriFromServerSet(remoteCloudStoreServers,
+              currentState.deploymentServiceLink))
+          .setBody(deploymentServiceState)
+          .setCompletion(
+              (completedOp, failure) -> {
+                if (null != failure) {
+                  failTask(failure);
+                } else {
+                  TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+                }
+              }
+          ));
+    } catch (URISyntaxException e) {
+      failTask(e);
+    }
   }
 
   /**
