@@ -82,7 +82,7 @@ class Vm(BaseResource):
     def __init__(self, vm_id=None, flavor=None,
                  state=None, datastore=None, environment=None,
                  disks=[], datastore_name=None,
-                 resource_constraints=[]):
+                 resource_constraints=[], tenant_id=None, project_id=None):
         """
         Create a new VM.
         :param vm_id:
@@ -92,6 +92,9 @@ class Vm(BaseResource):
         :param datastore_name: str, name of datastore where vm is created
         :param environment:
         :param disks:
+        :param resource_constraints:
+        :param tenant_id: str, tenant id of the vm
+        :param project_id: str, project id of the vm
         :return:
         """
         self.id = vm_id
@@ -104,6 +107,8 @@ class Vm(BaseResource):
         self.resource_constraints = resource_constraints
         self.placement = None
         self.networks = []
+        self.tenant_id = tenant_id
+        self.project_id = project_id
 
     @staticmethod
     def from_thrift(thrift_object):
@@ -112,6 +117,8 @@ class Vm(BaseResource):
             flavor=Flavor.from_thrift(thrift_object.flavor_info),
             state=State(thrift_object.state),
             environment=thrift_object.environment,
+            tenant_id=thrift_object.tenant_id,
+            project_id=thrift_object.project_id,
         )
         if thrift_object.disks:
             instance.disks = [Disk.from_thrift(d)
@@ -138,7 +145,8 @@ class Vm(BaseResource):
         thrift_vm = ThriftVm(
             self.id, self.flavor.name,
             thrift_state, None, self.environment,
-            disks, self.flavor.to_thrift(), resource_constraints
+            disks, self.flavor.to_thrift(), resource_constraints,
+            self.tenant_id, self.project_id,
         )
 
         if self.datastore:
