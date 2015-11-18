@@ -28,6 +28,8 @@ import java.util.Map;
  * Interface for resolving scheduler resource constraints.
  */
 public interface ConstraintChecker {
+  int DEFAULT_AGENT_PORT = 8835;
+
   /**
    * Returns all the hosts with the given datastore.
    *
