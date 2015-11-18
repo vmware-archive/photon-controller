@@ -18,6 +18,7 @@ import com.vmware.dcp.common.ServiceHost;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
+import com.vmware.photon.controller.model.resources.DiskFactoryService;
 
 import java.util.logging.LogManager;
 
@@ -28,6 +29,7 @@ public class TestHost extends BasicServiceHost {
 
   public static final Class[] FACTORY_SERVICES = {
       ComputeDescriptionFactoryService.class,
+      DiskFactoryService.class,
   };
 
   public TestHost() throws Throwable {
