@@ -17,6 +17,7 @@ import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.TaskState;
+import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
@@ -213,6 +214,34 @@ public class QueryTaskUtils {
     }
 
     return documentLinks;
+  }
+
+  /**
+   * Get the URI of the service document from the query response.
+   *
+   * This is to be used for "indirect" DCP calls. A call is returned as
+   * being accepted, and subsequent calls need to be issued to check
+   * if the service is finished.
+   *
+   * @param queryResult
+   * @return
+   */
+  public static <T extends ServiceDocument> URI getServiceDocumentUri(Operation queryResult) {
+    URI uri = queryResult.getUri();
+    QueryTask task = queryResult.getBody(QueryTask.class);
+
+    return UriUtils.buildUri(uri.getScheme(), uri.getHost(), uri.getPort(), task.documentSelfLink, null);
+  }
+
+  /**
+   * Extract the status of the task from the query result.
+   *
+   * @param queryResult
+   * @return
+   */
+  public static TaskState.TaskStage getServiceState(Operation queryResult) {
+    QueryTask task = queryResult.getBody(QueryTask.class);
+    return task.taskInfo.stage;
   }
 
   /**
