@@ -15,13 +15,16 @@ package com.vmware.photon.controller.common.dcp;
 
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.dcp.common.ServiceDocumentQueryResult;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -38,6 +41,9 @@ public interface DcpClient {
   Operation get(String documentSelfLink)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
+  Operation get(URI documentServiceUri)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
+
   Operation postToBroadcastQueryService(QueryTask.QuerySpecification spec)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
@@ -47,8 +53,20 @@ public interface DcpClient {
   Operation patch(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
+  Operation query(QueryTask.QuerySpecification spec, boolean isDirect)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
+
   <T extends ServiceDocument> List<T> queryDocuments(Class<T> documentType,
                                                      ImmutableMap<String, String> terms)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
+
+  <T extends ServiceDocument> ServiceDocumentQueryResult queryDocuments(Class<T> documentType,
+                                                                        ImmutableMap<String, String> terms,
+                                                                        Optional<Integer> pageSize,
+                                                                        boolean expandContent)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
+
+  ServiceDocumentQueryResult queryDocumentPage(String pageLink)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
   <T extends ServiceDocument> List<String> queryDocumentsForLinks(Class<T> documentType,

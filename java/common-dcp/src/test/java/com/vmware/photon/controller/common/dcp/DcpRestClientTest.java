@@ -15,6 +15,7 @@ package com.vmware.photon.controller.common.dcp;
 
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.dcp.common.ServiceDocumentQueryResult;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.ExampleFactoryService;
 import com.vmware.dcp.services.common.ExampleService;
@@ -24,6 +25,8 @@ import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundExcept
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import org.apache.commons.collections.CollectionUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -37,6 +40,9 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.fail;
 
 import java.net.InetSocketAddress;
 import java.net.ProtocolException;
@@ -44,12 +50,16 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * Tests {@link DcpRestClient}.
@@ -459,7 +469,6 @@ public class DcpRestClientTest {
    */
   public class QueryDocumentsTest {
     private BasicServiceHost host;
-    private DcpRestClient dcpRestClient;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -589,6 +598,69 @@ public class DcpRestClientTest {
       Collection<String> documentLinks = dcpRestClient.queryDocumentsForLinks(
           ExampleService.ExampleServiceState.class, null);
       assertThat(documentLinks.size(), is(0));
+    }
+
+    @Test
+    public void testBroadcastQueryOfCreatedDocuments() throws Throwable {
+      final int numDocuments = 100;
+      final int pageSize = 30;
+
+      Map<String, ExampleService.ExampleServiceState> exampleServiceStateMap = new HashMap<>();
+      for (int i = 0; i < numDocuments; i++) {
+        ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
+        exampleServiceState.name = UUID.randomUUID().toString();
+        String documentSelfLink = createDocument(exampleServiceState);
+
+        exampleServiceStateMap.put(documentSelfLink, exampleServiceState);
+      }
+
+      checkBroadcastQueryParams();
+
+      checkDocumentsRetrievedInAll(numDocuments, null, true, exampleServiceStateMap.values());
+      checkDocumentsRetrievedPageByPage(numDocuments, pageSize, null, true, exampleServiceStateMap.values());
+
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      checkDocumentsRetrievedInAll(numDocuments, termsBuilder.build(), true, exampleServiceStateMap.values());
+      checkDocumentsRetrievedPageByPage(numDocuments, pageSize, termsBuilder.build(), true,
+          exampleServiceStateMap.values());
+
+      for (Map.Entry<String, ExampleService.ExampleServiceState> entry : exampleServiceStateMap.entrySet()) {
+        termsBuilder = new ImmutableMap.Builder<>();
+        termsBuilder.put("name", entry.getValue().name);
+
+        checkDocumentsRetrievedInAll(1, termsBuilder.build(), true, ImmutableSet.of(entry.getValue()));
+        checkDocumentsRetrievedPageByPage(1, pageSize, termsBuilder.build(), true, ImmutableSet.of(entry.getValue()));
+      }
+    }
+
+    private void checkBroadcastQueryParams() throws Throwable {
+      try {
+        dcpRestClient.queryDocuments(null, null, null, true);
+        fail("Should have failed due to null DocumentType");
+      } catch (NullPointerException e) {
+        assertThat(e.getMessage(), is("Cannot query documents with null documentType"));
+      }
+
+      try {
+        dcpRestClient.queryDocuments(ExampleService.ExampleServiceState.class, null, Optional.of(0), true);
+        fail("Should have failed due to illegal document page size");
+      } catch (IllegalArgumentException e) {
+        assertThat(e.getMessage(), is("Cannot query documents with a page size less than 1"));
+      }
+
+      try {
+        dcpRestClient.queryDocumentPage(null);
+        fail("Should have failed due to null page link");
+      } catch (NullPointerException e) {
+        assertThat(e.getMessage(), is("Cannot query documents with null pageLink"));
+      }
+
+      try {
+        dcpRestClient.queryDocumentPage("");
+        fail("Should have failed due to empty page link");
+      } catch (IllegalArgumentException e) {
+        assertThat(e.getMessage(), is("Cannot query documents with empty pageLink"));
+      }
     }
 
     private void setUpHostAndClient() throws Throwable {
@@ -799,5 +871,91 @@ public class DcpRestClientTest {
       assertThat(queryResult, is(notNullValue()));
       assertThat(queryResult.results, is(nullValue()));
     }
+
+    @Test
+    public void testBroadcastQueryOfCreatedDocuments() throws Throwable {
+      final int numDocuments = 100;
+      final int pageSize = 30;
+
+      Map<String, ExampleService.ExampleServiceState> exampleServiceStateMap = new HashMap<>();
+      for (int i = 0; i < numDocuments; i++) {
+        ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
+        exampleServiceState.name = UUID.randomUUID().toString();
+        String documentSelfLink = createDocument(exampleServiceState);
+
+        exampleServiceStateMap.put(documentSelfLink, exampleServiceState);
+      }
+
+      checkDocumentsRetrievedInAll(numDocuments, null, true, exampleServiceStateMap.values());
+      checkDocumentsRetrievedPageByPage(numDocuments, pageSize, null, true, exampleServiceStateMap.values());
+
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      checkDocumentsRetrievedInAll(numDocuments, termsBuilder.build(), true, exampleServiceStateMap.values());
+      checkDocumentsRetrievedPageByPage(numDocuments, pageSize, termsBuilder.build(), true,
+          exampleServiceStateMap.values());
+
+      for (Map.Entry<String, ExampleService.ExampleServiceState> entry : exampleServiceStateMap.entrySet()) {
+        termsBuilder = new ImmutableMap.Builder<>();
+        termsBuilder.put("name", entry.getValue().name);
+
+        checkDocumentsRetrievedInAll(1, termsBuilder.build(), true, ImmutableSet.of(entry.getValue()));
+        checkDocumentsRetrievedPageByPage(1, pageSize, termsBuilder.build(), true, ImmutableSet.of(entry.getValue()));
+      }
+    }
+  }
+
+  private void checkDocumentsRetrievedInAll(int numDocuments,
+                                            ImmutableMap<String, String> queryTerms,
+                                            boolean expandContent,
+                                            Collection<ExampleService.ExampleServiceState> expectedDocuments)
+      throws Throwable {
+
+    ServiceDocumentQueryResult queryResult = dcpRestClient.queryDocuments
+        (ExampleService.ExampleServiceState.class, queryTerms, Optional.<Integer>empty(), expandContent);
+
+    Set<String> expectedDocumentNames = expectedDocuments.stream()
+        .map(d -> d.name)
+        .collect(Collectors.toSet());
+    Set<String> actualDocumentNames = queryResult.documents.values().stream()
+        .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
+        .collect(Collectors.toSet());
+
+    assertThat(queryResult.documentLinks.size(), is(numDocuments));
+    assertThat(queryResult.documents.size(), is(numDocuments));
+    assertThat(CollectionUtils.isEqualCollection(expectedDocumentNames, actualDocumentNames), is(true));
+    assertNull(queryResult.nextPageLink);
+    assertNull(queryResult.prevPageLink);
+  }
+
+  private void checkDocumentsRetrievedPageByPage(int numDocuments,
+                                                 int pageSize,
+                                                 ImmutableMap<String, String> queryTerms,
+                                                 boolean expandContent,
+                                                 Collection<ExampleService.ExampleServiceState> expectedDocuments)
+      throws Throwable {
+
+    ServiceDocumentQueryResult queryResult = dcpRestClient.queryDocuments
+        (ExampleService.ExampleServiceState.class, queryTerms, Optional.of(pageSize), expandContent);
+
+    assertNull(queryResult.documents);
+    assertNotNull(queryResult.nextPageLink);
+    assertNull(queryResult.prevPageLink);
+
+    Set<String> expectedDocumentNames = expectedDocuments.stream()
+        .map(d -> d.name)
+        .collect(Collectors.toSet());
+
+    Set<String> actualDocumentNames = new HashSet<>();
+    while (queryResult.nextPageLink != null) {
+      queryResult = dcpRestClient.queryDocumentPage(queryResult.nextPageLink);
+
+      actualDocumentNames.addAll(queryResult.documents.values().stream()
+          .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
+          .collect(Collectors.toSet())
+      );
+    }
+
+    assertThat(actualDocumentNames.size(), is(numDocuments));
+    assertThat(CollectionUtils.isEqualCollection(expectedDocumentNames, actualDocumentNames), is(true));
   }
 }
