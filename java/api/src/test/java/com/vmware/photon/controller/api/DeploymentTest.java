@@ -131,7 +131,7 @@ public class DeploymentTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "Deployment{id=id, Kind=deployment, imageDatastores=[image-datastore], syslogEndpoint=0.0.0.1, " +
+          "Deployment{id=id, Kind=deployment, imageDatastores=image-datastore, syslogEndpoint=0.0.0.1, " +
               "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, " +
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443," +
               " tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, loadBalancerEnabled=true," +
