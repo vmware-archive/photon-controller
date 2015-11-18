@@ -91,28 +91,18 @@ import com.vmware.photon.controller.common.zookeeper.ServiceNodeUtils;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.swagger.resources.SwaggerJsonListing;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import com.hubspot.dropwizard.guice.GuiceBundle;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.configuration.ConfigurationException;
-import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.hibernate.HibernateBundle;
-import io.dropwizard.hibernate.SessionFactoryFactory;
 import io.dropwizard.jetty.HttpConnectorFactory;
-import io.dropwizard.migrations.MigrationsBundle;
 import io.dropwizard.server.DefaultServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.hibernate.EmptyInterceptor;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.cfg.ImprovedNamingStrategy;
-import org.hibernate.type.Type;
-import org.reflections.Reflections;
 
-import javax.persistence.Entity;
 import javax.servlet.DispatcherType;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorFactory;
@@ -120,12 +110,10 @@ import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -162,13 +150,6 @@ public class ApiFeService extends Application<ApiFeConfiguration> {
 
   @Override
   public void initialize(Bootstrap<ApiFeConfiguration> bootstrap) {
-    bootstrap.addBundle(new MigrationsBundle<ApiFeConfiguration>() {
-      @Override
-      public DataSourceFactory getDataSourceFactory(ApiFeConfiguration configuration) {
-        return configuration.getDataSourceFactory();
-      }
-    });
-
     bootstrap.addBundle(new AssetsBundle("/assets", "/api/", "index.html"));
 
     apiModule = new ApiFeModule();
@@ -322,34 +303,5 @@ public class ApiFeService extends Application<ApiFeConfiguration> {
         .addModule(zookeeperModule)
         .enableAutoConfig(getClass().getPackage().getName())
         .build();
-  }
-
-  private HibernateBundle<ApiFeConfiguration> getHibernateBundle() {
-    Reflections reflections = new Reflections(getClass().getPackage().getName());
-    Set<Class<?>> entities = reflections.getTypesAnnotatedWith(Entity.class);
-    ImmutableList<Class<?>> immutableEntitiesList = ImmutableList.copyOf(entities);
-
-    Reflections commonReflections = new Reflections("com.vmware.esxcloud.api.common");
-    entities.addAll(commonReflections.getTypesAnnotatedWith(Entity.class));
-
-    return new HibernateBundle<ApiFeConfiguration>(immutableEntitiesList, new SessionFactoryFactory()) {
-      @Override
-      public DataSourceFactory getDataSourceFactory(ApiFeConfiguration configuration) {
-        return configuration.getDataSourceFactory();
-      }
-
-      @Override
-      public void configure(Configuration configuration) {
-        configuration.setNamingStrategy(ImprovedNamingStrategy.INSTANCE);
-        configuration.setInterceptor(new EmptyInterceptor() {
-          @Override
-          public boolean onLoad(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
-            injector.injectMembers(entity);
-            return true;
-          }
-        });
-      }
-    };
-
   }
 }
