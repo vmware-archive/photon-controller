@@ -74,6 +74,13 @@ public class CloudStoreHelper {
     return Operation.createPost(getCloudStoreURI(path));
   }
 
+  public Operation createBroadcastPost(String path, String selectorPath) {
+    return Operation
+        .createPost(UriUtils.buildBroadcastRequestUri(getCloudStoreURI(path), selectorPath))
+        .setReferer(this.localHostAddress);
+  }
+
+
   public Operation createPatch(String path) {
     return Operation
         .createPatch(getCloudStoreURI(path))
