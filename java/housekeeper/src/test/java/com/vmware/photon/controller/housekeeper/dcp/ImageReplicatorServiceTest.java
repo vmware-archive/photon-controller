@@ -22,6 +22,8 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -1099,6 +1101,7 @@ public class ImageReplicatorServiceTest {
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       newImageReplicator.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+      createImageReplicationService(newImageReplicator.image);
       //Call Service.
       ImageReplicatorService.State response = machine.callServiceAndWaitForState(ImageReplicatorServiceFactory
               .SELF_LINK, newImageReplicator,
@@ -1329,6 +1332,33 @@ public class ImageReplicatorServiceTest {
           });
       Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
       return result.getBody(ImageService.State.class);
+    }
+
+    private ImageReplicationService.State createImageReplicationService(String imageId) throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
+
+      machine.startFactoryServiceSynchronously(
+          ImageReplicationServiceFactory.class,
+          com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory.SELF_LINK);
+
+      ImageReplicationService.State state
+          = new com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService.State();
+      state.imageId = imageId;
+      state.imageDatastoreId = "image-datastore-1";
+
+      Operation op = cloudStoreHelper
+          .createPost(com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a image in cloud store.");
+            }
+          });
+      Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      return result.getBody(ImageReplicationService.State.class);
     }
   }
 }
