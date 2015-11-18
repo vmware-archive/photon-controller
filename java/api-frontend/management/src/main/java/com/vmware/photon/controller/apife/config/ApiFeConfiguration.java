@@ -19,7 +19,6 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
-import io.dropwizard.db.DataSourceFactory;
 import org.hibernate.validator.constraints.Range;
 
 import javax.validation.Valid;
@@ -48,11 +47,6 @@ public class ApiFeConfiguration extends Configuration {
 
   @Valid
   @NotNull
-  @JsonProperty("database")
-  private DataSourceFactory dataSourceFactory = new DataSourceFactory();
-
-  @Valid
-  @NotNull
   @JsonProperty("root_scheduler")
   private RootSchedulerConfig rootScheduler = new RootSchedulerConfig();
 
@@ -78,10 +72,6 @@ public class ApiFeConfiguration extends Configuration {
 
   public AuthConfig getAuth() {
     return this.auth;
-  }
-
-  public DataSourceFactory getDataSourceFactory() {
-    return dataSourceFactory;
   }
 
   public RootSchedulerConfig getRootScheduler() {

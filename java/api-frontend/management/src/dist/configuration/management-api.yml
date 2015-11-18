@@ -8,29 +8,6 @@ server:
       bindHost: "{{{MANAGEMENT-API_BIND_ADDRESS}}}"
 
 registrationAddress: "{{{MANAGEMENT-API_REGISTRATION_ADDRESS}}}"
-database:
-  driverClass: org.postgresql.Driver
-  user: "{{{DB_USER}}}"
-  password: "{{{DB_PASSWORD}}}"
-  url: jdbc:postgresql://{{{DB_HOST}}}/{{{DB_NAME}}}
-  properties:
-    hibernate.hbm2ddl.auto: validate
-
-  # the maximum amount of time to wait on an empty pool before throwing an exception.
-  maxWaitForConnection: 10s
-
-  # the SQL query to run when validating a connection's liveness
-  validationQuery: "/* MyService Health Check */ SELECT 1"
-
-  # the minimum number of connections to keep open
-  minSize: 8
-
-  # the maximum number of connections to keep open
-  # 1000 in postgresql conf - 3 (supervisor connections)
-  maxSize: 997
-
-  # whether or not idle connections should be validated
-  checkConnectionWhileIdle: false
 
 # to add console logging add '- type: console' below
 logging:
