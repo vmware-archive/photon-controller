@@ -99,6 +99,9 @@ build_for_py_ver() {
      > $DEST_VIB_LAYOUT/$FIREWALL_CONF
 
    AGENT_VERSION=$(cat ../src/agent/VERSION)
+   if [ -n "$PROMOTE_NUMBER" ]; then
+     AGENT_VERSION="$AGENT_VERSION.$PROMOTE_NUMBER"
+   fi
    ../misc/fill_template $SRC_VIB_LAYOUT/descriptor.xml \
      ESX_VERSION $esx_version \
      AGENT_VERSION $AGENT_VERSION \
