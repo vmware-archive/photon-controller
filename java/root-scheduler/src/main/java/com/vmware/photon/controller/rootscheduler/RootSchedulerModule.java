@@ -14,6 +14,9 @@
 package com.vmware.photon.controller.rootscheduler;
 
 import com.vmware.photon.controller.chairman.gen.Chairman;
+import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.HostClientFactory;
+import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ClientPool;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
@@ -27,9 +30,14 @@ import com.vmware.photon.controller.common.thrift.StaticServerSetFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestIdInterceptor;
+import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
+import com.vmware.photon.controller.rootscheduler.service.InMemoryConstraintChecker;
+import com.vmware.photon.controller.rootscheduler.service.RootSchedulerService;
 import com.vmware.photon.controller.rootscheduler.service.SchedulerManager;
+import com.vmware.photon.controller.rootscheduler.service.SchedulerService;
 import com.vmware.photon.controller.rootscheduler.strategy.RandomStrategy;
 import com.vmware.photon.controller.rootscheduler.strategy.Strategy;
+import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -85,6 +93,21 @@ public class RootSchedulerModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(ServerSet.class, StaticServerSet.class)
         .build(StaticServerSetFactory.class));
+
+    install(new FactoryModuleBuilder()
+        .implement(HostClient.class, HostClient.class)
+        .build(HostClientFactory.class));
+
+    if (config.getMode().equals("flat")) {
+      bind(RootScheduler.Iface.class).to(SchedulerService.class);
+      if (config.getConstraintChecker().equals("memory")) {
+        bind(ConstraintChecker.class).to(InMemoryConstraintChecker.class);
+      } else {
+        // TODO(mmutsuzaki) bind to dcp constraint checker
+      }
+    } else {
+      bind(RootScheduler.Iface.class).to(RootSchedulerService.class);
+    }
   }
 
   @Provides
@@ -120,5 +143,14 @@ public class RootSchedulerModule extends AbstractModule {
       ClientProxyFactory<Chairman.AsyncClient> factory,
       ClientPool<Chairman.AsyncClient> clientPool) {
     return factory.create(clientPool);
+  }
+
+  @Provides
+  @Singleton
+  public DcpRestClient getDcpRestClient(ZookeeperServerSetFactory serverSetFactory) {
+    ServerSet serverSet = serverSetFactory.createServiceServerSet("cloudstore", true);
+    DcpRestClient client = new DcpRestClient(serverSet, Executors.newFixedThreadPool(4));
+    client.start();
+    return client;
   }
 }
