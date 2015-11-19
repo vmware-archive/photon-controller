@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.common.dcp.helpers.dcp;
 
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 
 /**
  * This class implements an test environment that runs multiple BasicServiceHosts.

@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.common.dcp.helpers.dcp;
+package com.vmware.photon.controller.common.tests;
 
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.ServiceDocument;

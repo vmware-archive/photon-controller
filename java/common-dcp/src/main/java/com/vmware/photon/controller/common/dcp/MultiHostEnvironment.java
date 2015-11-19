@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.common.dcp.helpers.dcp;
+package com.vmware.photon.controller.common.dcp;
 
 import com.vmware.dcp.common.FactoryService;
 import com.vmware.dcp.common.Operation;
@@ -23,16 +23,12 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
-import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
-import com.vmware.photon.controller.common.dcp.OperationLatch;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.testng.Assert.assertTrue;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -238,9 +234,9 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
       ServiceHost host = hosts[i];
       T r = ServiceHostUtils.waitForServiceState(
           type, serviceUri, test, host, waitIterationSleep, waitIterationCount, getEnvironmentCleanup());
-      assertTrue(r != null);
+      assert (r != null);
       logger.info("host " + host.getState().id + " has owner " + r.documentOwner);
-      if (result != null && !DcpTestHelper.equals(type, result, r)) {
+      if (result != null && !ServiceUtils.compareDocuments(type, result, r)) {
         logger.info(String.format("current %s last %s", Utils.toJson(r), Utils.toJson(result)));
         throw new IllegalStateException("response is not consistent across node group");
       }
@@ -281,7 +277,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
     for (int i = 0; i < hosts.length; i++) {
       ServiceHost host = hosts[i];
       result = ServiceHostUtils.waitForServiceState(type, serviceUri, test, host, getEnvironmentCleanup());
-      assertTrue(result != null);
+      assert (result != null);
       logger.info("host " + host.getState().id + " has owner " + result.documentOwner);
     }
 
@@ -310,6 +306,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
 
   /**
    * Generates a unique storage sandbox path.
+   *
    * @return
    */
   protected String generateStorageSandboxPath() {
@@ -360,7 +357,8 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
                                       return isReady;
                                     }
                                   },
-        getEnvironmentCleanup());
+        getEnvironmentCleanup()
+    );
   }
 
   /**

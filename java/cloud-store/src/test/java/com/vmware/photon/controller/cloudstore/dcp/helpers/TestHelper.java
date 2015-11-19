@@ -23,7 +23,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
-import com.vmware.photon.controller.common.dcp.helpers.dcp.MultiHostEnvironment;
+import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 
 import com.google.common.collect.ImmutableSet;
