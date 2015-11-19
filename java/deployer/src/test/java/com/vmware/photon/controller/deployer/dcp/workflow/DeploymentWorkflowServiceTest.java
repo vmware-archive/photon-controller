@@ -27,7 +27,9 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.common.Constants;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -43,9 +45,6 @@ import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
-import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketService;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskService;
@@ -1002,33 +1001,18 @@ public class DeploymentWorkflowServiceTest {
     }
 
     private void verifyTenantServiceState() throws Throwable {
-      verifySingletonServiceState(
-          TenantService.State.class,
-          (state) -> {
-            assertThat(state.tenantName, is(Constants.TENANT_NAME));
-            assertThat(state.tenantId, is("CREATE_TENANT_ENTITY_ID"));
-            return true;
-          }, localDeployer);
+      List<TenantService.State> states = queryForServiceStates(TenantService.State.class, localStore);
+      assertThat(states.size(), is(1));
     }
 
     private void verifyResourceTicketServiceState() throws Throwable {
-      verifySingletonServiceState(
-          ResourceTicketService.State.class,
-          (state) -> {
-            assertThat(state.resourceTicketName, is(Constants.RESOURCE_TICKET_NAME));
-            assertThat(state.resourceTicketId, is("CREATE_RESOURCE_TICKET_ENTITY_ID"));
-            return true;
-          }, localDeployer);
+      List<ResourceTicketService.State> states = queryForServiceStates(ResourceTicketService.State.class, localStore);
+      assertThat(states.size(), is(1));
     }
 
     private void verifyProjectServiceState() throws Throwable {
-      verifySingletonServiceState(
-          ProjectService.State.class,
-          (state) -> {
-            assertThat(state.projectName, is(Constants.PROJECT_NAME));
-            assertThat(state.projectId, is("CREATE_PROJECT_ENTITY_ID"));
-            return true;
-          }, localDeployer);
+      List<ProjectService.State> states = queryForServiceStates(ProjectService.State.class, localStore);
+      assertThat(states.size(), is(1));
     }
 
     private void verifyImageServiceState() throws Throwable {

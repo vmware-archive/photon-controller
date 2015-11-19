@@ -14,15 +14,15 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -33,9 +33,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
-import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketService;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
@@ -177,21 +174,22 @@ public class CreateResourceTicketTaskService extends StatefulService {
 
   private void getTenantEntity(final State currentState) {
 
-    sendRequest(Operation
-        .createGet(this, currentState.tenantServiceLink)
-        .setCompletion((operation, throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.tenantServiceLink)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                failTask(throwable);
+                return;
+              }
 
-          try {
-            TenantService.State tenantState = operation.getBody(TenantService.State.class);
-            createResourceTicket(currentState, tenantState);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        }));
+              try {
+                TenantService.State tenantState = operation.getBody(TenantService.State.class);
+                createResourceTicket(currentState, tenantState);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
   private void createResourceTicket(final State currentState, final TenantService.State tenantState) {
@@ -221,7 +219,8 @@ public class CreateResourceTicketTaskService extends StatefulService {
     }
 
     try {
-      HostUtils.getApiClient(this).getTenantsApi().createResourceTicketAsync(tenantState.tenantId, createSpec,
+      HostUtils.getApiClient(this).getTenantsApi().createResourceTicketAsync(
+          ServiceUtils.getIDFromDocumentSelfLink(tenantState.documentSelfLink), createSpec,
           callback);
     } catch (Throwable t) {
       failTask(t);
@@ -233,7 +232,10 @@ public class CreateResourceTicketTaskService extends StatefulService {
       @Override
       public void onSuccess(@Nullable Task result) {
         try {
-          createResourceTicketEntity(currentState, result.getEntity().getId());
+          State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+          patchState.resourceTicketServiceLink = ResourceTicketServiceFactory.SELF_LINK + "/"
+              + result.getEntity().getId();
+          TaskUtils.sendSelfPatch(CreateResourceTicketTaskService.this, patchState);
         } catch (Throwable t) {
           failTask(t);
         }
@@ -250,44 +252,6 @@ public class CreateResourceTicketTaskService extends StatefulService {
         this,
         currentState.taskPollDelay,
         pollTaskCallback);
-  }
-
-  private void createResourceTicketEntity(final State currentState, final String resourceTicketId) {
-
-    final Service service = this;
-
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-        }
-
-        try {
-          State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-          patchState.resourceTicketServiceLink = operation.getBody(ResourceTicketService.State.class).documentSelfLink;
-          TaskUtils.sendSelfPatch(service, patchState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    Operation op = Operation
-        .createPost(UriUtils.buildUri(getHost(), ResourceTicketFactoryService.SELF_LINK))
-        .setBody(createResourceTicketServiceState(currentState, resourceTicketId))
-        .setCompletion(completionHandler);
-    sendRequest(op);
-  }
-
-  private ResourceTicketService.State createResourceTicketServiceState(State currentState, String resourceTicketId) {
-    ResourceTicketService.State state = new ResourceTicketService.State();
-    state.resourceTicketName = Constants.RESOURCE_TICKET_NAME;
-    state.tenantServiceLink = currentState.tenantServiceLink;
-    state.quotaLineItems = currentState.quotaLineItems;
-    state.resourceTicketId = resourceTicketId;
-    state.documentSelfLink = "/" + resourceTicketId;
-    return state;
   }
 
   private State applyPatch(State startState, State patchState) {

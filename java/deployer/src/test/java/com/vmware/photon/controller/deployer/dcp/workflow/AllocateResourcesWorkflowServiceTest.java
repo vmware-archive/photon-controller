@@ -28,6 +28,10 @@ import com.vmware.photon.controller.client.resource.FlavorApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -38,9 +42,6 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
-import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketService;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskServiceTest;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
@@ -546,16 +547,16 @@ public class AllocateResourcesWorkflowServiceTest {
       TestHelper.assertTaskStateFinished(finalState.taskState);
 
       TenantService.State tenantServiceFinalState =
-          machine.getServiceState(finalState.tenantServiceLink, TenantService.State.class);
-      assertThat(tenantServiceFinalState.tenantId, is("tenantEntityId"));
+          cloudStoreMachine.getServiceState(finalState.tenantServiceLink, TenantService.State.class);
+      assertThat(tenantServiceFinalState.name, is(Constants.TENANT_NAME));
 
       ResourceTicketService.State resourceTicketServiceFinalState =
-          machine.getServiceState(finalState.resourceTicketServiceLink, ResourceTicketService.State.class);
-      assertThat(resourceTicketServiceFinalState.resourceTicketId, is("resourceTicketEntityId"));
+          cloudStoreMachine.getServiceState(finalState.resourceTicketServiceLink, ResourceTicketService.State.class);
+      assertThat(resourceTicketServiceFinalState.name, is(Constants.RESOURCE_TICKET_NAME));
 
       ProjectService.State projectServiceFinalState =
-          machine.getServiceState(finalState.projectServiceLink, ProjectService.State.class);
-      assertThat(projectServiceFinalState.projectId, is("projectEntityId"));
+          cloudStoreMachine.getServiceState(finalState.projectServiceLink, ProjectService.State.class);
+      assertThat(projectServiceFinalState.name, is(Constants.PROJECT_NAME));
 
       for (String vmServiceLink : finalState.vmServiceLinks) {
         VmService.State vmServiceFinalState =
@@ -691,22 +692,28 @@ public class AllocateResourcesWorkflowServiceTest {
       taskReturnedByCreateTenant = new Task();
       taskReturnedByCreateTenant.setId("createTenantTaskId");
       taskReturnedByCreateTenant.setState("COMPLETED");
+
+      TenantService.State tenantState = TestHelper.createTenant(cloudStoreMachine);
+      String tenantId = ServiceUtils.getIDFromDocumentSelfLink(tenantState.documentSelfLink);
       Task.Entity tenantEntity = new Task.Entity();
-      tenantEntity.setId("tenantEntityId");
+      tenantEntity.setId(tenantId);
       taskReturnedByCreateTenant.setEntity(tenantEntity);
 
       taskReturnedByCreateResourceTicket = new Task();
       taskReturnedByCreateResourceTicket.setId("createResourceTicketTaskId");
       taskReturnedByCreateResourceTicket.setState("COMPLETED");
+      ResourceTicketService.State resourceState = TestHelper.createResourceTicket(tenantId, cloudStoreMachine);
+      String rtId = ServiceUtils.getIDFromDocumentSelfLink(resourceState.documentSelfLink);
       Task.Entity resourceTicketEntity = new Task.Entity();
-      resourceTicketEntity.setId("resourceTicketEntityId");
+      resourceTicketEntity.setId(rtId);
       taskReturnedByCreateResourceTicket.setEntity(resourceTicketEntity);
 
       taskReturnedByCreateProject = new Task();
       taskReturnedByCreateProject.setId("createProjectTaskId");
       taskReturnedByCreateProject.setState("COMPLETED");
       Task.Entity projectEntity = new Task.Entity();
-      projectEntity.setId("projectEntityId");
+      ProjectService.State projectState = TestHelper.createProject(tenantId, rtId, cloudStoreMachine);
+      projectEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(projectState.documentSelfLink));
       taskReturnedByCreateProject.setEntity(projectEntity);
 
       if (failCreateFlavors) {

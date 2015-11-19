@@ -14,13 +14,12 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -30,8 +29,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
@@ -184,7 +181,9 @@ public class CreateTenantTaskService extends StatefulService {
       @Override
       public void onSuccess(@Nullable Task result) {
         try {
-          createTenantEntity(result.getEntity().getId());
+          State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+          patchState.tenantServiceLink = TenantServiceFactory.SELF_LINK + "/" + result.getEntity().getId();
+          TaskUtils.sendSelfPatch(CreateTenantTaskService.this, patchState);
         } catch (Throwable t) {
           failTask(t);
         }
@@ -201,42 +200,6 @@ public class CreateTenantTaskService extends StatefulService {
         this,
         currentState.taskPollDelay,
         pollTaskCallback);
-  }
-
-  private void createTenantEntity(final String tenantId) {
-
-    final Service service = this;
-
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-        }
-
-        try {
-          State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-          patchState.tenantServiceLink = operation.getBody(TenantService.State.class).documentSelfLink;
-          TaskUtils.sendSelfPatch(service, patchState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    Operation op = Operation
-        .createPost(UriUtils.buildUri(getHost(), TenantFactoryService.SELF_LINK))
-        .setBody(createTenantServiceState(tenantId))
-        .setCompletion(completionHandler);
-    sendRequest(op);
-  }
-
-  private TenantService.State createTenantServiceState(String tenantId) {
-    TenantService.State state = new TenantService.State();
-    state.tenantName = Constants.TENANT_NAME;
-    state.tenantId = tenantId;
-    state.documentSelfLink = "/" + tenantId;
-    return state;
   }
 
   private State applyPatch(State currentState, State patchState) {

@@ -31,6 +31,9 @@ import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.auth.AuthException;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -274,9 +277,17 @@ public class MockHelper {
     clusterVmDiskTaskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(
         clusteredVmDiskFlavorService.documentSelfLink));
     taskReturnedByCreateClusterVmDiskFlavor.setEntity(clusterVmDiskTaskEntity);
-    final Task taskReturnedByCreateTenant = TestHelper.createCompletedApifeTask("CREATE_TENANT");
-    final Task taskReturnedByCreateResourceTicket = TestHelper.createCompletedApifeTask("CREATE_RESOURCE_TICKET");
-    final Task taskReturnedByCreateProject = TestHelper.createCompletedApifeTask("CREATE_PROJECT");
+
+    TenantService.State tenantState = TestHelper.createTenant(machine);
+    String tenantId = ServiceUtils.getIDFromDocumentSelfLink(tenantState.documentSelfLink);
+    ResourceTicketService.State resourceTicketState = TestHelper.createResourceTicket(tenantId, machine);
+    ProjectService.State projectState = TestHelper.createProject(tenantId,
+        ServiceUtils.getIDFromDocumentSelfLink(resourceTicketState.documentSelfLink), machine);
+    final Task taskReturnedByCreateTenant = TestHelper.createCompletedApifeTask("CREATE_TENANT", tenantId);
+    final Task taskReturnedByCreateResourceTicket = TestHelper.createCompletedApifeTask("CREATE_RESOURCE_TICKET",
+        ServiceUtils.getIDFromDocumentSelfLink(resourceTicketState.documentSelfLink));
+    final Task taskReturnedByCreateProject = TestHelper.createCompletedApifeTask("CREATE_PROJECT",
+        ServiceUtils.getIDFromDocumentSelfLink(projectState.documentSelfLink));
     final Task taskReturnedByPerformVmOperation = TestHelper.createCompletedApifeTask("PERFORM_VM_OPERATION");
 
     if (isSuccess) {

@@ -23,19 +23,18 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ApiTestUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
-import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketService;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -85,7 +84,7 @@ public class CreateProjectTaskServiceTest {
   private void dummy() {
   }
 
-  private CreateProjectTaskService.State buildValidStartState(TaskState.TaskStage stage) {
+  private CreateProjectTaskService.State buildValidStartState(TaskState.TaskStage stage) throws Throwable {
     CreateProjectTaskService.State startState = new CreateProjectTaskService.State();
     startState.taskState = new TaskState();
     startState.taskState.stage = stage;
@@ -404,18 +403,19 @@ public class CreateProjectTaskServiceTest {
     private DeployerContext deployerContext;
     private ApiClient apiClient;
     private ApiClientFactory apiClientFactory;
-    private TenantService.State tenantServiceStartState;
-    private ResourceTicketService.State resourceTicketServiceStartState;
     private CreateProjectTaskService.State startState;
     private TasksApi tasksApi;
     private TenantsApi tenantsApi;
     private TestEnvironment testEnvironment;
+    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreTestEnvironment;
     private Task.Entity projectEntity;
 
     private TestEnvironment createTestEnvironment(ApiClientFactory apiClientFactory) throws Throwable {
+      cloudStoreTestEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       return new TestEnvironment.Builder()
           .deployerContext(deployerContext)
           .apiClientFactory(apiClientFactory)
+          .cloudServerSet(cloudStoreTestEnvironment.getServerSet())
           .hostCount(1)
           .build();
     }
@@ -426,34 +426,22 @@ public class CreateProjectTaskServiceTest {
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           CreateProjectTaskService.class.getResource(configFilePath).getPath()).getDeployerContext();
 
-      tenantServiceStartState = new TenantService.State();
-      tenantServiceStartState.tenantName = "TENANT_NAME";
-      tenantServiceStartState.tenantId = "TENANT_ID";
-      tenantServiceStartState.documentSelfLink = "/TENANT_ID";
-
-      resourceTicketServiceStartState = new ResourceTicketService.State();
-      resourceTicketServiceStartState.resourceTicketName = "RESOURCE_TICKET_NAME";
-      resourceTicketServiceStartState.resourceTicketId = "RESOURCE_TICKET_ID";
-      resourceTicketServiceStartState.documentSelfLink = "/RESOURCE_TICKET_ID";
-
       startState = buildValidStartState(TaskState.TaskStage.CREATED);
       startState.taskPollDelay = 10;
       startState.controlFlags = null;
 
-      projectEntity = new Task.Entity();
-      projectEntity.setId("PROJECT_ID");
     }
 
     @AfterClass
     public void tearDownClass() {
       deployerContext = null;
-      tenantServiceStartState = null;
     }
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
       testEnvironment = createTestEnvironment(apiClientFactory);
+
       apiClient = mock(ApiClient.class);
       doReturn(apiClient).when(apiClientFactory).create();
       tasksApi = mock(TasksApi.class);
@@ -461,27 +449,30 @@ public class CreateProjectTaskServiceTest {
       tenantsApi = mock(TenantsApi.class);
       doReturn(tenantsApi).when(apiClient).getTenantsApi();
 
-      TenantService.State tenantState =
-          testEnvironment.callServiceSynchronously(
-              TenantFactoryService.SELF_LINK,
-              tenantServiceStartState,
-              TenantService.State.class);
+      TenantService.State tenantState = TestHelper.createTenant(cloudStoreTestEnvironment);
+      String tenantId = ServiceUtils.getIDFromDocumentSelfLink(tenantState.documentSelfLink);
 
-      resourceTicketServiceStartState.tenantServiceLink = tenantState.documentSelfLink;
-
-      ResourceTicketService.State resourceTicketState =
-          testEnvironment.callServiceSynchronously(
-              ResourceTicketFactoryService.SELF_LINK,
-              resourceTicketServiceStartState,
-              ResourceTicketService.State.class);
+      ResourceTicketService.State resourceTicketState = TestHelper.createResourceTicket(tenantId,
+          cloudStoreTestEnvironment);
 
       startState.resourceTicketServiceLink = resourceTicketState.documentSelfLink;
+
+      ProjectService.State projectState = TestHelper.createProject(tenantId,
+          ServiceUtils.getIDFromDocumentSelfLink(resourceTicketState.documentSelfLink),
+          cloudStoreTestEnvironment);
+      projectEntity = new Task.Entity();
+      projectEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(projectState.documentSelfLink));
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
       if (null != testEnvironment) {
         testEnvironment.stop();
+      }
+
+      if (null != cloudStoreTestEnvironment) {
+        cloudStoreTestEnvironment.stop();
+        cloudStoreTestEnvironment = null;
       }
 
       apiClient = null;
@@ -514,9 +505,8 @@ public class CreateProjectTaskServiceTest {
       assertThat(finalState.projectServiceLink, notNullValue());
 
       ProjectService.State projectState =
-          testEnvironment.getServiceState(finalState.projectServiceLink, ProjectService.State.class);
-      assertThat(projectState.projectName, is(Constants.PROJECT_NAME));
-      assertThat(projectState.projectId, is(projectEntity.getId()));
+          cloudStoreTestEnvironment.getServiceState(finalState.projectServiceLink, ProjectService.State.class);
+      assertThat(projectState.name, is(Constants.PROJECT_NAME));
     }
 
     @Test
@@ -552,9 +542,8 @@ public class CreateProjectTaskServiceTest {
       assertThat(finalState.projectServiceLink, notNullValue());
 
       ProjectService.State projectState =
-          testEnvironment.getServiceState(finalState.projectServiceLink, ProjectService.State.class);
-      assertThat(projectState.projectName, is(Constants.PROJECT_NAME));
-      assertThat(projectState.projectId, is(projectEntity.getId()));
+          cloudStoreTestEnvironment.getServiceState(finalState.projectServiceLink, ProjectService.State.class);
+      assertThat(projectState.name, is(Constants.PROJECT_NAME));
     }
 
     @Test
@@ -610,9 +599,8 @@ public class CreateProjectTaskServiceTest {
       assertThat(finalState.projectServiceLink, notNullValue());
 
       ProjectService.State projectState =
-          testEnvironment.getServiceState(finalState.projectServiceLink, ProjectService.State.class);
-      assertThat(projectState.projectName, is(Constants.PROJECT_NAME));
-      assertThat(projectState.projectId, is(projectEntity.getId()));
+          cloudStoreTestEnvironment.getServiceState(finalState.projectServiceLink, ProjectService.State.class);
+      assertThat(projectState.name, is(Constants.PROJECT_NAME));
     }
 
     @Test(dataProvider = "CreateProjectExceptions")

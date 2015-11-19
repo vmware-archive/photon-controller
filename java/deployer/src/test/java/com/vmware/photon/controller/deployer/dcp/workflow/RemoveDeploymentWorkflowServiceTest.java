@@ -42,6 +42,8 @@ import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
@@ -53,8 +55,6 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
@@ -669,13 +669,13 @@ public class RemoveDeploymentWorkflowServiceTest {
     }
 
     private void verifyTenantServiceState() {
-      List<TenantService.State> states = queryForServiceStates(TenantService.State.class, testEnvironment);
+      List<TenantService.State> states = queryForServiceStates(TenantService.State.class, cloudStoreTestEnvironment);
 
       assertThat(states.size(), is(0));
     }
 
     private void verifyProjectServiceState() {
-      List<ProjectService.State> states = queryForServiceStates(ProjectService.State.class, testEnvironment);
+      List<ProjectService.State> states = queryForServiceStates(ProjectService.State.class, cloudStoreTestEnvironment);
 
       assertThat(states.size(), is(0));
     }

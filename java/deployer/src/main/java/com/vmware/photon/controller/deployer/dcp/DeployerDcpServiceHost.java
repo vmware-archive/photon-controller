@@ -35,9 +35,6 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFa
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactoryProvider;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFactoryService;
@@ -146,9 +143,6 @@ public class DeployerDcpServiceHost
       // Entity Services
       ContainerFactoryService.class,
       ContainerTemplateFactoryService.class,
-      ProjectFactoryService.class,
-      ResourceTicketFactoryService.class,
-      TenantFactoryService.class,
       VmFactoryService.class,
 
       // Task Services
