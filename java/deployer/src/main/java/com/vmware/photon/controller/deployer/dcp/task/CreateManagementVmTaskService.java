@@ -31,6 +31,7 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.VmMetadata;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -45,7 +46,6 @@ import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
@@ -267,8 +267,7 @@ public class CreateManagementVmTaskService extends StatefulService {
 
   private void processStartedStage(final State currentState, final VmService.State vmState, final HostService.State
       hostState) {
-
-    Operation imageGetOperation = Operation.createGet(this, vmState.imageServiceLink);
+    Operation imageGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.imageServiceLink);
     Operation projectGetOperation = Operation.createGet(this, vmState.projectServiceLink);
     Operation flavorGetOperation = Operation.createGet(this, vmState.flavorServiceLink);
 
@@ -309,7 +308,6 @@ public class CreateManagementVmTaskService extends StatefulService {
    * @param currentState Supplies the current state object.
    * @param vmState Supplies the state object of the VmService entity.
    * @param hostState Supplies the state object of the HostService entity.
-   * @param imageState Supplies the state object of the ImageService entity.
    * @param projectState Supplies the state object of the ProjectService entity.
    * @param flavorState Supplies the state object of the FlavorService entity.
    */
@@ -638,7 +636,6 @@ public class CreateManagementVmTaskService extends StatefulService {
    *
    * @param vmState Supplies the state object of the VmService entity.
    * @param hostState Supplies the state object of the HostService entity.
-   * @param imageState Supplies the state object of the ImageService entity.
    * @param flavorState Supplies the state object of the FlavorService entity.
    * @return Returns the VmCreateSpec object.
    */
@@ -652,7 +649,7 @@ public class CreateManagementVmTaskService extends StatefulService {
     spec.setName(vmState.name);
     spec.setFlavor(flavorState.vmFlavorName);
 
-    spec.setSourceImageId(imageState.imageId);
+    spec.setSourceImageId(imageState.documentSelfLink);
 
     List<AttachedDiskCreateSpec> attachedDisks = new ArrayList<>();
 

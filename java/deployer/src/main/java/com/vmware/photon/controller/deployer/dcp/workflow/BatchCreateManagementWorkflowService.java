@@ -25,6 +25,7 @@ import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -320,7 +321,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         } else if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
           TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null));
         } else {
-          updateVmServices(currentState, result.imageServiceLink);
+          updateVmServices(currentState, ImageServiceFactory.SELF_LINK + "/" + result.imageId);
         }
       }
 

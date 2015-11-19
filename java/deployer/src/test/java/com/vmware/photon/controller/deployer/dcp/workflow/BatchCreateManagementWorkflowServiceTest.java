@@ -33,7 +33,9 @@ import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
@@ -43,8 +45,6 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFa
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -453,8 +453,6 @@ public class BatchCreateManagementWorkflowServiceTest {
 
     private BatchCreateManagementWorkflowService.State startState;
 
-    private ImageService.State imageServiceStartState;
-
     private ContainersConfig containersConfig;
     private DeployerContext deployerContext;
     private ApiClientFactory apiClientFactory;
@@ -505,11 +503,6 @@ public class BatchCreateManagementWorkflowServiceTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-
-      imageServiceStartState = new ImageService.State();
-      imageServiceStartState.imageId = "imageId";
-      imageServiceStartState.imageName = "imageName";
-      imageServiceStartState.imageFile = "imageFile";
 
       apiClient = mock(ApiClient.class);
       projectApi = mock(ProjectApi.class);
@@ -594,8 +587,9 @@ public class BatchCreateManagementWorkflowServiceTest {
       projectEntity.setId("projectEntityId");
       taskReturnedByCreateProject.setEntity(projectEntity);
 
+      ImageService.State imageServiceState = TestHelper.createImageService(cloudStoreMachine);
       Task.Entity taskEntity = new Task.Entity();
-      taskEntity.setId("taskEntityId");
+      taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(imageServiceState.documentSelfLink));
       taskReturnedByUploadImage = new Task();
       taskReturnedByUploadImage.setId("taskId");
       taskReturnedByUploadImage.setState("STARTED");
@@ -829,11 +823,7 @@ public class BatchCreateManagementWorkflowServiceTest {
       HostService.State hostServiceState = TestHelper.createHostService(cloudStoreMachine,
           Collections.singleton(UsageTag.MGMT.name()));
 
-      ImageService.State imageServiceState =
-          machine.callServiceSynchronously(
-              ImageFactoryService.SELF_LINK,
-              imageServiceStartState,
-              ImageService.State.class);
+      ImageService.State imageServiceState = TestHelper.createImageService(cloudStoreMachine);
 
       VmService.State vmServiceStartState = TestHelper.getVmServiceStartState(hostServiceState);
       vmServiceStartState.ipAddress = "1.1.1.1";
