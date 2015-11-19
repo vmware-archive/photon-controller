@@ -39,7 +39,7 @@ describe EsxCloud::DeploymentImporter do
 <<CONTENT
 ---
 deployment:
-  image_datastore: image_datastore
+  image_datastores: image_datastore
   auth_enabled: true
   oauth_endpoint: 0.0.0.0
   oauth_port: '8080'
@@ -56,7 +56,7 @@ CONTENT
         it_behaves_like "import configuration" do
           let(:file) { yml_file }
           let(:spec) do
-            EsxCloud::DeploymentCreateSpec.new("image_datastore",
+            EsxCloud::DeploymentCreateSpec.new(["image_datastore"],
                                                EsxCloud::AuthInfo.new(true, '0.0.0.0', '8080', 't', 'u', 'p', ['sg1', 'sg2']),
                                                "0.0.0.1",
                                                "0.0.0.2",
@@ -70,7 +70,7 @@ CONTENT
 <<CONTENT
 ---
 deployment:
-  image_datastore: image_datastore
+  image_datastores: image_datastore
   auth_enabled: false
 CONTENT
         end
@@ -78,7 +78,7 @@ CONTENT
         it_behaves_like "import configuration" do
           let(:file) { yml_file }
           let(:spec) do
-            EsxCloud::DeploymentCreateSpec.new("image_datastore", EsxCloud::AuthInfo.new(false))
+            EsxCloud::DeploymentCreateSpec.new(["image_datastore"], EsxCloud::AuthInfo.new(false))
           end
         end
       end
