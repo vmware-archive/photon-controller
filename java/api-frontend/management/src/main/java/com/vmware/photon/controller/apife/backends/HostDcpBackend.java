@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.AvailabilityZoneState;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Host;
@@ -23,12 +24,14 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidAvailabilityZoneStateException;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
@@ -61,16 +64,18 @@ public class HostDcpBackend implements HostBackend {
   private final EntityLockBackend entityLockBackend;
   private final DeploymentBackend deploymentBackend;
   private final TombstoneBackend tombstoneBackend;
+  private final AvailabilityZoneBackend availabilityZoneBackend;
 
   @Inject
   public HostDcpBackend(ApiFeDcpRestClient dcpClient, TaskBackend taskBackend,
                         EntityLockBackend entityLockBackend, DeploymentBackend deploymentBackend,
-                        TombstoneBackend tombstoneBackend) {
+                        TombstoneBackend tombstoneBackend, AvailabilityZoneBackend availabilityZoneBackend) {
     this.dcpClient = dcpClient;
     this.taskBackend = taskBackend;
     this.entityLockBackend = entityLockBackend;
     this.deploymentBackend = deploymentBackend;
     this.tombstoneBackend = tombstoneBackend;
+    this.availabilityZoneBackend = availabilityZoneBackend;
     this.dcpClient.start();
   }
 
@@ -196,7 +201,11 @@ public class HostDcpBackend implements HostBackend {
     return taskEntity;
   }
 
-  private HostEntity create(HostCreateSpec hostCreateSpec) {
+  private HostEntity create(HostCreateSpec hostCreateSpec) throws ExternalException {
+    if (hostCreateSpec.getAvailabilityZone() != null && !hostCreateSpec.getAvailabilityZone().isEmpty()) {
+      isAvailabilityZoneReady(hostCreateSpec.getAvailabilityZone());
+    }
+
     HostService.State hostState = new HostService.State();
 
     hostState.state = HostState.CREATING;
@@ -243,6 +252,14 @@ public class HostDcpBackend implements HostBackend {
   private boolean isDeploymentReady(String deploymentId) throws DeploymentNotFoundException {
     DeploymentEntity deploymentEntity = deploymentBackend.findById(deploymentId);
     return deploymentEntity.getState().equals(DeploymentState.READY);
+  }
+
+  private void isAvailabilityZoneReady(String availabilityZoneId) throws ExternalException {
+    AvailabilityZoneEntity availabilityZoneEntity = availabilityZoneBackend.getEntityById(availabilityZoneId);
+    if (!AvailabilityZoneState.READY.equals(availabilityZoneEntity.getState())) {
+      throw new InvalidAvailabilityZoneStateException(String.format("AvailabilityZone %s is in %s state",
+          availabilityZoneEntity.getId(), availabilityZoneEntity.getState()));
+    }
   }
 
   private HostEntity toHostEntity(HostService.State hostState) {
