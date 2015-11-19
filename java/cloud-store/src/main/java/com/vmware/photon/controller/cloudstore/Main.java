@@ -51,7 +51,7 @@ public class Main {
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("CloudStore")
         .defaultHelp(true)
-        .description("ESX Cloud CloudStore");
+        .description("Photon Controller CloudStore");
     parser.addArgument("file").help("configuration file");
 
     Namespace namespace = parser.parseArgsOrFail(args);

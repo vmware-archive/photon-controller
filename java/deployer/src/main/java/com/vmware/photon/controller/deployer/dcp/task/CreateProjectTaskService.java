@@ -53,7 +53,7 @@ import java.util.Arrays;
 
 /**
  * This class implements a DCP micro-service which performs the task of
- * creating a project in an ESX Cloud instance.
+ * creating a project in an Photon Controller instance.
  */
 public class CreateProjectTaskService extends StatefulService {
 

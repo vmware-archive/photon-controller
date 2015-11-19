@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Base ESXCloud exception.
+ * Base Photon Controller exception.
  */
 public class ExternalException extends ApiFeException {
 

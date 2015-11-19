@@ -146,7 +146,7 @@ public class VmProvisionTaskService extends StatefulService {
   }
 
   /**
-   * Creates the VM in ESXCloud by calling API-FE. On success, the method save
+   * Creates the VM in Photon Controller by calling API-FE. On success, the method save
    * the identifier of the created VM and moves the Task to the next sub-stage i.e. ATTACH_ISO.
    *
    * @param currentState

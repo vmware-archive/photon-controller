@@ -46,7 +46,7 @@ public class Main {
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("Root scheduler")
         .defaultHelp(true)
-        .description("ESX Cloud Root Scheduler");
+        .description("Photon Controller Root Scheduler");
     parser.addArgument("file").help("configuration file");
 
     Namespace namespace = parser.parseArgsOrFail(args);

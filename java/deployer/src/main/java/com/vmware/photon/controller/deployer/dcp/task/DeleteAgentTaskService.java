@@ -46,7 +46,7 @@ import java.util.List;
 
 /**
  * This class implements a DCP micro-service which performs the task of
- * deleting an ESX Cloud agent instance from an ESX hypervisor.
+ * deleting an Photon Controller agent instance from an ESX hypervisor.
  */
 public class DeleteAgentTaskService extends StatefulService {
 

@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * Tenant API representation.
  */
-@ApiModel(value = "The tenancy model of ESX Cloud is designed to provide tenants with a sub-dividable " +
+@ApiModel(value = "The tenancy model of Photon Controller is designed to provide tenants with a sub-dividable " +
     "virtual resource pool expressed in terms of quota limits, capabilities, and SLA. " +
     "A tenant contains a collection of projects and resource tickets. Projects are created by carving off " +
     "quota limits from one of the tenant's resource tickets.")
