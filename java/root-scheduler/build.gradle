@@ -4,6 +4,7 @@ apply plugin: 'thrift'
 mainClassName = 'com.vmware.photon.controller.rootscheduler.Main'
 
 dependencies {
+  compile project(':cloud-store')
   compile project(':common')
   compile project(':common-logging')
 
