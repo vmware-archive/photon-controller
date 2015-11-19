@@ -23,9 +23,9 @@ describe EsxCloud::CliClient do
 
   it "creates a host" do
     host = double(EsxCloud::Host, id: "h1", address: "10.146.36.28")
-    spec = EsxCloud::HostCreateSpec.new("u1", "p1", ["MGMT", "CLOUD"], "10.146.36.28", {"a" => "b"}, "z1")
+    spec = EsxCloud::HostCreateSpec.new("u1", "p1", ["MGMT", "CLOUD"], "10.146.36.28", {"a" => "b"})
 
-    expect(client).to receive(:run_cli).with("host create -u 'u1' -t 'p1' -i '10.146.36.28' -z 'z1' -t 'MGMT,CLOUD' -m '{\"a\":\"b\"}'")
+    expect(client).to receive(:run_cli).with("host create -u 'u1' -t 'p1' -i '10.146.36.28' -t 'MGMT,CLOUD' -m '{\"a\":\"b\"}'")
     expect(client).to receive(:mgmt_find_all_hosts).and_return(EsxCloud::HostList.new([host]))
     expect(client.create_host("foo", spec.to_hash)).to eq host
   end

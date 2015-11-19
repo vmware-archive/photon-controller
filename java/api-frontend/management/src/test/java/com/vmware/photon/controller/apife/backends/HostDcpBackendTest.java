@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.AvailabilityZoneCreateSpec;
+import com.vmware.photon.controller.api.AvailabilityZoneState;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
@@ -21,12 +23,16 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidAvailabilityZoneStateException;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
@@ -48,6 +54,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Tests {@link HostDcpBackend}.
@@ -117,6 +124,12 @@ public class HostDcpBackendTest {
     return deploymentCreateSpec;
   }
 
+  private static AvailabilityZoneCreateSpec getAvailabilityZoneCreateSpec() {
+    AvailabilityZoneCreateSpec availabilityZoneCreateSpec = new AvailabilityZoneCreateSpec();
+    availabilityZoneCreateSpec.setName(UUID.randomUUID().toString());
+    return availabilityZoneCreateSpec;
+  }
+
   /**
    * Tests for creating Hosts.
    */
@@ -135,6 +148,9 @@ public class HostDcpBackendTest {
     @Inject
     private DeploymentBackend deploymentBackend;
 
+    @Inject
+    private AvailabilityZoneBackend availabilityZoneBackend;
+
     private HostCreateSpec hostCreateSpec;
     private String deploymentId;
 
@@ -145,7 +161,6 @@ public class HostDcpBackendTest {
       hostCreateSpec.setUsername("user");
       hostCreateSpec.setPassword("password");
       hostCreateSpec.setAddress("0.0.0.0");
-      hostCreateSpec.setAvailabilityZone("availabilityZone");
       hostCreateSpec.setMetadata(new HashMap<String, String>() {{
         put("k1", "v1");
       }});
@@ -168,6 +183,21 @@ public class HostDcpBackendTest {
       commonHostAndClientTeardown();
     }
 
+    private AvailabilityZoneEntity createAvailabilityZoneDocument() throws ExternalException {
+      AvailabilityZoneCreateSpec availabilityZoneCreateSpec = getAvailabilityZoneCreateSpec();
+      TaskEntity task = availabilityZoneBackend.createAvailabilityZone(availabilityZoneCreateSpec);
+      AvailabilityZoneEntity availabilityZoneEntity = availabilityZoneBackend.getEntityById(task.getEntityId());
+      assertThat(availabilityZoneEntity.getState(), is(AvailabilityZoneState.READY));
+      return availabilityZoneEntity;
+    }
+
+    private AvailabilityZoneEntity deleteAvailabilityZoneDocument(String availabilityZoneId) throws ExternalException {
+      TaskEntity task = availabilityZoneBackend.prepareAvailabilityZoneDelete(availabilityZoneId);
+      AvailabilityZoneEntity availabilityZoneEntity = availabilityZoneBackend.getEntityById(task.getEntityId());
+      assertThat(availabilityZoneEntity.getState(), is(AvailabilityZoneState.PENDING_DELETE));
+      return availabilityZoneEntity;
+    }
+
     @Test
     public void testPrepareHostCreate() throws Throwable {
       TaskEntity taskEntity = hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
@@ -183,6 +213,54 @@ public class HostDcpBackendTest {
       assertThat(hostEntity.getAvailabilityZone(), is(hostCreateSpec.getAvailabilityZone()));
       assertThat(hostEntity.getMetadata().get("k1"), is("v1"));
       assertThat(hostEntity.getUsageTags(), containsString("CLOUD"));
+    }
+
+    @Test
+    public void testPrepareHostCreateWithAvailabilityZone() throws Throwable {
+      AvailabilityZoneEntity availabilityZoneEntity = createAvailabilityZoneDocument();
+      hostCreateSpec.setAvailabilityZone(availabilityZoneEntity.getId());
+
+      TaskEntity taskEntity = hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
+
+      String hostId = taskEntity.getEntityId();
+      assertThat(hostId, notNullValue());
+      HostEntity hostEntity = hostBackend.findById(hostId);
+      assertThat(hostEntity, notNullValue());
+      assertThat(hostEntity.getState(), is(HostState.CREATING));
+      assertThat(hostEntity.getUsername(), is(hostCreateSpec.getUsername()));
+      assertThat(hostEntity.getPassword(), is(hostCreateSpec.getPassword()));
+      assertThat(hostEntity.getAddress(), is(hostCreateSpec.getAddress()));
+      assertThat(hostEntity.getAvailabilityZone(), is(hostCreateSpec.getAvailabilityZone()));
+      assertThat(hostEntity.getMetadata().get("k1"), is("v1"));
+      assertThat(hostEntity.getUsageTags(), containsString("CLOUD"));
+    }
+
+    @Test
+    public void testPrepareHostCreateWithNonExistingAvailabilityZone() throws Throwable {
+      String availabilityZoneId = UUID.randomUUID().toString();
+      hostCreateSpec.setAvailabilityZone(availabilityZoneId);
+
+      try {
+        hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
+        fail("should have failed with AvailabilityZoneNotFoundException");
+      } catch (AvailabilityZoneNotFoundException e) {
+        assertThat(e.getMessage(), is("AvailabilityZone " + availabilityZoneId + " not found"));
+      }
+    }
+
+    @Test
+    public void testPrepareHostCreateWithInvalidAvailabilityZoneState() throws Throwable {
+      AvailabilityZoneEntity availabilityZoneEntity = createAvailabilityZoneDocument();
+      availabilityZoneEntity = deleteAvailabilityZoneDocument(availabilityZoneEntity.getId());
+      hostCreateSpec.setAvailabilityZone(availabilityZoneEntity.getId());
+
+      try {
+        hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
+        fail("should have failed with InvalidAvailabilityZoneStateException");
+      } catch (InvalidAvailabilityZoneStateException e) {
+        assertThat(e.getMessage(),
+            is("AvailabilityZone " + availabilityZoneEntity.getId() + " is in PENDING_DELETE state"));
+      }
     }
   }
 
@@ -216,7 +294,6 @@ public class HostDcpBackendTest {
       hostCreateSpec.setUsername("user");
       hostCreateSpec.setPassword("password");
       hostCreateSpec.setAddress("0.0.0.0");
-      hostCreateSpec.setAvailabilityZone("availabilityZone");
       hostCreateSpec.setMetadata(new HashMap<String, String>() {{
         put("k1", "v1");
       }});
@@ -334,7 +411,6 @@ public class HostDcpBackendTest {
       hostCreateSpec.setUsername("user");
       hostCreateSpec.setPassword("password");
       hostCreateSpec.setAddress("0.0.0.0");
-      hostCreateSpec.setAvailabilityZone("availabilityZone");
       hostCreateSpec.setMetadata(new HashMap<String, String>() {{
         put("k1", "v1");
       }});
@@ -457,7 +533,6 @@ public class HostDcpBackendTest {
       hostCreateSpec.setUsername("user");
       hostCreateSpec.setPassword("password");
       hostCreateSpec.setAddress("0.0.0.0");
-      hostCreateSpec.setAvailabilityZone("availabilityZone");
       hostCreateSpec.setMetadata(new HashMap<String, String>() {{
         put("k1", "v1");
       }});

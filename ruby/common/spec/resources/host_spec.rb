@@ -21,7 +21,7 @@ describe EsxCloud::Host do
   end
 
   it "delegates create to client" do
-    spec = EsxCloud::HostCreateSpec.new("u1", "p1", ["CLOUD"], "10.146.36.34", {}, "zone1")
+    spec = EsxCloud::HostCreateSpec.new("u1", "p1", ["CLOUD"], "10.146.36.34", {})
     expect(client).to receive(:create_host).with("foo", spec.to_hash).and_return(host)
     expect(EsxCloud::Host.create("foo", spec)).to eq host
   end
