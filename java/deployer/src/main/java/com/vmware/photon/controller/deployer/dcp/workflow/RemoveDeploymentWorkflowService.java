@@ -47,9 +47,6 @@ import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
-import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketService;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
@@ -884,10 +881,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
   private void deleteDCPEntities(final FutureCallback<Task> callback) {
     deleteDCPEntities(ContainerTemplateService.State.class);
     deleteDCPEntities(ContainerService.State.class);
-    deleteDCPEntities(ProjectService.State.class);
     deleteDCPEntities(VmService.State.class);
-    deleteDCPEntities(ResourceTicketService.State.class);
-    deleteDCPEntities(TenantService.State.class);
 
     ServiceUtils.logInfo(this, "Remove from cloud store..");
 

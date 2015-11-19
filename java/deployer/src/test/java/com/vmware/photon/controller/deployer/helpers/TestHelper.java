@@ -29,6 +29,13 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
@@ -408,6 +415,44 @@ public class TestHelper {
     return flavorServiceState;
   }
 
+  public static TenantService.State createTenant(MultiHostEnvironment<?> cloudStoreMachine) throws Throwable {
+    TenantService.State tenantServiceStartState = new TenantService.State();
+    tenantServiceStartState.name = Constants.TENANT_NAME;
+    TenantService.State tenantState =
+        cloudStoreMachine.callServiceSynchronously(
+            TenantServiceFactory.SELF_LINK,
+            tenantServiceStartState,
+            TenantService.State.class);
+    return  tenantState;
+  }
+
+  public static ResourceTicketService.State createResourceTicket(String tenantId, MultiHostEnvironment<?>
+      cloudStoreMachine) throws Throwable {
+    ResourceTicketService.State resourceTicketServiceStartState = new ResourceTicketService.State();
+    resourceTicketServiceStartState.tenantId = tenantId;
+    resourceTicketServiceStartState.name = Constants.RESOURCE_TICKET_NAME;
+    ResourceTicketService.State resourceTicketState =
+        cloudStoreMachine.callServiceSynchronously(
+            ResourceTicketServiceFactory.SELF_LINK,
+            resourceTicketServiceStartState,
+            ResourceTicketService.State.class);
+    return resourceTicketState;
+  }
+
+  public static ProjectService.State createProject(String tenantId, String resourceTicketId, MultiHostEnvironment<?>
+      cloudStoreMachine) throws Throwable {
+    ProjectService.State projectServiceStartState = new ProjectService.State();
+    projectServiceStartState.name = Constants.PROJECT_NAME;
+    projectServiceStartState.resourceTicketId = resourceTicketId;
+    projectServiceStartState.tenantId = tenantId;
+    ProjectService.State projectState =
+        cloudStoreMachine.callServiceSynchronously(
+            ProjectServiceFactory.SELF_LINK,
+            projectServiceStartState,
+            ProjectService.State.class);
+    return projectState;
+  }
+
   //
   // Mocking helper routines
   //
@@ -456,9 +501,13 @@ public class TestHelper {
   }
 
   public static Task createCompletedApifeTask(String taskName) {
+    String entityId = String.format("%s_ENTITY_ID", taskName);
+    return createCompletedApifeTask(taskName, entityId);
+  }
+
+  public static Task createCompletedApifeTask(String taskName, String entityId) {
 
     String taskId = String.format("%s_ID", taskName);
-    String entityId = String.format("%s_ENTITY_ID", taskName);
 
     Task.Entity entity = new Task.Entity();
     entity.setId(entityId);

@@ -117,17 +117,17 @@ public class AllocateResourcesWorkflowService extends StatefulService {
     public List<String> vmServiceLinks;
 
     /**
-     * This value represents the service link of the TenantService entity.
+     * This value represents the service link of the tenant entity.
      */
     public String tenantServiceLink;
 
     /**
-     * This value represents the service link of the ResourceTicketService entity.
+     * This value represents the service link of the resource ticket entity.
      */
     public String resourceTicketServiceLink;
 
     /**
-     * This value represents the service link of the ProjectService entity.
+     * This value represents the service link of the Project Service entity.
      */
     public String projectServiceLink;
   }

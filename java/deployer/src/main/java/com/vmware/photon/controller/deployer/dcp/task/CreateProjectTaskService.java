@@ -14,17 +14,19 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.ResourceTicketReservation;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -35,10 +37,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
-import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketService;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
@@ -172,40 +170,42 @@ public class CreateProjectTaskService extends StatefulService {
 
   private void getResourceTicketEntity(final State currentState) {
 
-    sendRequest(Operation
-        .createGet(this, currentState.resourceTicketServiceLink)
-        .setCompletion((operation, throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.resourceTicketServiceLink)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                failTask(throwable);
+                return;
+              }
 
-          try {
-            ResourceTicketService.State resourceTicketState = operation.getBody(ResourceTicketService.State.class);
-            getTenantEntity(currentState, resourceTicketState);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        }));
+              try {
+                ResourceTicketService.State resourceTicketState = operation.getBody(ResourceTicketService.State.class);
+                getTenantEntity(currentState, resourceTicketState);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
   private void getTenantEntity(final State currentState, final ResourceTicketService.State resourceTicketState) {
 
-    sendRequest(Operation
-        .createGet(this, resourceTicketState.tenantServiceLink)
-        .setCompletion((operation, throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(TenantServiceFactory.SELF_LINK + "/" + resourceTicketState.tenantId)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                failTask(throwable);
+                return;
+              }
 
-          try {
-            TenantService.State tenantState = operation.getBody(TenantService.State.class);
-            createProject(currentState, resourceTicketState, tenantState);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        }));
+              try {
+                TenantService.State tenantState = operation.getBody(TenantService.State.class);
+                createProject(currentState, resourceTicketState, tenantState);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
   private void createProject(final State currentState, final ResourceTicketService.State resourceTicketState,
@@ -229,7 +229,7 @@ public class CreateProjectTaskService extends StatefulService {
 
     String projectName = Constants.PROJECT_NAME;
     ResourceTicketReservation resourceTicketReservation = new ResourceTicketReservation();
-    resourceTicketReservation.setName(resourceTicketState.resourceTicketName);
+    resourceTicketReservation.setName(resourceTicketState.name);
 //    if (resourceTicketState.quotaLineItems != null) {
 //      // We use all the quota of the resource ticket for the project of the management plane.
 //      resourceTicketReservation.setLimits(resourceTicketState.quotaLineItems);
@@ -251,7 +251,8 @@ public class CreateProjectTaskService extends StatefulService {
         resourceTicketReservation.getLimits().toString()));
 
     try {
-      HostUtils.getApiClient(this).getTenantsApi().createProjectAsync(tenantState.tenantId, createSpec, callback);
+      HostUtils.getApiClient(this).getTenantsApi().createProjectAsync(ServiceUtils.getIDFromDocumentSelfLink
+          (tenantState.documentSelfLink), createSpec, callback);
     } catch (Throwable t) {
       failTask(t);
     }
@@ -262,7 +263,10 @@ public class CreateProjectTaskService extends StatefulService {
       @Override
       public void onSuccess(@Nullable Task result) {
         try {
-          createProjectEntity(currentState, result.getEntity().getId());
+          State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+          patchState.projectServiceLink = ProjectServiceFactory.SELF_LINK + "/" + result.getEntity().getId();
+          TaskUtils.sendSelfPatch(CreateProjectTaskService.this, patchState);
+
         } catch (Throwable t) {
           failTask(t);
         }
@@ -280,44 +284,6 @@ public class CreateProjectTaskService extends StatefulService {
         currentState.taskPollDelay,
         pollTaskCallback);
   }
-
-  private void createProjectEntity(final State currentState, final String projectId) {
-
-    final Service service = this;
-
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-        }
-
-        try {
-          State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-          patchState.projectServiceLink = operation.getBody(ProjectService.State.class).documentSelfLink;
-          TaskUtils.sendSelfPatch(service, patchState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    Operation op = Operation
-        .createPost(UriUtils.buildUri(getHost(), ProjectFactoryService.SELF_LINK))
-        .setBody(createProjectServiceState(currentState, projectId))
-        .setCompletion(completionHandler);
-    sendRequest(op);
-  }
-
-  private ProjectService.State createProjectServiceState(State currentState, String projectId) {
-    ProjectService.State state = new ProjectService.State();
-    state.projectName = Constants.PROJECT_NAME;
-    state.resourceTicketServiceLink = currentState.resourceTicketServiceLink;
-    state.projectId = projectId;
-    state.documentSelfLink = "/" + projectId;
-    return state;
-  }
-
 
   private State applyPatch(State currentState, State patchState) {
     if (patchState.taskState.stage != currentState.taskState.stage) {

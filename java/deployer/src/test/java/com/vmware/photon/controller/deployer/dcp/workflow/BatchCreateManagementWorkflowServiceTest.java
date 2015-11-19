@@ -35,6 +35,9 @@ import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -586,22 +589,27 @@ public class BatchCreateManagementWorkflowServiceTest {
       taskReturnedByCreateTenant = new Task();
       taskReturnedByCreateTenant.setId("createTenantTaskId");
       taskReturnedByCreateTenant.setState("COMPLETED");
+      TenantService.State tenantState = TestHelper.createTenant(cloudStoreMachine);
+      String tenantId = ServiceUtils.getIDFromDocumentSelfLink(tenantState.documentSelfLink);
       Task.Entity tenantEntity = new Task.Entity();
-      tenantEntity.setId("tenantEntityId");
+      tenantEntity.setId(tenantId);
       taskReturnedByCreateTenant.setEntity(tenantEntity);
 
       taskReturnedByCreateResourceTicket = new Task();
       taskReturnedByCreateResourceTicket.setId("createResourceTicketTaskId");
       taskReturnedByCreateResourceTicket.setState("COMPLETED");
+      ResourceTicketService.State resourceState = TestHelper.createResourceTicket(tenantId, cloudStoreMachine);
+      String rtId = ServiceUtils.getIDFromDocumentSelfLink(resourceState.documentSelfLink);
       Task.Entity resourceTicketEntity = new Task.Entity();
-      resourceTicketEntity.setId("resourceTicketEntityId");
+      resourceTicketEntity.setId(rtId);
       taskReturnedByCreateResourceTicket.setEntity(resourceTicketEntity);
 
       taskReturnedByCreateProject = new Task();
       taskReturnedByCreateProject.setId("createProjectTaskId");
       taskReturnedByCreateProject.setState("COMPLETED");
+      ProjectService.State projectState = TestHelper.createProject(tenantId, rtId, cloudStoreMachine);
       Task.Entity projectEntity = new Task.Entity();
-      projectEntity.setId("projectEntityId");
+      projectEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(projectState.documentSelfLink));
       taskReturnedByCreateProject.setEntity(projectEntity);
 
       ImageService.State imageServiceState = TestHelper.createImageService(cloudStoreMachine);

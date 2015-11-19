@@ -33,6 +33,7 @@ import com.vmware.photon.controller.api.VmMetadata;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -46,7 +47,6 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
@@ -268,8 +268,8 @@ public class CreateManagementVmTaskService extends StatefulService {
   private void processStartedStage(final State currentState, final VmService.State vmState, final HostService.State
       hostState) {
     Operation imageGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.imageServiceLink);
-    Operation projectGetOperation = Operation.createGet(this, vmState.projectServiceLink);
     Operation flavorGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.flavorServiceLink);
+    Operation projectGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.projectServiceLink);
 
     OperationJoin
         .create(
@@ -308,7 +308,13 @@ public class CreateManagementVmTaskService extends StatefulService {
    * @param currentState Supplies the current state object.
    * @param vmState Supplies the state object of the VmService entity.
    * @param hostState Supplies the state object of the HostService entity.
+<<<<<<< HEAD
    * @param projectState Supplies the state object of the ProjectService entity.
+=======
+   * @param imageState Supplies the state object of the Image Service entity.
+   * @param projectState Supplies the state object of the Project Service entity.
+   * @param flavorState Supplies the state object of the FlavorService entity.
+>>>>>>> Use cloudstore Project, ResourceTicket, Tenant and remove deployer's
    */
   private void processStartedStage(final State currentState,
                                    final VmService.State vmState, final HostService.State hostState,
@@ -345,7 +351,7 @@ public class CreateManagementVmTaskService extends StatefulService {
     };
 
     CreateVmTaskService.State startState = new CreateVmTaskService.State();
-    startState.projectId = projectState.projectId;
+    startState.projectId = ServiceUtils.getIDFromDocumentSelfLink(projectState.documentSelfLink);
     startState.vmCreateSpec = composeVmCreateSpec(vmState, hostState, imageState, flavorState);
     startState.queryCreateVmTaskInterval = currentState.queryCreateVmTaskInterval;
 

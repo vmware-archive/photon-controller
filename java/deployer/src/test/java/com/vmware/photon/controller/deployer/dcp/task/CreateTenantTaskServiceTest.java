@@ -22,15 +22,16 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ApiTestUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
-import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -411,13 +412,16 @@ public class CreateTenantTaskServiceTest {
     private TasksApi tasksApi;
     private TenantsApi tenantsApi;
     private TestEnvironment testEnvironment;
+    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreTestEnvironment;
     private Task.Entity tenantEntity;
 
     private TestEnvironment createTestEnvironment(ApiClientFactory apiClientFactory) throws Throwable {
+      cloudStoreTestEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
 
       testEnvironment = new TestEnvironment.Builder()
           .deployerContext(deployerContext)
           .apiClientFactory(apiClientFactory)
+          .cloudServerSet(cloudStoreTestEnvironment.getServerSet())
           .hostCount(1)
           .build();
 
@@ -433,9 +437,6 @@ public class CreateTenantTaskServiceTest {
       startState = buildValidStartState(TaskState.TaskStage.CREATED);
       startState.taskPollDelay = 10;
       startState.controlFlags = null;
-
-      tenantEntity = new Task.Entity();
-      tenantEntity.setId("TENANT_ID");
     }
 
     @AfterClass
@@ -457,12 +458,22 @@ public class CreateTenantTaskServiceTest {
 
       tenantsApi = mock(TenantsApi.class);
       doReturn(tenantsApi).when(apiClient).getTenantsApi();
+
+      TenantService.State tenantState = TestHelper.createTenant(cloudStoreTestEnvironment);
+
+      tenantEntity = new Task.Entity();
+      tenantEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(tenantState.documentSelfLink));
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
       if (null != testEnvironment) {
         testEnvironment.stop();
+      }
+
+      if (null != cloudStoreTestEnvironment) {
+        cloudStoreTestEnvironment.stop();
+        cloudStoreTestEnvironment = null;
       }
 
       apiClient = null;
@@ -495,9 +506,8 @@ public class CreateTenantTaskServiceTest {
       assertThat(finalState.tenantServiceLink, notNullValue());
 
       TenantService.State tenantState =
-          testEnvironment.getServiceState(finalState.tenantServiceLink, TenantService.State.class);
-      assertThat(tenantState.tenantName, is(Constants.TENANT_NAME));
-      assertThat(tenantState.tenantId, is(tenantEntity.getId()));
+          cloudStoreTestEnvironment.getServiceState(finalState.tenantServiceLink, TenantService.State.class);
+      assertThat(tenantState.name, is(Constants.TENANT_NAME));
     }
 
     @Test
@@ -533,9 +543,8 @@ public class CreateTenantTaskServiceTest {
       assertThat(finalState.tenantServiceLink, notNullValue());
 
       TenantService.State tenantState =
-          testEnvironment.getServiceState(finalState.tenantServiceLink, TenantService.State.class);
-      assertThat(tenantState.tenantName, is(Constants.TENANT_NAME));
-      assertThat(tenantState.tenantId, is(tenantEntity.getId()));
+          cloudStoreTestEnvironment.getServiceState(finalState.tenantServiceLink, TenantService.State.class);
+      assertThat(tenantState.name, is(Constants.TENANT_NAME));
     }
 
     @Test
@@ -591,9 +600,8 @@ public class CreateTenantTaskServiceTest {
       assertThat(finalState.tenantServiceLink, notNullValue());
 
       TenantService.State tenantState =
-          testEnvironment.getServiceState(finalState.tenantServiceLink, TenantService.State.class);
-      assertThat(tenantState.tenantName, is(Constants.TENANT_NAME));
-      assertThat(tenantState.tenantId, is(tenantEntity.getId()));
+          cloudStoreTestEnvironment.getServiceState(finalState.tenantServiceLink, TenantService.State.class);
+      assertThat(tenantState.name, is(Constants.TENANT_NAME));
     }
 
     @Test(dataProvider = "CreateTenantExceptions")

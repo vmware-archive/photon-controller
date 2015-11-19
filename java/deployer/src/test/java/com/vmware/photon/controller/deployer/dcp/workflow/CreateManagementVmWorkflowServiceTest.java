@@ -30,6 +30,7 @@ import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
@@ -40,8 +41,6 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFa
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -541,9 +540,8 @@ public class CreateManagementVmWorkflowServiceTest {
     public void setUp() throws Throwable {
 
       projectServiceStartState = new ProjectService.State();
-      projectServiceStartState.projectName = "projectName";
-      projectServiceStartState.resourceTicketServiceLink = "resourceTicketServiceLink";
-      projectServiceStartState.projectId = "projectid";
+      projectServiceStartState.name = "projectName";
+      projectServiceStartState.resourceTicketId = "resourceTicketServiceLink";
       projectServiceStartState.documentSelfLink = "projectid";
 
       dockerProvisioner = mock(DockerProvisioner.class);
@@ -799,11 +797,7 @@ public class CreateManagementVmWorkflowServiceTest {
 
       FlavorService.State flavorServiceState = TestHelper.createFlavor(cloudStoreMachine);
 
-      ProjectService.State projectServiceState =
-          machine.callServiceSynchronously(
-              ProjectFactoryService.SELF_LINK,
-              projectServiceStartState,
-              ProjectService.State.class);
+      ProjectService.State projectServiceState = TestHelper.createProject("tenant1", "rt1", cloudStoreMachine);
 
       VmService.State vmServiceStartState = TestHelper.getVmServiceStartState(hostServiceState);
       vmServiceStartState.ipAddress = "1.1.1.1";
