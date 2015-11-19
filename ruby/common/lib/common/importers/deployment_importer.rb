@@ -29,8 +29,9 @@ module EsxCloud
       fail UnexpectedFormat, "No deployment defined" unless deployment
 
       deployment['use_image_datastore_for_vms'] = false unless deployment['use_image_datastore_for_vms'] == true
+      image_datastores = deployment['image_datastores'].split(/\s*,\s*/)
       EsxCloud::DeploymentCreateSpec.new(
-        deployment['image_datastore'],
+        image_datastores,
         EsxCloud::AuthInfo.new(
           deployment['auth_enabled'] == true,
           deployment['oauth_endpoint'],
