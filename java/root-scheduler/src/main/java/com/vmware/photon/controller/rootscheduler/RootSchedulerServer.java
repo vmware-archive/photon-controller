@@ -44,7 +44,7 @@ public class RootSchedulerServer {
   private final String bind;
   private final String registrationAddress;
   private final int port;
-  private final RootSchedulerService rootSchedulerService;
+  private final RootScheduler.Iface rootSchedulerService;
   private final TProtocolFactory protocolFactory;
   private final TTransportFactory transportFactory;
   private final ServiceNodeFactory serviceNodeFactory;
@@ -58,7 +58,7 @@ public class RootSchedulerServer {
   public RootSchedulerServer(@Config.Bind String bind,
                              @Config.RegistrationAddress String registrationAddress,
                              @Config.Port int port,
-                             RootSchedulerService rootSchedulerService,
+                             RootScheduler.Iface rootSchedulerService,
                              TProtocolFactory protocolFactory,
                              TTransportFactory transportFactory,
                              ServiceNodeFactory serviceNodeFactory,
@@ -87,7 +87,7 @@ public class RootSchedulerServer {
     InetSocketAddress bindSocketAddress = new InetSocketAddress(bindIpAddress, port);
     TServerSocket transport = new TServerSocket(bindSocketAddress);
 
-    RootScheduler.Processor<RootSchedulerService> rootSchedulerProcessor =
+    RootScheduler.Processor<RootScheduler.Iface> rootSchedulerProcessor =
         new RootScheduler.Processor<>(rootSchedulerService);
     TMultiplexedProcessor processor = new TMultiplexedProcessor();
     processor.registerProcessor("RootScheduler", rootSchedulerProcessor);
@@ -98,14 +98,15 @@ public class RootSchedulerServer {
             .protocolFactory(protocolFactory)
             .transportFactory(transportFactory)
     );
+    logger.info("michi1");
 
     // Need to re-fetch local port in case it was 0
     InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress,
         transport.getServerSocket().getLocalPort());
     serviceNode = serviceNodeFactory.createLeader("root-scheduler", registrationSocketAddress);
-
-    server.setServerEventHandler(thriftFactory.create(rootSchedulerService, serviceNode));
-
+    if (rootSchedulerService instanceof RootSchedulerService) {
+      server.setServerEventHandler(thriftFactory.create((RootSchedulerService) rootSchedulerService, serviceNode));
+    }
     logger.info("Starting root scheduler ({})", buildInfo);
     logger.info("Listening on: {}", bindSocketAddress);
     logger.info("Registering address: {}", registrationSocketAddress);

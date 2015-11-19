@@ -40,6 +40,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  */
 @SuppressWarnings("UnusedDeclaration")
 public class Config {
+  private String mode;
+
+  private String constraintChecker;
 
   @NotNull
   @Range(min = 0, max = 65535)
@@ -95,6 +98,14 @@ public class Config {
     } catch (UnknownHostException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public String getMode() {
+    return mode;
+  }
+
+  public String getConstraintChecker() {
+    return constraintChecker;
   }
 
   public Integer getPort() {

@@ -81,6 +81,7 @@ public class RootSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     this.rootSchedulerServerSet = rootSchedulerServerSet;
     this.leader = false;
     this.buildInfo = buildInfo;
+    logger.info("Initialized root scheduler service: {}", buildInfo);
   }
 
   private static void initRequestId(PlaceRequest placeRequest) {
