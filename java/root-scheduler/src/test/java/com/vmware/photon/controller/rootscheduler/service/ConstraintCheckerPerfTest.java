@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
-import com.vmware.dcp.common.Operation;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
@@ -26,6 +25,7 @@ import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 
 import com.google.common.base.Stopwatch;
+import com.vmware.xenon.common.Operation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.DataProvider;
