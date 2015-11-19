@@ -56,7 +56,7 @@ describe "Mesos cluster-service lifecycle", cluster: true do
         type: "MESOS",
         vm_flavor: @seeder.vm_flavor!.name,
         disk_flavor: @seeder.ephemeral_disk_flavor!.name,
-        network_id: @seeder.network!.id,
+        network_id: @seeder.networks![0].id,
         slave_count: 1,
         batch_size: nil,
         extended_properties: props
