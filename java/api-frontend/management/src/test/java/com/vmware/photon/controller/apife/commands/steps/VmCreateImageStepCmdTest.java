@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.ImageSettingsEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -37,6 +38,8 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -65,6 +68,8 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
   private ImageLoader imageLoader;
   @Mock
   private ImageStore imageStore;
+  @Mock
+  private ImageConfig imageConfig;
   private StepEntity step;
   private ImageEntity image;
   private ImageEntity vmImage;
@@ -103,7 +108,7 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
     step.addResource(vm);
     step.addResource(vmImage);
 
-    command = spy(new VmCreateImageStepCmd(taskCommand, stepBackend, step, imageBackend, imageStore));
+    command = spy(new VmCreateImageStepCmd(taskCommand, stepBackend, step, imageBackend, imageStore, imageConfig));
     doReturn(imageLoader).when(command).getImageLoader();
   }
 
@@ -118,6 +123,7 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
 
     InOrder inOrder = inOrder(imageBackend, imageLoader);
     inOrder.verify(imageLoader).loadImage(image, vm.getId(), vm.getHost());
+    inOrder.verify(imageBackend).updateImageDatastore(eq(image.getId()), anyString());
     verifyNoMoreInteractions(imageBackend, imageLoader);
   }
 
@@ -134,6 +140,7 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
     InOrder inOrder = inOrder(imageBackend, imageLoader);
     inOrder.verify(imageLoader).loadImage(image, vm.getId(), vm.getHost());
     inOrder.verify(imageBackend).updateState(image, ImageState.READY);
+    inOrder.verify(imageBackend).updateImageDatastore(eq(image.getId()), anyString());
     verifyNoMoreInteractions(imageBackend, imageLoader);
   }
 

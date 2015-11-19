@@ -136,7 +136,7 @@ public class StepCommandFactory {
       case GET_MKS_TICKET:
         return new VmGetMksTicketStepCmd(taskCommand, stepBackend, stepEntity, taskBackend);
       case CREATE_VM_IMAGE:
-        return new VmCreateImageStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore);
+        return new VmCreateImageStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore, imageConfig);
       case DELETE_IMAGE:
         return new ImageDeleteStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore);
       case DELETE_IMAGE_REPLICAS:
