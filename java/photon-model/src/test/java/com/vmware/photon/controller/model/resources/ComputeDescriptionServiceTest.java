@@ -102,7 +102,7 @@ public class ComputeDescriptionServiceTest {
     @Test
     public void testValidStartState() throws Throwable {
       ComputeDescriptionService.ComputeDescription startState = buildValidStartState();
-      ComputeDescriptionService.ComputeDescription returnState = machine.callServiceSynchronously(
+      ComputeDescriptionService.ComputeDescription returnState = host.postServiceSynchronously(
           ComputeDescriptionFactoryService.SELF_LINK,
           startState,
           ComputeDescriptionService.ComputeDescription.class);
@@ -119,7 +119,7 @@ public class ComputeDescriptionServiceTest {
       ComputeDescriptionService.ComputeDescription startState = buildValidStartState();
       startState.id = null;
 
-      ComputeDescriptionService.ComputeDescription returnState = machine.callServiceSynchronously(
+      ComputeDescriptionService.ComputeDescription returnState = host.postServiceSynchronously(
           ComputeDescriptionFactoryService.SELF_LINK,
           startState,
           ComputeDescriptionService.ComputeDescription.class);
@@ -133,7 +133,7 @@ public class ComputeDescriptionServiceTest {
       ComputeDescriptionService.ComputeDescription startState = buildValidStartState();
       startState.bootAdapterReference = null;
 
-      machine.callServiceSynchronously(
+      host.postServiceSynchronously(
           ComputeDescriptionFactoryService.SELF_LINK,
           startState,
           ComputeDescriptionService.ComputeDescription.class,
@@ -145,7 +145,7 @@ public class ComputeDescriptionServiceTest {
       ComputeDescriptionService.ComputeDescription startState = buildValidStartState();
       startState.powerAdapterReference = null;
 
-      machine.callServiceSynchronously(
+      host.postServiceSynchronously(
           ComputeDescriptionFactoryService.SELF_LINK,
           startState,
           ComputeDescriptionService.ComputeDescription.class,
@@ -157,7 +157,7 @@ public class ComputeDescriptionServiceTest {
       ComputeDescriptionService.ComputeDescription startState = buildValidStartState();
       startState.instanceAdapterReference = null;
 
-      machine.callServiceSynchronously(
+      host.postServiceSynchronously(
           ComputeDescriptionFactoryService.SELF_LINK,
           startState,
           ComputeDescriptionService.ComputeDescription.class,

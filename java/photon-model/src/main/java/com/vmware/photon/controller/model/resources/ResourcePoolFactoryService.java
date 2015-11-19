@@ -21,14 +21,14 @@ import com.vmware.photon.controller.model.UriPaths;
 import java.util.UUID;
 
 /**
- * Creates compute host description instances.
+ * This class implements a DCP service which provides a factory for
+ * {@link ResourcePoolService} instances.
  */
-public class ComputeDescriptionFactoryService extends FactoryService {
+public class ResourcePoolFactoryService extends FactoryService {
+  public static final String SELF_LINK = UriPaths.RESOURCES + "/pools";
 
-  public static final String SELF_LINK = UriPaths.RESOURCES + "/compute-descriptions";
-
-  public ComputeDescriptionFactoryService() {
-    super(ComputeDescriptionService.ComputeDescription.class);
+  public ResourcePoolFactoryService() {
+    super(ResourcePoolService.ResourcePoolState.class);
   }
 
   @Override
@@ -38,9 +38,7 @@ public class ComputeDescriptionFactoryService extends FactoryService {
       return;
     }
 
-    ComputeDescriptionService.ComputeDescription initState = post.getBody(
-        ComputeDescriptionService.ComputeDescription.class);
-
+    ResourcePoolService.ResourcePoolState initState = post.getBody(ResourcePoolService.ResourcePoolState.class);
     if (initState.id == null) {
       initState.id = UUID.randomUUID().toString();
     }
@@ -50,6 +48,6 @@ public class ComputeDescriptionFactoryService extends FactoryService {
 
   @Override
   public Service createServiceInstance() throws Throwable {
-    return new ComputeDescriptionService();
+    return new ResourcePoolService();
   }
 }
