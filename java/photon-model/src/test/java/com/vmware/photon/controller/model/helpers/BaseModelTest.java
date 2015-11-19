@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.model.helpers;
 
 import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
+import com.vmware.photon.controller.model.resources.ResourcePoolFactoryService;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -35,27 +36,28 @@ public abstract class BaseModelTest {
   private static final int HOST_PORT = 0;
   private static final Logger logger = LoggerFactory.getLogger(BaseModelTest.class);
 
-  protected TestHost machine;
+  protected TestHost host;
   private Path sandboxDirectory;
 
   public static final Class[] FACTORY_SERVICES = {
       ComputeDescriptionFactoryService.class,
+      ResourcePoolFactoryService.class,
   };
 
   @BeforeClass
   public void setUpClass() throws Throwable {
-    if (machine == null) {
+    if (host == null) {
       sandboxDirectory = Files.createTempDirectory(null);
-      machine = new TestHost(HOST_PORT, sandboxDirectory, FACTORY_SERVICES);
-      machine.start();
+      host = new TestHost(HOST_PORT, sandboxDirectory, FACTORY_SERVICES);
+      host.start();
     }
   }
 
   @AfterClass
   public void tearDownClass() throws Throwable {
-    if (machine != null) {
-      machine.tearDown();
-      machine = null;
+    if (host != null) {
+      host.tearDown();
+      host = null;
     }
     File sandbox = new File(sandboxDirectory.toUri());
     if (sandbox.exists()) {

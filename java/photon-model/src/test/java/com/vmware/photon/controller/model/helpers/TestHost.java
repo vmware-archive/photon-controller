@@ -64,12 +64,12 @@ public class TestHost extends VerificationHost {
     LogManager.getLogManager().reset();
   }
 
-  public <T extends ServiceDocument> T callServiceSynchronously(
+  public <T extends ServiceDocument> T postServiceSynchronously(
       String serviceUri, T body, Class<T> type) throws Throwable {
-    return callServiceSynchronously(serviceUri, body, type, null);
+    return postServiceSynchronously(serviceUri, body, type, null);
   }
 
-  public <T extends ServiceDocument> T callServiceSynchronously(
+  public <T extends ServiceDocument> T postServiceSynchronously(
       String serviceUri, T body, Class<T> type, Class expectedException) throws Throwable {
 
     this.testStart(1);
@@ -103,6 +103,42 @@ public class TestHost extends VerificationHost {
         });
 
     this.sendRequest(postOperation);
+    this.testWait();
+
+    return (T) responseBody;
+  }
+
+  public <T extends ServiceDocument> void patchServiceSynchronously(
+      String serviceUri, T patchBody) throws Throwable {
+
+    this.testStart(1);
+    Operation patchOperation = Operation
+        .createPatch(UriUtils.buildUri(this, serviceUri))
+        .setBody(patchBody)
+        .setReferer(this.getUri())
+        .setCompletion(getCompletion());
+
+    this.sendRequest(patchOperation);
+    this.testWait();
+  }
+
+  public <T extends ServiceDocument> T getServiceSynchronously(
+      String serviceUri, Class<T> type) throws Throwable {
+
+    this.testStart(1);
+    Operation patchOperation = Operation
+        .createGet(UriUtils.buildUri(this, serviceUri))
+        .setReferer(this.getUri())
+        .setCompletion((operation, throwable) -> {
+          if (throwable != null) {
+            this.failIteration(throwable);
+          }
+
+          responseBody = operation.getBody(type);
+          this.completeIteration();
+        });
+
+    this.sendRequest(patchOperation);
     this.testWait();
 
     return (T) responseBody;
