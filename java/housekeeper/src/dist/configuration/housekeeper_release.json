@@ -1,6 +1,6 @@
 {
-  "cpuCount": 1,
-  "memoryMb": 1024,
+  "cpuCount": 2,
+  "memoryMb": 2048,
   "diskGb": 8,
   "isReplicated": true,
   "isPrivileged": false,

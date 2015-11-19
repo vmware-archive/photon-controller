@@ -43,7 +43,6 @@ import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.hamcrest.CoreMatchers;
 import org.mockito.internal.matchers.NotNull;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -53,8 +52,10 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
@@ -499,9 +500,11 @@ public class AllocateHostResourceTaskServiceTest {
       Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
       assertThat(containerServices.size(), is(9));
       assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).sum(), lessThan(8192));
-      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).max().getAsInt(), is(2730));
-      containerServices.stream().forEach(cs -> assertThat(cs.cpuShares, CoreMatchers.is(ContainerService.State
+      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).max().getAsInt(), lessThan(8192));
+      containerServices.stream().forEach(cs -> assertThat(cs.cpuShares, lessThanOrEqualTo(ContainerService.State
           .DOCKER_CPU_SHARES_MAX)));
+      containerServices.stream().forEach(cs -> assertThat(cs.cpuShares, greaterThanOrEqualTo(ContainerService.State
+          .DOCKER_CPU_SHARES_MIN)));
     }
 
     @Test
