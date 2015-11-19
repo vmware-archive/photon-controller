@@ -26,6 +26,7 @@ import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.xenon.common.Operation;
 
 import com.google.common.base.Stopwatch;
+import com.vmware.xenon.common.Operation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.DataProvider;
