@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
+import com.vmware.dcp.common.AutehnticationUtils;
 import com.vmware.dcp.common.FactoryService;
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.OperationJoin;
@@ -222,6 +223,7 @@ public class CopyStateTaskService extends StatefulService {
         .addBooleanClause(typeClause)
         .addBooleanClause(timeClause);
     querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+    ServiceUtils.logInfo(this, Utils.toJson(QueryTask.create(querySpec).setDirect(true)));
 
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {
       @Override
@@ -234,10 +236,14 @@ public class CopyStateTaskService extends StatefulService {
       }
     };
 
+
     Operation post = Operation
         .createPost(buildQueryURI(currentState))
         .setBody(QueryTask.create(querySpec).setDirect(true))
         .setCompletion(handler);
+
+    AutehnticationUtils.addSystemUserAuthcontext(post, getSystemAuthorizationContext());
+    ServiceUtils.logInfo(this, Utils.toJson(post));
     sendRequest(post);
   }
 
@@ -268,6 +274,7 @@ public class CopyStateTaskService extends StatefulService {
     Operation get = Operation
         .createGet(UriUtils.buildUri(currentState.sourceIp, currentState.sourcePort, nextPageLink, null))
         .setCompletion(handler);
+    AutehnticationUtils.addSystemUserAuthcontext(get, getSystemAuthorizationContext());
     sendRequest(get);
   }
 
