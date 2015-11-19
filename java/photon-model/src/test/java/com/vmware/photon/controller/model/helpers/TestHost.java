@@ -18,6 +18,8 @@ import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.ServiceHost;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.test.VerificationHost;
+import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
+import com.vmware.photon.controller.model.resources.ComputeFactoryService;
 
 import java.lang.reflect.Field;
 import java.nio.file.Path;
@@ -30,6 +32,10 @@ public class TestHost extends VerificationHost {
 
   private ServiceDocument responseBody;
   private Class[] factoryServices;
+  public static final Class[] FACTORY_SERVICES = {
+      ComputeDescriptionFactoryService.class,
+      ComputeFactoryService.class
+  };
 
   /**
    * Overloaded Constructor.
