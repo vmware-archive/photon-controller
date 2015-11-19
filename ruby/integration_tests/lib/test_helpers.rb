@@ -91,6 +91,14 @@ module EsxCloud
       ENV["ESX_VM_PORT_GROUP"]
     end
 
+    def self.get_vm_port_group2
+      ENV["ESX_VM_PORT_GROUP2"]
+    end
+
+    def self.get_vm_port_groups
+      [self.get_vm_port_group, self.get_vm_port_group2].compact
+    end
+
     def self.get_datastore_name
       ENV["ESX_DATASTORE"] || "datastore1"
     end
