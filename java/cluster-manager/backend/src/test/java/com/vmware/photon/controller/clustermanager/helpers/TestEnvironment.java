@@ -21,7 +21,7 @@ import com.vmware.photon.controller.clustermanager.clients.MesosClient;
 import com.vmware.photon.controller.clustermanager.clients.SwarmClient;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
-import com.vmware.photon.controller.common.dcp.helpers.dcp.MultiHostEnvironment;
+import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 
 import com.google.common.util.concurrent.ListeningExecutorService;

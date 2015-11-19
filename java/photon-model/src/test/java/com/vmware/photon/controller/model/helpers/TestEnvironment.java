@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.model.helpers;
 
-import com.vmware.photon.controller.common.dcp.helpers.dcp.MultiHostEnvironment;
+import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 
 import static org.testng.Assert.assertTrue;
 
