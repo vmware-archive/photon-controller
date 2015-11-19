@@ -15,6 +15,7 @@ ifdef DISABLE_HYPERVISOR_LOGGING
 endif
 
 export TEST_OPTS
+export PROMOTE_NUMBER
 
 all: test
 
