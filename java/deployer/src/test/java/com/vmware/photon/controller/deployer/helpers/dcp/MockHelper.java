@@ -29,14 +29,15 @@ import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.auth.AuthException;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.helpers.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
@@ -239,23 +240,40 @@ public class MockHelper {
     final Task taskReturnedByAttachIso = TestHelper.createCompletedApifeTask("ATTACH_ISO");
     final Task taskReturnedByCreateManagementVmFlavor =
         TestHelper.createCompletedApifeTask("CREATE_MANAGEMENT_VM_FLAVOR");
+    FlavorService.State flavorService = TestHelper.createFlavor(machine);
+    Task.Entity taskEntity = new Task.Entity();
+    taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(flavorService.documentSelfLink));
+    taskReturnedByCreateManagementVmFlavor.setEntity(taskEntity);
+
     final Task taskReturnedByCreateManagementVmDiskFlavor =
         TestHelper.createCompletedApifeTask("CREATE_MANAGEMENT_VM_DISK_FLAVOR");
+    FlavorService.State diskFlavorService = TestHelper.createFlavor(machine);
+    Task.Entity diskTaskEntity = new Task.Entity();
+    diskTaskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(diskFlavorService.documentSelfLink));
+    taskReturnedByCreateManagementVmDiskFlavor.setEntity(diskTaskEntity);
+
     final Task taskReturnedByCreateClusterMasterVmFlavor =
         TestHelper.createCompletedApifeTask("CREATE_CLUSTER_MASTER_VM_FLAVOR");
-    final Task taskReturnedByCreateClusterOtherVmFlavor =
-        TestHelper.createCompletedApifeTask("CREATE_CLUSTER_OTHER_VM_FLAVOR");
+    FlavorService.State clusteredVmFlavorService = TestHelper.createFlavor(machine);
+    Task.Entity clusterVmTaskEntity = new Task.Entity();
+    clusterVmTaskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(clusteredVmFlavorService.documentSelfLink));
+    taskReturnedByCreateClusterMasterVmFlavor.setEntity(clusterVmTaskEntity);
     final Task taskReturnedByCreateClusterVmDiskFlavor =
         TestHelper.createCompletedApifeTask("CREATE_CLUSTER_VM_DISK_FLAVOR");
 
     ImageService.State imageServiceState = TestHelper.createImageService(machine);
-    Task.Entity taskEntity = new Task.Entity();
-    taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(imageServiceState.documentSelfLink));
+    Task.Entity taskEntityImage = new Task.Entity();
+    taskEntityImage.setId(ServiceUtils.getIDFromDocumentSelfLink(imageServiceState.documentSelfLink));
     Task taskReturnedByUploadManagementImage = new Task();
     taskReturnedByUploadManagementImage.setId("taskId");
     taskReturnedByUploadManagementImage.setState("COMPLETED");
-    taskReturnedByUploadManagementImage.setEntity(taskEntity);
+    taskReturnedByUploadManagementImage.setEntity(taskEntityImage);
 
+    FlavorService.State clusteredVmDiskFlavorService = TestHelper.createFlavor(machine);
+    Task.Entity clusterVmDiskTaskEntity = new Task.Entity();
+    clusterVmDiskTaskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(
+        clusteredVmDiskFlavorService.documentSelfLink));
+    taskReturnedByCreateClusterVmDiskFlavor.setEntity(clusterVmDiskTaskEntity);
     final Task taskReturnedByCreateTenant = TestHelper.createCompletedApifeTask("CREATE_TENANT");
     final Task taskReturnedByCreateResourceTicket = TestHelper.createCompletedApifeTask("CREATE_RESOURCE_TICKET");
     final Task taskReturnedByCreateProject = TestHelper.createCompletedApifeTask("CREATE_PROJECT");

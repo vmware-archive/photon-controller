@@ -28,6 +28,7 @@ import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -41,8 +42,6 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
@@ -64,7 +63,7 @@ import java.util.stream.Collectors;
 import static java.lang.Math.max;
 
 /**
- * This class implements a DCP micro-service which performs the task of creating {@link FlavorService} entities
+ * This class implements a DCP micro-service which performs the task of creating flavorservice entities
  * for the VM.
  */
 public class CreateFlavorTaskService extends StatefulService {
@@ -339,17 +338,10 @@ public class CreateFlavorTaskService extends StatefulService {
     FlavorCreateSpec vmFlavorCreateSpec = composeVmFlavorCreateSpec(vmState, finalCpuCount, finalMemoryMb);
     FlavorCreateSpec diskFlavorCreateSpec = composeDiskFlavorCreateSpec(vmState, finalDiskGb);
 
-    final FlavorService.State flavorState = new FlavorService.State();
-    flavorState.vmFlavorName = vmFlavorCreateSpec.getName();
-    flavorState.diskFlavorName = diskFlavorCreateSpec.getName();
-    flavorState.cpuCount = finalCpuCount;
-    flavorState.memoryMb = finalMemoryMb;
-    flavorState.diskGb = finalDiskGb;
-
     FutureCallback<Task> callback = new FutureCallback<Task>() {
       @Override
       public void onSuccess(@Nullable Task result) {
-        processTask(currentState, result, flavorState, finishLatch, failures);
+        processTask(currentState, result, finishLatch, failures);
       }
 
       @Override
@@ -399,7 +391,7 @@ public class CreateFlavorTaskService extends StatefulService {
     return spec;
   }
 
-  private void processTask(final State currentState, final Task task, final FlavorService.State flavorState,
+  private void processTask(final State currentState, final Task task,
     final AtomicInteger finishLatch, final List<Throwable> failures) {
 
     FutureCallback<Task> pollTaskCallback = new FutureCallback<Task>() {
@@ -407,7 +399,7 @@ public class CreateFlavorTaskService extends StatefulService {
       public void onSuccess(@Nullable Task task) {
         if (0 == finishLatch.decrementAndGet()) {
           if (failures.isEmpty()) {
-            createFlavorService(currentState, flavorState);
+            updateVmService(currentState, task.getEntity().getId());
           } else {
             failTask(ExceptionUtils.createMultiException(failures));
           }
@@ -433,40 +425,13 @@ public class CreateFlavorTaskService extends StatefulService {
         pollTaskCallback);
   }
 
-  private void createFlavorService(final State currentState, final FlavorService.State flavorState) {
+  private void updateVmService(final State currentState, final String flavorServiceId) {
 
-    ServiceUtils.logInfo(this, "Creating flavor service");
-
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (throwable != null) {
-          failTask(throwable);
-          return;
-        }
-
-        try {
-          updateVmService(currentState, operation.getBody(FlavorService.State.class).documentSelfLink);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    Operation postOperation = Operation
-        .createPost(UriUtils.buildUri(getHost(), FlavorFactoryService.SELF_LINK))
-        .setBody(flavorState)
-        .setCompletion(completionHandler);
-    sendRequest(postOperation);
-  }
-
-  private void updateVmService(final State currentState, final String flavorServiceLink) throws Throwable {
-
-    ServiceUtils.logInfo(this, "Updating VM service %s with flavor service link %s", currentState.vmServiceLink,
-        flavorServiceLink);
+    ServiceUtils.logInfo(this, "Updating VM service %s with flavor service id %s", currentState.vmServiceLink,
+        flavorServiceId);
 
     VmService.State vmPatchState = new VmService.State();
-    vmPatchState.flavorServiceLink = flavorServiceLink;
+    vmPatchState.flavorServiceLink = FlavorServiceFactory.SELF_LINK + "/" + flavorServiceId;
     final Service service = this;
 
     Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {

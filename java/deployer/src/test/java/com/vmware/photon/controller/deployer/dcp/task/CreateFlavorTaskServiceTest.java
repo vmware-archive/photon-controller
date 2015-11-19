@@ -25,8 +25,10 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.FlavorApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
@@ -35,7 +37,6 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ApiTestUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -412,17 +413,26 @@ public class CreateFlavorTaskServiceTest {
       taskReturnedByCreateVmFlavor.setId("createVmFlavorTaskId");
       taskReturnedByCreateVmFlavor.setState("STARTED");
 
+
+      FlavorService.State flavorService = TestHelper.createFlavor(cloudStoreMachine);
       taskReturnedByGetCreateVmFlavorTask = new Task();
       taskReturnedByGetCreateVmFlavorTask.setId("createVmFlavorTaskId");
       taskReturnedByGetCreateVmFlavorTask.setState("COMPLETED");
+      Task.Entity taskEntity = new Task.Entity();
+      taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(flavorService.documentSelfLink));
+      taskReturnedByGetCreateVmFlavorTask.setEntity(taskEntity);
 
       taskReturnedByCreateDiskFlavor = new Task();
       taskReturnedByCreateDiskFlavor.setId("createDiskFlavorTaskId");
       taskReturnedByCreateDiskFlavor.setState("STARTED");
 
+      FlavorService.State diskFlavorService = TestHelper.createFlavor(cloudStoreMachine);
       taskReturnedByGetCreateDiskFlavorTask = new Task();
       taskReturnedByGetCreateDiskFlavorTask.setId("createDiskFlavorTaskId");
       taskReturnedByGetCreateDiskFlavorTask.setState("COMPLETED");
+      Task.Entity taskEntityDiskFlavor = new Task.Entity();
+      taskEntityDiskFlavor.setId(ServiceUtils.getIDFromDocumentSelfLink(diskFlavorService.documentSelfLink));
+      taskReturnedByGetCreateDiskFlavorTask.setEntity(taskEntityDiskFlavor);
     }
 
     @AfterMethod
@@ -467,12 +477,8 @@ public class CreateFlavorTaskServiceTest {
       assertThat(vmServiceFinalState.flavorServiceLink, notNullValue());
 
       FlavorService.State vmFlavorState =
-          machine.getServiceState(vmServiceFinalState.flavorServiceLink, FlavorService.State.class);
-      assertThat(vmFlavorState.vmFlavorName, is("mgmt-vm-NAME"));
-      assertThat(vmFlavorState.diskFlavorName, is("mgmt-vm-disk-NAME"));
-      assertThat(vmFlavorState.cpuCount, is(2));
-      assertThat(vmFlavorState.memoryMb, is(6144));
-      assertThat(vmFlavorState.diskGb, is(12));
+          cloudStoreMachine.getServiceState(vmServiceFinalState.flavorServiceLink, FlavorService.State.class);
+      assertThat(vmFlavorState.name, is("dummyName"));
     }
 
     @Test
@@ -500,12 +506,8 @@ public class CreateFlavorTaskServiceTest {
       assertThat(vmServiceFinalState.flavorServiceLink, notNullValue());
 
       FlavorService.State vmFlavorState =
-          machine.getServiceState(vmServiceFinalState.flavorServiceLink, FlavorService.State.class);
-      assertThat(vmFlavorState.vmFlavorName, is("mgmt-vm-NAME"));
-      assertThat(vmFlavorState.diskFlavorName, is("mgmt-vm-disk-NAME"));
-      assertThat(vmFlavorState.cpuCount, is(1));
-      assertThat(vmFlavorState.memoryMb, is(2));
-      assertThat(vmFlavorState.diskGb, is(3));
+          cloudStoreMachine.getServiceState(vmServiceFinalState.flavorServiceLink, FlavorService.State.class);
+      assertThat(vmFlavorState.name, is("dummyName"));
     }
 
     @Test
