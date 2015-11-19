@@ -104,6 +104,7 @@ class TMultiplexedProcessor(TProcessor):
     def __init__(self):
         self.services = {}
         self.shutting_down = False
+        self._logger = logging.getLogger(__name__)
 
     def registerProcessor(self, service_name, processor, num_workers=0,
                           max_queued_entries=0):
@@ -136,8 +137,8 @@ class TMultiplexedProcessor(TProcessor):
         self.services[service_name] = ServiceProcessor(service_name, processor,
                                                        service_queue, workers,
                                                        max_queued_entries)
-        logging.info("Initialized service %s, with threadpool size %d"
-                     % (service_name, num_workers))
+        self._logger.info("Initialized service %s, with threadpool size %d"
+                          % (service_name, num_workers))
 
     def shutdown(self):
         """
@@ -183,19 +184,20 @@ class TMultiplexedProcessor(TProcessor):
         """
         # Check if we are shutting down.
         if self.shutting_down:
-            logging.warning("Processor shutting down, failing request")
+            self._logger.warning("Processor shutting down, failing request")
             raise TException("Processor shuttind down")
 
         # Check if it is a valid message
         (name, m_type, seqid) = iprot.readMessageBegin()
         if m_type != TMessageType.CALL & m_type != TMessageType.ONEWAY:
-            logging.warning("Invalid message: This should not have happened")
+            self._logger.warning(
+                "Invalid message: This should not have happened")
             raise TException("Invalid message type")
 
         # Check if we can find the service name
         index = name.find(SEPARATOR)
         if index < 0:
-            logging.warning(
+            self._logger.warning(
                 "Service name not found in message name: " + name +
                 ". Did you forget to use TMultiplexProtocol in your client?")
             raise TException("Service name not found")
@@ -204,14 +206,15 @@ class TMultiplexedProcessor(TProcessor):
         service_name = name[0:index]
         m_call = name[index+len(SEPARATOR):]
         if service_name not in self.services:
-            logging.warning("Service name not found: " + service_name +
-                            ". Did you forget to call registerProcessor()?")
+            self._logger.warning(
+                "Service name not found: " + service_name +
+                ". Did you forget to call registerProcessor()?")
             raise TException("Service not found")
 
         # Check if the queue is already backed up.
         if (self.services[service_name].is_full()):
             err = "Queue is full for service: %s" % service_name
-            logging.warning(err)
+            self._logger.warning(err)
             raise TException(err)
 
         standardMessage = (
