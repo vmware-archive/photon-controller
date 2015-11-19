@@ -24,7 +24,6 @@ dependencies {
     testCompile "org.powermock:powermock-api-mockito:${versions.powermock}"
     testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
     testCompile(project(path: ':common', configuration: 'tests'))
-    testCompile(project(path: ':common-dcp', configuration: 'tests'))
     testCompile(project(path: ':cloud-store', configuration: 'tests'))
 }
 

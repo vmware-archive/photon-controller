@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
-import com.vmware.photon.controller.common.dcp.helpers.dcp.MultiHostEnvironment;
+import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 
 import org.apache.commons.io.FileUtils;
