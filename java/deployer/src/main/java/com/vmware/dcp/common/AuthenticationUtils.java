@@ -17,7 +17,7 @@ import com.vmware.dcp.common.Operation.AuthorizationContext;
 /**
  * This class allows us to use a package private method to set an AuthorizationContext on an Operation.
  */
-public class AutehnticationUtils {
+public class AuthenticationUtils {
 
   public static Operation addSystemUserAuthcontext(Operation post, AuthorizationContext authorizationContext) {
     post.setAuthorizationContext(authorizationContext);

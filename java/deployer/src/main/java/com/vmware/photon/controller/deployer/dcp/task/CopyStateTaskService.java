@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.AutehnticationUtils;
+import com.vmware.dcp.common.AuthenticationUtils;
 import com.vmware.dcp.common.FactoryService;
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.OperationJoin;
@@ -242,7 +242,7 @@ public class CopyStateTaskService extends StatefulService {
         .setBody(QueryTask.create(querySpec).setDirect(true))
         .setCompletion(handler);
 
-    AutehnticationUtils.addSystemUserAuthcontext(post, getSystemAuthorizationContext());
+    AuthenticationUtils.addSystemUserAuthcontext(post, getSystemAuthorizationContext());
     ServiceUtils.logInfo(this, Utils.toJson(post));
     sendRequest(post);
   }
@@ -274,7 +274,7 @@ public class CopyStateTaskService extends StatefulService {
     Operation get = Operation
         .createGet(UriUtils.buildUri(currentState.sourceIp, currentState.sourcePort, nextPageLink, null))
         .setCompletion(handler);
-    AutehnticationUtils.addSystemUserAuthcontext(get, getSystemAuthorizationContext());
+    AuthenticationUtils.addSystemUserAuthcontext(get, getSystemAuthorizationContext());
     sendRequest(get);
   }
 
