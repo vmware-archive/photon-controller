@@ -13,8 +13,15 @@
 
 package com.vmware.photon.controller.model.helpers;
 
+import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
+
+import org.apache.commons.io.FileUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Abstract base class that creates a DCP ServiceHost
@@ -22,15 +29,20 @@ import org.testng.annotations.BeforeClass;
  */
 public abstract class BaseModelTest {
 
-  public static final int HOST_COUNT = 1;
-  public static final String TAG = "REUSE_HOST";
+  private static final int HOST_PORT = 0;
 
-  protected TestEnvironment machine;
+  protected TestHost machine;
+  private Path sandboxDirectory;
+
+  public static final Class[] FACTORY_SERVICES = {
+      ComputeDescriptionFactoryService.class,
+  };
 
   @BeforeClass
   public void setUpClass() throws Throwable {
     if (machine == null) {
-      machine = new TestEnvironment(HOST_COUNT);
+      sandboxDirectory = Files.createTempDirectory(null);
+      machine = new TestHost(HOST_PORT, sandboxDirectory, FACTORY_SERVICES);
       machine.start();
     }
   }
@@ -38,8 +50,12 @@ public abstract class BaseModelTest {
   @AfterClass
   public void tearDownClass() throws Throwable {
     if (machine != null) {
-      machine.stop();
+      machine.tearDown();
       machine = null;
+    }
+    File sandbox = new File(sandboxDirectory.toUri());
+    if (sandbox.exists()) {
+      FileUtils.forceDelete(sandbox);
     }
   }
 }

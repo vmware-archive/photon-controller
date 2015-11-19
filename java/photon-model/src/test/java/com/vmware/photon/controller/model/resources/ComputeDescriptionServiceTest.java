@@ -128,7 +128,7 @@ public class ComputeDescriptionServiceTest {
       assertNotNull(returnState.id);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test
     public void testMissingBootAdapterReference() throws Throwable {
       ComputeDescriptionService.ComputeDescription startState = buildValidStartState();
       startState.bootAdapterReference = null;
@@ -136,10 +136,11 @@ public class ComputeDescriptionServiceTest {
       machine.callServiceSynchronously(
           ComputeDescriptionFactoryService.SELF_LINK,
           startState,
-          ComputeDescriptionService.ComputeDescription.class);
+          ComputeDescriptionService.ComputeDescription.class,
+          IllegalArgumentException.class);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test
     public void testMissingPowerAdapterReference() throws Throwable {
       ComputeDescriptionService.ComputeDescription startState = buildValidStartState();
       startState.powerAdapterReference = null;
@@ -147,10 +148,11 @@ public class ComputeDescriptionServiceTest {
       machine.callServiceSynchronously(
           ComputeDescriptionFactoryService.SELF_LINK,
           startState,
-          ComputeDescriptionService.ComputeDescription.class);
+          ComputeDescriptionService.ComputeDescription.class,
+          IllegalArgumentException.class);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test
     public void testMissingInstanceAdapterReference() throws Throwable {
       ComputeDescriptionService.ComputeDescription startState = buildValidStartState();
       startState.instanceAdapterReference = null;
@@ -158,7 +160,8 @@ public class ComputeDescriptionServiceTest {
       machine.callServiceSynchronously(
           ComputeDescriptionFactoryService.SELF_LINK,
           startState,
-          ComputeDescriptionService.ComputeDescription.class);
+          ComputeDescriptionService.ComputeDescription.class,
+          IllegalArgumentException.class);
     }
   }
 }
