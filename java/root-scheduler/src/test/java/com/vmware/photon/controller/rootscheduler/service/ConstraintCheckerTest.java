@@ -13,25 +13,24 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
-
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
-import static org.testng.Assert.assertEquals;
-
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
+
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -43,7 +42,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
+ * Test Constraint Checker.
  */
 public class ConstraintCheckerTest {
   /**
@@ -52,10 +51,11 @@ public class ConstraintCheckerTest {
    * - 10 hosts: host0, host1, ..., host9
    * - 1 network per host: host0 => nw0, host1 => nw1, ..., host9 => nw9
    * - 1 datastore per host: host0 => ds0, host1 => ds1, ..., host9 => ds9
-   * - each host with a unique availability zone: host0 => az0, host1 => az1, ..., host9, az9
+   * - each host with a unique availability zone: host0 => az0, host1 => az1, ..., host9 => az9
    * - 1 tag per datastore: ds0 => dstag0, ds1 => dstag1, ..., ds9 => dstag9
    * - 5 management hosts host0, host2, host4, host6, host8
    */
+
   @DataProvider(name = "default")
   public Object[][] createDefault() {
     Map<String, HostService.State> hosts = new HashMap<>();
@@ -73,6 +73,8 @@ public class ConstraintCheckerTest {
       host.availabilityZone = azName;
       if (i % 2 == 0) {
         host.usageTags = new HashSet<>(Arrays.asList(UsageTag.MGMT.name()));
+      } else {
+        host.usageTags = new HashSet<>();
       }
       hosts.put(hostName, host);
 
@@ -88,11 +90,11 @@ public class ConstraintCheckerTest {
 
   @Test(dataProvider = "default")
   public void testDefault(ConstraintChecker checker, Map<String, HostService.State> expectedHosts) {
-    Map<String, ServerAddress> hosts = checker.getManagementHosts();
-    assertThat(hosts.keySet(), containsInAnyOrder("host0", "host2", "host4", "host6", "host8"));
+    Set<String> hosts = checker.getManagementHosts();
+    assertThat(hosts, containsInAnyOrder("host0", "host2", "host4", "host6", "host8"));
 
     hosts = checker.getHosts();
-    assertEquals(hosts.keySet(), expectedHosts.keySet());
+    assertEquals(hosts, expectedHosts.keySet());
 
     for (int i = 0; i < expectedHosts.size(); i++) {
       String hostName = "host" + i;
@@ -101,21 +103,21 @@ public class ConstraintCheckerTest {
       String nwName = "nw" + i;
       String azName = "az" + i;
       hosts = checker.getHostsWithDatastore(dsName);
-      assertThat(hosts.keySet(), containsInAnyOrder(hostName));
+      assertThat(hosts, containsInAnyOrder(hostName));
       hosts = checker.getHostsWithDatastoreTag(dsTag);
-      assertThat(hosts.keySet(), containsInAnyOrder(hostName));
+      assertThat(hosts, containsInAnyOrder(hostName));
       hosts = checker.getHostsWithNetwork(nwName);
-      assertThat(hosts.keySet(), containsInAnyOrder(hostName));
+      assertThat(hosts, containsInAnyOrder(hostName));
       hosts = checker.getHostsInAvailabilityZone(azName);
-      assertThat(hosts.keySet(), containsInAnyOrder(hostName));
+      assertThat(hosts, containsInAnyOrder(hostName));
       hosts = checker.getHostsNotInAvailabilityZone(azName);
-      assertEquals(hosts.keySet(),
+      assertEquals(hosts,
                    Sets.filter(expectedHosts.keySet(), Predicates.not(Predicates.equalTo(hostName))));
     }
   }
   @Test(dataProvider = "default")
   public void testSingleConstraint(ConstraintChecker checker, Map<String, HostService.State> expectedHosts) {
-    Map<String, ServerAddress> allHosts = checker.getHosts();
+    Map<String, ServerAddress> allHosts = checker.getHostMap();
     assertEquals(allHosts.keySet(), expectedHosts.keySet());
     for (Map.Entry<String, ServerAddress> entry: allHosts.entrySet()) {
       assertThat(entry.getKey(), is(entry.getValue().getHost()));
@@ -172,7 +174,7 @@ public class ConstraintCheckerTest {
   @Test(dataProvider = "default")
   public void testNoConstraint(ConstraintChecker checker, Map<String, HostService.State> expectedHosts) {
     // expect to get all the hosts without any constraint.
-    Map<String, ServerAddress> allHosts = checker.getHosts();
+    Map<String, ServerAddress> allHosts = checker.getHostMap();
     List<ResourceConstraint> constraints = new LinkedList<>();
     Map<String, ServerAddress> candidates = checker.getCandidates(constraints, 10);
     assertEquals(candidates, allHosts);

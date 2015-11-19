@@ -16,13 +16,15 @@ import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Interface for resolving scheduler resource constraints.
@@ -30,59 +32,101 @@ import java.util.Map;
 public interface ConstraintChecker {
   int DEFAULT_AGENT_PORT = 8835;
 
+  Random RANDOM = new Random();
+
   /**
-   * Returns all the hosts with the given datastore.
+   * Returns all the hosts with a given datastore.
    *
    * @param datastoreId
-   * @return A map from host ID to ServerAddress (ip, port).
+   * @return A set of host IDs with the given datastore.
    */
-  Map<String, ServerAddress> getHostsWithDatastore(String datastoreId);
+  ImmutableSet<String> getHostsWithDatastore(String datastoreId);
 
   /**
-   * Returns all the hosts with the given network.
+   * Returns all the hosts with a given network.
    *
    * @param networkId
-   * @return A map from host ID to ServerAddress (ip, port).
+   * @return A set of host IDs with the given network.
    */
-  Map<String, ServerAddress> getHostsWithNetwork(String networkId);
+  ImmutableSet<String> getHostsWithNetwork(String networkId);
 
   /**
-   * Returns all the hosts in the given availability zone.
+   * Returns all the hosts in a given availability zone.
    *
    * @param availabilityZone
-   * @return A map from host ID to ServerAddress (ip, port).
+   * @return A set of host IDs in a given availability zone.
    */
-  Map<String, ServerAddress> getHostsInAvailabilityZone(String availabilityZone);
+  ImmutableSet<String> getHostsInAvailabilityZone(String availabilityZone);
 
   /**
-   * Returns all the hosts outside the given availability zone.
+   * Returns all the hosts outside a given availability zone.
    *
    * @param availabilityZone
-   * @return A map from host ID to ServerAddress (ip, port).
+   * @return A set of host IDs outside a given availability zone.
    */
-  Map<String, ServerAddress> getHostsNotInAvailabilityZone(String availabilityZone);
+  ImmutableSet<String> getHostsNotInAvailabilityZone(String availabilityZone);
 
   /**
    * Returns all the hosts that has access to any datastore with a given tag.
    *
    * @param datastoreTag
-   * @return A map from host ID to ServerAddress (ip, port).
+   * @return A set of host IDs with any datastore with a given tag.
    */
-  Map<String, ServerAddress> getHostsWithDatastoreTag(String datastoreTag);
+  ImmutableSet<String> getHostsWithDatastoreTag(String datastoreTag);
 
   /**
    * Returns all the management hosts.
    *
-   * @return A map from host ID to ServerAddress (ip, port).
+   * @return A set of management host IDs .
    */
-  Map<String, ServerAddress> getManagementHosts();
+  ImmutableSet<String> getManagementHosts();
 
   /**
-   * Returns all the hosts.
+   * Returns all the host IDs.
    *
-   * @return A map from host ID to ServerAddress (ip, port).
+   * @return A set of host IDs.
    */
-  Map<String, ServerAddress> getHosts();
+  ImmutableSet<String> getHosts();
+
+  /**
+   * Returns a map from host ID to {@link ServerAddress}.
+   *
+   * @return a map from host ID to {@link ServerAddress}.
+   */
+  ImmutableMap<String, ServerAddress> getHostMap();
+
+  /**
+   * Returns a set of host IDs that satisfy a given constraint.
+   *
+   * @param constraint
+   * @return a set of hostIDs that satisfy a given constraints.
+   */
+  default ImmutableSet<String> checkConstraint(ResourceConstraint constraint) {
+    ImmutableSet<String> matches;
+    if (!constraint.isSetValues() || constraint.getValues().size() != 1) {
+      throw new IllegalArgumentException("Invalid constraint with multiple values: " + constraint);
+    }
+    String value = constraint.getValues().get(0);
+    if (constraint.getType() == ResourceConstraintType.DATASTORE) {
+      matches = getHostsWithDatastore(value);
+    } else if (constraint.getType() == ResourceConstraintType.NETWORK) {
+      // TODO(mmutsuzaki) support multiple networks?
+      matches = getHostsWithNetwork(value);
+    } else if (constraint.getType() == ResourceConstraintType.AVAILABILITY_ZONE) {
+      if (constraint.isNegative()) {
+        matches = getHostsNotInAvailabilityZone(value);
+      } else {
+        matches = getHostsInAvailabilityZone(value);
+      }
+    } else if (constraint.getType() == ResourceConstraintType.DATASTORE_TAG) {
+      matches = getHostsWithDatastoreTag(value);
+    } else if (constraint.getType() == ResourceConstraintType.MANAGEMENT_ONLY) {
+      matches = getManagementHosts();
+    } else {
+      throw new IllegalArgumentException("Unsupported constraint type: " + constraint);
+    }
+    return matches;
+  }
 
   /**
    * Randomly pick candidates that satisfy all the resource constraints.
@@ -97,42 +141,23 @@ public interface ConstraintChecker {
    */
   default Map<String, ServerAddress> getCandidates(List<ResourceConstraint> constraints, int numCandidates) {
     // Find all the hosts that satisfy the resource constraints.
-    Map<String, ServerAddress> matches = getHosts();
-    for (ResourceConstraint constraint: constraints) {
-      if (!constraint.isSetValues() || constraint.getValues().size() != 1) {
-        throw new IllegalArgumentException("Invalid constraint with multiple values: " + constraint);
-      }
-      String value = constraint.getValues().get(0);
-      if (constraint.getType() == ResourceConstraintType.DATASTORE) {
-        matches = Maps.difference(matches, getHostsWithDatastore(value)).entriesInCommon();
-      } else if (constraint.getType() == ResourceConstraintType.NETWORK) {
-        // TODO(mmutsuzaki) support multiple networks?
-        matches = Maps.difference(matches, getHostsWithNetwork(value)).entriesInCommon();
-      } else if (constraint.getType() == ResourceConstraintType.AVAILABILITY_ZONE) {
-        if (constraint.isNegative()) {
-          matches = Maps.difference(matches, getHostsNotInAvailabilityZone(value)).entriesInCommon();
-        } else {
-          matches = Maps.difference(matches, getHostsInAvailabilityZone(value)).entriesInCommon();
-        }
-      } else if (constraint.getType() == ResourceConstraintType.DATASTORE_TAG) {
-        matches = Maps.difference(matches, getHostsWithDatastoreTag(value)).entriesInCommon();
-      } else if (constraint.getType() == ResourceConstraintType.MANAGEMENT_ONLY) {
-        matches = Maps.difference(matches, getManagementHosts()).entriesInCommon();
-      } else {
-        throw new IllegalArgumentException("Unsupported constraint type: " + constraint);
+    ImmutableSet<String> matches;
+    if (constraints.isEmpty()) {
+      matches = getHosts();
+    } else {
+      Iterator<ResourceConstraint> iterator = constraints.iterator();
+      matches = checkConstraint(iterator.next());
+      while (iterator.hasNext()) {
+        matches = Sets.intersection(matches, checkConstraint(iterator.next())).immutableCopy();
       }
     }
 
     // Randomly pick candidates. Pretty sure there is a better way to do this...
-    List<String> candidates = new ArrayList<>(matches.keySet());
-    Collections.shuffle(candidates);
     Map<String, ServerAddress> result = new HashMap<>();
-    for (String candidate: candidates) {
-      result.put(candidate, matches.get(candidate));
-      if (result.size() == numCandidates) {
-        break;
-      }
+    while (result.size() < numCandidates && result.size() < matches.size()) {
+      String pick = matches.asList().get(RANDOM.nextInt(matches.size()));
+      result.put(pick, getHostMap().get(pick));
     }
-    return result;
+    return ImmutableMap.copyOf(result);
   }
 }

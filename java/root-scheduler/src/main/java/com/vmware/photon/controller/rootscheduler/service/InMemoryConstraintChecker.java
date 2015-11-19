@@ -17,23 +17,23 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Random;
 
 /**
  * An immutable, in-memory implementation of {@link ConstraintChecker}.
  */
 public class InMemoryConstraintChecker implements ConstraintChecker {
   private static final Logger logger = LoggerFactory.getLogger(InMemoryConstraintChecker.class);
+
+  private Random random = new Random();
 
   // Map from host ID to host:port
   private final ImmutableMap<String, ServerAddress> hosts;
@@ -42,16 +42,16 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
   private final ImmutableSet<String> managementHosts;
 
   // Map from network ID to host IDs
-  private final ImmutableMultimap<String, String> networks;
+  private final ImmutableSetMultimap<String, String> networks;
 
   // Map from datastore ID to host IDs
-  private final ImmutableMultimap<String, String> datastores;
+  private final ImmutableSetMultimap<String, String> datastores;
 
   // Map from datastore tag to host IDs
-  private final ImmutableMultimap<String, String> datastoreTags;
+  private final ImmutableSetMultimap<String, String> datastoreTags;
 
   // Map from availability zone to host IDs
-  private final ImmutableMultimap<String, String> availabilityZones;
+  private final ImmutableSetMultimap<String, String> availabilityZones;
 
 
   public InMemoryConstraintChecker(Map<String, HostService.State> hosts,
@@ -106,42 +106,41 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
   }
 
   @Override
-  public Map<String, ServerAddress> getHostsWithDatastore(String datastoreId) {
-    ImmutableCollection<String> hostsWithDatastore = datastores.get(datastoreId);
-    return Maps.filterKeys(hosts, Predicates.in(hostsWithDatastore));
+  public ImmutableSet<String> getHostsWithDatastore(String datastoreId) {
+    return datastores.get(datastoreId);
   }
 
   @Override
-  public Map<String, ServerAddress> getHostsWithNetwork(String networkId) {
-    ImmutableCollection<String> hostsWithNetwork = networks.get(networkId);
-    return Maps.filterKeys(hosts, Predicates.in(hostsWithNetwork));
+  public ImmutableSet<String> getHostsWithNetwork(String networkId) {
+    return networks.get(networkId);
   }
 
   @Override
-  public Map<String, ServerAddress> getHostsInAvailabilityZone(String availabilityZone) {
-    ImmutableCollection<String> hostsInAvailabilityZone = availabilityZones.get(availabilityZone);
-    return Maps.filterKeys(hosts, Predicates.in(hostsInAvailabilityZone));
+  public ImmutableSet<String> getHostsInAvailabilityZone(String availabilityZone) {
+    return availabilityZones.get(availabilityZone);
   }
 
   @Override
-  public Map<String, ServerAddress> getHostsNotInAvailabilityZone(String availabilityZone) {
-    ImmutableCollection<String> hostsInAvailabilityZone = availabilityZones.get(availabilityZone);
-    return Maps.filterKeys(hosts, Predicates.not(Predicates.in(hostsInAvailabilityZone)));
+  public ImmutableSet<String> getHostsNotInAvailabilityZone(String availabilityZone) {
+    return Sets.difference(hosts.keySet(), availabilityZones.get(availabilityZone)).immutableCopy();
   }
 
   @Override
-  public Map<String, ServerAddress> getManagementHosts() {
-    return Maps.filterKeys(hosts, Predicates.in(managementHosts));
+  public ImmutableSet<String> getManagementHosts() {
+    return managementHosts;
   }
 
   @Override
-  public Map<String, ServerAddress> getHosts() {
+  public ImmutableSet<String> getHosts() {
+    return hosts.keySet();
+  }
+
+  @Override
+  public ImmutableMap<String, ServerAddress> getHostMap() {
     return hosts;
   }
-
   @Override
-  public Map<String, ServerAddress> getHostsWithDatastoreTag(String datastoreTag) {
-    ImmutableCollection<String> hostsWithDatastoreTag = datastoreTags.get(datastoreTag);
-    return Maps.filterKeys(hosts, Predicates.in(hostsWithDatastoreTag));
+  public ImmutableSet<String> getHostsWithDatastoreTag(String datastoreTag) {
+    return datastoreTags.get(datastoreTag);
   }
 }
