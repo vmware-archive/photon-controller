@@ -33,8 +33,7 @@ describe "deployment lifecycle", order: :defined, deployer: true do
         EsxCloud::TestHelpers.get_esx_password,
         ["MGMT", "CLOUD"],
         EsxCloud::TestHelpers.get_esx_ip,
-        host_metadata,
-        "zone")
+        host_metadata)
   end
 
   let(:deployment_spec) do
