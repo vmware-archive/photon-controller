@@ -1,3 +1,9 @@
+# hierarchical or flat. default to hierarchical
+mode: hierachical
+# memory or dcp. default to memory
+constraintChecker: memory
+# Refresh interval for in-memory constraint checker cache in seconds.
+refreshIntervalSec: 30
 bind: "{{{ROOT-SCHEDULER_BIND_ADDRESS}}}"
 registrationAddress: "{{{ROOT-SCHEDULER_REGISTRATION_ADDRESS}}}"
 port: {{{ROOT-SCHEDULER_PORT}}}

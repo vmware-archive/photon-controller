@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
+import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.scheduler.gen.Scheduler;
 
 import com.google.inject.Guice;
@@ -62,8 +63,9 @@ public class Main {
         new ThriftServiceModule<>(new TypeLiteral<Scheduler.AsyncClient>() {
         }),
         new ThriftServiceModule<>(new TypeLiteral<Chairman.AsyncClient>() {
-        })
-    );
+        }),
+        new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
+        }));
 
     final RootSchedulerServer server = injector.getInstance(RootSchedulerServer.class);
 
