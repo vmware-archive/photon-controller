@@ -27,6 +27,7 @@ import com.vmware.photon.controller.client.resource.ImagesApi;
 import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -38,8 +39,6 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFa
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
 import com.vmware.photon.controller.deployer.dcp.entity.ImageFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectFactoryService;
@@ -502,7 +501,6 @@ public class CreateManagementVmWorkflowServiceTest {
     private CreateManagementVmWorkflowService.State startState;
 
     private ImageService.State imageServiceStartState;
-    private FlavorService.State flavorServiceStartState;
     private ProjectService.State projectServiceStartState;
 
     private DeployerConfig deployerConfig;
@@ -548,12 +546,6 @@ public class CreateManagementVmWorkflowServiceTest {
       imageServiceStartState.imageId = "imageId";
       imageServiceStartState.imageName = "imageName";
       imageServiceStartState.imageFile = "imageFile";
-      flavorServiceStartState = new FlavorService.State();
-      flavorServiceStartState.vmFlavorName = "vmFlavorName";
-      flavorServiceStartState.diskFlavorName = "diskFlavorName";
-      flavorServiceStartState.cpuCount = 1;
-      flavorServiceStartState.memoryMb = 2048;
-      flavorServiceStartState.diskGb = 4;
       projectServiceStartState = new ProjectService.State();
       projectServiceStartState.projectName = "projectName";
       projectServiceStartState.resourceTicketServiceLink = "resourceTicketServiceLink";
@@ -815,11 +807,7 @@ public class CreateManagementVmWorkflowServiceTest {
               imageServiceStartState,
               ImageService.State.class);
 
-      FlavorService.State flavorServiceState =
-          machine.callServiceSynchronously(
-              FlavorFactoryService.SELF_LINK,
-              flavorServiceStartState,
-              FlavorService.State.class);
+      FlavorService.State flavorServiceState = TestHelper.createFlavor(cloudStoreMachine);
 
       ProjectService.State projectServiceState =
           machine.callServiceSynchronously(

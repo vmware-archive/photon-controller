@@ -40,6 +40,7 @@ import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -48,8 +49,8 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
+import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
+import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
 import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
@@ -544,11 +545,11 @@ public class RemoveDeploymentWorkflowServiceTest {
       };
     }
 
-    private int queryNumOfFlavors() throws Throwable {
+    private int queryNumOfContainers() throws Throwable {
       QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
       querySpecification.query = new QueryTask.Query()
           .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(FlavorService.State.class));
+          .setTermMatchValue(Utils.buildKind(ContainerService.State.class));
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
@@ -557,16 +558,13 @@ public class RemoveDeploymentWorkflowServiceTest {
       return documentLinks.size();
     }
 
-    private void createFlavor(String flavorName) throws Throwable {
+    private void createContainerService(String containerId) throws Throwable {
 
-      FlavorService.State flavorState = new FlavorService.State();
-      flavorState.vmFlavorName = flavorName;
-      flavorState.diskFlavorName = "diskFlavorName";
-      flavorState.cpuCount = 1;
-      flavorState.memoryMb = 1024;
-      flavorState.diskGb = 1;
-
-      testEnvironment.sendPostAndWait(FlavorFactoryService.SELF_LINK, flavorState);
+      ContainerService.State containerService = new ContainerService.State();
+      containerService.containerId = containerId;
+      containerService.vmServiceLink = "vmServiceLink";
+      containerService.containerTemplateServiceLink = "ctLink";
+      testEnvironment.sendPostAndWait(ContainerFactoryService.SELF_LINK, containerService);
     }
 
     @Test(dataProvider = "HostCounts")
@@ -586,9 +584,9 @@ public class RemoveDeploymentWorkflowServiceTest {
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())),
           NUMBER_OF_MGMT_AND_CLOUD_HOST);
 
-      createFlavor("flavorName1");
-      int numOfFlavors = queryNumOfFlavors();
-      assertThat(numOfFlavors, is(1));
+      createContainerService("containerName1");
+      int numOfContainers = queryNumOfContainers();
+      assertThat(numOfContainers, is(1));
 
       RemoveDeploymentWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -597,8 +595,8 @@ public class RemoveDeploymentWorkflowServiceTest {
               RemoveDeploymentWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
-      numOfFlavors = queryNumOfFlavors();
-      assertThat(numOfFlavors, is(0));
+      numOfContainers = queryNumOfContainers();
+      assertThat(numOfContainers, is(0));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FINISHED));
       verifyVmServiceStates();

@@ -26,8 +26,10 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.FlavorApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
@@ -677,6 +679,10 @@ public class AllocateResourcesWorkflowServiceTest {
       taskReturnedByCreateFlavor = new Task();
       taskReturnedByCreateFlavor.setId("createFlavorTaskId");
       taskReturnedByCreateFlavor.setState("COMPLETED");
+      FlavorService.State flavorService = TestHelper.createFlavor(cloudStoreMachine);
+      Task.Entity taskEntity = new Task.Entity();
+      taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(flavorService.documentSelfLink));
+      taskReturnedByCreateFlavor.setEntity(taskEntity);
 
       taskReturnedByCreateDiskFlavor = new Task();
       taskReturnedByCreateDiskFlavor.setId("createDiskFlavorTaskId");

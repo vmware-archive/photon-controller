@@ -30,6 +30,7 @@ import com.vmware.photon.controller.api.LocalitySpec;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.VmMetadata;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
@@ -44,7 +45,6 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
 import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -270,7 +270,7 @@ public class CreateManagementVmTaskService extends StatefulService {
 
     Operation imageGetOperation = Operation.createGet(this, vmState.imageServiceLink);
     Operation projectGetOperation = Operation.createGet(this, vmState.projectServiceLink);
-    Operation flavorGetOperation = Operation.createGet(this, vmState.flavorServiceLink);
+    Operation flavorGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.flavorServiceLink);
 
     OperationJoin
         .create(
@@ -311,7 +311,6 @@ public class CreateManagementVmTaskService extends StatefulService {
    * @param hostState Supplies the state object of the HostService entity.
    * @param imageState Supplies the state object of the ImageService entity.
    * @param projectState Supplies the state object of the ProjectService entity.
-   * @param flavorState Supplies the state object of the FlavorService entity.
    */
   private void processStartedStage(final State currentState,
                                    final VmService.State vmState, final HostService.State hostState,
@@ -639,7 +638,6 @@ public class CreateManagementVmTaskService extends StatefulService {
    * @param vmState Supplies the state object of the VmService entity.
    * @param hostState Supplies the state object of the HostService entity.
    * @param imageState Supplies the state object of the ImageService entity.
-   * @param flavorState Supplies the state object of the FlavorService entity.
    * @return Returns the VmCreateSpec object.
    */
   private VmCreateSpec composeVmCreateSpec(final VmService.State vmState,
@@ -650,7 +648,7 @@ public class CreateManagementVmTaskService extends StatefulService {
     // Craft the VM creation spec.
     VmCreateSpec spec = new VmCreateSpec();
     spec.setName(vmState.name);
-    spec.setFlavor(flavorState.vmFlavorName);
+    spec.setFlavor(flavorState.name);
 
     spec.setSourceImageId(imageState.imageId);
 
@@ -659,7 +657,7 @@ public class CreateManagementVmTaskService extends StatefulService {
     AttachedDiskCreateSpec bootDisk = new AttachedDiskCreateSpec();
     bootDisk.setName(vmState.name + "-bootdisk");
     bootDisk.setBootDisk(true);
-    bootDisk.setFlavor(flavorState.diskFlavorName);
+    bootDisk.setFlavor(flavorState.name);
     bootDisk.setKind(EphemeralDisk.KIND);
     attachedDisks.add(bootDisk);
 

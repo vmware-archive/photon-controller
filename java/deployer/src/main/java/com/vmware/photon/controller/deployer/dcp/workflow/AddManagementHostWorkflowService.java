@@ -802,7 +802,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
           public void onSuccess(@Nullable CreateFlavorTaskService.State result) {
             switch (result.taskState.stage) {
               case FINISHED:
-                updateVmLinks(currentState, deploymentService, result.documentSelfLink, vmServiceLink);
+                updateVmLinks(currentState, deploymentService, vmServiceLink);
                 break;
               case FAILED:
                 State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
@@ -835,10 +835,9 @@ public class AddManagementHostWorkflowService extends StatefulService {
         setLinksCallback);
   }
 
-  private void updateVmLinks(State currentState, DeploymentService.State deploymentService, String flavorLink, String
+  private void updateVmLinks(State currentState, DeploymentService.State deploymentService, String
       vmServiceLink) {
     VmService.State vmPatchState = new VmService.State();
-    vmPatchState.flavorServiceLink = flavorLink;
     vmPatchState.imageServiceLink = ImageFactoryService.SELF_LINK + "/" + deploymentService.imageId;
     vmPatchState.projectServiceLink = ProjectFactoryService.SELF_LINK + "/" + deploymentService.projectId;
 

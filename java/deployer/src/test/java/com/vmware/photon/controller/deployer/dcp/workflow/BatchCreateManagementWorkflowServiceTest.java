@@ -32,8 +32,10 @@ import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
@@ -472,6 +474,7 @@ public class BatchCreateManagementWorkflowServiceTest {
     private Task taskReturnedBySetMetadata;
     private Task taskReturnedByAttachIso;
     private Task taskReturnedByGetTask;
+    private Task taskReturnedByGetUploadImageTask;
     private Task taskReturnedByCreateVmFlavor;
     private Task taskReturnedByGetCreateVmFlavorTask;
     private Task taskReturnedByCreateDiskFlavor;
@@ -546,6 +549,10 @@ public class BatchCreateManagementWorkflowServiceTest {
       taskReturnedByGetTask.setId("taskId");
       taskReturnedByGetTask.setState("COMPLETED");
 
+      taskReturnedByGetUploadImageTask = new Task();
+      taskReturnedByGetUploadImageTask.setId("taskId");
+      taskReturnedByGetUploadImageTask.setState("COMPLETED");
+
       Task.Entity entity = new Task.Entity();
       entity.setId("vmId");
       taskReturnedByCreateVm.setEntity(entity);
@@ -567,6 +574,10 @@ public class BatchCreateManagementWorkflowServiceTest {
       taskReturnedByGetCreateVmFlavorTask = new Task();
       taskReturnedByGetCreateVmFlavorTask.setId("createVmFlavorTaskId");
       taskReturnedByGetCreateVmFlavorTask.setState("COMPLETED");
+      FlavorService.State flavorService = TestHelper.createFlavor(cloudStoreMachine);
+      Task.Entity taskEntity = new Task.Entity();
+      taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(flavorService.documentSelfLink));
+      taskReturnedByGetCreateVmFlavorTask.setEntity(taskEntity);
 
       taskReturnedByCreateDiskFlavor = new Task();
       taskReturnedByCreateDiskFlavor.setId("createDiskFlavorTaskId");
@@ -575,6 +586,10 @@ public class BatchCreateManagementWorkflowServiceTest {
       taskReturnedByGetCreateDiskFlavorTask = new Task();
       taskReturnedByGetCreateDiskFlavorTask.setId("createDiskFlavorTaskId");
       taskReturnedByGetCreateDiskFlavorTask.setState("COMPLETED");
+      FlavorService.State diskFlavorService = TestHelper.createFlavor(cloudStoreMachine);
+      Task.Entity diskTaskEntity = new Task.Entity();
+      diskTaskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(diskFlavorService.documentSelfLink));
+      taskReturnedByGetCreateDiskFlavorTask.setEntity(diskTaskEntity);
 
       taskReturnedByCreateTenant = new Task();
       taskReturnedByCreateTenant.setId("createTenantTaskId");
@@ -597,13 +612,13 @@ public class BatchCreateManagementWorkflowServiceTest {
       projectEntity.setId("projectEntityId");
       taskReturnedByCreateProject.setEntity(projectEntity);
 
-      Task.Entity taskEntity = new Task.Entity();
-      taskEntity.setId("taskEntityId");
+      Task.Entity taskEntityUpload = new Task.Entity();
+      taskEntityUpload.setId("taskEntityId");
       taskReturnedByUploadImage = new Task();
       taskReturnedByUploadImage.setId("taskId");
       taskReturnedByUploadImage.setState("STARTED");
-      taskReturnedByUploadImage.setEntity(taskEntity);
-      taskReturnedByGetTask.setEntity(taskEntity);
+      taskReturnedByUploadImage.setEntity(taskEntityUpload);
+      taskReturnedByGetUploadImageTask.setEntity(taskEntityUpload);
 
       startState = buildValidStartupState();
       startState.controlFlags = 0;
@@ -693,7 +708,7 @@ public class BatchCreateManagementWorkflowServiceTest {
       doAnswer(new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
-          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetTask);
+          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetUploadImageTask);
           return null;
         }
       }).when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
@@ -816,14 +831,6 @@ public class BatchCreateManagementWorkflowServiceTest {
           return null;
         }
       }).when(vmApi).setMetadataAsync(any(String.class), any(VmMetadata.class), any(FutureCallback.class));
-
-      doAnswer(new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetTask);
-          return null;
-        }
-      }).when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
 
       HostService.State hostServiceState = TestHelper.createHostService(cloudStoreMachine,
           Collections.singleton(UsageTag.MGMT.name()));

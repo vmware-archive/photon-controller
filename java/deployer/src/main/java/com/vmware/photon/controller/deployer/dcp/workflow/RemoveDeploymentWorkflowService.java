@@ -47,7 +47,6 @@ import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
 import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
 import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketService;
@@ -884,7 +883,6 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
   }
 
   private void deleteDCPEntities(final FutureCallback<Task> callback) {
-    deleteDCPEntities(FlavorService.State.class);
     deleteDCPEntities(ImageService.State.class);
     deleteDCPEntities(ContainerTemplateService.State.class);
     deleteDCPEntities(ContainerService.State.class);
