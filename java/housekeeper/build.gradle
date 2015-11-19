@@ -8,6 +8,7 @@ dependencies {
   compile project(':common-dcp')
   compile project(':common-logging')
   compile project(':cloud-store')
+  compile project(':common-tests')
 
   compile "com.google.guava:guava:${versions.guava}"
   compile "com.google.inject.extensions:guice-assistedinject:${versions.guice}"
@@ -35,7 +36,6 @@ dependencies {
   testCompile 'org.testng:testng:6.8'
   testCompile "org.powermock:powermock-api-mockito:${versions.powermock}"
   testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
-  testCompile(project(path: ':common-dcp', configuration: 'tests'))
 }
 
 jar {

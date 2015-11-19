@@ -15,7 +15,7 @@ package com.vmware.photon.controller.deployer.helpers.dcp;
 
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.dcp.helpers.dcp.MultiHostEnvironment;
+import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
