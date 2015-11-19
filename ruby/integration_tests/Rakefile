@@ -75,8 +75,7 @@ namespace :api do
         EsxCloud::TestHelpers.get_esx_password,
         ["CLOUD"],
         EsxCloud::TestHelpers.get_esx_ip,
-        metadata,
-        "zone1"
+        metadata
       )
       host = EsxCloud::Host.create deployments.first.id, spec
       puts host

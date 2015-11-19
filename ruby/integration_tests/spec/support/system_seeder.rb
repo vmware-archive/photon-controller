@@ -84,6 +84,10 @@ module EsxCloud
       @tenant ||= create_random_tenant
     end
 
+    def pending_delete_availability_zone!
+      @pending_delete_availability_zone ||= create_pending_delete_availability_zone
+    end
+
     def resource_ticket!
       @resource_ticket ||= tenant!.create_resource_ticket(
         name: random_name("rt-"),
@@ -200,6 +204,12 @@ module EsxCloud
       EsxCloud::Flavor.create spec
     end
 
+    def create_availability_zone()
+      name = random_name "avialability-zone-"
+      spec = EsxCloud::AvailabilityZoneCreateSpec.new name
+      EsxCloud::AvailabilityZone.create spec
+    end
+
     def create_bootable_image
       image_file = ENV["ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE"] || fail("ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE is not defined")
       EsxCloud::Image.create(image_file, random_name("image-"), "EAGER")
@@ -250,6 +260,12 @@ module EsxCloud
         File.delete(dummy_file) if File.exist?(dummy_file)
         EsxCloud::Image.find_all.items.find { |i| i.name == image_name }
       end
+    end
+
+    def create_pending_delete_availability_zone
+      availability_zone = create_availability_zone
+      availability_zone.delete
+      EsxCloud::AvailabilityZone.find_by_id(availability_zone.id)
     end
 
     def create_network

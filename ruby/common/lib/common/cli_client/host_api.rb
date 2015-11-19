@@ -22,7 +22,7 @@ module EsxCloud
         cmd = "host create -u '#{payload[:username]}'"
         cmd += " -t '#{payload[:password]}'"
         cmd += " -i '#{payload[:address]}'"
-        cmd += " -z '#{payload[:availabilityZone]}'"
+        cmd += " -z '#{payload[:availabilityZone]}'" if payload[:availabilityZone]
         cmd += " -t '#{payload[:usageTags].join(",")}'" if payload[:usageTags]
         cmd += " -m '#{payload[:metadata].to_json}'" if payload[:metadata]
 
