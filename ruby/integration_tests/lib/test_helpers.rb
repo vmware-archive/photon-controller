@@ -87,8 +87,9 @@ module EsxCloud
       ENV["ESX_MGMT_PORT_GROUP"]
     end
 
-    def self.get_vm_port_group
-      ENV["ESX_VM_PORT_GROUP"]
+    def self.get_vm_port_groups
+      port_groups = ENV["ESX_VM_PORT_GROUP"]
+      return port_groups.split(',')
     end
 
     def self.get_datastore_name
@@ -312,8 +313,8 @@ module EsxCloud
       TestHelpers.get_mgmt_port_group
     end
 
-    def get_vm_port_group
-      TestHelpers.get_vm_port_group
+    def get_vm_port_groups
+      TestHelpers.get_vm_port_groups
     end
 
     def get_datastore_name
