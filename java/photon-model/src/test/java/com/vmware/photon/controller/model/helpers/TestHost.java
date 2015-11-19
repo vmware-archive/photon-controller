@@ -14,53 +14,97 @@
 package com.vmware.photon.controller.model.helpers;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.ServiceHost;
-import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
-import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
+import com.vmware.dcp.common.UriUtils;
+import com.vmware.dcp.common.test.VerificationHost;
 
+import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.logging.LogManager;
 
 /**
  * This class implements helper routines used to test service hosts in isolation.
  */
-public class TestHost extends BasicServiceHost {
+public class TestHost extends VerificationHost {
 
-  public static final Class[] FACTORY_SERVICES = {
-      ComputeDescriptionFactoryService.class,
-  };
+  private ServiceDocument responseBody;
+  private Class[] factoryServices;
 
-  public TestHost() throws Throwable {
+  /**
+   * Overloaded Constructor.
+   */
+  public TestHost(int port, Path storageSandbox, Class... factoryServices) throws Throwable {
     super();
-    this.initialize();
+    ServiceHost.Arguments args = new ServiceHost.Arguments();
+    args.id = "host-" + VerificationHost.hostNumber.incrementAndGet();
+    args.port = port;
+    args.sandbox = storageSandbox;
+    args.bindAddress = ServiceHost.LOOPBACK_ADDRESS;
+    this.initialize(args);
+
+    this.factoryServices = factoryServices;
   }
 
   @Override
   public ServiceHost start() throws Throwable {
     super.start();
+    for (Class service : this.factoryServices) {
+      Field f = service.getField(UriUtils.FIELD_NAME_SELF_LINK);
+      String path = (String) f.get(null);
 
-    this.startWithCoreServices();
-    ServiceHostUtils.startServices(this, FACTORY_SERVICES);
-
+      this.startServiceAndWait(service, path);
+    }
     return this;
   }
 
   @Override
-  public void destroy() throws Throwable {
-    super.destroy();
+  public void tearDown() {
+    super.tearDown();
     LogManager.getLogManager().reset();
   }
 
-  @Override
-  public Operation sendRequestAndWait(Operation op) throws Throwable {
-    Operation operation = super.sendRequestAndWait(op);
+  public <T extends ServiceDocument> T callServiceSynchronously(
+      String serviceUri, T body, Class<T> type) throws Throwable {
+    return callServiceSynchronously(serviceUri, body, type, null);
+  }
 
-    // For tests we check status code 200 to see if the response is OK
-    // If nothing is changed in patch, it returns 304 which means not modified.
-    // We will treat 304 as 200
-    if (operation.getStatusCode() == 304) {
-      operation.setStatusCode(200);
-    }
-    return operation;
+  public <T extends ServiceDocument> T callServiceSynchronously(
+      String serviceUri, T body, Class<T> type, Class expectedException) throws Throwable {
+
+    this.testStart(1);
+    Operation postOperation = Operation
+        .createPost(UriUtils.buildUri(this, serviceUri))
+        .setBody(body)
+        .setReferer(this.getUri())
+        .setCompletion((operation, throwable) -> {
+
+          boolean failureExpected = (expectedException != null);
+          boolean failureReturned = (throwable != null);
+
+          if (failureExpected ^ failureReturned) {
+            Throwable t = throwable == null
+                ? new IllegalArgumentException("Call did not fail as expected")
+                : throwable;
+
+            this.failIteration(t);
+            return;
+          }
+
+          if (failureExpected && expectedException != throwable.getClass()) {
+            this.failIteration(throwable);
+            return;
+          }
+
+          if (!failureExpected) {
+            responseBody = operation.getBody(type);
+          }
+          this.completeIteration();
+        });
+
+    this.sendRequest(postOperation);
+    this.testWait();
+
+    return (T) responseBody;
   }
 }
