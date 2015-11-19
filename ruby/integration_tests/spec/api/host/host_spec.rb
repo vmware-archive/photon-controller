@@ -201,6 +201,51 @@ describe "host", management: true, devbox: true do
           end
         end
       end
+
+      context "when availability zone does not exist" do
+        let(:host_create_spec) do
+          spec.availability_zone = "availability-zone-not-exist"
+          spec
+        end
+
+        it "fails to create host" do
+          error_msg = "AvailabilityZone availability-zone-not-exist not found"
+          begin
+            client.create_host(@deployment.id, host_create_spec.to_hash)
+            fail("There should be an error when creating one with non-existing availability zone")
+          rescue EsxCloud::ApiError => e
+            expect(e.response_code).to eq 404
+            expect(e.errors.size).to eq 1
+            expect(e.errors.first.code).to eq "AvailabilityZoneNotFound"
+            expect(e.errors.first.message).to eq error_msg
+          rescue EsxCloud::CliError => e
+            expect(e.output).to include(error_msg)
+          end
+        end
+      end
+
+      context "when availability zone is in PENDING_DELETE state" do
+        let(:zone) { EsxCloud::SystemSeeder.instance.pending_delete_availability_zone! }
+        let(:host_create_spec) do
+          spec.availability_zone = zone.id
+          spec
+        end
+
+        it "should fail" do
+          expect(zone.state).to eq "PENDING_DELETE"
+
+          begin
+            client.create_host(@deployment.id, host_create_spec.to_hash)
+            fail "create host with availability zone in PENDING_DELETE state should fail"
+          rescue EsxCloud::ApiError => e
+            e.response_code.should == 400
+            e.errors.size.should == 1
+            e.errors[0].code.should == "InvalidAvailabilityZoneState"
+          rescue EsxCloud::CliError => e
+            e.message.should match("InvalidAvailabilityZoneState")
+          end
+        end
+      end
     end
   end
 
