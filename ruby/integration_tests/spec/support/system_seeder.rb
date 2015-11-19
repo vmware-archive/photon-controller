@@ -23,7 +23,7 @@ module EsxCloud
       :image, :bootable_image, :pending_delete_image, :error_image,
       :tenant, :resource_ticket, :project,
       :host, :vm, :vm_for_pending_delete_image,
-      :persistent_disk, :network
+      :persistent_disk, :networks
 
     # @param [Array] resource_ticket_limits
     # @param [Array] subdivide_limits_percent
@@ -108,8 +108,8 @@ module EsxCloud
       @host ||= create_host(deployment!, vm!)
     end
 
-    def network!
-      @network ||= create_network
+    def networks!
+      @networks ||= create_networks
     end
 
     def persistent_disk!
@@ -252,9 +252,14 @@ module EsxCloud
       end
     end
 
-    def create_network
-      spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [get_vm_port_group])
-      EsxCloud::Config.client.create_network(spec.to_hash)
+    def create_networks
+      networks = Array.new
+      get_vm_port_groups.each do |port_group|
+        spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [port_group])
+        network = EsxCloud::Config.client.create_network(spec.to_hash)
+        networks.push(network)
+      end
+      return networks
     end
 
     def create_deployment
