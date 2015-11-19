@@ -19,6 +19,7 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -43,6 +44,7 @@ public class CloudStoreHelper {
     this.localHostAddress = OperationUtils.getLocalAddress();
   }
 
+  @VisibleForTesting
   public void setServerSet(ServerSet cloudStoreServerSet) {
     this.cloudStoreServerSet = checkNotNull(cloudStoreServerSet);
     this.localHostAddress = OperationUtils.getLocalAddress();
@@ -72,7 +74,9 @@ public class CloudStoreHelper {
   }
 
   public Operation createPost(String path) {
-    return Operation.createPost(getCloudStoreURI(path));
+    return Operation
+        .createPost(getCloudStoreURI(path))
+        .setReferer(this.localHostAddress);
   }
 
   public Operation createBroadcastPost(String path, String selectorPath) {
