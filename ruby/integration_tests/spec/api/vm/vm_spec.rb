@@ -366,7 +366,7 @@ describe "vm", management: true, image: true do
 
       context "when vm's image is in READY state" do
         let(:image) { EsxCloud::SystemSeeder.instance.bootable_image! }
-        let(:network_id) { EsxCloud::SystemSeeder.instance.network!.id }
+        let(:network_id) { EsxCloud::SystemSeeder.instance.networks!.id }
         let(:vm) do
           create_vm(@project, image_id: image.id, networks: [network_id])
         end
