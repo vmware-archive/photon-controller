@@ -25,6 +25,7 @@ import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFound
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.Mock;
@@ -47,6 +48,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,6 +129,57 @@ public class DeploymentHostsResourceTest extends ResourceTest {
         .request(MediaType.APPLICATION_JSON)
         .post(Entity.entity(hostCreateSpec, MediaType.APPLICATION_JSON));
     assertThat(clientResponse.getStatus(), is(500));
+  }
+
+  @Test
+  public void testCreateHostWithMgmtCloudTagsSuccess() throws ExternalException, URISyntaxException {
+    Map<String, String> hostMetadata = new HashMap<>();
+    hostMetadata.put("id", "h_146_36_27");
+    hostMetadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE, "8");
+    hostMetadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_GB_OVERWIRTE, "8");
+    hostMetadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE, "32");
+
+    HostCreateSpec hostCreateSpec = new HostCreateSpec("10.146.1.1",
+        "username",
+        "password",
+        "availabilityZone",
+        Arrays.asList(UsageTag.MGMT, UsageTag.CLOUD),
+        hostMetadata);
+
+    Task task = new Task();
+    task.setId(taskId);
+    doReturn(task).when(hostFeClient).createHost(eq(hostCreateSpec), anyString());
+
+    Response clientResponse = client()
+        .target(hostsRoute)
+        .request(MediaType.APPLICATION_JSON)
+        .post(Entity.entity(hostCreateSpec, MediaType.APPLICATION_JSON));
+    assertThat(clientResponse.getStatus(), is(201));
+
+    Task responseTask = clientResponse.readEntity(Task.class);
+    assertThat(responseTask, is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
+  }
+
+  @Test
+  public void testCreateHostWithMgmtCloudTagsFailure() throws ExternalException {
+    Map<String, String> hostMetadata = new HashMap<>();
+    hostMetadata.put("id", "h_146_36_27");
+
+    HostCreateSpec hostCreateSpec = new HostCreateSpec("10.146.1.1",
+        "username",
+        "password",
+        "availabilityZone",
+        Arrays.asList(UsageTag.MGMT, UsageTag.CLOUD),
+        hostMetadata);
+    doThrow(new ExternalException()).when(hostFeClient).createHost(eq(hostCreateSpec), anyString());
+
+    Response clientResponse = client()
+        .target(hostsRoute)
+        .request(MediaType.APPLICATION_JSON)
+        .post(Entity.entity(hostCreateSpec, MediaType.APPLICATION_JSON));
+    assertThat(clientResponse.getStatus(), is(400));
   }
 
   @Test

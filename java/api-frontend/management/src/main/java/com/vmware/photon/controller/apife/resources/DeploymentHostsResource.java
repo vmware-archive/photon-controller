@@ -17,12 +17,15 @@ import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.clients.HostFeClient;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidHostSpecException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
@@ -44,6 +47,10 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This resource is for deployment hosts related API.
@@ -81,11 +88,25 @@ public class DeploymentHostsResource {
       {@ApiResponse(code = 201, message = "Host is being created, creation process can be fetched via the task")})
   public Response create(@Context Request request, @Validated HostCreateSpec spec, @PathParam("id") String id)
       throws ExternalException {
+    validate(spec);
     Task task = hostFeClient.createHost(spec, id);
     return generateCustomResponse(
         Response.Status.CREATED,
         task,
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
+  }
+
+  private void validate(HostCreateSpec spec) throws InvalidHostSpecException {
+    List<UsageTag> usageTags = spec.getUsageTags();
+    if (usageTags.contains(UsageTag.MGMT) && usageTags.contains(UsageTag.CLOUD)) {
+      Set<String> expectedKeys = new HashSet<>();
+      expectedKeys.add(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE);
+      expectedKeys.add(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_GB_OVERWIRTE);
+      expectedKeys.add(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE);
+      if (!spec.getMetadata().keySet().containsAll(expectedKeys)) {
+        throw new InvalidHostSpecException();
+      }
+    }
   }
 }

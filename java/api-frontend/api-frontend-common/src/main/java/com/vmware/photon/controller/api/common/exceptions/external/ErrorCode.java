@@ -114,7 +114,8 @@ public enum ErrorCode {
   CLUSTER_NOT_FOUND("ClusterNotFound", Response.Status.NOT_FOUND),
   SECURITY_GROUPS_ALREADY_INHERITED("SecurityGroupsAlreadyInherited", Response.Status.BAD_REQUEST),
   CLUSTER_TYPE_ALREADY_CONFIGURED("ClusterTypeAlreadyConfigured", Response.Status.BAD_REQUEST),
-  CLUSTER_TYPE_NOT_CONFIGURED("ClusterTypeNotConfigured", Response.Status.NOT_FOUND);
+  CLUSTER_TYPE_NOT_CONFIGURED("ClusterTypeNotConfigured", Response.Status.NOT_FOUND),
+  INVALID_HOST_SPEC("InvalidHostSpec", Response.Status.BAD_REQUEST);
 
   private final String code;
   private final int httpStatus;
