@@ -67,7 +67,7 @@ namespace :api do
 
       metadata = {
           "ALLOWED_DATASTORES" => EsxCloud::TestHelpers.get_datastore_name,
-          "ALLOWED_NETWORKS" => EsxCloud::TestHelpers.get_vm_port_group
+          "ALLOWED_NETWORKS" => EsxCloud::TestHelpers.get_vm_port_groups
       }
 
       spec = EsxCloud::HostCreateSpec.new(
