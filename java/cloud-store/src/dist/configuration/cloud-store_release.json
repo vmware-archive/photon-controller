@@ -1,5 +1,5 @@
 {
-  "cpuCount": 1,
+  "cpuCount": 4,
   "memoryMb": 4096,
   "diskGb": 8,
   "isReplicated": true,
