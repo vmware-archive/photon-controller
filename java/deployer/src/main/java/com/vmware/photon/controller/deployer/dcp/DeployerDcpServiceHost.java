@@ -46,6 +46,7 @@ import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFa
 import com.vmware.photon.controller.deployer.dcp.task.BuildRuntimeConfigurationTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerSpecLayoutTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerSpecTaskFactoryService;
@@ -349,6 +350,8 @@ public class DeployerDcpServiceHost
 
     // Start all the factories
     ServiceHostUtils.startServices(this, getFactoryServices());
+    this.addPrivilegedService(CopyStateTaskService.class);
+
     startTaskSchedulerServices();
 
     return this;
