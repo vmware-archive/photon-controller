@@ -159,6 +159,26 @@ public class ServiceUtils {
   }
 
   /**
+   * Compare the hash of two documents.
+   *
+   * @param type
+   * @param document1
+   * @param document2
+   * @return the value {@code 0} if hash of two documents are equal;
+   * a value less than {@code 0} if hash of document1
+   * is lexicographically less than hash of document2; and a
+   * value greater than {@code 0} otherwise.
+   */
+  public static <T extends ServiceDocument> boolean documentEquals(
+      Class<T> type, T document1, T document2) throws IllegalAccessException {
+
+    ServiceDocumentDescription documentDescription = ServiceDocumentDescription.Builder.create()
+        .buildDescription(type, EnumSet.noneOf(Service.ServiceOption.class));
+
+    return ServiceDocument.equals(documentDescription, document1, document2);
+  }
+
+  /**
    * Returns the URI of a random server.
    * @param serverSet
    * @param path

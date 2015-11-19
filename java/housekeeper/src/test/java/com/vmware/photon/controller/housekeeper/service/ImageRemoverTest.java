@@ -15,8 +15,8 @@ package com.vmware.photon.controller.housekeeper.service;
 
 import com.vmware.dcp.common.Operation;
 import com.vmware.photon.controller.common.clients.HostClient;
-import com.vmware.photon.controller.common.dcp.helpers.dcp.TestServiceIgnoresPosts;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
+import com.vmware.photon.controller.common.tests.TestServiceIgnoresPosts;
 import com.vmware.photon.controller.housekeeper.dcp.ImageRemoverService;
 import com.vmware.photon.controller.housekeeper.dcp.ImageRemoverServiceFactory;
 import com.vmware.photon.controller.housekeeper.gen.RemoveImageRequest;
