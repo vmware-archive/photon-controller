@@ -457,7 +457,6 @@ public class RegisterAuthClientTaskService extends StatefulService {
    * @param deploymentServicelink Link to the deployment service.
    */
   private void sendDeploymentPatch(DeploymentService.State deploymentPatchState, String deploymentServicelink) {
-
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
             .createPatch(deploymentServicelink)

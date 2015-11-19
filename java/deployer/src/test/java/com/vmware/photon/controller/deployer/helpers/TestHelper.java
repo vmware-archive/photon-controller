@@ -16,12 +16,16 @@ package com.vmware.photon.controller.deployer.helpers;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
@@ -371,6 +375,19 @@ public class TestHelper {
         VmFactoryService.SELF_LINK,
         startState,
         VmService.State.class);
+  }
+
+  public static ImageService.State createImageService(MultiHostEnvironment<?> cloudStoreMachine) throws Throwable {
+    ImageService.State imageServiceStartState = new ImageService.State();
+    imageServiceStartState.name = "imageName";
+    imageServiceStartState.replicationType = ImageReplicationType.EAGER;
+    imageServiceStartState.state = ImageState.READY;
+    ImageService.State imageServiceState =
+        cloudStoreMachine.callServiceSynchronously(
+            ImageServiceFactory.SELF_LINK,
+            imageServiceStartState,
+            ImageService.State.class);
+    return imageServiceState;
   }
 
   //

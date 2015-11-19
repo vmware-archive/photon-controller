@@ -29,11 +29,14 @@ import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.auth.AuthException;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.helpers.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
@@ -221,7 +224,8 @@ public class MockHelper {
     return serverSet;
   }
 
-  public static void mockApiClient(ApiClientFactory apiClientFactory, boolean isSuccess) throws Throwable {
+  public static void mockApiClient(ApiClientFactory apiClientFactory, MultiHostEnvironment<?> machine, boolean
+                                   isSuccess) throws Throwable {
     ApiClient apiClient = mock(ApiClient.class);
     ProjectApi projectApi = mock(ProjectApi.class);
     TasksApi tasksApi = mock(TasksApi.class);
@@ -243,7 +247,15 @@ public class MockHelper {
         TestHelper.createCompletedApifeTask("CREATE_CLUSTER_OTHER_VM_FLAVOR");
     final Task taskReturnedByCreateClusterVmDiskFlavor =
         TestHelper.createCompletedApifeTask("CREATE_CLUSTER_VM_DISK_FLAVOR");
-    final Task taskReturnedByUploadManagementImage = TestHelper.createCompletedApifeTask("MANAGEMENT_UPLOAD_IMAGE");
+
+    ImageService.State imageServiceState = TestHelper.createImageService(machine);
+    Task.Entity taskEntity = new Task.Entity();
+    taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(imageServiceState.documentSelfLink));
+    Task taskReturnedByUploadManagementImage = new Task();
+    taskReturnedByUploadManagementImage.setId("taskId");
+    taskReturnedByUploadManagementImage.setState("COMPLETED");
+    taskReturnedByUploadManagementImage.setEntity(taskEntity);
+
     final Task taskReturnedByCreateTenant = TestHelper.createCompletedApifeTask("CREATE_TENANT");
     final Task taskReturnedByCreateResourceTicket = TestHelper.createCompletedApifeTask("CREATE_RESOURCE_TICKET");
     final Task taskReturnedByCreateProject = TestHelper.createCompletedApifeTask("CREATE_PROJECT");

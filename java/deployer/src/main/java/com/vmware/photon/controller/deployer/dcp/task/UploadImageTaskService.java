@@ -14,11 +14,9 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.Task;
@@ -33,8 +31,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultUuid;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
@@ -108,10 +104,10 @@ public class UploadImageTaskService extends StatefulService {
     public String apiFeEndpoint;
 
     /**
-     * This value represents the link to the created image service.
+     * This value represents the id of to the created image service.
      */
     @WriteOnce
-    public String imageServiceLink;
+    public String imageId;
 
     /**
      * This value represents the interval between querying the state of the
@@ -281,7 +277,11 @@ public class UploadImageTaskService extends StatefulService {
     FutureCallback<Task> callback = new FutureCallback<Task>() {
       @Override
       public void onSuccess(@Nullable Task result) {
-        handleUploadImageTaskCompletion(currentState, task);
+        State patchState = new State();
+        patchState.taskState = new TaskState();
+        patchState.taskState.stage = TaskState.TaskStage.FINISHED;
+        patchState.imageId = task.getEntity().getId();
+        TaskUtils.sendSelfPatch(UploadImageTaskService.this, patchState);
       }
 
       @Override
@@ -303,45 +303,6 @@ public class UploadImageTaskService extends StatefulService {
   }
 
   /**
-   * This method creates the {@link ImageService.State} document in DCP from the uploaded image.
-   *
-   * @param currentState Supplies the current state object.
-   * @param task         Supplies the task object of the upoad image task.
-   */
-  private void handleUploadImageTaskCompletion(final State currentState, final Task task) {
-
-    final Service service = this;
-
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-
-        State patchState = new State();
-        patchState.taskState = new TaskState();
-        patchState.taskState.stage = TaskState.TaskStage.FINISHED;
-        patchState.imageServiceLink = operation.getBody(ServiceDocument.class).documentSelfLink;
-        TaskUtils.sendSelfPatch(service, patchState);
-      }
-    };
-
-    // Update the image service state with the imageId.
-    ImageService.State imagePatchState = new ImageService.State();
-    imagePatchState.imageId = task.getEntity().getId();
-    imagePatchState.imageFile = currentState.imageFile;
-    imagePatchState.imageName = currentState.imageName;
-    imagePatchState.documentSelfLink = imagePatchState.imageId;
-    Operation patchOperation = Operation
-        .createPost(UriUtils.buildUri(getHost(), ImageFactoryService.SELF_LINK))
-        .setCompletion(completionHandler)
-        .setBody(imagePatchState);
-    sendRequest(patchOperation);
-  }
-
-  /**
    * This method applies a patch to a state object.
    *
    * @param startState Supplies the start state object.
@@ -353,8 +314,8 @@ public class UploadImageTaskService extends StatefulService {
       startState.taskState = patchState.taskState;
     }
 
-    if (startState.imageServiceLink == null) {
-      startState.imageServiceLink = patchState.imageServiceLink;
+    if (startState.imageId == null) {
+      startState.imageId = patchState.imageId;
     }
 
     return startState;

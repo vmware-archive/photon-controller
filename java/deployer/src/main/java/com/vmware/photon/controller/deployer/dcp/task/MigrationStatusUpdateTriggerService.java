@@ -138,7 +138,6 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
       long vibsUploading) {
 
     DeploymentService.State patch = buildPatch(finishedCopyStateCounts, vibsUploaded, vibsUploading);
-
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
             .createPatch(currentState.deploymentServiceLink)

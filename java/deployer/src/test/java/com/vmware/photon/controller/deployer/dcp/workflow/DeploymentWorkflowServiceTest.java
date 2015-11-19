@@ -25,6 +25,7 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -42,7 +43,6 @@ import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
 import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
@@ -588,15 +588,17 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockServiceConfigurator(serviceConfiguratorFactory, true);
     }
 
+    private void createCloudStores() throws Throwable {
+      localStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      remoteStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+    }
+
     private void createTestEnvironment(int remoteNodeCount) throws Throwable {
       String quorum = deployerConfig.getZookeeper().getQuorum();
       deployerConfig.getDeployerContext().setZookeeperQuorum(quorum);
 
       DeployerContext context = spy(deployerConfig.getDeployerContext());
       ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);
-
-      localStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
-      remoteStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
 
       localDeployer = new TestEnvironment.Builder()
           .authHelperFactory(authHelperFactory)
@@ -695,9 +697,10 @@ public class DeploymentWorkflowServiceTest {
     @Test(dataProvider = "HostCountsWithAuthInfo")
     public void testSuccess(Integer mgmtHostCount, Integer mixedHostCount, Integer cloudHostCount,
                             Boolean isAuthEnabled) throws Throwable {
+      createCloudStores();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(hostClientFactory, true);
-      MockHelper.mockApiClient(apiClientFactory, true);
+      MockHelper.mockApiClient(apiClientFactory, localStore, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), DeployAgentTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
@@ -770,9 +773,10 @@ public class DeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "AuthEnabled")
     public void testProvisionManagementHostFailure(Boolean authEnabled) throws Throwable {
+      createCloudStores();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, false);
       MockHelper.mockHostClient(hostClientFactory, false);
-      MockHelper.mockApiClient(apiClientFactory, true);
+      MockHelper.mockApiClient(apiClientFactory, localStore, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), DeployAgentTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
@@ -799,9 +803,10 @@ public class DeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "AuthEnabled")
     public void testCreateManagementPlaneFailure(Boolean authEnabled) throws Throwable {
+      createCloudStores();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(hostClientFactory, true);
-      MockHelper.mockApiClient(apiClientFactory, false);
+      MockHelper.mockApiClient(apiClientFactory, localStore, false);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), DeployAgentTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
@@ -828,9 +833,10 @@ public class DeploymentWorkflowServiceTest {
 
     @Test
     public void testAuthClientRegistrationFailure() throws Throwable {
+      createCloudStores();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(hostClientFactory, true);
-      MockHelper.mockApiClient(apiClientFactory, true);
+      MockHelper.mockApiClient(apiClientFactory, localStore, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), DeployAgentTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
@@ -1026,14 +1032,8 @@ public class DeploymentWorkflowServiceTest {
     }
 
     private void verifyImageServiceState() throws Throwable {
-      List<ImageService.State> states = queryForServiceStates(ImageService.State.class, localDeployer);
+      List<ImageService.State> states = queryForServiceStates(ImageService.State.class, localStore);
       assertThat(states.size(), is(1));
-
-      assertThat(states.stream().filter(
-          s -> s.imageFile.contains("ESX_CLOUD_MANAGEMENT_VM_IMAGE_FILE")).count(), is(1L));
-      assertThat(states.stream().filter(
-              s -> s.imageFile.contains("ESX_CLOUD_MANAGEMENT_VM_IMAGE_FILE")).findFirst().get().imageId,
-          is("MANAGEMENT_UPLOAD_IMAGE_ENTITY_ID"));
     }
 
     private void verifyFlavorServiceStates() throws Throwable {

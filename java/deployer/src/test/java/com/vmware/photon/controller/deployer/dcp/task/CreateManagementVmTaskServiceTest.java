@@ -27,6 +27,7 @@ import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
@@ -39,8 +40,6 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactory
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.FlavorFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
@@ -486,7 +485,6 @@ public class CreateManagementVmTaskServiceTest {
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
     private DeployerContext deployerContext;
     private ApiClientFactory apiClientFactory;
-    private ImageService.State imageServiceStartState;
     private ProjectService.State projectServiceStartState;
     private FlavorService.State flavorServiceStartState;
     private VmService.State vmServiceStartState;
@@ -507,11 +505,6 @@ public class CreateManagementVmTaskServiceTest {
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           CreateManagementVmTaskServiceTest.class.getResource(configFilePath).getPath())
           .getDeployerContext();
-
-      imageServiceStartState = new ImageService.State();
-      imageServiceStartState.imageId = "imageId";
-      imageServiceStartState.imageName = "imageName";
-      imageServiceStartState.imageFile = "imageFile";
 
       projectServiceStartState = new ProjectService.State();
       projectServiceStartState.projectName = "projectName";
@@ -1018,11 +1011,7 @@ public class CreateManagementVmTaskServiceTest {
       HostService.State hostServiceState = TestHelper.createHostService(cloudStoreMachine,
           Collections.singleton(UsageTag.MGMT.name()));
 
-      ImageService.State imageServiceState =
-          machine.callServiceSynchronously(
-              ImageFactoryService.SELF_LINK,
-              imageServiceStartState,
-              ImageService.State.class);
+      ImageService.State imageServiceState = TestHelper.createImageService(cloudStoreMachine);
 
       ProjectService.State projectServiceState =
           machine.callServiceSynchronously(

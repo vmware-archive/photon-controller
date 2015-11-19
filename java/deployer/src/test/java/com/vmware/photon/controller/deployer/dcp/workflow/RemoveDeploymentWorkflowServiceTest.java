@@ -40,17 +40,18 @@ import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.helpers.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.entity.FlavorFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
 import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -663,38 +664,38 @@ public class RemoveDeploymentWorkflowServiceTest {
     }
 
     private void verifyVmServiceStates() throws Throwable {
-      List<VmService.State> states = queryForServiceStates(VmService.State.class);
+      List<VmService.State> states = queryForServiceStates(VmService.State.class, testEnvironment);
 
       // The number of VmService entities should be 0
       assertThat(states.size(), is(0));
     }
 
     private void verifyTenantServiceState() {
-      List<TenantService.State> states = queryForServiceStates(TenantService.State.class);
+      List<TenantService.State> states = queryForServiceStates(TenantService.State.class, testEnvironment);
 
       assertThat(states.size(), is(0));
     }
 
     private void verifyProjectServiceState() {
-      List<ProjectService.State> states = queryForServiceStates(ProjectService.State.class);
+      List<ProjectService.State> states = queryForServiceStates(ProjectService.State.class, testEnvironment);
 
       assertThat(states.size(), is(0));
     }
 
     private void verifyImageServiceState() {
-      List<ImageService.State> states = queryForServiceStates(ImageService.State.class);
+      List<ImageService.State> states = queryForServiceStates(ImageService.State.class, cloudStoreTestEnvironment);
 
       assertThat(states.size(), is(0));
     }
 
     private void verifyFlavorServiceStates() {
-      List<FlavorService.State> states = queryForServiceStates(FlavorService.State.class);
+      List<FlavorService.State> states = queryForServiceStates(FlavorService.State.class, testEnvironment);
 
       assertThat(states.size(), is(0));
     }
 
     private <T extends ServiceDocument> List<T> queryForServiceStates(
-        Class<T> classType) {
+        Class<T> classType, MultiHostEnvironment<?> multiHostEnvironment) {
       QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
       querySpecification.query = new QueryTask.Query()
           .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -702,12 +703,12 @@ public class RemoveDeploymentWorkflowServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       try {
-        NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
+        NodeGroupBroadcastResponse queryResponse = multiHostEnvironment.sendBroadcastQueryAndWait(queryTask);
         Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
 
         List<T> states = new ArrayList<>();
         for (String documentLink : documentLinks) {
-          states.add(testEnvironment.getServiceState(documentLink, classType));
+          states.add(multiHostEnvironment.getServiceState(documentLink, classType));
         }
 
         return states;
