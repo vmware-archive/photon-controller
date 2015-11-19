@@ -40,6 +40,14 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  */
 @SuppressWarnings("UnusedDeclaration")
 public class Config {
+  private String mode;
+
+  private String constraintChecker;
+
+  // Refresh interval for in-memory constraint checker cache in seconds.
+  @NotNull
+  @Range(min = 1, max = 600)
+  private Integer refreshIntervalSec = 30;
 
   @NotNull
   @Range(min = 0, max = 65535)
@@ -95,6 +103,18 @@ public class Config {
     } catch (UnknownHostException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public String getMode() {
+    return mode;
+  }
+
+  public String getConstraintChecker() {
+    return constraintChecker;
+  }
+
+  public Integer getRefreshIntervalSec() {
+    return refreshIntervalSec;
   }
 
   public Integer getPort() {
