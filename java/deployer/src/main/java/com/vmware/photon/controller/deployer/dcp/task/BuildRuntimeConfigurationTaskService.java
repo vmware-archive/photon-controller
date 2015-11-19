@@ -202,7 +202,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        getContainerService(currentState);
+        getDocuments(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
@@ -259,174 +259,84 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
    *
    * @param currentState
    */
-  private void getContainerService(final State currentState) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+  private void getDocuments(State currentState) {
 
-        try {
-          ContainerService.State containerState = operation.getBody(ContainerService.State.class);
-          processGetVmState(currentState, containerState);
-        } catch (Throwable t) {
-          failTask(throwable);
-        }
-      }
-    };
+    Operation containerGet = Operation.createGet(this, currentState.containerServiceLink);
+    Operation deploymentGet = HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymentServiceLink);
 
-    Operation getOperation = Operation
-        .createGet(UriUtils.buildUri(getHost(), currentState.containerServiceLink))
-        .setCompletion(completionHandler);
+    OperationJoin
+        .create(containerGet, deploymentGet)
+        .setCompletion((ops, exs) -> {
+          if (null != exs && !exs.isEmpty()) {
+            failTask(exs);
+            return;
+          }
 
-    sendRequest(getOperation);
+          try {
+            getDocuments(currentState,
+                ops.get(containerGet.getId()).getBody(ContainerService.State.class),
+                ops.get(deploymentGet.getId()).getBody(DeploymentService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
   }
 
-  /**
-   * This method retrieves the VM Service entity document pointed by the
-   * container service to get the ip address of the vm.
-   *
-   * @param currentState
-   */
-  private void processGetVmState(final State currentState,
-                                 final ContainerService.State containerState) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+  private void getDocuments(State currentState,
+                            ContainerService.State containerState,
+                            DeploymentService.State deploymentState) {
 
-        try {
-          VmService.State vmState = operation.getBody(VmService.State.class);
-          processGetContainerTemplate(currentState, vmState, containerState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
+    Operation templateGet = Operation.createGet(this, containerState.containerTemplateServiceLink);
+    Operation vmGet = Operation.createGet(this, containerState.vmServiceLink);
 
-    Operation getOperation = Operation
-        .createGet(UriUtils.buildUri(getHost(), containerState.vmServiceLink))
-        .setCompletion(completionHandler);
+    OperationJoin
+        .create(templateGet, vmGet)
+        .setCompletion((ops, exs) -> {
+          if (exs != null && !exs.isEmpty()) {
+            failTask(exs);
+            return;
+          }
 
-    sendRequest(getOperation);
+          try {
+            setCommonState(currentState, containerState, deploymentState,
+                ops.get(templateGet.getId()).getBody(ContainerTemplateService.State.class),
+                ops.get(vmGet.getId()).getBody(VmService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
   }
 
-  /**
-   * This method retrieves the VM Service entity document pointed by the
-   * container service to get the ip address of the vm.
-   *
-   * @param currentState
-   */
-  private void processGetContainerTemplate(
-      final State currentState,
-      final VmService.State vmState,
-      final ContainerService.State containerState) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+  private void setCommonState(State currentState,
+                              ContainerService.State containerState,
+                              DeploymentService.State deploymentState,
+                              ContainerTemplateService.State templateState,
+                              VmService.State vmState) {
 
-        try {
-          ContainerTemplateService.State containerTemplateState = operation.getBody(ContainerTemplateService.State
-              .class);
-          setCommonEnvironmentVariablesFromDeploymentServiceState(currentState, vmState, containerState,
-              containerTemplateState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    Operation getOperation = Operation
-        .createGet(UriUtils.buildUri(getHost(), containerState.containerTemplateServiceLink))
-        .setCompletion(completionHandler);
-
-    sendRequest(getOperation);
-  }
-
-  /**
-   * This method gets the deployment service state, and then sets common environmental variables.
-   *
-   * @param currentState
-   */
-  private void setCommonEnvironmentVariablesFromDeploymentServiceState(
-      final State currentState,
-      final VmService.State vmState,
-      final ContainerService.State containerState,
-      final ContainerTemplateService.State containerTemplateState) {
-
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(currentState.deploymentServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
-
-                  try {
-                    DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
-
-                    // Set syslog endpoint and ntp server
-                    if (containerState.dynamicParameters == null) {
-                      containerState.dynamicParameters = new HashMap<>();
-                    }
-
-                    containerState.dynamicParameters.put(ENV_NTP_ENDPOINT, deploymentState.ntpEndpoint);
-
-                    if (null != deploymentState.syslogEndpoint) {
-                      containerState.dynamicParameters.put(ENV_ENABLE_SYSLOG, "true");
-                      containerState.dynamicParameters.put(ENV_SYSLOG_ENDPOINT, deploymentState.syslogEndpoint);
-                    } else {
-                      containerState.dynamicParameters.put(ENV_ENABLE_SYSLOG, "false");
-                      containerState.dynamicParameters.put(ENV_SYSLOG_ENDPOINT, "");
-                    }
-
-                    // Set load balancer port
-                    int loadBalancerPort = deploymentState.oAuthEnabled ? ServicePortConstants.LOADBALANCER_HTTPS_PORT :
-                        ServicePortConstants.LOADBALANCER_HTTP_PORT;
-                    containerState.dynamicParameters.put(ENV_LOADBALANCER_PORT, String.valueOf(loadBalancerPort));
-
-                    // Load state for particular services
-                    loadRuntimeState(currentState, vmState, containerState, containerTemplateState);
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            ));
-  }
-
-  /**
-   * This method loads the runtime state for the container based on its type.
-   * @param currentState
-   * @param vmState
-   * @param containerState
-   * @param containerTemplateState
-   * @throws Exception
-   */
-  private void loadRuntimeState(
-      final State currentState,
-      final VmService.State vmState,
-      final ContainerService.State containerState,
-      final ContainerTemplateService.State containerTemplateState) throws Exception {
-
-    String vmIpAddress = vmState.ipAddress;
-
-    if (null == containerState.dynamicParameters) {
+    // Set syslog endpoint and ntp server
+    if (containerState.dynamicParameters == null) {
       containerState.dynamicParameters = new HashMap<>();
     }
 
-    ContainersConfig.ContainerType containerType =
-        ContainersConfig.ContainerType.valueOf(containerTemplateState.name);
+    containerState.dynamicParameters.put(ENV_NTP_ENDPOINT, deploymentState.ntpEndpoint);
+
+    if (null != deploymentState.syslogEndpoint) {
+      containerState.dynamicParameters.put(ENV_ENABLE_SYSLOG, "true");
+      containerState.dynamicParameters.put(ENV_SYSLOG_ENDPOINT, deploymentState.syslogEndpoint);
+    } else {
+      containerState.dynamicParameters.put(ENV_ENABLE_SYSLOG, "false");
+      containerState.dynamicParameters.put(ENV_SYSLOG_ENDPOINT, "");
+    }
+
+    // Set load balancer port
+    int loadBalancerPort = deploymentState.oAuthEnabled ? ServicePortConstants.LOADBALANCER_HTTPS_PORT :
+        ServicePortConstants.LOADBALANCER_HTTP_PORT;
+    containerState.dynamicParameters.put(ENV_LOADBALANCER_PORT, String.valueOf(loadBalancerPort));
+
+    String vmIpAddress = vmState.ipAddress;
+    ContainersConfig.ContainerType containerType = ContainersConfig.ContainerType.valueOf(templateState.name);
 
     String sharedSecret = HostUtils.getDeployerContext(this).getSharedSecret();
     ContainersConfig containersConfig = HostUtils.getContainersConfig(this);
@@ -438,89 +348,119 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         String.valueOf(containersConfig.getContainerSpecs().get(containerType.name()).getCpuCount()));
     dynamicParameters.put("diskGb",
         String.valueOf(containersConfig.getContainerSpecs().get(containerType.name()).getDiskGb()));
-    if (dynamicParameters != null) {
-      containerState.dynamicParameters.putAll(dynamicParameters);
-    }
+    containerState.dynamicParameters.putAll(dynamicParameters);
+
     switch (containerType) {
       case ManagementApi:
         containerState.dynamicParameters.put(ENV_API_REGISTRATION_ADDRESS, vmIpAddress);
         containerState.dynamicParameters.put(ENV_SHARED_SECRET, sharedSecret);
-        setEnvironmentVariablesFromDeploymentServiceState(currentState, vmState, containerState,
-            containerTemplateState);
+        containerState.dynamicParameters.put(ENV_DATASTORE, deploymentState.imageDataStoreNames.iterator().next());
+        containerState.dynamicParameters.put(ENV_ENABLE_AUTH, deploymentState.oAuthEnabled.toString());
+
+        if (deploymentState.oAuthEnabled) {
+          containerState.dynamicParameters.put(ENV_SWAGGER_LOGIN_URL, deploymentState.oAuthResourceLoginEndpoint);
+          containerState.dynamicParameters.put(ENV_SWAGGER_LOGOUT_URL, deploymentState.oAuthLogoutEndpoint);
+          containerState.dynamicParameters.put(ENV_AUTH_SERVER_TENANT, deploymentState.oAuthTenantName);
+          containerState.dynamicParameters.put(ENV_AUTH_SERVER_PORT,
+              String.valueOf(ServicePortConstants.LIGHTWAVE_PORT));
+        }
+
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(vmState.hostServiceLink)
+            .setCompletion((op, ex) -> {
+              if (null != ex) {
+                failTask(ex);
+                return;
+              }
+
+              try {
+                containerState.dynamicParameters.put(ENV_ESX_HOST, op.getBody(HostService.State.class).hostAddress);
+                scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
+                    (deploymentState.oAuthEnabled && currentState.isNewDeployment) ?
+                        Arrays.asList(ContainersConfig.ContainerType.Zookeeper,
+                            ContainersConfig.ContainerType.Lightwave) :
+                        Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+            .sendWith(this);
+
         break;
 
       case Chairman:
         containerState.dynamicParameters.put(ENV_CHAIRMAN_REGISTRATION_ADDRESS, vmIpAddress);
-        scheduleQueriesForGeneratingRuntimeState(
-            currentState, vmIpAddress, containerTemplateState, containerState,
-            Arrays.asList(
-                ContainersConfig.ContainerType.Zookeeper));
+        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
+            Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
         break;
 
       case RootScheduler:
         containerState.dynamicParameters.put(ENV_ROOT_SCHEDULER_REGISTRATION_ADDRESS, vmIpAddress);
-        scheduleQueriesForGeneratingRuntimeState(
-            currentState, vmIpAddress, containerTemplateState, containerState,
-            Arrays.asList(
-                ContainersConfig.ContainerType.Zookeeper));
+        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
+            Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
         break;
 
       case Deployer:
         containerState.dynamicParameters.put(ENV_DEPLOYER_REGISTRATION_ADDRESS, vmIpAddress);
         containerState.dynamicParameters.put(ENV_SHARED_SECRET, sharedSecret);
-
-        List<ContainersConfig.ContainerType> containerTypes = null;
-        if (currentState.isNewDeployment) {
-          containerTypes = Arrays.asList(
-              ContainersConfig.ContainerType.Zookeeper,
-              ContainersConfig.ContainerType.LoadBalancer);
-        } else {
-          containerTypes = Arrays.asList(
-              ContainersConfig.ContainerType.Zookeeper);
-        }
-
-        scheduleQueriesForGeneratingRuntimeState(
-            currentState, vmIpAddress, containerTemplateState, containerState,
+        List<ContainersConfig.ContainerType> containerTypes = currentState.isNewDeployment ?
+            Arrays.asList(ContainersConfig.ContainerType.Zookeeper, ContainersConfig.ContainerType.LoadBalancer) :
+            Collections.singletonList(ContainersConfig.ContainerType.Zookeeper);
+        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
             containerTypes);
         break;
 
       case Housekeeper:
         containerState.dynamicParameters.put(ENV_HOUSEKEEPER_REGISTRATION_ADDRESS, vmIpAddress);
-        scheduleQueriesForGeneratingRuntimeState(
-            currentState, vmIpAddress, containerTemplateState, containerState,
-            Arrays.asList(
-                ContainersConfig.ContainerType.Zookeeper));
+        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
+            Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
         break;
 
       case CloudStore:
         containerState.dynamicParameters.put(ENV_CLOUD_STORE_REGISTRATION_ADDRESS, vmIpAddress);
-        scheduleQueriesForGeneratingRuntimeState(
-            currentState, vmIpAddress, containerTemplateState, containerState,
-            Arrays.asList(
-                ContainersConfig.ContainerType.Zookeeper));
+        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
+            Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
         break;
 
       case Zookeeper:
         // Load list of zookeeper IPs
-        scheduleQueriesForGeneratingRuntimeState(
-            currentState, vmIpAddress, containerTemplateState, containerState,
-            Arrays.asList(
-                ContainersConfig.ContainerType.Zookeeper));
-
+        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
+            Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
         break;
 
       case LoadBalancer:
-        scheduleQueriesForGeneratingRuntimeState(
-            currentState, vmIpAddress, containerTemplateState, containerState,
-            Arrays.asList(
-                ContainersConfig.ContainerType.ManagementApi));
-
+        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
+            Collections.singletonList(ContainersConfig.ContainerType.ManagementApi));
         break;
 
       case Lightwave:
         containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADDRESS, vmIpAddress);
-        setLightwaveVariablesFromDeploymentServiceState(currentState, vmState, containerState,
-            containerTemplateState);
+        containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
+        containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
+        containerState.dynamicParameters.put(ENV_LIGHTWAVE_PASSWORD, deploymentState.oAuthPassword);
+        containerState.dynamicParameters.put(ENV_LIGHTWAVE_DOMAIN, deploymentState.oAuthTenantName);
+
+        DeploymentService.State patchState = new DeploymentService.State();
+        patchState.oAuthServerAddress = vmIpAddress;
+        patchState.oAuthServerPort = ServicePortConstants.LIGHTWAVE_PORT;
+
+        HostUtils.getCloudStoreHelper(this)
+            .createPatch(deploymentState.documentSelfLink)
+            .setBody(patchState)
+            .setCompletion((op, ex) -> {
+              if (null != ex) {
+                failTask(ex);
+                return;
+              }
+
+              try {
+                patchContainerWithDynamicParameters(currentState, containerState);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+            .sendWith(this);
+
         break;
 
       default:
@@ -529,171 +469,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         break;
     }
   }
-
-  /**
-   * This method gets the deployment service state, and then set the related lightwave parameters.
-   *
-   * @param currentState
-   * @param vmState
-   * @param containerState
-   * @param containerTemplateState
-   */
-  private void setLightwaveVariablesFromDeploymentServiceState(
-        final State currentState,
-        final VmService.State vmState,
-        final ContainerService.State containerState,
-        final ContainerTemplateService.State containerTemplateState) {
-
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(currentState.deploymentServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
-
-                  try {
-                    DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
-                    containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
-                    containerState.dynamicParameters.put(ENV_LIGHTWAVE_PASSWORD, deploymentState.oAuthPassword);
-                    containerState.dynamicParameters.put(ENV_LIGHTWAVE_DOMAIN, deploymentState.oAuthTenantName);
-                    patchDeploymentStateWithAuthParameters(currentState, vmState, containerState);
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            ));
-  }
-
-  /**
-  * Updates deployment state with lightwave container IP and port.
-  *
-  * @param currentState
-  * @param vmState
-  * @param containerState
-  */
-    private void patchDeploymentStateWithAuthParameters(
-        final State currentState, final VmService.State vmState, final ContainerService.State containerState) {
-
-      DeploymentService.State patchState = new DeploymentService.State();
-      patchState.oAuthServerAddress = vmState.ipAddress;
-      patchState.oAuthServerPort = ServicePortConstants.LIGHTWAVE_PORT;
-
-      sendRequest(
-          HostUtils.getCloudStoreHelper(this)
-              .createPatch(currentState.deploymentServiceLink)
-              .setBody(patchState)
-              .setCompletion(
-                  (completedOp, failure) -> {
-                    if (null != failure) {
-                      failTask(failure);
-                      return;
-                    }
-
-                    patchContainerWithDynamicParameters(currentState, containerState);
-                  }
-              ));
-  }
-
-  /**
-   * This method gets the deployment service state, and then set the related dynamic parameters.
-   *
-   * @param currentState
-   */
-  private void setEnvironmentVariablesFromDeploymentServiceState(
-      final State currentState,
-      final VmService.State vmState,
-      final ContainerService.State containerState,
-      final ContainerTemplateService.State containerTemplateState) {
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(currentState.deploymentServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
-
-                  try {
-                    DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
-
-                    // Set Auth
-                    containerState.dynamicParameters.put(ENV_ENABLE_AUTH,
-                        deploymentState.oAuthEnabled.toString());
-                    if (deploymentState.oAuthEnabled) {
-                      containerState.dynamicParameters.put(ENV_SWAGGER_LOGIN_URL,
-                          deploymentState.oAuthResourceLoginEndpoint);
-                      containerState.dynamicParameters.put(ENV_SWAGGER_LOGOUT_URL,
-                          deploymentState.oAuthLogoutEndpoint);
-                      containerState.dynamicParameters.put(ENV_AUTH_SERVER_TENANT,
-                          deploymentState.oAuthTenantName);
-                      containerState.dynamicParameters.put(ENV_AUTH_SERVER_PORT,
-                          String.valueOf(ServicePortConstants.LIGHTWAVE_PORT));
-                    }
-
-                    // Set Image Datastore
-                    containerState.dynamicParameters.put(
-                        ENV_DATASTORE, deploymentState.imageDataStoreNames.iterator().next());
-
-                    // Set Host Ip
-                    setEsxHostIp(currentState, vmState, containerState, containerTemplateState,
-                        deploymentState.oAuthEnabled);
-
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            ));
-  }
-
-  /**
-   * Sets IP of the ESX host.
-   * @param currentState
-   * @param vmState
-   * @param containerTemplateState
-   * @param isAuthEnabled
-   */
-  private void setEsxHostIp(
-      final State currentState,
-      final VmService.State vmState,
-      final ContainerService.State containerState,
-      final ContainerTemplateService.State containerTemplateState, boolean isAuthEnabled) {
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(vmState.hostServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
-
-                  try {
-                    HostService.State esxHypervisorState = completedOp.getBody(HostService.State.class);
-                    containerState.dynamicParameters.put(ENV_ESX_HOST, esxHypervisorState.hostAddress);
-
-                    List<ContainersConfig.ContainerType> containerList = null;
-                    if (isAuthEnabled && currentState.isNewDeployment) {
-                      containerList = Arrays.asList(
-                          ContainersConfig.ContainerType.Zookeeper,
-                          ContainersConfig.ContainerType.Lightwave
-                      );
-                    } else {
-                      containerList = Arrays.asList(ContainersConfig.ContainerType.Zookeeper);
-                    }
-
-                    scheduleQueriesForGeneratingRuntimeState(
-                        currentState, vmState.ipAddress, containerTemplateState, containerState, containerList);
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            ));
-  }
-
+  
   /**
    * Generates a bunch of queries to get the other container type related information
    * which is needed for the current container.
