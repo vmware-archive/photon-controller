@@ -24,6 +24,7 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -41,7 +42,6 @@ import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskFactoryService;
@@ -839,7 +839,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
       vmServiceLink) {
     VmService.State vmPatchState = new VmService.State();
     vmPatchState.flavorServiceLink = flavorLink;
-    vmPatchState.imageServiceLink = ImageFactoryService.SELF_LINK + "/" + deploymentService.imageId;
+    vmPatchState.imageServiceLink = ImageServiceFactory.SELF_LINK + "/" + deploymentService.imageId;
     vmPatchState.projectServiceLink = ProjectFactoryService.SELF_LINK + "/" + deploymentService.projectId;
 
     this.sendRequest(Operation

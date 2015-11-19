@@ -28,7 +28,6 @@ import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ApiTestUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
-import com.vmware.photon.controller.deployer.dcp.entity.ImageService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -534,7 +533,6 @@ public class UploadImageTaskServiceTest {
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
     private ApiClientFactory apiClientFactory;
-    private ImageService.State imageServiceStartState;
     private UploadImageTaskService.State startState;
     private ApiClient apiClient;
     private ImagesApi imagesApi;
@@ -549,10 +547,6 @@ public class UploadImageTaskServiceTest {
           UploadImageTaskServiceTest.class.getResource(configFilePath).getPath())
           .getDeployerContext();
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-
-      imageServiceStartState = new ImageService.State();
-      imageServiceStartState.imageFile = "imageFile";
-      imageServiceStartState.imageName = "imageName";
 
       apiClient = mock(ApiClient.class);
       imagesApi = mock(ImagesApi.class);
