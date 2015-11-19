@@ -29,7 +29,7 @@ import java.util.Random;
 /**
  * Interface for resolving scheduler resource constraints.
  */
-public interface ConstraintChecker {
+public interface  ConstraintChecker {
   int DEFAULT_AGENT_PORT = 8835;
 
   Random RANDOM = new Random();
