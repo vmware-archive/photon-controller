@@ -39,7 +39,6 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectFactoryService;
@@ -141,7 +140,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     public String deploymentServiceLink;
 
     /**
-     * This value represents the link to the {@link HostService} entity.
+     * This value represents the link to the host service entity.
      */
     public String hostServiceLink;
 
@@ -802,7 +801,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
           public void onSuccess(@Nullable CreateFlavorTaskService.State result) {
             switch (result.taskState.stage) {
               case FINISHED:
-                updateVmLinks(currentState, deploymentService, result.documentSelfLink, vmServiceLink);
+                updateVmLinks(currentState, deploymentService, vmServiceLink);
                 break;
               case FAILED:
                 State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
@@ -835,10 +834,9 @@ public class AddManagementHostWorkflowService extends StatefulService {
         setLinksCallback);
   }
 
-  private void updateVmLinks(State currentState, DeploymentService.State deploymentService, String flavorLink, String
+  private void updateVmLinks(State currentState, DeploymentService.State deploymentService, String
       vmServiceLink) {
     VmService.State vmPatchState = new VmService.State();
-    vmPatchState.flavorServiceLink = flavorLink;
     vmPatchState.imageServiceLink = ImageServiceFactory.SELF_LINK + "/" + deploymentService.imageId;
     vmPatchState.projectServiceLink = ProjectFactoryService.SELF_LINK + "/" + deploymentService.projectId;
 
@@ -952,7 +950,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
   private void getDeployment(final State currentState) {
     sendRequest(
-        ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper()
+        HostUtils.getCloudStoreHelper(this)
             .createGet(currentState.deploymentServiceLink)
             .setCompletion(
                 (operation, throwable) -> {

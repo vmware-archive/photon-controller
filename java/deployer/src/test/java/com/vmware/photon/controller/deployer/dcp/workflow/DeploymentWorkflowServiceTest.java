@@ -24,6 +24,7 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.Constants;
@@ -42,7 +43,6 @@ import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
 import com.vmware.photon.controller.deployer.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.deployer.dcp.entity.TenantService;
@@ -1037,18 +1037,15 @@ public class DeploymentWorkflowServiceTest {
     }
 
     private void verifyFlavorServiceStates() throws Throwable {
-      List<FlavorService.State> states = queryForServiceStates(FlavorService.State.class, localDeployer);
+      List<FlavorService.State> states = queryForServiceStates(FlavorService.State.class, localStore);
       List<VmService.State> vmStates = queryForServiceStates(VmService.State.class, localDeployer);
 
-      // For each VmService entity we should create one and only one FlavorService entity.
-      assertThat(states.size(), is(vmStates.size()));
-
-      for (final FlavorService.State state : states) {
-        Collection<VmService.State> vmStatesForFlavor = vmStates.stream()
-            .filter(vmState -> vmState.flavorServiceLink.equals(state.documentSelfLink))
+      for (final VmService.State vmState : vmStates) {
+        Collection<FlavorService.State> flavorsForVm = states.stream()
+            .filter(flavorState -> vmState.flavorServiceLink.equals(flavorState.documentSelfLink))
             .collect(Collectors.toList());
 
-        assertThat(vmStatesForFlavor.size(), is(1));
+        assertThat(flavorsForVm.size(), is(1));
       }
     }
 

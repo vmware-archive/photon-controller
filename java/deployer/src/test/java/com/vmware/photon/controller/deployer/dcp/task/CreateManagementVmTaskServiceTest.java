@@ -26,6 +26,7 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -38,8 +39,6 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.FlavorService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ProjectService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
@@ -486,7 +485,6 @@ public class CreateManagementVmTaskServiceTest {
     private DeployerContext deployerContext;
     private ApiClientFactory apiClientFactory;
     private ProjectService.State projectServiceStartState;
-    private FlavorService.State flavorServiceStartState;
     private VmService.State vmServiceStartState;
     private ContainerTemplateService.State containerTemplateStartState;
     private ContainerService.State containerStartState;
@@ -514,13 +512,6 @@ public class CreateManagementVmTaskServiceTest {
 
       vmServiceStartState = new VmService.State();
       vmServiceStartState.name = "vmName";
-
-      flavorServiceStartState = new FlavorService.State();
-      flavorServiceStartState.diskFlavorName = "diskFlavor";
-      flavorServiceStartState.vmFlavorName = "vmFlavor";
-      flavorServiceStartState.diskGb = 1;
-      flavorServiceStartState.cpuCount = 1;
-      flavorServiceStartState.memoryMb = 1024;
 
       containerTemplateStartState = TestHelper.getContainerTemplateServiceStartState();
 
@@ -1019,11 +1010,7 @@ public class CreateManagementVmTaskServiceTest {
               projectServiceStartState,
               ProjectService.State.class);
 
-      FlavorService.State flavorServiceState =
-          machine.callServiceSynchronously(
-              FlavorFactoryService.SELF_LINK,
-              flavorServiceStartState,
-              FlavorService.State.class);
+      FlavorService.State flavorServiceState = TestHelper.createFlavor(cloudStoreMachine);
 
       vmServiceStartState.hostServiceLink = hostServiceState.documentSelfLink;
       vmServiceStartState.imageServiceLink = imageServiceState.documentSelfLink;

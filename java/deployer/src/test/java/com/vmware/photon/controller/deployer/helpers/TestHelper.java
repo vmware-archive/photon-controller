@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.helpers;
 
 import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
@@ -22,6 +23,8 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
@@ -60,6 +63,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -388,6 +392,20 @@ public class TestHelper {
             imageServiceStartState,
             ImageService.State.class);
     return imageServiceState;
+  }
+
+  public static FlavorService.State createFlavor(MultiHostEnvironment<?> cloudStoreMachine) throws Throwable {
+    FlavorService.State flavorServiceStartState = new FlavorService.State();
+    flavorServiceStartState.name = "dummyName";
+    flavorServiceStartState.kind = "dummyKind";
+    flavorServiceStartState.cost = new ArrayList<>();
+    flavorServiceStartState.tags = new HashSet<>();
+    flavorServiceStartState.state = FlavorState.READY;
+    FlavorService.State flavorServiceState = cloudStoreMachine.callServiceSynchronously(
+        FlavorServiceFactory.SELF_LINK,
+        flavorServiceStartState,
+        FlavorService.State.class);
+    return flavorServiceState;
   }
 
   //
