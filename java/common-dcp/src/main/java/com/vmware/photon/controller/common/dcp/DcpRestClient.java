@@ -32,11 +32,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,7 +64,8 @@ public class DcpRestClient implements DcpClient {
   private static final Logger logger = LoggerFactory.getLogger(DcpRestClient.class);
   private NettyHttpServiceClient client;
   private ServerSet serverSet;
-  private URI localHostAddress;
+  private URI localHostUri;
+  private InetAddress localHostInetAddress;
 
 
   @Inject
@@ -81,7 +84,8 @@ public class DcpRestClient implements DcpClient {
       throw new RuntimeException(uriSyntaxException);
     }
 
-    this.localHostAddress = OperationUtils.getLocalAddress();
+    this.localHostUri = OperationUtils.getLocalHostUri();
+    this.localHostInetAddress = OperationUtils.getLocalHostInetAddress();
   }
 
   public void start() {
@@ -97,14 +101,14 @@ public class DcpRestClient implements DcpClient {
   @Override
   public Operation post(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    URI serviceUri = createUriUsingRandomAddress(serviceSelfLink);
+    URI serviceUri = getServiceUri(serviceSelfLink);
 
     Operation postOperation = Operation
         .createPost(serviceUri)
         .setUri(serviceUri)
         .setExpiration(Utils.getNowMicrosUtc() + getPostOperationExpirationMicros())
         .setBody(body)
-        .setReferer(this.localHostAddress);
+        .setReferer(this.localHostUri);
 
     return send(postOperation);
   }
@@ -112,14 +116,14 @@ public class DcpRestClient implements DcpClient {
   @Override
   public Operation get(String documentSelfLink)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    URI serviceUri = createUriUsingRandomAddress(documentSelfLink);
+    URI serviceUri = getServiceUri(documentSelfLink);
 
     Operation getOperation = Operation
         .createGet(serviceUri)
         .setUri(serviceUri)
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getGetOperationExpirationMicros())
-        .setReferer(this.localHostAddress);
+        .setReferer(this.localHostUri);
 
     return send(getOperation);
   }
@@ -127,14 +131,14 @@ public class DcpRestClient implements DcpClient {
   @Override
   public Operation delete(String documentSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    URI serviceUri = createUriUsingRandomAddress(documentSelfLink);
+    URI serviceUri = getServiceUri(documentSelfLink);
 
     Operation deleteOperation = Operation
         .createDelete(serviceUri)
         .setUri(serviceUri)
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getDeleteOperationExpirationMicros())
-        .setReferer(this.localHostAddress)
+        .setReferer(this.localHostUri)
         .setBody(body);
 
     return send(deleteOperation);
@@ -144,7 +148,7 @@ public class DcpRestClient implements DcpClient {
   public Operation postToBroadcastQueryService(QueryTask.QuerySpecification spec)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
     URI serviceUri = UriUtils.buildBroadcastRequestUri(
-        createUriUsingRandomAddress(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+        getServiceUri(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
         ServiceUriPaths.DEFAULT_NODE_SELECTOR);
 
     QueryTask query = QueryTask.create(spec)
@@ -155,7 +159,7 @@ public class DcpRestClient implements DcpClient {
         .setUri(serviceUri)
         .setExpiration(Utils.getNowMicrosUtc() + getQueryOperationExpirationMicros())
         .setBody(query)
-        .setReferer(this.localHostAddress);
+        .setReferer(this.localHostUri);
 
     return send(queryOperation);
   }
@@ -163,7 +167,7 @@ public class DcpRestClient implements DcpClient {
   @Override
   public Operation patch(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    URI serviceUri = createUriUsingRandomAddress(serviceSelfLink);
+    URI serviceUri = getServiceUri(serviceSelfLink);
 
     Operation patchOperation = Operation
         .createPatch(serviceUri)
@@ -171,7 +175,7 @@ public class DcpRestClient implements DcpClient {
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getPatchOperationExpirationMicros())
         .setBody(body)
-        .setReferer(this.localHostAddress);
+        .setReferer(this.localHostUri);
 
     return send(patchOperation);
   }
@@ -354,19 +358,33 @@ public class DcpRestClient implements DcpClient {
   }
 
   @VisibleForTesting
-  protected URI createUriUsingRandomAddress(String path) {
-    InetSocketAddress inetSocketAddress = getRandomInetSocketAddress();
-    int port = getPort(inetSocketAddress);
-    URI uri = null;
+  protected URI getServiceUri(String path) {
+
+    //check if any of the hosts are available locally
+    Optional<InetSocketAddress> localInetSocketAddress =
+        this.serverSet.getServers().stream().filter(
+            (InetSocketAddress i) -> i.getAddress().equals(this.localHostInetAddress))
+            .findFirst();
+
+    InetSocketAddress selectedInetSocketAddress;
+    if (localInetSocketAddress.isPresent()) {
+      // let the dcp host decide if a network hop across hosts is required for
+      // the requested operation.
+      selectedInetSocketAddress = localInetSocketAddress.get();
+    } else {
+      selectedInetSocketAddress = getRandomInetSocketAddress();
+    }
+
+    int port = getPort(selectedInetSocketAddress);
+    String address = selectedInetSocketAddress.getAddress().getHostAddress();
+
     try {
-      uri = ServiceUtils.createUriFromServerSet(inetSocketAddress, port, path);
+      return new URI("http", null, address, port, path, null, null);
     } catch (URISyntaxException uriSyntaxException) {
       logger.error("createUriFromServerSet: URISyntaxException path={} exception={} port={}",
           path, uriSyntaxException, port);
       throw new RuntimeException(uriSyntaxException);
     }
-
-    return uri;
   }
 
   private void logCompletedOperation(Operation completedOperation) {

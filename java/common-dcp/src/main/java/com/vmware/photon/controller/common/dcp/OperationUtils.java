@@ -29,6 +29,7 @@ import java.net.UnknownHostException;
 public class OperationUtils {
 
   private static final Logger logger = LoggerFactory.getLogger(OperationUtils.class);
+
   /**
    * Returns true if operation still needs to be completed.
    *
@@ -39,14 +40,14 @@ public class OperationUtils {
     return (null == op || null == op.getCompletion());
   }
 
-  public static URI getLocalAddress() {
-    URI uri = null;
-    String host = null;
+  public static URI getLocalHostUri() {
+    URI uri;
+    String host;
+    InetAddress localHostInetAddress = getLocalHostInetAddress();
 
-    try {
-      host = InetAddress.getLocalHost().getHostAddress();
-    } catch (UnknownHostException e) {
-      logger.warn("Exception retrieving local host address", e);
+    if (localHostInetAddress != null) {
+      host = localHostInetAddress.getHostAddress();
+    } else {
       host = "http://unknownhost";
     }
 
@@ -58,5 +59,14 @@ public class OperationUtils {
     }
 
     return uri;
+  }
+
+  public static InetAddress getLocalHostInetAddress() {
+    try {
+      return InetAddress.getLocalHost();
+    } catch (UnknownHostException e) {
+      logger.warn("Exception retrieving local host address", e);
+    }
+    return null;
   }
 }

@@ -32,22 +32,22 @@ import java.net.URISyntaxException;
 public class CloudStoreHelper {
 
   private ServerSet cloudStoreServerSet;
-  private URI localHostAddress;
+  private URI localHostUri;
 
   @Inject
   public CloudStoreHelper(@CloudStoreServerSet ServerSet cloudStoreServerSet) {
     this.cloudStoreServerSet = checkNotNull(cloudStoreServerSet);
-    this.localHostAddress = OperationUtils.getLocalAddress();
+    this.localHostUri = OperationUtils.getLocalHostUri();
   }
 
   public CloudStoreHelper() {
-    this.localHostAddress = OperationUtils.getLocalAddress();
+    this.localHostUri = OperationUtils.getLocalHostUri();
   }
 
   @VisibleForTesting
   public void setServerSet(ServerSet cloudStoreServerSet) {
     this.cloudStoreServerSet = checkNotNull(cloudStoreServerSet);
-    this.localHostAddress = OperationUtils.getLocalAddress();
+    this.localHostUri = OperationUtils.getLocalHostUri();
   }
 
   public URI getCloudStoreURI(String path) {
@@ -63,32 +63,32 @@ public class CloudStoreHelper {
         .createDelete(getCloudStoreURI(path))
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setBody(new ServiceDocument())
-        .setReferer(this.localHostAddress);
+        .setReferer(this.localHostUri);
   }
 
   public Operation createGet(String path) {
     return Operation
         .createGet(getCloudStoreURI(path))
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
-        .setReferer(this.localHostAddress);
+        .setReferer(this.localHostUri);
   }
 
   public Operation createPost(String path) {
     return Operation
         .createPost(getCloudStoreURI(path))
-        .setReferer(this.localHostAddress);
+        .setReferer(this.localHostUri);
   }
 
   public Operation createBroadcastPost(String path, String selectorPath) {
     return Operation
         .createPost(UriUtils.buildBroadcastRequestUri(getCloudStoreURI(path), selectorPath))
-        .setReferer(this.localHostAddress);
+        .setReferer(this.localHostUri);
   }
 
   public Operation createPatch(String path) {
     return Operation
         .createPatch(getCloudStoreURI(path))
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
-        .setReferer(this.localHostAddress);
+        .setReferer(this.localHostUri);
   }
 }
