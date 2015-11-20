@@ -263,6 +263,11 @@ public class AllocateHostResourceTaskService extends StatefulService {
       ContainerService.State state = new ContainerService.State();
       state.memoryMb = template.memoryMb * hostState.memoryMb / totalMemory;
       state.cpuShares = template.cpuCount * ContainerService.State.DOCKER_CPU_SHARES_MAX / maxCpu;
+      // Set memoryMb dynamic parameter which will be used to set the jvm max memory allocation
+      if (state.dynamicParameters == null) {
+        state.dynamicParameters = new HashMap<>();
+      }
+      state.dynamicParameters.put("memoryMb", String.valueOf(state.memoryMb));
       containerMap.put(templateMap.get(template.documentSelfLink), state);
     }
     return containerMap;
