@@ -90,7 +90,8 @@ public class HostService extends StatefulService {
 
   @Override
   public ServiceDocument getDocumentTemplate() {
-    return ServiceUtils.getDocumentTemplateWithIndexedFields(super.getDocumentTemplate(), State.FIELD_NAME_USAGE_TAGS);
+    return ServiceUtils.getDocumentTemplateWithIndexedFields(super.getDocumentTemplate(),
+        State.FIELD_NAME_USAGE_TAGS, State.FIELD_NAME_REPORTED_DATASTORES, State.FIELD_NAME_REPORTED_IMAGE_DATASTORES);
   }
 
   private void validateState(State currentState) {
@@ -156,6 +157,9 @@ public class HostService extends StatefulService {
 
     public static final String FIELD_NAME_HOST_ADDRESS = "hostAddress";
     public static final String FIELD_NAME_USAGE_TAGS = "usageTags";
+    public static final String FIELD_NAME_REPORTED_DATASTORES = "reportedDatastores";
+    public static final String FIELD_NAME_REPORTED_IMAGE_DATASTORES = "reportedImageDatastores";
+
 
     public static final String USAGE_TAGS_KEY =
         QueryTask.QuerySpecification.buildCollectionItemName(FIELD_NAME_USAGE_TAGS);
@@ -273,7 +277,7 @@ public class HostService extends StatefulService {
 
     /**
      * A set of datastore IDs reported by the host on registration. Chairman sets
-     * this field when it receives a registraion from the host.
+     * this field when it receives a registration from the host.
      */
     public Set<String> reportedDatastores;
 
