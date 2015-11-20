@@ -24,7 +24,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -65,7 +65,7 @@ public abstract class BaseModelTest {
     if (sandbox.exists()) {
       try {
         FileUtils.forceDelete(sandbox);
-      } catch (FileNotFoundException | IllegalArgumentException ex) {
+      } catch (IOException | IllegalArgumentException ex) {
         logger.debug("Sandbox file was not found");
       }
     }
