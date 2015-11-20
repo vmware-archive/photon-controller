@@ -32,7 +32,7 @@ import java.util.UUID;
  */
 public class ComputeDescriptionServiceTest {
 
-  private ComputeDescriptionService.ComputeDescription buildValidStartState() throws Throwable {
+  public static ComputeDescriptionService.ComputeDescription buildValidStartState() throws Throwable {
     ComputeDescriptionService.ComputeDescription cd = new ComputeDescriptionService.ComputeDescription();
 
     cd.bootAdapterReference = new URI("http://bootAdapterReference");
