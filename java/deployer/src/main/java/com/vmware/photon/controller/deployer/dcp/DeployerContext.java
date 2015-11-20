@@ -13,16 +13,19 @@
 
 package com.vmware.photon.controller.deployer.dcp;
 
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.common.dcp.UpgradeUtils;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.Range;
 
 import javax.validation.constraints.NotNull;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -105,6 +108,10 @@ public class DeployerContext {
   private final String configDirectory;
 
   private String zookeeperQuorum;
+
+  private Collection<Class<?>> migrationExecludedServices = ImmutableSet.<Class<?>>builder()
+      .add(DatastoreServiceFactory.class)
+      .build();
 
   @VisibleForTesting
   public DeployerContext() {
@@ -230,5 +237,9 @@ public class DeployerContext {
 
   public Set<Map.Entry<String, String>> getFactoryLinkMapEntries(){
     return UpgradeUtils.SOURCE_DESTINATION_MAP.entrySet();
+  }
+
+  public Collection<Class<?>> getMigrationExcludedServices() {
+    return migrationExecludedServices;
   }
 }
