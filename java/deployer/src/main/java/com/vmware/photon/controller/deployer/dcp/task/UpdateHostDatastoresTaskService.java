@@ -22,6 +22,7 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService.State;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -48,6 +49,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -235,6 +237,19 @@ public class UpdateHostDatastoresTaskService extends StatefulService {
     HostService.State host = new HostService.State();
     host.reportedDatastores = regularDatastoreStates.stream().map(ds -> ds.id).collect(Collectors.toSet());
     host.reportedImageDatastores = imageDatastores.stream().map(ds -> ds.id).collect(Collectors.toSet());
+
+    List<DatastoreService.State> allDatastores = new ArrayList<>(imageDatastores);
+    allDatastores.addAll(regularDatastoreStates);
+
+    host.datastoreServiceLinks = allDatastores.stream()
+        .collect(Collectors.toMap(
+            k -> {
+              return k.name;
+              },
+            v -> {
+              return DatastoreServiceFactory.SELF_LINK + "/" + v.id;
+              }));
+
     return cloudStoreHelper.createPatch(hostServiceLink)
         .setBody(host);
   }

@@ -240,6 +240,6 @@ public class DeployerContext {
   }
 
   public Collection<Class<?>> getMigrationExcludedServices() {
-    return migrationExecludedServices ;
+    return migrationExecludedServices;
   }
 }
