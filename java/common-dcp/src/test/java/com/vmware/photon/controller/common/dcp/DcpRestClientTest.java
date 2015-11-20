@@ -38,9 +38,11 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ProtocolException;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -92,16 +94,6 @@ public class DcpRestClientTest {
     ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
     assertThat(createdState.name, is(equalTo(exampleServiceState.name)));
     return createdState.documentSelfLink;
-  }
-
-  private String[] createDocuments(Integer documentCount) throws Throwable {
-    String[] documentSelfLinks = new String[documentCount];
-    for (Integer i = 0; i < documentCount; i++) {
-      ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
-      exampleServiceState.name = UUID.randomUUID().toString();
-      documentSelfLinks[i] = createDocument(exampleServiceState);
-    }
-    return documentSelfLinks;
   }
 
   private BasicServiceHost[] setUpMultipleHosts(Integer hostCount) throws Throwable {
@@ -271,12 +263,12 @@ public class DcpRestClientTest {
     @Test
     public void testTimeoutOfOperation() throws Throwable {
       String documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
-      URI uri = dcpRestClient.createUriUsingRandomAddress(documentSelfLink);
+      URI uri = dcpRestClient.getServiceUri(documentSelfLink);
       Operation getOperation = Operation
           .createGet(uri)
           .setUri(uri)
           .setExpiration(1)
-          .setReferer(OperationUtils.getLocalAddress())
+          .setReferer(OperationUtils.getLocalHostUri())
           .setStatusCode(Operation.STATUS_CODE_TIMEOUT);
 
       OperationLatch.OperationResult operationResult = new OperationLatch.OperationResult();
@@ -623,6 +615,12 @@ public class DcpRestClientTest {
     public void setUp() throws Throwable {
       hosts = setUpMultipleHosts(5);
       dcpRestClients = setupDcpRestClients(hosts);
+      InetSocketAddress[] servers = new InetSocketAddress[hosts.length];
+      for (int i = 0; i < hosts.length; i++) {
+        servers[i] = new InetSocketAddress(hosts[i].getPreferredAddress(), hosts[i].getPort());
+      }
+      StaticServerSet staticServerSet = new StaticServerSet(servers);
+      dcpRestClient = spy(new DcpRestClient(staticServerSet, Executors.newFixedThreadPool(1)));
       doReturn(TimeUnit.SECONDS.toMicros(5)).when(dcpRestClient).getGetOperationExpirationMicros();
       doReturn(TimeUnit.SECONDS.toMicros(5)).when(dcpRestClient).getQueryOperationExpirationMicros();
       dcpRestClient.start();
@@ -705,9 +703,12 @@ public class DcpRestClientTest {
 
       for (int i = 0; i < MAX_ITERATIONS; i++) {
         for (int j = 0; j < dcpRestClients.length; j++) {
+          Operation result = dcpRestClient.get(documentSelfLinks[j]);
+          ExampleService.ExampleServiceState savedState = result.getBody(ExampleService.ExampleServiceState.class);
+          assertThat(savedState.name, is(equalTo(exampleServiceStates[j].name)));
           for (int k = 0; k < dcpRestClients.length; k++) {
-            Operation result = dcpRestClients[k].get(documentSelfLinks[j]);
-            ExampleService.ExampleServiceState savedState = result.getBody(ExampleService.ExampleServiceState.class);
+            result = dcpRestClients[k].get(documentSelfLinks[j]);
+            savedState = result.getBody(ExampleService.ExampleServiceState.class);
             assertThat(savedState.name, is(equalTo(exampleServiceStates[j].name)));
           }
         }
@@ -798,6 +799,71 @@ public class DcpRestClientTest {
       QueryTask queryResult = result.getBody(QueryTask.class);
       assertThat(queryResult, is(notNullValue()));
       assertThat(queryResult.results, is(nullValue()));
+    }
+  }
+
+  /**
+   * Tests helper methods in DcpRestClient.
+   */
+  public class HelperMethodTest {
+    @Test
+    public void testGetServiceUri() throws Throwable {
+      InetAddress localHostInetAddress = OperationUtils.getLocalHostInetAddress();
+      assertThat(localHostInetAddress, is(notNullValue()));
+      String localHostAddress = null;
+      if (localHostInetAddress != null) {
+        localHostAddress = localHostInetAddress.getHostAddress();
+      }
+      assertThat(localHostAddress, is(notNullValue()));
+
+      InetSocketAddress[] servers1 = new InetSocketAddress[3];
+      servers1[0] = new InetSocketAddress("0.0.0.1", 1);
+      servers1[1] = new InetSocketAddress("0.0.0.2", 2);
+      servers1[2] = new InetSocketAddress("0.0.0.3", 3);
+      StaticServerSet staticServerSet = new StaticServerSet(servers1);
+      DcpRestClient testDcpRestClient = new DcpRestClient(staticServerSet, Executors.newFixedThreadPool(1));
+      final URI result1 = testDcpRestClient.getServiceUri("/dummyPath");
+
+      // the selected URI should be from the provided addresses
+      assertThat(
+          Arrays.asList(servers1)
+              .stream()
+              .filter(a -> a.getAddress().getHostAddress().equals(result1.getHost()))
+              .findFirst()
+              .isPresent(), is(true));
+
+      // the local address should not get selected since none of the provided addresses would match with it
+      assertThat(result1.getHost().equals(localHostAddress), is(false));
+
+      InetSocketAddress[] servers2 = new InetSocketAddress[4];
+      servers2[0] = servers1[0];
+      servers2[1] = servers1[1];
+      servers2[2] = servers1[2];
+      servers2[3] = new InetSocketAddress(OperationUtils.getLocalHostInetAddress(), 3);
+      staticServerSet = new StaticServerSet(servers2);
+      testDcpRestClient = new DcpRestClient(staticServerSet, Executors.newFixedThreadPool(1));
+      final URI result2 = testDcpRestClient.getServiceUri("/dummyPath");
+
+      //the selected URI should not be from the servers1 list as they do not match local address and servers2 has
+      //one that matches
+      assertThat(
+          Arrays.asList(servers1)
+              .stream()
+              .filter(a -> a.getAddress().getHostAddress().equals(result2.getHost()))
+              .findFirst()
+              .isPresent(), is(false));
+
+      //the selected URI should be from servers2 since it has
+      //one that matches local address
+      assertThat(
+          Arrays.asList(servers2)
+              .stream()
+              .filter(a -> a.getAddress().getHostAddress().equals(result2.getHost()))
+              .findFirst()
+              .isPresent(), is(true));
+
+      //the selected URI should be using local address
+      assertThat(result2.getHost().equals(localHostAddress), is(true));
     }
   }
 }

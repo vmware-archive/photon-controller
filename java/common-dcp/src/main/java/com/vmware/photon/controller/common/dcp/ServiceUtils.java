@@ -206,11 +206,4 @@ public class ServiceUtils {
     URI uri = new URI("http", null, address, port, path, null, null);
     return uri;
   }
-
-  public static URI createUriFromServerSet(InetSocketAddress inetSocketAddress, int port, String path) throws
-      URISyntaxException {
-    String address = inetSocketAddress.getHostString();
-    URI uri = new URI("http", null, address, port, path, null, null);
-    return uri;
-  }
 }
