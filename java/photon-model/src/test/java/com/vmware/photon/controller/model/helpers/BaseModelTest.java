@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.model.helpers;
 
 import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
+import com.vmware.photon.controller.model.resources.ComputeFactoryService;
 import com.vmware.photon.controller.model.resources.DiskFactoryService;
 import com.vmware.photon.controller.model.resources.ResourcePoolFactoryService;
 
@@ -25,6 +26,7 @@ import org.testng.annotations.BeforeClass;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -41,6 +43,7 @@ public abstract class BaseModelTest {
   private Path sandboxDirectory;
 
   public static final Class[] FACTORY_SERVICES = {
+      ComputeFactoryService.class,
       ComputeDescriptionFactoryService.class,
       DiskFactoryService.class,
       ResourcePoolFactoryService.class,
@@ -58,7 +61,7 @@ public abstract class BaseModelTest {
   @AfterClass
   public void tearDownClass() throws Throwable {
     if (host != null) {
-      host.tearDown();
+      host.stop();
       host = null;
     }
     File sandbox = new File(sandboxDirectory.toUri());
@@ -67,6 +70,8 @@ public abstract class BaseModelTest {
         FileUtils.forceDelete(sandbox);
       } catch (FileNotFoundException | IllegalArgumentException ex) {
         logger.debug("Sandbox file was not found");
+      } catch (IOException ex) {
+        FileUtils.forceDeleteOnExit(sandbox);
       }
     }
   }
