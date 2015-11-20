@@ -114,6 +114,11 @@ Vagrant.configure("2") do |config|
     echo "Cleanup done."
   EOS
 
+  restart_always = "--restart=always"
+  if ENV["NO_RESTART_ALWAYS"]
+    restart_always = ""
+  end
+
   # ================ NETWORK CONFIGURATION ================
 
   #
@@ -426,7 +431,7 @@ Vagrant.configure("2") do |config|
       #
       # Start fake agent
       #
-      docker run --restart=always -d -p 8835:8835 --net=host --name agent_container \
+      docker run -d -p 8835:8835 --net=host --name agent_container #{restart_always} \
         -v /vagrant/log/agent:/vagrant/log -v /devbox_data/tmp:/devbox_data/tmp \
         -v #{ESXCLOUD_DIR}:#{ESXCLOUD_DIR} #{datastore_mapped_dir_setting} \
         -v #{agent_config_dir}:/etc/esxcloud/agent \
@@ -504,7 +509,7 @@ Vagrant.configure("2") do |config|
   #
   config.vm.provision :shell, :inline => <<-EOS
     set -ex
-    docker run -d #{BASE_SERVICE_PORT_MAP[:zookeeper]} --restart=always \
+    docker run -d #{BASE_SERVICE_PORT_MAP[:zookeeper]} #{restart_always} \
       --net=host -v /vagrant/log/zookeeper:/var/log/zookeeper \
       -v /esxcloud/java/distributions/configurations/configuration-zookeeper:/var/esxcloud/data/zookeeper \
       -v /esxcloud/java/distributions/configurations/configuration-zookeeper:/usr/lib/zookeeper/conf \
@@ -516,7 +521,7 @@ Vagrant.configure("2") do |config|
   #
   config.vm.provision :shell, :inline => <<-EOS
     set -ex
-    docker run -d #{BASE_SERVICE_PORT_MAP[:haproxy]} --restart=always --net=host \
+    docker run -d #{BASE_SERVICE_PORT_MAP[:haproxy]} --net=host #{restart_always} \
     -v /esxcloud/java/distributions/configurations/configuration-haproxy:/etc/haproxy \
     -v /vagrant/log/haproxy:/var/log --privileged --name devbox_haproxy_container \
     -e HAPROXY_IP="#{network_ip}" --entrypoint /bin/bash devbox/haproxy /etc/haproxy/run.sh
@@ -586,7 +591,7 @@ Vagrant.configure("2") do |config|
       #
       # Start the container with the service
       #
-      docker run --restart=always -d #{SERVICE_PORT_MAP[service]} --net=host --name #{container_name} \
+      docker run -d #{SERVICE_PORT_MAP[service]} --net=host --name #{container_name} #{restart_always} \
         -v /vagrant/log/#{service}:/vagrant/log -v /devbox_data/tmp:/devbox_data/tmp \
         -v /vagrant/log/#{service}/script_logs:/vagrant/log/script_logs \
         -v #{ESXCLOUD_DIR}:#{ESXCLOUD_DIR} #{datastore_mapped_dir_setting} \
