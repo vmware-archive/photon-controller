@@ -68,6 +68,7 @@ import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTrigg
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.SetDatastoreTagsTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.UpdateHostDatastoresTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
@@ -181,6 +182,7 @@ public class DeployerDcpServiceHost
       ProvisionAgentTaskFactoryService.class,
       RegisterAuthClientTaskFactoryService.class,
       SetDatastoreTagsTaskFactoryService.class,
+      UpdateHostDatastoresTaskFactoryService.class,
       UploadImageTaskFactoryService.class,
       UploadVibTaskFactoryService.class,
       WaitForDockerTaskFactoryService.class,
