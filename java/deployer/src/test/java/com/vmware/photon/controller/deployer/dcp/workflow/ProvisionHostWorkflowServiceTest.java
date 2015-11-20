@@ -20,7 +20,6 @@ import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -190,6 +189,7 @@ public class ProvisionHostWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.DEPLOY_AGENT},
           {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.PROVISION_AGENT},
+          {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.UPDATE_DATASTORES},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
@@ -370,18 +370,24 @@ public class ProvisionHostWorkflowServiceTest {
     @DataProvider(name = "validStageUpdates")
     public Object[][] getValidStageUpdates() {
       return new Object[][]{
-          {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.DEPLOY_AGENT,
-              TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.PROVISION_AGENT},
-          {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.PROVISION_AGENT,
+        {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.DEPLOY_AGENT,
+          TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.PROVISION_AGENT},
+        {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.PROVISION_AGENT,
+            TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.UPDATE_DATASTORES},
+          {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.UPDATE_DATASTORES,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.DEPLOY_AGENT,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.PROVISION_AGENT,
-              TaskState.TaskStage.FAILED, null},
+                TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.UPDATE_DATASTORES,
+                  TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.DEPLOY_AGENT,
               TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.PROVISION_AGENT,
-              TaskState.TaskStage.CANCELLED, null},
+                TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.STARTED, ProvisionHostWorkflowService.TaskState.SubStage.UPDATE_DATASTORES,
+                  TaskState.TaskStage.CANCELLED, null},
       };
     }
 
@@ -471,7 +477,7 @@ public class ProvisionHostWorkflowServiceTest {
       } else if (declaredField.getType() == Integer.class) {
         declaredField.set(patchState, new Integer(0));
       } else if (declaredField.getType() == List.class) {
-        declaredField.set(patchState, new ArrayList());
+        declaredField.set(patchState, new ArrayList<>());
       } else if (declaredField.getType() == Set.class) {
         declaredField.set(patchState, new HashSet<>());
       } else {
@@ -504,7 +510,6 @@ public class ProvisionHostWorkflowServiceTest {
     private final File scriptDirectory = new File("/tmp/deployAgent/scripts");
 
     private DeployerContext deployerContext;
-    private HostClient hostClient;
     private HostClientFactory hostClientFactory;
     private ListeningExecutorService listeningExecutorService;
     private ProvisionHostWorkflowService.State startState;

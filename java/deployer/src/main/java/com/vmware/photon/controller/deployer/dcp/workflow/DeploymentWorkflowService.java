@@ -55,6 +55,8 @@ import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -473,9 +475,13 @@ public class DeploymentWorkflowService extends StatefulService {
     Set<InetSocketAddress> remoteServers
         = zookeeperClient.getServers(zookeeperQuorum, DeployerModule.DEPLOYER_SERVICE_NAME);
 
-    final AtomicInteger latch = new AtomicInteger(DeployerDcpServiceHost.FACTORY_SERVICES.length);
+    Set<Class<?>> servicesToMigrate
+      = new HashSet<Class<?>>((Arrays.<Class<?>>asList(DeployerDcpServiceHost.FACTORY_SERVICES)));
+    servicesToMigrate.removeAll(HostUtils.getDeployerContext(this).getMigrationExcludedServices());
+
+    final AtomicInteger latch = new AtomicInteger(servicesToMigrate.size());
     final List<Throwable> errors = new BlockingArrayQueue<>();
-    for (Class factoryClass : DeployerDcpServiceHost.FACTORY_SERVICES) {
+    for (Class<?> factoryClass : servicesToMigrate) {
       CopyStateTaskService.State startState = MiscUtils.createCopyStateStartState(localServers, remoteServers,
           MiscUtils.getSelfLink(factoryClass), null, 1);
 
@@ -530,10 +536,13 @@ public class DeploymentWorkflowService extends StatefulService {
     Set<InetSocketAddress> remoteServers
         = zookeeperClient.getServers(zookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
 
+    Set<Class<?>> servicesToMigrate
+      = new HashSet<Class<?>>(Arrays.<Class<?>>asList(CloudStoreDcpHost.FACTORY_SERVICES));
+    servicesToMigrate.removeAll(HostUtils.getDeployerContext(this).getMigrationExcludedServices());
 
-    final AtomicInteger latch = new AtomicInteger(CloudStoreDcpHost.FACTORY_SERVICES.length);
+    final AtomicInteger latch = new AtomicInteger(servicesToMigrate.size());
     final List<Throwable> errors = new BlockingArrayQueue<>();
-    for (Class factoryClass : CloudStoreDcpHost.FACTORY_SERVICES) {
+    for (Class<?> factoryClass : servicesToMigrate) {
       CopyStateTaskService.State startState = MiscUtils.createCopyStateStartState(localServers, remoteServers,
           MiscUtils.getSelfLink(factoryClass), null);
 
