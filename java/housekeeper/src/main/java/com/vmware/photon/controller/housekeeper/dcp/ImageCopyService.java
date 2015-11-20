@@ -18,6 +18,9 @@ import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
+import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -26,12 +29,13 @@ import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundExcep
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
+import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.CopyImageResponse;
 import com.vmware.photon.controller.host.gen.Host;
-import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -42,6 +46,9 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -263,12 +270,6 @@ public class ImageCopyService extends StatefulService {
    * @param current
    */
   private void copyImage(final State current) {
-    if (current.sourceDataStore.equals(current.destinationDataStore)) {
-      ServiceUtils.logInfo(this, "Skip copying image to source itself");
-      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
-      return;
-    }
-
     AsyncMethodCallback callback = new AsyncMethodCallback() {
       @Override
       public void onComplete(Object o) {
@@ -348,21 +349,52 @@ public class ImageCopyService extends StatefulService {
    * @param current
    */
   private void getHostFromDataStore(final State current) {
+    if (current.sourceDataStore.equals(current.destinationDataStore)) {
+      ServiceUtils.logInfo(this, "Skip copying image to source itself");
+      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
+      return;
+    }
+
+    Set<String> hostSet = new HashSet<>();
     try {
-      Set<HostConfig> hostConfigSet = getZookeeperHostMonitor().getHostsForDatastore(current.destinationDataStore);
-      checkState(
-          hostConfigSet.size() > 0, "No hosts found for reference datastore. [%s].", current.destinationDataStore);
+      QueryTask.QuerySpecification querySpecification = buildHostQuery(current);
 
-      HostConfig hostConfig = ServiceUtils.selectRandomItem(hostConfigSet);
+      sendRequest(
+          ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
+              .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+              .setBody(QueryTask.create(querySpecification).setDirect(true))
+              .setCompletion(
+                  (operation, throwable) -> {
+                    if (throwable != null) {
+                      failTask(throwable);
+                      return;
+                    }
+                    NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
+                    List<HostService.State> documentLinks = QueryTaskUtils
+                        .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
+                    for (HostService.State state : documentLinks) {
+                      hostSet.add(state.hostAddress);
+                    }
 
-      // Patch self with the host and data store information.
-      if (!current.isSelfProgressionDisabled) {
-        ImageCopyService.State patch = buildPatch(com.vmware.dcp.common
-                .TaskState.TaskStage.STARTED,
-            TaskState.SubStage.COPY_IMAGE, null);
-        patch.host = hostConfig.getAddress().getHost();
-        this.sendSelfPatch(patch);
-      }
+                    if (hostSet.size() == 0) {
+                      failTask(new Exception("No host found between source image " +
+                          "datastore " + current.sourceDataStore
+                          + "and destination datastore" + current.destinationDataStore));
+                      return;
+                    }
+
+                    String hostIp = ServiceUtils.selectRandomItem(hostSet);
+
+                    // Patch self with the host and data store information.
+                    if (!current.isSelfProgressionDisabled) {
+                      ImageCopyService.State patch = buildPatch(com.vmware.dcp.common
+                              .TaskState.TaskStage.STARTED,
+                          TaskState.SubStage.COPY_IMAGE, null);
+                      patch.host = hostIp;
+                      this.sendSelfPatch(patch);
+                    }
+                  }
+              ));
     } catch (Exception e) {
       failTask(e);
     }
@@ -424,6 +456,38 @@ public class ImageCopyService extends StatefulService {
     }
 
     return s;
+  }
+
+  /**
+   * Build a QuerySpecification for querying host with access to both image datastore and destination datastore.
+   *
+   * @param current
+   * @return
+   */
+  private QueryTask.QuerySpecification buildHostQuery(final State current) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(HostService.State.class));
+
+    String fieldName = QueryTask.QuerySpecification.buildCollectionItemName(
+        HostService.State.FIELD_NAME_REPORTED_IMAGE_DATASTORES);
+    QueryTask.Query imageDatastoreClause = new QueryTask.Query()
+        .setTermPropertyName(fieldName)
+        .setTermMatchValue(current.sourceDataStore);
+
+    fieldName = QueryTask.QuerySpecification.buildCollectionItemName(
+        HostService.State.FIELD_NAME_REPORTED_DATASTORES);
+    QueryTask.Query datastoreClause = new QueryTask.Query()
+        .setTermPropertyName(fieldName)
+        .setTermMatchValue(current.destinationDataStore);
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.query.addBooleanClause(imageDatastoreClause);
+    querySpecification.query.addBooleanClause(datastoreClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    return querySpecification;
   }
 
   /**
