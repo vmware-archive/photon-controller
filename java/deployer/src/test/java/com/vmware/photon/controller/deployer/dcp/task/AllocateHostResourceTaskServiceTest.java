@@ -55,6 +55,8 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
@@ -500,6 +502,9 @@ public class AllocateHostResourceTaskServiceTest {
       assertThat(containerServices.size(), is(9));
       assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).sum(), lessThan(8192));
       assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).max().getAsInt(), is(2730));
+      containerServices.stream().forEach(cs -> assertTrue(cs.dynamicParameters.containsKey("memoryMb")));
+      containerServices.stream().forEach(cs -> assertEquals(new Integer(cs.dynamicParameters.get("memoryMb")), cs
+          .memoryMb));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares, CoreMatchers.is(ContainerService.State
           .DOCKER_CPU_SHARES_MAX)));
     }
