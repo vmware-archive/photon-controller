@@ -20,6 +20,10 @@ import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -48,6 +52,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -134,7 +139,8 @@ public class UpdateHostDatastoresServiceTest {
       Operation startOperation = testHost.startServiceSynchronously(taskService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      UpdateHostDatastoresTaskService.State serviceState = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
+      UpdateHostDatastoresTaskService.State serviceState
+        = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
       assertThat(serviceState.hostServiceLink, is("HOST_SERVICE_LINK"));
     }
 
@@ -156,7 +162,8 @@ public class UpdateHostDatastoresServiceTest {
       Operation startOperation = testHost.startServiceSynchronously(taskService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      UpdateHostDatastoresTaskService.State serviceState = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
+      UpdateHostDatastoresTaskService.State serviceState
+        = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
     }
 
@@ -175,7 +182,8 @@ public class UpdateHostDatastoresServiceTest {
       Operation startOperation = testHost.startServiceSynchronously(taskService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      UpdateHostDatastoresTaskService.State serviceState = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
+      UpdateHostDatastoresTaskService.State serviceState
+        = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
       assertThat(serviceState.taskState.stage, is(startStage));
     }
 
@@ -252,7 +260,8 @@ public class UpdateHostDatastoresServiceTest {
       Operation result = testHost.sendRequestAndWait(patchOperation);
       assertThat(result.getStatusCode(), is(200));
 
-      UpdateHostDatastoresTaskService.State serviceState = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
+      UpdateHostDatastoresTaskService.State serviceState
+        = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
       assertThat(serviceState.taskState.stage, is(patchStage));
     }
 
@@ -431,6 +440,24 @@ public class UpdateHostDatastoresServiceTest {
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
+      DatastoreService.State imageDatastoreService = cloudStoreMachine.getServiceState(DatastoreServiceFactory.SELF_LINK + "/" + imageDatastore.getId(), DatastoreService.State.class);
+      assertThat(imageDatastoreService.isImageDatastore, is(true));
+      assertThat(imageDatastoreService.name, is(imageDatastore.getName()));
+      assertThat(imageDatastoreService.id, is(imageDatastore.getId()));
+      DatastoreService.State datastoreService = cloudStoreMachine.getServiceState(DatastoreServiceFactory.SELF_LINK + "/" + datastore.getId(), DatastoreService.State.class);
+      assertThat(datastoreService.isImageDatastore, is(false));
+      assertThat(datastoreService.name, is(datastore.getName()));
+      assertThat(datastoreService.id, is(datastore.getId()));
+
+      HostService.State host = cloudStoreMachine.getServiceState(startState.hostServiceLink, HostService.State.class);
+      assertThat(host.reportedDatastores.size(), is(1));
+      assertThat(host.reportedDatastores.iterator().next(), is(datastoreService.name));
+      assertThat(host.reportedImageDatastores.size(), is(1));
+      assertThat(host.reportedImageDatastores.iterator().next(), is(imageDatastoreService.name));
+      assertThat(host.datastoreServiceLinks, notNullValue());
+      assertThat(host.datastoreServiceLinks.size(), is(2));
+      assertThat(host.datastoreServiceLinks.get(datastore.getName()), is(datastoreService.documentSelfLink));
+      assertThat(host.datastoreServiceLinks.get(imageDatastore.getName()), is(imageDatastoreService.documentSelfLink));
     }
 
     @Test
