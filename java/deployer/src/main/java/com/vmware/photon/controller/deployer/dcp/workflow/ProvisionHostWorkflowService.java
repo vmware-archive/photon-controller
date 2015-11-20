@@ -35,6 +35,8 @@ import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskFactoryServ
 import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.UpdateHostDatastoresTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.UpdateHostDatastoresTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 
@@ -69,6 +71,7 @@ public class ProvisionHostWorkflowService extends StatefulService {
     public enum SubStage {
       DEPLOY_AGENT,
       PROVISION_AGENT,
+      UPDATE_DATASTORES
     }
   }
 
@@ -229,6 +232,7 @@ public class ProvisionHostWorkflowService extends StatefulService {
         switch (taskState.subStage) {
           case DEPLOY_AGENT:
           case PROVISION_AGENT:
+          case UPDATE_DATASTORES:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -294,6 +298,8 @@ public class ProvisionHostWorkflowService extends StatefulService {
       case PROVISION_AGENT:
         provisionAgentTask(currentState);
         break;
+      case UPDATE_DATASTORES:
+        updateDataStoreTask(currentState);
     }
   }
 
@@ -320,6 +326,9 @@ public class ProvisionHostWorkflowService extends StatefulService {
             break;
           case CANCELLED:
             TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
+            break;
+          default:
+            failTask(new RuntimeException("Unexected API-FE task.stage [" + result.taskState.stage.name() + "]"));
             break;
         }
       }
@@ -377,7 +386,10 @@ public class ProvisionHostWorkflowService extends StatefulService {
                               if (null != failure) {
                                 failTask(failure);
                               } else {
-                                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+                                TaskUtils.sendSelfPatch(service,
+                                  buildPatch(
+                                    TaskState.TaskStage.STARTED,
+                                    TaskState.SubStage.UPDATE_DATASTORES, null));
                               }
                             }
                         ));
@@ -390,6 +402,9 @@ public class ProvisionHostWorkflowService extends StatefulService {
                 break;
               case CANCELLED:
                 TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
+                break;
+              default:
+                failTask(new RuntimeException("Unexected API-FE task.stage [" + result.taskState.stage.name() + "]"));
                 break;
             }
           }
@@ -415,6 +430,68 @@ public class ProvisionHostWorkflowService extends StatefulService {
     startState.hostServiceLink = currentState.hostServiceLink;
     startState.chairmanServerList = currentState.chairmanServerList;
     return startState;
+  }
+
+  private void updateDataStoreTask(State currentState) {
+    final Service service = this;
+
+    FutureCallback<UpdateHostDatastoresTaskService.State> futureCallback =
+        new FutureCallback<UpdateHostDatastoresTaskService.State>() {
+          @Override
+          public void onSuccess(@Nullable UpdateHostDatastoresTaskService.State result) {
+            switch (result.taskState.stage) {
+              case FINISHED:
+                HostService.State hostService = new HostService.State();
+                hostService.state = HostState.READY;
+
+                sendRequest(
+                    HostUtils.getCloudStoreHelper(service)
+                        .createPatch(currentState.hostServiceLink)
+                        .setBody(hostService)
+                        .setCompletion(
+                            (completedOp, failure) -> {
+                              if (null != failure) {
+                                failTask(failure);
+                              } else {
+                                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+                              }
+                            }
+                        ));
+
+                break;
+              case FAILED:
+                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                patchState.taskState.failure = result.taskState.failure;
+                TaskUtils.sendSelfPatch(service, patchState);
+                break;
+              case CANCELLED:
+                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
+                break;
+              default:
+                failTask(new RuntimeException("Unexected API-FE task.stage [" + result.taskState.stage.name() + "]"));
+                break;
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        };
+
+    TaskUtils.startTaskAsync(this,
+        UpdateHostDatastoresTaskFactoryService.SELF_LINK,
+        createUpdateHostDatastoresTaskServiceState(currentState),
+        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+        UpdateHostDatastoresTaskService.State.class,
+        currentState.taskPollDelay,
+        futureCallback);
+  }
+
+  private UpdateHostDatastoresTaskService.State createUpdateHostDatastoresTaskServiceState(State currentState) {
+    UpdateHostDatastoresTaskService.State state = new UpdateHostDatastoresTaskService.State();
+    state.hostServiceLink = currentState.hostServiceLink;
+    return state;
   }
 
   /**
