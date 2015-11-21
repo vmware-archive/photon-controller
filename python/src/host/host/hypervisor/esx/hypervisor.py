@@ -49,7 +49,7 @@ class EsxHypervisor(object):
 
         image_datastores = [ds["name"] for ds in agent_config.image_datastores]
         self.datastore_manager = EsxDatastoreManager(
-            self, agent_config.datastores, image_datastores)
+            self, agent_config.datastores, agent_config.image_datastores)
         # datastore manager needs to update the cache when there is a change.
         self.vim_client.add_update_listener(self.datastore_manager)
         self.vm_manager = EsxVmManager(self.vim_client, self.datastore_manager)
