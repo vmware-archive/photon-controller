@@ -72,7 +72,7 @@ class TestVimClient(unittest.TestCase):
         update_mock.side_effect = vim.fault.HostConnectFault
         time.sleep(0.5)
         client.disconnect(wait=True)
-        assert_that(update_mock.call_count, less_than(4))  # no crazy loop
+        assert_that(update_mock.call_count, less_than(5))  # no crazy loop
 
     @patch.object(VimClient, "update_hosts_stats")
     @patch.object(VimClient, "update_cache")

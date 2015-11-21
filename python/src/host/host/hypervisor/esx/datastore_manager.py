@@ -38,39 +38,49 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
 
     @locked
     def _initialize_datastores(self):
-        self._image_datastores = set()
-        self._datastores = []  # gen.resource.ttypes.Datastore list
-        self._datastore_id_to_name_map = {}
+        self.initialized = False
 
-        # TODO(mmutsuzaki) The new installer will not provide the datastore
-        # list. This is a temporary fix to support both old and new installers.
+        # Initialize datastores and image_datastores. The provision request
+        # can specify both datastore names and IDs.
+        datastores = set([self._to_thrift_datastore(ds) for ds in
+                          self._hypervisor.vim_client.get_all_datastores()])
         if self._configured_datastores:
-            datastores = []
-            for name in self._configured_datastores:
-                ds = self._hypervisor.vim_client.get_datastore(name)
-                if not ds:
-                    self.logger.warning("Skipping unknown ds %s" % name)
-                    continue
-                datastores.append(ds)
+            vm_datastores = set([ds for ds in datastores
+                                if ds.name in self._configured_datastores or
+                                ds.id in self._configured_datastores])
         else:
-            datastores = self._hypervisor.vim_client.get_all_datastores()
+            vm_datastores = datastores
+        image_datastores = set([ds["name"] for ds in
+                               self._configured_image_datastores])
+        self._image_datastores = set([ds for ds in datastores
+                                      if ds.name in image_datastores or
+                                      ds.id in image_datastores])
+        self._datastores = vm_datastores | self._image_datastores
 
-        for ds in datastores:
-            try:
-                ds = self._to_thrift_datastore(ds)
+        self._datastore_id_to_name_map = {}
+        for ds in self._datastores:
+            datastore_mkdirs(self._hypervisor.vim_client, ds.name)
+            self._datastore_id_to_name_map[ds.id] = ds.name
 
-                self.logger.info("Datastore %s uuid==%s" % (ds.name, ds.id))
-                datastore_mkdirs(self._hypervisor.vim_client, ds.name)
-                if ds.name in self._configured_image_datastores:
-                    self._image_datastores.add(ds.id)
-                self._datastores.append(ds)
-                self._datastore_id_to_name_map[ds.id] = ds.name
-            except:
-                self.logger.exception("Failed to initialize %s" % ds)
-                if ds.name == self._configured_image_datastore:
-                    self.logger.critical(
-                        "Failed to initialize image datastore. This host " +
-                        "will not function properly.")
+        # make sure there is at least one datastore for cloud VMs. Here we
+        # can't simply throw an exception since the agent needs to continue
+        # running even if the current datastore configuration is invalid
+        # so that the deployer can provision the agent.
+        image_ds_for_vms = any([ds["used_for_vms"]
+                                for ds in self._configured_image_datastores])
+        if not vm_datastores and not image_ds_for_vms:
+            self.logger.critical("Datastore(s) %s not found in %s, %s" % (
+                                 self._configured_datastores, datastores,
+                                 self._configured_image_datastores))
+            return
+
+        # make sure there is at least one image datastore.
+        if not self._image_datastores:
+            self.logger.critical("Image datastore(s) %s not found in %s" % (
+                                 self._configured_image_datastores,
+                                 datastores))
+            return
+        self.initialized = True
 
     @locked
     def get_datastore_ids(self):
@@ -89,7 +99,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
 
     @locked
     def image_datastores(self):
-        return self._image_datastores
+        return [ds.id for ds in self._image_datastores]
 
     def datastore_nfc_ticket(self, datastore_name):
         ticket = self._hypervisor.vim_client.get_nfc_ticket_by_ds_name(
