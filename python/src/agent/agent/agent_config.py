@@ -171,13 +171,6 @@ class AgentConfig(object):
             if (cpu_overcommit < 1.0):
                 raise InvalidConfig("CPU Overcommit less than 1.0")
 
-        # Check if image_datastores field is valid
-        if provision_req.image_datastores and provision_req.datastores:
-            if not self._check_image_datastore(
-                    provision_req.image_datastores,
-                    provision_req.datastores):
-                raise InvalidConfig("image_datastores field is invalid")
-
         reboot = False
         reboot |= self._check_and_set_attr(
             self.AVAILABILITY_ZONE, provision_req.availability_zone)
@@ -749,18 +742,3 @@ class AgentConfig(object):
             if not self._is_unset(key, value):
                 new_config[key] = value
         self._write_json_file(self.DEFAULT_CONFIG_FILE, new_config)
-
-    def _check_image_datastore(self, image_datastores, datastores):
-        """
-        Check that all the image datastores are valid.
-
-        In the current version we don't actually call out to esx to check if
-        the ds exists, we just check if it is in one of datastores specified
-        by the user through the deployment.yml.
-        """
-        for image_ds in image_datastores:
-            if image_ds.name not in datastores:
-                self._logger.warning("Image ds %s not in %s" % (image_ds.name,
-                                                                datastores))
-                return False
-        return True
