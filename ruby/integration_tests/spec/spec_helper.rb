@@ -129,6 +129,8 @@ RSpec.configure do |config|
 
   config.filter_run_excluding upgrade: true unless ENV["UPGRADE"]
 
+  config.filter_run_excluding single_vm_pg:: true if EsxCloud::TestHelpers.get_vm_port_groups.length == 1   
+
   if RSpec.configuration.inclusion_filter[:management]
     EsxCloud::TestHelpers.await_system_ready
   end
@@ -136,11 +138,7 @@ RSpec.configure do |config|
   config.after(:suite) do
     cleaner = EsxCloud::SystemCleaner.new(ApiClientHelper.management)
     cleaner.clean_images(EsxCloud::SystemSeeder.instance)
-    if EsxCloud::SystemSeeder.instance.networks
-      EsxCloud::SystemSeeder.instance.networks!.each { |network|
-        cleaner.delete_network(network)
-      }
-    end
+    cleaner.delete_network(EsxCloud::SystemSeeder.instance.network) if EsxCloud::SystemSeeder.instance.network
     cleaner.delete_tenant(EsxCloud::SystemSeeder.instance.tenant) if EsxCloud::SystemSeeder.instance.tenant
     begin
       cleaner.clean_hosts
