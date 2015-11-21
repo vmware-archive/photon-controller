@@ -137,7 +137,10 @@ RSpec.configure do |config|
     cleaner = EsxCloud::SystemCleaner.new(ApiClientHelper.management)
     cleaner.clean_images(EsxCloud::SystemSeeder.instance)
     if EsxCloud::SystemSeeder.instance.networks
-      EsxCloud::SystemSeeder.instance.networks!.each { |network|
+      caller
+      EsxCloud::SystemSeeder.instance.networks.each { |network|
+        puts "Deleting network"
+        puts network.id
         cleaner.delete_network(network)
       }
     end

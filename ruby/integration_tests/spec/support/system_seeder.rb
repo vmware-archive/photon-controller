@@ -109,6 +109,8 @@ module EsxCloud
     end
 
     def networks!
+      puts "call to networks"
+      caller
       @networks ||= create_networks
     end
 
@@ -253,6 +255,7 @@ module EsxCloud
     end
 
     def create_networks
+      puts "creating network"
       networks = Array.new
       get_vm_port_groups.each { |port_group|
         spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [port_group])
