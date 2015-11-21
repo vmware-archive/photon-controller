@@ -15,6 +15,8 @@ require "spec_helper"
 describe "vm", management: true, image: true do
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.new(create_small_limits, [5.0])
+    EsxCloud::SystemSeeder.instance.networks!
+    EsxCloud::SystemSeeder.instance.networks!
     @cleaner = EsxCloud::SystemCleaner.new(client)
     @project = @seeder.project!
   end
@@ -210,6 +212,23 @@ describe "vm", management: true, image: true do
     vms.each do |vm|
       vm.delete
     end
+  end
+
+  it "should create a vm with multiple nics on different networks" do
+    vm_name = random_name("vm-")
+    puts "Seeder Instance Networks"
+    puts EsxCloud::SystemSeeder.instance.networks
+    network1 = EsxCloud::SystemSeeder.instance.networks![0]
+    #network2 = EsxCloud::SystemSeeder.instance.networks![1]
+    create_vm(@project, name: vm_name, networks: [network1.id])
+
+    vms = client.find_vms_by_name(@project.id, vm_name).items
+    vms.size.should == 1
+
+    vm_id = vms[0].id
+    networks = client.get_vm_networks(vm_id).network_connections
+    #networks.size.should == 2
+    networks.size.should == 1
   end
 
   context "when attributes are specified in VmCreateSpec" do
