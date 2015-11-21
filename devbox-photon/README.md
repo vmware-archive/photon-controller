@@ -18,7 +18,7 @@ Steps to install: https://docs.vagrantup.com/v2/installation/index.html
 
 Steps to install: https://www.virtualbox.org/manual/ch01.html#intro-installing
 
-* vagrant plugin for Photon OS (http://artifactory.ec.eng.vmware.com/artifactory/vagrant-box-with-images/develop/27/vagrant-guests-photon-0.0.1.gem)
+* vagrant plugin for Photon OS (https://bintray.com/artifact/download/photon-controller/public/27/resource/vagrant-guests-photon-0.0.1.gem)
 
 The plugin is downloaded and installed by the install_photon_plugin.sh script listed below.
 
