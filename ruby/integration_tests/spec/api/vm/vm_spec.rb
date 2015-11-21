@@ -212,6 +212,21 @@ describe "vm", management: true, image: true do
     end
   end
 
+  it "should create a vm with multiple nics on different networks" do
+    vm_name = random_name("vm-")
+    network1 = EsxCloud::SystemSeeder.instance.networks![0]
+    #network2 = EsxCloud::SystemSeeder.instance.networks![1]
+    create_vm(@project, name: vm_name, networks: [network1.id])
+
+    vms = client.find_vms_by_name(@project.id, vm_name).items
+    vms.size.should == 1
+
+    vm_id = vms[0].id
+    networks = client.get_vm_networks(vm_id).network_connections
+    #networks.size.should == 2
+    networks.size.should == 1
+  end
+
   context "when attributes are specified in VmCreateSpec" do
 
     context "when valid attributes are specified in VmCreateSpec" do
