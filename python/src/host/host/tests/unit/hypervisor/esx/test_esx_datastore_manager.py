@@ -45,13 +45,22 @@ class TestEsxDatastoreManager(unittest.TestCase):
         dstags.get.return_value = []
         common.services.register(ServiceName.DATASTORE_TAGS, dstags)
 
-        vim_client.get_datastore.side_effect = self._get_datastore
+        vim_client.get_all_datastores.return_value = self.get_datastore_mock([
+            # name, url, type, local
+            ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
+            ["datastore2", "/vmfs/volumes/id-2", "VMFS", False],
+            ["datastore3", "/vmfs/volumes/id-3", "NFS", None],
+            ["datastore4", "/vmfs/volumes/id-4", "NFSV41", None],
+            ["datastore5", "/vmfs/volumes/id-5", "vsan", None],
+            ["datastore6", "/vmfs/volumes/id-6", "VFFS", None],
+        ])
+
         hypervisor.vim_client = vim_client
 
         ds_list = ["datastore1", "datastore2", "datastore3",
                    "datastore4", "datastore5", "datastore6"]
-        ds_manager = EsxDatastoreManager(hypervisor, ds_list,
-                                         set(["datastore2"]))
+        image_ds = [{"name": "datastore2", "used_for_vms": False}]
+        ds_manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
 
         expected_call_args = []
         for ds in ds_list:
@@ -59,39 +68,29 @@ class TestEsxDatastoreManager(unittest.TestCase):
                            TMP_IMAGE_FOLDER_NAME]:
                 expected_call_args.append('/vmfs/volumes/%s/%s' % (ds, folder))
         called_args = [c[0][0] for c in mkdir_mock.call_args_list]
-        assert_that(called_args, equal_to(expected_call_args))
+        assert_that(called_args, contains_inanyorder(*expected_call_args))
 
-        assert_that(ds_manager.get_datastore_ids(), has_length(6))
         assert_that(ds_manager.get_datastore_ids(),
                     contains_inanyorder("id-1", "id-2", "id-3", "id-4",
                                         "id-5", "id-6"))
 
-        assert_that(ds_manager.vm_datastores(), has_length(5))
         assert_that(ds_manager.vm_datastores(),
                     contains_inanyorder("id-1", "id-3", "id-4", "id-5",
                                         "id-6"))
 
         datastores = ds_manager.get_datastores()
-        assert_that(datastores[0], is_(Datastore("id-1", "datastore1",
-                                                 type=DSType.LOCAL_VMFS,
-                                                 tags=[LOCAL_VMFS_TAG])))
-        assert_that(datastores[1], is_(Datastore("id-2", "datastore2",
-                                                 type=DSType.SHARED_VMFS,
-                                                 tags=[SHARED_VMFS_TAG])))
-        assert_that(datastores[2], is_(Datastore("id-3", "datastore3",
-                                                 type=DSType.NFS_3,
-                                                 tags=[NFS_TAG])))
-        assert_that(datastores[3], is_(Datastore("id-4", "datastore4",
-                                                 type=DSType.NFS_41,
-                                                 tags=[NFS_TAG])))
-        assert_that(datastores[4], is_(Datastore("id-5", "datastore5",
-                                                 type=DSType.VSAN,
-                                                 tags=[])))
-        assert_that(datastores[5], is_(Datastore("id-6", "datastore6",
-                                                 type=DSType.OTHER,
-                                                 tags=[])))
+        assert_that(datastores, contains_inanyorder(
+            Datastore("id-1", "datastore1", type=DSType.LOCAL_VMFS,
+                      tags=[LOCAL_VMFS_TAG]),
+            Datastore("id-2", "datastore2", type=DSType.SHARED_VMFS,
+                      tags=[SHARED_VMFS_TAG]),
+            Datastore("id-3", "datastore3", type=DSType.NFS_3, tags=[NFS_TAG]),
+            Datastore("id-4", "datastore4", type=DSType.NFS_41,
+                      tags=[NFS_TAG]),
+            Datastore("id-5", "datastore5", type=DSType.VSAN, tags=[]),
+            Datastore("id-6", "datastore6", type=DSType.OTHER, tags=[])))
 
-        assert_that(ds_manager.image_datastores(), is_(set(["id-2"])))
+        assert_that(ds_manager.image_datastores(), is_(["id-2"]))
         assert_that(ds_manager.datastore_type("id-1"),
                     is_(DSType.LOCAL_VMFS))
         assert_that(ds_manager.datastore_type("id-2"),
@@ -109,34 +108,88 @@ class TestEsxDatastoreManager(unittest.TestCase):
         assert_that(ds_manager.normalize("id-1"), is_("id-1"))
         assert_that(ds_manager.normalize("datastore1"), is_("id-1"))
 
-    def _get_datastore(self, name):
-        local = None
-        if name == "datastore1":
-            url = "/vmfs/volumes/id-1"
-            type = "VMFS"
-            local = True
-        elif name == "datastore2":
-            url = "/vmfs/volumes/id-2"
-            type = "VMFS"
-            local = False
-        elif name == "datastore3":
-            url = "/vmfs/volumes/id-3"
-            type = "NFS"
-        elif name == "datastore4":
-            url = "/vmfs/volumes/id-4"
-            type = "NFSV41"
-        elif name == "datastore5":
-            url = "/vmfs/volumes/id-5"
-            type = "vsan"
-        elif name == "datastore6":
-            url = "/vmfs/volumes/id-6"
-            type = "VFFS"
-        else:
-            return None
+    @patch("os.mkdir")
+    def test_single_datastore(self, mkdir_mock):
+        """Test that datastore manager works with a single datastore."""
+        hypervisor = MagicMock()
+        vim_client = MagicMock()
 
-        datastore = MagicMock()
-        datastore.name = name
-        datastore.summary.type = type
-        datastore.info.url = url
-        datastore.info.vmfs.local = local
-        return datastore
+        vim_client.get_all_datastores.return_value = self.get_datastore_mock([
+            # name, url, type, local
+            ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
+        ])
+        hypervisor.vim_client = vim_client
+
+        # No datastore. One image datastore that can be used for cloud VMs.
+        ds_list = []
+        image_ds = [{"name": "datastore1", "used_for_vms": True}]
+        ds_manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
+        assert_that(ds_manager.initialized, is_(True))
+        assert_that(ds_manager.get_datastore_ids(), is_(["id-1"]))
+        assert_that(ds_manager.vm_datastores(), is_([]))
+        assert_that(ds_manager.image_datastores(), is_(["id-1"]))
+
+        # No datastore. No image datastore that can be used for cloud VMs.
+        ds_list = []
+        image_ds = [{"name": "datastore1", "used_for_vms": False}]
+        ds_manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
+        assert_that(ds_manager.initialized, is_(False))
+
+    @patch("os.mkdir")
+    def test_multiple_image_datastores(self, mkdir_mock):
+        """Test that datastore manager works with multiple image datastores."""
+        vim_client = MagicMock()
+        vim_client.get_all_datastores.return_value = self.get_datastore_mock([
+            ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
+            ["datastore2", "/vmfs/volumes/id-2", "VMFS", True],
+            ["datastore3", "/vmfs/volumes/id-3", "VMFS", True],
+        ])
+        hypervisor = MagicMock()
+        hypervisor.vim_client = vim_client
+
+        ds_list = ["datastore1"]
+        image_ds = [
+            {"name": "datastore2", "used_for_vms": True},
+            {"name": "datastore3", "used_for_vms": False},
+        ]
+        ds_manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
+        assert_that(ds_manager.get_datastore_ids(),
+                    is_(["id-1", "id-2", "id-3"]))
+        assert_that(ds_manager.vm_datastores(), is_(["id-1"]))
+        assert_that(ds_manager.image_datastores(), is_(["id-2", "id-3"]))
+        assert_that(ds_manager.initialized, is_(True))
+
+    @patch("os.mkdir")
+    def test_nonexistent_datastores(self, mkdir_mock):
+        """Test that non-existent datastore get filtered out."""
+        vim_client = MagicMock()
+        vim_client.get_all_datastores.return_value = self.get_datastore_mock([
+            ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
+            ["datastore2", "/vmfs/volumes/id-2", "VMFS", True],
+            ["datastore3", "/vmfs/volumes/id-3", "VMFS", True],
+        ])
+        hypervisor = MagicMock()
+        hypervisor.vim_client = vim_client
+
+        ds_list = ["datastore1", "bad-datastore1"]
+        image_ds = [
+            {"name": "datastore2", "used_for_vms": True},
+            {"name": "datastore3", "used_for_vms": False},
+            {"name": "bad-datastores2", "used_for_vms": False},
+        ]
+        manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
+        assert_that(manager.get_datastore_ids(), is_(["id-1", "id-2", "id-3"]))
+        assert_that(manager.vm_datastores(), is_(["id-1"]))
+        assert_that(manager.image_datastores(), is_(["id-2", "id-3"]))
+        assert_that(manager.initialized, is_(True))
+
+    def get_datastore_mock(self, datastores):
+        result = []
+        for datastore in datastores:
+            mock = MagicMock()
+            mock.name = datastore[0]
+            mock.info.url = datastore[1]
+            mock.summary.type = datastore[2]
+            mock.info.vmfs.local = datastore[3]
+            result.append(mock)
+        return result

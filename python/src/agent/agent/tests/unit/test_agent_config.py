@@ -280,11 +280,6 @@ class TestUnitAgent(unittest.TestCase):
         self.assertFalse(self.agent.bootstrap_ready)
         self.assertEqual(self.agent.memory_overcommit, 1.0)
 
-        # input an invalid datastore for image.
-        req.image_datastores = set([ImageDatastore("ds5", False)])
-        req.memory_overcommit = 2.0
-        self.assertRaises(InvalidConfig, self.agent.update_config, req)
-
     def test_reboot_required(self):
         """
         Test that reboot required flag is set when all the required agent
