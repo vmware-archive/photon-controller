@@ -137,7 +137,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -1465,7 +1464,7 @@ public class HostClient {
    *
    * @param availabilityZone
    * @param dataStoreList
-   * @param imageDataStore
+   * @param imageDataStores
    * @param usedForVMs
    * @param networkList
    * @param hostAddress
@@ -1485,7 +1484,7 @@ public class HostClient {
   public void provision(
       String availabilityZone,
       List<String> dataStoreList,
-      String imageDataStore,
+      Set<String> imageDataStores,
       boolean usedForVMs,
       List<String> networkList,
       String hostAddress,
@@ -1502,9 +1501,10 @@ public class HostClient {
       throws RpcException {
     ensureClient();
 
-    ImageDatastore imageDatastore = new ImageDatastore();
-    imageDatastore.setName(imageDataStore);
-    imageDatastore.setUsed_for_vms(usedForVMs);
+    HashSet<ImageDatastore> imageDatastoreSet = new HashSet<>();
+    imageDataStores.forEach((imageDatastoreName) -> {
+      imageDatastoreSet.add(new ImageDatastore(imageDatastoreName, usedForVMs));
+    });
 
     ProvisionRequest provisionRequest = new ProvisionRequest();
     provisionRequest.setAvailability_zone(availabilityZone);
@@ -1514,13 +1514,10 @@ public class HostClient {
     provisionRequest.setEnvironment(environment);
     provisionRequest.setChairman_server(Util.getServerAddressList(chairmanServerList));
     provisionRequest.setMemory_overcommit(memoryOverCommit);
-    provisionRequest.setImage_datastore_info(imageDatastore);
     provisionRequest.setManagement_only(managementOnly);
     provisionRequest.setHost_id(hostId);
     provisionRequest.setNtp_endpoint(ntpEndpoint);
-    // TODO(mmutsuzaki): We'll remove the image_datastore_info field once the
-    // agent starts using the image_datastores field.
-    provisionRequest.setImage_datastores(new HashSet<>(Arrays.asList(imageDatastore)));
+    provisionRequest.setImage_datastores(imageDatastoreSet);
 
     clientProxy.setTimeout(PROVISION_TIMEOUT_MS);
     logger.info("provision target {}, request {}", getTarget(), provisionRequest);
@@ -1537,7 +1534,7 @@ public class HostClient {
    *
    * @param availabilityZone
    * @param dataStoreList
-   * @param imageDataStore
+   * @param imageDataStores
    * @param usedForVMs
    * @param networkList
    * @param hostAddress
@@ -1559,7 +1556,7 @@ public class HostClient {
   public ProvisionResponse provision(
       String availabilityZone,
       List<String> dataStoreList,
-      String imageDataStore,
+      Set<String> imageDataStores,
       boolean usedForVMs,
       List<String> networkList,
       String hostAddress,
@@ -1574,7 +1571,7 @@ public class HostClient {
       String ntpEndpoint)
       throws InterruptedException, RpcException {
     SyncHandler<ProvisionResponse, Host.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
-    provision(availabilityZone, dataStoreList, imageDataStore, usedForVMs, networkList, hostAddress, hostPort,
+    provision(availabilityZone, dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
         environment, chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, managementOnly, hostId,
         ntpEndpoint, syncHandler);
     syncHandler.await();
