@@ -13,10 +13,13 @@
 
 package com.vmware.photon.controller.model;
 
+import com.vmware.photon.controller.model.tasks.ProvisionComputeTaskFactoryService;
+
 /**
- * Service paths used in the provisioning model.
+ * Service factories used in Photon Model Task package.
  */
-public class UriPaths {
-  public static final String RESOURCES = "/resources";
-  public static final String PROVISIONING = "/provisioning";
+public class TaskFactoryServices {
+  public static final Class[] FACTORIES = {
+      ProvisionComputeTaskFactoryService.class
+  };
 }
