@@ -56,6 +56,7 @@ import static org.mockito.Matchers.anyDouble;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyMapOf;
+import static org.mockito.Matchers.anySetOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -533,7 +534,7 @@ public class ProvisionAgentTaskServiceTest {
       doThrow(new RpcException("Thrift exception during provision call")).when(hostClientMock)
           .provision(anyString(),
               anyListOf(String.class),
-              anyString(),
+              anySetOf(String.class),
               anyBoolean(),
               anyListOf(String.class),
               anyString(),
