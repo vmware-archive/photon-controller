@@ -36,6 +36,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class implements a mock {@link HostClient} object for use in testing.
@@ -94,7 +95,7 @@ public class HostClientMock extends HostClient {
   public void provision(
       String availabilityZone,
       List<String> datastores,
-      String imageDatastoreName,
+      Set<String> imageDatastoreNames,
       boolean usedForVMs,
       List<String> networks,
       String hostAddress,
