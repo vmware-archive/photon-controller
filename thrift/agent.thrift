@@ -137,7 +137,7 @@ struct ProvisionRequest {
   11: optional double cpu_overcommit
 
   // To specify whether a host is only used for management VMs.
-  12: optional bool management_only
+  10: optional bool management_only
 
   // Id of the host
   13: optional string host_id
@@ -146,7 +146,6 @@ struct ProvisionRequest {
   14: optional string ntp_endpoint
 
   // A set of image datastores for this host.
-  // The image_datastore_info field will be deprecated.
   15: optional set<resource.ImageDatastore> image_datastores
 
   99: optional tracing.TracingInfo tracing_info
