@@ -123,7 +123,7 @@ By default Dev Box runs with a private IP address as part of the default configu
 To use a public IP address for the Dev Box, define the following environment variables before starting Dev Box:
 
 * `PUBLIC_NETWORK_IP`
-* `PUBLIC_NETWORK_MASK`
+* `PUBLIC_NETWORK_NETMASK`
 
 The following self-explanatory variables are optional:
 
