@@ -18,6 +18,8 @@ import com.vmware.photon.controller.model.resources.ComputeFactoryService;
 import com.vmware.photon.controller.model.resources.DiskFactoryService;
 import com.vmware.photon.controller.model.resources.ResourceDescriptionFactoryService;
 import com.vmware.photon.controller.model.resources.ResourcePoolFactoryService;
+import com.vmware.photon.controller.model.tasks.ProvisionComputeTaskFactoryService;
+import com.vmware.photon.controller.model.tasks.ProvisionComputeTaskServiceTest;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -47,8 +49,15 @@ public abstract class BaseModelTest {
       ComputeFactoryService.class,
       ComputeDescriptionFactoryService.class,
       DiskFactoryService.class,
+      ProvisionComputeTaskFactoryService.class,
       ResourceDescriptionFactoryService.class,
       ResourcePoolFactoryService.class,
+
+      // Test mock services
+      ProvisionComputeTaskServiceTest.MockFailureBootAdapter.class,
+      ProvisionComputeTaskServiceTest.MockFailureInstanceAdapter.class,
+      ProvisionComputeTaskServiceTest.MockSuccessBootAdapter.class,
+      ProvisionComputeTaskServiceTest.MockSuccessInstanceAdapter.class
   };
 
   @BeforeClass

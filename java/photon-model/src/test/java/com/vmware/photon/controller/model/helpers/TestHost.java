@@ -21,12 +21,17 @@ import com.vmware.dcp.common.test.VerificationHost;
 
 import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 import java.util.logging.LogManager;
 
 /**
  * This class implements helper routines used to test service hosts in isolation.
  */
 public class TestHost extends VerificationHost {
+
+  private static final int WAIT_ITERATION_SLEEP = 500;
+  private static final int WAIT_ITERATION_COUNT = 30000 / WAIT_ITERATION_SLEEP; // 30 seconds.
 
   private ServiceDocument responseBody;
   private Class[] factoryServices;
@@ -143,4 +148,25 @@ public class TestHost extends VerificationHost {
 
     return (T) responseBody;
   }
+
+  public <T extends ServiceDocument> T waitForServiceState(
+      Class<T> type, String serviceUri, Predicate<T> test)
+      throws Throwable {
+    return waitForServiceState(type, serviceUri, test, WAIT_ITERATION_SLEEP, WAIT_ITERATION_COUNT);
+  }
+
+  public <T extends ServiceDocument> T waitForServiceState(
+      Class<T> type, String serviceUri, Predicate<T> test, int waitIterationSleep, int waitIterationCount)
+      throws Throwable {
+    for (int i = 0; i < waitIterationCount; i++) {
+      T t = getServiceSynchronously(serviceUri, type);
+      if (test.test(t)) {
+        return t;
+      }
+      Thread.sleep(waitIterationSleep);
+    }
+
+    throw new TimeoutException("timeout waiting for state transition.");
+  }
+
 }
