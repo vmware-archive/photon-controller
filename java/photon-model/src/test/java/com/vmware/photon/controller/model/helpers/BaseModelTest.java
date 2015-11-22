@@ -13,12 +13,6 @@
 
 package com.vmware.photon.controller.model.helpers;
 
-import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
-import com.vmware.photon.controller.model.resources.ComputeFactoryService;
-import com.vmware.photon.controller.model.resources.DiskFactoryService;
-import com.vmware.photon.controller.model.resources.ResourceDescriptionFactoryService;
-import com.vmware.photon.controller.model.resources.ResourcePoolFactoryService;
-
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,19 +37,13 @@ public abstract class BaseModelTest {
   protected TestHost host;
   private Path sandboxDirectory;
 
-  public static final Class[] FACTORY_SERVICES = {
-      ComputeFactoryService.class,
-      ComputeDescriptionFactoryService.class,
-      DiskFactoryService.class,
-      ResourceDescriptionFactoryService.class,
-      ResourcePoolFactoryService.class,
-  };
+  protected abstract Class[] getFactoryServices();
 
   @BeforeClass
   public void setUpClass() throws Throwable {
     if (host == null) {
       sandboxDirectory = Files.createTempDirectory(null);
-      host = new TestHost(HOST_PORT, sandboxDirectory, FACTORY_SERVICES);
+      host = new TestHost(HOST_PORT, sandboxDirectory, getFactoryServices());
       host.start();
     }
   }

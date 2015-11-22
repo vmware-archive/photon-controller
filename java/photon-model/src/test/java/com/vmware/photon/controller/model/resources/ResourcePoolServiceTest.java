@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.model.resources;
 
 import com.vmware.dcp.common.Service;
+import com.vmware.photon.controller.model.ModelFactoryServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 
 import org.testng.annotations.BeforeMethod;
@@ -82,6 +83,10 @@ public class ResourcePoolServiceTest {
    * This class implements tests for the handleStart method.
    */
   public class HandleStartTest extends BaseModelTest {
+    @Override
+    protected Class[] getFactoryServices() {
+      return ModelFactoryServices.FACTORIES;
+    }
 
     @Test
     public void testValidStartState() throws Throwable {
@@ -119,6 +124,10 @@ public class ResourcePoolServiceTest {
    * This class implements tests for the handlePatch method.
    */
   public class HandlePatchTest extends BaseModelTest {
+    @Override
+    protected Class[] getFactoryServices() {
+      return ModelFactoryServices.FACTORIES;
+    }
 
     @Test
     public void testPatchResourcePoolName() throws Throwable {

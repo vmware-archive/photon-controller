@@ -4,6 +4,7 @@ dependencies {
     compile "commons-io:commons-io:2.4"
     compile "com.vmware.dcp:dcp-common:${versions.dcp_common}"
     compile 'commons-validator:commons-validator:1.4.0'
+    compile(project(':photon-model'))
 
     testCompile("org.apache.curator:curator-test:${versions.curator}") {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
@@ -15,12 +16,13 @@ dependencies {
     testCompile "org.powermock:powermock-api-mockito:${versions.powermock}"
     testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
     testCompile "com.vmware.dcp:dcp-common:${versions.dcp_common}:tests"
+    testCompile(project(path: ':photon-model', configuration: 'tests'))
 }
 
 jar {
-    baseName = 'photon-model'
+    baseName = 'photon-model-tasks'
     manifest {
-        attributes 'Specification-Title': 'Common Model used by Photon Controller',
+        attributes 'Specification-Title': 'Tasks associated with Photon Model',
                 'Specification-Version': version,
                 'Built-By': System.getProperty('user.name'),
                 'Built-Date': new Date(),
@@ -34,17 +36,4 @@ tasks.withType(Test) {
     scanForTestClasses = false
     include "**/*Test.class"
     exclude "**/helpers/*.class"
-}
-
-task testJar(type: Jar, dependsOn: testClasses) {
-  baseName = "test-${project.archivesBaseName}"
-  from sourceSets.test.output
-}
-
-configurations {
-  tests
-}
-
-artifacts {
-  tests testJar
 }

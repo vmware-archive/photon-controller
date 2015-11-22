@@ -20,6 +20,7 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
+import com.vmware.photon.controller.model.ModelFactoryServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 import com.vmware.photon.controller.model.helpers.TestHost;
 
@@ -109,6 +110,11 @@ public class ComputeServiceTest {
    * This class implements tests for the handleStart method.
    */
   public class HandleStartTest extends BaseModelTest {
+    @Override
+    protected Class[] getFactoryServices() {
+      return ModelFactoryServices.FACTORIES;
+    }
+
     @Test
     public void testValidStartState() throws Throwable {
       ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
@@ -176,6 +182,11 @@ public class ComputeServiceTest {
    * This class implements tests for the handleGet method.
    */
   public class HandleGetTest extends BaseModelTest {
+    @Override
+    protected Class[] getFactoryServices() {
+      return ModelFactoryServices.FACTORIES;
+    }
+
     @Test
     public void testGet() throws Throwable {
       ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
@@ -227,6 +238,11 @@ public class ComputeServiceTest {
    * This class implements tests for the handlePatch method.
    */
   public class HandlePatchTest extends BaseModelTest {
+    @Override
+    protected Class[] getFactoryServices() {
+      return ModelFactoryServices.FACTORIES;
+    }
+
     @Test
     public void testPatch() throws Throwable {
       ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
@@ -293,6 +309,11 @@ public class ComputeServiceTest {
    */
   public class QueryTest extends BaseModelTest {
     public static final int SERVICE_COUNT = 10;
+
+    @Override
+    protected Class[] getFactoryServices() {
+      return ModelFactoryServices.FACTORIES;
+    }
 
     @Test
     public void testCustomPropertiesQuery() throws Throwable {
