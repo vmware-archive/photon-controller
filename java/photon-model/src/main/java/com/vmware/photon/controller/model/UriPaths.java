@@ -18,4 +18,5 @@ package com.vmware.photon.controller.model;
  */
 public class UriPaths {
   public static final String RESOURCES = "/resources";
+  public static final String PROVISIONING = "/provisioning";
 }
