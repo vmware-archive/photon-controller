@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.common.dcp.exceptions;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.ServiceErrorResponse;
 import com.vmware.photon.controller.common.dcp.OperationLatch;
 
 /**
@@ -37,7 +38,7 @@ public class DcpRuntimeException extends RuntimeException {
   }
 
   public DcpRuntimeException(Operation requestedOperation, OperationLatch.OperationResult operationResult) {
-    super(operationResult.operationFailure);
+    super(operationResult.completedOperation.getBody(ServiceErrorResponse.class).message);
     this.requestedOperation = requestedOperation;
     this.operationResult = operationResult;
   }

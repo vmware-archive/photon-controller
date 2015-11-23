@@ -39,6 +39,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServic
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 
 import com.google.common.base.Optional;
@@ -274,8 +275,9 @@ public class ImageDcpBackend implements ImageBackend {
       dcpClient.post(ImageReplicationServiceFactory.SELF_LINK, imageReplicationServiceState);
       logger.info("ImageReplicationServiceState created with imageId {}, ImageDatastore {}", imageId,
           datastores.get(0).id);
-    } catch (Exception e) {
-      if (e.getMessage().contains("handleServiceExistsPostCompletion")) {
+    } catch (DcpRuntimeException e) {
+      if (e.getOperationResult().completedOperation.getStatusCode() ==
+          com.vmware.dcp.common.Operation.STATUS_CODE_CONFLICT) {
         return;
       }
       throw e;
