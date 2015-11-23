@@ -16,8 +16,8 @@ package com.vmware.photon.controller.model.tasks;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
-import com.vmware.photon.controller.model.ModelFactoryServices;
-import com.vmware.photon.controller.model.TaskFactoryServices;
+import com.vmware.photon.controller.model.ModelServices;
+import com.vmware.photon.controller.model.TaskServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 import com.vmware.photon.controller.model.helpers.TestHost;
 import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
@@ -96,8 +96,8 @@ public class ProvisionComputeTaskServiceTest {
 
   private static Class[] getFactoryServices() {
     List<Class> services = new ArrayList<>();
-    Collections.addAll(services, ModelFactoryServices.FACTORIES);
-    Collections.addAll(services, TaskFactoryServices.FACTORIES);
+    Collections.addAll(services, ModelServices.FACTORIES);
+    Collections.addAll(services, TaskServices.FACTORIES);
     Collections.addAll(services, MockAdapter.FACTORIES);
     return services.toArray(new Class[services.size()]);
   }

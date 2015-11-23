@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.model.resources;
 
 import com.vmware.dcp.common.Service;
-import com.vmware.photon.controller.model.ModelFactoryServices;
+import com.vmware.photon.controller.model.ModelServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 
 import org.testng.annotations.BeforeMethod;
@@ -80,7 +80,7 @@ public class DiskServiceTest {
   public class HandleStartTest extends BaseModelTest {
     @Override
     protected Class[] getFactoryServices() {
-      return ModelFactoryServices.FACTORIES;
+      return ModelServices.FACTORIES;
     }
 
     @Test
@@ -218,7 +218,7 @@ public class DiskServiceTest {
   public class HandlePatchTest extends BaseModelTest {
     @Override
     protected Class[] getFactoryServices() {
-      return ModelFactoryServices.FACTORIES;
+      return ModelServices.FACTORIES;
     }
 
     @Test(dataProvider = "patchZoneId")
