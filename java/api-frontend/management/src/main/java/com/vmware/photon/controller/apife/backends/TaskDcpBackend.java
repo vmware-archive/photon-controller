@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.dcp.common.ServiceDocumentQueryResult;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.Step;
 import com.vmware.photon.controller.api.Task;
@@ -28,6 +29,7 @@ import com.vmware.photon.controller.apife.entities.StepWarningEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.base.InfrastructureEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidQueryParamsException;
+import com.vmware.photon.controller.apife.utils.DatatypeConversionUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -94,13 +96,14 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
   @Override
   public List<Task> filter(String entityId, String entityKind, Optional<String> state) throws ExternalException {
-    return this.filter(Optional.of(entityId), Optional.of(entityKind), state);
+    return this.filter(Optional.of(entityId), Optional.of(entityKind), state, Optional.<Integer>absent());
   }
 
   @Override
-  public List<Task> filter(Optional<String> entityId, Optional<String> entityKind, Optional<String> state)
+  public List<Task> filter(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
+                           Optional<Integer> pageSize)
       throws ExternalException {
-    List<TaskEntity> tasks = getEntityTasks(entityId, entityKind, state);
+    List<TaskEntity> tasks = getEntityTasks(entityId, entityKind, state, pageSize);
 
     List<Task> result = new ArrayList<>();
 
@@ -299,12 +302,13 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   @Override
-  public List<TaskEntity> getEntityTasks(Optional<String> entityId, Optional<String> entityKind, Optional<String> state)
+  public List<TaskEntity> getEntityTasks(Optional<String> entityId, Optional<String> entityKind,
+                                         Optional<String> state, Optional<Integer> pageSize)
       throws InvalidQueryParamsException {
 
     List<TaskEntity> taskEntityList = null;
 
-    List<TaskService.State> tasksDocuments = getEntityDocuments(entityId, entityKind, state);
+    List<TaskService.State> tasksDocuments = getEntityDocuments(entityId, entityKind, state, pageSize);
 
     if (tasksDocuments != null) {
       taskEntityList = new ArrayList<>(tasksDocuments.size());
@@ -355,8 +359,8 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     return taskEntityList;
   }
 
-  private List<TaskService.State> getEntityDocuments(
-      Optional<String> entityId, Optional<String> entityKind, Optional<String> state)
+  private List<TaskService.State> getEntityDocuments(Optional<String> entityId, Optional<String> entityKind,
+                                                     Optional<String> state, Optional<Integer> pageSize)
       throws InvalidQueryParamsException {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
 
@@ -380,7 +384,10 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
       termsBuilder.put("state", state.get().toUpperCase());
     }
 
-    return dcpClient.queryDocuments(TaskService.State.class, termsBuilder.build());
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(TaskService.State.class, termsBuilder.build(),
+        pageSize, true);
+
+    return DatatypeConversionUtils.xenonQueryResultToResourceList(TaskService.State.class, queryResult).getItems();
   }
 
   private List<TaskService.State> getTaskDocumentsInProject(
