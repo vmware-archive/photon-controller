@@ -89,8 +89,9 @@ class ApiClientHelper
       elsif driver == "gocli" # Go CLI driver
         go_cli_path = ENV["GO_CLI_PATH"].strip
         client = EsxCloud::GoCliClient.new(go_cli_path, api_address, token)
+        client.run_cli("target login #{token}") if token
       else # Unknown driver.
-        fail "Unknown driver '#{driver}'. Only 'cli' and 'api' drivers are supported."
+        fail "Unknown driver '#{driver}'. Only 'cli', 'gocli' and 'api' drivers are supported."
       end
 
       client

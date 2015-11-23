@@ -19,7 +19,7 @@ module EsxCloud
       # @param [Hash] payload
       # @return [Host]
       def create_host(deployment_id, payload)
-        @api_client.create_host(deployment_id, payloer)
+        @api_client.create_host(deployment_id, payload)
       end
 
       # @return [HostList]
