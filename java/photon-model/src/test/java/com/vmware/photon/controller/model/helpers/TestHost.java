@@ -18,6 +18,8 @@ import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.ServiceHost;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.test.VerificationHost;
+import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.dcp.services.common.ServiceUriPaths;
 
 import java.lang.reflect.Field;
 import java.nio.file.Path;
@@ -169,4 +171,27 @@ public class TestHost extends VerificationHost {
     throw new TimeoutException("timeout waiting for state transition.");
   }
 
+  public QueryTask createDirectQueryTask(String kind, String propertyName, String propertyValue) {
+    QueryTask q = new QueryTask();
+    q.querySpec = new QueryTask.QuerySpecification();
+    q.taskInfo.isDirect = true;
+
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(kind);
+    kindClause.occurance = QueryTask.Query.Occurance.MUST_OCCUR;
+    q.querySpec.query.addBooleanClause(kindClause);
+
+    QueryTask.Query customPropClause = new QueryTask.Query()
+        .setTermPropertyName(propertyName)
+        .setTermMatchValue(propertyValue);
+    customPropClause.occurance = QueryTask.Query.Occurance.MUST_OCCUR;
+    q.querySpec.query.addBooleanClause(customPropClause);
+
+    return q;
+  }
+
+  public QueryTask querySynchronously(QueryTask queryTask) throws Throwable {
+    return postServiceSynchronously(ServiceUriPaths.CORE_QUERY_TASKS, queryTask, QueryTask.class);
+  }
 }
