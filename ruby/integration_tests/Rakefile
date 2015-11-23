@@ -36,6 +36,12 @@ namespace "esxcloud" do
     task.rspec_opts = "--tag management --format RspecJunitFormatter --out reports/rspec-cli.xml --tag ~slow --profile"
   end
 
+  desc 'Run integration test for esxcloud gocli'
+  RSpec::Core::RakeTask.new(:gocli) do |task|
+    task.pattern = FileList['spec/api/**/*_spec.rb']
+    task.rspec_opts = "--tag management --format RspecJunitFormatter --out reports/rspec-gocli.xml --tag ~slow --profile"
+  end
+
   desc 'Run tests for the deployment apis'
   RSpec::Core::RakeTask.new(:deployment) do |task|
     task.pattern = FileList['spec/api/**/*_spec.rb']

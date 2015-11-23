@@ -122,10 +122,14 @@ bundle exec rake esxcloud:authorization
 # run tests using API & CLI drivers in subshells
 if [ -n "$NO_PARALLEL" ]
 then
+  export DRIVER=api
   bundle exec rake esxcloud:api
 
   export DRIVER=cli
   bundle exec rake esxcloud:cli
+
+  export DRIVER=gocli
+  bundle exec rake esxcloud:gocli
 else
   pids=[]
   (
@@ -139,6 +143,13 @@ else
       bundle exec rake esxcloud:cli
   ) &
   pids[1]=$!
+
+  (
+      export DRIVER=gocli
+      bundle exec rake esxcloud:gocli
+  ) &
+  pids[2]=$!
+
   for pid in ${pids[*]}; do wait $pid; done;
 fi
 
