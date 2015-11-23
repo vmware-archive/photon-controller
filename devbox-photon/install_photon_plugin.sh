@@ -12,7 +12,7 @@
 # specific language governing permissions and limitations under the License.
 
 photon_vagrant_plugin_url="https://bintray.com/artifact/download/photon-controller/public/27/resource/vagrant-guests-photon-0.0.1.gem"
-if [ -n DEVBOX_VAGRANT_PLUGIN_URL ]
+if [ -n "$DEVBOX_VAGRANT_PLUGIN_URL" ]
 then
   photon_vagrant_plugin_url="$DEVBOX_VAGRANT_PLUGIN_URL"
 fi
