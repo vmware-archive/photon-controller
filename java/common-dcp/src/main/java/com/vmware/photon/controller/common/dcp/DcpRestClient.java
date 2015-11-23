@@ -28,6 +28,7 @@ import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundExcept
 import com.vmware.photon.controller.common.thrift.ServerSet;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -42,7 +43,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -65,7 +65,7 @@ public class DcpRestClient implements DcpClient {
   private static final long PATCH_OPERATION_EXPIRATION_MICROS = TimeUnit.SECONDS.toMicros(60);
   private long patchOperationExpirationMicros = PATCH_OPERATION_EXPIRATION_MICROS;
   private static final long DEFAULT_OPERATION_LATCH_TIMEOUT_MICROS = TimeUnit.SECONDS.toMicros(90);
-  private static final long SERVICE_DOCUMENT_STATUS_CHECK_INTERVAL_MILLIS = TimeUnit.MILLISECONDS.toMillis(100);
+  private static final long SERVICE_DOCUMENT_STATUS_CHECK_INTERVAL_MILLIS = 100L;
   private long serviceDocumentStatusCheckIntervalMillis = SERVICE_DOCUMENT_STATUS_CHECK_INTERVAL_MILLIS;
   private static final Logger logger = LoggerFactory.getLogger(DcpRestClient.class);
   private NettyHttpServiceClient client;
@@ -292,7 +292,15 @@ public class DcpRestClient implements DcpClient {
 
     // Wait for the query task to finish and then retrieve the documents
     result = waitForTaskToFinish(queryServiceUri);
-    return result.getBody(QueryTask.class).results;
+
+    if (pageSize.isPresent()) {
+      // Pagination case, the first query always return empty set. Need to
+      // go ahead and get the first page.
+      return queryDocumentPage(result.getBody(QueryTask.class).results.nextPageLink);
+    } else {
+      // No pagination, the result already has the content.
+      return result.getBody(QueryTask.class).results;
+    }
   }
 
   /**
@@ -466,7 +474,7 @@ public class DcpRestClient implements DcpClient {
   protected URI getServiceUri(String path) {
 
     //check if any of the hosts are available locally
-    Optional<InetSocketAddress> localInetSocketAddress =
+    java.util.Optional<InetSocketAddress> localInetSocketAddress =
         this.serverSet.getServers().stream().filter(
             (InetSocketAddress i) -> i.getAddress().equals(this.localHostInetAddress))
             .findFirst();
