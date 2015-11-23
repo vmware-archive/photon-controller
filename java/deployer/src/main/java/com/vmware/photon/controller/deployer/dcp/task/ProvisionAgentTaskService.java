@@ -338,7 +338,7 @@ public class ProvisionAgentTaskService extends StatefulService {
             try {
               GetConfigResponse configResponse = getHostConfigCall.getResult();
               HostClient.ResponseValidator.checkGetConfigResponse(configResponse);
-              updateHostDocumentWithConfig(currentState, configResponse.getHostConfig());
+              updateHostDocumentWithConfig(currentState, hostState, configResponse.getHostConfig());
             } catch (TException e) {
               retryOrFail(retryable, currentState, new RpcException(e.getMessage()));
             } catch (Throwable t) {
@@ -361,16 +361,17 @@ public class ProvisionAgentTaskService extends StatefulService {
     }
   }
 
-  private void updateHostDocumentWithConfig(final State currentState, HostConfig hostConfig) {
+  private void updateHostDocumentWithConfig(final State currentState, final HostService.State hostState, HostConfig
+      hostConfig) {
     try {
       HostService.State patchState = new HostService.State();
-      if (hostConfig.isSetMemory_mb()) {
+      if (hostConfig.isSetMemory_mb() && hostState.memoryMb == null) {
         patchState.memoryMb = hostConfig.getMemory_mb();
       }
-      if (hostConfig.isSetCpu_count()) {
+      if (hostConfig.isSetCpu_count() && hostState.cpuCount == null) {
         patchState.cpuCount = hostConfig.getCpu_count();
       }
-      if (hostConfig.isSetMemory_mb() || hostConfig.isSetCpu_count()) {
+      if (patchState.memoryMb != null || patchState.cpuCount != null) {
         sendRequest(
             HostUtils.getCloudStoreHelper(this)
                 .createPatch(currentState.hostServiceLink)

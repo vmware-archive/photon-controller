@@ -174,6 +174,8 @@ public class DeploymentWorkFlowServiceClientTest {
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
       };
@@ -271,6 +273,8 @@ public class DeploymentWorkFlowServiceClientTest {
         for (DeploymentWorkflowService.TaskState.SubStage s : DeploymentWorkflowService.TaskState.SubStage.values()) {
           switch (s) {
             case ADD_HOSTS:
+            case CREATE_MANAGEMENT_PLANE:
+            case PROVISION_CLOUD_HOSTS:
             case ALLOCATE_CM_RESOURCES:
               startState.taskSubStates.add(TaskState.TaskStage.FINISHED);
               break;
@@ -321,12 +325,53 @@ public class DeploymentWorkFlowServiceClientTest {
         addHostStages.add(status);
       }
 
+      ArrayList<DeployStageStatus> createMgmtPlaneStages = new ArrayList<>();
+      for (DeploymentWorkflowService.TaskState.SubStage s : DeploymentWorkflowService.TaskState.SubStage.values()) {
+        DeployStageStatus status = new DeployStageStatus();
+        status.setName(s.name());
+        switch (s) {
+          case ADD_HOSTS:
+            status.setCode(DeployStatusCode.FINISHED);
+            break;
+          case CREATE_MANAGEMENT_PLANE:
+            status.setCode(DeployStatusCode.IN_PROGRESS);
+            break;
+          default:
+            status.setCode(null);
+            break;
+        }
+
+        createMgmtPlaneStages.add(status);
+      }
+
+      ArrayList<DeployStageStatus> provisionCloudHosts = new ArrayList<>();
+      for (DeploymentWorkflowService.TaskState.SubStage s : DeploymentWorkflowService.TaskState.SubStage.values()) {
+        DeployStageStatus status = new DeployStageStatus();
+        status.setName(s.name());
+        switch (s) {
+          case ADD_HOSTS:
+          case CREATE_MANAGEMENT_PLANE:
+            status.setCode(DeployStatusCode.FINISHED);
+            break;
+          case PROVISION_CLOUD_HOSTS:
+            status.setCode(DeployStatusCode.IN_PROGRESS);
+            break;
+          default:
+            status.setCode(null);
+            break;
+        }
+
+        provisionCloudHosts.add(status);
+      }
+
       ArrayList<DeployStageStatus> allocateCMStages = new ArrayList<>();
       for (DeploymentWorkflowService.TaskState.SubStage s : DeploymentWorkflowService.TaskState.SubStage.values()) {
         DeployStageStatus status = new DeployStageStatus();
         status.setName(s.name());
         switch (s) {
           case ADD_HOSTS:
+          case CREATE_MANAGEMENT_PLANE:
+          case PROVISION_CLOUD_HOSTS:
             status.setCode(DeployStatusCode.FINISHED);
             break;
           case ALLOCATE_CM_RESOURCES:
@@ -346,6 +391,8 @@ public class DeploymentWorkFlowServiceClientTest {
         status.setName(s.name());
         switch (s) {
           case ADD_HOSTS:
+          case CREATE_MANAGEMENT_PLANE:
+          case PROVISION_CLOUD_HOSTS:
           case ALLOCATE_CM_RESOURCES:
             status.setCode(DeployStatusCode.FINISHED);
             break;
@@ -366,6 +413,8 @@ public class DeploymentWorkFlowServiceClientTest {
         status.setName(s.name());
         switch (s) {
           case ADD_HOSTS:
+          case CREATE_MANAGEMENT_PLANE:
+          case PROVISION_CLOUD_HOSTS:
           case ALLOCATE_CM_RESOURCES:
           case MIGRATE_DEPLOYMENT_DATA:
             status.setCode(DeployStatusCode.FINISHED);
@@ -384,6 +433,8 @@ public class DeploymentWorkFlowServiceClientTest {
         status.setName(s.name());
         switch (s) {
           case ADD_HOSTS:
+          case CREATE_MANAGEMENT_PLANE:
+          case PROVISION_CLOUD_HOSTS:
           case ALLOCATE_CM_RESOURCES:
             status.setCode(DeployStatusCode.FINISHED);
             break;
@@ -401,6 +452,10 @@ public class DeploymentWorkFlowServiceClientTest {
       return new Object[][]{
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
               addHostStages},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
+              createMgmtPlaneStages},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
+              provisionCloudHosts},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
               allocateCMStages},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
