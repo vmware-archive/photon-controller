@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.collections.CollectionUtils;
@@ -55,7 +56,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -912,7 +912,7 @@ public class DcpRestClientTest {
       throws Throwable {
 
     ServiceDocumentQueryResult queryResult = dcpRestClient.queryDocuments
-        (ExampleService.ExampleServiceState.class, queryTerms, Optional.<Integer>empty(), expandContent);
+        (ExampleService.ExampleServiceState.class, queryTerms, Optional.absent(), expandContent);
 
     Set<String> expectedDocumentNames = expectedDocuments.stream()
         .map(d -> d.name)
@@ -938,15 +938,20 @@ public class DcpRestClientTest {
     ServiceDocumentQueryResult queryResult = dcpRestClient.queryDocuments
         (ExampleService.ExampleServiceState.class, queryTerms, Optional.of(pageSize), expandContent);
 
-    assertNull(queryResult.documents);
+    assertNotNull(queryResult.documents);
     assertNotNull(queryResult.nextPageLink);
     assertNull(queryResult.prevPageLink);
+
+    Set<String> actualDocumentNames = new HashSet<>();
+    actualDocumentNames.addAll(queryResult.documents.values().stream()
+            .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
+            .collect(Collectors.toSet())
+    );
 
     Set<String> expectedDocumentNames = expectedDocuments.stream()
         .map(d -> d.name)
         .collect(Collectors.toSet());
 
-    Set<String> actualDocumentNames = new HashSet<>();
     while (queryResult.nextPageLink != null) {
       queryResult = dcpRestClient.queryDocumentPage(queryResult.nextPageLink);
 
