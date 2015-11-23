@@ -14,6 +14,11 @@
 package com.vmware.photon.controller.model.resources;
 
 import com.vmware.dcp.common.Service;
+import com.vmware.dcp.common.ServiceDocumentDescription;
+import com.vmware.dcp.common.UriUtils;
+import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.dcp.services.common.TenantFactoryService;
 import com.vmware.photon.controller.model.ModelServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 
@@ -137,7 +142,7 @@ public class DiskServiceTest {
     }
 
     @Test(dataProvider = "capacityMBytes")
-    public void testCapacityLessThanOneMB(Long capacityMBytes) throws Throwable{
+    public void testCapacityLessThanOneMB(Long capacityMBytes) throws Throwable {
       DiskService.Disk startState = buildValidStartState();
       startState.capacityMBytes = capacityMBytes;
       startState.sourceImageReference = new URI("http://sourceImageReference");
@@ -153,7 +158,7 @@ public class DiskServiceTest {
 
     @DataProvider(name = "capacityMBytes")
     public Object[][] getCapacityMBytes() {
-      return new Object[][] {
+      return new Object[][]{
           {1L},
           {0L}
       };
@@ -205,7 +210,7 @@ public class DiskServiceTest {
 
     @DataProvider(name = "fileEntryPaths")
     public Object[][] getFileEntryPaths() {
-      return new Object[][] {
+      return new Object[][]{
           {null},
           {""}
       };
@@ -245,7 +250,7 @@ public class DiskServiceTest {
 
     @DataProvider(name = "patchZoneId")
     public Object[][] getPatchZoneId() {
-      return new Object[][] {
+      return new Object[][]{
           {null, "startZoneId"},
           {"startZoneId", "startZoneId"},
           {"patchZoneId", "patchZoneId"}
@@ -276,7 +281,7 @@ public class DiskServiceTest {
 
     @DataProvider(name = "patchName")
     public Object[][] getPatchName() {
-      return new Object[][] {
+      return new Object[][]{
           {null, "startName"},
           {"startName", "startName"},
           {"patchName", "patchName"}
@@ -308,7 +313,7 @@ public class DiskServiceTest {
 
     @DataProvider(name = "patchStatus")
     public Object[][] getPatchStatus() {
-      return new Object[][] {
+      return new Object[][]{
           {null, DiskService.DiskStatus.DETACHED},
           {DiskService.DiskStatus.DETACHED, DiskService.DiskStatus.DETACHED},
           {DiskService.DiskStatus.ATTACHED, DiskService.DiskStatus.ATTACHED}
@@ -339,7 +344,7 @@ public class DiskServiceTest {
 
     @DataProvider(name = "patchCapacityMBytes")
     public Object[][] getPatchCapacityMBytes() {
-      return new Object[][] {
+      return new Object[][]{
           {0L, 100L},
           {100L, 100L},
           {200L, 200L}
@@ -357,7 +362,7 @@ public class DiskServiceTest {
       startState.tenantLinks = new ArrayList<>();
       startState.tenantLinks.add("tenant-link1");
       startState.bootOrder = 1;
-      startState.bootArguments = new String[] { "boot-argument1" };
+      startState.bootArguments = new String[]{"boot-argument1"};
       startState.currencyUnit = "currency-unit1";
 
       DiskService.Disk returnState = host.postServiceSynchronously(
@@ -374,7 +379,7 @@ public class DiskServiceTest {
       patchState.tenantLinks = new ArrayList<>();
       patchState.tenantLinks.add("tenant-link2");
       patchState.bootOrder = 2;
-      patchState.bootArguments = new String[] { "boot-argument2" };
+      patchState.bootArguments = new String[]{"boot-argument2"};
       patchState.currencyUnit = "currency-unit2";
 
       host.patchServiceSynchronously(
@@ -392,6 +397,39 @@ public class DiskServiceTest {
       assertThat(returnState.bootArguments, is(startState.bootArguments));
       assertThat(returnState.currencyUnit, is(startState.currencyUnit));
 
+    }
+  }
+
+  /**
+   * This class implements tests for query.
+   */
+  public class QueryTest extends BaseModelTest {
+
+    @Override
+    protected Class[] getFactoryServices() {
+      return ModelServices.FACTORIES;
+    }
+
+    @Test
+    public void testTenantLinksQuery() throws Throwable {
+      DiskService.Disk disk = buildValidStartState();
+
+      URI tenantUri = UriUtils.buildUri(host, TenantFactoryService.class);
+      disk.tenantLinks = new ArrayList<>();
+      disk.tenantLinks.add(UriUtils.buildUriPath(tenantUri.getPath(), "tenantA"));
+
+      DiskService.Disk startState = host.postServiceSynchronously(
+          DiskFactoryService.SELF_LINK, disk, DiskService.Disk.class);
+
+      String kind = Utils.buildKind(DiskService.Disk.class);
+      String propertyName = QueryTask.QuerySpecification
+          .buildCollectionItemName(ServiceDocumentDescription.FIELD_NAME_TENANT_LINKS);
+
+      QueryTask q = host.createDirectQueryTask(kind, propertyName, disk.tenantLinks.get(0));
+      q = host.querySynchronously(q);
+      assertNotNull(q.results.documentLinks);
+      assertThat(q.results.documentCount, is(1L));
+      assertThat(q.results.documentLinks.get(0), is(startState.documentSelfLink));
     }
   }
 }
