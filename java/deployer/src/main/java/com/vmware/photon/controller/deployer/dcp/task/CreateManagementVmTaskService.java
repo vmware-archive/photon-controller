@@ -308,13 +308,10 @@ public class CreateManagementVmTaskService extends StatefulService {
    * @param currentState Supplies the current state object.
    * @param vmState Supplies the state object of the VmService entity.
    * @param hostState Supplies the state object of the HostService entity.
-<<<<<<< HEAD
    * @param projectState Supplies the state object of the ProjectService entity.
-=======
    * @param imageState Supplies the state object of the Image Service entity.
    * @param projectState Supplies the state object of the Project Service entity.
    * @param flavorState Supplies the state object of the FlavorService entity.
->>>>>>> Use cloudstore Project, ResourceTicket, Tenant and remove deployer's
    */
   private void processStartedStage(final State currentState,
                                    final VmService.State vmState, final HostService.State hostState,
@@ -641,11 +638,8 @@ public class CreateManagementVmTaskService extends StatefulService {
    *
    * @param vmState Supplies the state object of the VmService entity.
    * @param hostState Supplies the state object of the HostService entity.
-<<<<<<< HEAD
    * @param flavorState Supplies the state object of the FlavorService entity.
-=======
    * @param imageState Supplies the state object of the ImageService entity.
->>>>>>> Use cloudstore FlavorService and remove deployer's FlavorService
    * @return Returns the VmCreateSpec object.
    */
   private VmCreateSpec composeVmCreateSpec(final VmService.State vmState,

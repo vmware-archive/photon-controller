@@ -19,6 +19,7 @@ import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -84,6 +85,8 @@ public class DeploymentWorkflowService extends StatefulService {
      */
     public enum SubStage {
       ADD_HOSTS,
+      CREATE_MANAGEMENT_PLANE,
+      PROVISION_CLOUD_HOSTS,
       ALLOCATE_CM_RESOURCES,
       MIGRATE_DEPLOYMENT_DATA
     }
@@ -231,6 +234,8 @@ public class DeploymentWorkflowService extends StatefulService {
     if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
       switch (currentState.taskState.subStage) {
         case ADD_HOSTS:
+        case CREATE_MANAGEMENT_PLANE:
+        case PROVISION_CLOUD_HOSTS:
         case ALLOCATE_CM_RESOURCES:
         case MIGRATE_DEPLOYMENT_DATA:
           break;
@@ -341,6 +346,12 @@ public class DeploymentWorkflowService extends StatefulService {
       case ADD_HOSTS:
         addHosts(currentState);
         break;
+      case CREATE_MANAGEMENT_PLANE:
+        batchCreateManagementPlane(currentState);
+        break;
+      case PROVISION_CLOUD_HOSTS:
+        processProvisionCloudHosts(currentState);
+        break;
       case ALLOCATE_CM_RESOURCES:
         allocateClusterManagerResources(currentState);
         break;
@@ -361,7 +372,7 @@ public class DeploymentWorkflowService extends StatefulService {
               case FINISHED:
                 TaskUtils.sendSelfPatch(service, buildPatch(
                     TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.ALLOCATE_CM_RESOURCES,
+                    TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
                     null));
                 break;
               case FAILED:
@@ -393,6 +404,77 @@ public class DeploymentWorkflowService extends StatefulService {
         startState,
         (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
         AddManagementHostWorkflowService.State.class,
+        currentState.taskPollDelay,
+        callback);
+  }
+
+  private void batchCreateManagementPlane(final State currentState) {
+    ServiceUtils.logInfo(this, "Bulk provisioning management plane");
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+
+                  DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+                  try {
+                    batchCreateManagementPlane(currentState, deploymentState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            )
+    );
+  }
+
+  private void batchCreateManagementPlane(final State currentState, DeploymentService.State deploymentService) {
+
+    final Service service = this;
+
+    FutureCallback<BatchCreateManagementWorkflowService.State> callback =
+        new FutureCallback<BatchCreateManagementWorkflowService.State>() {
+          @Override
+          public void onSuccess(@Nullable BatchCreateManagementWorkflowService.State result) {
+            switch (result.taskState.stage) {
+              case FINISHED:
+                TaskUtils.sendSelfPatch(service, buildPatch(
+                    TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_CLOUD_HOSTS, null));
+                break;
+              case FAILED:
+                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                patchState.taskState.failure = result.taskState.failure;
+                TaskUtils.sendSelfPatch(service, patchState);
+                break;
+              case CANCELLED:
+                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
+                break;
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        };
+
+    BatchCreateManagementWorkflowService.State startState = new BatchCreateManagementWorkflowService.State();
+
+    startState.imageFile = currentState.managementVmImageFile;
+    startState.deploymentServiceLink = currentState.deploymentServiceLink;
+    startState.isAuthEnabled = deploymentService.oAuthEnabled;
+    startState.taskPollDelay = currentState.taskPollDelay;
+    startState.ntpEndpoint = deploymentService.ntpEndpoint;
+
+    TaskUtils.startTaskAsync(
+        this,
+        BatchCreateManagementWorkflowFactoryService.SELF_LINK,
+        startState,
+        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+        BatchCreateManagementWorkflowService.State.class,
         currentState.taskPollDelay,
         callback);
   }
@@ -613,6 +695,81 @@ public class DeploymentWorkflowService extends StatefulService {
     } catch (URISyntaxException e) {
       failTask(e);
     }
+  }
+
+  private void processProvisionCloudHosts(final State currentState) throws
+      Throwable {
+
+    ServiceUtils.logInfo(this, "Bulk provisioning cloud hosts");
+
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+
+                  DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+                  try {
+                    processProvisionCloudHosts(currentState, deploymentState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            )
+    );
+  }
+
+  private void processProvisionCloudHosts(final State currentState, DeploymentService.State deploymentService) throws
+      Throwable {
+
+    checkState(null != deploymentService.chairmanServerList);
+
+    final Service service = this;
+
+    FutureCallback<BulkProvisionHostsWorkflowService.State> callback =
+        new FutureCallback<BulkProvisionHostsWorkflowService.State>() {
+          @Override
+          public void onSuccess(@Nullable BulkProvisionHostsWorkflowService.State result) {
+            switch (result.taskState.stage) {
+              case FINISHED:
+                TaskUtils.sendSelfPatch(service, buildPatch(
+                    TaskState.TaskStage.STARTED, TaskState.SubStage.ALLOCATE_CM_RESOURCES, null));
+                break;
+              case FAILED:
+                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                patchState.taskState.failure = result.taskState.failure;
+                TaskUtils.sendSelfPatch(service, patchState);
+                break;
+              case CANCELLED:
+                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
+                break;
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        };
+
+    BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
+    startState.deploymentServiceLink = currentState.deploymentServiceLink;
+    startState.chairmanServerList = deploymentService.chairmanServerList;
+    startState.usageTag = UsageTag.CLOUD.name();
+    startState.taskPollDelay = currentState.taskPollDelay;
+
+    TaskUtils.startTaskAsync(
+        this,
+        BulkProvisionHostsWorkflowFactoryService.SELF_LINK,
+        startState,
+        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+        BulkProvisionHostsWorkflowService.State.class,
+        currentState.taskPollDelay,
+        callback);
   }
 
   /**
