@@ -69,9 +69,10 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
-import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * This class implements tests for {@link CreateFlavorTaskService} class.
@@ -461,7 +462,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false, false);
+      setupValidServiceDocuments(false, false, false);
 
       CreateFlavorTaskService.State finalState =
           machine.callServiceAndWaitForState(
@@ -490,7 +491,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(true, false);
+      setupValidServiceDocuments(true, false, false);
 
       CreateFlavorTaskService.State finalState =
           machine.callServiceAndWaitForState(
@@ -519,7 +520,37 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false, true);
+      setupValidServiceDocuments(false, true, false);
+
+      CreateFlavorTaskService.State finalState =
+          machine.callServiceAndWaitForState(
+              CreateFlavorTaskFactoryService.SELF_LINK,
+              startState,
+              CreateFlavorTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      TestHelper.assertTaskStateFinished(finalState.taskState);
+
+      VmService.State vmServiceFinalState =
+          machine.getServiceState(vmServiceState.documentSelfLink, VmService.State.class);
+      assertThat(vmServiceFinalState.flavorServiceLink, notNullValue());
+
+      FlavorService.State vmFlavorState =
+          cloudStoreMachine.getServiceState(vmServiceFinalState.flavorServiceLink, FlavorService.State.class);
+      assertThat(vmFlavorState.name, is("dummyName"));
+    }
+
+
+    @Test
+    public void testEndToEndSuccessWithHostConfigSharedHost() throws Throwable {
+
+      setupCreateVmFlavorCall(false, taskReturnedByCreateVmFlavor);
+      setupGetCreateVmFlavorTaskCall(false, taskReturnedByGetCreateVmFlavorTask);
+      setupCreateDiskFlavorCall(false, taskReturnedByCreateDiskFlavor);
+      setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
+
+      machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
+      setupValidServiceDocuments(false, true, true);
 
       CreateFlavorTaskService.State finalState =
           machine.callServiceAndWaitForState(
@@ -542,7 +573,7 @@ public class CreateFlavorTaskServiceTest {
     @Test
     public void testEndToEndFailureZeroContainerService() throws Throwable {
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidVmServiceDocument(false, false);
+      setupValidVmServiceDocument(false, false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -563,7 +594,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false, false);
+      setupValidServiceDocuments(false, false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -584,7 +615,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false, false);
+      setupValidServiceDocuments(false, false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -605,7 +636,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false, false);
+      setupValidServiceDocuments(false, false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -625,7 +656,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(true, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false, false);
+      setupValidServiceDocuments(false, false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -645,7 +676,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false, false);
+      setupValidServiceDocuments(false, false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -665,7 +696,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false, false);
+      setupValidServiceDocuments(false, false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -685,7 +716,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, taskReturnedByGetCreateDiskFlavorTask);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false, false);
+      setupValidServiceDocuments(false, false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -705,7 +736,7 @@ public class CreateFlavorTaskServiceTest {
       setupGetCreateDiskFlavorTaskCall(false, task);
 
       machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(), 1);
-      setupValidServiceDocuments(false, false);
+      setupValidServiceDocuments(false, false, false);
 
       CreateFlavorTaskService.State finalState = machine.callServiceAndWaitForState(
           CreateFlavorTaskFactoryService.SELF_LINK,
@@ -727,10 +758,16 @@ public class CreateFlavorTaskServiceTest {
       };
     }
 
-    private void setupValidVmServiceDocument(boolean overwriteVmResource, boolean addHostResource) throws Throwable {
+    private void setupValidVmServiceDocument(boolean overwriteVmResource, boolean addHostResource, boolean sharedHost)
+        throws Throwable {
+      Set<String> usageTags = new HashSet<>();
+      usageTags.add(UsageTag.MGMT.name());
 
-      HostService.State hostStartState =
-          TestHelper.getHostServiceStartState(Collections.singleton(UsageTag.MGMT.name()), HostState.READY);
+      if (sharedHost) {
+        usageTags.add(UsageTag.CLOUD.name());
+      }
+
+      HostService.State hostStartState = TestHelper.getHostServiceStartState(usageTags, HostState.READY);
       if (overwriteVmResource) {
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE, "1");
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_GB_OVERWIRTE, "2");
@@ -758,8 +795,9 @@ public class CreateFlavorTaskServiceTest {
       TestHelper.createContainerService(machine, containerTemplateSavedState2, vmServiceState);
     }
 
-    private void setupValidServiceDocuments(boolean overwriteVmResource, boolean addHostResource) throws Throwable {
-      setupValidVmServiceDocument(overwriteVmResource, addHostResource);
+    private void setupValidServiceDocuments(boolean overwriteVmResource, boolean addHostResource, boolean sharedHost)
+        throws Throwable {
+      setupValidVmServiceDocument(overwriteVmResource, addHostResource, sharedHost);
       setupValidContainerAndContainerTemplateDocuments();
     }
 
