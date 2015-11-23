@@ -11,20 +11,35 @@
 # under the License.
 
 import stats.stats
-import stats.plugin
 import unittest
 
 from hamcrest import *  # noqa
 from matchers import *  # noqa
+from mock import MagicMock
+from mock import patch
+
+import common
+from common.service_name import ServiceName
 
 
 class TestStats(unittest.TestCase):
 
-    def test_stats(self):
-        assert_that(stats.stats.StatsHandler, not_none())
+    def setUp(self):
+        agent_config = MagicMock()
+        common.services.register(ServiceName.AGENT_CONFIG, agent_config)
 
-    def test_plugin(self):
+    @patch('stats.stats.StatsCollector.start_collection')
+    @patch('stats.stats.StatsCollector.configure_collectors')
+    def test_stats_handler(self, _config_collectors, _start_collection):
+        stats.stats.StatsHandler()
+        _config_collectors.assert_called_once_with()
+        _start_collection.assert_called_once_with()
+
+    @patch('stats.stats.StatsHandler')
+    def test_plugin(self, _handler):
+        import stats.plugin
         assert_that(stats.plugin.plugin, not_none())
+        _handler.assert_called_once_with()
 
 
 if __name__ == '__main__':

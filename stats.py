@@ -17,12 +17,16 @@ from common.photon_thrift.decorators import log_request
 from .gen import StatsService
 from .gen.ttypes import SetCollectionLevelResponse
 from .gen.ttypes import SetCollectionLevelResultCode
+from stats_collector import StatsCollector
 
 
 class StatsHandler(StatsService.Iface):
 
     def __init__(self):
         self._logger = logging.getLogger(__name__)
+        self._collector = StatsCollector()
+        self._collector.configure_collectors()
+        self._collector.start_collection()
 
     def _error_response(self, code, error, response):
         self._logger.debug(error)
