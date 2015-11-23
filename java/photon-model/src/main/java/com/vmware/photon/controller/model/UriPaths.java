@@ -11,11 +11,12 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.model;
+  package com.vmware.photon.controller.model;
 
 /**
  * Service paths used in the provisioning model.
  */
 public class UriPaths {
-  public static final String RESOURCES = "/resources";
+    public static final String RESOURCES = "/resources";
+    public static final String RESOURCES_NETWORKS = RESOURCES + "/networks";
 }
