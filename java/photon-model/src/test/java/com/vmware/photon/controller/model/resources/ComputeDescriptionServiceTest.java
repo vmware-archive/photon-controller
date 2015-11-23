@@ -14,6 +14,11 @@
 package com.vmware.photon.controller.model.resources;
 
 import com.vmware.dcp.common.Service;
+import com.vmware.dcp.common.ServiceDocumentDescription;
+import com.vmware.dcp.common.UriUtils;
+import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.dcp.services.common.TenantFactoryService;
 import com.vmware.photon.controller.model.ModelFactoryServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 
@@ -21,17 +26,20 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.UUID;
 
 /**
  * This class implements tests for the {@link ComputeDescriptionService} class.
  */
 public class ComputeDescriptionServiceTest {
+  private static final String TEST_DESC_PROPERTY_NAME = "testDescProperty";
 
   public static ComputeDescriptionService.ComputeDescription buildValidStartState() throws Throwable {
     ComputeDescriptionService.ComputeDescription cd = new ComputeDescriptionService.ComputeDescription();
@@ -47,10 +55,11 @@ public class ComputeDescriptionServiceTest {
     cd.dataStoreId = null;
 
     ArrayList<String> children = new ArrayList<>();
-    for (ComputeDescriptionService.ComputeDescription.ComputeType type :
-        ComputeDescriptionService.ComputeDescription.ComputeType.values()) {
-      children.add(type.name());
-    }
+//    for (ComputeDescriptionService.ComputeDescription.ComputeType type :
+//        ComputeDescriptionService.ComputeDescription.ComputeType.values()) {
+//      children.add(type.name());
+//    }
+    children.add(ComputeDescriptionService.ComputeDescription.ComputeType.VM_HOST.toString());
 
     cd.supportedChildren = children;
     cd.environmentName = ComputeDescriptionService.ComputeDescription.ENVIRONMENT_NAME_ON_PREMISE;
@@ -167,6 +176,84 @@ public class ComputeDescriptionServiceTest {
           startState,
           ComputeDescriptionService.ComputeDescription.class,
           IllegalArgumentException.class);
+    }
+  }
+
+  /**
+   * This class implements tests for query.
+   */
+  public class QueryTest extends BaseModelTest {
+
+    @Override
+    protected Class[] getFactoryServices() {
+      return ModelFactoryServices.FACTORIES;
+    }
+
+    @Test
+    public void testTenantLinksQuery() throws Throwable {
+      ComputeDescriptionService.ComputeDescription disk = buildValidStartState();
+
+      URI tenantUri = UriUtils.buildUri(host, TenantFactoryService.class);
+      disk.tenantLinks = new ArrayList<>();
+      disk.tenantLinks.add(UriUtils.buildUriPath(tenantUri.getPath(), "tenantA"));
+
+      ComputeDescriptionService.ComputeDescription startState = host.postServiceSynchronously(
+          ComputeDescriptionFactoryService.SELF_LINK, disk, ComputeDescriptionService.ComputeDescription.class);
+
+      String kind = Utils.buildKind(ComputeDescriptionService.ComputeDescription.class);
+      String propertyName = QueryTask.QuerySpecification
+          .buildCollectionItemName(ServiceDocumentDescription.FIELD_NAME_TENANT_LINKS);
+
+      QueryTask q = host.createDirectQueryTask(kind, propertyName, disk.tenantLinks.get(0));
+      q = host.querySynchronously(q);
+      assertNotNull(q.results.documentLinks);
+      assertThat(q.results.documentCount, is(1L));
+      assertThat(q.results.documentLinks.get(0), is(startState.documentSelfLink));
+    }
+
+    @Test
+    public void testCustomPropertiesQuery() throws Throwable {
+      String newCustomPropertyValue = UUID.randomUUID().toString();
+
+      ComputeDescriptionService.ComputeDescription cd = buildValidStartState();
+      cd.customProperties = new HashMap<>();
+      cd.customProperties.put(TEST_DESC_PROPERTY_NAME, newCustomPropertyValue);
+
+      host.postServiceSynchronously(
+          ComputeDescriptionFactoryService.SELF_LINK, cd, ComputeDescriptionService.ComputeDescription.class);
+
+      String kind = Utils.buildKind(ComputeDescriptionService.ComputeDescription.class);
+      String propertyName = QueryTask.QuerySpecification.buildCompositeFieldName(
+          ComputeService.ComputeState.FIELD_NAME_CUSTOM_PROPERTIES, TEST_DESC_PROPERTY_NAME);
+
+      // Query computes with newCustomPropClause and expect 1 instance
+      QueryTask q = host.createDirectQueryTask(kind, propertyName, newCustomPropertyValue);
+      queryComputes(q, 1);
+    }
+
+
+    @Test
+    public void testSupportedChildrenQuery() throws Throwable {
+      ComputeDescriptionService.ComputeDescription cd = buildValidStartState();
+      cd.supportedChildren.add(ComputeDescriptionService.ComputeDescription.ComputeType.DOCKER_CONTAINER.toString());
+      host.postServiceSynchronously(
+          ComputeDescriptionFactoryService.SELF_LINK, cd, ComputeDescriptionService.ComputeDescription.class);
+
+      String kind = Utils.buildKind(ComputeDescriptionService.ComputeDescription.class);
+      String propertyName = QueryTask.QuerySpecification.buildCollectionItemName(
+          ComputeDescriptionService.ComputeDescription.FIELD_NAME_SUPPORTED_CHILDREN);
+
+      // Query computes with newCustomPropClause and expect 1 instance
+      QueryTask q = host.createDirectQueryTask(
+          kind, propertyName, ComputeDescriptionService.ComputeDescription.ComputeType.DOCKER_CONTAINER.toString());
+      queryComputes(q, 1);
+    }
+
+    private void queryComputes(QueryTask q, int expectedCount) throws Throwable {
+      QueryTask queryTask = host.querySynchronously(q);
+      assertNotNull(queryTask.results.documentLinks);
+      assertFalse(queryTask.results.documentLinks.isEmpty());
+      assertThat(queryTask.results.documentLinks.size(), is(expectedCount));
     }
   }
 }

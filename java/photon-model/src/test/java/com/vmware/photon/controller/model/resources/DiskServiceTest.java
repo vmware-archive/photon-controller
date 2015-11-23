@@ -14,6 +14,11 @@
 package com.vmware.photon.controller.model.resources;
 
 import com.vmware.dcp.common.Service;
+import com.vmware.dcp.common.ServiceDocumentDescription;
+import com.vmware.dcp.common.UriUtils;
+import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.dcp.services.common.TenantFactoryService;
 import com.vmware.photon.controller.model.ModelFactoryServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 
@@ -392,6 +397,39 @@ public class DiskServiceTest {
       assertThat(returnState.bootArguments, is(startState.bootArguments));
       assertThat(returnState.currencyUnit, is(startState.currencyUnit));
 
+    }
+  }
+
+  /**
+   * This class implements tests for query.
+   */
+  public class QueryTest extends BaseModelTest {
+
+    @Override
+    protected Class[] getFactoryServices() {
+      return ModelFactoryServices.FACTORIES;
+    }
+
+    @Test
+    public void testTenantLinksQuery() throws Throwable {
+      DiskService.Disk disk = buildValidStartState();
+
+      URI tenantUri = UriUtils.buildUri(host, TenantFactoryService.class);
+      disk.tenantLinks = new ArrayList<>();
+      disk.tenantLinks.add(UriUtils.buildUriPath(tenantUri.getPath(), "tenantA"));
+
+      DiskService.Disk startState = host.postServiceSynchronously(
+          DiskFactoryService.SELF_LINK, disk, DiskService.Disk.class);
+
+      String kind = Utils.buildKind(DiskService.Disk.class);
+      String propertyName = QueryTask.QuerySpecification
+          .buildCollectionItemName(ServiceDocumentDescription.FIELD_NAME_TENANT_LINKS);
+
+      QueryTask q = host.createDirectQueryTask(kind, propertyName, disk.tenantLinks.get(0));
+      q = host.querySynchronously(q);
+      assertNotNull(q.results.documentLinks);
+      assertThat(q.results.documentCount, is(1L));
+      assertThat(q.results.documentLinks.get(0), is(startState.documentSelfLink));
     }
   }
 }

@@ -250,11 +250,6 @@ public class ComputeService extends StatefulService {
               return;
             }
 
-            if (!hasOption(ServiceOption.DOCUMENT_OWNER)) {
-              start.complete();
-              return;
-            }
-
             setUpMaintenance(s, start);
           });
 

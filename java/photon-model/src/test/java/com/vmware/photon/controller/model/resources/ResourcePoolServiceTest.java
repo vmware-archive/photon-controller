@@ -14,6 +14,11 @@
 package com.vmware.photon.controller.model.resources;
 
 import com.vmware.dcp.common.Service;
+import com.vmware.dcp.common.ServiceDocumentDescription;
+import com.vmware.dcp.common.UriUtils;
+import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.dcp.services.common.TenantFactoryService;
 import com.vmware.photon.controller.model.ModelFactoryServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 
@@ -23,6 +28,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.testng.Assert.assertNotNull;
 
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.UUID;
 
@@ -198,6 +205,39 @@ public class ResourcePoolServiceTest {
       ResourcePoolService.ResourcePoolState startState = buildValidStartState();
       return host.postServiceSynchronously(
           ResourcePoolFactoryService.SELF_LINK, startState, ResourcePoolService.ResourcePoolState.class);
+    }
+  }
+
+  /**
+   * This class implements tests for query.
+   */
+  public class QueryTest extends BaseModelTest {
+
+    @Override
+    protected Class[] getFactoryServices() {
+      return ModelFactoryServices.FACTORIES;
+    }
+
+    @Test
+    public void testTenantLinksQuery() throws Throwable {
+      ResourcePoolService.ResourcePoolState rp = buildValidStartState();
+
+      URI tenantUri = UriUtils.buildUri(host, TenantFactoryService.class);
+      rp.tenantLinks = new ArrayList<>();
+      rp.tenantLinks.add(UriUtils.buildUriPath(tenantUri.getPath(), "tenantA"));
+
+      ResourcePoolService.ResourcePoolState startState = host.postServiceSynchronously(
+          ResourcePoolFactoryService.SELF_LINK, rp, ResourcePoolService.ResourcePoolState.class);
+
+      String kind = Utils.buildKind(ResourcePoolService.ResourcePoolState.class);
+      String propertyName = QueryTask.QuerySpecification
+          .buildCollectionItemName(ServiceDocumentDescription.FIELD_NAME_TENANT_LINKS);
+
+      QueryTask q = host.createDirectQueryTask(kind, propertyName, rp.tenantLinks.get(0));
+      q = host.querySynchronously(q);
+      assertNotNull(q.results.documentLinks);
+      assertThat(q.results.documentCount, is(1L));
+      assertThat(q.results.documentLinks.get(0), is(startState.documentSelfLink));
     }
   }
 }

@@ -13,13 +13,12 @@
 
 package com.vmware.photon.controller.model.resources;
 
-import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.dcp.common.ServiceDocumentDescription;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
+import com.vmware.dcp.services.common.TenantFactoryService;
 import com.vmware.photon.controller.model.ModelFactoryServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 import com.vmware.photon.controller.model.helpers.TestHost;
@@ -28,6 +27,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 
 import java.net.URI;
@@ -71,9 +71,6 @@ public class ComputeServiceTest {
     cs.networkLinks.add("http://network");
     cs.customProperties = new HashMap<>();
     cs.customProperties.put(TEST_DESC_PROPERTY_NAME, TEST_DESC_PROPERTY_VALUE);
-    cs.tenantLinks = new ArrayList<>();
-    cs.tenantLinks.add("http://tenant");
-
     return cs;
   }
 
@@ -316,6 +313,29 @@ public class ComputeServiceTest {
     }
 
     @Test
+    public void testTenantLinksQuery() throws Throwable {
+      ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
+      ComputeService.ComputeState cs = buildValidStartState(cd);
+
+      URI tenantUri = UriUtils.buildUri(host, TenantFactoryService.class);
+      cs.tenantLinks = new ArrayList<>();
+      cs.tenantLinks.add(UriUtils.buildUriPath(tenantUri.getPath(), "tenantA"));
+
+      ComputeService.ComputeState startState = host.postServiceSynchronously(
+          ComputeFactoryService.SELF_LINK, cs, ComputeService.ComputeState.class);
+
+      String kind = Utils.buildKind(ComputeService.ComputeState.class);
+      String propertyName = QueryTask.QuerySpecification
+          .buildCollectionItemName(ServiceDocumentDescription.FIELD_NAME_TENANT_LINKS);
+
+      QueryTask q = host.createDirectQueryTask(kind, propertyName, cs.tenantLinks.get(0));
+      q = host.querySynchronously(q);
+      assertNotNull(q.results.documentLinks);
+      assertThat(q.results.documentCount, is(1L));
+      assertThat(q.results.documentLinks.get(0), is(startState.documentSelfLink));
+    }
+
+    @Test
     public void testCustomPropertiesQuery() throws Throwable {
       ComputeService.ComputeState[] initialStates = createInstances(SERVICE_COUNT);
 
@@ -328,72 +348,24 @@ public class ComputeServiceTest {
       patchBody.customProperties.put(TEST_DESC_PROPERTY_NAME, newCustomPropertyValue);
       host.patchServiceSynchronously(customPropComputeStateLink, patchBody);
 
-      // Query computes with newCustomPropClause and expect 1 instance
-      QueryTask q = new QueryTask();
-      q.querySpec = new QueryTask.QuerySpecification();
-      q.taskInfo.isDirect = true;
-
       String kind = Utils.buildKind(ComputeService.ComputeState.class);
-      QueryTask.Query kindClause = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(kind);
-      kindClause.occurance = QueryTask.Query.Occurance.MUST_OCCUR;
-      q.querySpec.query.addBooleanClause(kindClause);
+      String propertyName = QueryTask.QuerySpecification.buildCompositeFieldName(
+          ComputeService.ComputeState.FIELD_NAME_CUSTOM_PROPERTIES, TEST_DESC_PROPERTY_NAME);
 
-      QueryTask.Query newCustomPropClause = new QueryTask.Query()
-          .setTermPropertyName(QueryTask.QuerySpecification.buildCompositeFieldName(
-              ComputeService.ComputeState.FIELD_NAME_CUSTOM_PROPERTIES,
-              TEST_DESC_PROPERTY_NAME))
-          .setTermMatchValue(newCustomPropertyValue);
-      newCustomPropClause.occurance = QueryTask.Query.Occurance.MUST_OCCUR;
-      q.querySpec.query.addBooleanClause(newCustomPropClause);
-
+      // Query computes with newCustomPropClause and expect 1 instance
+      QueryTask q = host.createDirectQueryTask(kind, propertyName, newCustomPropertyValue);
       queryComputes(q, 1);
 
       // Query computes with old CustomPropClause and expect SERVICE_COUNT-1 instances
-      q = new QueryTask();
-      q.querySpec = new QueryTask.QuerySpecification();
-      q.taskInfo.isDirect = true;
-      q.querySpec.query.addBooleanClause(kindClause);
-
-      QueryTask.Query customPropClause = new QueryTask.Query()
-          .setTermPropertyName(QueryTask.QuerySpecification.buildCompositeFieldName(
-              ComputeService.ComputeState.FIELD_NAME_CUSTOM_PROPERTIES,
-              TEST_DESC_PROPERTY_NAME))
-          .setTermMatchValue(TEST_DESC_PROPERTY_VALUE);
-      customPropClause.occurance = QueryTask.Query.Occurance.MUST_OCCUR;
-      q.querySpec.query.addBooleanClause(customPropClause);
-
+      q = host.createDirectQueryTask(kind, propertyName, TEST_DESC_PROPERTY_VALUE);
       queryComputes(q, SERVICE_COUNT - 1);
     }
 
-    private void queryComputes(QueryTask q, long expectedCount) throws Throwable {
-      host.testStart(1);
-      host.sendRequest(Operation
-          .createPost(UriUtils.buildUri(host, ServiceUriPaths.CORE_QUERY_TASKS))
-          .setBody(q)
-          .setReferer(host.getUri())
-          .setCompletion(
-              (o, e) -> {
-                if (e != null) {
-                  host.failIteration(e);
-                  return;
-                }
-
-                QueryTask qtr = o.getBody(QueryTask.class);
-                if (qtr.results.documentLinks == null
-                    || qtr.results.documentLinks.isEmpty()) {
-                  host.failIteration(new IllegalStateException("No results found."));
-                } else if (qtr.results.documentLinks.size() != expectedCount) {
-                  host.failIteration(new IllegalStateException(
-                      "Different count of results expected. Returned documents: "
-                          + qtr.results.documentLinks.size() + ", expected:"
-                          + expectedCount));
-                } else {
-                  host.completeIteration();
-                }
-              }));
-      host.testWait();
+    private void queryComputes(QueryTask q, int expectedCount) throws Throwable {
+      QueryTask queryTask = host.querySynchronously(q);
+      assertNotNull(queryTask.results.documentLinks);
+      assertFalse(queryTask.results.documentLinks.isEmpty());
+      assertThat(queryTask.results.documentLinks.size(), is(expectedCount));
     }
 
     public ComputeService.ComputeState[] createInstances(int c) throws Throwable {

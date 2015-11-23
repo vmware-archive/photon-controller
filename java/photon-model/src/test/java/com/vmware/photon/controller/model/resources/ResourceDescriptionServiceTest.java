@@ -14,6 +14,11 @@
 package com.vmware.photon.controller.model.resources;
 
 import com.vmware.dcp.common.Service;
+import com.vmware.dcp.common.ServiceDocumentDescription;
+import com.vmware.dcp.common.UriUtils;
+import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.dcp.services.common.TenantFactoryService;
 import com.vmware.photon.controller.model.ModelFactoryServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 
@@ -23,6 +28,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.testng.Assert.assertNotNull;
 
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.EnumSet;
 
 /**
@@ -111,6 +118,39 @@ public class ResourceDescriptionServiceTest {
           startState,
           ResourceDescriptionService.ResourceDescription.class,
           IllegalArgumentException.class);
+    }
+  }
+
+  /**
+   * This class implements tests for query.
+   */
+  public class QueryTest extends BaseModelTest {
+
+    @Override
+    protected Class[] getFactoryServices() {
+      return ModelFactoryServices.FACTORIES;
+    }
+
+    @Test
+    public void testTenantLinksQuery() throws Throwable {
+      ResourceDescriptionService.ResourceDescription rd = buildValidStartState();
+
+      URI tenantUri = UriUtils.buildUri(host, TenantFactoryService.class);
+      rd.tenantLinks = new ArrayList<>();
+      rd.tenantLinks.add(UriUtils.buildUriPath(tenantUri.getPath(), "tenantA"));
+
+      ResourceDescriptionService.ResourceDescription startState = host.postServiceSynchronously(
+          ResourceDescriptionFactoryService.SELF_LINK, rd, ResourceDescriptionService.ResourceDescription.class);
+
+      String kind = Utils.buildKind(ResourceDescriptionService.ResourceDescription.class);
+      String propertyName = QueryTask.QuerySpecification
+          .buildCollectionItemName(ServiceDocumentDescription.FIELD_NAME_TENANT_LINKS);
+
+      QueryTask q = host.createDirectQueryTask(kind, propertyName, rd.tenantLinks.get(0));
+      q = host.querySynchronously(q);
+      assertNotNull(q.results.documentLinks);
+      assertThat(q.results.documentCount, is(1L));
+      assertThat(q.results.documentLinks.get(0), is(startState.documentSelfLink));
     }
   }
 }
