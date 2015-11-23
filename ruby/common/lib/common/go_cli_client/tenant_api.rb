@@ -71,9 +71,7 @@ module EsxCloud
       # @param [String] id
       # @param [Hash] payload
       def set_tenant_security_groups(id, payload)
-        security_groups = payload[:items].join(",")
-        cmd = "tenant set_security_groups #{id} #{security_groups}"
-        run_cli(cmd)
+        @api_client.set_tenant_security_groups(id, payload)
       end
     end
   end

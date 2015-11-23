@@ -72,7 +72,7 @@ describe EsxCloud::GoCliClient do
     client.get_tenant_tasks("foo", "a").should == tasks
   end
 
-  it "sets tenant security groups" do
+  xit "sets tenant security groups" do
     tenant_id = "t1"
     security_groups = ["adminGroup1", "adminGroup2"]
     payload = {items: security_groups}
