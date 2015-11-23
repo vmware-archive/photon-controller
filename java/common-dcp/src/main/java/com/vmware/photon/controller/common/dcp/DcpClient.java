@@ -20,11 +20,11 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 /**
