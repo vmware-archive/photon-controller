@@ -124,7 +124,7 @@ public class OperationLatchTest {
     @Test
     public void testLatchTimeout() throws Throwable {
       try {
-        latch.awaitForOperationResult(1);
+        latch.awaitForOperationCompletion(1);
         Assert.fail("Operation Latch should have timed out");
       } catch (TimeoutException e) {
         assertThat(e.getMessage(),
@@ -135,7 +135,7 @@ public class OperationLatchTest {
     @Test(expectedExceptions = TimeoutException.class)
     public void testOperationTimeout() throws Throwable {
       operation.setExpiration(TimeUnit.MILLISECONDS.toMicros(1));
-      latch.awaitForOperationResult(30);
+      latch.awaitForOperationCompletion(30);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)

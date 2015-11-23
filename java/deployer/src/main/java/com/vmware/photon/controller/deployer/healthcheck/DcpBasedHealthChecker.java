@@ -52,8 +52,8 @@ public class DcpBasedHealthChecker implements HealthChecker {
     OperationLatch syncOp = new OperationLatch(get);
     dcpService.sendRequest(get);
     try {
-      OperationLatch.OperationResult operationResult = syncOp.awaitForOperationResult();
-      Status status = operationResult.completedOperation.getBody(Status.class);
+      Operation completedOperation = syncOp.awaitForOperationCompletion();
+      Status status = completedOperation.getBody(Status.class);
       return status.getType() == StatusType.READY;
     } catch (Exception e) {
       logger.error("GET to DCP service failed [{}:{}]: {}", address, port, e);

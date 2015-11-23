@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.common.dcp.exceptions;
 
 import com.vmware.dcp.common.Operation;
-import com.vmware.photon.controller.common.dcp.OperationLatch;
+import com.vmware.dcp.common.ServiceErrorResponse;
 
 /**
  * This is to capture all DCP exceptions that we would normally want the clients to handle.
@@ -22,29 +22,21 @@ import com.vmware.photon.controller.common.dcp.OperationLatch;
 public class DcpException extends Throwable {
 
   private Operation requestedOperation;
-  private OperationLatch.OperationResult operationResult;
+  private Operation completedOperation;
 
-  public DcpException(Operation operation) {
-    super(operation.toString());
-
-    this.requestedOperation = operation;
-  }
-
-  public DcpException(Operation requestedOperation, OperationLatch.OperationResult operationResult) {
-      super(operationResult.completedOperation == null ?
-              requestedOperation.toString() : operationResult.completedOperation.toString(),
-          operationResult
-          .operationFailure);
+  public DcpException(Operation requestedOperation, Operation completedOperation) {
+    super(completedOperation == null ?
+        null : completedOperation.getBody(ServiceErrorResponse.class).message);
 
     this.requestedOperation = requestedOperation;
-    this.operationResult = operationResult;
+    this.completedOperation = completedOperation;
   }
 
   public Operation getRequestedOperation() {
     return requestedOperation;
   }
 
-  public OperationLatch.OperationResult getOperationResult() {
-    return operationResult;
+  public Operation getCompletedOperation() {
+    return completedOperation;
   }
 }

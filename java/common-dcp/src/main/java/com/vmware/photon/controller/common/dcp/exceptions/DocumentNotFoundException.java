@@ -14,18 +14,12 @@
 package com.vmware.photon.controller.common.dcp.exceptions;
 
 import com.vmware.dcp.common.Operation;
-import com.vmware.photon.controller.common.dcp.OperationLatch;
 
 /**
  * This exception maps to HTTP status code 404.
  */
 public class DocumentNotFoundException extends DcpException {
-
-  public DocumentNotFoundException(Operation operation) {
-    super(operation);
-  }
-
-  public DocumentNotFoundException(Operation operation, OperationLatch.OperationResult operationResult) {
-    super(operation, operationResult);
+  public DocumentNotFoundException(Operation requestedOperation, Operation completedOperation) {
+    super(requestedOperation, completedOperation);
   }
 }

@@ -74,7 +74,7 @@ public class EntityLockDcpBackend implements EntityLockBackend {
       logger.info("Entity Lock with entityId : {} and taskId: {} has been set", state.entityId, state.taskId);
     } catch (DcpRuntimeException e) {
       //re-throw any exception other than a conflict which indicated the lock already exists
-      if (e.getOperationResult().completedOperation.getStatusCode() != Operation.STATUS_CODE_CONFLICT) {
+      if (e.getCompletedOperation().getStatusCode() != Operation.STATUS_CODE_CONFLICT) {
         throw e;
       }
 

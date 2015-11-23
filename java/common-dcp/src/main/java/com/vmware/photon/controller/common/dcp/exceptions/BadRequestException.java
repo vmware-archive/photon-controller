@@ -14,18 +14,12 @@
 package com.vmware.photon.controller.common.dcp.exceptions;
 
 import com.vmware.dcp.common.Operation;
-import com.vmware.photon.controller.common.dcp.OperationLatch;
 
 /**
  * This exception maps to HTTP status code 400.
  */
 public class BadRequestException extends DcpException {
-
-  public BadRequestException(Operation operation) {
-    super(operation);
-  }
-
-  public BadRequestException(Operation operation, OperationLatch.OperationResult operationResult) {
-    super(operation, operationResult);
+  public BadRequestException(Operation requestedOperation, Operation completedOperation) {
+    super(requestedOperation, completedOperation);
   }
 }

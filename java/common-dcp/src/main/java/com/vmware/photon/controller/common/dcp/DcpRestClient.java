@@ -16,6 +16,7 @@ package com.vmware.photon.controller.common.dcp;
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.ServiceDocumentQueryResult;
+import com.vmware.dcp.common.ServiceErrorResponse;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
@@ -349,39 +350,32 @@ public class DcpRestClient implements DcpClient {
    * This method sifts through errors from DCP operations into checked and unchecked(RuntimeExceptions)
    * This is the default handling but it can be overridden by different clients based on their needs.
    *
-   * @param operation
-   * @param operationResult
+   * @param requestedOperation
+   * @param completedOperation
    * @return
    * @throws DocumentNotFoundException
    * @throws TimeoutException
    */
   @VisibleForTesting
-  protected Operation handleOperationResult(Operation operation, OperationLatch.OperationResult operationResult)
+  protected void handleOperationResult(Operation requestedOperation, Operation completedOperation)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
 
-    switch (operationResult.completedOperation.getStatusCode()) {
+    switch (completedOperation.getStatusCode()) {
       case Operation.STATUS_CODE_OK:
       case Operation.STATUS_CODE_ACCEPTED:
-        return operationResult.completedOperation;
+        return;
       case Operation.STATUS_CODE_NOT_FOUND:
-        throw new DocumentNotFoundException(operation, operationResult);
+        throw new DocumentNotFoundException(requestedOperation, completedOperation);
       case Operation.STATUS_CODE_TIMEOUT:
-        TimeoutException timeoutException;
-        if (operationResult.operationFailure instanceof TimeoutException) {
-          timeoutException = (TimeoutException) operationResult.operationFailure;
-        } else {
-          timeoutException = new TimeoutException(operationResult.operationFailure.getMessage());
-          timeoutException.initCause(operationResult.operationFailure);
-        }
-        handleTimeoutException(operationResult.completedOperation, timeoutException);
+        TimeoutException timeoutException =
+            new TimeoutException(completedOperation.getBody(ServiceErrorResponse.class).message);
+        handleTimeoutException(completedOperation, timeoutException);
         break;
       case Operation.STATUS_CODE_BAD_REQUEST:
-        throw new BadRequestException(operation, operationResult);
+        throw new BadRequestException(requestedOperation, completedOperation);
       default:
-        handleUnknownError(operation, operationResult);
+        handleUnknownError(requestedOperation, completedOperation);
     }
-
-    return null;
   }
 
   @VisibleForTesting
@@ -409,23 +403,22 @@ public class DcpRestClient implements DcpClient {
   }
 
   @VisibleForTesting
-  protected Operation send(Operation operation)
+  protected Operation send(Operation requestedOperation)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    logger.info("send: STARTED {}", createLogMessageWithBody(operation));
-    OperationLatch operationLatch = createOperationLatch(operation);
+    logger.info("send: STARTED {}", createLogMessageWithBody(requestedOperation));
+    OperationLatch operationLatch = createOperationLatch(requestedOperation);
 
-    client.send(operation);
+    client.send(requestedOperation);
 
     Operation completedOperation = null;
     try {
-      OperationLatch.OperationResult operationResult =
-          operationLatch.awaitForOperationResult(DEFAULT_OPERATION_LATCH_TIMEOUT_MICROS);
-      logCompletedOperation(operationResult.completedOperation);
-      completedOperation = handleOperationResult(operation, operationResult);
+      completedOperation = operationLatch.awaitForOperationCompletion(DEFAULT_OPERATION_LATCH_TIMEOUT_MICROS);
+      logCompletedOperation(completedOperation);
+      handleOperationResult(requestedOperation, completedOperation);
     } catch (TimeoutException timeoutException) {
-      handleTimeoutException(operation, timeoutException);
+      handleTimeoutException(requestedOperation, timeoutException);
     } catch (InterruptedException interruptedException) {
-      handleInterruptedException(operation, interruptedException);
+      handleInterruptedException(requestedOperation, interruptedException);
     }
     //this maybe null due to client side exceptions caught above.
     return completedOperation;
@@ -460,8 +453,8 @@ public class DcpRestClient implements DcpClient {
     return inetSocketAddress.getPort();
   }
 
-  private void handleUnknownError(Operation operation, OperationLatch.OperationResult operationResult) {
-    throw new DcpRuntimeException(operation, operationResult);
+  private void handleUnknownError(Operation requestedOperation, Operation completedOperation) {
+    throw new DcpRuntimeException(requestedOperation, completedOperation);
   }
 
   private InetSocketAddress getRandomInetSocketAddress() {
