@@ -11,12 +11,24 @@
  * specific language governing permissions and limitations under the License.
  */
 
-  package com.vmware.photon.controller.model;
+package com.vmware.photon.controller.model.resources;
+
+import com.vmware.dcp.common.FactoryService;
+import com.vmware.dcp.common.Service;
+import com.vmware.photon.controller.model.UriPaths;
 
 /**
- * Service paths used in the provisioning model.
+ * Creates a NetworkInterfaceService instance.
  */
-public class UriPaths {
-    public static final String RESOURCES = "/resources";
-    public static final String RESOURCES_NETWORKS = RESOURCES + "/networks";
+public class NetworkInterfaceFactoryService extends FactoryService {
+  public static final String SELF_LINK = UriPaths.RESOURCES_NETWORKS + "/interfaces";
+
+  public NetworkInterfaceFactoryService() {
+    super(NetworkInterfaceService.NetworkInterfaceState.class);
+  }
+
+  @Override
+  public Service createServiceInstance() {
+    return new NetworkInterfaceService();
+  }
 }
