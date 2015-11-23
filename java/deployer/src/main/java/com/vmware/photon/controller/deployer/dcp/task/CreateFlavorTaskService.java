@@ -27,6 +27,7 @@ import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
@@ -55,6 +56,7 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -326,12 +328,18 @@ public class CreateFlavorTaskService extends StatefulService {
               finalDiskGb += containerTemplateState.diskGb;
             }
 
+            // The ratio of the resource which can be consumed by the management vm to the total host resource
+            float mgmtVmHostRatio = 1.0f;
+            if (hostState.usageTags.containsAll(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name()))) {
+              mgmtVmHostRatio = 0.25f;
+            }
+
             // If host memory and cpu count is set, consume them entirely for the management vm.
             if (hostState.memoryMb != null) {
-              finalMemoryMb = hostState.memoryMb;
+              finalMemoryMb = (int) (hostState.memoryMb * mgmtVmHostRatio);
             }
             if (hostState.cpuCount != null) {
-              finalCpuCount = hostState.cpuCount;
+              finalCpuCount = (int) (hostState.cpuCount * mgmtVmHostRatio);
             }
             createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryMb, finalDiskGb);
           } catch (Throwable t) {
