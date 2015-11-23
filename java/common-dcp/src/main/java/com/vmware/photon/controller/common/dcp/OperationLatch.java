@@ -33,8 +33,8 @@ public class OperationLatch {
   private Operation operation;
 
   @VisibleForTesting
-  protected OperationResult getOperationResult() {
-    return operationResult;
+  protected Operation getCompletedOperation() {
+    return operationResult.completedOperation;
   }
 
   public OperationLatch(Operation op) {
@@ -56,14 +56,14 @@ public class OperationLatch {
     return operationResult.completedOperation;
   }
 
-  public OperationResult awaitForOperationResult() throws InterruptedException, TimeoutException {
+  public Operation awaitForOperationCompletion() throws InterruptedException, TimeoutException {
     this.awaitUsingOperationExpiration();
-    return getOperationResult();
+    return getCompletedOperation();
   }
 
-  public OperationResult awaitForOperationResult(long timeoutMicros) throws InterruptedException, TimeoutException {
+  public Operation awaitForOperationCompletion(long timeoutMicros) throws InterruptedException, TimeoutException {
     this.await(timeoutMicros, TimeUnit.MICROSECONDS);
-    return getOperationResult();
+    return getCompletedOperation();
   }
 
   @VisibleForTesting
@@ -100,7 +100,8 @@ public class OperationLatch {
   /**
    * This class allows us to capture all output from the DCP operation completion handler.
    */
-  public static class OperationResult {
+  @VisibleForTesting
+  protected static class OperationResult {
     public Operation completedOperation;
     public Throwable operationFailure;
   }

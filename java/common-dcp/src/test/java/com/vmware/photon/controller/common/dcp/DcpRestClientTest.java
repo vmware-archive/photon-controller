@@ -16,6 +16,7 @@ package com.vmware.photon.controller.common.dcp;
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.ServiceDocumentQueryResult;
+import com.vmware.dcp.common.ServiceErrorResponse;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.ExampleFactoryService;
 import com.vmware.dcp.services.common.ExampleService;
@@ -46,7 +47,6 @@ import static org.testng.Assert.fail;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.ProtocolException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -274,28 +274,35 @@ public class DcpRestClientTest {
     public void testTimeoutOfOperation() throws Throwable {
       String documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
       URI uri = dcpRestClient.getServiceUri(documentSelfLink);
+      ServiceErrorResponse serviceErrorResponse = new ServiceErrorResponse();
+      serviceErrorResponse.statusCode = Operation.STATUS_CODE_TIMEOUT;
+      serviceErrorResponse.message = UUID.randomUUID().toString();
+
       Operation getOperation = Operation
           .createGet(uri)
           .setUri(uri)
           .setExpiration(1)
           .setReferer(OperationUtils.getLocalHostUri())
-          .setStatusCode(Operation.STATUS_CODE_TIMEOUT);
+          .setStatusCode(Operation.STATUS_CODE_TIMEOUT)
+          .setBody(serviceErrorResponse);
 
-      OperationLatch.OperationResult operationResult = new OperationLatch.OperationResult();
-      operationResult.completedOperation = getOperation;
-      String exceptionMessage = UUID.randomUUID().toString();
-      operationResult.operationFailure = new ProtocolException(exceptionMessage);
+      Operation completedOperation = Operation
+          .createGet(uri)
+          .setUri(uri)
+          .setExpiration(1)
+          .setReferer(OperationUtils.getLocalHostUri())
+          .setStatusCode(Operation.STATUS_CODE_TIMEOUT)
+          .setBody(serviceErrorResponse);
 
       OperationLatch operationLatch = spy(new OperationLatch(getOperation));
-      doReturn(operationResult).when(operationLatch).getOperationResult();
-
+      doReturn(completedOperation).when(operationLatch).getCompletedOperation();
       doReturn(operationLatch).when(dcpRestClient).createOperationLatch(any(Operation.class));
 
       try {
         dcpRestClient.send(getOperation);
         Assert.fail("send should have thrown TimeoutException");
       } catch (TimeoutException e) {
-        assertThat(e.getMessage(), containsString(exceptionMessage));
+        assertThat(e.getMessage(), containsString(serviceErrorResponse.message));
       }
     }
   }

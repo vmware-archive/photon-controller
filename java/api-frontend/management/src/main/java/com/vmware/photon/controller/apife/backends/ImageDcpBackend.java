@@ -276,7 +276,7 @@ public class ImageDcpBackend implements ImageBackend {
       logger.info("ImageReplicationServiceState created with imageId {}, ImageDatastore {}", imageId,
           datastores.get(0).id);
     } catch (DcpRuntimeException e) {
-      if (e.getOperationResult().completedOperation.getStatusCode() ==
+      if (e.getCompletedOperation().getStatusCode() ==
           com.vmware.dcp.common.Operation.STATUS_CODE_CONFLICT) {
         return;
       }

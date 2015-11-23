@@ -248,7 +248,7 @@ public class ResourceTicketServiceTest {
         fail("resource ticket consume above limits should have failed");
       } catch (BadRequestException e) {
         ServiceErrorResponse serviceErrorResponse =
-            e.getOperationResult().completedOperation.getBody(ServiceErrorResponse.class);
+            e.getCompletedOperation().getBody(ServiceErrorResponse.class);
         assertThat(serviceErrorResponse.message,
             containsString("Not enough quota: Current Limit: " + testState.limitMap.get("key1").toString() +
                 ", desiredUsage " + patch.cost.get("key1").toString()));
@@ -286,7 +286,7 @@ public class ResourceTicketServiceTest {
         fail("resource ticket consume above limits should have failed");
       } catch (BadRequestException e) {
         ResourceTicketService.QuotaErrorResponse quotaErrorResponse =
-            e.getOperationResult().completedOperation.getBody(ResourceTicketService.QuotaErrorResponse.class);
+            e.getCompletedOperation().getBody(ResourceTicketService.QuotaErrorResponse.class);
         assertThat(quotaErrorResponse.limit, is(notNullValue()));
         assertThat(quotaErrorResponse.limit.getValue(), is(testState.limitMap.get("key1").getValue()));
         assertThat(quotaErrorResponse.usage, is(notNullValue()));

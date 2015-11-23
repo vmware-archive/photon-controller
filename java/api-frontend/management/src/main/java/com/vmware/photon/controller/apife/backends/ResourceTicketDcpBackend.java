@@ -106,7 +106,7 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
     } catch (DcpRuntimeException e) {
       if (e.getCause() instanceof BadRequestException) {
         ResourceTicketService.QuotaErrorResponse quotaErrorResponse =
-            e.getOperationResult().completedOperation.getBody(ResourceTicketService.QuotaErrorResponse.class);
+            e.getCompletedOperation().getBody(ResourceTicketService.QuotaErrorResponse.class);
         throw new QuotaException(
             new QuotaLineItemEntity(quotaErrorResponse.limit.getKey(),
                 quotaErrorResponse.limit.getValue(), quotaErrorResponse.limit.getUnit()),

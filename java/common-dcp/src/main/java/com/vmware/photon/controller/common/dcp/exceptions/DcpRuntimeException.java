@@ -15,7 +15,6 @@ package com.vmware.photon.controller.common.dcp.exceptions;
 
 import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.photon.controller.common.dcp.OperationLatch;
 
 /**
  * This is to capture all DCP exceptions that we would normally not handle.
@@ -24,12 +23,12 @@ import com.vmware.photon.controller.common.dcp.OperationLatch;
 public class DcpRuntimeException extends RuntimeException {
 
   private Operation requestedOperation;
-  private OperationLatch.OperationResult operationResult;
+  private Operation completedOperation;
 
   public DcpRuntimeException(DcpException cause) {
     super(cause);
     this.requestedOperation = cause.getRequestedOperation();
-    this.operationResult = cause.getOperationResult();
+    this.completedOperation = cause.getCompletedOperation();
   }
 
   public DcpRuntimeException(Operation operation) {
@@ -37,10 +36,10 @@ public class DcpRuntimeException extends RuntimeException {
     this.requestedOperation = operation;
   }
 
-  public DcpRuntimeException(Operation requestedOperation, OperationLatch.OperationResult operationResult) {
-    super(operationResult.completedOperation.getBody(ServiceErrorResponse.class).message);
+  public DcpRuntimeException(Operation requestedOperation, Operation completedOperation) {
+    super(completedOperation.getBody(ServiceErrorResponse.class).message);
     this.requestedOperation = requestedOperation;
-    this.operationResult = operationResult;
+    this.completedOperation = completedOperation;
   }
 
   public DcpRuntimeException(Throwable cause) {
@@ -55,7 +54,7 @@ public class DcpRuntimeException extends RuntimeException {
     return requestedOperation;
   }
 
-  public OperationLatch.OperationResult getOperationResult() {
-    return operationResult;
+  public Operation getCompletedOperation() {
+    return completedOperation;
   }
 }
