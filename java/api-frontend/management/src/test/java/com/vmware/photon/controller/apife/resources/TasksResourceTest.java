@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import org.hamcrest.CoreMatchers;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -52,11 +53,12 @@ public class TasksResourceTest {
    * Tests find method.
    */
   public static class FindTest extends ResourceTest {
-    List<Task> tasks;
-
-    Task.Entity entity;
-
-    String state;
+    private Task t1;
+    private Task t2;
+    private String link1;
+    private String link2;
+    private Task.Entity entity;
+    private String state;
 
     @Mock
     private TaskFeClient taskFeClient;
@@ -74,23 +76,37 @@ public class TasksResourceTest {
 
       state = "state";
 
-      Task t1 = new Task();
+      t1 = new Task();
       t1.setId("t1");
       t1.setEntity(entity);
 
-      Task t2 = new Task();
+      t2 = new Task();
       t2.setId("t2");
       t2.setEntity(entity);
 
-      tasks = ImmutableList.of(t1, t2);
+      link1 = UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build("t1").toString();
+      link2 = UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build("t2").toString();
+
       when(
-          taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state))
-      ).thenReturn(new ResourceList<>(tasks));
+          taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
+              Optional.<Integer>absent())
+      ).thenReturn(new ResourceList<>(ImmutableList.of(t1, t2)));
+      when(
+          taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
+              Optional.of(2))
+      ).thenReturn(new ResourceList<>(ImmutableList.of(t1, t2)));
+      when(
+          taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
+              Optional.of(1))
+      ).thenReturn(new ResourceList<>(ImmutableList.of(t1)));
     }
 
-    @Test
-    public void testFilterTasks() throws Exception {
-      Response response = getTasks(entity.getId(), entity.getKind(), state);
+    @Test(dataProvider = "pageSizes")
+    public void testFilterTasks(Optional<Integer> pageSize,
+                                List<Task> expectedTasks,
+                                List<String> expectedLinks) throws Exception {
+
+      Response response = getTasks(entity.getId(), entity.getKind(), state, pageSize);
       assertThat(response.getStatus(), is(200));
 
       List<Task> tasks = response.readEntity(
@@ -98,22 +114,38 @@ public class TasksResourceTest {
           }
       ).getItems();
 
-      assertThat(tasks.size(), is(2));
-      assertThat(tasks.get(0), is(tasks.get(0)));
-      assertThat(tasks.get(0).getSelfLink().endsWith(
-          UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build("t1").toString()), is(true));
-      assertThat(tasks.get(1), is(tasks.get(1)));
-      assertThat(tasks.get(1).getSelfLink().endsWith(
-          UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build("t2").toString()), is(true));
-
-      for (Task t : tasks) {
-        assertThat(new URI(t.getSelfLink()).isAbsolute(), CoreMatchers.is(true));
+      for (int i = 0; i < tasks.size(); i++) {
+        assertThat(new URI(tasks.get(i).getSelfLink()).isAbsolute(), CoreMatchers.is(true));
+        assertThat(tasks.get(i), is(expectedTasks.get(i)));
+        assertThat(tasks.get(i).getSelfLink().endsWith(expectedLinks.get(i)), is(true));
       }
     }
 
-    private Response getTasks(String eId, String eKind, String state) {
+    @DataProvider(name = "pageSizes")
+    private Object[][] getPageSize() {
+      return new Object[][] {
+          {
+              Optional.<Integer>absent(),
+              ImmutableList.of(t1, t2),
+              ImmutableList.of(link1, link2)
+          },
+          {
+              Optional.of(1),
+              ImmutableList.of(t1),
+              ImmutableList.of(link1, link2)
+          },
+          {
+              Optional.of(2),
+              ImmutableList.of(t1, t2),
+              ImmutableList.of(link1, link2)
+          }
+      };
+    }
+
+    private Response getTasks(String eId, String eKind, String state, Optional<Integer> pageSize) {
       WebTarget resource = client().target(
-          String.format("%s?entityId=%s&entityKind=%s&state=%s", TaskResourceRoutes.API, eId, eKind, state));
+          String.format("%s?entityId=%s&entityKind=%s&state=%s&pageSize=%s", TaskResourceRoutes.API, eId, eKind,
+              state, pageSize));
       return resource.request().get();
     }
   }

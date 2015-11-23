@@ -491,8 +491,8 @@ public class TaskDcpBackendTest {
 
     @Test
     public void testFilter() throws Throwable {
-      List<Task> tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(), Optional
-          .<String>absent());
+      List<Task> tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(),
+          Optional.<String>absent(), Optional.<Integer>absent());
 
       int initialTaskCount = tasks.size();
 
@@ -500,19 +500,20 @@ public class TaskDcpBackendTest {
       vmEntity.setId(UUID.randomUUID().toString());
       taskBackend.createQueuedTask(vmEntity, Operation.CREATE_VM);
 
-      tasks = taskBackend.filter(Optional.of(vmEntity.getId()), Optional.of(Vm.KIND), Optional.<String>absent());
+      tasks = taskBackend.filter(Optional.of(vmEntity.getId()), Optional.of(Vm.KIND), Optional.<String>absent(),
+          Optional.<Integer>absent());
       assertThat(tasks.size(), is(1));
 
       tasks = taskBackend.filter(Optional.of(vmEntity.getId()), Optional.of(Vm.KIND),
-          Optional.of(TaskEntity.State.QUEUED.toString()));
+          Optional.of(TaskEntity.State.QUEUED.toString()), Optional.<Integer>absent());
       assertThat(tasks.size(), is(1));
 
       tasks = taskBackend.filter(Optional.of(vmEntity.getId()), Optional.of(Vm.KIND),
-          Optional.of(TaskEntity.State.COMPLETED.toString()));
+          Optional.of(TaskEntity.State.COMPLETED.toString()), Optional.<Integer>absent());
       assertThat(tasks.size(), is(0));
 
       tasks = taskBackend.filter(Optional.of(UUID.randomUUID().toString()), Optional.of(Vm.KIND),
-          Optional.of(TaskEntity.State.QUEUED.toString()));
+          Optional.of(TaskEntity.State.QUEUED.toString()), Optional.<Integer>absent());
       assertThat(tasks.size(), is(0));
 
       PersistentDiskEntity persistentDiskEntity = new PersistentDiskEntity();
@@ -521,52 +522,57 @@ public class TaskDcpBackendTest {
       taskBackend.createQueuedTask(persistentDiskEntity, Operation.CREATE_DISK);
 
       // test with state only
-      tasks = taskBackend.filter(
-          Optional.<String>absent(), Optional.<String>absent(), Optional.of(TaskEntity.State.QUEUED.toString()));
+      tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(),
+          Optional.of(TaskEntity.State.QUEUED.toString()), Optional.<Integer>absent());
       assertThat(tasks.size(), is(2));
 
       // test different capitalization of KIND
       tasks = taskBackend.filter(
           Optional.of(persistentDiskEntity.getId()),
           Optional.of(PersistentDisk.KIND.toUpperCase()),
-          Optional.of(TaskEntity.State.QUEUED.toString()));
+          Optional.of(TaskEntity.State.QUEUED.toString()),
+          Optional.<Integer>absent());
       assertThat(tasks.size(), is(1));
 
       // test different capitalization for state
       tasks = taskBackend.filter(
           Optional.of(persistentDiskEntity.getId()),
           Optional.of(PersistentDisk.KIND),
-          Optional.of(TaskEntity.State.QUEUED.toString().toLowerCase()));
+          Optional.of(TaskEntity.State.QUEUED.toString().toLowerCase()),
+          Optional.<Integer>absent());
       assertThat(tasks.size(), is(1));
 
       // test with missing state and different capitalization of kind
       tasks = taskBackend.filter(
           Optional.of(persistentDiskEntity.getId()),
           Optional.of(PersistentDisk.KIND.toUpperCase()),
-          Optional.<String>absent());
+          Optional.<String>absent(),
+          Optional.<Integer>absent());
       assertThat(tasks.size(), is(1));
 
       // test with all optional params missing
-      tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(), Optional.<String>absent());
+      tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(), Optional.<String>absent(),
+          Optional.<Integer>absent());
       assertThat(tasks.size(), is(initialTaskCount + 2));
     }
 
     @Test(expectedExceptions = InvalidQueryParamsException.class,
         expectedExceptionsMessageRegExp = "^Both entityId and entityKind params need to be specified.$")
     public void testFilterWithOnlyEntityId() throws Throwable {
-      taskBackend.filter(Optional.of("foo"), Optional.<String>absent(), Optional.of("bar"));
+      taskBackend.filter(Optional.of("foo"), Optional.<String>absent(), Optional.of("bar"), Optional.<Integer>absent());
     }
 
     @Test(expectedExceptions = InvalidQueryParamsException.class,
         expectedExceptionsMessageRegExp = "^Both entityId and entityKind params need to be specified.$")
     public void testFilterWithOnlyEntityKind() throws Throwable {
-      taskBackend.filter(Optional.<String>absent(), Optional.of("foo"), Optional.<String>absent());
+      taskBackend.filter(Optional.<String>absent(), Optional.of("foo"), Optional.<String>absent(),
+          Optional.<Integer>absent());
     }
 
     @Test
     public void testFilterInProject() throws Throwable {
-      List<Task> tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(), Optional
-          .<String>absent());
+      List<Task> tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(),
+          Optional.<String>absent(), Optional.<Integer>absent());
 
       int initialTaskCount = tasks.size();
 
