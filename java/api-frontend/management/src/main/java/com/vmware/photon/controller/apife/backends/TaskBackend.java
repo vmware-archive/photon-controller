@@ -38,8 +38,8 @@ public interface TaskBackend {
 
   List<Task> filter(String entityId, String entityKind, Optional<String> state) throws ExternalException;
 
-  List<Task> filter(Optional<String> entityId, Optional<String> entityKind, Optional<String> state)
-      throws ExternalException;
+  List<Task> filter(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
+                    Optional<Integer> pageSize) throws ExternalException;
 
   List<Task> filterInProject(String projectId, Optional<String> state, Optional<String> kind);
 
@@ -62,9 +62,8 @@ public interface TaskBackend {
 
   void update(TaskEntity task) throws TaskNotFoundException;
 
-  List<TaskEntity> getEntityTasks(
-      Optional<String> entityId, Optional<String> entityKind, Optional<String> state)
-      throws InvalidQueryParamsException;
+  List<TaskEntity> getEntityTasks(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
+                                  Optional<Integer> pageSize) throws InvalidQueryParamsException;
 
   void delete(TaskEntity task);
 
