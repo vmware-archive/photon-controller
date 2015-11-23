@@ -20,7 +20,7 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
-import com.vmware.photon.controller.model.ModelFactoryServices;
+import com.vmware.photon.controller.model.ModelServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 import com.vmware.photon.controller.model.helpers.TestHost;
 
@@ -112,7 +112,7 @@ public class ComputeServiceTest {
   public class HandleStartTest extends BaseModelTest {
     @Override
     protected Class[] getFactoryServices() {
-      return ModelFactoryServices.FACTORIES;
+      return ModelServices.FACTORIES;
     }
 
     @Test
@@ -184,7 +184,7 @@ public class ComputeServiceTest {
   public class HandleGetTest extends BaseModelTest {
     @Override
     protected Class[] getFactoryServices() {
-      return ModelFactoryServices.FACTORIES;
+      return ModelServices.FACTORIES;
     }
 
     @Test
@@ -240,7 +240,7 @@ public class ComputeServiceTest {
   public class HandlePatchTest extends BaseModelTest {
     @Override
     protected Class[] getFactoryServices() {
-      return ModelFactoryServices.FACTORIES;
+      return ModelServices.FACTORIES;
     }
 
     @Test
@@ -312,7 +312,7 @@ public class ComputeServiceTest {
 
     @Override
     protected Class[] getFactoryServices() {
-      return ModelFactoryServices.FACTORIES;
+      return ModelServices.FACTORIES;
     }
 
     @Test

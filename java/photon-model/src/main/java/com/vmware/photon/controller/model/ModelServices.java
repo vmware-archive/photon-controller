@@ -13,13 +13,21 @@
 
 package com.vmware.photon.controller.model;
 
-import com.vmware.photon.controller.model.tasks.ProvisionComputeTaskFactoryService;
+import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
+import com.vmware.photon.controller.model.resources.ComputeFactoryService;
+import com.vmware.photon.controller.model.resources.DiskFactoryService;
+import com.vmware.photon.controller.model.resources.ResourceDescriptionFactoryService;
+import com.vmware.photon.controller.model.resources.ResourcePoolFactoryService;
 
 /**
- * Service factories used in Photon Model Task package.
+ * Service factories used in Photon Model package.
  */
-public class TaskFactoryServices {
+public class ModelServices {
   public static final Class[] FACTORIES = {
-      ProvisionComputeTaskFactoryService.class
+      ComputeFactoryService.class,
+      ComputeDescriptionFactoryService.class,
+      DiskFactoryService.class,
+      ResourceDescriptionFactoryService.class,
+      ResourcePoolFactoryService.class,
   };
 }
