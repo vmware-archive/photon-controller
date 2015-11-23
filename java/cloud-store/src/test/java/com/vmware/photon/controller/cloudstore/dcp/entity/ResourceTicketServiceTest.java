@@ -319,8 +319,8 @@ public class ResourceTicketServiceTest {
       try {
         dcpRestClient.patch(createdState.documentSelfLink, patch);
       } catch (DcpRuntimeException e) {
-        assertThat(e.getOperationResult().operationFailure.getMessage(), containsString("PatchType {NONE} in " +
-            "patchOperation"));
+        assertThat(e.getMessage(),
+            containsString("PatchType {NONE} in patchOperation"));
         return;
       }
 
