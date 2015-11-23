@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import org.hamcrest.CoreMatchers;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -34,87 +35,114 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Tests {@link TasksResource}.
  */
-public class TasksResourceTest {
+public class TasksResourceTest extends ResourceTest {
 
-  /**
-   * dummy method for IntelliJ.
-   */
-  @Test
-  public void dummy() {
+  private Task t1 = new Task();
+  private Task t2 = new Task();
+  private String link1 = UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build("t1").toString();
+  private String link2 = UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build("t2").toString();
+  private Task.Entity entity;
+  private String state;
+
+  @Mock
+  private TaskFeClient taskFeClient;
+
+  @Override
+  protected void setUpResources() throws Exception {
+    addResource(new TasksResource(taskFeClient));
   }
 
-  /**
-   * Tests find method.
-   */
-  public static class FindTest extends ResourceTest {
-    List<Task> tasks;
+  @BeforeMethod
+  public void setUp() throws Throwable {
+    entity = new Task.Entity();
+    entity.setId("e1");
+    entity.setKind("vm");
 
-    Task.Entity entity;
+    state = "state";
 
-    String state;
+    t1.setId("t1");
+    t1.setEntity(entity);
 
-    @Mock
-    private TaskFeClient taskFeClient;
+    t2.setId("t2");
+    t2.setEntity(entity);
 
-    @Override
-    protected void setUpResources() throws Exception {
-      addResource(new TasksResource(taskFeClient));
+    when(
+        taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
+            Optional.<Integer>absent())
+    ).thenReturn(new ResourceList<>(ImmutableList.of(t1, t2)));
+    when(
+        taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
+            Optional.of(2))
+    ).thenReturn(new ResourceList<>(ImmutableList.of(t1, t2)));
+    when(
+        taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
+            Optional.of(1))
+    ).thenReturn(new ResourceList<>(ImmutableList.of(t1)));
+    when(
+        taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
+            Optional.of(3))
+    ).thenReturn(new ResourceList<>(Collections.emptyList()));
+  }
+
+  @Test(dataProvider = "pageSizes")
+  public void testFilterTasks(Optional<Integer> pageSize,
+                              List<Task> expectedTasks,
+                              List<String> expectedLinks) throws Exception {
+
+    Response response = getTasks(entity.getId(), entity.getKind(), state, pageSize);
+    assertThat(response.getStatus(), is(200));
+
+    List<Task> tasks = response.readEntity(
+        new GenericType<ResourceList<Task>>() {
+        }
+    ).getItems();
+
+    for (int i = 0; i < tasks.size(); i++) {
+      assertThat(new URI(tasks.get(i).getSelfLink()).isAbsolute(), CoreMatchers.is(true));
+      assertThat(tasks.get(i), is(expectedTasks.get(i)));
+      assertThat(tasks.get(i).getSelfLink().endsWith(expectedLinks.get(i)), is(true));
+    }
+  }
+
+  @DataProvider(name = "pageSizes")
+  private Object[][] getPageSize() {
+    return new Object[][] {
+        {
+            Optional.<Integer>absent(),
+            ImmutableList.of(t1, t2),
+            ImmutableList.of(link1, link2)
+        },
+        {
+            Optional.of(1),
+            ImmutableList.of(t1),
+            ImmutableList.of(link1, link2)
+        },
+        {
+            Optional.of(2),
+            ImmutableList.of(t1, t2),
+            ImmutableList.of(link1, link2)
+        },
+        {
+            Optional.of(3),
+            Collections.emptyList(),
+            Collections.emptyList()
+        }
+    };
+  }
+
+  private Response getTasks(String eId, String eKind, String state, Optional<Integer> pageSize) {
+    String uri = TaskResourceRoutes.API + "?entityId=" + eId + "&entityKind=" + eKind + "&state=" + state;
+    if (pageSize.isPresent()) {
+      uri += "&pageSize=" + pageSize.get();
     }
 
-    @BeforeMethod
-    public void setUp() throws Throwable {
-      entity = new Task.Entity();
-      entity.setId("e1");
-      entity.setKind("vm");
-
-      state = "state";
-
-      Task t1 = new Task();
-      t1.setId("t1");
-      t1.setEntity(entity);
-
-      Task t2 = new Task();
-      t2.setId("t2");
-      t2.setEntity(entity);
-
-      tasks = ImmutableList.of(t1, t2);
-      when(
-          taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state))
-      ).thenReturn(new ResourceList<>(tasks));
-    }
-
-    @Test
-    public void testFilterTasks() throws Exception {
-      Response response = getTasks(entity.getId(), entity.getKind(), state);
-      assertThat(response.getStatus(), is(200));
-
-      List<Task> tasks = response.readEntity(
-          new GenericType<ResourceList<Task>>() {
-          }
-      ).getItems();
-
-      assertThat(tasks.size(), is(2));
-      assertThat(tasks.get(0), is(tasks.get(0)));
-      assertThat(tasks.get(0).getSelfLink().endsWith(
-          UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build("t1").toString()), is(true));
-      assertThat(tasks.get(1), is(tasks.get(1)));
-      assertThat(tasks.get(1).getSelfLink().endsWith(
-          UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build("t2").toString()), is(true));
-
-      for (Task t : tasks) {
-        assertThat(new URI(t.getSelfLink()).isAbsolute(), CoreMatchers.is(true));
-      }
-    }
-
-    private Response getTasks(String eId, String eKind, String state) {
-      WebTarget resource = client().target(
-          String.format("%s?entityId=%s&entityKind=%s&state=%s", TaskResourceRoutes.API, eId, eKind, state));
-      return resource.request().get();
-    }
+    WebTarget resource = client().target(uri);
+    return resource.request().get();
   }
 }
