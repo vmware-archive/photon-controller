@@ -44,8 +44,7 @@ public class AttachedDiskService extends StatefulService {
       validateState(startState);
       startOperation.complete();
     } catch (IllegalStateException t) {
-      ServiceUtils.logSevere(this, t);
-      ServiceUtils.failOperationAsBadRequest(startOperation, t);
+      ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       startOperation.fail(t);

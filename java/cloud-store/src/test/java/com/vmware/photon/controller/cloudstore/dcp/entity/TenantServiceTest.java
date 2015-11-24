@@ -18,7 +18,7 @@ import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.apache.commons.collections.ListUtils;
@@ -256,7 +256,7 @@ public class TenantServiceTest {
       try {
         dcpRestClient.patch(serviceLink, patchState);
         fail("Should have failed due to updating immutable field");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("name is immutable"));
       }
     }

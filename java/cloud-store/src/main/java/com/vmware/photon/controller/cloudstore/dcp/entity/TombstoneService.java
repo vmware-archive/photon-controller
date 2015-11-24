@@ -46,8 +46,7 @@ public class TombstoneService extends StatefulService {
       validateState(startState);
       startOperation.complete();
     } catch (IllegalStateException t) {
-      ServiceUtils.logSevere(this, t);
-      ServiceUtils.failOperationAsBadRequest(startOperation, t);
+      ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       startOperation.fail(t);
@@ -57,15 +56,21 @@ public class TombstoneService extends StatefulService {
   @Override
   public void handlePatch(Operation patchOperation) {
     ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    try {
+      State currentState = getState(patchOperation);
+      State patchState = patchOperation.getBody(State.class);
+      validatePatch(currentState, patchState);
 
-    State currentState = getState(patchOperation);
-    State patchState = patchOperation.getBody(State.class);
-    validatePatch(currentState, patchState);
+      PatchUtils.patchState(currentState, patchState);
+      validateState(currentState);
 
-    PatchUtils.patchState(currentState, patchState);
-    validateState(currentState);
-
-    patchOperation.complete();
+      patchOperation.complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patchOperation.fail(t);
+    }
   }
 
   /**

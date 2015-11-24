@@ -19,7 +19,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import com.google.common.collect.ImmutableSet;
@@ -316,7 +316,7 @@ public class HostServiceTest {
       try {
         dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("hostAddress is immutable"));
       }
     }
@@ -335,7 +335,7 @@ public class HostServiceTest {
       try {
         dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("userName is immutable"));
       }
     }
@@ -354,7 +354,7 @@ public class HostServiceTest {
       try {
         dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("password is immutable"));
       }
     }
@@ -373,7 +373,7 @@ public class HostServiceTest {
       try {
         dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("usageTags is immutable"));
       }
     }
@@ -392,7 +392,7 @@ public class HostServiceTest {
       try {
         dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("metadata is immutable"));
       }
     }

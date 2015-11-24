@@ -18,7 +18,7 @@ import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.apache.commons.collections.ListUtils;
@@ -265,7 +265,7 @@ public class ProjectServiceTest {
       assertThat(ListUtils.isEqualList(stateAfterPatch.securityGroups, patchState.securityGroups), is(true));
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class,
+    @Test(expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = ".*name is immutable.*")
     public void testIllegalPatch() throws Throwable {
       Operation result = dcpRestClient.get(serviceLink);
