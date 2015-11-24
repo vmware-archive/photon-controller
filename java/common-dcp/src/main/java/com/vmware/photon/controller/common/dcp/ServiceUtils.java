@@ -208,8 +208,16 @@ public class ServiceUtils {
     return uri;
   }
 
-  public static void failOperationAsBadRequest(Operation operation, Throwable e) {
+  public static void failOperationAsBadRequest(Service service, Operation operation, Throwable e) {
+    failOperationAsBadRequest(service, operation, e, null);
+  }
+
+  public static void failOperationAsBadRequest(Service service,
+                                               Operation operation,
+                                               Throwable e,
+                                               Object failureBody) {
+    logSevere(service, e);
     operation.setStatusCode(Operation.STATUS_CODE_BAD_REQUEST);
-    operation.fail(e);
+    operation.fail(e, failureBody);
   }
 }

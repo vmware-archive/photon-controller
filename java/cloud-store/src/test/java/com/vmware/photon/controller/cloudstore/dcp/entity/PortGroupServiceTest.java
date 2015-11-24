@@ -24,7 +24,7 @@ import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.testng.annotations.AfterMethod;
@@ -227,7 +227,7 @@ public class PortGroupServiceTest {
       try {
         dcpRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("name is immutable"));
       }
     }

@@ -17,7 +17,7 @@ import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.testng.annotations.AfterMethod;
@@ -177,7 +177,7 @@ public class DatastoreServiceTest {
     /**
      * Test PATCH operation against the immutable id field..
      */
-    @Test(expectedExceptions = DcpRuntimeException.class)
+    @Test(expectedExceptions = BadRequestException.class)
     public void testPatchId() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
@@ -200,7 +200,7 @@ public class DatastoreServiceTest {
     /**
      * Test PATCH operation against the immutable name field..
      */
-    @Test(expectedExceptions = DcpRuntimeException.class)
+    @Test(expectedExceptions = BadRequestException.class)
     public void testPatchName() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
@@ -223,7 +223,7 @@ public class DatastoreServiceTest {
     /**
      * Test PATCH operation against the immutable type field..
      */
-    @Test(expectedExceptions = DcpRuntimeException.class)
+    @Test(expectedExceptions = BadRequestException.class)
     public void testPatchType() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);

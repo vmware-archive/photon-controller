@@ -21,7 +21,6 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
-import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
@@ -59,8 +58,7 @@ public class ResourceTicketService extends StatefulService {
       validateState(startState);
       startOperation.complete();
     } catch (IllegalStateException t) {
-      ServiceUtils.logSevere(this, t);
-      ServiceUtils.failOperationAsBadRequest(startOperation, t);
+      ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       startOperation.fail(t);
@@ -91,11 +89,9 @@ public class ResourceTicketService extends StatefulService {
       patchOperation.complete();
       ServiceUtils.logInfo(this, "Patch of type {%s} successfully applied", patch.patchtype);
     } catch (QuotaException quotaException) {
-      ServiceUtils.logSevere(this, quotaException);
-      if (!OperationUtils.isCompleted(patchOperation)) {
-        patchOperation.setStatusCode(Operation.STATUS_CODE_BAD_REQUEST);
-        patchOperation.fail(quotaException, quotaException.quotaErrorResponse);
-      }
+      ServiceUtils.failOperationAsBadRequest(this, patchOperation, quotaException, quotaException.quotaErrorResponse);
+    } catch (IllegalStateException t) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       patchOperation.fail(t);

@@ -19,7 +19,6 @@ import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
-import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
@@ -56,8 +55,7 @@ public class NetworkService extends StatefulService {
       validateState(startState);
       startOperation.complete();
     } catch (IllegalStateException t) {
-      ServiceUtils.logSevere(this, t);
-      ServiceUtils.failOperationAsBadRequest(startOperation, t);
+      ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       startOperation.fail(t);
@@ -77,11 +75,11 @@ public class NetworkService extends StatefulService {
       PatchUtils.patchState(currentState, patchState);
       validateState(currentState);
       patchOperation.complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      if (!OperationUtils.isCompleted(patchOperation)) {
-        patchOperation.fail(t);
-      }
+      patchOperation.fail(t);
     }
   }
 

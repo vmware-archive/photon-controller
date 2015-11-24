@@ -49,8 +49,7 @@ public class ProjectService extends StatefulService {
       validateState(startState);
       startOperation.complete();
     } catch (IllegalStateException t) {
-      ServiceUtils.logSevere(this, t);
-      ServiceUtils.failOperationAsBadRequest(startOperation, t);
+      ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       startOperation.fail(t);
@@ -58,20 +57,22 @@ public class ProjectService extends StatefulService {
   }
 
   @Override
-  public void handlePatch(Operation patch) {
+  public void handlePatch(Operation patchOperation) {
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
 
     try {
-      State currentState = getState(patch);
-      State patchState = patch.getBody(State.class);
+      State currentState = getState(patchOperation);
+      State patchState = patchOperation.getBody(State.class);
       validatePatchState(currentState, patchState);
 
       PatchUtils.patchState(currentState, patchState);
       validateState(currentState);
-      patch.complete();
+      patchOperation.complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      patch.fail(t);
+      patchOperation.fail(t);
     }
   }
 
