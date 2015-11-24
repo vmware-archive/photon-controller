@@ -89,7 +89,7 @@ public class
     ImageCopyService.State state = new ImageCopyService.State();
     state.isSelfProgressionDisabled = true;
     state.image = "image1";
-    state.sourceDataStore = "source-datastore";
+    state.sourceDataStoreName = "source-datastore";
     state.destinationDataStore = "datastore1-inv";
 
     return state;
@@ -303,7 +303,7 @@ public class
       ImageCopyService.State startState = new ImageCopyService.State();
       startState.isSelfProgressionDisabled = true;
       startState.image = "image1";
-      startState.sourceDataStore = "source-datastore";
+      startState.sourceDataStoreName = "source-datastore";
       host.startServiceSynchronously(service, startState);
     }
 
@@ -639,7 +639,7 @@ public class
       host.startServiceSynchronously(service, buildValidStartupState());
 
       ImageCopyService.State patchState = new ImageCopyService.State();
-      patchState.sourceDataStore = "new-source";
+      patchState.sourceDataStoreName = "new-source";
 
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
@@ -653,7 +653,7 @@ public class
       }
 
       ImageCopyService.State savedState = host.getServiceState(ImageCopyService.State.class);
-      assertThat(savedState.sourceDataStore, is("source-datastore"));
+      assertThat(savedState.sourceDataStoreName, is("source-datastore"));
     }
 
     @Test
@@ -697,7 +697,7 @@ public class
       // Build input.
       copyTask = new ImageCopyService.State();
       copyTask.image = "WindowsRelease9.0";
-      copyTask.sourceDataStore = "datastore0";
+      copyTask.sourceDataStoreName = "datastore0";
       copyTask.destinationDataStore = "datastore1";
     }
 
@@ -762,7 +762,7 @@ public class
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
-      assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
+      assertThat(response.sourceDataStoreName, is(copyTask.sourceDataStoreName));
       assertThat(response.destinationDataStore, not(isEmptyOrNullString()));
       assertThat(response.host, not(isEmptyOrNullString()));
 
@@ -797,7 +797,7 @@ public class
       doReturn(new HostClientMock()).when(hostClientFactory).create();
 
       // modify start state
-      copyTask.destinationDataStore = copyTask.sourceDataStore;
+      copyTask.destinationDataStore = copyTask.sourceDataStoreName;
 
       zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
           ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
@@ -820,8 +820,8 @@ public class
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
-      assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
-      assertThat(response.destinationDataStore, is(copyTask.sourceDataStore));
+      assertThat(response.sourceDataStoreName, is(copyTask.sourceDataStoreName));
+      assertThat(response.destinationDataStore, is(copyTask.sourceDataStoreName));
       assertThat(response.host, not(isEmptyOrNullString()));
 
       // Check stats.
@@ -858,7 +858,7 @@ public class
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
-      assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
+      assertThat(response.sourceDataStoreName, is(copyTask.sourceDataStoreName));
       assertThat(response.destinationDataStore, is(copyTask.destinationDataStore));
       assertThat(response.host, nullValue());
       assertThat(response.taskInfo.failure.message, containsString("GetHostsForDatastore error"));
@@ -909,7 +909,7 @@ public class
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
-      assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
+      assertThat(response.sourceDataStoreName, is(copyTask.sourceDataStoreName));
       assertThat(response.destinationDataStore, not(isEmptyOrNullString()));
       assertThat(response.host, not(isEmptyOrNullString()));
 
@@ -971,7 +971,7 @@ public class
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
-      assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
+      assertThat(response.sourceDataStoreName, is(copyTask.sourceDataStoreName));
       assertThat(response.destinationDataStore, not(isEmptyOrNullString()));
       assertThat(response.host, not(isEmptyOrNullString()));
       assertThat(response.taskInfo.failure.message, containsString("copyImage error"));
