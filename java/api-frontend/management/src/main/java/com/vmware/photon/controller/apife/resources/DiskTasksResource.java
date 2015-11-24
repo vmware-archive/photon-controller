@@ -59,11 +59,12 @@ public class DiskTasksResource {
       response = Task.class, responseContainer = ResourceList.CLASS_NAME)
   public Response get(@Context Request request,
                       @PathParam("id") String id,
-                      @QueryParam("state") Optional<String> state)
+                      @QueryParam("state") Optional<String> state,
+                      @QueryParam("pageSize") Optional<Integer> pageSize)
       throws ExternalException {
     return generateResourceListResponse(
         Response.Status.OK,
-        taskFeClient.getDiskTasks(id, state),
+        taskFeClient.getDiskTasks(id, state, pageSize),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

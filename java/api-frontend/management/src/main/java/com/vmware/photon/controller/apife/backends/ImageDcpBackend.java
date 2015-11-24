@@ -238,8 +238,9 @@ public class ImageDcpBackend implements ImageBackend {
   }
 
   @Override
-  public List<Task> getTasks(String id, Optional<String> state) throws ExternalException {
+  public List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException {
     ImageEntity imageEntity = findById(id);
+    // Will consume the pageSize in later CR.
     return taskBackend.filter(imageEntity.getId(), imageEntity.getKind(), state);
   }
 

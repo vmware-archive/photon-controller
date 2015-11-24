@@ -59,11 +59,12 @@ public class VmTasksResource {
       response = Task.class, responseContainer = ResourceList.CLASS_NAME)
   public Response get(@Context Request request,
                       @PathParam("id") String id,
-                      @QueryParam("state") Optional<String> state)
+                      @QueryParam("state") Optional<String> state,
+                      @QueryParam("pageSize") Optional<Integer> pageSize)
       throws ExternalException {
     return generateResourceListResponse(
         Response.Status.OK,
-        taskFeClient.getVmTasks(id, state),
+        taskFeClient.getVmTasks(id, state, pageSize),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

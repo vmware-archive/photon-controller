@@ -480,7 +480,8 @@ public class DiskDcpBackendTest {
     public void testDiskGetTask() throws Exception {
       TaskEntity taskEntity = diskBackend.prepareDiskCreate(projectId, spec);
 
-      List<Task> taskEntityList = diskBackend.getTasks(taskEntity.getEntityId(), Optional.<String>absent());
+      List<Task> taskEntityList = diskBackend.getTasks(taskEntity.getEntityId(), Optional.<String>absent(),
+          Optional.<Integer>absent());
       assertThat(taskEntityList.size(), is(1));
       assertThat(taskEntityList.get(0).getOperation(), is(Operation.CREATE_DISK.toString()));
       assertThat(taskEntityList.get(0).getSteps().size(), is(2));

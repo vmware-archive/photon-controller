@@ -64,10 +64,11 @@ public class TenantTasksResource {
   })
   public Response get(@Context Request request,
                       @PathParam("id") String id,
-                      @QueryParam("state") Optional<String> state) throws ExternalException {
+                      @QueryParam("state") Optional<String> state,
+                      @QueryParam("pageSize") Optional<Integer> pageSize) throws ExternalException {
     return generateResourceListResponse(
         Response.Status.OK,
-        taskFeClient.getTenantTasks(id, state),
+        taskFeClient.getTenantTasks(id, state, pageSize),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
