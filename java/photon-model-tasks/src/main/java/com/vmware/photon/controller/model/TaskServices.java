@@ -14,12 +14,14 @@
 package com.vmware.photon.controller.model;
 
 import com.vmware.photon.controller.model.tasks.ProvisionComputeTaskFactoryService;
+import com.vmware.photon.controller.model.tasks.ResourceRemovalTaskFactoryService;
 
 /**
  * Service factories used in Photon Model Task package.
  */
 public class TaskServices {
   public static final Class[] FACTORIES = {
-      ProvisionComputeTaskFactoryService.class
+      ProvisionComputeTaskFactoryService.class,
+      ResourceRemovalTaskFactoryService.class
   };
 }
