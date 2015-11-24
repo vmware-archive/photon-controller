@@ -11,15 +11,22 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.model;
+package com.vmware.photon.controller.model.awsadapter;
 
 /**
- * Service paths used in the provisioning model.
+ * Defines AWS stages.
  */
-public class UriPaths {
-    public static final String RESOURCES = "/resources";
-    public static final String RESOURCES_NETWORKS = RESOURCES + "/networks";
-    public static final String PROVISIONING = "/provisioning";
-    public static final String PROVISIONING_AWS = PROVISIONING + "/aws";
-    public static final String AWS_INSTANCE_SERVICE = PROVISIONING_AWS + "/instance-service";
+public enum AWSStages {
+
+  VMDESC,
+  PARENTDESC,
+  PARENTAUTH,
+  CLIENT,
+  DELETE,
+  CREATE,
+  VMDISKS,
+  FIREWALL,
+  DONE,
+  ERROR
+
 }
