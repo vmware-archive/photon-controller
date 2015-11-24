@@ -14,10 +14,15 @@
   package com.vmware.photon.controller.model;
 
 /**
- * Service paths used in the provisioning model.
+ * ServiceUriPaths
+ *
+ * Service paths used by the photon model.
  */
 public class UriPaths {
+  public static final int GO_DCP_HOST_PORT = 8082;
+  public static final String GO_DCP_HOST_PROCESS_NAME = "go-dcp";
+  public static final String PROVISIONING = "/provisioning";
   public static final String RESOURCES = "/resources";
   public static final String RESOURCES_NETWORKS = RESOURCES + "/networks";
-  public static final String PROVISIONING = "/provisioning";
+
 }
