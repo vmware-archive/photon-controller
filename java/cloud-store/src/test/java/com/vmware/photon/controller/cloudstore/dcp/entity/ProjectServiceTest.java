@@ -172,7 +172,7 @@ public class ProjectServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'tenantId' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("tenantId cannot be null"));
       }
     }
@@ -190,7 +190,7 @@ public class ProjectServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'Name' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("name cannot be null"));
       }
     }

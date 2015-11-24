@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.testng.annotations.AfterMethod;
@@ -169,7 +170,7 @@ public class ImageServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'image.name' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("name cannot be null"));
       }
     }
@@ -206,7 +207,7 @@ public class ImageServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class,
+    @Test(expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = "name is immutable")
     public void testPatchNameFail() throws Throwable {
       host.startServiceSynchronously(service, testState);
@@ -225,7 +226,7 @@ public class ImageServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class,
+    @Test(expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = "replicationType is immutable")
     public void testPatchReplicationTypeFail() throws Throwable {
       host.startServiceSynchronously(service, testState);
@@ -314,7 +315,7 @@ public class ImageServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class,
+    @Test(expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = "Replicated datastore count exceeds total datastore count.")
     public void testReplicatedDatastoreCountExceedsTotalCount() throws Throwable {
       host.startServiceSynchronously(service, testState);
@@ -335,7 +336,7 @@ public class ImageServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class,
+    @Test(expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = "Replicated datastore count cannot be less than '0'.")
     public void testReplicatedDatastoreCountEndsUpLessThanZero() throws Throwable {
       host.startServiceSynchronously(service, testState);

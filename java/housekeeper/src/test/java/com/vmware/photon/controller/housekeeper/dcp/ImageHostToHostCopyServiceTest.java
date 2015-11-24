@@ -22,6 +22,8 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.CopyImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
@@ -196,7 +198,7 @@ public class ImageHostToHostCopyServiceTest {
         ImageHostToHostCopyService.State startState = new ImageHostToHostCopyService.State();
         startState.isSelfProgressionDisabled = true;
         host.startServiceSynchronously(service, startState);
-      } catch (NullPointerException ex) {
+      } catch (DcpRuntimeException ex) {
         assertThat(ex.getMessage(), is("image not provided"));
       }
     }
@@ -208,12 +210,12 @@ public class ImageHostToHostCopyServiceTest {
         startState.isSelfProgressionDisabled = true;
         startState.image = "image1";
         host.startServiceSynchronously(service, startState);
-      } catch (NullPointerException ex) {
+      } catch (DcpRuntimeException ex) {
         assertThat(ex.getMessage(), is("source datastore not provided"));
       }
     }
 
-    @Test(expectedExceptions = NullPointerException.class,
+    @Test(expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = "^destination datastore not provided$")
     public void testInvalidStartStateWithoutDestinationDataStore() throws Throwable {
       ImageHostToHostCopyService.State startState = new ImageHostToHostCopyService.State();
@@ -304,7 +306,7 @@ public class ImageHostToHostCopyServiceTest {
 
       try {
         host.sendRequestAndWait(patchOp);
-      } catch (IllegalStateException ex) {
+      } catch (DcpRuntimeException ex) {
         assertThat(ex.getMessage(), is(errorMsg));
       }
 
@@ -384,7 +386,7 @@ public class ImageHostToHostCopyServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("Image cannot be changed."));
       }
 
@@ -406,7 +408,7 @@ public class ImageHostToHostCopyServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("Source datastore cannot be changed."));
       }
 
@@ -428,7 +430,7 @@ public class ImageHostToHostCopyServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("Destination datastore cannot be changed."));
       }
 

@@ -41,6 +41,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -329,7 +330,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "fieldNamesWithMissingValue")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       FinalizeDeploymentMigrationWorkflowService.State startState = buildValidStartState(TaskState.TaskStage.CREATED,
           null);
@@ -376,7 +377,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       try {
         testHost.startServiceSynchronously(finalizeDeploymentMigrationWorkflowService, startState);
         fail("Service start should throw in response to illegal taskPollDelay values");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("taskPollDelay must be greater than zero"));
       }
     }
@@ -506,7 +507,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     }
 
 
-    @Test(dataProvider = "InvalidStageUpdates", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "InvalidStageUpdates", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
                                            FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage
                                                startSubStage,
@@ -642,7 +643,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     }
 
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "ImmutableFieldNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "ImmutableFieldNames")
     public void testInvalidStateFieldValue(String fieldName) throws Throwable {
       startService(buildValidStartState(null, null));
       serviceCreated = true;

@@ -21,6 +21,7 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -210,7 +211,7 @@ public class CreateContainersWorkflowServiceTest {
      * @param fieldName
      * @throws Throwable
      */
-    @Test(dataProvider = "fieldNamesWithMissingValue", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "fieldNamesWithMissingValue", expectedExceptions = DcpRuntimeException.class)
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       CreateContainersWorkflowService.State startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -339,7 +340,7 @@ public class CreateContainersWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStageTransition(
         TaskState.TaskStage startStage,
         CreateContainersWorkflowService.TaskState.SubStage startSubStage,
@@ -478,7 +479,7 @@ public class CreateContainersWorkflowServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "ImmutableFieldNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "ImmutableFieldNames")
     private void testInvalidPatchStateValue(String fieldName) throws Throwable {
       CreateContainersWorkflowService.State startState = buildValidStartState(null, null);
       Operation startOperation = testHost.startServiceSynchronously(createContainersWorkflowService, startState);

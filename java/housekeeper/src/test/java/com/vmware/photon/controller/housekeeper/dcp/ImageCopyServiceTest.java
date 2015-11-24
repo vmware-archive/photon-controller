@@ -29,6 +29,8 @@ import com.vmware.photon.controller.common.clients.exceptions.SystemErrorExcepti
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
@@ -280,7 +282,7 @@ public class
         ImageCopyService.State startState = new ImageCopyService.State();
         startState.isSelfProgressionDisabled = true;
         host.startServiceSynchronously(service, startState);
-      } catch (NullPointerException ex) {
+      } catch (DcpRuntimeException ex) {
         assertThat(ex.getMessage(), is("image not provided"));
       }
     }
@@ -292,12 +294,12 @@ public class
         startState.isSelfProgressionDisabled = true;
         startState.image = "image1";
         host.startServiceSynchronously(service, startState);
-      } catch (NullPointerException ex) {
+      } catch (DcpRuntimeException ex) {
         assertThat(ex.getMessage(), is("source datastore not provided"));
       }
     }
 
-    @Test(expectedExceptions = NullPointerException.class,
+    @Test(expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = "^destination datastore not provided$")
     public void testInvalidStartStateWithoutDestinationDataStore() throws Throwable {
       ImageCopyService.State startState = new ImageCopyService.State();
@@ -319,7 +321,7 @@ public class
       try {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch missing substage");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("subStage cannot be null"));
       }
     }
@@ -397,7 +399,7 @@ public class
       try {
         host.sendRequestAndWait(patchOp);
         fail("Expected IllegalStateException.");
-      } catch (IllegalStateException ex) {
+      } catch (DcpRuntimeException ex) {
         assertThat(ex.getMessage(), is("Service is not in CREATED stage, ignores patch from TaskSchedulerService"));
       }
 
@@ -519,7 +521,7 @@ public class
         host.sendRequestAndWait(patchOp);
         fail("Transition from " + startStage + ":" + startSubStage +
             " to " + targetStage + ":" + targetSubStage + " " + "did not fail.");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), startsWith("Invalid stage update."));
       }
     }
@@ -607,7 +609,7 @@ public class
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("ParentLink cannot be changed."));
       }
     }
@@ -626,7 +628,7 @@ public class
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("Image cannot be changed."));
       }
 
@@ -648,7 +650,7 @@ public class
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("Source datastore cannot be changed."));
       }
 
@@ -670,7 +672,7 @@ public class
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("Destination datastore cannot be changed."));
       }
 

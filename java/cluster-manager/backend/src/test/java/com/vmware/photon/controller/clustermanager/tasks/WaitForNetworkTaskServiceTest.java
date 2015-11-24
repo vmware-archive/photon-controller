@@ -29,6 +29,7 @@ import com.vmware.photon.controller.clustermanager.helpers.TestHelper;
 import com.vmware.photon.controller.clustermanager.helpers.TestHost;
 import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 
@@ -179,7 +180,7 @@ public class WaitForNetworkTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "NotNullFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "NotNullFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStartStateMissingRequiredField(String fieldName) throws Throwable {
       WaitForNetworkTaskService.State startState = buildValidStartState(null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
@@ -257,7 +258,7 @@ public class WaitForNetworkTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
       startService(buildValidStartState(startStage));
@@ -295,7 +296,7 @@ public class WaitForNetworkTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
       startService(buildValidStartState(null));
 

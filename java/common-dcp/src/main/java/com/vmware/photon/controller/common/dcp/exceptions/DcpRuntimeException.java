@@ -31,11 +31,6 @@ public class DcpRuntimeException extends RuntimeException {
     this.completedOperation = cause.getCompletedOperation();
   }
 
-  public DcpRuntimeException(Operation operation) {
-    super(operation.toString());
-    this.requestedOperation = operation;
-  }
-
   public DcpRuntimeException(Operation requestedOperation, Operation completedOperation) {
     super(completedOperation.getBody(ServiceErrorResponse.class).message);
     this.requestedOperation = requestedOperation;

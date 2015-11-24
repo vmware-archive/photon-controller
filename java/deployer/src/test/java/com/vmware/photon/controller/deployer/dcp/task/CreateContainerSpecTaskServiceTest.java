@@ -24,6 +24,7 @@ import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
@@ -186,7 +187,7 @@ public class CreateContainerSpecTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStartStateAttributes", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "InvalidStartStateAttributes", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStartStateInvalidAttributeSet(String attributeName, Object value) throws Throwable {
       CreateContainerSpecTaskService.State startState = buildValidStartState(TaskState.TaskStage.CREATED);
       startState.getClass().getDeclaredField(attributeName).set(startState, value);
@@ -267,7 +268,7 @@ public class CreateContainerSpecTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
       startService(startStage);
@@ -308,7 +309,7 @@ public class CreateContainerSpecTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidPatchStateAttributes", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "InvalidPatchStateAttributes", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchStateInvalidAttributeSet(String attributeName, Object value) throws Throwable {
       startService(TaskState.TaskStage.CREATED);
 

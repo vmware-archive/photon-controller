@@ -59,24 +59,39 @@ public class TombstoneCleanerService extends StatefulService {
   }
 
   @Override
-  public void handleStart(Operation start) {
-    State s = start.getBody(State.class);
-    initializeState(s);
-    validateState(s);
-    start.setBody(s).complete();
+  public void handleStart(Operation startOperation) {
+    ServiceUtils.logInfo(this, "Starting Service %s", getSelfLink());
+    State s = startOperation.getBody(State.class);
+    try {
+      initializeState(s);
+      validateState(s);
+      startOperation.setBody(s).complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      startOperation.fail(t);
+    }
 
     processStart(s);
   }
 
   @Override
-  public void handlePatch(Operation patch) {
-    State currentState = getState(patch);
-    State patchState = patch.getBody(State.class);
+  public void handlePatch(Operation patchOperation) {
+    State currentState = getState(patchOperation);
+    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
 
-    validatePatch(currentState, patchState);
-    applyPatch(currentState, patchState);
-    validateState(currentState);
-    patch.complete();
+    try {
+      State patchState = patchOperation.getBody(State.class);
+      validatePatch(currentState, patchState);
+      applyPatch(currentState, patchState);
+      validateState(currentState);
+      patchOperation.complete();
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patchOperation.fail(t);
+    }
 
     processPatch(currentState);
   }

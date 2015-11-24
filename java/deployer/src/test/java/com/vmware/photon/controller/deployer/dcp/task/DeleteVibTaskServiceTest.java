@@ -20,6 +20,7 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -162,7 +163,7 @@ public class DeleteVibTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStartStateMissingRequiredField(String fieldName) throws Throwable {
       DeleteVibTaskService.State startState = buildValidStartState(null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -246,7 +247,7 @@ public class DeleteVibTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
 
@@ -288,7 +289,7 @@ public class DeleteVibTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
       DeleteVibTaskService.State startState = buildValidStartState(null);
       Operation startOperation = testHost.startServiceSynchronously(deleteVibTaskService, startState);

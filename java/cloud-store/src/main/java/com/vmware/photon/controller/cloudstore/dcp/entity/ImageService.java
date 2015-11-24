@@ -123,21 +123,23 @@ public class ImageService extends StatefulService {
     }
   }
 
-  private void handlePatchAdjustDatastoreReplicationCount(Operation patch) {
+  private void handlePatchAdjustDatastoreReplicationCount(Operation patchOperation) {
     ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
     try {
-      State currentState = getState(patch);
-      DatastoreCountRequest patchState = patch.getBody(DatastoreCountRequest.class);
+      State currentState = getState(patchOperation);
+      DatastoreCountRequest patchState = patchOperation.getBody(DatastoreCountRequest.class);
 
       currentState.replicatedDatastore += patchState.amount;
       validateState(currentState);
 
-      setState(patch, currentState);
-      patch.setBody(currentState);
-      patch.complete();
+      setState(patchOperation, currentState);
+      patchOperation.setBody(currentState);
+      patchOperation.complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      patch.fail(t);
+      patchOperation.fail(t);
     }
   }
 

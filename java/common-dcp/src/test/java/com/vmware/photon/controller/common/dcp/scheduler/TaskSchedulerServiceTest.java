@@ -20,6 +20,7 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.helpers.dcp.BasicHostEnvironment;
 import com.vmware.photon.controller.common.dcp.helpers.services.TestServiceWithStage;
 import com.vmware.photon.controller.common.dcp.helpers.services.TestServiceWithStageFactory;
@@ -160,7 +161,7 @@ public class TaskSchedulerServiceTest {
       try {
         host.sendRequestAndWait(op);
         fail("handlePatch did not throw exception on invalid patch");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(),
             startsWith("Unparseable JSON body: java.lang.IllegalStateException: Expected BEGIN_OBJECT"));
       }

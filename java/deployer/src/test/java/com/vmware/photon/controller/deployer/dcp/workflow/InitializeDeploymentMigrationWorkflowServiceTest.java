@@ -33,6 +33,7 @@ import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -301,7 +302,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStartStateMissingRequiredField(String fieldName) throws Throwable {
       InitializeDeploymentMigrationWorkflowService.State startState = buildValidStartState(null, null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
@@ -417,7 +418,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageUpdates", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "InvalidStageUpdates", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
                                            InitializeDeploymentMigrationWorkflowService.TaskState.SubStage
                                                startSubStage,
@@ -511,7 +512,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchImmutableFieldChanged(String fieldName) throws Throwable {
       InitializeDeploymentMigrationWorkflowService.State startState = buildValidStartState(null, null);
       Operation startOperation = testHost.startServiceSynchronously(initializeDeploymentMigrationWorkflowService,

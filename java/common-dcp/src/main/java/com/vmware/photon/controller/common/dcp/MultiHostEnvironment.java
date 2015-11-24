@@ -23,6 +23,7 @@ import com.vmware.dcp.common.Utils;
 import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.ServiceUriPaths;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
@@ -181,7 +182,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
 
     Operation result = sendRequestAndWait(postOperation, hosts[0]);
     if (result.getStatusCode() >= Operation.STATUS_CODE_FAILURE_THRESHOLD) {
-      throw new RuntimeException("Operation failed with code " + result.getStatusCode());
+      throw new DcpRuntimeException("Operation failed with code " + result.getStatusCode());
     }
 
     return result.getBody(type);
@@ -203,7 +204,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
         .setBody(parameters);
     Operation resultOp = sendRequestAndWait(op, hosts[0]);
     if (resultOp.getStatusCode() >= Operation.STATUS_CODE_FAILURE_THRESHOLD) {
-      throw new RuntimeException("Operation failed with code " + resultOp.getStatusCode());
+      throw new DcpRuntimeException("Operation failed with code " + resultOp.getStatusCode());
     }
 
     // Verify result.

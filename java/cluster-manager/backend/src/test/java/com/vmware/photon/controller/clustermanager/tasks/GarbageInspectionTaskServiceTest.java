@@ -48,6 +48,7 @@ import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FutureCallback;
@@ -259,16 +260,17 @@ public class GarbageInspectionTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = {IllegalStateException.class, NullPointerException.class},
+    @Test(expectedExceptions = {DcpRuntimeException.class},
         dataProvider = "invalidStageUpdates")
     public void testInvalidStageUpdates(TaskState.TaskStage startStage,
                                         TaskState.TaskStage patchStage) throws Throwable {
       GarbageInspectionTaskService.State startState = buildValidState(startStage);
-      host.startServiceSynchronously(taskService, startState);
+      host.startServiceSynchronously(taskService, startState,
+          GarbageInspectionTaskFactoryService.SELF_LINK + clusterId);
 
       GarbageInspectionTaskService.State patchState = buildValidState(patchStage);
       Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, clusterId, null))
+          .createPatch(UriUtils.buildUri(host, GarbageInspectionTaskFactoryService.SELF_LINK + clusterId, null))
           .setBody(patchState);
 
       host.sendRequestAndWait(patchOp);
