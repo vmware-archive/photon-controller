@@ -118,4 +118,10 @@ public class DeployerDefaults {
    * Lightwave requires entrypoint of "init" to use systemd as service manager.
    */
   public static final String LIGHTWAVE_ENTRYPOINT = "/usr/sbin/init";
+
+  /**
+   * This is the ratio which decides the amount of resource to be allocated to the management vm on a host which is
+   * tagged with both MGMT and CLOUD usage tags.
+   */
+  public static final float MANAGEMENT_VM_TO_HOST_RESOURCE_RATIO = 0.25f;
 }

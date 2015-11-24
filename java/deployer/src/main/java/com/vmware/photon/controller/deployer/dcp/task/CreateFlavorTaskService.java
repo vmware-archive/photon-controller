@@ -27,7 +27,6 @@ import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
@@ -48,6 +47,7 @@ import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -56,7 +56,6 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -329,10 +328,7 @@ public class CreateFlavorTaskService extends StatefulService {
             }
 
             // The ratio of the resource which can be consumed by the management vm to the total host resource
-            float mgmtVmHostRatio = 1.0f;
-            if (hostState.usageTags.containsAll(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name()))) {
-              mgmtVmHostRatio = 0.25f;
-            }
+            float mgmtVmHostRatio = MiscUtils.getManagementVmHostRatio(hostState);
 
             // If host memory and cpu count is set, consume them entirely for the management vm.
             if (hostState.memoryMb != null) {

@@ -39,6 +39,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -58,7 +59,6 @@ import java.util.stream.Stream;
  * on the host's total memory and cpu count.
  */
 public class AllocateHostResourceTaskService extends StatefulService {
-
   /**
    * This class defines the document state associated with a single
    * {@link AllocateHostResourceTaskService} instance.
@@ -259,9 +259,11 @@ public class AllocateHostResourceTaskService extends StatefulService {
     int totalMemory = templateList.stream().mapToInt(t -> t.memoryMb).sum();
     int maxCpu = templateList.stream().mapToInt(t -> t.cpuCount).max().getAsInt();
     Map<String, ContainerService.State> containerMap = new HashMap<>();
+    float mgmtVmHostRatio = MiscUtils.getManagementVmHostRatio(hostState);
+
     for (ContainerTemplateService.State template : templateList) {
       ContainerService.State state = new ContainerService.State();
-      state.memoryMb = template.memoryMb * hostState.memoryMb / totalMemory;
+      state.memoryMb = (int) (template.memoryMb * hostState.memoryMb * mgmtVmHostRatio) / totalMemory;
       state.cpuShares = template.cpuCount * ContainerService.State.DOCKER_CPU_SHARES_MAX / maxCpu;
       // Set memoryMb dynamic parameter which will be used to set the jvm max memory allocation
       if (state.dynamicParameters == null) {

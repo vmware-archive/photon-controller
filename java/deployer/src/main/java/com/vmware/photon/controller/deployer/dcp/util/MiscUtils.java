@@ -21,6 +21,7 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.NetworkConnection;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmNetworks;
 import com.vmware.photon.controller.client.ApiClient;
@@ -33,6 +34,7 @@ import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
 
 import com.google.common.util.concurrent.FutureCallback;
@@ -43,6 +45,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -272,5 +275,10 @@ public class MiscUtils {
         .setBody(deploymentServiceState)
         .setCompletion(completionHandler)
         .sendWith(service);
+  }
+
+  public static float getManagementVmHostRatio(HostService.State hostState) {
+    return hostState.usageTags.containsAll(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())) ?
+        DeployerDefaults.MANAGEMENT_VM_TO_HOST_RESOURCE_RATIO : 1.0f;
   }
 }
