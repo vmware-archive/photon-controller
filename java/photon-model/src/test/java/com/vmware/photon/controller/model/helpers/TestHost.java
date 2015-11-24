@@ -133,7 +133,7 @@ public class TestHost extends VerificationHost {
       String serviceUri, Class<T> type) throws Throwable {
 
     this.testStart(1);
-    Operation patchOperation = Operation
+    Operation getOperation = Operation
         .createGet(UriUtils.buildUri(this, serviceUri))
         .setReferer(this.getUri())
         .setCompletion((operation, throwable) -> {
@@ -145,10 +145,28 @@ public class TestHost extends VerificationHost {
           this.completeIteration();
         });
 
-    this.sendRequest(patchOperation);
+    this.sendRequest(getOperation);
     this.testWait();
 
     return (T) responseBody;
+  }
+
+  public <T extends ServiceDocument> void deleteServiceSynchronously(
+      String serviceUri) throws Throwable {
+    this.testStart(1);
+    Operation deleteOperation = Operation
+        .createDelete(UriUtils.buildUri(this, serviceUri))
+        .setReferer(this.getUri())
+        .setCompletion((operation, throwable) -> {
+          if (throwable != null) {
+            this.failIteration(throwable);
+          }
+
+          this.completeIteration();
+        });
+
+    this.sendRequest(deleteOperation);
+    this.testWait();
   }
 
   public <T extends ServiceDocument> T waitForServiceState(
