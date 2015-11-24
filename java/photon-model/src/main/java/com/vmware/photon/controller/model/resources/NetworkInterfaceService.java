@@ -72,36 +72,22 @@ public class NetworkInterfaceService extends StatefulService {
   }
 
   @Override
-  public void handlePost(Operation post) {
-    NetworkInterfaceState body = post.getBody(NetworkInterfaceState.class);
-
+  public void handleStart(Operation start) {
     try {
-      if (body.address != null) {
-        if (body.networkDescriptionLink != null) {
-          throw new IllegalArgumentException(
-              "both networkDescriptionLink and IP cannot be set");
-        }
-        InetAddressValidator.getInstance().isValidInet4Address(body.address);
-      } else if (body.networkDescriptionLink == null) {
-        throw new IllegalArgumentException(
-            "either IP or networkDescriptionLink must be set");
+      if (!start.hasBody()) {
+        throw new IllegalArgumentException("body is required");
       }
-    } catch (Exception e) {
-      post.fail(e);
-      return;
+      validateState(start.getBody(NetworkInterfaceState.class));
+      start.complete();
+    } catch (Throwable t) {
+      start.fail(t);
     }
-
-    post.complete();
   }
 
   @Override
   public void handlePatch(Operation patch) {
     NetworkInterfaceState currentState = getState(patch);
     NetworkInterfaceState patchBody = patch.getBody(NetworkInterfaceState.class);
-
-    if (patchBody.id != null) {
-      currentState.id = patchBody.id;
-    }
 
     if (patchBody.leaseLink != null) {
       currentState.leaseLink = patchBody.leaseLink;
@@ -115,5 +101,22 @@ public class NetworkInterfaceService extends StatefulService {
     ServiceDocument td = super.getDocumentTemplate();
     ServiceDocumentDescription.expandTenantLinks(td.documentDescription);
     return td;
+  }
+
+  private void validateState(NetworkInterfaceState state) {
+    if (state.address != null) {
+      if (state.networkDescriptionLink != null) {
+        throw new IllegalArgumentException(
+            "both networkDescriptionLink and IP cannot be set");
+      }
+      if (!InetAddressValidator.getInstance().isValidInet4Address(state.address)) {
+        throw new IllegalArgumentException(
+            "IP address is invalid");
+      }
+
+    } else if (state.networkDescriptionLink == null) {
+      throw new IllegalArgumentException(
+          "either IP or networkDescriptionLink must be set");
+    }
   }
 }
