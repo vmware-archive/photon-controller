@@ -58,12 +58,12 @@ public class ResourceTicketService extends StatefulService {
       InitializationUtils.initialize(startState);
       validateState(startState);
       startOperation.complete();
-
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      ServiceUtils.failOperationAsBadRequest(startOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      if (!OperationUtils.isCompleted(startOperation)) {
-        startOperation.fail(t);
-      }
+      startOperation.fail(t);
     }
   }
 
@@ -87,6 +87,7 @@ public class ResourceTicketService extends StatefulService {
           throw new UnsupportedOperationException(message);
       }
 
+      validateState(currentState);
       patchOperation.complete();
       ServiceUtils.logInfo(this, "Patch of type {%s} successfully applied", patch.patchtype);
     } catch (QuotaException quotaException) {
@@ -97,9 +98,7 @@ public class ResourceTicketService extends StatefulService {
       }
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      if (!OperationUtils.isCompleted(patchOperation)) {
-        patchOperation.fail(t);
-      }
+      patchOperation.fail(t);
     }
   }
 

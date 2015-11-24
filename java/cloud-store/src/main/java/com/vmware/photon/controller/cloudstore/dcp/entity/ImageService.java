@@ -53,11 +53,11 @@ public class ImageService extends StatefulService {
 
     RequestRouter myRouter = new RequestRouter();
     myRouter.register(
-            Action.PATCH,
-            new RequestRouter.RequestBodyMatcher<DatastoreCountRequest>(
-                    DatastoreCountRequest.class, "kind",
-                    DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT),
-            this::handlePatchAdjustDatastoreReplicationCount, "AdjustReplicationCount");
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<DatastoreCountRequest>(
+            DatastoreCountRequest.class, "kind",
+            DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT),
+        this::handlePatchAdjustDatastoreReplicationCount, "AdjustReplicationCount");
 
     OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
     opProcessingChain.add(myRouter);
@@ -69,26 +69,37 @@ public class ImageService extends StatefulService {
   @Override
   public void handleStart(Operation startOperation) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
+    try {
+      State startState = startOperation.getBody(State.class);
+      InitializationUtils.initialize(startState);
+      validateState(startState);
 
-    State startState = startOperation.getBody(State.class);
-    InitializationUtils.initialize(startState);
-    validateState(startState);
-
-    startOperation.complete();
+      startOperation.complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      ServiceUtils.failOperationAsBadRequest(startOperation, t);
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      startOperation.fail(t);
+    }
   }
 
   @Override
   public void handlePatch(Operation patchOperation) {
     ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    try {
+      State currentState = getState(patchOperation);
+      State patchState = patchOperation.getBody(State.class);
 
-    State currentState = getState(patchOperation);
-    State patchState = patchOperation.getBody(State.class);
+      ValidationUtils.validatePatch(currentState, patchState);
+      PatchUtils.patchState(currentState, patchState);
+      validateState(currentState);
 
-    ValidationUtils.validatePatch(currentState, patchState);
-    PatchUtils.patchState(currentState, patchState);
-    validateState(currentState);
-
-    patchOperation.complete();
+      patchOperation.complete();
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patchOperation.fail(t);
+    }
   }
 
   /**
@@ -101,26 +112,32 @@ public class ImageService extends StatefulService {
 
     if (currentState.totalDatastore != null && currentState.replicatedDatastore != null) {
       checkState(
-              currentState.replicatedDatastore <= currentState.totalDatastore,
-              "Replicated datastore count exceeds total datastore count.");
+          currentState.replicatedDatastore <= currentState.totalDatastore,
+          "Replicated datastore count exceeds total datastore count.");
     }
 
     if (currentState.replicatedDatastore != null) {
       checkState(currentState.replicatedDatastore >= 0,
-              "Replicated datastore count cannot be less than '0'.");
+          "Replicated datastore count cannot be less than '0'.");
     }
   }
 
   private void handlePatchAdjustDatastoreReplicationCount(Operation patch) {
-    State currentState = getState(patch);
-    DatastoreCountRequest patchState = patch.getBody(DatastoreCountRequest.class);
+    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    try {
+      State currentState = getState(patch);
+      DatastoreCountRequest patchState = patch.getBody(DatastoreCountRequest.class);
 
-    currentState.replicatedDatastore += patchState.amount;
-    validateState(currentState);
+      currentState.replicatedDatastore += patchState.amount;
+      validateState(currentState);
 
-    setState(patch, currentState);
-    patch.setBody(currentState);
-    patch.complete();
+      setState(patch, currentState);
+      patch.setBody(currentState);
+      patch.complete();
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patch.fail(t);
+    }
   }
 
   /**

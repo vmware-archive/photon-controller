@@ -18,7 +18,7 @@ import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.testng.annotations.AfterMethod;
@@ -160,7 +160,7 @@ public class VmServiceTest {
       try {
         dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'name' was null");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("name cannot be null"));
       }
     }
@@ -176,7 +176,7 @@ public class VmServiceTest {
       try {
         dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'flavorId' was null");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("flavorId cannot be null"));
       }
     }
@@ -192,7 +192,7 @@ public class VmServiceTest {
       try {
         dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'projectId' was null");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("projectId cannot be null"));
       }
     }
@@ -208,7 +208,7 @@ public class VmServiceTest {
       try {
         dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'vmState' was null");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("vmState cannot be null"));
       }
     }
@@ -224,7 +224,7 @@ public class VmServiceTest {
       try {
         dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'imageId' was null");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("imageId cannot be null"));
       }
     }
