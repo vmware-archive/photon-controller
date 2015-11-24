@@ -145,7 +145,7 @@ public class DataDictionary {
       if (stat != null) {
         keys = zkClient.getChildren().forPath(ZKPaths.makePath(basePath, ""));
       } else {
-        logger.info("Can't retrive keys because {} doesn't exist in zk", path);
+        logger.debug("Can't retrive keys because {} doesn't exist in zk", path);
       }
     } catch (Exception e) {
       logger.error("An error occurred while try to retrieve keys for {}", basePath, e);
