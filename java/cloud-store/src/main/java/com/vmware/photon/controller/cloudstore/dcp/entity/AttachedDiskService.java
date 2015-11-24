@@ -17,7 +17,6 @@ import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
-import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
@@ -44,12 +43,12 @@ public class AttachedDiskService extends StatefulService {
       InitializationUtils.initialize(startState);
       validateState(startState);
       startOperation.complete();
-
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      ServiceUtils.failOperationAsBadRequest(startOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      if (!OperationUtils.isCompleted(startOperation)) {
-        startOperation.fail(t);
-      }
+      startOperation.fail(t);
     }
   }
 

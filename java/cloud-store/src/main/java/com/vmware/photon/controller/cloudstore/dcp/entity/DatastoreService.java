@@ -49,22 +49,35 @@ public class DatastoreService extends StatefulService {
   @Override
   public void handleStart(Operation startOperation) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
-    State startState = startOperation.getBody(State.class);
-    InitializationUtils.initialize(startState);
-    validateState(startState);
-    startOperation.complete();
+    try {
+      State startState = startOperation.getBody(State.class);
+      InitializationUtils.initialize(startState);
+      validateState(startState);
+      startOperation.complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      ServiceUtils.failOperationAsBadRequest(startOperation, t);
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      startOperation.fail(t);
+    }
   }
 
   @Override
   public void handlePatch(Operation patchOperation) {
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
-    State currentState = getState(patchOperation);
-    validateState(currentState);
-    State patchState = patchOperation.getBody(State.class);
-    validatePatchState(currentState, patchState);
-    applyPatch(currentState, patchState);
-    validateState(currentState);
-    patchOperation.complete();
+    try {
+      State currentState = getState(patchOperation);
+      validateState(currentState);
+      State patchState = patchOperation.getBody(State.class);
+      validatePatchState(currentState, patchState);
+      applyPatch(currentState, patchState);
+      validateState(currentState);
+      patchOperation.complete();
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patchOperation.fail(t);
+    }
   }
 
   @Override
@@ -126,7 +139,7 @@ public class DatastoreService extends StatefulService {
      * Indicates whether this datastore is used as a image datastore. Chairman
      * sets this flag to true when it receives a register request from an agent
      * that specifies this datastore as the image datastore.
-     *
+     * <p>
      * Note that chairman does not reset this field to false even when all the
      * agents that use this datastore as the image datastore un-register. If you
      * need to keep this field up-to-date, it must be cleaned up by a background

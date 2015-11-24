@@ -47,21 +47,34 @@ public class DeploymentService extends StatefulService {
   @Override
   public void handleStart(Operation startOperation) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
-    State startState = startOperation.getBody(State.class);
-    InitializationUtils.initialize(startState);
-    validateState(startState);
-    startOperation.complete();
+    try {
+      State startState = startOperation.getBody(State.class);
+      InitializationUtils.initialize(startState);
+      validateState(startState);
+      startOperation.complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      ServiceUtils.failOperationAsBadRequest(startOperation, t);
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      startOperation.fail(t);
+    }
   }
 
   @Override
   public void handlePatch(Operation patch) {
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
+    try {
     State startState = getState(patch);
     State patchState = patch.getBody(State.class);
     validatePatchState(startState, patchState);
     State currentState = applyPatch(startState, patchState);
     validateState(currentState);
     patch.complete();
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patch.fail(t);
+    }
   }
 
   @Override
@@ -95,7 +108,7 @@ public class DeploymentService extends StatefulService {
 
     /**
      * This value represents the list of security groups to be configured for this deployment.
-      */
+     */
     public List<String> oAuthSecurityGroups;
 
     /**

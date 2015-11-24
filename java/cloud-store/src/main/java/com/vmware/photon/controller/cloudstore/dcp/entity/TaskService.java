@@ -19,7 +19,6 @@ import com.vmware.dcp.common.RequestRouter;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.StatefulService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
-import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
@@ -62,38 +61,44 @@ public class TaskService extends StatefulService {
   }
 
   public void handleStepUpdatePatch(Operation patch) {
-    State currentState = getState(patch);
-    StepUpdate stepUpdate = patch.getBody(StepUpdate.class);
+    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    try {
+      State currentState = getState(patch);
+      StepUpdate stepUpdate = patch.getBody(StepUpdate.class);
 
-    if (stepUpdate.step == null) {
-      throw new IllegalArgumentException("Null step is not allowed for StepUpdate patch");
-    }
+      if (stepUpdate.step == null) {
+        throw new IllegalArgumentException("Null step is not allowed for StepUpdate patch");
+      }
 
-    if (stepUpdate.step.operation == null) {
-      throw new IllegalArgumentException("Null step.operation is not allowed for StepUpdate patch");
-    }
+      if (stepUpdate.step.operation == null) {
+        throw new IllegalArgumentException("Null step.operation is not allowed for StepUpdate patch");
+      }
 
-    State.Step step = null;
-    if (currentState.steps != null) {
-      for (State.Step currentStep : currentState.steps) {
-        if (currentStep.operation.equals(stepUpdate.step.operation)) {
-          step = currentStep;
+      State.Step step = null;
+      if (currentState.steps != null) {
+        for (State.Step currentStep : currentState.steps) {
+          if (currentStep.operation.equals(stepUpdate.step.operation)) {
+            step = currentStep;
+          }
         }
       }
+
+      if (step == null) {
+        throw new IllegalArgumentException("Cannot update a step that does not exist");
+      }
+
+      currentState.steps.remove(step);
+      currentState.steps.add(stepUpdate.step);
+
+      validateState(currentState);
+
+      setState(patch, currentState);
+      patch.setBody(currentState);
+      patch.complete();
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patch.fail(t);
     }
-
-    if (step == null) {
-      throw new IllegalArgumentException("Cannot update a step that does not exist");
-    }
-
-    currentState.steps.remove(step);
-    currentState.steps.add(stepUpdate.step);
-
-    validateState(currentState);
-
-    setState(patch, currentState);
-    patch.setBody(currentState);
-    patch.complete();
   }
 
   @Override
@@ -104,25 +109,30 @@ public class TaskService extends StatefulService {
       InitializationUtils.initialize(startState);
       validateState(startState);
       startOperation.complete();
-
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      ServiceUtils.failOperationAsBadRequest(startOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      if (!OperationUtils.isCompleted(startOperation)) {
-        startOperation.fail(t);
-      }
+      startOperation.fail(t);
     }
   }
 
   @Override
   public void handlePatch(Operation patchOperation) {
     ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
-    State currentState = getState(patchOperation);
-    State patchState = patchOperation.getBody(State.class);
+    try {
+      State currentState = getState(patchOperation);
+      State patchState = patchOperation.getBody(State.class);
 
-    ValidationUtils.validatePatch(currentState, patchState);
-    PatchUtils.patchState(currentState, patchState);
-    validateState(currentState);
-    patchOperation.complete();
+      ValidationUtils.validatePatch(currentState, patchState);
+      PatchUtils.patchState(currentState, patchState);
+      validateState(currentState);
+      patchOperation.complete();
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patchOperation.fail(t);
+    }
   }
 
   /**

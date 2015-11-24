@@ -55,12 +55,12 @@ public class NetworkService extends StatefulService {
       InitializationUtils.initialize(startState);
       validateState(startState);
       startOperation.complete();
-
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      ServiceUtils.failOperationAsBadRequest(startOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      if (!OperationUtils.isCompleted(startOperation)) {
-        startOperation.fail(t);
-      }
+      startOperation.fail(t);
     }
   }
 
@@ -69,12 +69,13 @@ public class NetworkService extends StatefulService {
     ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
 
     try {
-      State startState = getState(patchOperation);
+      State currentState = getState(patchOperation);
 
       State patchState = patchOperation.getBody(State.class);
-      validatePatchState(startState, patchState);
+      validatePatchState(currentState, patchState);
 
-      PatchUtils.patchState(startState, patchState);
+      PatchUtils.patchState(currentState, patchState);
+      validateState(currentState);
       patchOperation.complete();
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);

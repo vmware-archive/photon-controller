@@ -38,12 +38,20 @@ public class ClusterConfigurationService extends StatefulService {
   }
 
   @Override
-  public void handleStart(Operation operation) {
+  public void handleStart(Operation startOperation) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
-    State startState = operation.getBody(State.class);
-    InitializationUtils.initialize(startState);
-    ValidationUtils.validateState(startState);
-    operation.complete();
+    try {
+      State startState = startOperation.getBody(State.class);
+      InitializationUtils.initialize(startState);
+      ValidationUtils.validateState(startState);
+      startOperation.complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      ServiceUtils.failOperationAsBadRequest(startOperation, t);
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      startOperation.fail(t);
+    }
   }
 
   /**

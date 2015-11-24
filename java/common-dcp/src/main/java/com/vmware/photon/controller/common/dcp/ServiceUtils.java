@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.common.dcp;
 
+import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.ServiceDocumentDescription;
@@ -205,5 +206,10 @@ public class ServiceUtils {
 
     URI uri = new URI("http", null, address, port, path, null, null);
     return uri;
+  }
+
+  public static void failOperationAsBadRequest(Operation operation, Throwable e) {
+    operation.setStatusCode(Operation.STATUS_CODE_BAD_REQUEST);
+    operation.fail(e);
   }
 }

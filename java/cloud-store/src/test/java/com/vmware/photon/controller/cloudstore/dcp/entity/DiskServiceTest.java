@@ -22,7 +22,7 @@ import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.testng.annotations.AfterMethod;
@@ -198,7 +198,7 @@ public class DiskServiceTest {
         dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did " +
             "not fail when 'projectId' was null");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("projectId cannot be null"));
       }
     }
@@ -214,7 +214,7 @@ public class DiskServiceTest {
       try {
         dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'Name' was null");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("name cannot be null"));
       }
     }
@@ -230,7 +230,7 @@ public class DiskServiceTest {
       try {
         dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'State' was null");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("state cannot be null"));
       }
     }
@@ -246,7 +246,7 @@ public class DiskServiceTest {
       try {
         dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'diskType' was null");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("diskType cannot be null"));
       }
     }
@@ -262,7 +262,7 @@ public class DiskServiceTest {
       try {
         dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'flavorId' was null");
-      } catch (DcpRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("flavorId cannot be null"));
       }
     }

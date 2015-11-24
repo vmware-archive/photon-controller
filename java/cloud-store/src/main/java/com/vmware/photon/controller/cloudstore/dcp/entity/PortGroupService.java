@@ -19,7 +19,6 @@ import com.vmware.dcp.common.StatefulService;
 import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
-import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
@@ -55,11 +54,12 @@ public class PortGroupService extends StatefulService {
       InitializationUtils.initialize(startState);
       validateState(startState);
       startOperation.complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      ServiceUtils.failOperationAsBadRequest(startOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      if (!OperationUtils.isCompleted(startOperation)) {
-        startOperation.fail(t);
-      }
+      startOperation.fail(t);
     }
   }
 
@@ -79,9 +79,7 @@ public class PortGroupService extends StatefulService {
       patchOperation.complete();
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      if (!OperationUtils.isCompleted(patchOperation)) {
-        patchOperation.fail(t);
-      }
+      patchOperation.fail(t);
     }
   }
 

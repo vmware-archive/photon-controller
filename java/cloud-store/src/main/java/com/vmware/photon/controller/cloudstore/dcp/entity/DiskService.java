@@ -21,7 +21,6 @@ import com.vmware.photon.controller.api.DiskType;
 import com.vmware.photon.controller.api.LocalitySpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
-import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
@@ -53,12 +52,12 @@ public class DiskService extends StatefulService {
       InitializationUtils.initialize(startState);
       validateState(startState);
       startOperation.complete();
-
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      ServiceUtils.failOperationAsBadRequest(startOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      if (!OperationUtils.isCompleted(startOperation)) {
-        startOperation.fail(t);
-      }
+      startOperation.fail(t);
     }
   }
 
@@ -71,12 +70,11 @@ public class DiskService extends StatefulService {
     try {
       ValidationUtils.validatePatch(currentState, patchState);
       PatchUtils.patchState(currentState, patchState);
+      validateState(currentState);
       patchOperation.complete();
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      if (!OperationUtils.isCompleted(patchOperation)) {
-        patchOperation.fail(t);
-      }
+      patchOperation.fail(t);
     }
   }
 
