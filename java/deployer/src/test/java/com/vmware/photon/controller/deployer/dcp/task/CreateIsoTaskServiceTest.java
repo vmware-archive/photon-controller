@@ -26,6 +26,7 @@ import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.thrift.ServerSet;
@@ -233,7 +234,7 @@ public class CreateIsoTaskServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(dataProvider = "RequiredAttributeNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "RequiredAttributeNames", expectedExceptions = DcpRuntimeException.class)
     public void testMissingStateValue(String attributeName) throws Throwable {
       CreateIsoTaskService.State startState = buildValidStartupState(null);
       startState.getClass().getDeclaredField(attributeName).set(startState, null);
@@ -343,7 +344,7 @@ public class CreateIsoTaskServiceTest {
      *
      * @throws Throwable Throws an exception if any error is encountered.
      */
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test(expectedExceptions = DcpRuntimeException.class)
     public void testIllegalStageUpdatesInvalidPatch() throws Throwable {
 
       CreateIsoTaskService.State startState = buildValidStartupState(TaskState.TaskStage.STARTED);
@@ -366,7 +367,7 @@ public class CreateIsoTaskServiceTest {
      * @param targetStage    Supplies the stage of the target state.
      * @throws Throwable Throws an exception if any error is encountered.
      */
-    @Test(dataProvider = "illegalStageUpdatesInvalidStart", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "illegalStageUpdatesInvalidStart", expectedExceptions = DcpRuntimeException.class)
     public void testIllegalStageUpdatesInvalidStart(
         TaskState.TaskStage startStage,
         TaskState.TaskStage targetStage)
@@ -398,7 +399,7 @@ public class CreateIsoTaskServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test(expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchIsOperationProcessingDisabled() throws Throwable {
       CreateIsoTaskService.State startState = buildValidStartupState(null);
       host.startServiceSynchronously(service, startState);
@@ -420,7 +421,7 @@ public class CreateIsoTaskServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchStateValue(String attributeName) throws Throwable {
       CreateIsoTaskService.State startState = buildValidStartupState(null);
       host.startServiceSynchronously(service, startState);

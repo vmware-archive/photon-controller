@@ -48,6 +48,7 @@ public class BasicServiceHost
   public static final int WAIT_ITERATION_COUNT = 10000 / WAIT_ITERATION_SLEEP;
   public static final String BIND_ADDRESS = "0.0.0.0";
   public static final Integer BIND_PORT = 0;
+  public static final String REFERRER = "test-basic-service-host";
 
   private static final Logger logger = LoggerFactory.getLogger(BasicServiceHost.class);
 
@@ -221,7 +222,8 @@ public class BasicServiceHost
 
     OperationLatch syncPost = new OperationLatch(post);
     startService(post, service);
-    return syncPost.await();
+    Operation completedOperation = syncPost.awaitForOperationCompletion();
+    return OperationUtils.handleCompletedOperation(post, completedOperation);
   }
 
   public Operation deleteServiceSynchronously() throws Throwable {
@@ -233,7 +235,7 @@ public class BasicServiceHost
     Operation delete = Operation
         .createDelete(UriUtils.buildUri(this, path))
         .setBody("{}")
-        .setReferer(UriUtils.buildUri(this, "test"));
+        .setReferer(UriUtils.buildUri(this, REFERRER));
 
     OperationLatch syncDelete = new OperationLatch(delete);
     sendRequest(delete);
@@ -241,7 +243,7 @@ public class BasicServiceHost
   }
 
   public Operation sendRequestAndWait(Operation op) throws Throwable {
-    return ServiceHostUtils.sendRequestAndWait(this, op, "test");
+    return ServiceHostUtils.sendRequestAndWait(this, op, REFERRER);
   }
 
   public <T> T getServiceState(Class<T> type) throws Throwable {
@@ -249,7 +251,7 @@ public class BasicServiceHost
   }
 
   public <T> T getServiceState(Class<T> type, String path) throws Throwable {
-    return ServiceHostUtils.getServiceState(this, type, path, "test");
+    return ServiceHostUtils.getServiceState(this, type, path, "test-basic-service-host");
   }
 
   /**
@@ -287,7 +289,7 @@ public class BasicServiceHost
    * @throws Throwable
    */
   public QueryTask waitForQuery(QueryTask query, Predicate<QueryTask> predicate) throws Throwable {
-    return ServiceHostUtils.waitForQuery(this, "test", query, predicate,
+    return ServiceHostUtils.waitForQuery(this, REFERRER, query, predicate,
         this.waitIterationCount, this.waitIterationSleep);
   }
 }

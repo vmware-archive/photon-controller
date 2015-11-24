@@ -29,6 +29,8 @@ import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -141,7 +143,7 @@ public class TombstoneCleanerServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "PositiveFields",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = ".* must be greater than zero")
     public void testPositiveFields(String fieldName, Object value) throws Throwable {
       TombstoneCleanerService.State startState = buildValidStartupState();
@@ -283,7 +285,7 @@ public class TombstoneCleanerServiceTest {
       try {
         host.sendRequestAndWait(op);
         fail("handlePatch did not throw exception on invalid patch");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(),
             startsWith("Unparseable JSON body: java.lang.IllegalStateException: Expected BEGIN_OBJECT"));
       }
@@ -297,7 +299,7 @@ public class TombstoneCleanerServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "ImmutableFields",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = ".* is immutable")
     public void testImmutableFields(String fieldName, Object value) throws Throwable {
       TombstoneCleanerService.State patchState = new TombstoneCleanerService.State();

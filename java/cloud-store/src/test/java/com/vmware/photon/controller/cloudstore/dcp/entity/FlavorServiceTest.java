@@ -19,6 +19,8 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.testng.annotations.AfterMethod;
@@ -140,7 +142,7 @@ public class FlavorServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'flavor.name' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("name cannot be null"));
       }
     }
@@ -216,7 +218,7 @@ public class FlavorServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("should have failed with IllegalStateException");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
       }
     }
 
@@ -239,7 +241,7 @@ public class FlavorServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("should have failed with NullPointerException");
-      } catch (NullPointerException e) {
+      } catch (DcpRuntimeException e) {
       }
     }
   }

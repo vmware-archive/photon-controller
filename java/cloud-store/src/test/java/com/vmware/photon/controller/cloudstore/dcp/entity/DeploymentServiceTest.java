@@ -18,6 +18,7 @@ import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -101,7 +102,7 @@ public class DeploymentServiceTest {
       assertThat(savedState.imageDataStoreUsedForVMs, is(true));
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = BadRequestException.class)
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       DeploymentService.State startState = buildServiceStartState();
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -164,7 +165,7 @@ public class DeploymentServiceTest {
       assertThat(currentState.oAuthLogoutEndpoint, is(lotusLogoutEndpoint));
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test(expectedExceptions = BadRequestException.class)
     public void testIllegalPatch() throws Throwable {
       final String lightwaveAdminUsername = "NonAdministrator";
       final String lightwaveAdminPassword = "SomePassword22";

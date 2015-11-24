@@ -29,6 +29,8 @@ import com.vmware.photon.controller.common.clients.exceptions.SystemErrorExcepti
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
@@ -287,7 +289,7 @@ public class ImageDeleteServiceTest {
         ImageDeleteService.State startState = new ImageDeleteService.State();
         startState.isSelfProgressionDisabled = true;
         host.startServiceSynchronously(service, startState);
-      } catch (NullPointerException ex) {
+      } catch (DcpRuntimeException ex) {
         assertThat(ex.getMessage(), is("image not provided"));
       }
     }
@@ -299,7 +301,7 @@ public class ImageDeleteServiceTest {
         startState.isSelfProgressionDisabled = true;
         startState.image = "image1";
         host.startServiceSynchronously(service, startState);
-      } catch (IllegalStateException ex) {
+      } catch (DcpRuntimeException ex) {
         assertThat(ex.getMessage(), is("datastore not provided"));
       }
     }
@@ -385,7 +387,7 @@ public class ImageDeleteServiceTest {
 
       try {
         host.sendRequestAndWait(patchOp);
-      } catch (IllegalStateException ex) {
+      } catch (DcpRuntimeException ex) {
         assertThat(ex.getMessage(), is(errorMsg));
       }
 
@@ -471,7 +473,7 @@ public class ImageDeleteServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Expected IllegalStateException.");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("Service is not in CREATED stage, ignores patch from TaskSchedulerService"));
       }
     }
@@ -490,7 +492,7 @@ public class ImageDeleteServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("parentLink cannot be changed."));
       }
     }
@@ -509,7 +511,7 @@ public class ImageDeleteServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("imageWatermarkTime cannot be changed."));
       }
     }
@@ -528,7 +530,7 @@ public class ImageDeleteServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("image cannot be changed."));
       }
 
@@ -550,7 +552,7 @@ public class ImageDeleteServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("dataStore cannot be changed."));
       }
 
@@ -572,7 +574,7 @@ public class ImageDeleteServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("setTombstoneFlag cannot be changed."));
       }
 

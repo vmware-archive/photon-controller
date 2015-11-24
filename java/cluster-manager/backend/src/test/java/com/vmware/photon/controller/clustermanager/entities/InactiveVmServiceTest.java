@@ -18,6 +18,7 @@ import com.vmware.dcp.common.ServiceHost;
 import com.vmware.photon.controller.clustermanager.helpers.ReflectionUtils;
 import com.vmware.photon.controller.clustermanager.helpers.TestHelper;
 import com.vmware.photon.controller.clustermanager.helpers.TestHost;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 
 import org.testng.annotations.AfterClass;
@@ -111,7 +112,7 @@ public class InactiveVmServiceTest {
       testHost.getServiceState(InactiveVmService.State.class);
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "fieldNamesWithMissingValue")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       InactiveVmService.State startState = buildValidStartState();
       Field declaredField = startState.getClass().getDeclaredField(fieldName);

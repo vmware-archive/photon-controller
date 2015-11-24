@@ -158,7 +158,7 @@ public class PortGroupServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'portgroup.name' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("name cannot be null"));
       }
     }

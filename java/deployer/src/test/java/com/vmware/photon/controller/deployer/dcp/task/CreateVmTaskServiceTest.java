@@ -26,6 +26,7 @@ import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ApiTestUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
@@ -268,7 +269,7 @@ public class CreateVmTaskServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       CreateVmTaskService.State startState = buildValidStartupState();
       Field declaredField = startState.getClass().getDeclaredField(attributeName);
@@ -399,7 +400,7 @@ public class CreateVmTaskServiceTest {
       try {
         host.sendRequestAndWait(patchOp);
         fail("Patch handling should throw in response to invalid start state");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
       }
     }
 
@@ -437,7 +438,7 @@ public class CreateVmTaskServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testInvalidPatchStateValue(String attributeName) throws Throwable {
       CreateVmTaskService.State startState = buildValidStartupState();
       host.startServiceSynchronously(service, startState);

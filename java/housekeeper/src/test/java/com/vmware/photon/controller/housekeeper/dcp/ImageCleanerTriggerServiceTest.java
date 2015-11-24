@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
@@ -194,7 +195,7 @@ public class ImageCleanerTriggerServiceTest {
       try {
         host.sendRequestAndWait(op);
         fail("handlePatch did not throw exception on invalid patch");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(),
             startsWith("Unparseable JSON body: java.lang.IllegalStateException: Expected BEGIN_OBJECT"));
       }
@@ -263,7 +264,7 @@ public class ImageCleanerTriggerServiceTest {
       try {
         host.sendRequestAndWait(patchOp);
         fail("Transition from " + startExecutionState + " to " + expectedExecutionState + "did not fail.");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertEquals(e.getMessage(), "ExecutionState cannot be null.");
       }
     }

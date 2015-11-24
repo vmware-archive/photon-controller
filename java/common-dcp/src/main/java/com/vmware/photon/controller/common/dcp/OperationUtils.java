@@ -14,6 +14,10 @@
 package com.vmware.photon.controller.common.dcp;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.ServiceErrorResponse;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +26,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Class implements utility methods around Operation objects.
@@ -68,5 +73,22 @@ public class OperationUtils {
       logger.warn("Exception retrieving local host address", e);
     }
     return null;
+  }
+
+  public static Operation handleCompletedOperation(Operation requestedOperation, Operation completedOperation)
+      throws TimeoutException, DocumentNotFoundException, BadRequestException {
+    switch (completedOperation.getStatusCode()) {
+      case Operation.STATUS_CODE_OK:
+      case Operation.STATUS_CODE_ACCEPTED:
+        return completedOperation;
+      case Operation.STATUS_CODE_NOT_FOUND:
+        throw new DocumentNotFoundException(requestedOperation, completedOperation);
+      case Operation.STATUS_CODE_TIMEOUT:
+        throw new TimeoutException(completedOperation.getBody(ServiceErrorResponse.class).message);
+      case Operation.STATUS_CODE_BAD_REQUEST:
+        throw new BadRequestException(requestedOperation, completedOperation);
+      default:
+        throw new DcpRuntimeException(requestedOperation, completedOperation);
+    }
   }
 }

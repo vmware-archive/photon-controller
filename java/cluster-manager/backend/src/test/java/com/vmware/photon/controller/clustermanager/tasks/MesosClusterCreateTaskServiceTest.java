@@ -48,6 +48,7 @@ import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelpe
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 
@@ -222,7 +223,7 @@ public class MesosClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "invalidStartStates")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "invalidStartStates")
     public void testInvalidStartState(TaskState.TaskStage stage,
                                       MesosClusterCreateTask.TaskState.SubStage subStage) throws Throwable {
 
@@ -280,7 +281,7 @@ public class MesosClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       MesosClusterCreateTask startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(attributeName);
@@ -398,7 +399,7 @@ public class MesosClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = {IllegalStateException.class, NullPointerException.class},
+    @Test(expectedExceptions = {DcpRuntimeException.class},
         dataProvider = "invalidSubStageUpdates")
     public void testInvalidSubStageUpdates(TaskState.TaskStage startStage,
                                            MesosClusterCreateTask.TaskState.SubStage startSubStage,
@@ -517,7 +518,7 @@ public class MesosClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "immutableFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "immutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchImmutableFieldChanged(String fieldName) throws Throwable {
       MesosClusterCreateTask startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
       Operation startOperation = host.startServiceSynchronously(taskService, startState);

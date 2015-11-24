@@ -24,6 +24,7 @@ import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
@@ -191,7 +192,7 @@ public class DeleteVmTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       DeleteVmTaskService.State startState = buildValidStartUpState();
       Field declaredField = startState.getClass().getDeclaredField(attributeName);
@@ -274,7 +275,7 @@ public class DeleteVmTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "IllegalStageUpdate")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "IllegalStageUpdate")
     public void testIllegalStageUpdate(
         TaskState.TaskStage startStage, TaskState.TaskStage patchStage) throws Throwable {
       DeleteVmTaskService.State startState = buildValidStartUpState(startStage);
@@ -316,7 +317,7 @@ public class DeleteVmTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testInvalidPatchStateValue(String attributeName) throws Throwable {
       DeleteVmTaskService.State startState = buildValidStartUpState();
       host.startServiceSynchronously(service, startState);

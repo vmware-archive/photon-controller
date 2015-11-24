@@ -31,6 +31,7 @@ import com.vmware.photon.controller.clustermanager.helpers.TestHelper;
 import com.vmware.photon.controller.clustermanager.helpers.TestHost;
 import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 
@@ -200,7 +201,7 @@ public class VmProvisionTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "invalidStartStates")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "invalidStartStates")
     public void testInvalidStartState(TaskState.TaskStage stage,
                                       VmProvisionTaskService.State.TaskState.SubStage subStage) throws Throwable {
 
@@ -236,7 +237,7 @@ public class VmProvisionTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       VmProvisionTaskService.State startState = ReflectionUtils.buildValidStartState(
           VmProvisionTaskService.State.class);
@@ -347,7 +348,7 @@ public class VmProvisionTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = {IllegalStateException.class, NullPointerException.class},
+    @Test(expectedExceptions = {DcpRuntimeException.class},
         dataProvider = "invalidStageUpdates")
     public void testInvalidStageUpdates(TaskState.TaskStage startStage,
                                         VmProvisionTaskService.State.TaskState.SubStage startSubStage,
@@ -451,7 +452,7 @@ public class VmProvisionTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "immutableFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "immutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchImmutableFieldChanged(String fieldName) throws Throwable {
       VmProvisionTaskService.State startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
       Operation startOperation = host.startServiceSynchronously(taskService, startState);

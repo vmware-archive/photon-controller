@@ -18,6 +18,8 @@ import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.ServiceHost;
 import com.vmware.dcp.common.UriUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -121,7 +123,7 @@ public class ContainerTemplateServiceTest {
       assertThat(savedState.diskGb, is(4));
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "fieldNamesWithMissingValue")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       ContainerTemplateService.State startState = TestHelper.getContainerTemplateServiceStartState();
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -136,7 +138,7 @@ public class ContainerTemplateServiceTest {
       return TestHelper.toDataProvidersList(notNullAttributes);
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "InvalidValueFieldNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "InvalidValueFieldNames")
     public void testInvalidStartStateInvalidField(String fieldName, Object fieldValue) throws Throwable {
       ContainerTemplateService.State startState = TestHelper.getContainerTemplateServiceStartState();
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -185,7 +187,7 @@ public class ContainerTemplateServiceTest {
       TestHost.destroy(testHost);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = BadRequestException.class)
     public void testPatch() throws Throwable {
       ContainerTemplateService.State startState = TestHelper.getContainerTemplateServiceStartState();
       Operation startOperation = testHost.startServiceSynchronously(containerTemplateService, startState);

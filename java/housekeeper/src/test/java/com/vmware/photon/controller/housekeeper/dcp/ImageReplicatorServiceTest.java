@@ -30,6 +30,8 @@ import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientCopyImageErrorMock;
@@ -311,7 +313,7 @@ public class ImageReplicatorServiceTest {
 
       try {
         host.startServiceSynchronously(service, startState);
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("queryPollDelay needs to be >= 0"));
       }
     }
@@ -336,7 +338,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch missing image");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("image not provided"));
       }
     }
@@ -354,7 +356,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch missing datastore");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("datastore not provided"));
       }
     }
@@ -373,7 +375,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch missing dataStoreCount");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("dataStoreCount not provided"));
       }
     }
@@ -396,7 +398,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch invalid dataStoreCount");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("dataStoreCount needs to be >= 0"));
       }
     }
@@ -413,7 +415,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch missing substage");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("subStage cannot be null"));
       }
     }
@@ -519,7 +521,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.sendRequestAndWait(op);
         fail("handlePatch did not throw exception on invalid patch");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(),
             startsWith("Unparseable JSON body: java.lang.IllegalStateException: Expected BEGIN_OBJECT"));
       }
@@ -544,7 +546,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Changing image via a patch should fail");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("image field cannot be updated in a patch"));
       }
 
@@ -571,7 +573,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Changing datastore via a patch should fail");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("datastore field cannot be updated in a patch"));
       }
 
@@ -621,7 +623,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("validation did not fail when dataStoreCount was updated to a value < 0");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("dataStoreCount needs to be >= 0"));
       }
     }
@@ -667,7 +669,7 @@ public class ImageReplicatorServiceTest {
 
       try {
         host.sendRequestAndWait(patch);
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("finishedCopies needs to be >= 0"));
       }
     }
@@ -713,7 +715,7 @@ public class ImageReplicatorServiceTest {
 
       try {
         host.sendRequestAndWait(patch);
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("failedOrCanceledCopies needs to be >= 0"));
       }
     }
@@ -891,7 +893,7 @@ public class ImageReplicatorServiceTest {
         host.sendRequestAndWait(patchOp);
         fail("Transition from " + startStage + ":" + startSubStage +
             " to " + targetStage + ":" + targetSubStage + " " + "did not fail.");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), startsWith("Invalid stage update."));
       }
     }

@@ -39,6 +39,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterDelet
 import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 
@@ -188,7 +189,7 @@ public class ClusterDeleteTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "invalidStartStates")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "invalidStartStates")
     public void testInvalidStartState(TaskState.TaskStage stage,
                                       ClusterDeleteTask.TaskState.SubStage subStage) throws Throwable {
 
@@ -232,7 +233,7 @@ public class ClusterDeleteTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       ClusterDeleteTask startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(attributeName);
@@ -335,7 +336,7 @@ public class ClusterDeleteTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = {IllegalStateException.class, NullPointerException.class},
+    @Test(expectedExceptions = {DcpRuntimeException.class, NullPointerException.class},
         dataProvider = "invalidSubStageUpdates")
     public void testInvalidSubStageUpdates(TaskState.TaskStage startStage,
                                            ClusterDeleteTask.TaskState.SubStage startSubStage,
@@ -424,7 +425,7 @@ public class ClusterDeleteTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "immutableFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "immutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchImmutableFieldChanged(String fieldName) throws Throwable {
       ClusterDeleteTask startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
       Operation startOperation = host.startServiceSynchronously(taskService, startState);

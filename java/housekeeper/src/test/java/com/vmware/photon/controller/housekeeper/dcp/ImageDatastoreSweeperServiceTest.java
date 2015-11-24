@@ -33,6 +33,8 @@ import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.GetMonitoredImagesResultCode;
@@ -372,7 +374,7 @@ public class ImageDatastoreSweeperServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "InvalidStartStage",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = ".*Invalid subStage.*")
     public void testInvalidStartStage(
         final TaskState.TaskStage startStage,
@@ -442,7 +444,7 @@ public class ImageDatastoreSweeperServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "InvalidDatastore",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = "datastore cannot be (null|blank)")
     public void testInvalidDatastore(String datastore) throws Throwable {
       ImageDatastoreSweeperService.State startState = buildValidStartupState();
@@ -463,7 +465,7 @@ public class ImageDatastoreSweeperServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class,
+    @Test(expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = "host cannot be blank")
     public void testInvalidHost() throws Throwable {
       ImageDatastoreSweeperService.State startState = buildValidStartupState();
@@ -479,7 +481,7 @@ public class ImageDatastoreSweeperServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "PositiveFields",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = ".* must be greater than zero")
     public void testPositiveFields(String fieldName, Object value) throws Throwable {
       ImageDatastoreSweeperService.State startState = buildValidStartupState();
@@ -541,7 +543,7 @@ public class ImageDatastoreSweeperServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = RuntimeException.class)
+    @Test(expectedExceptions = BadRequestException.class)
     public void testInvalidPayload() throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState());
 
@@ -687,7 +689,7 @@ public class ImageDatastoreSweeperServiceTest {
       try {
         host.sendRequestAndWait(patchOp);
         fail("Transition from " + initialStage + " to " + targetStage + " did not fail.");
-      } catch (IllegalStateException | NullPointerException ignored) {
+      } catch (DcpRuntimeException ignored) {
       }
 
       ImageDatastoreSweeperService.State savedState = host.getServiceState(ImageDatastoreSweeperService.State.class);
@@ -797,7 +799,7 @@ public class ImageDatastoreSweeperServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "ImmutableFields",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = ".* is immutable")
     public void testImmutableFields(String field, Object value) throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState());
@@ -837,7 +839,7 @@ public class ImageDatastoreSweeperServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "InvalidHostPollIntervalUpdate",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = "hostPollInterval must be greater than zero")
     public void testInvalidHostPollIntervalUpdate(Integer value) throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState());
@@ -866,7 +868,7 @@ public class ImageDatastoreSweeperServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class,
+    @Test(expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = "host cannot be blank")
     public void testUpdatingHostToEmpty() throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState());

@@ -30,6 +30,7 @@ import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -202,7 +203,7 @@ public class CreateProjectTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "fieldNamesWithMissingValue")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       CreateProjectTaskService.State startState = buildValidStartState(TaskState.TaskStage.CREATED);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -244,7 +245,7 @@ public class CreateProjectTaskServiceTest {
       try {
         testHost.startServiceSynchronously(createProjectTaskService, startState);
         fail("Service start should throw in response to illegal taskPollDelay values");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("taskPollDelay must be greater than zero"));
       }
     }
@@ -336,7 +337,7 @@ public class CreateProjectTaskServiceTest {
       try {
         testHost.sendRequestAndWait(patchOperation);
         fail("Stage transition from " + startStage.toString() + " to " + patchStage.toString() + " should fail");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         // N.B. An assertion can be added here if an error message is added to
         //      the checkState calls in validatePatch.
       }
@@ -368,7 +369,7 @@ public class CreateProjectTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "fieldNamesWithInvalidValue")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithInvalidValue")
     public void testInvalidStateFieldValue(String fieldName) throws Throwable {
       CreateProjectTaskService.State startState = buildValidStartState(TaskState.TaskStage.CREATED);
       Operation startOperation = testHost.startServiceSynchronously(createProjectTaskService, startState);

@@ -17,6 +17,7 @@ import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.testng.annotations.AfterMethod;
@@ -139,7 +140,7 @@ public class ImageReplicationServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'imageId' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("imageId cannot be null"));
       }
     }
@@ -157,7 +158,7 @@ public class ImageReplicationServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'imageDatastoreId' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("imageDatastoreId cannot be null"));
       }
     }

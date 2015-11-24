@@ -24,6 +24,7 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.FlavorApi;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -349,7 +350,7 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
       try {
         host.sendRequestAndWait(patchOp);
         fail("Patch handling should throw in response to invalid start state");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
       }
     }
 
@@ -465,7 +466,7 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testInvalidPatchStateValue(String attributeName) throws Throwable {
       AllocateClusterManagerResourcesTaskService.State startState = buildValidStartupState(
           TaskState.TaskStage.CREATED, null);

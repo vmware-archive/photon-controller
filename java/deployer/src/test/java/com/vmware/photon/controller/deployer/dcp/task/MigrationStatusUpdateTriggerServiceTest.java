@@ -22,6 +22,7 @@ import com.vmware.dcp.common.TaskState.TaskStage;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
@@ -44,7 +45,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.lang.reflect.Field;
-import java.net.ProtocolException;
 import java.util.EnumSet;
 
 /**
@@ -115,7 +115,7 @@ public class MigrationStatusUpdateTriggerServiceTest {
       TestHost.destroy(testHost);
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStartStateMissingRequiredField(String fieldName) throws Throwable {
       MigrationStatusUpdateTriggerService.State startState = buildValidStartState();
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -216,7 +216,7 @@ public class MigrationStatusUpdateTriggerServiceTest {
       assertThat(deploymentState.vibsUploading, is(1L));
     }
 
-    @Test(expectedExceptions = ProtocolException.class)
+    @Test(expectedExceptions = DcpRuntimeException.class)
     public void failsWhenDeploymentDocumentNotFound() throws Throwable {
       startTestEnvironment();
       startState.deploymentServiceLink = "/fakeurl";

@@ -152,7 +152,7 @@ public class HostServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'host.hostAddress' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("hostAddress cannot be null"));
       }
     }
@@ -170,7 +170,7 @@ public class HostServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'host.userName' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("userName cannot be null"));
       }
     }
@@ -188,7 +188,7 @@ public class HostServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'host.password' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("password cannot be null"));
       }
     }
@@ -206,7 +206,7 @@ public class HostServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'host.usageTags' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("usageTags cannot be null"));
       }
     }
@@ -224,7 +224,7 @@ public class HostServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'host.usageTags' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("usageTags cannot be emtpy"));
       }
     }
@@ -242,7 +242,7 @@ public class HostServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'host.state' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("state cannot be null"));
       }
     }

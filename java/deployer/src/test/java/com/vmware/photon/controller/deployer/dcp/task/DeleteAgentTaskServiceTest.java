@@ -21,6 +21,7 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.thrift.ServerSet;
@@ -260,7 +261,7 @@ public class DeleteAgentTaskServiceTest {
      *
      * @throws Throwable
      */
-    @Test(dataProvider = "RequiredAttributeNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "RequiredAttributeNames", expectedExceptions = DcpRuntimeException.class)
     public void testFailureRequiredStateNull(String fieldName) throws Throwable {
       DeleteAgentTaskService.State startState = buildValidStartupState(null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
@@ -380,7 +381,7 @@ public class DeleteAgentTaskServiceTest {
         host.sendRequestAndWait(patchOperation);
         fail("Transition from " + startStage + " to " + targetStage + " succeeded unexpectedly");
 
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         // N.B. An assertion can be added here if an error message is added to
         //      the checkState calls in validatePatch.
       }
@@ -415,7 +416,7 @@ public class DeleteAgentTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchUpdateImmutableField(String fieldName) throws Throwable {
       DeleteAgentTaskService.State startState = buildValidStartupState(null);
       Operation startOperation = host.startServiceSynchronously(service, startState);
