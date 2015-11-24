@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -81,55 +82,95 @@ public class ConstraintCheckerPerfTest {
     }
     ConstraintChecker inMemory = new InMemoryConstraintChecker(hosts, datastores);
     return new Object[][]{
-        {inMemory, hosts},
+        {inMemory, hosts, 1},
+        {inMemory, hosts, 4},
+        {inMemory, hosts, 8},
     };
   }
 
   @Test(dataProvider = "default")
-  public void testPerformance(ConstraintChecker checker, Map<String, HostService.State> expectedHosts) {
+  public void testPerformance(ConstraintChecker checker, Map<String, HostService.State> expectedHosts,
+                              int numThreads) throws Exception{
     // no constraint
-    List<ResourceConstraint> constraints = new LinkedList<>();
     int numRequests = 1000000;
+
     Stopwatch watch = Stopwatch.createStarted();
-    for (int i = 0; i < numRequests; i++) {
-      checker.getCandidates(constraints, 4);
+    List<Thread> workers = new ArrayList<>(numThreads);
+    for (int i = 0; i < numThreads; i++) {
+      Thread worker = new Thread(() -> {
+        List<ResourceConstraint> constraints = new LinkedList<>();
+        for (int j = 0; j < numRequests; j++) {
+          checker.getCandidates(constraints, 4);
+        }
+      });
+      worker.start();
+      workers.add(worker);
+    }
+    for (Thread worker: workers) {
+      worker.join();
     }
     watch.stop();
-    double throughput = (double) numRequests / Math.max(1, watch.elapsed(TimeUnit.MILLISECONDS)) * 1000;
+    double throughput = (double) numThreads * numRequests /
+        Math.max(1, watch.elapsed(TimeUnit.MILLISECONDS)) * 1000;
     logger.info("No constraint");
-    logger.info("{} requests", numRequests);
+    logger.info("{} threads", numThreads);
+    logger.info("{} requests/thread", numRequests);
     logger.info("{} milliseconds", watch.elapsed(TimeUnit.MILLISECONDS));
     logger.info("{} requests/sec", throughput);
 
     // single datastore constraint
     watch = Stopwatch.createStarted();
-    for (int i = 0; i < numRequests; i++) {
-      constraints = new LinkedList<>();
-      int datastore = random.nextInt(1000);
-      String datastoreId = new UUID(0, datastore).toString();
-      constraints.add(new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList(datastoreId)));
-      checker.getCandidates(constraints, 4);
+    workers = new ArrayList<>(numThreads);
+    for (int i = 0; i < numThreads; i++) {
+      Thread worker = new Thread(() -> {
+        for (int j = 0; j < numRequests; j++) {
+          List<ResourceConstraint> constraints = new LinkedList<>();
+          int datastore = random.nextInt(1000);
+          String datastoreId = new UUID(0, datastore).toString();
+          constraints.add(new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList(datastoreId)));
+          checker.getCandidates(constraints, 4);
+        }
+      });
+      worker.start();
+      workers.add(worker);
+    }
+    for (Thread worker: workers) {
+      worker.join();
     }
     watch.stop();
-    throughput = (float) numRequests / Math.max(1, watch.elapsed(TimeUnit.MILLISECONDS)) * 1000;
+    throughput = (double) numThreads * numRequests /
+        Math.max(1, watch.elapsed(TimeUnit.MILLISECONDS)) * 1000;
     logger.info("Single datastore constraint");
-    logger.info("{} requests", numRequests);
+    logger.info("{} threads", numThreads);
+    logger.info("{} requests/thread", numRequests);
     logger.info("{} milliseconds", watch.elapsed(TimeUnit.MILLISECONDS));
     logger.info("{} requests/sec", throughput);
 
     // single availability zone constraint
     watch = Stopwatch.createStarted();
-    for (int i = 0; i < numRequests; i++) {
-      constraints = new LinkedList<>();
-      int datastore = random.nextInt(1000);
-      String az = new UUID(0, datastore).toString();
-      constraints.add(new ResourceConstraint(ResourceConstraintType.AVAILABILITY_ZONE, Arrays.asList(az)));
-      checker.getCandidates(constraints, 4);
+    workers = new ArrayList<>(numThreads);
+    for (int i = 0; i < numThreads; i++) {
+      Thread worker = new Thread(() -> {
+        for (int j = 0; j < numRequests; j++) {
+          List<ResourceConstraint> constraints = new LinkedList<>();
+          int datastore = random.nextInt(1000);
+          String az = new UUID(0, datastore).toString();
+          constraints.add(new ResourceConstraint(ResourceConstraintType.AVAILABILITY_ZONE, Arrays.asList(az)));
+          checker.getCandidates(constraints, 4);
+        }
+      });
+      worker.start();
+      workers.add(worker);
+    }
+    for (Thread worker: workers) {
+      worker.join();
     }
     watch.stop();
-    throughput = (float) numRequests / Math.max(1, watch.elapsed(TimeUnit.MILLISECONDS)) * 1000;
+    throughput = (double) numThreads * numRequests /
+        Math.max(1, watch.elapsed(TimeUnit.MILLISECONDS)) * 1000;
     logger.info("Single availability zone constraint");
-    logger.info("{} requests", numRequests);
+    logger.info("{} threads", numThreads);
+    logger.info("{} requests/thread", numRequests);
     logger.info("{} milliseconds", watch.elapsed(TimeUnit.MILLISECONDS));
     logger.info("{} requests/sec", throughput);
   }
