@@ -14,11 +14,8 @@
 package com.vmware.photon.controller.model.resources;
 
 import com.vmware.dcp.common.FactoryService;
-import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.model.UriPaths;
-
-import java.util.UUID;
 
 /**
  * Creates a NetworkInterfaceService instance.
@@ -28,24 +25,6 @@ public class NetworkInterfaceFactoryService extends FactoryService {
 
   public NetworkInterfaceFactoryService() {
     super(NetworkInterfaceService.NetworkInterfaceState.class);
-  }
-
-  @Override
-  public void handlePost(Operation post) {
-    if (!post.hasBody()) {
-      post.fail(new IllegalArgumentException("body is required"));
-      return;
-    }
-
-    NetworkInterfaceService.NetworkInterfaceState initState = post.getBody(NetworkInterfaceService
-        .NetworkInterfaceState.class);
-
-    if (initState.id == null) {
-      initState.id = UUID.randomUUID().toString();
-    }
-    initState.documentSelfLink = initState.id;
-    post.setBody(initState).complete();
-
   }
 
   @Override
