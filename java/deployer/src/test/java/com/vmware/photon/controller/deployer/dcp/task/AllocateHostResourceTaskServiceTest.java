@@ -30,6 +30,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
@@ -486,7 +487,7 @@ public class AllocateHostResourceTaskServiceTest {
     private void testTaskSuccess() throws Throwable {
       machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
 
-      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(1, 3, 8, 8192);
+      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(1, 3, 8, 8192, false);
       startState.hostServiceLink = hostService.documentSelfLink;
 
       AllocateHostResourceTaskService.State finalState =
@@ -513,10 +514,42 @@ public class AllocateHostResourceTaskServiceTest {
     }
 
     @Test
+    private void testTaskSuccessWithMixedHostConfig() throws Throwable {
+      machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
+
+      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(1, 3, 8, 8192, true);
+      startState.hostServiceLink = hostService.documentSelfLink;
+
+      AllocateHostResourceTaskService.State finalState =
+          machine.callServiceAndWaitForState(
+              AllocateHostResourceTaskFactoryService.SELF_LINK,
+              startState,
+              AllocateHostResourceTaskService.State.class,
+              (state) -> TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal());
+
+      TestHelper.assertTaskStateFinished(finalState.taskState);
+
+      String vmServiceLink = getVmService(hostService.documentSelfLink);
+      Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
+      assertThat(containerServices.size(), is(9));
+      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).sum(), lessThan((int) (8192 *
+          DeployerDefaults.MANAGEMENT_VM_TO_HOST_RESOURCE_RATIO)));
+      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).max().getAsInt(), lessThan((int) (8192 *
+          DeployerDefaults.MANAGEMENT_VM_TO_HOST_RESOURCE_RATIO)));
+      containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
+          lessThanOrEqualTo(ContainerService.State.DOCKER_CPU_SHARES_MAX)));
+      containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
+          greaterThanOrEqualTo(ContainerService.State.DOCKER_CPU_SHARES_MIN)));
+      containerServices.stream().forEach(cs -> assertTrue(cs.dynamicParameters.containsKey("memoryMb")));
+      containerServices.stream().forEach(cs -> assertEquals(new Integer(cs.dynamicParameters.get("memoryMb")),
+          cs.memoryMb));
+    }
+
+    @Test
     private void testTaskSuccessWithoutHostConfig() throws Throwable {
       machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
 
-      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(1, 3, null, null);
+      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(1, 3, null, null, false);
       startState.hostServiceLink = hostService.documentSelfLink;
 
       AllocateHostResourceTaskService.State finalState =
@@ -594,13 +627,17 @@ public class AllocateHostResourceTaskServiceTest {
     }
 
     private HostService.State createHostEntitiesAndAllocateVmsAndContainers(
-        int mgmtCount, int cloudCount, Integer cpuCount, Integer memoryMb) throws Throwable {
+        int mgmtCount, int cloudCount, Integer cpuCount, Integer memoryMb, boolean mixedHost) throws Throwable {
 
       HostService.State mgmtHostService = null;
 
       for (int i = 0; i < mgmtCount; i++) {
-        HostService.State hostService = TestHelper.getHostServiceStartState(Collections.singleton(UsageTag.MGMT.name
-            ()), HostState.READY);
+        Set<String> usageTags = new HashSet<>();
+        usageTags.add(UsageTag.MGMT.name());
+        if (mixedHost) {
+          usageTags.add(UsageTag.CLOUD.name());
+        }
+        HostService.State hostService = TestHelper.getHostServiceStartState(usageTags, HostState.READY);
         hostService.memoryMb = memoryMb;
         hostService.cpuCount = cpuCount;
         if (i == 0) {
