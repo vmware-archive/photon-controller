@@ -17,6 +17,8 @@ import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.ServiceDocumentDescription;
 import com.vmware.dcp.common.StatefulService;
+import com.vmware.dcp.common.Utils;
+import com.vmware.dcp.services.common.QueryTask;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -128,6 +130,11 @@ public class ResourcePoolService extends StatefulService {
      * represented in the form of documentSelfLinks.
      */
     public List<String> tenantLinks;
+
+    /**
+     * Query description for the resource pool.
+     */
+    public QueryTask.QuerySpecification querySpecification;
   }
 
   public ResourcePoolService() {
@@ -147,6 +154,7 @@ public class ResourcePoolService extends StatefulService {
 
     ResourcePoolState initState = start.getBody(ResourcePoolState.class);
     validateState(initState);
+    createResourceQuerySpec(initState);
     start.complete();
   }
 
@@ -191,6 +199,25 @@ public class ResourcePoolService extends StatefulService {
     if (state.properties == null) {
       state.properties = EnumSet.noneOf(ResourcePoolState.ResourcePoolProperty.class);
     }
+  }
+
+  private void createResourceQuerySpec(ResourcePoolState initState) {
+
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+
+    String kind = Utils.buildKind(ComputeService.ComputeState.class);
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(kind);
+    querySpec.query.addBooleanClause(kindClause);
+
+    // we want compute resources only in the same resource pool as this task
+    QueryTask.Query resourcePoolClause = new QueryTask.Query()
+        .setTermPropertyName(ComputeService.ComputeState.FIELD_NAME_RESOURCE_POOL_LINK)
+        .setTermMatchValue(getSelfLink());
+    querySpec.query.addBooleanClause(resourcePoolClause);
+
+    initState.querySpecification = querySpec;
   }
 
   @Override

@@ -21,6 +21,7 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.TenantFactoryService;
 import com.vmware.photon.controller.model.ModelServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
+import com.vmware.photon.controller.model.helpers.TestHost;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -70,6 +71,17 @@ public class ComputeDescriptionServiceTest {
     cd.regionId = "provider-specific-regions";
     cd.zoneId = "provider-specific-zone";
     return cd;
+  }
+
+  public static ComputeDescriptionService.ComputeDescription createComputeDescription(TestHost host)
+      throws Throwable {
+    ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.buildValidStartState();
+    // disable periodic maintenance for tests by default.
+    cd.healthAdapterReference = null;
+    return host.postServiceSynchronously(
+        ComputeDescriptionFactoryService.SELF_LINK,
+        cd,
+        ComputeDescriptionService.ComputeDescription.class);
   }
 
   @Test

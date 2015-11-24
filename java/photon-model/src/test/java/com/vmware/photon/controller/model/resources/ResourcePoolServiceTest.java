@@ -239,5 +239,29 @@ public class ResourcePoolServiceTest {
       assertThat(q.results.documentCount, is(1L));
       assertThat(q.results.documentLinks.get(0), is(startState.documentSelfLink));
     }
+
+    @Test
+    public void testResourcePoolQuery() throws Throwable {
+      // Create a resourcePool
+      ResourcePoolService.ResourcePoolState rp = buildValidStartState();
+      ResourcePoolService.ResourcePoolState startState = host.postServiceSynchronously(
+          ResourcePoolFactoryService.SELF_LINK, rp, ResourcePoolService.ResourcePoolState.class);
+
+      // Create a ComputeService in the same resource Pool
+      ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.createComputeDescription(host);
+      ComputeService.ComputeState cs = ComputeServiceTest.buildValidStartState(cd);
+      cs.resourcePoolLink = startState.documentSelfLink;
+      ComputeService.ComputeState csStartState = host.postServiceSynchronously(
+          ComputeFactoryService.SELF_LINK, cs, ComputeService.ComputeState.class);
+
+      QueryTask q = new QueryTask();
+      q.querySpec = startState.querySpecification;
+      q.taskInfo.isDirect = true;
+      QueryTask qr = host.querySynchronously(q);
+
+      assertNotNull(qr.results.documentLinks);
+      assertThat(qr.results.documentCount, is(1L));
+      assertThat(qr.results.documentLinks.get(0), is(csStartState.documentSelfLink));
+    }
   }
 }
