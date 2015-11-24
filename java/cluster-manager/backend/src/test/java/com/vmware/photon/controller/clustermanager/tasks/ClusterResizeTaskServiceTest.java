@@ -49,9 +49,10 @@ import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.validation.Immutable;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -207,7 +208,7 @@ public class ClusterResizeTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "invalidStartStates")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "invalidStartStates")
     public void testInvalidStartState(TaskState.TaskStage stage,
                                       ClusterResizeTask.TaskState.SubStage subStage) throws Throwable {
 
@@ -243,7 +244,7 @@ public class ClusterResizeTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       ClusterResizeTask startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(attributeName);
@@ -339,7 +340,7 @@ public class ClusterResizeTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = {IllegalStateException.class, NullPointerException.class},
+    @Test(expectedExceptions = {DcpRuntimeException.class},
         dataProvider = "invalidSubStageUpdates")
     public void testInvalidSubStageUpdates(TaskState.TaskStage startStage,
                                            ClusterResizeTask.TaskState.SubStage startSubStage,
@@ -348,11 +349,13 @@ public class ClusterResizeTaskServiceTest {
         throws Throwable {
 
       ClusterResizeTask startState = buildValidStartState(startStage, startSubStage);
-      host.startServiceSynchronously(taskService, startState);
+      host.startServiceSynchronously(taskService, startState,
+          ClusterMaintenanceTaskFactoryService.SELF_LINK + TestHost.SERVICE_URI);
 
       ClusterResizeTask patchState = buildValidPatchState(patchStage, patchSubStage);
       Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .createPatch(UriUtils.buildUri(host,
+              ClusterMaintenanceTaskFactoryService.SELF_LINK + TestHost.SERVICE_URI, null))
           .setBody(patchState);
 
       host.sendRequestAndWait(patchOp);
@@ -415,7 +418,7 @@ public class ClusterResizeTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "immutableFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "immutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchImmutableFieldChanged(String fieldName) throws Throwable {
       ClusterResizeTask startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
       Operation startOperation = host.startServiceSynchronously(taskService, startState);
@@ -437,8 +440,7 @@ public class ClusterResizeTaskServiceTest {
     @DataProvider(name = "immutableFieldNames")
     public Object[][] getImmutableFieldNames() {
       return TestHelper.toDataProvidersList(
-          ReflectionUtils.getAttributeNamesWithAnnotation(
-              ClusterResizeTask.class, Immutable.class));
+          ImmutableList.of("controlFlags", "clusterId", "newSlaveCount"));
     }
   }
 

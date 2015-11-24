@@ -18,6 +18,8 @@ import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.photon.controller.resource.gen.ImageReplication;
 
@@ -126,7 +128,7 @@ public class ImageServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "illegalIdValues",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = "id cannot be (null|blank)")
     public void testMissingImageId(String id) throws Throwable {
       ImageService.State startState = buildValidStartupState();
@@ -149,7 +151,7 @@ public class ImageServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "illegalParentLinkValues",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = "parentLink cannot be (null|blank)")
     public void testMissingParentLink(String link) throws Throwable {
       ImageService.State startState = buildValidStartupState();
@@ -234,7 +236,7 @@ public class ImageServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalArgumentException.class,
+    @Test(expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = "Action not supported: PATCH")
     public void testPatch() throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState());

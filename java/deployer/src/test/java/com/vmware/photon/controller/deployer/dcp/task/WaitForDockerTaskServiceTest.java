@@ -18,6 +18,7 @@ import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.TaskState;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -199,7 +200,7 @@ public class WaitForDockerTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "NotNullAttributeFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "NotNullAttributeFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStartStateMissingNotNullField(String fieldName) throws Throwable {
       WaitForDockerTaskService.State startState = buildValidStartState(null, null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
@@ -293,7 +294,7 @@ public class WaitForDockerTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
                                            @Nullable WaitForDockerTaskService.TaskState.SubStage startSubStage,
                                            TaskState.TaskStage patchStage,
@@ -364,7 +365,7 @@ public class WaitForDockerTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableAttributeFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "ImmutableAttributeFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchSetsImmutableField(String fieldName) throws Throwable {
       WaitForDockerTaskService.State startState = buildValidStartState(null, null);
       Operation startOperation = testHost.startServiceSynchronously(waitForDockerTaskService, startState);

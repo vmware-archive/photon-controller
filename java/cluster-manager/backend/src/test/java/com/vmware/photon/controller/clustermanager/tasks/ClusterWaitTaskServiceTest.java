@@ -26,6 +26,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
 import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 
@@ -203,7 +204,7 @@ public class ClusterWaitTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "NotNullFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "NotNullFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStartStateMissingRequiredField(String fieldName) throws Throwable {
       ClusterWaitTaskService.State startState = buildValidStartState(null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
@@ -283,7 +284,7 @@ public class ClusterWaitTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
       startService(buildValidStartState(startStage));
@@ -322,7 +323,7 @@ public class ClusterWaitTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
       startService(buildValidStartState(null));
 

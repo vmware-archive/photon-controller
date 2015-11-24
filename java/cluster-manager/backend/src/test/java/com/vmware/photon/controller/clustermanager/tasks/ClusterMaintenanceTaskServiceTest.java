@@ -46,6 +46,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FutureCallback;
@@ -183,7 +184,7 @@ public class ClusterMaintenanceTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "invalidStartStates")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "invalidStartStates")
     public void testInvalidStartState(TaskState.TaskStage stage) throws Throwable {
       ClusterMaintenanceTaskService.State startState = buildValidState(stage);
       host.startServiceSynchronously(taskService, startState);
@@ -279,16 +280,17 @@ public class ClusterMaintenanceTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = {IllegalStateException.class, NullPointerException.class},
+    @Test(expectedExceptions = {DcpRuntimeException.class},
         dataProvider = "invalidSubStageUpdates")
     public void testInvalidSubStageUpdates(TaskState.TaskStage startStage,
                                            TaskState.TaskStage patchStage) throws Throwable {
       ClusterMaintenanceTaskService.State startState = buildValidState(startStage);
-      host.startServiceSynchronously(taskService, startState);
+      host.startServiceSynchronously(taskService, startState,
+          ClusterMaintenanceTaskFactoryService.SELF_LINK + clusterUri);
 
       ClusterMaintenanceTaskService.State patchState = buildValidState(patchStage);
       Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, clusterUri, null))
+          .createPatch(UriUtils.buildUri(host, ClusterMaintenanceTaskFactoryService.SELF_LINK + clusterUri, null))
           .setBody(patchState);
 
       host.sendRequestAndWait(patchOp);

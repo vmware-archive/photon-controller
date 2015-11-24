@@ -22,6 +22,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -206,7 +207,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStartStateMissingRequiredField(String fieldName) throws Throwable {
       BulkProvisionHostsWorkflowService.State startState = buildValidStartState(null, null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
@@ -311,7 +312,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
                                            BulkProvisionHostsWorkflowService.TaskState.SubStage startSubStage,
                                            TaskState.TaskStage patchStage,
@@ -396,7 +397,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchImmutableFieldChanged(String fieldName) throws Throwable {
       BulkProvisionHostsWorkflowService.State startState = buildValidStartState(null, null);
       Operation startOperation = testHost.startServiceSynchronously(bulkProvisionHostsWorkflowService, startState);

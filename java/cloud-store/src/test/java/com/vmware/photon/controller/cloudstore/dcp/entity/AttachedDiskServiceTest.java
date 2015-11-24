@@ -18,6 +18,7 @@ import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.api.EphemeralDisk;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.testng.annotations.AfterMethod;
@@ -144,7 +145,7 @@ public class AttachedDiskServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'vmId' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("vmId cannot be null"));
       }
     }

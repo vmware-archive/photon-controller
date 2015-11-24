@@ -25,6 +25,8 @@ import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
 import com.vmware.dcp.services.common.NodeGroupService;
 import com.vmware.dcp.services.common.NodeState;
 import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -388,20 +390,21 @@ public class ServiceHostUtils {
    * Send given operation and wait for the response.
    *
    * @param host
-   * @param op
+   * @param requestedOperation
    * @param referrer
    * @return
    * @throws Throwable
    */
-  public static Operation sendRequestAndWait(
-      ServiceHost host, Operation op, String referrer) throws Throwable {
-    OperationLatch syncOp = new OperationLatch(op);
-    if (op.getReferer() == null) {
-      op.setReferer(UriUtils.buildUri(host, referrer));
+  public static Operation sendRequestAndWait(ServiceHost host, Operation requestedOperation, String referrer)
+      throws TimeoutException, DocumentNotFoundException, BadRequestException, InterruptedException {
+    OperationLatch syncOp = new OperationLatch(requestedOperation);
+    if (requestedOperation.getReferer() == null) {
+      requestedOperation.setReferer(UriUtils.buildUri(host, referrer));
     }
-    host.sendRequest(op);
 
-    return syncOp.await();
+    host.sendRequest(requestedOperation);
+    Operation completedOperation = syncOp.awaitForOperationCompletion();
+    return OperationUtils.handleCompletedOperation(requestedOperation, completedOperation);
   }
 
   public static NodeGroupBroadcastResponse sendBroadcastQueryAndWait(

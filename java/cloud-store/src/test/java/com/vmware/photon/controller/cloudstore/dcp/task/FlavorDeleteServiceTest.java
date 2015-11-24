@@ -20,6 +20,8 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -173,7 +175,7 @@ public class FlavorDeleteServiceTest {
         startState.flavor = null;
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'flavor.name' was null");
-      } catch (IllegalStateException ex) {
+      } catch (BadRequestException ex) {
         assertThat(ex.getMessage(), is("flavor cannot be null"));
       }
     }
@@ -244,7 +246,7 @@ public class FlavorDeleteServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class,
+    @Test(expectedExceptions = DcpRuntimeException.class,
         expectedExceptionsMessageRegExp = "flavor is immutable")
     public void testPatchFail() throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState());
@@ -284,7 +286,7 @@ public class FlavorDeleteServiceTest {
 
       try {
         host.sendRequestAndWait(patchOp);
-      } catch (IllegalStateException ex) {
+      } catch (DcpRuntimeException ex) {
         assertThat(ex.getMessage(), is(errorMsg));
       }
 
@@ -369,7 +371,7 @@ public class FlavorDeleteServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("parentLink is immutable"));
       }
     }

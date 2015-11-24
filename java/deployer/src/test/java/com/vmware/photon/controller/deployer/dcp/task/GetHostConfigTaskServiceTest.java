@@ -21,6 +21,7 @@ import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.thrift.ServerSet;
@@ -184,7 +185,7 @@ public class GetHostConfigTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
 
       GetHostConfigTaskService.State startState = buildValidStartState();
@@ -282,7 +283,7 @@ public class GetHostConfigTaskServiceTest {
       try {
         testHost.sendRequestAndWait(patchOp);
         fail("Patch handling should throw in response to invalid start state");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
       }
     }
 
@@ -313,7 +314,7 @@ public class GetHostConfigTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testInvalidPatchStateValue(String attributeName) throws Throwable {
       GetHostConfigTaskService.State startState = buildValidStartState();
       testHost.startServiceSynchronously(service, startState);

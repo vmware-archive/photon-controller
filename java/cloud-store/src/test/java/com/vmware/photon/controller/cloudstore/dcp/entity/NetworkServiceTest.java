@@ -24,6 +24,7 @@ import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import org.testng.annotations.AfterMethod;
@@ -148,7 +149,7 @@ public class NetworkServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'network.name' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("name cannot be null"));
       }
     }
@@ -168,7 +169,7 @@ public class NetworkServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'network.portGroups' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("portGroups cannot be null"));
       }
     }
@@ -205,7 +206,7 @@ public class NetworkServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class,
+    @Test(expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = "name is immutable")
     public void testPatchFail() throws Throwable {
       host.startServiceSynchronously(service, testNetwork);

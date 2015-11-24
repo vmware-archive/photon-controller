@@ -165,7 +165,7 @@ public class TenantServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'Name' was null");
-      } catch (IllegalStateException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("name cannot be null"));
       }
     }

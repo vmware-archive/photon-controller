@@ -56,12 +56,12 @@ public class FlavorDeleteService extends StatefulService {
   }
 
   @Override
-  public void handleStart(Operation start) {
+  public void handleStart(Operation startOperation) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
 
     try {
       // Initialize the task state.
-      State s = start.getBody(State.class);
+      State s = startOperation.getBody(State.class);
       if (s.taskInfo == null || s.taskInfo.stage == null) {
         s.taskInfo = new TaskState();
         s.taskInfo.stage = TaskState.TaskStage.CREATED;
@@ -72,13 +72,18 @@ public class FlavorDeleteService extends StatefulService {
       }
 
       validateState(s);
-      start.setBody(s).complete();
+      startOperation.setBody(s).complete();
 
       sendStageProgressPatch(s, s.taskInfo.stage);
+    } catch (IllegalStateException t) {
+      ServiceUtils.logSevere(this, t);
+      if (!OperationUtils.isCompleted(startOperation)) {
+        ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
+      }
     } catch (RuntimeException e) {
       logSevere(e);
-      if (!OperationUtils.isCompleted(start)) {
-        start.fail(e);
+      if (!OperationUtils.isCompleted(startOperation)) {
+        startOperation.fail(e);
       }
     }
   }

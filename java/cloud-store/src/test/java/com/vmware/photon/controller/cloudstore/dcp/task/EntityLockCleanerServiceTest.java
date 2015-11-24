@@ -25,6 +25,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.COMPLETED;
 import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.ERROR;
 import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.QUEUED;
@@ -251,7 +252,7 @@ public class EntityLockCleanerServiceTest {
       try {
         host.sendRequestAndWait(op);
         fail("handlePatch did not throw exception on invalid patch");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(),
             startsWith("Unparseable JSON body: java.lang.IllegalStateException: Expected BEGIN_OBJECT"));
       }

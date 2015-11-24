@@ -17,6 +17,7 @@ import com.vmware.dcp.common.Operation;
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -122,7 +123,7 @@ public class TombstoneServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "NotNullableFields",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = ".* cannot be null")
     public void testNotNullableFields(String fieldName) throws Throwable {
       TombstoneService.State startState = buildValidStartState();
@@ -149,7 +150,7 @@ public class TombstoneServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "PositiveFields",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = ".* must be greater than zero")
     public void testPositiveFields(String fieldName, Object value) throws Throwable {
       TombstoneService.State startState = buildValidStartState();
@@ -196,7 +197,7 @@ public class TombstoneServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "ImmutableFields",
-        expectedExceptions = IllegalStateException.class,
+        expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = ".* is immutable")
     public void testImmutableFields(String field, Object value) throws Throwable {
       TombstoneService.State patch = new TombstoneService.State();

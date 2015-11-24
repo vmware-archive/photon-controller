@@ -29,6 +29,8 @@ import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientDeleteImageErrorMock;
@@ -237,7 +239,7 @@ public class ImageRemoverServiceTest {
       try {
         host.startServiceSynchronously(service, buildValidStartupState(stage, subStage));
         fail("service start did not fail when 'stage' was invalid");
-      } catch (IllegalStateException ex) {
+      } catch (DcpRuntimeException ex) {
         assertThat(ex.getMessage(), startsWith("Invalid stage update."));
       }
     }
@@ -287,7 +289,7 @@ public class ImageRemoverServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not when 'queryPollDelay' <= 0");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("queryPollDelay needs to be greater than 0"));
       }
     }
@@ -312,7 +314,7 @@ public class ImageRemoverServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'image' was null");
-      } catch (NullPointerException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("image cannot be null"));
       }
     }
@@ -390,7 +392,7 @@ public class ImageRemoverServiceTest {
       try {
         host.sendRequestAndWait(op);
         fail("handlePatch did not throw exception on invalid patch");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(),
             startsWith("Unparseable JSON body: java.lang.IllegalStateException: Expected BEGIN_OBJECT"));
       }
@@ -415,7 +417,7 @@ public class ImageRemoverServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Changing image via a patch should fail");
-      } catch (IllegalArgumentException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("image field cannot be updated in a patch"));
       }
 
@@ -515,7 +517,7 @@ public class ImageRemoverServiceTest {
       try {
         host.sendRequestAndWait(patchOp);
         fail("Transition from " + startStage + " to " + targetStage + "did not fail.");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), startsWith("Invalid stage update."));
       }
     }
@@ -651,7 +653,7 @@ public class ImageRemoverServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("validation did not fail when dataStoreCount was updated to a value < 0");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("dataStoreCount needs to be >= 0"));
       }
     }
@@ -670,7 +672,7 @@ public class ImageRemoverServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("validation did not fail when dataStoreCount was 'null' in STARTED:AWAIT_COMPLETION stage");
-      } catch (NullPointerException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("dataStoreCount cannot be null"));
       }
     }
@@ -717,7 +719,7 @@ public class ImageRemoverServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("validation did not fail when finishedDeletes was updated to a value < 0");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("finishedDeletes needs to be >= 0"));
       }
     }
@@ -764,7 +766,7 @@ public class ImageRemoverServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("validation did not fail when failedOrCanceledDeletes was updated to a value < 0");
-      } catch (IllegalStateException e) {
+      } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), is("failedOrCanceledDeletes needs to be >= 0"));
       }
     }

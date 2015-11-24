@@ -38,6 +38,7 @@ import com.vmware.photon.controller.clustermanager.helpers.TestHost;
 import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 
 import com.google.common.util.concurrent.FutureCallback;
 import org.testng.annotations.AfterClass;
@@ -241,16 +242,17 @@ public class GarbageCollectionTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = {IllegalStateException.class, NullPointerException.class},
+    @Test(expectedExceptions = {DcpRuntimeException.class},
         dataProvider = "invalidStageUpdates")
     public void testInvalidStageUpdates(TaskState.TaskStage startStage,
                                         TaskState.TaskStage patchStage) throws Throwable {
       GarbageCollectionTaskService.State startState = buildValidState(startStage);
-      host.startServiceSynchronously(taskService, startState);
+      host.startServiceSynchronously(taskService, startState,
+          GarbageCollectionTaskFactoryService.SELF_LINK + clusterUri);
 
       GarbageCollectionTaskService.State patchState = buildValidState(patchStage);
       Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, clusterUri, null))
+          .createPatch(UriUtils.buildUri(host, GarbageCollectionTaskFactoryService.SELF_LINK + clusterUri, null))
           .setBody(patchState);
 
       host.sendRequestAndWait(patchOp);

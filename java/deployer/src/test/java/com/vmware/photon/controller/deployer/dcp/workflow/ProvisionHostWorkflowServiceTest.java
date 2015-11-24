@@ -23,6 +23,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -294,7 +295,7 @@ public class ProvisionHostWorkflowServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       ProvisionHostWorkflowService.State startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(attributeName);
@@ -397,7 +398,7 @@ public class ProvisionHostWorkflowServiceTest {
      *
      * @throws Throwable Throws an exception if any error is encountered.
      */
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test(expectedExceptions = DcpRuntimeException.class)
     public void testIllegalStageUpdatesInvalidPatch() throws Throwable {
       ProvisionHostWorkflowService.State startState = buildValidStartState(null, null);
       host.startServiceSynchronously(service, startState);
@@ -419,7 +420,7 @@ public class ProvisionHostWorkflowServiceTest {
      * @param targetStage Supplies the stage of the target state.
      * @throws Throwable Throws an exception if any error is encountered.
      */
-    @Test(dataProvider = "illegalStageUpdatesInvalidStart", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "illegalStageUpdatesInvalidStart", expectedExceptions = DcpRuntimeException.class)
     public void testIllegalStageUpdatesInvalidStart(
         TaskState.TaskStage startStage,
         ProvisionHostWorkflowService.TaskState.SubStage startSubStage,
@@ -463,7 +464,7 @@ public class ProvisionHostWorkflowServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(expectedExceptions = IllegalStateException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
     public void testInvalidPatchStateValue(String attributeName) throws Throwable {
       ProvisionHostWorkflowService.State startState = buildValidStartState(null, null);
       host.startServiceSynchronously(service, startState);
