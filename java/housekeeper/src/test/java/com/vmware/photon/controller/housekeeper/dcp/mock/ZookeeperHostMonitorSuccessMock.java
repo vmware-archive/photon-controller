@@ -79,10 +79,12 @@ public class ZookeeperHostMonitorSuccessMock extends ZookeeperHostMonitor {
     for (int i = 0; i < dataStoreCount; i++) {
       Datastore datastore = new Datastore();
       if (i < imageDataStoreCount) {
-        datastore.setId("image_datastore_id_" + i);
+        datastore.setId("image-datastore-id-" + i);
+        datastore.setName("image-datastore-name-" + i);
         imageDatastores.add(datastore);
       } else {
-        datastore.setId("vm_datastore_id_" + i);
+        datastore.setName("vm-datastore-name-" + i);
+        datastore.setId("vm-datastore-id-" + i);
       }
 
       allDatastores.add(datastore);
