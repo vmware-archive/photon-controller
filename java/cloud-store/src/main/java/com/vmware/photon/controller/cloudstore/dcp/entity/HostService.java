@@ -92,7 +92,10 @@ public class HostService extends StatefulService {
 
   @Override
   public ServiceDocument getDocumentTemplate() {
-    return ServiceUtils.getDocumentTemplateWithIndexedFields(super.getDocumentTemplate(), State.FIELD_NAME_USAGE_TAGS);
+    return ServiceUtils.getDocumentTemplateWithIndexedFields(super.getDocumentTemplate(),
+        State.FIELD_NAME_REPORTED_DATASTORES,
+        State.FIELD_NAME_REPORTED_NETWORKS,
+        State.FIELD_NAME_USAGE_TAGS);
   }
 
   private void validateState(State currentState) {
@@ -156,7 +159,10 @@ public class HostService extends StatefulService {
    */
   public static class State extends ServiceDocument {
 
+    public static final String FIELD_NAME_AVAILABILITY_ZONE = "availabilityZone";
     public static final String FIELD_NAME_HOST_ADDRESS = "hostAddress";
+    public static final String FIELD_NAME_REPORTED_DATASTORES = "reportedDatastores";
+    public static final String FIELD_NAME_REPORTED_NETWORKS = "reportedNetworks";
     public static final String FIELD_NAME_USAGE_TAGS = "usageTags";
 
     public static final String USAGE_TAGS_KEY =

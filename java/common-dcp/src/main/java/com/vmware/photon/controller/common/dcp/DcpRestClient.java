@@ -411,7 +411,7 @@ public class DcpRestClient implements DcpClient {
   @VisibleForTesting
   protected Operation send(Operation operation)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    logger.info("send: STARTED {}", createLogMessageWithBody(operation));
+    // logger.info("send: STARTED {}", createLogMessageWithBody(operation));
     OperationLatch operationLatch = createOperationLatch(operation);
 
     client.send(operation);
@@ -508,8 +508,8 @@ public class DcpRestClient implements DcpClient {
           // fall through
         case PUT:
           // for successful DELETE, PATCH and PUT we do not need to log the status and body.
-          logger.info("send: SUCCESS {}",
-              createLogMessageWithoutStatusAndBody(completedOperation));
+          /*logger.info("send: SUCCESS {}",
+              createLogMessageWithoutStatusAndBody(completedOperation));*/
           break;
         case POST:
           // fall through
@@ -518,14 +518,14 @@ public class DcpRestClient implements DcpClient {
         default:
           // for successful POST and GET we do not need to log the status,
           // but we need need to log the body to see what was returned for the posted query or get.
-          logger.info("send: SUCCESS {}",
-              createLogMessageWithBody(completedOperation));
+          /*logger.info("send: SUCCESS {}",
+              createLogMessageWithBody(completedOperation));*/
       }
     } else {
       if (completedOperation.getStatusCode() == Operation.STATUS_CODE_NOT_FOUND) {
-        logger.info("send: COMPLETED {}", createLogMessageWithStatus(completedOperation));
+        // logger.info("send: COMPLETED {}", createLogMessageWithStatus(completedOperation));
       } else {
-        logger.warn("send: WARN {}", createLogMessageWithStatusAndBody(completedOperation));
+        // logger.warn("send: WARN {}", createLogMessageWithStatusAndBody(completedOperation));
       }
     }
   }
