@@ -21,7 +21,6 @@ import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.dcp.services.common.TenantFactoryService;
 import com.vmware.photon.controller.model.ModelServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
-import com.vmware.photon.controller.model.helpers.TestHost;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -43,18 +42,7 @@ public class ComputeServiceTest {
   private static final String TEST_DESC_PROPERTY_NAME = "testDescProperty";
   private static final String TEST_DESC_PROPERTY_VALUE = UUID.randomUUID().toString();
 
-  private static ComputeDescriptionService.ComputeDescription createComputeDescription(TestHost host)
-      throws Throwable {
-    ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.buildValidStartState();
-    // disable periodic maintenance for tests by default.
-    cd.healthAdapterReference = null;
-    return host.postServiceSynchronously(
-        ComputeDescriptionFactoryService.SELF_LINK,
-        cd,
-        ComputeDescriptionService.ComputeDescription.class);
-  }
-
-  private static ComputeService.ComputeStateWithDescription buildValidStartState(
+  public static ComputeService.ComputeStateWithDescription buildValidStartState(
       ComputeDescriptionService.ComputeDescription cd) throws Throwable {
     ComputeService.ComputeStateWithDescription cs = new ComputeService.ComputeStateWithDescription();
     cs.id = UUID.randomUUID().toString();
@@ -114,8 +102,8 @@ public class ComputeServiceTest {
 
     @Test
     public void testValidStartState() throws Throwable {
-      ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
-      ComputeService.ComputeState startState = buildValidStartState(cd);
+      ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.createComputeDescription(host);
+      ComputeService.ComputeState startState = ComputeServiceTest.buildValidStartState(cd);
       ComputeService.ComputeState returnState = host.postServiceSynchronously(
           ComputeFactoryService.SELF_LINK,
           startState,
@@ -132,7 +120,7 @@ public class ComputeServiceTest {
 
     @Test
     public void testMissingId() throws Throwable {
-      ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
+      ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.createComputeDescription(host);
       ComputeService.ComputeState startState = buildValidStartState(cd);
       startState.id = null;
 
@@ -147,7 +135,7 @@ public class ComputeServiceTest {
 
     @Test
     public void testMissingDescriptionLink() throws Throwable {
-      ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
+      ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.createComputeDescription(host);
       ComputeService.ComputeState startState = buildValidStartState(cd);
       startState.powerState = ComputeService.PowerState.OFF;
       startState.descriptionLink = null;
@@ -161,7 +149,7 @@ public class ComputeServiceTest {
 
     @Test
     public void testMissingAdapterManagementReference() throws Throwable {
-      ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
+      ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.createComputeDescription(host);
       cd.supportedChildren = new ArrayList<>();
       cd.supportedChildren.add(ComputeDescriptionService.ComputeDescription.ComputeType.VM_HOST.toString());
       ComputeService.ComputeState startState = buildValidStartState(cd);
@@ -186,7 +174,7 @@ public class ComputeServiceTest {
 
     @Test
     public void testGet() throws Throwable {
-      ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
+      ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.createComputeDescription(host);
       ComputeService.ComputeState startState = buildValidStartState(cd);
 
       ComputeService.ComputeState returnState = host.postServiceSynchronously(
@@ -210,7 +198,7 @@ public class ComputeServiceTest {
 
     @Test
     public void testGetExpand() throws Throwable {
-      ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
+      ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.createComputeDescription(host);
       ComputeService.ComputeStateWithDescription startState = buildValidStartState(cd);
 
       ComputeService.ComputeState returnState = host.postServiceSynchronously(
@@ -242,7 +230,7 @@ public class ComputeServiceTest {
 
     @Test
     public void testPatch() throws Throwable {
-      ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
+      ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.createComputeDescription(host);
       ComputeService.ComputeState startState = buildValidStartState(cd);
 
       ComputeService.ComputeState returnState = host.postServiceSynchronously(
@@ -275,7 +263,7 @@ public class ComputeServiceTest {
 
     @Test
     public void testPatchNoChange() throws Throwable {
-      ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
+      ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.createComputeDescription(host);
       ComputeService.ComputeState startState = buildValidStartState(cd);
 
       ComputeService.ComputeState returnState = host.postServiceSynchronously(
@@ -314,7 +302,7 @@ public class ComputeServiceTest {
 
     @Test
     public void testTenantLinksQuery() throws Throwable {
-      ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
+      ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.createComputeDescription(host);
       ComputeService.ComputeState cs = buildValidStartState(cd);
 
       URI tenantUri = UriUtils.buildUri(host, TenantFactoryService.class);
@@ -370,7 +358,7 @@ public class ComputeServiceTest {
 
     public ComputeService.ComputeState[] createInstances(int c) throws Throwable {
       ComputeService.ComputeState[] instances = new ComputeService.ComputeState[c];
-      ComputeDescriptionService.ComputeDescription cd = createComputeDescription(host);
+      ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.createComputeDescription(host);
       for (int i = 0; i < c; i++) {
         instances[i] = host.postServiceSynchronously(
             ComputeFactoryService.SELF_LINK,
