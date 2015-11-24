@@ -441,8 +441,8 @@ public class ImageReplicatorService extends StatefulService {
     // build start state
     ImageCopyService.State copyState = new ImageCopyService.State();
     copyState.image = current.image;
-    copyState.sourceDataStore = current.datastore;
-    copyState.destinationDataStore = datastore;
+    copyState.sourceImageDataStoreName = current.datastore;
+    copyState.destinationDataStoreId = datastore;
     copyState.parentLink = getSelfLink();
     copyState.documentExpirationTimeMicros = current.documentExpirationTimeMicros;
 
