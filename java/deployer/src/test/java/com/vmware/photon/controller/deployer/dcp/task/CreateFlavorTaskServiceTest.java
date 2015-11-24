@@ -415,7 +415,7 @@ public class CreateFlavorTaskServiceTest {
       taskReturnedByCreateVmFlavor.setState("STARTED");
 
 
-      FlavorService.State flavorService = TestHelper.createFlavor(cloudStoreMachine);
+      FlavorService.State flavorService = TestHelper.createFlavor(cloudStoreMachine, null);
       taskReturnedByGetCreateVmFlavorTask = new Task();
       taskReturnedByGetCreateVmFlavorTask.setId("createVmFlavorTaskId");
       taskReturnedByGetCreateVmFlavorTask.setState("COMPLETED");
@@ -427,7 +427,7 @@ public class CreateFlavorTaskServiceTest {
       taskReturnedByCreateDiskFlavor.setId("createDiskFlavorTaskId");
       taskReturnedByCreateDiskFlavor.setState("STARTED");
 
-      FlavorService.State diskFlavorService = TestHelper.createFlavor(cloudStoreMachine);
+      FlavorService.State diskFlavorService = TestHelper.createFlavor(cloudStoreMachine, "mgmt-vm-disk-NAME");
       taskReturnedByGetCreateDiskFlavorTask = new Task();
       taskReturnedByGetCreateDiskFlavorTask.setId("createDiskFlavorTaskId");
       taskReturnedByGetCreateDiskFlavorTask.setState("COMPLETED");
@@ -475,11 +475,15 @@ public class CreateFlavorTaskServiceTest {
 
       VmService.State vmServiceFinalState =
           machine.getServiceState(vmServiceState.documentSelfLink, VmService.State.class);
-      assertThat(vmServiceFinalState.flavorServiceLink, notNullValue());
+      assertThat(vmServiceFinalState.vmFlavorServiceLink, notNullValue());
+      assertThat(vmServiceFinalState.diskFlavorServiceLink, notNullValue());
 
       FlavorService.State vmFlavorState =
-          cloudStoreMachine.getServiceState(vmServiceFinalState.flavorServiceLink, FlavorService.State.class);
+          cloudStoreMachine.getServiceState(vmServiceFinalState.vmFlavorServiceLink, FlavorService.State.class);
       assertThat(vmFlavorState.name, is("dummyName"));
+      FlavorService.State diskFlavorState =
+          cloudStoreMachine.getServiceState(vmServiceFinalState.diskFlavorServiceLink, FlavorService.State.class);
+      assertThat(diskFlavorState.name, is("mgmt-vm-disk-NAME"));
     }
 
     @Test
@@ -504,11 +508,15 @@ public class CreateFlavorTaskServiceTest {
 
       VmService.State vmServiceFinalState =
           machine.getServiceState(vmServiceState.documentSelfLink, VmService.State.class);
-      assertThat(vmServiceFinalState.flavorServiceLink, notNullValue());
+      assertThat(vmServiceFinalState.vmFlavorServiceLink, notNullValue());
+      assertThat(vmServiceFinalState.diskFlavorServiceLink, notNullValue());
 
       FlavorService.State vmFlavorState =
-          cloudStoreMachine.getServiceState(vmServiceFinalState.flavorServiceLink, FlavorService.State.class);
+          cloudStoreMachine.getServiceState(vmServiceFinalState.vmFlavorServiceLink, FlavorService.State.class);
       assertThat(vmFlavorState.name, is("dummyName"));
+      FlavorService.State diskFlavorState =
+          cloudStoreMachine.getServiceState(vmServiceFinalState.diskFlavorServiceLink, FlavorService.State.class);
+      assertThat(diskFlavorState.name, is("mgmt-vm-disk-NAME"));
     }
 
     @Test
@@ -533,11 +541,14 @@ public class CreateFlavorTaskServiceTest {
 
       VmService.State vmServiceFinalState =
           machine.getServiceState(vmServiceState.documentSelfLink, VmService.State.class);
-      assertThat(vmServiceFinalState.flavorServiceLink, notNullValue());
+      assertThat(vmServiceFinalState.vmFlavorServiceLink, notNullValue());
 
       FlavorService.State vmFlavorState =
-          cloudStoreMachine.getServiceState(vmServiceFinalState.flavorServiceLink, FlavorService.State.class);
+          cloudStoreMachine.getServiceState(vmServiceFinalState.vmFlavorServiceLink, FlavorService.State.class);
       assertThat(vmFlavorState.name, is("dummyName"));
+      FlavorService.State diskFlavorState =
+          cloudStoreMachine.getServiceState(vmServiceFinalState.diskFlavorServiceLink, FlavorService.State.class);
+      assertThat(diskFlavorState.name, is("mgmt-vm-disk-NAME"));
     }
 
 
@@ -563,11 +574,15 @@ public class CreateFlavorTaskServiceTest {
 
       VmService.State vmServiceFinalState =
           machine.getServiceState(vmServiceState.documentSelfLink, VmService.State.class);
-      assertThat(vmServiceFinalState.flavorServiceLink, notNullValue());
+      assertThat(vmServiceFinalState.vmFlavorServiceLink, notNullValue());
+      assertThat(vmServiceFinalState.diskFlavorServiceLink, notNullValue());
 
       FlavorService.State vmFlavorState =
-          cloudStoreMachine.getServiceState(vmServiceFinalState.flavorServiceLink, FlavorService.State.class);
+          cloudStoreMachine.getServiceState(vmServiceFinalState.vmFlavorServiceLink, FlavorService.State.class);
       assertThat(vmFlavorState.name, is("dummyName"));
+      FlavorService.State diskFlavorState =
+          cloudStoreMachine.getServiceState(vmServiceFinalState.diskFlavorServiceLink, FlavorService.State.class);
+      assertThat(diskFlavorState.name, is("mgmt-vm-disk-NAME"));
     }
 
     @Test

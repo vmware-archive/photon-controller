@@ -28,7 +28,6 @@ import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -46,7 +45,6 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
-import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -60,7 +58,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import static java.lang.Math.max;
 
@@ -352,33 +349,77 @@ public class CreateFlavorTaskService extends StatefulService {
   private void createFlavorInApife(final State currentState, final VmService.State vmState, final int finalCpuCount,
      final int finalMemoryMb, final int finalDiskGb) throws IOException {
 
-    ApiClient client = HostUtils.getApiClient(this);
-
-    final AtomicInteger finishLatch = new AtomicInteger(2);
-    final List<Throwable> failures = new ArrayList<>();
     FlavorCreateSpec vmFlavorCreateSpec = composeVmFlavorCreateSpec(vmState, finalCpuCount, finalMemoryMb);
     FlavorCreateSpec diskFlavorCreateSpec = composeDiskFlavorCreateSpec(vmState, finalDiskGb);
 
     FutureCallback<Task> callback = new FutureCallback<Task>() {
       @Override
       public void onSuccess(@Nullable Task result) {
-        processTask(currentState, result, finishLatch, failures);
+        createDiskFlavorInAPIFE(currentState, result, diskFlavorCreateSpec);
       }
 
       @Override
       public void onFailure(Throwable throwable) {
-        synchronized (failures) {
-          failures.add(throwable);
-        }
-
-        if (0 == finishLatch.decrementAndGet()) {
-          failTask(ExceptionUtils.createMultiException(failures));
-        }
+        failTask(throwable);
       }
     };
 
-    client.getFlavorApi().createAsync(vmFlavorCreateSpec, callback);
-    client.getFlavorApi().createAsync(diskFlavorCreateSpec, callback);
+    HostUtils.getApiClient(this).getFlavorApi().createAsync(vmFlavorCreateSpec, callback);
+  }
+  private void createDiskFlavorInAPIFE(final State currentState, final Task createVmFlavorTask,
+                                       FlavorCreateSpec diskFlavorCreateSpec) {
+
+    FutureCallback<Task> diskCallback = new FutureCallback<Task>() {
+      @Override
+      public void onSuccess(@Nullable Task result) {
+        updateVmService(currentState, createVmFlavorTask.getEntity().getId(), result.getEntity().getId());
+      }
+
+      @Override
+      public void onFailure(Throwable throwable) {
+        failTask(throwable);
+      }
+    };
+
+    FutureCallback<Task> pollTaskCallback = new FutureCallback<Task>() {
+      @Override
+      public void onSuccess(@Nullable Task task) {
+        try {
+          createVmFlavorTask.setEntity(task.getEntity());
+          HostUtils.getApiClient(CreateFlavorTaskService.this).getFlavorApi().createAsync(diskFlavorCreateSpec,
+              new FutureCallback<Task>() {
+                @Override
+                public void onSuccess(@Nullable Task result) {
+                  // Poll create disk flavor task
+                  ApiUtils.pollTaskAsync(result,
+                      HostUtils.getApiClient(CreateFlavorTaskService.this),
+                      CreateFlavorTaskService.this,
+                      currentState.queryTaskInterval,
+                      diskCallback);
+                }
+
+                @Override
+                public void onFailure(Throwable t) {
+                  failTask(t);
+                }
+              });
+        } catch (Throwable t) {
+          failTask(t);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable throwable) {
+        failTask(throwable);
+      }
+    };
+
+    // Poll create vm flavor task
+    ApiUtils.pollTaskAsync(createVmFlavorTask,
+        HostUtils.getApiClient(this),
+        this,
+        currentState.queryTaskInterval,
+        pollTaskCallback);
   }
 
   private FlavorCreateSpec composeVmFlavorCreateSpec(final VmService.State vmState, int finalCpuCount,
@@ -412,47 +453,15 @@ public class CreateFlavorTaskService extends StatefulService {
     return spec;
   }
 
-  private void processTask(final State currentState, final Task task,
-    final AtomicInteger finishLatch, final List<Throwable> failures) {
+  private void updateVmService(final State currentState, final String vmFlavorServiceId, final String
+      diskFlavorServiceId) {
 
-    FutureCallback<Task> pollTaskCallback = new FutureCallback<Task>() {
-      @Override
-      public void onSuccess(@Nullable Task task) {
-        if (0 == finishLatch.decrementAndGet()) {
-          if (failures.isEmpty()) {
-            updateVmService(currentState, task.getEntity().getId());
-          } else {
-            failTask(ExceptionUtils.createMultiException(failures));
-          }
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable throwable) {
-        synchronized (failures) {
-          failures.add(throwable);
-        }
-
-        if (0 == finishLatch.decrementAndGet()) {
-          failTask(ExceptionUtils.createMultiException(failures));
-        }
-      }
-    };
-
-    ApiUtils.pollTaskAsync(task,
-        HostUtils.getApiClient(this),
-        this,
-        currentState.queryTaskInterval,
-        pollTaskCallback);
-  }
-
-  private void updateVmService(final State currentState, final String flavorServiceId) {
-
-    ServiceUtils.logInfo(this, "Updating VM service %s with flavor service id %s", currentState.vmServiceLink,
-        flavorServiceId);
+    ServiceUtils.logInfo(this, "Updating VM service %s with vmflavor service id %s and diskFlavor service id %s",
+        currentState.vmServiceLink, vmFlavorServiceId, diskFlavorServiceId);
 
     VmService.State vmPatchState = new VmService.State();
-    vmPatchState.flavorServiceLink = FlavorServiceFactory.SELF_LINK + "/" + flavorServiceId;
+    vmPatchState.vmFlavorServiceLink = FlavorServiceFactory.SELF_LINK + "/" + vmFlavorServiceId;
+    vmPatchState.diskFlavorServiceLink = FlavorServiceFactory.SELF_LINK + "/" + diskFlavorServiceId;
     final Service service = this;
 
     Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {

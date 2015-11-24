@@ -1010,12 +1010,14 @@ public class CreateManagementVmTaskServiceTest {
               projectServiceStartState,
               ProjectService.State.class);
 
-      FlavorService.State flavorServiceState = TestHelper.createFlavor(cloudStoreMachine);
+      FlavorService.State vmFlavorServiceState = TestHelper.createFlavor(cloudStoreMachine, null);
+      FlavorService.State diskFlavorServiceState = TestHelper.createFlavor(cloudStoreMachine, "mgmt-vm-disk-NAME");
 
       vmServiceStartState.hostServiceLink = hostServiceState.documentSelfLink;
       vmServiceStartState.imageServiceLink = imageServiceState.documentSelfLink;
       vmServiceStartState.projectServiceLink = projectServiceState.documentSelfLink;
-      vmServiceStartState.flavorServiceLink = flavorServiceState.documentSelfLink;
+      vmServiceStartState.vmFlavorServiceLink = vmFlavorServiceState.documentSelfLink;
+      vmServiceStartState.diskFlavorServiceLink = diskFlavorServiceState.documentSelfLink;
     }
 
     /**

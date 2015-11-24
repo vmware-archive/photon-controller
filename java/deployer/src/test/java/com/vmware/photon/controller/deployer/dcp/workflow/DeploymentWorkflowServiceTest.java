@@ -1026,7 +1026,7 @@ public class DeploymentWorkflowServiceTest {
 
       for (final VmService.State vmState : vmStates) {
         Collection<FlavorService.State> flavorsForVm = states.stream()
-            .filter(flavorState -> vmState.flavorServiceLink.equals(flavorState.documentSelfLink))
+            .filter(flavorState -> vmState.vmFlavorServiceLink.equals(flavorState.documentSelfLink))
             .collect(Collectors.toList());
 
         assertThat(flavorsForVm.size(), is(1));

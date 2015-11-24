@@ -569,7 +569,7 @@ public class BatchCreateManagementWorkflowServiceTest {
       taskReturnedByGetCreateVmFlavorTask = new Task();
       taskReturnedByGetCreateVmFlavorTask.setId("createVmFlavorTaskId");
       taskReturnedByGetCreateVmFlavorTask.setState("COMPLETED");
-      FlavorService.State flavorService = TestHelper.createFlavor(cloudStoreMachine);
+      FlavorService.State flavorService = TestHelper.createFlavor(cloudStoreMachine, null);
       Task.Entity taskEntity = new Task.Entity();
       taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(flavorService.documentSelfLink));
       taskReturnedByGetCreateVmFlavorTask.setEntity(taskEntity);
@@ -581,7 +581,7 @@ public class BatchCreateManagementWorkflowServiceTest {
       taskReturnedByGetCreateDiskFlavorTask = new Task();
       taskReturnedByGetCreateDiskFlavorTask.setId("createDiskFlavorTaskId");
       taskReturnedByGetCreateDiskFlavorTask.setState("COMPLETED");
-      FlavorService.State diskFlavorService = TestHelper.createFlavor(cloudStoreMachine);
+      FlavorService.State diskFlavorService = TestHelper.createFlavor(cloudStoreMachine, "mgmt-vm-disk-NAME");
       Task.Entity diskTaskEntity = new Task.Entity();
       diskTaskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(diskFlavorService.documentSelfLink));
       taskReturnedByGetCreateDiskFlavorTask.setEntity(diskTaskEntity);
