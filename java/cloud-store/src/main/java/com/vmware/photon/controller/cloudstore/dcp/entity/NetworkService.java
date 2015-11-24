@@ -87,8 +87,9 @@ public class NetworkService extends StatefulService {
 
   @Override
   public ServiceDocument getDocumentTemplate() {
-    return ServiceUtils.getDocumentTemplateWithIndexedFields(
-        super.getDocumentTemplate(), State.FIELD_NAME_PORT_GROUPS);
+    ServiceDocument template = super.getDocumentTemplate();
+    ServiceUtils.setExpandedIndexing(template, State.FIELD_NAME_PORT_GROUPS);
+    return template;
   }
 
   /**

@@ -82,7 +82,9 @@ public class DatastoreService extends StatefulService {
 
   @Override
   public ServiceDocument getDocumentTemplate() {
-    return ServiceUtils.getDocumentTemplateWithIndexedFields(super.getDocumentTemplate(), State.FIELD_NAME_TAGS);
+    ServiceDocument template = super.getDocumentTemplate();
+    ServiceUtils.setExpandedIndexing(template, State.FIELD_NAME_TAGS);
+    return template;
   }
 
   private void validateState(State currentState) {

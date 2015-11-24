@@ -87,8 +87,9 @@ public class VmService extends StatefulService {
 
   @Override
   public ServiceDocument getDocumentTemplate() {
-    return ServiceUtils.getDocumentTemplateWithIndexedFields(
-        super.getDocumentTemplate(), State.FIELD_NAME_TAGS, State.FIELD_NAME_NETWORKS);
+    ServiceDocument template = super.getDocumentTemplate();
+    ServiceUtils.setExpandedIndexing(template, State.FIELD_NAME_TAGS, State.FIELD_NAME_NETWORKS);
+    return template;
   }
 
   /**

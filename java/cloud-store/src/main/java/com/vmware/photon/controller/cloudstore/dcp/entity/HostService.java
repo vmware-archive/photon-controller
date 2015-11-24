@@ -90,7 +90,9 @@ public class HostService extends StatefulService {
 
   @Override
   public ServiceDocument getDocumentTemplate() {
-    return ServiceUtils.getDocumentTemplateWithIndexedFields(super.getDocumentTemplate(), State.FIELD_NAME_USAGE_TAGS);
+    ServiceDocument template = super.getDocumentTemplate();
+    ServiceUtils.setExpandedIndexing(template, State.FIELD_NAME_USAGE_TAGS);
+    return template;
   }
 
   private void validateState(State currentState) {
