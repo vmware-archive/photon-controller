@@ -177,8 +177,8 @@ public class ImageCopyService extends StatefulService {
 
     checkArgument(patch.parentLink == null, "ParentLink cannot be changed.");
     checkArgument(patch.image == null, "Image cannot be changed.");
-    checkArgument(patch.sourceDataStore == null, "Source datastore cannot be changed.");
-    checkArgument(patch.destinationDataStore == null, "Destination datastore cannot be changed.");
+    checkArgument(patch.sourceImageDataStoreName == null, "Source datastore cannot be changed.");
+    checkArgument(patch.destinationDataStoreId == null, "Destination datastore cannot be changed.");
   }
 
   /**
@@ -191,8 +191,8 @@ public class ImageCopyService extends StatefulService {
     checkNotNull(current.taskInfo.stage, "stage cannot be null");
 
     checkNotNull(current.image, "image not provided");
-    checkNotNull(current.sourceDataStore, "source datastore not provided");
-    checkNotNull(current.destinationDataStore, "destination datastore not provided");
+    checkNotNull(current.sourceImageDataStoreName, "source datastore not provided");
+    checkNotNull(current.destinationDataStoreId, "destination datastore not provided");
 
     checkState(current.documentExpirationTimeMicros > 0, "documentExpirationTimeMicros needs to be greater than 0");
 
@@ -233,8 +233,8 @@ public class ImageCopyService extends StatefulService {
       currentState.host = patchState.host;
     }
 
-    if (patchState.destinationDataStore != null) {
-      currentState.destinationDataStore = patchState.destinationDataStore;
+    if (patchState.destinationDataStoreId != null) {
+      currentState.destinationDataStoreId = patchState.destinationDataStoreId;
     }
   }
 
@@ -263,7 +263,7 @@ public class ImageCopyService extends StatefulService {
    * @param current
    */
   private void copyImage(final State current) {
-    if (current.sourceDataStore.equals(current.destinationDataStore)) {
+    if (current.sourceImageDataStoreName.equals(current.destinationDataStoreId)) {
       ServiceUtils.logInfo(this, "Skip copying image to source itself");
       sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
       return;
@@ -302,7 +302,8 @@ public class ImageCopyService extends StatefulService {
     };
 
     try {
-      getHostClient(current).copyImage(current.image, current.sourceDataStore, current.destinationDataStore, callback);
+      getHostClient(current).copyImage(current.image, current.sourceImageDataStoreName,
+          current.destinationDataStoreId, callback);
     } catch (IOException | RpcException e) {
       failTask(e);
     }
@@ -349,9 +350,9 @@ public class ImageCopyService extends StatefulService {
    */
   private void getHostFromDataStore(final State current) {
     try {
-      Set<HostConfig> hostConfigSet = getZookeeperHostMonitor().getHostsForDatastore(current.destinationDataStore);
+      Set<HostConfig> hostConfigSet = getZookeeperHostMonitor().getHostsForDatastore(current.destinationDataStoreId);
       checkState(
-          hostConfigSet.size() > 0, "No hosts found for reference datastore. [%s].", current.destinationDataStore);
+          hostConfigSet.size() > 0, "No hosts found for reference datastore. [%s].", current.destinationDataStoreId);
 
       HostConfig hostConfig = ServiceUtils.selectRandomItem(hostConfigSet);
 
@@ -469,12 +470,17 @@ public class ImageCopyService extends StatefulService {
     /**
      * The store where the image is currently available.
      */
-    public String sourceDataStore;
+    public String sourceImageDataStoreName;
+
+    /**
+     * The image datastore id where the image is currently available.
+     */
+    public String sourceImageDataStoreId;
 
     /**
      * The store where the image will be copied to.
      */
-    public String destinationDataStore;
+    public String destinationDataStoreId;
 
     /**
      * Host with access to both source and destination stores.
