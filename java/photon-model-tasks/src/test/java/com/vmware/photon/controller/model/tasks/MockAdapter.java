@@ -46,13 +46,13 @@ public class MockAdapter {
       switch (op.getAction()) {
         case PATCH:
           ComputeInstanceRequest request = op.getBody(ComputeInstanceRequest.class);
-          ProvisionComputeTaskService.ProvisionComputeTaskState provisioningTaskBody =
-              new ProvisionComputeTaskService.ProvisionComputeTaskState();
-          provisioningTaskBody.taskInfo = new TaskState();
-          provisioningTaskBody.taskInfo.stage = TaskState.TaskStage.FINISHED;
+          ComputeSubTaskService.ComputeSubTaskState computeSubTaskState =
+              new ComputeSubTaskService.ComputeSubTaskState();
+          computeSubTaskState.taskInfo = new TaskState();
+          computeSubTaskState.taskInfo.stage = TaskState.TaskStage.FINISHED;
           sendRequest(Operation
               .createPatch(request.provisioningTaskReference)
-              .setBody(provisioningTaskBody));
+              .setBody(computeSubTaskState));
           break;
         default:
           super.handleRequest(op);
@@ -74,14 +74,14 @@ public class MockAdapter {
       switch (op.getAction()) {
         case PATCH:
           ComputeInstanceRequest request = op.getBody(ComputeInstanceRequest.class);
-          ProvisionComputeTaskService.ProvisionComputeTaskState provisioningTaskBody =
-              new ProvisionComputeTaskService.ProvisionComputeTaskState();
-          provisioningTaskBody.taskInfo = new TaskState();
-          provisioningTaskBody.taskInfo.stage = TaskState.TaskStage.FAILED;
-          provisioningTaskBody.taskInfo.failure = ServiceErrorResponse.create(new Exception(), 500);
+          ComputeSubTaskService.ComputeSubTaskState computeSubTaskState =
+              new ComputeSubTaskService.ComputeSubTaskState();
+          computeSubTaskState.taskInfo = new TaskState();
+          computeSubTaskState.taskInfo.stage = TaskState.TaskStage.FAILED;
+          computeSubTaskState.taskInfo.failure = ServiceErrorResponse.create(new Exception(), 500);
           sendRequest(Operation
               .createPatch(request.provisioningTaskReference)
-              .setBody(provisioningTaskBody));
+              .setBody(computeSubTaskState));
           break;
         default:
           super.handleRequest(op);
@@ -103,13 +103,13 @@ public class MockAdapter {
       switch (op.getAction()) {
         case PATCH:
           ComputeBootRequest request = op.getBody(ComputeBootRequest.class);
-          ProvisionComputeTaskService.ProvisionComputeTaskState provisioningTaskBody =
-              new ProvisionComputeTaskService.ProvisionComputeTaskState();
-          provisioningTaskBody.taskInfo = new TaskState();
-          provisioningTaskBody.taskInfo.stage = TaskState.TaskStage.FINISHED;
+          ComputeSubTaskService.ComputeSubTaskState computeSubTaskState =
+              new ComputeSubTaskService.ComputeSubTaskState();
+          computeSubTaskState.taskInfo = new TaskState();
+          computeSubTaskState.taskInfo.stage = TaskState.TaskStage.FINISHED;
           sendRequest(Operation
               .createPatch(request.provisioningTaskReference)
-              .setBody(provisioningTaskBody));
+              .setBody(computeSubTaskState));
           break;
         default:
           super.handleRequest(op);
@@ -131,14 +131,14 @@ public class MockAdapter {
       switch (op.getAction()) {
         case PATCH:
           ComputeBootRequest request = op.getBody(ComputeBootRequest.class);
-          ProvisionComputeTaskService.ProvisionComputeTaskState provisioningTaskBody =
-              new ProvisionComputeTaskService.ProvisionComputeTaskState();
-          provisioningTaskBody.taskInfo = new TaskState();
-          provisioningTaskBody.taskInfo.stage = TaskState.TaskStage.FAILED;
-          provisioningTaskBody.taskInfo.failure = ServiceErrorResponse.create(new Exception(), 500);
+          ComputeSubTaskService.ComputeSubTaskState computeSubTaskState =
+              new ComputeSubTaskService.ComputeSubTaskState();
+          computeSubTaskState.taskInfo = new TaskState();
+          computeSubTaskState.taskInfo.stage = TaskState.TaskStage.FAILED;
+          computeSubTaskState.taskInfo.failure = ServiceErrorResponse.create(new Exception(), 500);
           sendRequest(Operation
               .createPatch(request.provisioningTaskReference)
-              .setBody(provisioningTaskBody));
+              .setBody(computeSubTaskState));
           break;
         default:
           super.handleRequest(op);
