@@ -243,21 +243,21 @@ public class MockHelper {
     final Task taskReturnedByAttachIso = TestHelper.createCompletedApifeTask("ATTACH_ISO");
     final Task taskReturnedByCreateManagementVmFlavor =
         TestHelper.createCompletedApifeTask("CREATE_MANAGEMENT_VM_FLAVOR");
-    FlavorService.State flavorService = TestHelper.createFlavor(machine);
+    FlavorService.State flavorService = TestHelper.createFlavor(machine, null);
     Task.Entity taskEntity = new Task.Entity();
     taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(flavorService.documentSelfLink));
     taskReturnedByCreateManagementVmFlavor.setEntity(taskEntity);
 
     final Task taskReturnedByCreateManagementVmDiskFlavor =
         TestHelper.createCompletedApifeTask("CREATE_MANAGEMENT_VM_DISK_FLAVOR");
-    FlavorService.State diskFlavorService = TestHelper.createFlavor(machine);
+    FlavorService.State diskFlavorService = TestHelper.createFlavor(machine, "mgmt-vm-disk-NAME");
     Task.Entity diskTaskEntity = new Task.Entity();
     diskTaskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(diskFlavorService.documentSelfLink));
     taskReturnedByCreateManagementVmDiskFlavor.setEntity(diskTaskEntity);
 
     final Task taskReturnedByCreateClusterMasterVmFlavor =
         TestHelper.createCompletedApifeTask("CREATE_CLUSTER_MASTER_VM_FLAVOR");
-    FlavorService.State clusteredVmFlavorService = TestHelper.createFlavor(machine);
+    FlavorService.State clusteredVmFlavorService = TestHelper.createFlavor(machine, null);
     Task.Entity clusterVmTaskEntity = new Task.Entity();
     clusterVmTaskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(clusteredVmFlavorService.documentSelfLink));
     taskReturnedByCreateClusterMasterVmFlavor.setEntity(clusterVmTaskEntity);
@@ -272,7 +272,7 @@ public class MockHelper {
     taskReturnedByUploadManagementImage.setState("COMPLETED");
     taskReturnedByUploadManagementImage.setEntity(taskEntityImage);
 
-    FlavorService.State clusteredVmDiskFlavorService = TestHelper.createFlavor(machine);
+    FlavorService.State clusteredVmDiskFlavorService = TestHelper.createFlavor(machine, "mgmt-vm-disk-NAME");
     Task.Entity clusterVmDiskTaskEntity = new Task.Entity();
     clusterVmDiskTaskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(
         clusteredVmDiskFlavorService.documentSelfLink));

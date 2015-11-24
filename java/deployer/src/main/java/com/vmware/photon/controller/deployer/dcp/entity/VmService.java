@@ -64,10 +64,16 @@ public class VmService extends StatefulService {
     public String projectServiceLink;
 
     /**
-     * This value represents the link of the VM/disk flavor service document
+     * This value represents the link of the VM flavor service document
      * associated with this VM.
      */
-    public String flavorServiceLink;
+    public String vmFlavorServiceLink;
+
+    /**
+     * This value represents the link of the disk flavor service document
+     * associated with this VM.
+     */
+    public String diskFlavorServiceLink;
 
     /**
      * This value represents the ID of the VM object in APIFE.
@@ -129,8 +135,12 @@ public class VmService extends StatefulService {
       currentState.vmId = patchState.vmId;
     }
 
-    if (null != patchState.flavorServiceLink) {
-      currentState.flavorServiceLink = patchState.flavorServiceLink;
+    if (null != patchState.vmFlavorServiceLink) {
+      currentState.vmFlavorServiceLink = patchState.vmFlavorServiceLink;
+    }
+
+    if (null != patchState.diskFlavorServiceLink) {
+      currentState.diskFlavorServiceLink = patchState.diskFlavorServiceLink;
     }
 
     if (null != patchState.imageServiceLink) {

@@ -680,7 +680,7 @@ public class AllocateResourcesWorkflowServiceTest {
       taskReturnedByCreateFlavor = new Task();
       taskReturnedByCreateFlavor.setId("createFlavorTaskId");
       taskReturnedByCreateFlavor.setState("COMPLETED");
-      FlavorService.State flavorService = TestHelper.createFlavor(cloudStoreMachine);
+      FlavorService.State flavorService = TestHelper.createFlavor(cloudStoreMachine, null);
       Task.Entity taskEntity = new Task.Entity();
       taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(flavorService.documentSelfLink));
       taskReturnedByCreateFlavor.setEntity(taskEntity);
