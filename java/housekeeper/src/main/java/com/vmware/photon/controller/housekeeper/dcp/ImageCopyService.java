@@ -177,7 +177,7 @@ public class ImageCopyService extends StatefulService {
 
     checkArgument(patch.parentLink == null, "ParentLink cannot be changed.");
     checkArgument(patch.image == null, "Image cannot be changed.");
-    checkArgument(patch.sourceDataStore == null, "Source datastore cannot be changed.");
+    checkArgument(patch.sourceDataStoreName == null, "Source datastore cannot be changed.");
     checkArgument(patch.destinationDataStore == null, "Destination datastore cannot be changed.");
   }
 
@@ -191,7 +191,7 @@ public class ImageCopyService extends StatefulService {
     checkNotNull(current.taskInfo.stage, "stage cannot be null");
 
     checkNotNull(current.image, "image not provided");
-    checkNotNull(current.sourceDataStore, "source datastore not provided");
+    checkNotNull(current.sourceDataStoreName, "source datastore not provided");
     checkNotNull(current.destinationDataStore, "destination datastore not provided");
 
     checkState(current.documentExpirationTimeMicros > 0, "documentExpirationTimeMicros needs to be greater than 0");
@@ -263,7 +263,7 @@ public class ImageCopyService extends StatefulService {
    * @param current
    */
   private void copyImage(final State current) {
-    if (current.sourceDataStore.equals(current.destinationDataStore)) {
+    if (current.sourceDataStoreName.equals(current.destinationDataStore)) {
       ServiceUtils.logInfo(this, "Skip copying image to source itself");
       sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
       return;
@@ -302,7 +302,8 @@ public class ImageCopyService extends StatefulService {
     };
 
     try {
-      getHostClient(current).copyImage(current.image, current.sourceDataStore, current.destinationDataStore, callback);
+      getHostClient(current).copyImage(current.image, current.sourceDataStoreName,
+          current.destinationDataStore, callback);
     } catch (IOException | RpcException e) {
       failTask(e);
     }
@@ -469,7 +470,12 @@ public class ImageCopyService extends StatefulService {
     /**
      * The store where the image is currently available.
      */
-    public String sourceDataStore;
+    public String sourceDataStoreName;
+
+    /**
+     * The image datastore id where the image is currently available.
+     */
+    public String sourceImageDataStoreId;
 
     /**
      * The store where the image will be copied to.

@@ -490,7 +490,7 @@ public class ImageReplicatorServiceTest {
       task.taskInfo.stage = stage;
       task.parentLink = TestHost.SERVICE_URI;
       task.image = "image1";
-      task.sourceDataStore = "datastore1";
+      task.sourceDataStoreName = "datastore1";
       task.destinationDataStore = "destinationDatastore";
 
       if (stage == ImageReplicatorService.TaskState.TaskStage.FAILED) {
@@ -770,7 +770,7 @@ public class ImageReplicatorServiceTest {
       for (Map.Entry<String, Object> document : response.results.documents.entrySet()) {
         ImageCopyService.State docState = Utils.fromJson(document.getValue(), ImageCopyService.State.class);
         assertThat(docState.image, is(startState.image));
-        assertThat(docState.sourceDataStore, is(startState.datastore));
+        assertThat(docState.sourceDataStoreName, is(startState.datastore));
         assertThat(docState.destinationDataStore, containsString("datastore_id"));
       }
     }
