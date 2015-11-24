@@ -13,8 +13,14 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -35,6 +41,7 @@ import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorGet
 import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
+import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
@@ -66,7 +73,9 @@ import static org.testng.Assert.fail;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -92,7 +101,7 @@ public class ImageReplicatorServiceTest {
     state.queryPollDelay = 50;
 
     state.image = "image-id";
-    state.datastore = "datastore";
+    state.datastore = "image-datastore-name-0";
 
     return state;
   }
@@ -579,7 +588,7 @@ public class ImageReplicatorServiceTest {
       }
 
       ImageReplicatorService.State savedState = host.getServiceState(ImageReplicatorService.State.class);
-      assertThat(savedState.datastore, is("datastore"));
+      assertThat(savedState.datastore, is("image-datastore-name-0"));
     }
 
     /**
@@ -774,7 +783,7 @@ public class ImageReplicatorServiceTest {
         ImageCopyService.State docState = Utils.fromJson(document.getValue(), ImageCopyService.State.class);
         assertThat(docState.image, is(startState.image));
         assertThat(docState.sourceImageDataStoreName, is(startState.datastore));
-        assertThat(docState.destinationDataStoreId, containsString("datastore_id"));
+        assertThat(docState.destinationDataStoreId, containsString("datastore-id"));
       }
     }
 
@@ -1101,6 +1110,8 @@ public class ImageReplicatorServiceTest {
 
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
+      createHostService(zookeeperHostMonitor.getAllDatastores());
+      createDatastoreService(zookeeperHostMonitor.getImageDatastores());
       newImageReplicator.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       //Call Service.
       ImageReplicatorService.State response = machine.callServiceAndWaitForState(ImageReplicatorServiceFactory
@@ -1230,7 +1241,7 @@ public class ImageReplicatorServiceTest {
                   1.0 +       // START:TRIGGER_COPIES
                   1.0 +       // START:AWAIT_COMPLETION
                   1.0 +   // At least one query patch
-                  1.0     // FINISHED
+                  1.0     // FAILED
           ));
       assertThat(stats.entries.get(
           ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS.toString()).latestValue, is(1.0));
@@ -1252,6 +1263,8 @@ public class ImageReplicatorServiceTest {
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       newImageReplicator.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+      createHostService(zookeeperHostMonitor.getAllDatastores());
+      createDatastoreService(zookeeperHostMonitor.getImageDatastores());
 
       //Call Service.
       ImageReplicatorService.State response = machine.callServiceAndWaitForState(ImageReplicatorServiceFactory
@@ -1261,8 +1274,8 @@ public class ImageReplicatorServiceTest {
 
       // Check response.
       assertThat(response.dataStoreCount, notNullValue());
-      assertTrue(response.finishedCopies == null || response.finishedCopies == 0);
-      assertThat(response.failedOrCanceledCopies, is(response.dataStoreCount));
+      assertTrue(response.finishedCopies == 1);
+      assertThat(response.failedOrCanceledCopies, is(response.dataStoreCount - 1));
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
@@ -1307,6 +1320,64 @@ public class ImageReplicatorServiceTest {
           });
       Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
       return result.getBody(ImageService.State.class);
+    }
+
+    private void createHostService(Set<Datastore> targetDatastores) throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+      machine.startFactoryServiceSynchronously(
+          HostServiceFactory.class,
+          HostServiceFactory.SELF_LINK);
+
+      for (Datastore datastore : targetDatastores) {
+        HostService.State state = new HostService.State();
+        state.state = HostState.READY;
+        state.hostAddress = "0.0.0.0";
+        state.userName = "test-name";
+        state.password = "test-password";
+        state.usageTags = new HashSet<>();
+        state.usageTags.add(UsageTag.CLOUD.name());
+        state.reportedDatastores = new HashSet<>();
+        state.reportedDatastores.add(datastore.getId());
+        state.reportedImageDatastores = new HashSet<>();
+        state.reportedImageDatastores.add("image-datastore-id-0");
+
+        Operation op = cloudStoreHelper
+            .createPost(HostServiceFactory.SELF_LINK)
+            .setBody(state)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                Assert.fail("Failed to create a host in cloud store.");
+              }
+            });
+        ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      }
+    }
+
+    private void createDatastoreService(Set<Datastore> sourceDatastores) throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+
+      machine.startFactoryServiceSynchronously(
+          DatastoreServiceFactory.class,
+          DatastoreServiceFactory.SELF_LINK);
+
+      for (Datastore datastore : sourceDatastores) {
+        DatastoreService.State state = new DatastoreService.State();
+        state.id = datastore.getId();
+        state.name = datastore.getName();
+        state.isImageDatastore = true;
+        state.type = "EXT3";
+        state.documentSelfLink = "/" + datastore.getId();
+
+        Operation op = cloudStoreHelper
+            .createPost(DatastoreServiceFactory.SELF_LINK)
+            .setBody(state)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                Assert.fail("Failed to create a datastore document in cloud store.");
+              }
+            });
+        ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      }
     }
   }
 }
