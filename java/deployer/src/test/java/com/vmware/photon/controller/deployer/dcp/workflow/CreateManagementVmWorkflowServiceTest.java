@@ -795,14 +795,16 @@ public class CreateManagementVmWorkflowServiceTest {
 
       ImageService.State imageServiceState = TestHelper.createImageService(cloudStoreMachine);
 
-      FlavorService.State flavorServiceState = TestHelper.createFlavor(cloudStoreMachine);
+      FlavorService.State vmFlavorServiceState = TestHelper.createFlavor(cloudStoreMachine, null);
+      FlavorService.State diskFlavorServiceState = TestHelper.createFlavor(cloudStoreMachine, "mgmt-vm-disk-NAME");
 
       ProjectService.State projectServiceState = TestHelper.createProject("tenant1", "rt1", cloudStoreMachine);
 
       VmService.State vmServiceStartState = TestHelper.getVmServiceStartState(hostServiceState);
       vmServiceStartState.ipAddress = "1.1.1.1";
       vmServiceStartState.imageServiceLink = imageServiceState.documentSelfLink;
-      vmServiceStartState.flavorServiceLink = flavorServiceState.documentSelfLink;
+      vmServiceStartState.vmFlavorServiceLink = vmFlavorServiceState.documentSelfLink;
+      vmServiceStartState.diskFlavorServiceLink = diskFlavorServiceState.documentSelfLink;
       vmServiceStartState.projectServiceLink = projectServiceState.documentSelfLink;
       VmService.State vmServiceState = TestHelper.createVmService(machine, vmServiceStartState);
       startState.vmServiceLink = vmServiceState.documentSelfLink;

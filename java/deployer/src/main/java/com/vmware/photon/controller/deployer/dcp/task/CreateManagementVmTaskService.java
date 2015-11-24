@@ -268,12 +268,13 @@ public class CreateManagementVmTaskService extends StatefulService {
   private void processStartedStage(final State currentState, final VmService.State vmState, final HostService.State
       hostState) {
     Operation imageGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.imageServiceLink);
-    Operation flavorGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.flavorServiceLink);
+    Operation vmFlavorGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.vmFlavorServiceLink);
+    Operation diskFlavorGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.diskFlavorServiceLink);
     Operation projectGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.projectServiceLink);
 
     OperationJoin
         .create(
-            Arrays.asList(imageGetOperation, projectGetOperation, flavorGetOperation))
+            Arrays.asList(imageGetOperation, projectGetOperation, vmFlavorGetOperation, diskFlavorGetOperation))
         .setCompletion((ops, exs) -> {
           if (null != exs && !exs.isEmpty()) {
             failTask(exs);
@@ -284,7 +285,11 @@ public class CreateManagementVmTaskService extends StatefulService {
             ImageService.State imageState = ops.get(imageGetOperation.getId()).getBody(ImageService.State.class);
             ProjectService.State projectState = ops.get(projectGetOperation.getId()).getBody(
                 ProjectService.State.class);
-            FlavorService.State flavorState = ops.get(flavorGetOperation.getId()).getBody(FlavorService.State.class);
+            FlavorService.State vmFlavorState = ops.get(vmFlavorGetOperation.getId()).getBody(FlavorService.State
+                .class);
+
+            FlavorService.State diskFlavorState = ops.get(diskFlavorGetOperation.getId()).getBody(FlavorService.State
+                .class);
 
             processStartedStage(
                 currentState,
@@ -292,7 +297,8 @@ public class CreateManagementVmTaskService extends StatefulService {
                 hostState,
                 imageState,
                 projectState,
-                flavorState);
+                vmFlavorState,
+                diskFlavorState);
 
           } catch (Throwable t) {
             failTask(t);
@@ -308,18 +314,17 @@ public class CreateManagementVmTaskService extends StatefulService {
    * @param currentState Supplies the current state object.
    * @param vmState Supplies the state object of the VmService entity.
    * @param hostState Supplies the state object of the HostService entity.
-<<<<<<< HEAD
    * @param projectState Supplies the state object of the ProjectService entity.
-=======
    * @param imageState Supplies the state object of the Image Service entity.
    * @param projectState Supplies the state object of the Project Service entity.
-   * @param flavorState Supplies the state object of the FlavorService entity.
->>>>>>> Use cloudstore Project, ResourceTicket, Tenant and remove deployer's
+   * @param vmFlavorState Supplies the state object of the FlavorService entity.
+   * @param diskFlavorState Supplies the state object of the FlavorService entity.
    */
   private void processStartedStage(final State currentState,
                                    final VmService.State vmState, final HostService.State hostState,
                                    final ImageService.State imageState, final ProjectService.State projectState,
-                                   final FlavorService.State flavorState) throws IOException {
+                                   final FlavorService.State vmFlavorState, final FlavorService.State diskFlavorState)
+      throws IOException {
 
     final Service service = this;
 
@@ -352,7 +357,7 @@ public class CreateManagementVmTaskService extends StatefulService {
 
     CreateVmTaskService.State startState = new CreateVmTaskService.State();
     startState.projectId = ServiceUtils.getIDFromDocumentSelfLink(projectState.documentSelfLink);
-    startState.vmCreateSpec = composeVmCreateSpec(vmState, hostState, imageState, flavorState);
+    startState.vmCreateSpec = composeVmCreateSpec(vmState, hostState, imageState, vmFlavorState, diskFlavorState);
     startState.queryCreateVmTaskInterval = currentState.queryCreateVmTaskInterval;
 
     TaskUtils.startTaskAsync(
@@ -641,22 +646,21 @@ public class CreateManagementVmTaskService extends StatefulService {
    *
    * @param vmState Supplies the state object of the VmService entity.
    * @param hostState Supplies the state object of the HostService entity.
-<<<<<<< HEAD
-   * @param flavorState Supplies the state object of the FlavorService entity.
-=======
    * @param imageState Supplies the state object of the ImageService entity.
->>>>>>> Use cloudstore FlavorService and remove deployer's FlavorService
+   * @param vmFlavorState Supplies the state object of the FlavorService entity.
+   * @param diskFlavorState Supplies the state object of the FlavorService entity.
    * @return Returns the VmCreateSpec object.
    */
   private VmCreateSpec composeVmCreateSpec(final VmService.State vmState,
                                            final HostService.State hostState,
                                            final ImageService.State imageState,
-                                           final FlavorService.State flavorState) {
+                                           final FlavorService.State vmFlavorState,
+                                           final FlavorService.State diskFlavorState) {
 
     // Craft the VM creation spec.
     VmCreateSpec spec = new VmCreateSpec();
     spec.setName(vmState.name);
-    spec.setFlavor(flavorState.name);
+    spec.setFlavor(vmFlavorState.name);
 
     spec.setSourceImageId(imageState.documentSelfLink);
 
@@ -665,7 +669,7 @@ public class CreateManagementVmTaskService extends StatefulService {
     AttachedDiskCreateSpec bootDisk = new AttachedDiskCreateSpec();
     bootDisk.setName(vmState.name + "-bootdisk");
     bootDisk.setBootDisk(true);
-    bootDisk.setFlavor(flavorState.name);
+    bootDisk.setFlavor(diskFlavorState.name);
     bootDisk.setKind(EphemeralDisk.KIND);
     attachedDisks.add(bootDisk);
 

@@ -183,7 +183,8 @@ public class VmServiceTest {
 
       VmService.State patchState = new VmService.State();
       patchState.vmId = "vmId";
-      patchState.flavorServiceLink = "flavorServiceLink";
+      patchState.vmFlavorServiceLink = "vmflavorServiceLink";
+      patchState.diskFlavorServiceLink = "diskflavorServiceLink";
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
@@ -193,7 +194,8 @@ public class VmServiceTest {
       VmService.State savedState = testHost.getServiceState(VmService.State.class);
 
       assertThat(savedState.vmId, is("vmId"));
-      assertThat(savedState.flavorServiceLink, is("flavorServiceLink"));
+      assertThat(savedState.vmFlavorServiceLink, is("vmflavorServiceLink"));
+      assertThat(savedState.diskFlavorServiceLink, is("diskflavorServiceLink"));
     }
   }
 }
