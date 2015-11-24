@@ -58,7 +58,7 @@ public class ServiceUtilsTest {
 
     assertThat(propertyDescription.indexingOptions.size(), is(0));
 
-    ServiceUtils.getDocumentTemplateWithIndexedFields(serviceDocument, "DUMMY_PROPERTY");
+    ServiceUtils.setExpandedIndexing(serviceDocument, "DUMMY_PROPERTY");
 
     assertThat(propertyDescription.indexingOptions,
         is(EnumSet.of(ServiceDocumentDescription.PropertyIndexingOption.EXPAND)));

@@ -140,23 +140,31 @@ public class ServiceUtils {
   }
 
   /**
-   * This method generates a document template with expanded indexing for one or more fields. This is required for
-   * queries over non-PODO types such as collections and maps, and for complex embedded structures.
+   * This method updates the specified document template with expanded indexing for one or more fields. This is
+   * required for queries over non-PODO types such as collections and maps, and for complex embedded structures.
    *
    * @param sd         Supplies the base document template for the service in question.
    * @param fieldNames Supplies a list of field names for which expanded indexing should be enabled.
-   * @return On success, the return value is a document template with expanded indexing enabled.
    */
-  public static ServiceDocument getDocumentTemplateWithIndexedFields(ServiceDocument sd, String... fieldNames) {
+  public static void setExpandedIndexing(ServiceDocument sd, String... fieldNames) {
+    setIndexingOptions(sd, ServiceDocumentDescription.PropertyIndexingOption.EXPAND, fieldNames);
+  }
+
+  /**
+   * This method updates the indexing options for the fields in the specified document template to add the specified
+   * option.
+   *
+   * @param sd         Supplies the base document template for the service in question.
+   * @param option     Supplies an indexing option.
+   * @param fieldNames Supplies a list of field names for which the specified indexing option should be enabled.
+   */
+  public static void setIndexingOptions(ServiceDocument sd,
+                                        ServiceDocumentDescription.PropertyIndexingOption option,
+                                        String... fieldNames) {
     for (String fieldName : fieldNames) {
-
-      ServiceDocumentDescription.PropertyDescription propertyDescription =
-          sd.documentDescription.propertyDescriptions.get(fieldName);
-
-      propertyDescription.indexingOptions = EnumSet.of(ServiceDocumentDescription.PropertyIndexingOption.EXPAND);
+      ServiceDocumentDescription.PropertyDescription pd = sd.documentDescription.propertyDescriptions.get(fieldName);
+      pd.indexingOptions.add(option);
     }
-
-    return sd;
   }
 
   /**

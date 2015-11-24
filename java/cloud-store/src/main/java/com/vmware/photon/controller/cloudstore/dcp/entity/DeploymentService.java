@@ -79,7 +79,9 @@ public class DeploymentService extends StatefulService {
 
   @Override
   public ServiceDocument getDocumentTemplate() {
-    return ServiceUtils.getDocumentTemplateWithIndexedFields(super.getDocumentTemplate(), "imageDataStoreNames");
+    ServiceDocument template = super.getDocumentTemplate();
+    ServiceUtils.setExpandedIndexing(template, State.FIELD_NAME_IMAGE_DATA_STORE_NAMES);
+    return template;
   }
 
   private void validateState(State currentState) {
@@ -99,6 +101,8 @@ public class DeploymentService extends StatefulService {
    * This class defines the document state associated with a single {@link DeploymentService} instance.
    */
   public static class State extends ServiceDocument {
+
+    public static final String FIELD_NAME_IMAGE_DATA_STORE_NAMES = "imageDataStoreNames";
 
     /**
      * This value represents the current state of the Deployment.
