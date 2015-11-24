@@ -17,26 +17,30 @@ from common.service_name import ServiceName
 from gen.agent import AgentControl
 
 
-# Load agent config and registrant
-try:
-    config = common.services.get(ServiceName.AGENT_CONFIG)
-except Exception as e:
-    raise ImportError(e)
+class AgentControlPlugin(common.plugin.Plugin):
 
-# Load num_threads
-try:
-    num_threads = config.host_service_threads
-except Exception as e:
-    raise ImportError(e)
+    def __init__(self):
+        super(AgentControlPlugin, self).__init__("AgentControl")
 
-# Create agent control handler
-agent_control_handler = AgentControlHandler()
-common.services.register(AgentControl.Iface, agent_control_handler)
+    def init(self):
+        # Load agent config
+        config = common.services.get(ServiceName.AGENT_CONFIG)
 
-# Create plugin
-plugin = common.plugin.Plugin(
-    name="AgentControl",
-    service=AgentControl,
-    handler=agent_control_handler,
-    num_threads=num_threads,
-)
+        # Load num_threads
+        num_threads = config.host_service_threads
+
+        # Create agent control handler
+        agent_control_handler = AgentControlHandler()
+        common.services.register(AgentControl.Iface, agent_control_handler)
+
+        # Create plugin
+        service = common.plugin.ThriftService(
+            name="AgentControl",
+            service=AgentControl,
+            handler=agent_control_handler,
+            num_threads=num_threads,
+        )
+        self.add_thrift_service(service)
+
+
+plugin = AgentControlPlugin()

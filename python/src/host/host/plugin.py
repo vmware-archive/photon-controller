@@ -17,42 +17,50 @@ from gen.host import Host
 from host.host_handler import HostHandler
 from host.hypervisor import hypervisor
 
-# Load agent config and registrant
-try:
-    config = common.services.get(ServiceName.AGENT_CONFIG)
-    registrant = common.services.get(ServiceName.REGISTRANT)
-except Exception as e:
-    raise ImportError(e)
 
-# Create the hypervisor object
-hv = hypervisor.Hypervisor(config)
+class HostPlugin(common.plugin.Plugin):
 
-# When datastore/network changes on the host, let chairman know
-hv.add_update_listener(registrant)
+    def __init__(self):
+        super(HostPlugin, self).__init__("Host")
 
-# When configuration changes, notify hypervisor
-config.on_config_change(config.CPU_OVERCOMMIT, hv.set_cpu_overcommit)
-config.on_config_change(config.MEMORY_OVERCOMMIT, hv.set_memory_overcommit)
+    def init(self):
+        # Load agent config and registrant
+        config = common.services.get(ServiceName.AGENT_CONFIG)
+        registrant = common.services.get(ServiceName.REGISTRANT)
 
-# Register hypervisor in services
-common.services.register(ServiceName.HYPERVISOR, hv)
+        # Create the hypervisor object
+        hv = hypervisor.Hypervisor(config)
 
-# Create host handler
-host_handler = HostHandler(hv)
-common.services.register(Host.Iface, host_handler)
-if config.hypervisor == "esx":
-    common.services.register(ServiceName.VIM_CLIENT, hv.hypervisor.vim_client)
+        # When datastore/network changes on the host, let chairman know
+        hv.add_update_listener(registrant)
 
-# Load num_threads
-try:
-    num_threads = config.host_service_threads
-except Exception as e:
-    raise ImportError(e)
+        # When configuration changes, notify hypervisor
+        config.on_config_change(config.CPU_OVERCOMMIT,
+                                hv.set_cpu_overcommit)
+        config.on_config_change(config.MEMORY_OVERCOMMIT,
+                                hv.set_memory_overcommit)
 
-# Define host plugin
-plugin = common.plugin.Plugin(
-    name="Host",
-    service=Host,
-    handler=host_handler,
-    num_threads=num_threads,
-)
+        # Register hypervisor in services
+        common.services.register(ServiceName.HYPERVISOR, hv)
+
+        # Create host handler
+        host_handler = HostHandler(hv)
+        common.services.register(Host.Iface, host_handler)
+        if config.hypervisor == "esx":
+            common.services.register(ServiceName.VIM_CLIENT,
+                                     hv.hypervisor.vim_client)
+
+        # Load num_threads
+        num_threads = config.host_service_threads
+
+        # Define and add thrift service
+        service = common.plugin.ThriftService(
+            name="Host",
+            service=Host,
+            handler=host_handler,
+            num_threads=num_threads,
+        )
+        self.add_thrift_service(service)
+
+
+plugin = HostPlugin()

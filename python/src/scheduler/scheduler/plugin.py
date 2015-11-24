@@ -17,27 +17,31 @@ from gen.scheduler import Scheduler
 from scheduler.scheduler_handler import SchedulerHandler
 
 
-# Load agent config and registrant
-try:
-    config = common.services.get(ServiceName.AGENT_CONFIG)
-except Exception as e:
-    raise ImportError(e)
+class SchedulerPlugin(common.plugin.Plugin):
 
-# Create scheduler handler
-scheduler_handler = SchedulerHandler(config.utilization_transfer_ratio)
-common.services.register(Scheduler.Iface, scheduler_handler)
+    def __init__(self):
+        super(SchedulerPlugin, self).__init__("Scheduler")
 
-# Load num_threads
-try:
-    num_threads = config.scheduler_service_threads
-except Exception as e:
-    raise ImportError(e)
+    def init(self):
+        # Load agent config
+        config = common.services.get(ServiceName.AGENT_CONFIG)
+
+        # Create scheduler handler
+        scheduler_handler = SchedulerHandler(config.utilization_transfer_ratio)
+        common.services.register(Scheduler.Iface, scheduler_handler)
+
+        # Load num_threads
+        num_threads = config.scheduler_service_threads
+
+        # Define and add thrift service
+        service = common.plugin.ThriftService(
+            name="Scheduler",
+            service=Scheduler,
+            handler=scheduler_handler,
+            num_threads=num_threads,
+        )
+
+        self.add_thrift_service(service)
 
 
-# Define scheduler plugin
-plugin = common.plugin.Plugin(
-    name="Scheduler",
-    service=Scheduler,
-    handler=scheduler_handler,
-    num_threads=num_threads,
-)
+plugin = SchedulerPlugin()
