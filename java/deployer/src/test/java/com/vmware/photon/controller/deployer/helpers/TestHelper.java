@@ -401,9 +401,14 @@ public class TestHelper {
     return imageServiceState;
   }
 
-  public static FlavorService.State createFlavor(MultiHostEnvironment<?> cloudStoreMachine) throws Throwable {
+  public static FlavorService.State createFlavor(MultiHostEnvironment<?> cloudStoreMachine, String name) throws
+      Throwable {
     FlavorService.State flavorServiceStartState = new FlavorService.State();
-    flavorServiceStartState.name = "dummyName";
+    if (name == null) {
+      flavorServiceStartState.name = "dummyName";
+    } else {
+      flavorServiceStartState.name = name;
+    }
     flavorServiceStartState.kind = "dummyKind";
     flavorServiceStartState.cost = new ArrayList<>();
     flavorServiceStartState.tags = new HashSet<>();
