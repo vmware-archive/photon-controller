@@ -43,7 +43,7 @@ import common.file_util
 from common.datastore_tags import DatastoreTags
 from common.exclusive_set import ExclusiveSet
 from common.mode import Mode
-from common.plugin import load_plugins
+from common.plugin import load_plugins, thrift_services
 from common.request_id import RequestIdExecutor
 from common.service_name import ServiceName
 from common.state import State
@@ -137,8 +137,8 @@ class Agent:
         """ Initialize the thrift server. """
         mux_processor = TMultiplexedProcessor()
 
-        for plugin in self.plugins:
-            self._logger.info("Load plugin %s (num_threads: %d)",
+        for plugin in thrift_services():
+            self._logger.info("Load thrift services %s (num_threads: %d)",
                               plugin.name, plugin.num_threads)
             handler = plugin.handler
             processor = plugin.service.Processor(handler)
