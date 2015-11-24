@@ -56,7 +56,7 @@ public interface DiskBackend {
   void createVmDiskOperationStep(TaskEntity task, VmEntity vm, List<String> diskIds,
                                  Operation operation) throws ExternalException;
 
-  List<Task> getTasks(String id, Optional<String> state) throws ExternalException;
+  List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   BaseDiskEntity find(String kind, String id) throws DiskNotFoundException;
 

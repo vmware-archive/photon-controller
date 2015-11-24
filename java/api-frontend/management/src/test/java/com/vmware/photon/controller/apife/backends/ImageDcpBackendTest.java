@@ -553,7 +553,7 @@ public class ImageDcpBackendTest {
       imageName = UUID.randomUUID().toString();
       String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
       imageBackend.prepareImageDelete(imageId);
-      List<Task> tasks = imageBackend.getTasks(imageId, Optional.<String>absent());
+      List<Task> tasks = imageBackend.getTasks(imageId, Optional.<String>absent(), Optional.<Integer>absent());
       assertThat(tasks.size(), is(1));
       assertThat(tasks.get(0).getState(), is("QUEUED"));
     }
@@ -563,14 +563,14 @@ public class ImageDcpBackendTest {
       imageName = UUID.randomUUID().toString();
       String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
       imageBackend.prepareImageDelete(imageId);
-      List<Task> tasks = imageBackend.getTasks(imageId, Optional.of("FINISHED"));
+      List<Task> tasks = imageBackend.getTasks(imageId, Optional.of("FINISHED"), Optional.<Integer>absent());
       assertThat(tasks.size(), is(0));
     }
 
     @Test(expectedExceptions = ImageNotFoundException.class,
         expectedExceptionsMessageRegExp = "^Image id 'image1' not found$")
     public void testGetTasksWithInvalidImageId() throws Exception {
-      imageBackend.getTasks("image1", Optional.<String>absent());
+      imageBackend.getTasks("image1", Optional.<String>absent(), Optional.<Integer>absent());
     }
   }
 }

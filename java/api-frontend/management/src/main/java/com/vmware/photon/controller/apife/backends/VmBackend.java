@@ -54,7 +54,7 @@ public interface VmBackend {
 
   Vm toApiRepresentation(String id) throws ExternalException;
 
-  List<Task> getTasks(String id, Optional<String> state) throws ExternalException;
+  List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   void tombstone(VmEntity vm) throws ExternalException;
 

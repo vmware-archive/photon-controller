@@ -58,7 +58,7 @@ public interface ImageBackend {
 
   void updateSettings(ImageEntity imageEntity, Map<String, String> imageSettings) throws ExternalException;
 
-  List<Task> getTasks(String id, Optional<String> state) throws ExternalException;
+  List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   ImageEntity findById(String id) throws ExternalException;
 }

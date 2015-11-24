@@ -201,8 +201,9 @@ public class DiskDcpBackend implements DiskBackend {
   }
 
   @Override
-  public List<Task> getTasks(String id, Optional<String> state) throws ExternalException {
+  public List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException {
     BaseDiskEntity diskEntity = find(PersistentDisk.KIND, id);
+    // Will consume this pageSize in next CR.
     return taskBackend.filter(diskEntity.getId(), diskEntity.getKind(), state);
   }
 

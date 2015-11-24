@@ -282,8 +282,9 @@ public class VmDcpBackend implements VmBackend {
   }
 
   @Override
-  public List<Task> getTasks(String id, Optional<String> state) throws ExternalException {
+  public List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException {
     VmEntity vm = findById(id);
+    // Not consuming pageSize now. Too much stuff is using taskBackend.filter
     return taskBackend.filter(vm.getId(), vm.getKind(), state);
   }
 

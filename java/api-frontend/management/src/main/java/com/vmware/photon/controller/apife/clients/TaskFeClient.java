@@ -34,7 +34,8 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Frontend client for task used by {@link TaskResource}.
+ * Frontend client for task used by {@link com.vmware.photon.controller.apife.resources.TasksResource}
+ * and {@link com.vmware.photon.controller.apife.resources.TaskResource}.
  */
 @Singleton
 public class TaskFeClient {
@@ -86,11 +87,11 @@ public class TaskFeClient {
     return new ResourceList<>(taskBackend.filter(entityId, entityKind, state, pageSize));
   }
 
-  public ResourceList<Task> getTenantTasks(String tenantId, Optional<String> state)
+  public ResourceList<Task> getTenantTasks(String tenantId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
     tenantBackend.findById(tenantId);
     return new ResourceList<>(taskBackend.filter(Optional.of(tenantId), Optional.of(TenantEntity.KIND), state,
-        Optional.<Integer>absent()));
+        pageSize));
   }
 
   public ResourceList<Task> getProjectTasks(String projectId, Optional<String> state,
@@ -99,27 +100,26 @@ public class TaskFeClient {
     return new ResourceList<>(taskBackend.filterInProject(projectId, state, kind));
   }
 
-  public ResourceList<Task> getResourceTicketTasks(String resourceTicketId, Optional<String> state)
-      throws ExternalException {
+  public ResourceList<Task> getResourceTicketTasks(String resourceTicketId, Optional<String> state,
+                                                   Optional<Integer> pageSize) throws ExternalException {
     resourceTicketBackend.findById(resourceTicketId);
     return new ResourceList<>(
-        taskBackend.filter(Optional.of(resourceTicketId), Optional.of(ResourceTicketEntity.KIND), state,
-            Optional.<Integer>absent()));
+        taskBackend.filter(Optional.of(resourceTicketId), Optional.of(ResourceTicketEntity.KIND), state, pageSize));
   }
 
-  public ResourceList<Task> getVmTasks(String vmId, Optional<String> state)
+  public ResourceList<Task> getVmTasks(String vmId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(vmBackend.getTasks(vmId, state));
+    return new ResourceList<>(vmBackend.getTasks(vmId, state, pageSize));
   }
 
-  public ResourceList<Task> getDiskTasks(String diskId, Optional<String> state)
+  public ResourceList<Task> getDiskTasks(String diskId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(diskBackend.getTasks(diskId, state));
+    return new ResourceList<>(diskBackend.getTasks(diskId, state, pageSize));
   }
 
-  public ResourceList<Task> getImageTasks(String imageId, Optional<String> state)
+  public ResourceList<Task> getImageTasks(String imageId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(imageBackend.getTasks(imageId, state));
+    return new ResourceList<>(imageBackend.getTasks(imageId, state, pageSize));
   }
 
   public ResourceList<Task> getFlavorTasks(String flavorId, Optional<String> state)
