@@ -658,7 +658,7 @@ public class CreateManagementVmTaskService extends StatefulService {
     spec.setName(vmState.name);
     spec.setFlavor(flavorState.name);
 
-    spec.setSourceImageId(imageState.documentSelfLink);
+    spec.setSourceImageId(ServiceUtils.getIDFromDocumentSelfLink(imageState.documentSelfLink));
 
     List<AttachedDiskCreateSpec> attachedDisks = new ArrayList<>();
 
