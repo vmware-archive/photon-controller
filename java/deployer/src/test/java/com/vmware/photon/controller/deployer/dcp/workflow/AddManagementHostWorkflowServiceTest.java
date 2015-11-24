@@ -77,6 +77,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
 import javax.annotation.Nullable;
@@ -849,7 +850,7 @@ public class AddManagementHostWorkflowServiceTest {
 
       verifyVmServiceStates(2);
       verifyContainerTemplateServiceStates(isAuthEnabled);
-      verifyContainerServiceStates();
+      verifyContainerServiceStates(startState.hostServiceLink);
     }
 
     private HostService.State createHostService(Set<String> usageTags) throws Throwable {
@@ -1037,7 +1038,7 @@ public class AddManagementHostWorkflowServiceTest {
       }
     }
 
-    private void verifyContainerServiceStates() throws Throwable {
+    private void verifyContainerServiceStates(String hostServiceLink) throws Throwable {
       List<VmService.State> vmStates = queryForServiceStates(VmService.State.class, localDeployer);
       List<ContainerTemplateService.State> containerTemplateStates =
           queryForServiceStates(ContainerTemplateService.State.class, localDeployer);
@@ -1075,7 +1076,12 @@ public class AddManagementHostWorkflowServiceTest {
 
           if (documentLinks.size() > 0) {
             for (String documentLink : documentLinks) {
-              localDeployer.getServiceState(documentLink, ContainerService.State.class);
+              ContainerService.State containerState = localDeployer.getServiceState(documentLink, ContainerService.State
+                  .class);
+              if (vmState.hostServiceLink.equals(hostServiceLink)) {
+                assertNotNull(containerState.memoryMb);
+                assertNotNull(containerState.cpuShares);
+              }
               // TODO(ysheng): verify container ID
             }
           }

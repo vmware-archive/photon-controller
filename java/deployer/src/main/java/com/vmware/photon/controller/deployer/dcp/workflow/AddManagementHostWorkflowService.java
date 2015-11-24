@@ -43,6 +43,8 @@ import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
+import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
@@ -631,10 +633,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
           public void onSuccess(@Nullable BulkProvisionHostsWorkflowService.State result) {
             switch (result.taskState.stage) {
               case FINISHED:
-                TaskUtils.sendSelfPatch(service, buildPatch(
-                    TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
-                    null));
+                queryManagementHosts(currentState);
                 break;
               case FAILED:
                 State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
@@ -670,6 +669,89 @@ public class AddManagementHostWorkflowService extends StatefulService {
         BulkProvisionHostsWorkflowService.State.class,
         currentState.taskPollDelay,
         callback);
+  }
+
+  private void queryManagementHosts(final State currentState) {
+    QueryTask.QuerySpecification querySpecification;
+
+    if (currentState.hostServiceLink != null) {
+      querySpecification = MiscUtils.generateHostQuerySpecification(currentState.hostServiceLink, null);
+    } else {
+      querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
+    }
+
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(querySpecification).setDirect(true))
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
+
+                  try {
+                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                    QueryTaskUtils.logQueryResults(this, documentLinks);
+                    checkState(documentLinks.size() >= 1);
+                    allocateHostResource(currentState, documentLinks);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
+  }
+
+  private void allocateHostResource(final State currentState, Collection<String> documentLinks) {
+    ServiceUtils.logInfo(this, "Allocating host resource to containers and vms");
+    final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
+    final Service service = this;
+
+    FutureCallback<AllocateHostResourceTaskService.State> callback =
+        new FutureCallback<AllocateHostResourceTaskService.State>() {
+          @Override
+          public void onSuccess(@Nullable AllocateHostResourceTaskService.State result) {
+            switch (result.taskState.stage) {
+              case FINISHED:
+                if (0 == pendingChildren.decrementAndGet()) {
+                  TaskUtils.sendSelfPatch(service, buildPatch(
+                      TaskState.TaskStage.STARTED,
+                      TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
+                      null));
+                }
+                break;
+              case FAILED:
+                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                patchState.taskState.failure = result.taskState.failure;
+                TaskUtils.sendSelfPatch(service, patchState);
+                break;
+              case CANCELLED:
+                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
+                break;
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        };
+
+
+    for (String hostServiceLink : documentLinks) {
+      AllocateHostResourceTaskService.State startState = new AllocateHostResourceTaskService.State();
+      startState.hostServiceLink = hostServiceLink;
+
+      TaskUtils.startTaskAsync(
+          this,
+          AllocateHostResourceTaskFactoryService.SELF_LINK,
+          startState,
+          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+          AllocateHostResourceTaskService.State.class,
+          currentState.taskPollDelay,
+          callback);
+    }
   }
 
   private void processCreateManagementPlane(final State currentState, DeploymentService.State deploymentService)
