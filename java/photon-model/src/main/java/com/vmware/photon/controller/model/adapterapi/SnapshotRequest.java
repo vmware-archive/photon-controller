@@ -11,47 +11,24 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.model.resources;
+package com.vmware.photon.controller.model.adapterapi;
 
 import java.net.URI;
 
 /**
- * Request to create/destroy a network instance on a given compute.
+ * Request to the snapshot service.
  */
-public class NetworkInstanceRequest {
+public class SnapshotRequest {
 
   /**
-   * The types of instance request.
+   * URI reference to the snapshot service instance.
    */
-  public static enum InstanceRequestType {
-    CREATE,
-    DELETE
-  }
+  public URI snapshotReference;
 
   /**
-   * Request type of a network instance on the given compute.
+   * URI reference to the snapshot task service instance.
    */
-  public InstanceRequestType requestType;
-
-  /**
-   * Link to secrets.
-   */
-  public String authCredentialsLink;
-
-  /**
-   * The resource pool the network exists in.
-   */
-  public String resourcePoolLink;
-
-  /**
-   * The network instance being requested on.
-   */
-  public URI networkReference;
-
-  /**
-   * Task tracking the state of this request. Set by run-time.
-   */
-  public URI provisioningTaskReference;
+  public URI snapshotTaskReference;
 
   /**
    * Value indicating whether the service should treat this as a mock request and complete the
