@@ -611,7 +611,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
                 failTask(failure);
               } else {
                 TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.CREATE_MANAGEMENT_PLANE, null));
+                    TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS, null));
               }
             }
         )

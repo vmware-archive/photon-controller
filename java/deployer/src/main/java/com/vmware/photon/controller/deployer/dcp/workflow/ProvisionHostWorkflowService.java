@@ -300,6 +300,7 @@ public class ProvisionHostWorkflowService extends StatefulService {
         break;
       case UPDATE_DATASTORES:
         updateDataStoreTask(currentState);
+        break;
     }
   }
 
@@ -441,23 +442,7 @@ public class ProvisionHostWorkflowService extends StatefulService {
           public void onSuccess(@Nullable UpdateHostDatastoresTaskService.State result) {
             switch (result.taskState.stage) {
               case FINISHED:
-                HostService.State hostService = new HostService.State();
-                hostService.state = HostState.READY;
-
-                sendRequest(
-                    HostUtils.getCloudStoreHelper(service)
-                        .createPatch(currentState.hostServiceLink)
-                        .setBody(hostService)
-                        .setCompletion(
-                            (completedOp, failure) -> {
-                              if (null != failure) {
-                                failTask(failure);
-                              } else {
-                                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED, null, null));
-                              }
-                            }
-                        ));
-
+                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED, null, null));
                 break;
               case FAILED:
                 State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
