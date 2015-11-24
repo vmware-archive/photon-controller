@@ -15,16 +15,13 @@ package com.vmware.photon.controller.model.tasks;
 
 import com.vmware.dcp.common.Service;
 import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.model.ModelServices;
 import com.vmware.photon.controller.model.TaskServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
-import com.vmware.photon.controller.model.helpers.TestHost;
 import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
 import com.vmware.photon.controller.model.resources.ComputeDescriptionService;
 import com.vmware.photon.controller.model.resources.ComputeDescriptionService.ComputeDescription.ComputeType;
 import com.vmware.photon.controller.model.resources.ComputeDescriptionServiceTest;
-import com.vmware.photon.controller.model.resources.ComputeFactoryService;
 import com.vmware.photon.controller.model.resources.ComputeService;
 
 import org.testng.annotations.BeforeMethod;
@@ -32,67 +29,15 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * This class implements tests for the {@link ProvisionComputeTaskService} class.
  */
 public class ProvisionComputeTaskServiceTest {
-  private static final String TEST_DESC_PROPERTY_NAME = "testDescProperty";
-  private static final String TEST_DESC_PROPERTY_VALUE = UUID.randomUUID().toString();
-
-  private static ComputeDescriptionService.ComputeDescription createComputeDescription(
-      TestHost host,
-      String instanceAdapterLink,
-      String bootAdapterLink) throws Throwable {
-    ComputeDescriptionService.ComputeDescription cd = ComputeDescriptionServiceTest.buildValidStartState();
-    // disable periodic maintenance for tests by default.
-    cd.healthAdapterReference = null;
-    if (instanceAdapterLink != null) {
-      cd.instanceAdapterReference = UriUtils.buildUri(host, instanceAdapterLink);
-    }
-    if (bootAdapterLink != null) {
-      cd.bootAdapterReference = UriUtils.buildUri(host, bootAdapterLink);
-    }
-    return host.postServiceSynchronously(
-        ComputeDescriptionFactoryService.SELF_LINK,
-        cd,
-        ComputeDescriptionService.ComputeDescription.class);
-  }
-
-  private static ComputeService.ComputeStateWithDescription createCompute(
-      TestHost host,
-      ComputeDescriptionService.ComputeDescription cd) throws Throwable {
-    ComputeService.ComputeState cs = new ComputeService.ComputeStateWithDescription();
-    cs.id = UUID.randomUUID().toString();
-    cs.descriptionLink = cd.documentSelfLink;
-    cs.resourcePoolLink = null;
-    cs.address = "10.0.0.1";
-    cs.primaryMAC = "01:23:45:67:89:ab";
-    cs.powerState = ComputeService.PowerState.ON;
-    cs.adapterManagementReference = URI.create("https://esxhost-01:443/sdk");
-    cs.diskLinks = new ArrayList<>();
-    cs.diskLinks.add("http://disk");
-    cs.networkLinks = new ArrayList<>();
-    cs.networkLinks.add("http://network");
-    cs.customProperties = new HashMap<>();
-    cs.customProperties.put(TEST_DESC_PROPERTY_NAME, TEST_DESC_PROPERTY_VALUE);
-    cs.tenantLinks = new ArrayList<>();
-    cs.tenantLinks.add("http://tenant");
-
-    ComputeService.ComputeState returnState = host.postServiceSynchronously(
-        ComputeFactoryService.SELF_LINK,
-        cs,
-        ComputeService.ComputeState.class);
-
-    return ComputeService.ComputeStateWithDescription.create(cd, returnState);
-  }
 
   private static Class[] getFactoryServices() {
     List<Class> services = new ArrayList<>();
@@ -100,20 +45,6 @@ public class ProvisionComputeTaskServiceTest {
     Collections.addAll(services, TaskServices.FACTORIES);
     Collections.addAll(services, MockAdapter.FACTORIES);
     return services.toArray(new Class[services.size()]);
-  }
-
-  private static ComputeService.ComputeStateWithDescription createComputeWithDescription(
-      TestHost host,
-      String instanceAdapterLink,
-      String bootAdapterLink) throws Throwable {
-    return createCompute(host,
-        createComputeDescription(host, instanceAdapterLink, bootAdapterLink));
-  }
-
-  private static ComputeService.ComputeStateWithDescription createComputeWithDescription(
-      TestHost host,
-      ComputeType supportedChildren) throws Throwable {
-    return createComputeWithDescription(host, null, null);
   }
 
   @Test
@@ -153,7 +84,9 @@ public class ProvisionComputeTaskServiceTest {
 
     @Test
     public void testValidateComputeHost() throws Throwable {
-      ComputeService.ComputeStateWithDescription cs = createComputeWithDescription(host, ComputeType.VM_HOST);
+      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(
+          host,
+          ComputeType.VM_HOST);
 
       ProvisionComputeTaskService.ProvisionComputeTaskState startState =
           new ProvisionComputeTaskService.ProvisionComputeTaskState();
@@ -177,7 +110,9 @@ public class ProvisionComputeTaskServiceTest {
 
     @Test
     public void testMissingComputeLink() throws Throwable {
-      ComputeService.ComputeStateWithDescription cs = createComputeWithDescription(host, ComputeType.VM_HOST);
+      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(
+          host,
+          ComputeType.VM_HOST);
 
       ProvisionComputeTaskService.ProvisionComputeTaskState startState =
           new ProvisionComputeTaskService.ProvisionComputeTaskState();
@@ -192,7 +127,9 @@ public class ProvisionComputeTaskServiceTest {
 
     @Test
     public void testMissingSubStage() throws Throwable {
-      ComputeService.ComputeStateWithDescription cs = createComputeWithDescription(host, ComputeType.VM_HOST);
+      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(
+          host,
+          ComputeType.VM_HOST);
 
       ProvisionComputeTaskService.ProvisionComputeTaskState startState =
           new ProvisionComputeTaskService.ProvisionComputeTaskState();
@@ -217,7 +154,7 @@ public class ProvisionComputeTaskServiceTest {
           cd,
           ComputeDescriptionService.ComputeDescription.class);
 
-      ComputeService.ComputeStateWithDescription cs = createCompute(host, cd1);
+      ComputeService.ComputeStateWithDescription cs = ModelUtils.createCompute(host, cd1);
 
       ProvisionComputeTaskService.ProvisionComputeTaskState startState =
           new ProvisionComputeTaskService.ProvisionComputeTaskState();
@@ -251,7 +188,7 @@ public class ProvisionComputeTaskServiceTest {
 
     @Test
     public void testCreateAndBootHostSuccess() throws Throwable {
-      ComputeService.ComputeStateWithDescription cs = createComputeWithDescription(
+      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(
           host,
           MockAdapter.MockSuccessInstanceAdapter.SELF_LINK,
           MockAdapter.MockSuccessBootAdapter.SELF_LINK);
@@ -278,7 +215,7 @@ public class ProvisionComputeTaskServiceTest {
 
     @Test
     public void testCreateHostFailure() throws Throwable {
-      ComputeService.ComputeStateWithDescription cs = createComputeWithDescription(
+      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(
           host,
           MockAdapter.MockFailureInstanceAdapter.SELF_LINK,
           null);
@@ -305,7 +242,7 @@ public class ProvisionComputeTaskServiceTest {
 
     @Test
     public void testBootHostFailure() throws Throwable {
-      ComputeService.ComputeStateWithDescription cs = createComputeWithDescription(
+      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(
           host,
           MockAdapter.MockSuccessInstanceAdapter.SELF_LINK,
           MockAdapter.MockFailureBootAdapter.SELF_LINK);
