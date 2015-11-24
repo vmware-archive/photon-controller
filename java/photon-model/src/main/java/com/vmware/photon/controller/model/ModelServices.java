@@ -18,6 +18,7 @@ import com.vmware.photon.controller.model.resources.ComputeFactoryService;
 import com.vmware.photon.controller.model.resources.DiskFactoryService;
 import com.vmware.photon.controller.model.resources.ResourceDescriptionFactoryService;
 import com.vmware.photon.controller.model.resources.ResourcePoolFactoryService;
+import com.vmware.photon.controller.model.resources.SnapshotFactoryService;
 
 /**
  * Service factories used in Photon Model package.
@@ -29,5 +30,6 @@ public class ModelServices {
       DiskFactoryService.class,
       ResourceDescriptionFactoryService.class,
       ResourcePoolFactoryService.class,
+      SnapshotFactoryService.class
   };
 }
