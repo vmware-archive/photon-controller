@@ -11,19 +11,22 @@
  * specific language governing permissions and limitations under the License.
  */
 
-  package com.vmware.photon.controller.model;
+package com.vmware.photon.controller.model.awsadapter;
 
 /**
- * ServiceUriPaths
- *
- * Service paths used by the photon model.
+ * Defines AWS stages.
  */
-public class UriPaths {
-  public static final int GO_DCP_HOST_PORT = 8082;
-  public static final String GO_DCP_HOST_PROCESS_NAME = "go-dcp";
-  public static final String PROVISIONING = "/provisioning";
-  public static final String RESOURCES = "/resources";
-  public static final String RESOURCES_NETWORKS = RESOURCES + "/networks";
-  public static final String PROVISIONING_AWS = PROVISIONING + "/aws";
-  public static final String AWS_INSTANCE_SERVICE = PROVISIONING_AWS + "/instance-service";
+public enum AWSStages {
+
+  VMDESC,
+  PARENTDESC,
+  PARENTAUTH,
+  CLIENT,
+  DELETE,
+  CREATE,
+  VMDISKS,
+  FIREWALL,
+  DONE,
+  ERROR
+
 }
