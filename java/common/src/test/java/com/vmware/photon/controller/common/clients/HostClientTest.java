@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.clients.exceptions.ImageAlreadyExistE
 import com.vmware.photon.controller.common.clients.exceptions.ImageInUseException;
 import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.ImageRefCountFileException;
+import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentConfigurationException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidReservationException;
@@ -44,6 +45,7 @@ import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
+import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.AttachISORequest;
 import com.vmware.photon.controller.host.gen.AttachISOResponse;
 import com.vmware.photon.controller.host.gen.AttachISOResultCode;
@@ -106,6 +108,9 @@ import com.vmware.photon.controller.host.gen.ServiceTicketResultCode;
 import com.vmware.photon.controller.host.gen.SetHostModeRequest;
 import com.vmware.photon.controller.host.gen.StartImageScanRequest;
 import com.vmware.photon.controller.host.gen.StartImageSweepRequest;
+import com.vmware.photon.controller.host.gen.TransferImageRequest;
+import com.vmware.photon.controller.host.gen.TransferImageResponse;
+import com.vmware.photon.controller.host.gen.TransferImageResultCode;
 import com.vmware.photon.controller.host.gen.VmDiskOpError;
 import com.vmware.photon.controller.host.gen.VmDiskOpResultCode;
 import com.vmware.photon.controller.host.gen.VmDisksAttachRequest;
@@ -846,6 +851,125 @@ public class HostClientTest {
 
     @Test(enabled = false)
     public void testFailureUnknownError() {
+    }
+  }
+
+  /**
+   * This class implements tests for the transferImage method.
+   */
+  public class TransferImageTest {
+
+    private String imageId = "imageId";
+    private String source = "dataStore1";
+    private String destination = "dataStore2";
+    private ServerAddress destinationHost = new ServerAddress("0.0.0.0", 0);
+
+    @BeforeMethod
+    private void setUp() throws Throwable {
+      HostClientTest.this.setUp();
+    }
+
+    @AfterMethod
+    private void tearDown() {
+      hostClient = null;
+    }
+
+    private Answer getAnswer(final Host.AsyncClient.transfer_image_call transferImageCall) {
+      return new Answer() {
+        @Override
+        public Object answer(InvocationOnMock invocation) throws Throwable {
+          Object[] args = invocation.getArguments();
+          AsyncMethodCallback<Host.AsyncClient.transfer_image_call> handler = (AsyncMethodCallback) args[1];
+          handler.onComplete(transferImageCall);
+          return null;
+        }
+      };
+    }
+
+    @Test
+    public void testSuccess() throws Exception {
+      TransferImageResponse transferImageResponse = new TransferImageResponse();
+      transferImageResponse.setResult(TransferImageResultCode.OK);
+      final Host.AsyncClient.transfer_image_call transferImageCall = mock(Host.AsyncClient.transfer_image_call.class);
+      doReturn(transferImageResponse).when(transferImageCall).getResult();
+      doAnswer(getAnswer(transferImageCall))
+          .when(clientProxy).transfer_image(any(TransferImageRequest.class), any(AsyncMethodCallback.class));
+
+      hostClient.setClientProxy(clientProxy);
+      assertThat(hostClient.transferImage(imageId, source, destination, destinationHost), is(transferImageResponse));
+    }
+
+    @Test
+    public void testFailureNullHostIp() throws Exception {
+      try {
+        hostClient.transferImage(imageId, source, destination, destinationHost);
+        fail("Synchronous copyImage call should throw with null async clientProxy");
+      } catch (IllegalArgumentException e) {
+        assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
+      }
+    }
+
+    @Test
+    public void testFailureTExceptionOnCall() throws Exception {
+      doThrow(new TException("Thrift exception"))
+          .when(clientProxy).transfer_image(any(TransferImageRequest.class), any(AsyncMethodCallback.class));
+
+      hostClient.setClientProxy(clientProxy);
+
+      try {
+        hostClient.transferImage(imageId, source, destination, destinationHost);
+        fail("Synchronous transferImage call should convert TException on call to RpcException");
+      } catch (RpcException e) {
+        assertThat(e.getMessage(), is("Thrift exception"));
+      }
+    }
+
+    @Test
+    public void testFailureTExceptionOnGetResult() throws Exception {
+      final Host.AsyncClient.transfer_image_call transferImageCall = mock(Host.AsyncClient.transfer_image_call.class);
+      doThrow(new TException("Thrift exception")).when(transferImageCall).getResult();
+      doAnswer(getAnswer(transferImageCall))
+          .when(clientProxy).transfer_image(any(TransferImageRequest.class), any(AsyncMethodCallback.class));
+
+      hostClient.setClientProxy(clientProxy);
+
+      try {
+        hostClient.transferImage(imageId, source, destination, destinationHost);
+        fail("Synchronous copyImage call should convert TException on getResult to RpcException");
+      } catch (RpcException e) {
+        assertThat(e.getMessage(), is("Thrift exception"));
+      }
+    }
+
+    @Test(dataProvider = "TransferImageFailureResultCodes")
+    public void testFailureResult(TransferImageResultCode resultCode,
+                                  Class<RuntimeException> exceptionClass) throws Exception {
+      TransferImageResponse transferImageResponse = new TransferImageResponse();
+      transferImageResponse.setResult(resultCode);
+      transferImageResponse.setError(resultCode.toString());
+
+      final Host.AsyncClient.transfer_image_call transferImageCall = mock(Host.AsyncClient.transfer_image_call.class);
+      doReturn(transferImageResponse).when(transferImageCall).getResult();
+      doAnswer(getAnswer(transferImageCall))
+          .when(clientProxy).transfer_image(any(TransferImageRequest.class), any(AsyncMethodCallback.class));
+
+      hostClient.setClientProxy(clientProxy);
+
+      try {
+        hostClient.transferImage(imageId, source, destination, destinationHost);
+        fail("Synchronous copyImage call should throw on failure result: " + resultCode.toString());
+      } catch (Exception e) {
+        assertTrue(e.getClass() == exceptionClass);
+        assertThat(e.getMessage(), is(resultCode.toString()));
+      }
+    }
+
+    @DataProvider(name = "TransferImageFailureResultCodes")
+    public Object[][] getTransferImageFailureResultCodes() {
+      return new Object[][]{
+          {TransferImageResultCode.TRANSFER_IN_PROGRESS, ImageTransferInProgressException.class},
+          {TransferImageResultCode.SYSTEM_ERROR, SystemErrorException.class},
+      };
     }
   }
 
