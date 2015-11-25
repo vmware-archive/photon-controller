@@ -30,6 +30,7 @@ import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.host.gen.AgentStatusResponse;
 import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostConfig;
@@ -331,14 +332,13 @@ public class ProvisionAgentTaskService extends StatefulService {
       }
     };
 
-    final AsyncMethodCallback<Host.AsyncClient.get_host_config_call> handler =
-        new AsyncMethodCallback<Host.AsyncClient.get_host_config_call>() {
+      final AsyncMethodCallback<Host.AsyncClient.get_agent_status_call> handler =
+          new AsyncMethodCallback<Host.AsyncClient.get_agent_status_call>() {
           @Override
-          public void onComplete(Host.AsyncClient.get_host_config_call getHostConfigCall) {
+          public void onComplete(Host.AsyncClient.get_agent_status_call getAgentStatusCall) {
             try {
-              GetConfigResponse configResponse = getHostConfigCall.getResult();
-              HostClient.ResponseValidator.checkGetConfigResponse(configResponse);
-              updateHostDocumentWithConfig(currentState, configResponse.getHostConfig());
+              AgentStatusResponse agentStatusResponse = getAgentStatusCall.getResult();
+              HostClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse);
             } catch (TException e) {
               retryOrFail(retryable, currentState, new RpcException(e.getMessage()));
             } catch (Throwable t) {
@@ -355,40 +355,9 @@ public class ProvisionAgentTaskService extends StatefulService {
     try {
       HostClient hostClient = HostUtils.getHostClient(this);
       hostClient.setIpAndPort(hostState.hostAddress, ServicePortConstants.AGENT_PORT);
-      hostClient.getHostConfig(handler);
+      hostClient.getAgentStatus(handler);
     } catch (Throwable t) {
       retryOrFail(retryable, currentState, t);
-    }
-  }
-
-  private void updateHostDocumentWithConfig(final State currentState, HostConfig hostConfig) {
-    try {
-      HostService.State patchState = new HostService.State();
-      if (hostConfig.isSetMemory_mb()) {
-        patchState.memoryMb = hostConfig.getMemory_mb();
-      }
-      if (hostConfig.isSetCpu_count()) {
-        patchState.cpuCount = hostConfig.getCpu_count();
-      }
-      if (hostConfig.isSetMemory_mb() || hostConfig.isSetCpu_count()) {
-        sendRequest(
-            HostUtils.getCloudStoreHelper(this)
-                .createPatch(currentState.hostServiceLink)
-                .setBody(patchState)
-                .setCompletion(
-                    (completedOp, failure) -> {
-                      if (null != failure) {
-                        failTask(failure);
-                      } else {
-                        sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-                      }
-                    }
-                ));
-      } else {
-        sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-      }
-    } catch (Throwable t) {
-      failTask(t);
     }
   }
 

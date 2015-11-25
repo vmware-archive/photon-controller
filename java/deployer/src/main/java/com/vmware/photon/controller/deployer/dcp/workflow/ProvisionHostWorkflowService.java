@@ -30,8 +30,8 @@ import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskFactoryServ
 import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskService;
-import com.vmware.photon.controller.deployer.dcp.task.UpdateHostDatastoresTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.UpdateHostDatastoresTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.ExtractHostInformationTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ExtractHostInformationTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
@@ -436,10 +436,10 @@ public class ProvisionHostWorkflowService extends StatefulService {
   private void updateDataStoreTask(State currentState) {
     final Service service = this;
 
-    FutureCallback<UpdateHostDatastoresTaskService.State> futureCallback =
-        new FutureCallback<UpdateHostDatastoresTaskService.State>() {
+    FutureCallback<ExtractHostInformationTaskService.State> futureCallback =
+        new FutureCallback<ExtractHostInformationTaskService.State>() {
           @Override
-          public void onSuccess(@Nullable UpdateHostDatastoresTaskService.State result) {
+          public void onSuccess(@Nullable ExtractHostInformationTaskService.State result) {
             switch (result.taskState.stage) {
               case FINISHED:
                 TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED, null, null));
@@ -465,16 +465,16 @@ public class ProvisionHostWorkflowService extends StatefulService {
         };
 
     TaskUtils.startTaskAsync(this,
-        UpdateHostDatastoresTaskFactoryService.SELF_LINK,
+        ExtractHostInformationTaskFactoryService.SELF_LINK,
         createUpdateHostDatastoresTaskServiceState(currentState),
         (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        UpdateHostDatastoresTaskService.State.class,
+        ExtractHostInformationTaskService.State.class,
         currentState.taskPollDelay,
         futureCallback);
   }
 
-  private UpdateHostDatastoresTaskService.State createUpdateHostDatastoresTaskServiceState(State currentState) {
-    UpdateHostDatastoresTaskService.State state = new UpdateHostDatastoresTaskService.State();
+  private ExtractHostInformationTaskService.State createUpdateHostDatastoresTaskServiceState(State currentState) {
+    ExtractHostInformationTaskService.State state = new ExtractHostInformationTaskService.State();
     state.hostServiceLink = currentState.hostServiceLink;
     return state;
   }

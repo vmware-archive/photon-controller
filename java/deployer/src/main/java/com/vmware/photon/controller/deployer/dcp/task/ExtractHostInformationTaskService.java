@@ -13,6 +13,12 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
+import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationJoin;
+import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.dcp.common.StatefulService;
+import com.vmware.dcp.common.TaskState;
+import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
@@ -34,12 +40,6 @@ import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.resource.gen.Datastore;
-import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.OperationJoin;
-import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
-import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.thrift.async.AsyncMethodCallback;
@@ -57,10 +57,10 @@ import java.util.stream.Collectors;
 /**
  * This class implements a DCP microservice which performs the task of provisioning an agent.
  */
-public class UpdateHostDatastoresTaskService extends StatefulService {
+public class ExtractHostInformationTaskService extends StatefulService {
 
   /**
-   * This class defines the document state associated with a single {@link UpdateHostDatastoresTaskService} instance.
+   * This class defines the document state associated with a single {@link ExtractHostInformationTaskService} instance.
    */
   public static class State extends ServiceDocument {
     /**
@@ -85,7 +85,7 @@ public class UpdateHostDatastoresTaskService extends StatefulService {
     public Integer controlFlags;
   }
 
-  public UpdateHostDatastoresTaskService() {
+  public ExtractHostInformationTaskService() {
     super(State.class);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
@@ -158,20 +158,20 @@ public class UpdateHostDatastoresTaskService extends StatefulService {
 
   private void gethostState(State currentState) {
     HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.hostServiceLink)
-        .setCompletion((op, t) -> {
-          if (t != null) {
-            failTask(t);
-            return;
-          }
-          getHostConfig(currentState, op.getBody(HostService.State.class));
-        })
-        .sendWith(this);
+      .createGet(currentState.hostServiceLink)
+      .setCompletion((op, t) ->{
+        if (t != null) {
+          failTask(t);
+          return;
+        }
+        getHostConfig(currentState, op.getBody(HostService.State.class));
+      })
+      .sendWith(this);
   }
 
   private void getHostConfig(final State currentState, final HostService.State hostState) {
     AsyncMethodCallback<Host.AsyncClient.get_host_config_call> handler
-        = new AsyncMethodCallback<Host.AsyncClient.get_host_config_call>() {
+      = new AsyncMethodCallback<Host.AsyncClient.get_host_config_call>() {
 
       @Override
       public void onComplete(Host.AsyncClient.get_host_config_call call) {
@@ -200,6 +200,7 @@ public class UpdateHostDatastoresTaskService extends StatefulService {
   }
 
   private void processHostConfig(HostConfig hostConfig, String hostServiceLink) {
+
     Set<String> imageDatastoreIds = getOrElse(hostConfig.getImage_datastore_ids(), new HashSet<String>());
 
     Collection<Datastore> imageDatastores = getOrElse(hostConfig.getDatastores(), new ArrayList<Datastore>()).stream()
@@ -214,18 +215,18 @@ public class UpdateHostDatastoresTaskService extends StatefulService {
 
     Collection<Operation> operations = generateDatastorePosts(imageDatastoreStates);
     operations.addAll(generateDatastorePosts(regularDatastoreStates));
-    operations.add(generateHostupdatePatch(hostServiceLink, imageDatastoreStates, regularDatastoreStates));
+    operations.add(generateHostupdatePatch(hostConfig, hostServiceLink, imageDatastoreStates, regularDatastoreStates));
 
     OperationJoin.create(operations)
-        .setCompletion((ops, ts) -> {
-          ts = removeEntityExistsErrors(ops, ts);
-          if (ts != null && !ts.isEmpty()) {
-            failTask(ExceptionUtils.createMultiException(ts.values()));
-            return;
-          }
-          sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-        })
-        .sendWith(this);
+      .setCompletion((ops, ts) -> {
+        ts = removeEntityExistsErrors(ops, ts);
+        if (ts != null && !ts.isEmpty()) {
+          failTask(ExceptionUtils.createMultiException(ts.values()));
+          return;
+        }
+        sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+      })
+      .sendWith(this);
   }
 
   private <T> T getOrElse(T value, T alternative) {
@@ -245,6 +246,7 @@ public class UpdateHostDatastoresTaskService extends StatefulService {
   }
 
   private Operation generateHostupdatePatch(
+      HostConfig hostConfig,
       String hostServiceLink,
       Collection<DatastoreService.State> imageDatastores,
       Collection<DatastoreService.State> regularDatastoreStates) {
@@ -260,10 +262,17 @@ public class UpdateHostDatastoresTaskService extends StatefulService {
         .collect(Collectors.toMap(
             k -> {
               return k.name;
-            },
+              },
             v -> {
               return DatastoreServiceFactory.SELF_LINK + "/" + v.id;
-            }));
+              }));
+
+    if (hostConfig.isSetMemory_mb()) {
+      host.memoryMb = hostConfig.getMemory_mb();
+    }
+    if (hostConfig.isSetCpu_count()) {
+      host.cpuCount = hostConfig.getCpu_count();
+    }
 
     return cloudStoreHelper.createPatch(hostServiceLink)
         .setBody(host);
