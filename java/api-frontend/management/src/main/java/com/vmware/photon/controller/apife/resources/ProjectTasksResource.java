@@ -65,10 +65,11 @@ public class ProjectTasksResource {
   public Response get(@Context Request request,
                       @PathParam("id") String id,
                       @QueryParam("state") Optional<String> state,
-                      @QueryParam("kind") Optional<String> kind) throws ExternalException {
+                      @QueryParam("kind") Optional<String> kind,
+                      @QueryParam("pageSize") Optional<Integer> pageSize) throws ExternalException {
     return generateResourceListResponse(
         Response.Status.OK,
-        taskFeClient.getProjectTasks(id, state, kind),
+        taskFeClient.getProjectTasks(id, state, kind, pageSize),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

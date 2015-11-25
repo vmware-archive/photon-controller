@@ -15,13 +15,14 @@ package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.TaskFeClient;
-import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
-import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import org.hamcrest.CoreMatchers;
 import org.mockito.Mock;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -39,13 +40,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Tests {@link ProjectTasksResource}.
+ * Tests for {@link com.vmware.photon.controller.apife.resources.HostTasksResource}.
  */
-public class ProjectTasksResourceTest extends ResourceTest {
+public class HostTasksResourceTest extends ResourceTest {
 
-  private String projectId = "p1";
-  private String projectTasksRoutePath =
-      UriBuilder.fromPath(ProjectResourceRoutes.PROJECT_TASKS_PATH).build(projectId).toString();
+  private String hostId = "host1";
+  private String hostTaskRoute =
+      UriBuilder.fromPath(HostResourceRoutes.HOST_TASKS_PATH).build(hostId).toString();
 
   private String taskId1 = "task1";
   private String taskRoutePath1 =
@@ -60,29 +61,26 @@ public class ProjectTasksResourceTest extends ResourceTest {
   @Mock
   private TaskFeClient client;
 
-  @Mock
-  private TaskCommandFactory taskCommandFactory;
-
   @Override
-  protected void setUpResources() throws Exception {
-    addResource(new ProjectTasksResource(client));
+  protected void setUpResources() {
+    addResource(new HostTasksResource(client));
   }
 
   @Test(dataProvider = "pageSizes")
-  public void testGetProjectTasks(Optional<Integer> pageSize,
-                                  List<Task> expectedTasks,
-                                  List<String> expectedTaskRoutes) throws Exception {
+  public void testGetHostTasks(Optional<Integer> pageSize,
+                               List<Task> expectedTasks,
+                               List<String> expectedTaskRoutes) throws Exception {
     task1.setId(taskId1);
     task2.setId(taskId2);
 
-    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.<String>absent(),
-        Optional.<Integer>absent())).thenReturn(new ResourceList<>(ImmutableList.of(task1, task2)));
-    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.<String>absent(),
-        Optional.of(1))).thenReturn(new ResourceList<>(ImmutableList.of(task1)));
-    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.<String>absent(),
-        Optional.of(2))).thenReturn(new ResourceList<>(ImmutableList.of(task1, task2)));
-    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.<String>absent(),
-        Optional.of(3))).thenReturn(new ResourceList<>(Collections.emptyList()));
+    when(client.getHostTasks(hostId, Optional.<String>absent(), Optional.<Integer>absent()))
+        .thenReturn(new ResourceList<Task>(ImmutableList.of(task1, task2)));
+    when(client.getHostTasks(hostId, Optional.<String>absent(), Optional.of(1)))
+        .thenReturn(new ResourceList<Task>(ImmutableList.of(task1)));
+    when(client.getHostTasks(hostId, Optional.<String>absent(), Optional.of(2)))
+        .thenReturn(new ResourceList<Task>(ImmutableList.of(task1, task2)));
+    when(client.getHostTasks(hostId, Optional.<String>absent(), Optional.of(3)))
+        .thenReturn(new ResourceList<Task>(Collections.emptyList()));
 
     Response response = getTasks(pageSize);
     assertThat(response.getStatus(), is(200));
@@ -96,9 +94,21 @@ public class ProjectTasksResourceTest extends ResourceTest {
 
     for (int i = 0; i < tasks.getItems().size(); i++) {
       assertThat(tasks.getItems().get(i), is(expectedTasks.get(i)));
-      assertThat(new URI(tasks.getItems().get(i).getSelfLink()).isAbsolute(), is(true));
-      assertThat(tasks.getItems().get(i).getSelfLink().endsWith(expectedTaskRoutes.get(i)), is(true));
+      assertThat(new URI(tasks.getItems().get(i).getSelfLink()).isAbsolute(), CoreMatchers.is(true));
+      assertThat(tasks.getItems().get(i).getSelfLink().endsWith(expectedTaskRoutes.get(i)), CoreMatchers.is(true));
     }
+  }
+
+  @Test
+  public void testGetHostTasksWithInvalidId() throws Exception {
+    when(client.getHostTasks(hostId, Optional.<String>absent(), Optional.<Integer>absent()))
+        .thenThrow(new ExternalException("Invalid host Id."));
+
+    Response response = client()
+        .target(hostTaskRoute)
+        .request("application/json")
+        .get();
+    assertThat(response.getStatus(), is(500));
   }
 
   @DataProvider(name = "pageSizes")
@@ -128,7 +138,7 @@ public class ProjectTasksResourceTest extends ResourceTest {
   }
 
   private Response getTasks(Optional<Integer> pageSize) {
-    String uri = projectTasksRoutePath;
+    String uri = hostTaskRoute;
     if (pageSize.isPresent()) {
       uri += "?pageSize=" + pageSize.get();
     }

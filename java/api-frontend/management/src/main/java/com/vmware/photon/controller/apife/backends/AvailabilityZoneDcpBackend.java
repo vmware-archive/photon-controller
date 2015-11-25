@@ -123,8 +123,9 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
   }
 
   @Override
-  public List<Task> getTasks(String id, Optional<String> state) throws ExternalException {
+  public List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException {
     AvailabilityZoneEntity availabilityZoneEntity = getEntityById(id);
+    // Will consume pageSize in later CR.
     return taskBackend.filter(availabilityZoneEntity.getId(), availabilityZoneEntity.getKind(), state);
   }
 
