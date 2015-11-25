@@ -458,6 +458,11 @@ public class DcpRestClient implements DcpClient {
     return patchOperationExpirationMicros;
   }
 
+  @VisibleForTesting
+  protected long getServiceDocumentStatusCheckIntervalMillis() {
+    return serviceDocumentStatusCheckIntervalMillis;
+  }
+
   protected int getPort(InetSocketAddress inetSocketAddress) {
     return inetSocketAddress.getPort();
   }
@@ -586,7 +591,7 @@ public class DcpRestClient implements DcpClient {
         return result;
       }
 
-      Thread.sleep(serviceDocumentStatusCheckIntervalMillis);
+      Thread.sleep(getServiceDocumentStatusCheckIntervalMillis());
     } while (Utils.getNowMicrosUtc() <= result.getExpirationMicrosUtc());
 
     throw new TimeoutException(String.format("Timeout:{%s}, TimeUnit:{%s}", result.getExpirationMicrosUtc(),
