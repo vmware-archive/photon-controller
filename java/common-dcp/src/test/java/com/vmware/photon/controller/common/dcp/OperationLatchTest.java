@@ -61,7 +61,7 @@ public class OperationLatchTest {
     @Test
     public void testWithDefaultTimeout() throws Throwable {
       operation.complete();
-      Operation result = latch.await();
+      Operation result = latch.awaitOperationCompletion();
 
       assertThat(result, is(operation));
       verify(latch, times(1)).await(OperationLatch.DEFAULT_OPERATION_TIMEOUT_MICROS, TimeUnit.MICROSECONDS);
@@ -71,13 +71,14 @@ public class OperationLatchTest {
     public void testTimeout() throws Throwable {
       latch = spy(new OperationLatch(operation));
       when(latch.calculateOperationTimeoutMicros()).thenReturn(TimeUnit.MILLISECONDS.toMicros(1));
-      latch.await();
+      latch.awaitOperationCompletion();
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test
     public void testOperationFailure() throws Throwable {
       operation.fail(new IllegalArgumentException());
-      latch.await();
+      Operation result = latch.awaitOperationCompletion();
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_BAD_REQUEST));
     }
   }
 
@@ -99,7 +100,7 @@ public class OperationLatchTest {
       latch = spy(new OperationLatch(operation));
 
       operation.complete();
-      latch.await();
+      latch.awaitOperationCompletion();
 
       //range check the timeout since the latch did not throw an exception
       //and we cannot be sure what exact timeout would get used
@@ -118,13 +119,13 @@ public class OperationLatchTest {
     @Test(expectedExceptions = TimeoutException.class)
     public void testDefaultTimeout() throws Throwable {
       operation.setExpiration(TimeUnit.MILLISECONDS.toMicros(1));
-      latch.await();
+      latch.awaitOperationCompletion();
     }
 
     @Test
     public void testLatchTimeout() throws Throwable {
       try {
-        latch.awaitForOperationCompletion(1);
+        latch.awaitOperationCompletion(1);
         Assert.fail("Operation Latch should have timed out");
       } catch (TimeoutException e) {
         assertThat(e.getMessage(),
@@ -135,13 +136,14 @@ public class OperationLatchTest {
     @Test(expectedExceptions = TimeoutException.class)
     public void testOperationTimeout() throws Throwable {
       operation.setExpiration(TimeUnit.MILLISECONDS.toMicros(1));
-      latch.awaitForOperationCompletion(30);
+      latch.awaitOperationCompletion(30);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test
     public void testOperationFailure() throws Throwable {
       operation.fail(new IllegalArgumentException());
-      latch.await();
+      Operation result = latch.awaitOperationCompletion();
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_BAD_REQUEST));
     }
   }
 }

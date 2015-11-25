@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.OperationLatch;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
@@ -82,9 +83,7 @@ public class ValidateHostTaskServiceClient {
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setContextId(LoggingUtils.getRequestId());
 
-    OperationLatch syncOp = new OperationLatch(post);
-    dcpHost.sendRequest(post);
-    Operation operation = syncOp.await();
+    Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, post, REFERRER_PATH);
 
     // Return operation id.
     return operation.getBody(ValidateHostTaskService.State.class).documentSelfLink;
@@ -98,9 +97,7 @@ public class ValidateHostTaskServiceClient {
         .setExpiration(Utils.getNowMicrosUtc() + OperationLatch.DEFAULT_OPERATION_TIMEOUT_MICROS)
         .setContextId(LoggingUtils.getRequestId());
 
-    OperationLatch opLatch = new OperationLatch(getOperation);
-    dcpHost.sendRequest(getOperation);
-    Operation operation = opLatch.await();
+    Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH);
     ValidateHostTaskService.State serviceState = operation.getBody(ValidateHostTaskService.State.class);
 
     return serviceState.taskState;
