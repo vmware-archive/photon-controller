@@ -109,7 +109,7 @@ public class ProjectDcpBackend implements ProjectBackend {
 
   @Override
   public ProjectEntity findById(String id) throws ProjectNotFoundException {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
 
     try {
       result = dcpClient.get(ProjectServiceFactory.SELF_LINK + "/" + id);
@@ -184,7 +184,7 @@ public class ProjectDcpBackend implements ProjectBackend {
     ResourceTicketEntity projectTicket = createProjectResourceTicket(tenantTicket, reservation);
     state.resourceTicketId = projectTicket.getId();
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(ProjectServiceFactory.SELF_LINK, state);
+    com.vmware.xenon.common.Operation result = dcpClient.post(ProjectServiceFactory.SELF_LINK, state);
 
     ProjectService.State createdState = result.getBody(ProjectService.State.class);
 

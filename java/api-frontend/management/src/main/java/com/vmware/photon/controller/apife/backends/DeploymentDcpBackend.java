@@ -306,7 +306,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     state.imageId = spec.getImageId();
     state.documentSelfLink = spec.getType().toString().toLowerCase();
 
-    com.vmware.dcp.common.Operation operation =
+    com.vmware.xenon.common.Operation operation =
         dcpClient.post(ClusterConfigurationServiceFactory.SELF_LINK, state);
 
     state = operation.getBody(ClusterConfigurationService.State.class);
@@ -350,7 +350,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
   private DeploymentService.State patchDeployment(String id, DeploymentService.State patch) throws
       DeploymentNotFoundException {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
     try {
       result = dcpClient.patch(DeploymentServiceFactory.SELF_LINK + "/" + id, patch);
     } catch (DocumentNotFoundException e) {
@@ -361,7 +361,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   }
 
   private DeploymentService.State getDeploymentById(String id) throws DeploymentNotFoundException {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
     try {
       result = dcpClient.get(DeploymentServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
@@ -405,7 +405,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     }
     deployment.loadBalancerEnabled = spec.getLoadBalancerEnabled();
 
-    com.vmware.dcp.common.Operation operation =
+    com.vmware.xenon.common.Operation operation =
         dcpClient.post(DeploymentServiceFactory.SELF_LINK, deployment);
 
     deployment = operation.getBody(DeploymentService.State.class);
@@ -516,7 +516,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
   private ClusterConfiguration findClusterConfigurationByType(ClusterType clusterType) throws ExternalException {
     try {
-      com.vmware.dcp.common.Operation operation =
+      com.vmware.xenon.common.Operation operation =
           dcpClient.get(getClusterConfigurationLink(clusterType));
       ClusterConfigurationService.State state = operation.getBody(ClusterConfigurationService.State.class);
 

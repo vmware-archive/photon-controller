@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;

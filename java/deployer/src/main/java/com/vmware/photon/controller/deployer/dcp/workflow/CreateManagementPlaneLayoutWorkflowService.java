@@ -13,13 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -37,6 +30,13 @@ import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskFact
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -55,7 +55,7 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
   /**
    * This class defines the state of a {@link ProvisionHostWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -106,8 +106,8 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
     public Boolean isLoadbalancerEnabled;
 
     /**
-    * This value represents if we deploy with authentication enabled.
-    */
+     * This value represents if we deploy with authentication enabled.
+     */
     @DefaultBoolean(value = false)
     @Immutable
     public Boolean isAuthEnabled;

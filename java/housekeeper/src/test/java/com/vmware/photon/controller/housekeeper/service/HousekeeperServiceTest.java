@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.housekeeper.service;
 
 
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
@@ -41,6 +40,7 @@ import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResultCode;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
 import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.photon.controller.tracing.gen.TracingInfo;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;

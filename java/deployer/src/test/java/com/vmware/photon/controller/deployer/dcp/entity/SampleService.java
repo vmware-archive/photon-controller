@@ -12,10 +12,10 @@
  */
 package com.vmware.photon.controller.deployer.dcp.entity;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
 import com.vmware.photon.controller.common.dcp.validation.RenamedField;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
 
 import java.util.Set;
 
@@ -32,6 +32,7 @@ public class SampleService extends StatefulService {
   public void handleStart(Operation startOperation) {
     startOperation.complete();
   }
+
   /**
    * This class defines the document state associated with a single {@link SampleService} instance.
    */

@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.cloudstore.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.UriUtils;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -40,7 +40,7 @@ public class StatusServiceTest {
   }
 
   /**
-   * Tests {@link StatusService#handleGet(com.vmware.dcp.common.Operation)}.
+   * Tests {@link StatusService#handleGet(com.vmware.xenon.common.Operation)}.
    */
   public class HandleGetTest {
 

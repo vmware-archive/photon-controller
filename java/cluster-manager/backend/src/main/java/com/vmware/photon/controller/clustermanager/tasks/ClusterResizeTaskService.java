@@ -12,12 +12,6 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
@@ -29,6 +23,12 @@ import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -254,13 +254,13 @@ public class ClusterResizeTaskService extends StatefulService {
   }
 
   private ClusterResizeTask buildPatch(ClusterResizeTask.TaskState.TaskStage stage,
-                                                 ClusterResizeTask.TaskState.SubStage subStage) {
+                                       ClusterResizeTask.TaskState.SubStage subStage) {
     return buildPatch(stage, subStage, (Throwable) null);
   }
 
   private ClusterResizeTask buildPatch(ClusterResizeTask.TaskState.TaskStage stage,
-                                                 ClusterResizeTask.TaskState.SubStage subStage,
-                                                 @Nullable Throwable t) {
+                                       ClusterResizeTask.TaskState.SubStage subStage,
+                                       @Nullable Throwable t) {
     return buildPatch(stage, subStage, null == t ? null : Utils.toServiceErrorResponse(t));
   }
 

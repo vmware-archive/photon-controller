@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.dcp.validation;
 
-import com.vmware.dcp.common.TaskState;
+import com.vmware.xenon.common.TaskState;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

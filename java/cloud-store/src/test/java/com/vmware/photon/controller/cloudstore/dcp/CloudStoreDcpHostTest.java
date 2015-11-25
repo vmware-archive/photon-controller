@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp;
 
-import com.vmware.dcp.services.common.LuceneDocumentIndexService;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfigTest;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AttachedDiskServiceFactory;
@@ -47,6 +45,8 @@ import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerFactoryService;
+import com.vmware.xenon.services.common.LuceneDocumentIndexService;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.inject.Injector;
 import org.apache.commons.io.FileUtils;

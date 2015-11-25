@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;

@@ -13,14 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
@@ -42,6 +34,14 @@ import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactoryProvider;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -368,7 +368,7 @@ public class RegisterAuthClientTaskService extends StatefulService {
    * Read the documents carried by patch state.
    *
    * @param currentState Current State.
-   * @param lbIpAddress IP address of the load balancer.
+   * @param lbIpAddress  IP address of the load balancer.
    */
   private void getDeploymentDocuments(final State currentState, final String lbIpAddress) throws Throwable {
 
@@ -433,19 +433,19 @@ public class RegisterAuthClientTaskService extends StatefulService {
 
     FutureCallback<AuthClientHandler.ImplicitClient> futureCallback =
         new FutureCallback<AuthClientHandler.ImplicitClient>() {
-      @Override
-      public void onSuccess(AuthClientHandler.ImplicitClient result) {
-        DeploymentService.State patchState = new DeploymentService.State();
-        patchState.oAuthResourceLoginEndpoint = result.loginURI;
-        patchState.oAuthLogoutEndpoint = result.logoutURI;
-        sendDeploymentPatch(patchState, deploymentServiceLink);
-      }
+          @Override
+          public void onSuccess(AuthClientHandler.ImplicitClient result) {
+            DeploymentService.State patchState = new DeploymentService.State();
+            patchState.oAuthResourceLoginEndpoint = result.loginURI;
+            patchState.oAuthLogoutEndpoint = result.logoutURI;
+            sendDeploymentPatch(patchState, deploymentServiceLink);
+          }
 
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        };
 
     Futures.addCallback(futureTask, futureCallback);
   }

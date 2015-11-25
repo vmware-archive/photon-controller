@@ -13,12 +13,6 @@
 
 package com.vmware.photon.controller.deployer.service;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.zookeeper.PathChildrenCacheFactory;
@@ -93,6 +87,12 @@ import com.vmware.photon.controller.deployer.service.client.ValidateHostTaskServ
 import com.vmware.photon.controller.host.gen.HostMode;
 import com.vmware.photon.controller.resource.gen.Host;
 import com.vmware.photon.controller.status.gen.StatusType;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
@@ -940,7 +940,7 @@ public class DeployerServiceTest {
 
     @DataProvider(name = "DeployRequests")
     private Object[][] getDeployRequests() {
-      Object[][] data = new Object[][] {
+      Object[][] data = new Object[][]{
           {createDeployRequest(true, null, null, null),
               "Auth is enabled and [Oauth Password, Oauth Tenant, Oauth Username] should not be empty."},
           {createDeployRequest(false, "t", "u", "p"),
@@ -1058,7 +1058,7 @@ public class DeployerServiceTest {
       final DeploymentWorkflowService.State serviceDocument = new DeploymentWorkflowService.State();
       serviceDocument.taskState = new DeploymentWorkflowService.TaskState();
       serviceDocument.taskState.stage = TaskState.TaskStage.FAILED;
-      serviceDocument.taskState.failure = new com.vmware.dcp.common.ServiceErrorResponse();
+      serviceDocument.taskState.failure = new com.vmware.xenon.common.ServiceErrorResponse();
       serviceDocument.taskState.failure.message = "Not enough management hosts";
       serviceDocument.taskSubStates = new ArrayList<>();
 

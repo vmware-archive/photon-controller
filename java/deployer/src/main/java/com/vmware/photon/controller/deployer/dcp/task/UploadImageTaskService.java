@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
@@ -34,6 +29,11 @@ import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -95,7 +95,7 @@ public class UploadImageTaskService extends StatefulService {
      * This value represents the APIFE endpoint for uploading the image. Note that this parameter is only used by
      * {@link AllocateClusterManagerResourcesTaskService}, where the cluster image needs to be uploaded to the
      * management plane. By default this value should be null, and the image will be uploaded to the installer.
-     *
+     * <p>
      * The reason that the cluster image upload is different is because the upload happens after APIFE data being
      * migrated from installer to management plane. Therefore if we upload the cluster image to installer, the imageId
      * of the cluster image will not show up in the management plane.

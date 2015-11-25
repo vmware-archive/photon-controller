@@ -110,7 +110,7 @@ public class ImageDcpBackend implements ImageBackend {
     }
     imageServiceState.imageSettings = imageSettingsList;
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
+    com.vmware.xenon.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
 
     ImageService.State createdState = result.getBody(ImageService.State.class);
 
@@ -137,7 +137,7 @@ public class ImageDcpBackend implements ImageBackend {
     imageServiceState.state = ImageState.CREATING;
     imageServiceState.replicationType = replicationType;
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
+    com.vmware.xenon.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
     ImageService.State createdState = result.getBody(ImageService.State.class);
 
     String id = ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);
@@ -245,7 +245,7 @@ public class ImageDcpBackend implements ImageBackend {
 
   @Override
   public ImageEntity findById(String id) throws ExternalException {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
     try {
       result = dcpClient.get(ImageServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
@@ -277,7 +277,7 @@ public class ImageDcpBackend implements ImageBackend {
           datastores.get(0).id);
     } catch (DcpRuntimeException e) {
       if (e.getCompletedOperation().getStatusCode() ==
-          com.vmware.dcp.common.Operation.STATUS_CODE_CONFLICT) {
+          com.vmware.xenon.common.Operation.STATUS_CODE_CONFLICT) {
         return;
       }
       throw e;

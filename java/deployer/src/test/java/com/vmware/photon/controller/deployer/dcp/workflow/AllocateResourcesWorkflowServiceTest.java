@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
@@ -51,6 +46,11 @@ import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.util.concurrent.FutureCallback;
 import org.mockito.invocation.InvocationOnMock;
@@ -666,7 +666,8 @@ public class AllocateResourcesWorkflowServiceTest {
         boolean failCreateResourceTicket,
         boolean failCreateProject) throws Throwable {
 
-      ApiClient apiClient = mock(ApiClient.class);;
+      ApiClient apiClient = mock(ApiClient.class);
+      ;
       FlavorApi flavorApi = mock(FlavorApi.class);
       TenantsApi tenantsApi = mock(TenantsApi.class);
       final Task taskReturnedByCreateFlavor;
@@ -728,7 +729,8 @@ public class AllocateResourcesWorkflowServiceTest {
             return null;
           }
         })
-            .when(flavorApi).createAsync(any(FlavorCreateSpec.class), any(FutureCallback.class));;
+            .when(flavorApi).createAsync(any(FlavorCreateSpec.class), any(FutureCallback.class));
+        ;
       }
 
       if (failCreateTenant) {
@@ -742,7 +744,7 @@ public class AllocateResourcesWorkflowServiceTest {
             return null;
           }
         })
-          .when(tenantsApi).createAsync(any(String.class), any(FutureCallback.class));
+            .when(tenantsApi).createAsync(any(String.class), any(FutureCallback.class));
       }
 
       if (failCreateResourceTicket) {
@@ -757,14 +759,14 @@ public class AllocateResourcesWorkflowServiceTest {
             return null;
           }
         })
-          .when(tenantsApi).createResourceTicketAsync(
+            .when(tenantsApi).createResourceTicketAsync(
             any(String.class), any(ResourceTicketCreateSpec.class), any(FutureCallback.class));
       }
 
       if (failCreateProject) {
         doThrow(new RuntimeException("Exception during CREATE_PROJECT"))
             .when(tenantsApi).createProjectAsync(
-              any(String.class), any(ProjectCreateSpec.class), any(FutureCallback.class));
+            any(String.class), any(ProjectCreateSpec.class), any(FutureCallback.class));
       } else {
         doAnswer(new Answer() {
           @Override
@@ -773,7 +775,7 @@ public class AllocateResourcesWorkflowServiceTest {
             return null;
           }
         })
-          .when(tenantsApi).createProjectAsync(
+            .when(tenantsApi).createProjectAsync(
             any(String.class), any(ProjectCreateSpec.class), any(FutureCallback.class));
       }
 

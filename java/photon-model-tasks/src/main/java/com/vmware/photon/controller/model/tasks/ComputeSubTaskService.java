@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.model.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.TaskState.TaskStage;
-import com.vmware.dcp.common.Utils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.TaskState.TaskStage;
+import com.vmware.xenon.common.Utils;
 
 import java.util.List;
 

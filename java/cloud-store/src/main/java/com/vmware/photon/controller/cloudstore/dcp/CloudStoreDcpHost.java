@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AttachedDiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneServiceFactory;
@@ -48,6 +45,9 @@ import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerFactoryService;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

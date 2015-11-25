@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
@@ -218,7 +218,7 @@ public class QueryTaskUtils {
 
   /**
    * Get the URI of the service document from the query response.
-   *
+   * <p>
    * This is to be used for "indirect" DCP calls. A call is returned as
    * being accepted, and subsequent calls need to be issued to check
    * if the service is finished.
@@ -334,7 +334,7 @@ public class QueryTaskUtils {
   }
 
   /**
-   * Finds the name of the field of type {@link com.vmware.dcp.common.TaskState} in
+   * Finds the name of the field of type {@link com.vmware.xenon.common.TaskState} in
    * the class passed as a parameter.
    *
    * @param childClass

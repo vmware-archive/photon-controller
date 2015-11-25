@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -39,6 +34,11 @@ import com.vmware.photon.controller.deployer.dcp.task.UpdateHostDatastoresTaskFa
 import com.vmware.photon.controller.deployer.dcp.task.UpdateHostDatastoresTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -58,7 +58,7 @@ public class ProvisionHostWorkflowService extends StatefulService {
   /**
    * This class defines the state of a {@link ProvisionHostWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -388,9 +388,9 @@ public class ProvisionHostWorkflowService extends StatefulService {
                                 failTask(failure);
                               } else {
                                 TaskUtils.sendSelfPatch(service,
-                                  buildPatch(
-                                    TaskState.TaskStage.STARTED,
-                                    TaskState.SubStage.UPDATE_DATASTORES, null));
+                                    buildPatch(
+                                        TaskState.TaskStage.STARTED,
+                                        TaskState.SubStage.UPDATE_DATASTORES, null));
                               }
                             }
                         ));

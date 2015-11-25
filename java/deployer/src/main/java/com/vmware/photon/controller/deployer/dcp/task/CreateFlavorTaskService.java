@@ -13,16 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
@@ -46,6 +36,16 @@ import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -343,7 +343,7 @@ public class CreateFlavorTaskService extends StatefulService {
   }
 
   private void createFlavorInApife(final State currentState, final VmService.State vmState, final int finalCpuCount,
-     final int finalMemoryMb, final int finalDiskGb) throws IOException {
+                                   final int finalMemoryMb, final int finalDiskGb) throws IOException {
 
     FlavorCreateSpec vmFlavorCreateSpec = composeVmFlavorCreateSpec(vmState, finalCpuCount, finalMemoryMb);
     FlavorCreateSpec diskFlavorCreateSpec = composeDiskFlavorCreateSpec(vmState, finalDiskGb);
@@ -362,6 +362,7 @@ public class CreateFlavorTaskService extends StatefulService {
 
     HostUtils.getApiClient(this).getFlavorApi().createAsync(vmFlavorCreateSpec, callback);
   }
+
   private void createDiskFlavorInAPIFE(final State currentState, final Task createVmFlavorTask,
                                        FlavorCreateSpec diskFlavorCreateSpec) {
 
@@ -419,7 +420,7 @@ public class CreateFlavorTaskService extends StatefulService {
   }
 
   private FlavorCreateSpec composeVmFlavorCreateSpec(final VmService.State vmState, int finalCpuCount,
-    int finalMemoryMb) {
+                                                     int finalMemoryMb) {
     FlavorCreateSpec spec = new FlavorCreateSpec();
     spec.setName(String.format("mgmt-vm-%s", vmState.name));
     spec.setKind("vm");

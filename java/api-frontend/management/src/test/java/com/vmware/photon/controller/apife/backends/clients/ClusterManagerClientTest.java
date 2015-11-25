@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends.clients;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocumentQueryResult;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.Cluster;
 import com.vmware.photon.controller.api.ClusterCreateSpec;
 import com.vmware.photon.controller.api.ClusterState;
@@ -31,6 +26,11 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesCl
 import com.vmware.photon.controller.clustermanager.servicedocuments.MesosClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmClusterCreateTask;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
@@ -403,8 +403,8 @@ public class ClusterManagerClientTest {
       return kc;
     }
 
-    private com.vmware.dcp.common.Operation buildOperation() {
-      com.vmware.dcp.common.Operation operation = new com.vmware.dcp.common.Operation();
+    private com.vmware.xenon.common.Operation buildOperation() {
+      com.vmware.xenon.common.Operation operation = new com.vmware.xenon.common.Operation();
       operation.setBody(clusterDocument);
 
       return operation;

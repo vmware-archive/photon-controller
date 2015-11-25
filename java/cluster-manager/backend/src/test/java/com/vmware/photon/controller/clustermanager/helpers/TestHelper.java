@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.helpers;
 
-import com.vmware.dcp.common.TaskState;
+import com.vmware.xenon.common.TaskState;
 
 import org.apache.commons.io.FileUtils;
 import static org.hamcrest.MatcherAssert.assertThat;

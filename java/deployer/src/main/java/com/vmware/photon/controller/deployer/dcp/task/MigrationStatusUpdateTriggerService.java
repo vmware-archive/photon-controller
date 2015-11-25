@@ -12,15 +12,6 @@
  */
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.OperationSequence;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState.TaskStage;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -31,6 +22,15 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.OperationSequence;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState.TaskStage;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -83,29 +83,29 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
     Operation uploadVibTaskQuery = generateKindQuery(UploadVibTaskService.State.class);
 
     OperationSequence.create(copyStateTaskQuery, uploadVibTaskQuery)
-      .setCompletion((op, t) -> {
-        if (t != null && !t.isEmpty()) {
-          ServiceUtils.logSevere(this, ExceptionUtils.createMultiException(t.values()));
-          get.fail(t.get(copyStateTaskQuery.getId()));
-          return;
-        }
+        .setCompletion((op, t) -> {
+          if (t != null && !t.isEmpty()) {
+            ServiceUtils.logSevere(this, ExceptionUtils.createMultiException(t.values()));
+            get.fail(t.get(copyStateTaskQuery.getId()));
+            return;
+          }
 
-        try {
-          Map<String, Integer> finishedCopyStateCounts
-              = countFinishedCopyStateTaskServices(copyStateTaskQuery, op);
-          List<UploadVibTaskService.State> documents
-              = extractDocuments(op.get(uploadVibTaskQuery.getId()), UploadVibTaskService.State.class);
-          long vibsUploaded = countTasks(documents, task -> task.taskState.stage == TaskStage.FINISHED);
-          long vibsUploading = countTasks(
-              documents,
-              task -> task.taskState.stage == TaskStage.STARTED || task.taskState.stage == TaskStage.CREATED);
+          try {
+            Map<String, Integer> finishedCopyStateCounts
+                = countFinishedCopyStateTaskServices(copyStateTaskQuery, op);
+            List<UploadVibTaskService.State> documents
+                = extractDocuments(op.get(uploadVibTaskQuery.getId()), UploadVibTaskService.State.class);
+            long vibsUploaded = countTasks(documents, task -> task.taskState.stage == TaskStage.FINISHED);
+            long vibsUploading = countTasks(
+                documents,
+                task -> task.taskState.stage == TaskStage.STARTED || task.taskState.stage == TaskStage.CREATED);
 
-          updateDeploymentService(get, currentState, finishedCopyStateCounts, vibsUploaded, vibsUploading);
-        } catch (Throwable throwable) {
-          get.fail(throwable);
-        }
-      })
-      .sendWith(this);
+            updateDeploymentService(get, currentState, finishedCopyStateCounts, vibsUploaded, vibsUploading);
+          } catch (Throwable throwable) {
+            get.fail(throwable);
+          }
+        })
+        .sendWith(this);
   }
 
   private Map<String, Integer> countFinishedCopyStateTaskServices(
@@ -117,7 +117,7 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
         .collect(Collectors.toList());
 
     List<CopyStateTaskService.State> copyStateTasks
-      = extractDocuments(op.get(copyStateTaskQuery.getId()), CopyStateTaskService.State.class);
+        = extractDocuments(op.get(copyStateTaskQuery.getId()), CopyStateTaskService.State.class);
 
     Map<String, Integer> map = new HashMap<>();
     sourceFactories.stream().forEach(factoryLink -> map.put(appendIfNotExists(factoryLink, "/"), 0));
@@ -170,8 +170,8 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
 
   private long countTasks(List<UploadVibTaskService.State> tasks, Predicate<UploadVibTaskService.State> predicate) {
     return tasks.stream()
-      .filter(predicate)
-      .count();
+        .filter(predicate)
+        .count();
   }
 
   @Override
@@ -205,8 +205,8 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
       }
 
       OperationJoin.create(opList)
-        .setCompletion(joinedGetCompletionHandler)
-        .sendWith(this);
+          .setCompletion(joinedGetCompletionHandler)
+          .sendWith(this);
     });
     sendRequest(updateQuery);
   }
@@ -228,8 +228,8 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     return Operation
-      .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
-      .setBody(QueryTask.create(querySpecification).setDirect(true));
+        .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+        .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 
   private Operation generateDataMigrationStatusUpdateTaskQuery() {
@@ -242,7 +242,7 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     return Operation
-      .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
-      .setBody(QueryTask.create(querySpecification).setDirect(true));
+        .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+        .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 }

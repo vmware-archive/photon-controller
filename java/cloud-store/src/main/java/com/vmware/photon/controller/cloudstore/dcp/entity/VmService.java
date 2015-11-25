@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
 import com.vmware.photon.controller.api.Iso;
 import com.vmware.photon.controller.api.LocalitySpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
@@ -25,6 +22,9 @@ import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
 
 import java.util.List;
 import java.util.Map;

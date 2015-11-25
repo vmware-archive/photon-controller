@@ -201,7 +201,7 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
       }
     }
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(ResourceTicketServiceFactory.SELF_LINK,
+    com.vmware.xenon.common.Operation result = dcpClient.post(ResourceTicketServiceFactory.SELF_LINK,
         resourceTicket);
 
     ResourceTicketService.State createdResourceTicket = result.getBody(ResourceTicketService.State.class);
@@ -322,7 +322,7 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
       }
     }
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(ResourceTicketServiceFactory.SELF_LINK,
+    com.vmware.xenon.common.Operation result = dcpClient.post(ResourceTicketServiceFactory.SELF_LINK,
         resourceTicket);
 
     ResourceTicketService.State createdResourceTicket = result.getBody(ResourceTicketService.State.class);
@@ -391,7 +391,7 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
   }
 
   private ResourceTicketService.State getResourceTicketStateById(String id) throws ResourceTicketNotFoundException {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
     try {
       result = dcpClient.get(ResourceTicketServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {

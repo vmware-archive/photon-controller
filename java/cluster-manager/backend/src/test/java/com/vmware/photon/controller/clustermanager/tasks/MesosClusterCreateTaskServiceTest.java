@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.NetworkConnection;
 import com.vmware.photon.controller.api.Task;
@@ -51,6 +42,15 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -829,9 +829,9 @@ public class MesosClusterCreateTaskServiceTest {
       // Mock createVm
       if (isSuccess) {
         doAnswer(invocation -> {
-            ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByCreateVm);
-            return null;
-          }).when(projectApi).createVmAsync(any(String.class), any(VmCreateSpec.class), any(FutureCallback.class));
+          ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByCreateVm);
+          return null;
+        }).when(projectApi).createVmAsync(any(String.class), any(VmCreateSpec.class), any(FutureCallback.class));
       } else {
         doThrow(new RuntimeException("vm provisioning failed")).when(projectApi)
             .createVmAsync(any(String.class), any(VmCreateSpec.class), any(FutureCallback.class));
@@ -844,15 +844,15 @@ public class MesosClusterCreateTaskServiceTest {
 
       // Mock startVm
       doAnswer(invocation -> {
-          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByStartVm);
-          return null;
-        }).when(vmApi).performStartOperationAsync(anyString(), any(FutureCallback.class));
+        ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByStartVm);
+        return null;
+      }).when(vmApi).performStartOperationAsync(anyString(), any(FutureCallback.class));
 
       // Mock verifyVm
       doAnswer(invocation -> {
-          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetVmNetwork);
-          return null;
-        }).when(vmApi).getNetworksAsync(anyString(), any(FutureCallback.class));
+        ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetVmNetwork);
+        return null;
+      }).when(vmApi).getNetworksAsync(anyString(), any(FutureCallback.class));
 
       NetworkConnection networkConnection = new NetworkConnection();
       networkConnection.setNetwork("VM VLAN");
@@ -866,19 +866,19 @@ public class MesosClusterCreateTaskServiceTest {
 
     private void mockMesosClient() throws Throwable {
       doAnswer(invocation -> {
-          ((FutureCallback<String>) invocation.getArguments()[1]).onSuccess(leaderIp);
-          return null;
-        }).when(mesosClient).getMasterLeader(
+        ((FutureCallback<String>) invocation.getArguments()[1]).onSuccess(leaderIp);
+        return null;
+      }).when(mesosClient).getMasterLeader(
           any(String.class), any(FutureCallback.class));
 
       doAnswer(invocation -> {
-          ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(mesosNodeIps);
-          return null;
-        }).when(mesosClient).getNodeAddressesAsync(
+        ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(mesosNodeIps);
+        return null;
+      }).when(mesosClient).getNodeAddressesAsync(
           any(String.class), any(FutureCallback.class));
 
       doAnswer(invocation -> {
-          ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(true);
+        ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(true);
         return null;
       }).when(mesosClient).checkMarathon(
           any(String.class), any(FutureCallback.class));

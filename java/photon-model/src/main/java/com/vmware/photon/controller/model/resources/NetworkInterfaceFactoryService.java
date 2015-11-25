@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.model.resources;
 
-import com.vmware.dcp.common.FactoryService;
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.model.UriPaths;
+import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 
 import java.util.UUID;
 

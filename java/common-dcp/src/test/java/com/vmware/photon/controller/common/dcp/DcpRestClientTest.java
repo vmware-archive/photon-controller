@@ -13,17 +13,17 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceDocumentQueryResult;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.ExampleFactoryService;
-import com.vmware.dcp.services.common.ExampleService;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.ExampleFactoryService;
+import com.vmware.xenon.services.common.ExampleService;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -128,7 +128,7 @@ public class DcpRestClientTest {
 
       ServiceHostUtils.waitForNodeGroupConvergence(
           hosts,
-          com.vmware.dcp.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP,
+          com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP,
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_SLEEP);
     }
@@ -963,8 +963,8 @@ public class DcpRestClientTest {
       queryResult = dcpRestClient.queryDocumentPage(queryResult.nextPageLink);
 
       actualDocumentNames.addAll(queryResult.documents.values().stream()
-          .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
-          .collect(Collectors.toSet())
+              .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
+              .collect(Collectors.toSet())
       );
     }
 

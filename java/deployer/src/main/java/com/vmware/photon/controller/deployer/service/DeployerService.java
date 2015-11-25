@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.deployer.service;
 
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
@@ -121,6 +119,8 @@ import com.vmware.photon.controller.host.gen.HostMode;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.photon.controller.tracing.gen.TracingInfo;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;

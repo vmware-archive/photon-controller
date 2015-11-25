@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.dcp.scheduler;
 
-import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocument;
 
 /**
  * Interface defining an object that builds the state object for a TaskTrigger.

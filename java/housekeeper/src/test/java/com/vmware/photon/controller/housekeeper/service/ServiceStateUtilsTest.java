@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.housekeeper.service;
 
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
+import com.vmware.xenon.common.TaskState;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

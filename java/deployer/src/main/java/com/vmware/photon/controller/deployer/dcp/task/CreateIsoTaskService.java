@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -46,6 +37,15 @@ import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -424,10 +424,12 @@ public class CreateIsoTaskService extends StatefulService {
       }
 
       // Deserialize the string to get load balancer servers and zookeeper quorum
-      Type lbType = new TypeToken<ArrayList<LoadBalancerServer>>() {}.getType();
+      Type lbType = new TypeToken<ArrayList<LoadBalancerServer>>() {
+      }.getType();
       dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_LOADBALANCER_SERVERS,
           (k, v) -> new Gson().fromJson(v.toString(), lbType));
-      Type zkType = new TypeToken<ArrayList<ZookeeperServer>>() {}.getType();
+      Type zkType = new TypeToken<ArrayList<ZookeeperServer>>() {
+      }.getType();
       dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM,
           (k, v) -> new Gson().fromJson(v.toString(), zkType));
 

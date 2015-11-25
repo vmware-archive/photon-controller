@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -45,6 +36,15 @@ import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -460,9 +460,9 @@ public class BuildRuntimeConfigurationTaskServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-        deployerConfig = ConfigBuilder.build(DeployerConfig.class,
-            this.getClass().getResource(configFilePath).getPath());
-        TestHelper.setContainersConfig(deployerConfig);
+      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+          this.getClass().getResource(configFilePath).getPath());
+      TestHelper.setContainersConfig(deployerConfig);
       implicitClient = new AuthClientHandler.ImplicitClient("client_id", "http://login", "http://logout");
     }
 
@@ -547,7 +547,8 @@ public class BuildRuntimeConfigurationTaskServiceTest {
             .ENV_LOADBALANCER_SERVERS));
         String servers = containerService.dynamicParameters.get(BuildRuntimeConfigurationTaskService
             .ENV_LOADBALANCER_SERVERS);
-        Type listType = new TypeToken<ArrayList<LoadBalancerServer>>() {}.getType();
+        Type listType = new TypeToken<ArrayList<LoadBalancerServer>>() {
+        }.getType();
         List<LoadBalancerServer> serverList = new Gson().fromJson(servers, listType);
         assertThat(serverList.size(), is(3));
         assertThat(serverList.get(0).getServerName(), is("server-1"));
@@ -558,7 +559,8 @@ public class BuildRuntimeConfigurationTaskServiceTest {
             .ENV_ZOOKEEPER_QUORUM));
         String servers = containerService.dynamicParameters.get(BuildRuntimeConfigurationTaskService
             .ENV_ZOOKEEPER_QUORUM);
-        Type listType = new TypeToken<ArrayList<ZookeeperServer>>() {}.getType();
+        Type listType = new TypeToken<ArrayList<ZookeeperServer>>() {
+        }.getType();
         List<ZookeeperServer> serverList = new Gson().fromJson(servers, listType);
         assertThat(serverList.size(), is(3));
         assertThat(serverList.get(0).getZookeeperInstance().startsWith("server.1"), is(true));

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.api.ClusterCreateSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.apife.backends.ClusterBackend;
@@ -25,6 +24,7 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
+import com.vmware.xenon.common.TaskState;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

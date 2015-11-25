@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.dcp.scheduler;
 
-import com.vmware.dcp.common.StatefulService;
+import com.vmware.xenon.common.StatefulService;
 
 /**
  * This is the config entry, one for each service registered with TaskSchedulerService.

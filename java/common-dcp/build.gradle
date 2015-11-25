@@ -2,7 +2,7 @@ dependencies {
   compile project(':common')
   compile project(':common-logging')
 
-  compile "com.vmware.dcp:dcp-common:${versions.dcp_common}"
+  compile "com.vmware.xenon:xenon-common:${versions.xenon_common}"
   compile "commons-io:commons-io:2.4"
   compile "com.google.guava:guava:${versions.guava}"
 

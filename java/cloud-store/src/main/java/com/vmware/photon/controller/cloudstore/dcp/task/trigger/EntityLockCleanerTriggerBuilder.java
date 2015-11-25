@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.task.trigger;
 
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerService;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerService;
+import com.vmware.xenon.common.Utils;
 
 import java.util.concurrent.TimeUnit;
 

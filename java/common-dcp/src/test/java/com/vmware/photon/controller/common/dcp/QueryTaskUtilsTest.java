@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;
@@ -354,7 +354,7 @@ public class QueryTaskUtilsTest {
   private class TestDerivedStateClass {
     public DerivedTaskState state;
 
-    public class DerivedTaskState extends com.vmware.dcp.common.TaskState {
+    public class DerivedTaskState extends com.vmware.xenon.common.TaskState {
 
     }
   }

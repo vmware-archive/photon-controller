@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
@@ -47,6 +42,11 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
@@ -152,7 +152,7 @@ public class CreateIsoTaskServiceTest {
      * This test verifies that service instances can be created with specific
      * start states.
      *
-     * @param stage    Supplies the stage of state.
+     * @param stage Supplies the stage of state.
      * @throws Throwable Throws exception if any error is encountered.
      */
     @Test(dataProvider = "validStartStages")
@@ -204,7 +204,7 @@ public class CreateIsoTaskServiceTest {
      * in a terminal state is not modified on startup when state transitions are
      * enabled.
      *
-     * @param stage    Supplies the stage of the state.
+     * @param stage Supplies the stage of the state.
      * @throws Throwable Throws an exception if any error is encountered.
      */
     @Test(dataProvider = "TerminalStartStages")
@@ -280,15 +280,15 @@ public class CreateIsoTaskServiceTest {
     /**
      * This test verifies that legal stage and substage transitions succeed.
      *
-     * @param startStage     Supplies the stage of the start state.
-     * @param targetStage    Supplies the stage of the target state.
+     * @param startStage  Supplies the stage of the start state.
+     * @param targetStage Supplies the stage of the target state.
      * @throws Throwable Throws an exception if any error is encountered.
      */
     @Test(dataProvider = "validStageUpdates")
     public void testValidStageUpdates(
-            TaskState.TaskStage startStage,
-            TaskState.TaskStage targetStage)
-            throws Throwable {
+        TaskState.TaskStage startStage,
+        TaskState.TaskStage targetStage)
+        throws Throwable {
 
       CreateIsoTaskService.State startState = buildValidStartupState(startStage);
       host.startServiceSynchronously(service, startState);
@@ -363,8 +363,8 @@ public class CreateIsoTaskServiceTest {
      * This test verifies that illegal stage transitions fail, where
      * the start state is invalid.
      *
-     * @param startStage     Supplies the stage of the start state.
-     * @param targetStage    Supplies the stage of the target state.
+     * @param startStage  Supplies the stage of the start state.
+     * @param targetStage Supplies the stage of the target state.
      * @throws Throwable Throws an exception if any error is encountered.
      */
     @Test(dataProvider = "illegalStageUpdatesInvalidStart", expectedExceptions = DcpRuntimeException.class)
@@ -408,8 +408,8 @@ public class CreateIsoTaskServiceTest {
       patchState.controlFlags = 0;
 
       Operation patchOp = Operation
-              .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-              .setBody(patchState);
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
 
       host.sendRequestAndWait(patchOp);
     }
@@ -433,13 +433,13 @@ public class CreateIsoTaskServiceTest {
         declaredField.set(patchState, new Integer(0));
       } else if (declaredField.getType() == Boolean.class) {
         declaredField.set(patchState, false);
-      }  else {
+      } else {
         declaredField.set(patchState, declaredField.getType().newInstance());
       }
 
       Operation patchOp = Operation
-              .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-              .setBody(patchState);
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
 
       host.sendRequestAndWait(patchOp);
     }
@@ -860,14 +860,14 @@ public class CreateIsoTaskServiceTest {
   }
 
   public TestEnvironment createTestEnvironment(
-          DeployerContext deployerContext,
-          ContainersConfig containersConfig,
-          ListeningExecutorService listeningExecutorService,
-          ApiClientFactory apiClientFactory,
-          ServiceConfiguratorFactory serviceConfiguratorFactory,
-          ServerSet cloudServerSet,
-          int hostCount)
-          throws Throwable {
+      DeployerContext deployerContext,
+      ContainersConfig containersConfig,
+      ListeningExecutorService listeningExecutorService,
+      ApiClientFactory apiClientFactory,
+      ServiceConfiguratorFactory serviceConfiguratorFactory,
+      ServerSet cloudServerSet,
+      int hostCount)
+      throws Throwable {
 
     return new TestEnvironment.Builder()
         .deployerContext(deployerContext)

@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.photon.controller.resource.gen.ImageReplication;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.UriUtils;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;

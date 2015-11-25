@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.services.common.LuceneDocumentIndexService;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -32,6 +29,9 @@ import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientF
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.services.common.LuceneDocumentIndexService;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Injector;

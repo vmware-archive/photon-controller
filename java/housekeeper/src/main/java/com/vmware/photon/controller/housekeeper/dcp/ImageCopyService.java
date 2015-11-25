@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -33,6 +28,11 @@ import com.vmware.photon.controller.host.gen.CopyImageResponse;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.thrift.async.AsyncMethodCallback;
@@ -358,7 +358,7 @@ public class ImageCopyService extends StatefulService {
 
       // Patch self with the host and data store information.
       if (!current.isSelfProgressionDisabled) {
-        ImageCopyService.State patch = buildPatch(com.vmware.dcp.common
+        ImageCopyService.State patch = buildPatch(com.vmware.xenon.common
                 .TaskState.TaskStage.STARTED,
             TaskState.SubStage.COPY_IMAGE, null);
         patch.host = hostConfig.getAddress().getHost();
@@ -430,7 +430,7 @@ public class ImageCopyService extends StatefulService {
   /**
    * Service execution stages.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
     /**
      * The execution substage.
      */

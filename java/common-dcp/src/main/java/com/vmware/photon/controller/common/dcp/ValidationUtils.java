@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.common.dcp.validation.ImmutableValidator;
 import com.vmware.photon.controller.common.dcp.validation.NotBlankValidator;
 import com.vmware.photon.controller.common.dcp.validation.NotEmptyValidator;
@@ -23,6 +20,9 @@ import com.vmware.photon.controller.common.dcp.validation.NotNullValidator;
 import com.vmware.photon.controller.common.dcp.validation.PositiveValidator;
 import com.vmware.photon.controller.common.dcp.validation.RangeValidator;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnceValidator;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;

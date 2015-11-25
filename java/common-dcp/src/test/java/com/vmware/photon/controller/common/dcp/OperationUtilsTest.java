@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.Operation;
+import com.vmware.xenon.common.Operation;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

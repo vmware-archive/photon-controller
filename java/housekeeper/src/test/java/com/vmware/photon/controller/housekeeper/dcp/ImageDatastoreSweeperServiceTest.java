@@ -13,16 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.ServiceStats;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
@@ -49,6 +39,16 @@ import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockSta
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.photon.controller.resource.gen.InactiveImageDescriptor;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.ServiceStats;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -226,7 +226,7 @@ public class ImageDatastoreSweeperServiceTest {
         service.getZookeeperHostMonitor();
         fail("Cast class ServiceHost to ZookeeperHostMonitorProvider should fail");
       } catch (ClassCastException ex) {
-        assertThat(ex.getMessage(), startsWith("com.vmware.dcp.common.ServiceHost"));
+        assertThat(ex.getMessage(), startsWith("com.vmware.xenon.common.ServiceHost"));
       }
     }
   }
@@ -273,7 +273,7 @@ public class ImageDatastoreSweeperServiceTest {
         service.getHostClient();
         fail("Cast class ServiceHost to HostClientProvider should fail");
       } catch (ClassCastException ex) {
-        assertThat(ex.getMessage(), startsWith("com.vmware.dcp.common.ServiceHost"));
+        assertThat(ex.getMessage(), startsWith("com.vmware.xenon.common.ServiceHost"));
       }
     }
   }

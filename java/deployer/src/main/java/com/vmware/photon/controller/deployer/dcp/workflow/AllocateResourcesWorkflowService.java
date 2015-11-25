@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -45,6 +36,15 @@ import com.vmware.photon.controller.deployer.dcp.task.CreateTenantTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -66,7 +66,7 @@ public class AllocateResourcesWorkflowService extends StatefulService {
   /**
    * This class defines the state of a {@link AllocateResourcesWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -376,7 +376,7 @@ public class AllocateResourcesWorkflowService extends StatefulService {
 
   private CreateFlavorTaskService.State generateCreateFlavorTaskServiceState(State currentState, String vmServiceLink) {
     CreateFlavorTaskService.State state = new CreateFlavorTaskService.State();
-    state.taskState = new com.vmware.dcp.common.TaskState();
+    state.taskState = new com.vmware.xenon.common.TaskState();
     state.taskState.stage = TaskState.TaskStage.CREATED;
     state.vmServiceLink = vmServiceLink;
     state.queryTaskInterval = currentState.taskPollDelay;
@@ -428,8 +428,8 @@ public class AllocateResourcesWorkflowService extends StatefulService {
 
   private CreateTenantTaskService.State generateCreateTenantTaskServiceState(final State currentState) {
     CreateTenantTaskService.State state = new CreateTenantTaskService.State();
-    state.taskState = new com.vmware.dcp.common.TaskState();
-    state.taskState.stage = com.vmware.dcp.common.TaskState.TaskStage.CREATED;
+    state.taskState = new com.vmware.xenon.common.TaskState();
+    state.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.CREATED;
     state.taskPollDelay = currentState.taskPollDelay;
     return state;
   }
@@ -480,8 +480,8 @@ public class AllocateResourcesWorkflowService extends StatefulService {
 
   private CreateResourceTicketTaskService.State generateCreateResourceTicketTaskServiceState(final State currentState) {
     CreateResourceTicketTaskService.State state = new CreateResourceTicketTaskService.State();
-    state.taskState = new com.vmware.dcp.common.TaskState();
-    state.taskState.stage = com.vmware.dcp.common.TaskState.TaskStage.CREATED;
+    state.taskState = new com.vmware.xenon.common.TaskState();
+    state.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.CREATED;
     state.taskPollDelay = currentState.taskPollDelay;
     state.tenantServiceLink = currentState.tenantServiceLink;
     state.quotaLineItems = new ArrayList<>();
@@ -534,8 +534,8 @@ public class AllocateResourcesWorkflowService extends StatefulService {
 
   private CreateProjectTaskService.State generateCreateProjectTaskServiceState(final State currentState) {
     CreateProjectTaskService.State state = new CreateProjectTaskService.State();
-    state.taskState = new com.vmware.dcp.common.TaskState();
-    state.taskState.stage = com.vmware.dcp.common.TaskState.TaskStage.CREATED;
+    state.taskState = new com.vmware.xenon.common.TaskState();
+    state.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.CREATED;
     state.taskPollDelay = currentState.taskPollDelay;
     state.resourceTicketServiceLink = currentState.resourceTicketServiceLink;
     return state;

@@ -162,7 +162,7 @@ public class HostDcpBackend implements HostBackend {
 
   @Override
   public HostEntity findById(String id) throws HostNotFoundException {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
 
     try {
       result = dcpClient.get(HostServiceFactory.SELF_LINK + "/" + id);
@@ -208,7 +208,7 @@ public class HostDcpBackend implements HostBackend {
     hostState.usageTags = new HashSet<>(hostCreateSpec.getUsageTags().stream().map(g -> g.name()).collect
         (Collectors.toList()));
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(HostServiceFactory.SELF_LINK, hostState);
+    com.vmware.xenon.common.Operation result = dcpClient.post(HostServiceFactory.SELF_LINK, hostState);
     HostService.State createdState = result.getBody(HostService.State.class);
     HostEntity hostEntity = toHostEntity(createdState);
     logger.info("Host {} has been created", hostEntity.getId());

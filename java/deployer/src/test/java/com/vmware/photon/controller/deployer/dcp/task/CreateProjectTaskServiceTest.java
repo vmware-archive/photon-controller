@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
@@ -43,6 +38,11 @@ import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.util.concurrent.FutureCallback;
 import org.mockito.invocation.InvocationOnMock;
@@ -574,21 +574,21 @@ public class CreateProjectTaskServiceTest {
           return null;
         }
       }).
-      doAnswer(new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(getTaskReturnValue2);
-          return null;
-        }
-      }).
-      doAnswer(new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(getTaskReturnValue3);
-          return null;
-        }
-      }).
-      when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
+          doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+              ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(getTaskReturnValue2);
+              return null;
+            }
+          }).
+          doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+              ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(getTaskReturnValue3);
+              return null;
+            }
+          }).
+          when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
 
       CreateProjectTaskService.State finalState = testEnvironment.callServiceAndWaitForState(
           CreateProjectTaskFactoryService.SELF_LINK,

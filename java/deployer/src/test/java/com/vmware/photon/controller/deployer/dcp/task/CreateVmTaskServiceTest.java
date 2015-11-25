@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.client.ApiClient;
@@ -36,6 +31,11 @@ import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.util.concurrent.FutureCallback;
 import org.mockito.invocation.InvocationOnMock;
@@ -184,7 +184,7 @@ public class CreateVmTaskServiceTest {
      * This test verifies that service instances can be created with specific
      * start states, where the createVmTaskId is not set.
      *
-     * @param stage    Supplies the stage of state.
+     * @param stage Supplies the stage of state.
      * @throws Throwable Throws exception if any error is encountered.
      */
     @Test(dataProvider = "validStartStates")
@@ -280,7 +280,7 @@ public class CreateVmTaskServiceTest {
 
     @DataProvider(name = "attributeNames")
     public Object[][] getAttributeNames() {
-      return new Object[][] {
+      return new Object[][]{
           {"vmCreateSpec"},
           {"projectId"},
       };
@@ -334,8 +334,8 @@ public class CreateVmTaskServiceTest {
     /**
      * This test verifies that legal stage transitions succeed.
      *
-     * @param startStage     Supplies the stage of the start state.
-     * @param targetStage    Supplies the stage of the target state.
+     * @param startStage  Supplies the stage of the start state.
+     * @param targetStage Supplies the stage of the target state.
      * @throws Throwable Throws an exception if any error is encountered.
      */
     @Test(dataProvider = "validStageUpdates")
@@ -379,8 +379,8 @@ public class CreateVmTaskServiceTest {
     /**
      * This test verifies that illegal stage transitions fail.
      *
-     * @param startStage     Supplies the stage of the start state.
-     * @param targetStage    Supplies the stage of the target state.
+     * @param startStage  Supplies the stage of the start state.
+     * @param targetStage Supplies the stage of the target state.
      * @throws Throwable Throws an exception if any error is encountered.
      */
     @Test(dataProvider = "illegalStageUpdatesInvalidPatch")
@@ -455,7 +455,7 @@ public class CreateVmTaskServiceTest {
 
     @DataProvider(name = "attributeNames")
     public Object[][] getAttributeNames() {
-      return new Object[][] {
+      return new Object[][]{
           {"vmCreateSpec"},
           {"projectId"}
       };

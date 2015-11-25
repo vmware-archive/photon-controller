@@ -13,17 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
@@ -46,6 +35,17 @@ import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -69,7 +69,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   /**
    * This class defines the state of a {@link CreateManagementVmWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -126,8 +126,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     public Integer childPollInterval;
 
     /**
-      * This value represents if authentication is enabled or not.
-      */
+     * This value represents if authentication is enabled or not.
+     */
     @NotNull
     @Immutable
     public Boolean isAuthEnabled;
@@ -355,14 +355,13 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     state.imageName = "management-vm-image";
     state.imageFile = currentState.imageFile;
     state.imageReplicationType = ImageReplicationType.ON_DEMAND;
-    state.taskState = new com.vmware.dcp.common.TaskState();
+    state.taskState = new com.vmware.xenon.common.TaskState();
     state.taskState.stage = TaskState.TaskStage.CREATED;
     state.queryUploadImageTaskInterval = currentState.childPollInterval;
     return state;
   }
 
   /**
-   *
    * @param currentState
    */
   private void updateVmServices(final State currentState, final String imageServiceLink) {
@@ -584,22 +583,22 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
 
     FutureCallback<CreateContainersWorkflowService.State> callback = new
         FutureCallback<CreateContainersWorkflowService.State>() {
-      @Override
-      public void onSuccess(@Nullable CreateContainersWorkflowService.State result) {
-        if (result.taskState.stage == TaskState.TaskStage.FAILED) {
-          TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FAILED, null, result.taskState.failure));
-        } else if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
-          TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null));
-        } else {
-          sendProgressPatch(result.taskState, TaskState.TaskStage.FINISHED, null);
-        }
-      }
+          @Override
+          public void onSuccess(@Nullable CreateContainersWorkflowService.State result) {
+            if (result.taskState.stage == TaskState.TaskStage.FAILED) {
+              TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FAILED, null, result.taskState.failure));
+            } else if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
+              TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null));
+            } else {
+              sendProgressPatch(result.taskState, TaskState.TaskStage.FINISHED, null);
+            }
+          }
 
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        };
     CreateContainersWorkflowService.State startState = new CreateContainersWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.isAuthEnabled = currentState.isAuthEnabled;
@@ -617,12 +616,12 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   /**
    * This method sends a progress patch depending of the taskState of the provided state.
    *
-   * @param state Supplies the state.
-   * @param stage Supplies the stage to progress to.
+   * @param state    Supplies the state.
+   * @param stage    Supplies the stage to progress to.
    * @param subStage Supplies the substate to progress to.
    */
   private void sendProgressPatch(
-      com.vmware.dcp.common.TaskState state,
+      com.vmware.xenon.common.TaskState state,
       TaskState.TaskStage stage,
       TaskState.SubStage subStage) {
     switch (state.stage) {

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.clients.status;
 
-import com.vmware.dcp.common.Operation;
 import com.vmware.photon.controller.cloudstore.dcp.StatusService;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
@@ -21,6 +20,7 @@ import com.vmware.photon.controller.common.dcp.exceptions.DcpException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
+import com.vmware.xenon.common.Operation;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

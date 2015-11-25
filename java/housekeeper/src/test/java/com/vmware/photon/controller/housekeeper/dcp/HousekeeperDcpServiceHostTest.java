@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.dcp.services.common.LuceneDocumentIndexService;
-import com.vmware.dcp.services.common.LuceneQueryTaskFactoryService;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
@@ -25,6 +22,9 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.ConfigTest;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
+import com.vmware.xenon.services.common.LuceneDocumentIndexService;
+import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.inject.Injector;
 import org.apache.commons.io.FileUtils;

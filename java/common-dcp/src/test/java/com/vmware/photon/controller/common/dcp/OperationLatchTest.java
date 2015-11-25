@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Utils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Utils;
 
 import org.mockito.ArgumentCaptor;
 import org.testng.Assert;

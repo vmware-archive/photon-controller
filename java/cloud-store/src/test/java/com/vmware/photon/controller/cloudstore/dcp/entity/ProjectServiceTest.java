@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 
 import org.apache.commons.collections.ListUtils;
 import org.testng.annotations.AfterMethod;

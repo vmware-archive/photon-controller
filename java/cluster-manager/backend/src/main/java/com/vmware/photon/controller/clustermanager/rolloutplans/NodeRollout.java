@@ -12,7 +12,7 @@
  */
 package com.vmware.photon.controller.clustermanager.rolloutplans;
 
-import com.vmware.dcp.common.Service;
+import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.FutureCallback;
 
@@ -24,9 +24,9 @@ public interface NodeRollout {
   /**
    * Performs the Rollout operation.
    *
-   * @param service     the service requesting for the rollout operation
-   * @param input       the input for the rollout operation
-   * @param callback    Callback that is invoked after a rollout completes.
+   * @param service  the service requesting for the rollout operation
+   * @param input    the input for the rollout operation
+   * @param callback Callback that is invoked after a rollout completes.
    */
   void run(final Service service,
            final NodeRolloutInput input,

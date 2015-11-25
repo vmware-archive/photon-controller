@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.Utils;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -86,7 +86,7 @@ public class DcpBasedHealthCheckerTest {
 
   @DataProvider(name = "notReadyStatus")
   public Object[][] getNotRreadyStatus() {
-    return new Object[][] {
+    return new Object[][]{
         {StatusType.ERROR},
         {StatusType.INITIALIZING},
         {StatusType.PARTIAL_ERROR},

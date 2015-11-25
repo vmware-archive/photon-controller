@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.deployer.helpers;
 
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.api.HostState;
@@ -56,6 +55,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.xenon.common.TaskState;
 
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -428,7 +428,7 @@ public class TestHelper {
             TenantServiceFactory.SELF_LINK,
             tenantServiceStartState,
             TenantService.State.class);
-    return  tenantState;
+    return tenantState;
   }
 
   public static ResourceTicketService.State createResourceTicket(String tenantId, MultiHostEnvironment<?>
