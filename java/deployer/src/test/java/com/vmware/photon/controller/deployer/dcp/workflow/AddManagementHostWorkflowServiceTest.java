@@ -108,14 +108,6 @@ public class AddManagementHostWorkflowServiceTest {
   private TestHost testHost;
 
   /**
-   * This method is a dummy test case which forces IntelliJ to recognize the
-   * current class as a test class.
-   */
-  @Test
-  private void dummy() {
-  }
-
-  /**
    * This method creates a new State object which is sufficient to create a new
    * AddManagementHostTaskService instance.
    */
@@ -432,6 +424,15 @@ public class AddManagementHostWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
               TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY,
+              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
               TaskState.TaskStage.FAILED, null},
@@ -491,6 +492,9 @@ public class AddManagementHostWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
               TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY,
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
@@ -508,6 +512,9 @@ public class AddManagementHostWorkflowServiceTest {
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
               TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
+              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
 
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
@@ -518,11 +525,17 @@ public class AddManagementHostWorkflowServiceTest {
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
               TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
+              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
 
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
@@ -534,6 +547,15 @@ public class AddManagementHostWorkflowServiceTest {
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
 
+          {TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
+
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FINISHED, null,
@@ -545,6 +567,9 @@ public class AddManagementHostWorkflowServiceTest {
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
@@ -570,6 +595,9 @@ public class AddManagementHostWorkflowServiceTest {
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
@@ -591,6 +619,9 @@ public class AddManagementHostWorkflowServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
@@ -734,7 +765,7 @@ public class AddManagementHostWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
-          .cloudServerSet(localStore.getServerSet())
+          .cloudServerSet(remoteStore.getServerSet())
           .hostCount(remoteNodeCount)
           .build();
 
@@ -794,15 +825,15 @@ public class AddManagementHostWorkflowServiceTest {
     @DataProvider(name = "HostWithTagWithAuthInfo")
     public Object[][] getHostsWithAuthInfo() {
       return new Object[][]{
-          {true, true},
-          {true, false},
-          {false, true},
-          {false, false},
+          {true, true, 1},
+          {true, false, 5},
+          {false, true, 1},
+          {false, false, 1},
       };
     }
 
     @Test(dataProvider = "HostWithTagWithAuthInfo")
-    public void testSuccess(Boolean isMgmtHost, Boolean isAuthEnabled) throws Throwable {
+    public void testSuccess(Boolean isOnlyMgmtHost, Boolean isAuthEnabled, int hostCount) throws Throwable {
       createCloudStore();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(hostClientFactory, true);
@@ -815,7 +846,7 @@ public class AddManagementHostWorkflowServiceTest {
       createTestEnvironment(1);
 
       startState.deploymentServiceLink = createDeploymentServiceLink(localStore, isAuthEnabled);
-      HostService.State initialHost = createHostService(Collections.singleton(UsageTag.MGMT.name()));
+      HostService.State initialHost = createHostService(Collections.singleton(UsageTag.MGMT.name()), localStore);
 
       DeploymentWorkflowService.State deploymentState = DeploymentWorkflowServiceTest.buildValidStartState(null, null);
       deploymentState.deploymentServiceLink = startState.deploymentServiceLink;
@@ -830,30 +861,40 @@ public class AddManagementHostWorkflowServiceTest {
 
       TestHelper.assertTaskStateFinished(deploymentWorkflowState.taskState);
 
-      if (isMgmtHost) {
-        HostService.State mgmtHost = createHostService(Collections.singleton(UsageTag.MGMT.name()));
-        startState.hostServiceLink = mgmtHost.documentSelfLink;
-      } else {
-        HostService.State mgmtHost = createHostService(new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag
-            .MGMT.name())));
-        startState.hostServiceLink = mgmtHost.documentSelfLink;
+      DeploymentService.State deploymentServiceRemoteOriginal = (queryForServiceStates(DeploymentService.State.class,
+          remoteStore)).get(0);
+
+      for (int i = 1; i <= hostCount ; i++) {
+        if (isOnlyMgmtHost) {
+          HostService.State mgmtHost = createHostService(Collections.singleton(UsageTag.MGMT.name()), remoteStore);
+          startState.hostServiceLink = mgmtHost.documentSelfLink;
+        } else {
+          HostService.State mgmtHost = createHostService(new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag
+              .MGMT.name())), remoteStore);
+          startState.hostServiceLink = mgmtHost.documentSelfLink;
+        }
+
+        AddManagementHostWorkflowService.State finalState =
+            remoteDeployer.callServiceAndWaitForState(
+                AddManagementHostWorkflowFactoryService.SELF_LINK,
+                startState,
+                AddManagementHostWorkflowService.State.class,
+                (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+        TestHelper.assertTaskStateFinished(finalState.taskState);
+
+        DeploymentService.State deploymentServiceRemote = (queryForServiceStates(DeploymentService.State.class,
+            remoteStore)).get(0);
+
+        verifyZookeeperQuorumChange(deploymentServiceRemoteOriginal, deploymentServiceRemote, i);
+        verifyVmServiceStates(1 + i);
       }
-
-      AddManagementHostWorkflowService.State finalState =
-          localDeployer.callServiceAndWaitForState(
-              AddManagementHostWorkflowFactoryService.SELF_LINK,
-              startState,
-              AddManagementHostWorkflowService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-
-      verifyVmServiceStates(2);
       verifyContainerTemplateServiceStates(isAuthEnabled);
       verifyContainerServiceStates(startState.hostServiceLink);
     }
 
-    private HostService.State createHostService(Set<String> usageTags) throws Throwable {
+    private HostService.State createHostService(Set<String> usageTags, MultiHostEnvironment<?> machine) throws
+        Throwable {
       HostService.State hostStartState = TestHelper.getHostServiceStartState(usageTags, HostState.CREATING);
       if (usageTags.contains(UsageTag.MGMT.name())) {
         DeployerDcpServiceHost remoteHost = remoteDeployer.getHosts()[0];
@@ -862,7 +903,7 @@ public class AddManagementHostWorkflowServiceTest {
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_DEPLOYER_DCP_PORT,
             Integer.toString(remoteHost.getPort()));
       }
-      return TestHelper.createHostService(localStore, hostStartState);
+      return TestHelper.createHostService(machine, hostStartState);
     }
 
     private String createDeploymentServiceLink(
@@ -972,7 +1013,7 @@ public class AddManagementHostWorkflowServiceTest {
     }
 
     private void verifyVmServiceStates(int expectedVmEntityNumber) throws Throwable {
-      List<VmService.State> states = queryForServiceStates(VmService.State.class, localDeployer);
+      List<VmService.State> states = queryForServiceStates(VmService.State.class, remoteDeployer);
 
       // The number of VmService entities that the workflow creates should match
       // the sum of the number of MGMT only hosts and the number of MIXED host.
@@ -983,7 +1024,7 @@ public class AddManagementHostWorkflowServiceTest {
         assertThat(state.vmId, is("CREATE_VM_ENTITY_ID"));
         assertThat(state.name, startsWith(CreateVmSpecLayoutTaskService.DOCKER_VM_PREFIX));
 
-        HostService.State hostState = localStore.getServiceState(state.hostServiceLink, HostService.State.class);
+        HostService.State hostState = remoteStore.getServiceState(state.hostServiceLink, HostService.State.class);
         assertThat(state.ipAddress,
             is(hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP)));
 
@@ -996,7 +1037,7 @@ public class AddManagementHostWorkflowServiceTest {
 
     private void verifyContainerTemplateServiceStates(Boolean isAuthEnabled) throws Throwable {
       List<ContainerTemplateService.State> states = queryForServiceStates(ContainerTemplateService.State.class,
-          localDeployer);
+          remoteDeployer);
 
       // The number of ContainerTemplateService entities that the workflow creates should match
       // the number of the container specs in the config.
@@ -1039,9 +1080,9 @@ public class AddManagementHostWorkflowServiceTest {
     }
 
     private void verifyContainerServiceStates(String hostServiceLink) throws Throwable {
-      List<VmService.State> vmStates = queryForServiceStates(VmService.State.class, localDeployer);
+      List<VmService.State> vmStates = queryForServiceStates(VmService.State.class, remoteDeployer);
       List<ContainerTemplateService.State> containerTemplateStates =
-          queryForServiceStates(ContainerTemplateService.State.class, localDeployer);
+          queryForServiceStates(ContainerTemplateService.State.class, remoteDeployer);
 
       for (ContainerTemplateService.State containerTemplateState : containerTemplateStates) {
         int containerStateNumberIfReplicated = 0;
@@ -1063,7 +1104,7 @@ public class AddManagementHostWorkflowServiceTest {
           querySpecification.query.addBooleanClause(containerTemplateServiceLinkClause);
           QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
-          NodeGroupBroadcastResponse queryResponse = localDeployer.sendBroadcastQueryAndWait(queryTask);
+          NodeGroupBroadcastResponse queryResponse = remoteDeployer.sendBroadcastQueryAndWait(queryTask);
           Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
 
           // For each VmService entity and each ContainerTemplate entity, there is one and only one
@@ -1076,8 +1117,8 @@ public class AddManagementHostWorkflowServiceTest {
 
           if (documentLinks.size() > 0) {
             for (String documentLink : documentLinks) {
-              ContainerService.State containerState = localDeployer.getServiceState(documentLink, ContainerService.State
-                  .class);
+              ContainerService.State containerState = remoteDeployer.getServiceState(
+                  documentLink, ContainerService.State.class);
               if (vmState.hostServiceLink.equals(hostServiceLink)) {
                 assertNotNull(containerState.memoryMb);
                 assertNotNull(containerState.cpuShares);
@@ -1093,6 +1134,13 @@ public class AddManagementHostWorkflowServiceTest {
           assertThat(containerStateNumberIfReplicated, is(1));
         }
       }
+    }
+
+    private void verifyZookeeperQuorumChange(DeploymentService.State deploymentServiceOriginal,
+                                             DeploymentService.State deploymentServiceAfterAddHost, int hostCount) {
+      String[] originalZookeeperQuorum = deploymentServiceOriginal.zookeeperQuorum.split(",");
+      String[] newZookeeperQuorum = deploymentServiceAfterAddHost.zookeeperQuorum.split(",");
+      assertThat(newZookeeperQuorum.length == originalZookeeperQuorum.length + hostCount, is(true));
     }
 
     private <T extends ServiceDocument> List<T> queryForServiceStates(Class<T> classType,
