@@ -44,6 +44,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.net.InetAddress;
@@ -245,6 +246,60 @@ public class DcpRestClientTest {
     @Test(expectedExceptions = DocumentNotFoundException.class)
     public void testGetOfNonExistingDocument() throws Throwable {
       dcpRestClient.get(ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString());
+    }
+
+    @Test
+    public void testGetOfCreatedDocuments() throws Throwable {
+      ExampleService.ExampleServiceState exampleServiceState1 = new ExampleService.ExampleServiceState();
+      exampleServiceState1.name = UUID.randomUUID().toString();
+      String documentSelfLink1 = createDocument(exampleServiceState1);
+
+      ExampleService.ExampleServiceState exampleServiceState2 = new ExampleService.ExampleServiceState();
+      exampleServiceState2.name = UUID.randomUUID().toString();
+      String documentSelfLink2 = createDocument(exampleServiceState2);
+
+      ExampleService.ExampleServiceState exampleServiceState3 = new ExampleService.ExampleServiceState();
+      exampleServiceState3.name = UUID.randomUUID().toString();
+      String documentSelfLink3 = createDocument(exampleServiceState3);
+
+      Map<String, Operation> results = dcpRestClient.get(
+          Arrays.asList(documentSelfLink1, documentSelfLink2, documentSelfLink3), 3);
+
+      assertThat(results.size(), is(3));
+      assertTrue(results.containsKey(documentSelfLink1));
+      assertThat(results.get(documentSelfLink1).getBody(ExampleService.ExampleServiceState.class).name,
+          is(exampleServiceState1.name));
+      assertTrue(results.containsKey(documentSelfLink2));
+      assertThat(results.get(documentSelfLink2).getBody(ExampleService.ExampleServiceState.class).name,
+          is(exampleServiceState2.name));
+      assertTrue(results.containsKey(documentSelfLink3));
+      assertThat(results.get(documentSelfLink3).getBody(ExampleService.ExampleServiceState.class).name,
+          is(exampleServiceState3.name));
+    }
+
+    @Test(expectedExceptions = DocumentNotFoundException.class)
+    public void testGetOfOneMissingDocument() throws Throwable {
+      ExampleService.ExampleServiceState exampleServiceState1 = new ExampleService.ExampleServiceState();
+      exampleServiceState1.name = UUID.randomUUID().toString();
+      String documentSelfLink1 = createDocument(exampleServiceState1);
+
+      ExampleService.ExampleServiceState exampleServiceState2 = new ExampleService.ExampleServiceState();
+      exampleServiceState2.name = UUID.randomUUID().toString();
+      String documentSelfLink2 = createDocument(exampleServiceState2);
+
+      String documentSelfLink3 = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
+
+      dcpRestClient.get(Arrays.asList(documentSelfLink1, documentSelfLink2, documentSelfLink3), 3);
+    }
+
+    @Test(expectedExceptions = DocumentNotFoundException.class)
+    public void testGetOfThreeMissingDocuments() throws Throwable {
+
+      String documentSelfLink1 = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
+      String documentSelfLink2 = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
+      String documentSelfLink3 = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
+
+      dcpRestClient.get(Arrays.asList(documentSelfLink1, documentSelfLink2, documentSelfLink3), 3);
     }
   }
 

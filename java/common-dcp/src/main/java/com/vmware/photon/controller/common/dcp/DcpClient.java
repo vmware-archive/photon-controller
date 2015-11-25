@@ -24,7 +24,9 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -39,6 +41,9 @@ public interface DcpClient {
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
   Operation get(String documentSelfLink)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
+
+  Map<String, Operation> get(Collection<String> documentSelfLinks, int batchSize)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
   Operation get(URI documentServiceUri)
