@@ -239,20 +239,21 @@ public class DcpRestClient implements DcpClient {
   @Override
   public Operation query(QueryTask.QuerySpecification spec, boolean isDirect)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    return query(QueryTask.create(spec).setDirect(isDirect));
+  }
+
+  @Override
+  public Operation query(QueryTask queryTask)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
 
     URI queryFactoryUri = getServiceUri(ServiceUriPaths.CORE_QUERY_TASKS);
-
-    QueryTask query = QueryTask.create(spec);
-    query.setDirect(isDirect);
 
     Operation queryOperation = Operation
         .createPost(queryFactoryUri)
         .setUri(queryFactoryUri)
         .setExpiration(Utils.getNowMicrosUtc() + getQueryOperationExpirationMicros())
-        .setBody(query)
+        .setBody(queryTask)
         .setReferer(this.localHostUri);
-
-    URI queryServiceUri = UriUtils.extendUri(queryFactoryUri, query.documentSelfLink);
 
     return send(queryOperation);
   }
