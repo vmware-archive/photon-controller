@@ -61,7 +61,7 @@ public class OperationLatchTest {
     @Test
     public void testWithDefaultTimeout() throws Throwable {
       operation.complete();
-      Operation result = latch.await();
+      Operation result = latch.awaitForOperationCompletion();
 
       assertThat(result, is(operation));
       verify(latch, times(1)).await(OperationLatch.DEFAULT_OPERATION_TIMEOUT_MICROS, TimeUnit.MICROSECONDS);
@@ -71,13 +71,14 @@ public class OperationLatchTest {
     public void testTimeout() throws Throwable {
       latch = spy(new OperationLatch(operation));
       when(latch.calculateOperationTimeoutMicros()).thenReturn(TimeUnit.MILLISECONDS.toMicros(1));
-      latch.await();
+      latch.awaitForOperationCompletion();
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test
     public void testOperationFailure() throws Throwable {
       operation.fail(new IllegalArgumentException());
-      latch.await();
+      Operation result = latch.awaitForOperationCompletion();
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_BAD_REQUEST));
     }
   }
 
@@ -99,7 +100,7 @@ public class OperationLatchTest {
       latch = spy(new OperationLatch(operation));
 
       operation.complete();
-      latch.await();
+      latch.awaitForOperationCompletion();
 
       //range check the timeout since the latch did not throw an exception
       //and we cannot be sure what exact timeout would get used
@@ -118,7 +119,7 @@ public class OperationLatchTest {
     @Test(expectedExceptions = TimeoutException.class)
     public void testDefaultTimeout() throws Throwable {
       operation.setExpiration(TimeUnit.MILLISECONDS.toMicros(1));
-      latch.await();
+      latch.awaitForOperationCompletion();
     }
 
     @Test
@@ -138,10 +139,11 @@ public class OperationLatchTest {
       latch.awaitForOperationCompletion(30);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test
     public void testOperationFailure() throws Throwable {
       operation.fail(new IllegalArgumentException());
-      latch.await();
+      Operation result = latch.awaitForOperationCompletion();
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_BAD_REQUEST));
     }
   }
 }

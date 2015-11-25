@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.dcp.OperationLatch;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
@@ -57,9 +58,7 @@ public class ChangeHostModeTaskServiceClient {
         .setBody(state)
         .setContextId(LoggingUtils.getRequestId());
 
-    OperationLatch syncOp = new OperationLatch(post);
-    dcpHost.sendRequest(post);
-    Operation operation = syncOp.await();
+    Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, post, REFERRER_PATH);
 
     // Return Operation ID
     return operation.getBody(ChangeHostModeTaskService.State.class).documentSelfLink;
@@ -80,9 +79,7 @@ public class ChangeHostModeTaskServiceClient {
         .setExpiration(Utils.getNowMicrosUtc() + OperationLatch.DEFAULT_OPERATION_TIMEOUT_MICROS)
         .setContextId(LoggingUtils.getRequestId());
 
-    OperationLatch opLatch = new OperationLatch(getOperation);
-    dcpHost.sendRequest(getOperation);
-    Operation operation = opLatch.await();
+    Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH);
     ChangeHostModeTaskService.State serviceState = operation.getBody(ChangeHostModeTaskService.State.class);
 
     return serviceState.taskState;

@@ -131,7 +131,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
 
       OperationLatch syncPost = new OperationLatch(post);
       host.startService(post, (FactoryService) factoryClass.newInstance());
-      syncPost.await();
+      syncPost.awaitForOperationCompletion();
     }
   }
 
@@ -341,7 +341,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
         .setExpiration(Utils.getNowMicrosUtc() + host.getOperationTimeoutMicros());
     host.forwardRequest(ServiceUriPaths.DEFAULT_NODE_SELECTOR, serviceSelfLink, op);
 
-    return syncOp.await();
+    return syncOp.awaitForOperationCompletion();
   }
 
   private void waitForHostReady(final H host) throws Throwable {
