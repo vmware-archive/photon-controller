@@ -16,7 +16,6 @@ from common.service_name import ServiceName
 from gen.host import Host
 from host.host_handler import HostHandler
 from host.hypervisor import hypervisor
-from host.hypervisor.esx.hypervisor import EsxHypervisor
 
 # Load agent config and registrant
 try:
@@ -41,7 +40,7 @@ common.services.register(ServiceName.HYPERVISOR, hv)
 # Create host handler
 host_handler = HostHandler(hv)
 common.services.register(Host.Iface, host_handler)
-if type(hv.hypervisor) == EsxHypervisor:
+if config.hypervisor == "esx":
     common.services.register(ServiceName.VIM_CLIENT, hv.hypervisor.vim_client)
 
 # Load num_threads
