@@ -94,9 +94,14 @@ module EsxCloud::Cli
 
       private
 
+      def assets_folder
+        File.join(
+                File.dirname(File.expand_path(__FILE__)),
+                "../../../assets")
+      end
+
       def get_auth_tool_path
-        auth_tool_files = Dir.glob(File.join(File.dirname(File.expand_path(__FILE__)),
-                                             "../../../assets/auth-tool-runnable*.jar"))
+        auth_tool_files = Dir.glob(File.join(assets_folder, "auth-tool-runnable*.jar"))
 
         if auth_tool_files.length == 0
           raise EsxCloud::CliError, "Could not find Auth-Token tool under #{assets_folder}"
