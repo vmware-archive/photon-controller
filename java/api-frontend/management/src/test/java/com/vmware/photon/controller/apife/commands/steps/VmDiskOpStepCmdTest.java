@@ -48,6 +48,7 @@ import com.vmware.photon.controller.scheduler.gen.FindResponse;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.mockito.Matchers.anyList;
@@ -250,7 +251,6 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
 
     when(attachedDiskBackend.findAttachedDisk(disk1)).thenReturn(attachedDiskEntity1);
     when(attachedDiskBackend.findAttachedDisk(disk2)).thenReturn(attachedDiskEntity2);
-    when(taskCommand.getRootSchedulerClient().findVm(vmId)).thenReturn(findResponse);
     when(taskCommand.getHostClient()).thenReturn(hostClient);
   }
 
@@ -282,19 +282,18 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     vm.setAgent("staled-agent");
     VmDiskOpStepCmd command = getVmDiskOpStepCmd(Operation.ATTACH_DISK);
 
-    when(rootSchedulerClient.findVm(vmId)).thenReturn(findResponse);
     when(hostClient.attachDisks(anyString(), anyList())).thenThrow(
-        new VmNotFoundException("Error")).thenReturn(SUCCESSFUL_VM_DISKOP_RESPONSE);
+        new VmNotFoundException("Error"));
 
-    command.execute();
-
-    InOrder inOrder = inOrder(hostClient, rootSchedulerClient);
-    inOrder.verify(hostClient).setAgentId("staled-agent");
-    inOrder.verify(hostClient).attachDisks(vmId, attachedDiskIds);
-    inOrder.verify(rootSchedulerClient).findVm(vmId);
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    inOrder.verify(hostClient).attachDisks(vmId, attachedDiskIds);
-    verifyNoMoreInteractions(hostClient, rootSchedulerClient);
+    try {
+      command.execute();
+      Assert.fail("Didn't throw VmNotFoundException");
+    } catch (VmNotFoundException ex) {
+      InOrder inOrder = inOrder(hostClient);
+      inOrder.verify(hostClient).setAgentId("staled-agent");
+      inOrder.verify(hostClient).attachDisks(vmId, attachedDiskIds);
+      verifyNoMoreInteractions(hostClient);
+    }
   }
 
   @Test(expectedExceptions = RpcException.class)

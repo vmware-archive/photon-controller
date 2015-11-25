@@ -36,7 +36,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -82,7 +81,6 @@ public class IsoDetachStepCmdTest extends PowerMockTestCase {
 
     command = new IsoDetachStepCmd(taskCommand, stepBackend, step, vmBackend);
     when(taskCommand.getHostClient(vm)).thenReturn(hostClient);
-    when(taskCommand.getHostClient(vm, false)).thenReturn(hostClient);
   }
 
   @Test
@@ -126,17 +124,12 @@ public class IsoDetachStepCmdTest extends PowerMockTestCase {
     verifyNoMoreInteractions(hostClient, vmBackend);
   }
 
-  @Test
+  @Test(expectedExceptions = VmNotFoundException.class)
   public void testStaleAgent() throws Exception {
     when(hostClient.detachISO(vm.getId(), true)).thenThrow(new VmNotFoundException("Error"))
         .thenReturn(new DetachISOResponse());
     doNothing().when(vmBackend).detachIso(vm);
 
     command.execute();
-
-    InOrder inOrder = inOrder(hostClient, vmBackend);
-    inOrder.verify(hostClient, times(2)).detachISO(vm.getId(), true);
-    inOrder.verify(vmBackend).detachIso(vm);
-    verifyNoMoreInteractions(hostClient, vmBackend);
   }
 }

@@ -21,7 +21,6 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.host.gen.MksTicketResponse;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -81,12 +80,7 @@ public class VmGetMksTicketStepCmd extends StepCommand {
   private MksTicketResponse getVmMksTicket(VmEntity vm)
       throws ApiFeException, InterruptedException, RpcException {
     MksTicketResponse response;
-    try {
-      response = taskCommand.getHostClient(vm).getVmMksTicket(vm.getId());
-    } catch (VmNotFoundException ex) {
-      response = taskCommand.getHostClient(vm, false).getVmMksTicket(vm.getId());
-    }
-    return response;
+    return taskCommand.getHostClient(vm).getVmMksTicket(vm.getId());
   }
 
 }

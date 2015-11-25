@@ -23,7 +23,6 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.host.gen.PowerVmOp;
 
 import com.google.common.collect.ImmutableMap;
@@ -72,13 +71,7 @@ public class VmPowerOpStepCmd extends StepCommand {
     checkArgument(entityList.size() == 1,
         "There should be only 1 VM referenced by step %s", step.getId());
     VmEntity vm = entityList.get(0);
-
-    try {
-      taskCommand.getHostClient(vm).powerVmOp(vm.getId(), powerOp);
-    } catch (VmNotFoundException ex) {
-      taskCommand.getHostClient(vm, false).powerVmOp(vm.getId(), powerOp);
-    }
-
+    taskCommand.getHostClient(vm).powerVmOp(vm.getId(), powerOp);
     vmBackend.updateState(vm, OP_STATE.get(powerOp));
     logger.info("Operation of {} is completed for VM {}", powerOp, vm);
   }

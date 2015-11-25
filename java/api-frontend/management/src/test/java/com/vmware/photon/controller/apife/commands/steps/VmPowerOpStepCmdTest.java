@@ -27,7 +27,6 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
-import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.PowerVmOp;
 import com.vmware.photon.controller.host.gen.PowerVmOpResponse;
@@ -107,35 +106,10 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
   }
 
   @Test
-  public void testStaleAgent() throws Exception {
-    VmPowerOpStepCmd command = getVmPowerOpStepCmd();
-    Operation operation = Operation.START_VM;
-    vm.setAgent("some-agent");
-    step.setOperation(operation);
-
-    when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
-    when(hostClient.powerVmOp(anyString(), any(PowerVmOp.class))).thenThrow(
-        new VmNotFoundException("Error")).thenReturn(new PowerVmOpResponse(PowerVmOpResultCode.OK));
-
-    command.execute();
-
-    InOrder inOrder = inOrder(hostClient, rootSchedulerClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("some-agent");
-    inOrder.verify(hostClient).powerVmOp("vm-1", PowerVmOp.ON);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    inOrder.verify(hostClient).powerVmOp("vm-1", PowerVmOp.ON);
-    inOrder.verify(vmBackend).updateState(vm, VmState.STARTED);
-
-    verifyNoMoreInteractions(hostClient, rootSchedulerClient, vmBackend);
-  }
-
-  @Test
   public void testVmNotFoundException() throws Exception {
     VmPowerOpStepCmd command = getVmPowerOpStepCmd();
     Operation operation = Operation.START_VM;
     step.setOperation(operation);
-    when(rootSchedulerClient.findVm("vm-1")).thenThrow(new VmNotFoundException("Error"));
 
     try {
       command.execute();

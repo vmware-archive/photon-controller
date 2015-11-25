@@ -24,7 +24,6 @@ import com.vmware.photon.controller.apife.entities.IsoEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -61,13 +60,8 @@ public class IsoAttachStepCmd extends StepCommand {
     IsoEntity isoEntity = isoList.get(0);
 
     try {
-      try {
-        taskCommand.getHostClient(vmEntity).attachISO(vmEntity.getId(),
-            String.format("%s/%s", vmEntity.buildVmFolderPath(), isoEntity.getName()));
-      } catch (VmNotFoundException ex) {
-        taskCommand.getHostClient(vmEntity, false).attachISO(vmEntity.getId(),
-            String.format("%s/%s", vmEntity.buildVmFolderPath(), isoEntity.getName()));
-      }
+      taskCommand.getHostClient(vmEntity).attachISO(vmEntity.getId(),
+          String.format("%s/%s", vmEntity.buildVmFolderPath(), isoEntity.getName()));
     } catch (RuntimeException ex) {
       vmBackend.tombstoneIsoEntity(isoEntity);
       throw new ApiFeException(ex);
