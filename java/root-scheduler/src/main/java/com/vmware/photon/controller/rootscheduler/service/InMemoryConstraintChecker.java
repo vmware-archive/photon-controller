@@ -223,47 +223,38 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
     return ImmutableMap.copyOf(result);
   }
 
-  @Override
   public ImmutableSet<String> getHostsInAvailabilityZone(String availabilityZone) {
     return availabilityZones.get(availabilityZone);
   }
 
-  @Override
   public ImmutableSet<String> getHostsNotInAvailabilityZone(String availabilityZone) {
     return Sets.difference(hosts.keySet(), availabilityZones.get(availabilityZone)).immutableCopy();
   }
 
-  @Override
   public ImmutableSet<String> getHostsWithDatastore(String datastoreId) {
     return datastores.get(datastoreId);
   }
 
-  @Override
   public ImmutableSet<String> getHostsWithDatastoreTag(String datastoreTag) {
     return datastoreTags.get(datastoreTag);
   }
 
-  @Override
   public ImmutableSet<String> getHostsWithNetwork(String networkId) {
     return networks.get(networkId);
   }
 
-  @Override
   public ImmutableSet<String> getHosts() {
     return hosts.keySet();
   }
 
-  @Override
   public ImmutableSet<String> getHostsExceptFor(String host) {
     return Sets.difference(hosts.keySet(), ImmutableSet.of(host)).immutableCopy();
   }
 
-  @Override
   public ImmutableSet<String> getManagementHosts() {
     return managementHosts;
   }
 
-  @Override
   public ImmutableMap<String, ServerAddress> getHostMap() {
     return hosts;
   }

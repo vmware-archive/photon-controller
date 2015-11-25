@@ -41,6 +41,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -136,18 +137,18 @@ public class ConstraintCheckerTest {
     DcpRestClient dcpRestClient = new DcpRestClient(
         cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
     dcpRestClient.start();
-    ConstraintChecker inMemory = new InMemoryConstraintChecker(dcpRestClient);
     return new Object[][]{
-        {inMemory},
+        {new InMemoryConstraintChecker(dcpRestClient)},
+        {new CloudStoreConstraintChecker(dcpRestClient)},
     };
   }
 
   @Test(dataProvider = "default")
   public void testDefault(ConstraintChecker checker) {
-    Set<String> hosts = checker.getManagementHosts();
+    Set<String> hosts = getManagementHosts(checker, 5);
     assertThat(hosts, containsInAnyOrder("host0", "host2", "host4", "host6", "host8"));
 
-    hosts = checker.getHosts();
+    hosts = getHosts(checker, expectedHosts.size());
     assertEquals(hosts, expectedHosts.keySet());
 
     for (int i = 0; i < expectedHosts.size(); i++) {
@@ -156,22 +157,22 @@ public class ConstraintCheckerTest {
       String dsTag = "dstag" + i;
       String nwName = "nw" + i;
       String azName = "az" + i;
-      hosts = checker.getHostsWithDatastore(dsName);
+      hosts = getHostsWithDatastore(checker, dsName, expectedHosts.size());
       assertThat(hosts, containsInAnyOrder(hostName));
-      hosts = checker.getHostsWithDatastoreTag(dsTag);
+      hosts = getHostsWithDatastoreTag(checker, dsTag, expectedHosts.size());
       assertThat(hosts, containsInAnyOrder(hostName));
-      hosts = checker.getHostsWithNetwork(nwName);
+      hosts = getHostsWithNetwork(checker, nwName, expectedHosts.size());
       assertThat(hosts, containsInAnyOrder(hostName));
-      hosts = checker.getHostsInAvailabilityZone(azName);
+      hosts = getHostsInAvailabilityZone(checker, azName, expectedHosts.size());
       assertThat(hosts, containsInAnyOrder(hostName));
-      hosts = checker.getHostsNotInAvailabilityZone(azName);
+      hosts = getHostsNotInAvailabilityZone(checker, azName, expectedHosts.size());
       assertEquals(hosts,
                    Sets.filter(expectedHosts.keySet(), Predicates.not(Predicates.equalTo(hostName))));
     }
   }
   @Test(dataProvider = "default")
   public void testSingleConstraint(ConstraintChecker checker) {
-    Map<String, ServerAddress> allHosts = checker.getHostMap();
+    Map<String, ServerAddress> allHosts = checker.getCandidates(Collections.emptyList(), expectedHosts.size());
     assertEquals(allHosts.keySet(), expectedHosts.keySet());
     for (Map.Entry<String, ServerAddress> entry: allHosts.entrySet()) {
       assertThat(entry.getKey(), is(entry.getValue().getHost()));
@@ -245,7 +246,7 @@ public class ConstraintCheckerTest {
   @Test(dataProvider = "default")
   public void testNoConstraint(ConstraintChecker checker) {
     // expect to get all the hosts without any constraint.
-    Map<String, ServerAddress> allHosts = checker.getHostMap();
+    Map<String, ServerAddress> allHosts = checker.getCandidates(Collections.emptyList(), expectedHosts.size());
     List<ResourceConstraint> constraints = new LinkedList<>();
     Map<String, ServerAddress> candidates = checker.getCandidates(constraints, 10);
     assertEquals(candidates, allHosts);
@@ -274,5 +275,46 @@ public class ConstraintCheckerTest {
     constraints.add(new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList("ds1")));
     constraints.add(new ResourceConstraint(ResourceConstraintType.NETWORK, Arrays.asList("nw2")));
     assertTrue(checker.getCandidates(constraints, 2).isEmpty());
+  }
+
+  private Set<String> getManagementHosts(ConstraintChecker checker, int numCandidates) {
+    ResourceConstraint constraint = new ResourceConstraint(
+        ResourceConstraintType.MANAGEMENT_ONLY, Collections.singletonList("unused"));
+    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
+  }
+
+  private Set<String> getHosts(ConstraintChecker checker, int numCandidates) {
+    return checker.getCandidates(Collections.emptyList(), numCandidates).keySet();
+  }
+
+  private Set<String> getHostsWithDatastore(ConstraintChecker checker, String datastoreId, int numCandidates) {
+    ResourceConstraint constraint = new ResourceConstraint(
+        ResourceConstraintType.DATASTORE, Collections.singletonList(datastoreId));
+    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
+  }
+
+  private Set<String> getHostsWithDatastoreTag(ConstraintChecker checker, String datastoreTag, int numCandidates) {
+    ResourceConstraint constraint = new ResourceConstraint(
+        ResourceConstraintType.DATASTORE_TAG, Collections.singletonList(datastoreTag));
+    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
+  }
+
+  private Set<String> getHostsWithNetwork(ConstraintChecker checker, String networkId, int numCandidates) {
+    ResourceConstraint constraint = new ResourceConstraint(
+        ResourceConstraintType.NETWORK, Collections.singletonList(networkId));
+    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
+  }
+
+  private Set<String> getHostsInAvailabilityZone(ConstraintChecker checker, String zoneId, int numCandidates) {
+    ResourceConstraint constraint = new ResourceConstraint(
+        ResourceConstraintType.AVAILABILITY_ZONE, Collections.singletonList(zoneId));
+    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
+  }
+
+  private Set<String> getHostsNotInAvailabilityZone(ConstraintChecker checker, String zoneId, int numCandidates) {
+    ResourceConstraint constraint = new ResourceConstraint(
+        ResourceConstraintType.AVAILABILITY_ZONE, Collections.singletonList(zoneId));
+    constraint.setNegative(true);
+    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
   }
 }
