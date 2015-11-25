@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.common.dcp;
 
 import com.vmware.dcp.common.Operation;
+import com.vmware.dcp.common.OperationJoin;
 import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.dcp.common.ServiceDocumentQueryResult;
 import com.vmware.dcp.common.ServiceErrorResponse;
@@ -41,8 +42,11 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,7 +76,6 @@ public class DcpRestClient implements DcpClient {
   private ServerSet serverSet;
   private URI localHostUri;
   private InetAddress localHostInetAddress;
-
 
   @Inject
   public DcpRestClient(ServerSet serverSet, ExecutorService executor) {
@@ -146,6 +149,38 @@ public class DcpRestClient implements DcpClient {
         .setReferer(this.localHostUri);
 
     return send(getOperation);
+  }
+
+  @Override
+  public Map<String, Operation> get(Collection<String> documentSelfLinks, int batchSize)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+
+    if (documentSelfLinks.isEmpty()) {
+      throw new IllegalArgumentException("documentSelfLinks collection cannot be empty");
+    }
+
+    if (batchSize <= 0) {
+      throw new IllegalArgumentException("batchSize must be greater than zero");
+    }
+
+    int batchCount = 1 + (documentSelfLinks.size() - 1) / batchSize;
+    Map<Long, Operation> operations = new HashMap<>(documentSelfLinks.size());
+    Map<Long, String> sourceLinks = new HashMap<>(documentSelfLinks.size());
+    for (String documentSelfLink : documentSelfLinks) {
+      URI serviceUri = getServiceUri(documentSelfLink);
+
+      Operation getOperation = Operation
+          .createGet(serviceUri)
+          .setUri(serviceUri)
+          .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
+          .setExpiration(Utils.getNowMicrosUtc() + batchCount * getGetOperationExpirationMicros())
+          .setReferer(this.localHostUri);
+
+      operations.put(getOperation.getId(), getOperation);
+      sourceLinks.put(getOperation.getId(), documentSelfLink);
+    }
+
+    return send(operations, sourceLinks, batchSize);
   }
 
   @Override
@@ -388,10 +423,27 @@ public class DcpRestClient implements DcpClient {
   }
 
   @VisibleForTesting
+  protected void handleOperationResults(Map<Long, Operation> requestedOps, Collection<Operation> completedOps)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    for (Operation completedOp : completedOps) {
+      handleOperationResult(requestedOps.get(completedOp.getId()), completedOp);
+    }
+  }
+
+  @VisibleForTesting
   protected void handleTimeoutException(Operation operation, TimeoutException timeoutException)
       throws TimeoutException {
     logger.warn("send: TIMEOUT {}, Message={}",
         createLogMessageWithStatusAndBody(operation),
+        timeoutException.getMessage());
+    throw timeoutException;
+  }
+
+  @VisibleForTesting
+  protected void handleTimeoutException(OperationJoin operationJoin, TimeoutException timeoutException)
+      throws TimeoutException {
+    logger.warn("send: TIMEOUT {}, Message={}",
+        createLogMessageWithStatusAndBody(operationJoin.getOperations()),
         timeoutException.getMessage());
     throw timeoutException;
   }
@@ -402,13 +454,26 @@ public class DcpRestClient implements DcpClient {
     logger.warn("send: INTERRUPTED {}, Exception={}",
         createLogMessageWithStatusAndBody(operation),
         interruptedException);
+    throw interruptedException;
+  }
 
+  @VisibleForTesting
+  protected void handleInterruptedException(OperationJoin operationJoin, InterruptedException interruptedException)
+      throws InterruptedException {
+    logger.warn("send: INTERRUPTED {}, Exception={}",
+        createLogMessageWithStatusAndBody(operationJoin.getOperations()),
+        interruptedException);
     throw interruptedException;
   }
 
   @VisibleForTesting
   protected OperationLatch createOperationLatch(Operation operation) {
     return new OperationLatch(operation);
+  }
+
+  @VisibleForTesting
+  protected OperationJoinLatch createOperationJoinLatch(OperationJoin operationJoin) {
+    return new OperationJoinLatch(operationJoin);
   }
 
   @VisibleForTesting
@@ -431,6 +496,37 @@ public class DcpRestClient implements DcpClient {
     }
     //this maybe null due to client side exceptions caught above.
     return completedOperation;
+  }
+
+  @VisibleForTesting
+  protected Map<String, Operation> send(Map<Long, Operation> requestedOperations,
+                                        Map<Long, String> sourceLinks,
+                                        int batchSize)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    logger.info("send: STARTED {}", createLogMessageWithBody(requestedOperations.values()));
+    OperationJoin operationJoin = OperationJoin.create(requestedOperations.values());
+    OperationJoinLatch operationJoinLatch = createOperationJoinLatch(operationJoin);
+    operationJoin.sendWith(client, batchSize);
+
+    Map<String, Operation> result = null;
+
+    try {
+      int batchCount = 1 + (requestedOperations.size() - 1) / batchSize;
+      operationJoinLatch.await(batchCount * DEFAULT_OPERATION_LATCH_TIMEOUT_MICROS, TimeUnit.MICROSECONDS);
+      Collection<Operation> completedOperations = operationJoin.getOperations();
+      logCompletedOperations(completedOperations);
+      handleOperationResults(requestedOperations, completedOperations);
+      result = new HashMap<>(completedOperations.size());
+      for (Operation operation : completedOperations) {
+        result.put(sourceLinks.get(operation.getId()), operation);
+      }
+    } catch (TimeoutException timeoutException) {
+      handleTimeoutException(operationJoin, timeoutException);
+    } catch (InterruptedException interruptedException) {
+      handleInterruptedException(operationJoin, interruptedException);
+    }
+
+    return result;
   }
 
   @VisibleForTesting
@@ -532,6 +628,12 @@ public class DcpRestClient implements DcpClient {
     }
   }
 
+  private void logCompletedOperations(Collection<Operation> operations) {
+    for (Operation completedOp : operations) {
+      logCompletedOperation(completedOp);
+    }
+  }
+
   private String createLogMessageWithoutStatusAndBody(Operation operation) {
     return String.format(
         "Action={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={NOT LOGGED}",
@@ -539,6 +641,14 @@ public class DcpRestClient implements DcpClient {
         operation.getId(),
         operation.getUri(),
         operation.getReferer());
+  }
+
+  private String createLogMessageWithoutStatusAndBody(Collection<Operation> operations) {
+    StringBuilder stringBuilder = new StringBuilder();
+    for (Operation operation : operations) {
+      stringBuilder.append(createLogMessageWithoutStatusAndBody(operation)).append("\n");
+    }
+    return stringBuilder.toString();
   }
 
   private String createLogMessageWithBody(Operation operation) {
@@ -551,6 +661,14 @@ public class DcpRestClient implements DcpClient {
         Utils.toJson(operation.getBodyRaw()));
   }
 
+  private String createLogMessageWithBody(Collection<Operation> operations) {
+    StringBuilder stringBuilder = new StringBuilder();
+    for (Operation operation : operations) {
+      stringBuilder.append(createLogMessageWithBody(operation)).append("\n");
+    }
+    return stringBuilder.toString();
+  }
+
   private String createLogMessageWithStatus(Operation operation) {
     return String.format(
         "Action={%s}, StatusCode={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={NOT LOGGED}",
@@ -559,6 +677,14 @@ public class DcpRestClient implements DcpClient {
         operation.getId(),
         operation.getUri(),
         operation.getReferer());
+  }
+
+  private String createLogMessageWithStatus(Collection<Operation> operations) {
+    StringBuilder stringBuilder = new StringBuilder();
+    for (Operation operation : operations) {
+      stringBuilder.append(createLogMessageWithStatus(operation)).append("\n");
+    }
+    return stringBuilder.toString();
   }
 
   private String createLogMessageWithStatusAndBody(Operation operation) {
@@ -570,6 +696,14 @@ public class DcpRestClient implements DcpClient {
         operation.getUri(),
         operation.getReferer(),
         Utils.toJson(operation.getBodyRaw()));
+  }
+
+  private String createLogMessageWithStatusAndBody(Collection<Operation> operations) {
+    StringBuilder stringBuilder = new StringBuilder();
+    for (Operation operation : operations) {
+      stringBuilder.append(createLogMessageWithStatusAndBody(operation)).append("\n");
+    }
+    return stringBuilder.toString();
   }
 
   private Operation waitForTaskToFinish(URI serviceUri)
