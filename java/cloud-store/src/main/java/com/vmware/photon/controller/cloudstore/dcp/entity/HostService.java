@@ -35,6 +35,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -42,6 +43,8 @@ import java.util.Set;
  * representing an ESX host.
  */
 public class HostService extends StatefulService {
+
+  private final Random random = new Random();
 
   public HostService() {
     super(State.class);
@@ -57,6 +60,11 @@ public class HostService extends StatefulService {
     try {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
+
+      if (null == startState.schedulingConstant) {
+        startState.schedulingConstant = (long) random.nextInt(10 * 1000);
+      }
+
       validateState(startState);
       startOperation.complete();
     } catch (IllegalStateException t) {
@@ -92,7 +100,10 @@ public class HostService extends StatefulService {
   @Override
   public ServiceDocument getDocumentTemplate() {
     ServiceDocument template = super.getDocumentTemplate();
+    ServiceUtils.setExpandedIndexing(template, State.FIELD_NAME_REPORTED_DATASTORES);
+    ServiceUtils.setExpandedIndexing(template, State.FIELD_NAME_REPORTED_NETWORKS);
     ServiceUtils.setExpandedIndexing(template, State.FIELD_NAME_USAGE_TAGS);
+    ServiceUtils.setSortedIndexing(template, State.FIELD_NAME_SCHEDULING_CONSTANT);
     return template;
   }
 
@@ -157,7 +168,11 @@ public class HostService extends StatefulService {
    */
   public static class State extends ServiceDocument {
 
+    public static final String FIELD_NAME_AVAILABILITY_ZONE = "availabilityZone";
     public static final String FIELD_NAME_HOST_ADDRESS = "hostAddress";
+    public static final String FIELD_NAME_REPORTED_DATASTORES = "reportedDatastores";
+    public static final String FIELD_NAME_REPORTED_NETWORKS = "reportedNetworks";
+    public static final String FIELD_NAME_SCHEDULING_CONSTANT = "schedulingConstant";
     public static final String FIELD_NAME_USAGE_TAGS = "usageTags";
 
     public static final String USAGE_TAGS_KEY =
@@ -295,5 +310,13 @@ public class HostService extends StatefulService {
      * with multiple image datastores.
      */
     public Set<String> reportedImageDatastores;
+
+    /**
+     * This value represents a randomly assigned integer value. It is used to create
+     * entropy when performing host constraint searches during scheduling.
+     */
+    @NotNull
+    @Immutable
+    public Long schedulingConstant;
   }
 }

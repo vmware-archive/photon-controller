@@ -151,6 +151,17 @@ public class ServiceUtils {
   }
 
   /**
+   * This method updates the specified document template with sorted indexing for one or more fields. This is
+   * required for sorting the results list of queries over numeric types.
+   *
+   * @param sd         Supplies the base document template for the service in question.
+   * @param fieldNames Supplies a list of field names for which sorted indexing should be enabled.
+   */
+  public static void setSortedIndexing(ServiceDocument sd, String... fieldNames) {
+    setIndexingOptions(sd, ServiceDocumentDescription.PropertyIndexingOption.SORT, fieldNames);
+  }
+
+  /**
    * This method updates the indexing options for the fields in the specified document template to add the specified
    * option.
    *
