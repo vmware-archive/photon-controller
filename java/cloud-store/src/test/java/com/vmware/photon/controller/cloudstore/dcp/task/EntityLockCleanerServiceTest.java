@@ -38,6 +38,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
@@ -125,6 +126,8 @@ public class EntityLockCleanerServiceTest {
 
       EntityLockCleanerService.State savedState = host.getServiceState(EntityLockCleanerService.State.class);
       assertThat(savedState.documentSelfLink, is(BasicServiceHost.SERVICE_URI));
+      assertEquals(savedState.entityLockDeleteWatermarkTimeInMicros,
+              (Long) EntityLockCleanerService.DEFAULT_DELETE_WATERMARK_TIME_MILLIS);
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
           is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
               new BigDecimal(TimeUnit.SECONDS.toMicros(10)))));
@@ -340,9 +343,9 @@ public class EntityLockCleanerServiceTest {
           EntityLockCleanerService.State.class,
           (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
       assertThat(response.danglingEntityLocks,
-          is(Integer.min(danglingEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
+          is(Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT)));
       assertThat(response.deletedEntityLocks,
-          is(Integer.min(danglingEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
+          is(Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT)));
 
       freeTestEnvironment(machine);
     }
@@ -364,10 +367,10 @@ public class EntityLockCleanerServiceTest {
           {7, 5, 1},
           {7, 5, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
           // Test cases with entity locks greater than the default page limit.
-          {EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT + 1, EntityLockCleanerService
-              .ENTITY_LOCK_DEFAULT_PAGE_LIMIT, 1},
-          {EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT + 1, EntityLockCleanerService
-              .ENTITY_LOCK_DEFAULT_PAGE_LIMIT + 1, 1},
+          {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 1, EntityLockCleanerService
+              .DEFAULT_PAGE_LIMIT, 1},
+          {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 1, EntityLockCleanerService
+              .DEFAULT_PAGE_LIMIT + 1, 1},
       };
     }
 
