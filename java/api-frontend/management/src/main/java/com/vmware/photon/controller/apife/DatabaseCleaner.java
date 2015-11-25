@@ -117,7 +117,7 @@ public class DatabaseCleaner implements Runnable {
           Optional.of(tombstone.getEntityId()),
           Optional.of(tombstone.getEntityKind()),
           Optional.<String>absent(),
-          Optional.<Integer>absent());
+          Optional.<Integer>absent()).getItems();
 
       logger.info("Found {} stale tasks", tasks.size());
       logger.debug("Stale tasks are {}", tasks);

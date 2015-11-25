@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -155,9 +156,11 @@ public class HostDcpBackend implements HostBackend {
   }
 
   @Override
-  public List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException {
+  public ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize)
+      throws ExternalException {
+
     HostEntity hostEntity = findById(id);
-    return taskBackend.filter(id, hostEntity.getKind(), state);
+    return taskBackend.filter(id, hostEntity.getKind(), state, pageSize);
   }
 
   @Override

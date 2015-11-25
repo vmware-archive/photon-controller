@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Step;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
@@ -54,6 +55,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Common task operations using DCP cloud store.
@@ -95,37 +97,24 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   @Override
-  public List<Task> filter(String entityId, String entityKind, Optional<String> state) throws ExternalException {
-    return this.filter(Optional.of(entityId), Optional.of(entityKind), state, Optional.<Integer>absent());
+  public ResourceList<Task> filter(String entityId, String entityKind, Optional<String> state,
+                                   Optional<Integer> pageSize) throws ExternalException {
+
+    return this.filter(Optional.of(entityId), Optional.of(entityKind), state, pageSize);
   }
 
   @Override
-  public List<Task> filter(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
-                           Optional<Integer> pageSize)
-      throws ExternalException {
-    List<TaskEntity> tasks = getEntityTasks(entityId, entityKind, state, pageSize);
-
-    List<Task> result = new ArrayList<>();
-
-    for (TaskEntity task : tasks) {
-      result.add(toApiRepresentation(task));
-    }
-
-    return result;
+  public ResourceList<Task> filter(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
+                                   Optional<Integer> pageSize) throws ExternalException {
+    ResourceList<TaskEntity> taskEntities = getEntityTasks(entityId, entityKind, state, pageSize);
+    return toApiRepresentation(taskEntities);
   }
 
   @Override
-  public List<Task> filterInProject(String projectId, Optional<String> state, Optional<String> entityKind,
+  public ResourceList<Task> filterInProject(String projectId, Optional<String> state, Optional<String> entityKind,
                                     Optional<Integer> pageSize) {
-    List<TaskEntity> tasks = getProjectTasks(projectId, state, entityKind, pageSize);
-
-    List<Task> result = new ArrayList<>();
-
-    for (TaskEntity task : tasks) {
-      result.add(toApiRepresentation(task));
-    }
-
-    return result;
+    ResourceList<TaskEntity> taskEntities = getProjectTasks(projectId, state, entityKind, pageSize);
+    return toApiRepresentation(taskEntities);
   }
 
   @Override
@@ -303,22 +292,12 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   @Override
-  public List<TaskEntity> getEntityTasks(Optional<String> entityId, Optional<String> entityKind,
-                                         Optional<String> state, Optional<Integer> pageSize)
+  public ResourceList<TaskEntity> getEntityTasks(Optional<String> entityId, Optional<String> entityKind,
+                                                 Optional<String> state, Optional<Integer> pageSize)
       throws InvalidQueryParamsException {
 
-    List<TaskEntity> taskEntityList = null;
-
-    List<TaskService.State> tasksDocuments = getEntityDocuments(entityId, entityKind, state, pageSize);
-
-    if (tasksDocuments != null) {
-      taskEntityList = new ArrayList<>(tasksDocuments.size());
-      for (TaskService.State taskState : tasksDocuments) {
-        taskEntityList.add(convertToTaskEntity(taskState));
-      }
-    }
-
-    return taskEntityList;
+    ResourceList<TaskService.State> tasksDocuments = getEntityDocuments(entityId, entityKind, state, pageSize);
+    return getTaskEntitiesFromDocuments(tasksDocuments);
   }
 
   private void patchTaskService(String taskId, TaskService.State taskServiceState) throws TaskNotFoundException {
@@ -338,31 +317,31 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     }
   }
 
-  private List<TaskEntity> getProjectTasks(
+  private ResourceList<TaskEntity> getProjectTasks(
       String projectId, Optional<String> state, Optional<String> entityKind, Optional<Integer> pageSize) {
 
-    List<TaskService.State> tasksDocuments = getTaskDocumentsInProject(projectId, state, entityKind, pageSize);
+    ResourceList<TaskService.State> tasksDocuments = getTaskDocumentsInProject(projectId, state, entityKind, pageSize);
 
     return getTaskEntitiesFromDocuments(tasksDocuments);
   }
 
-  private List<TaskEntity> getTaskEntitiesFromDocuments(List<TaskService.State> tasksDocuments) {
+  private ResourceList<TaskEntity> getTaskEntitiesFromDocuments(ResourceList<TaskService.State> tasksDocuments) {
 
-    List<TaskEntity> taskEntityList = null;
-
-    if (tasksDocuments != null) {
-      taskEntityList = new ArrayList<>(tasksDocuments.size());
-      for (TaskService.State taskState : tasksDocuments) {
-        taskEntityList.add(convertToTaskEntity(taskState));
-      }
-    }
+    ResourceList<TaskEntity> taskEntityList = new ResourceList<>();
+    taskEntityList.setItems(tasksDocuments.getItems().stream()
+        .map(d -> convertToTaskEntity(d))
+        .collect(Collectors.toList())
+    );
+    taskEntityList.setNextPageLink(tasksDocuments.getNextPageLink());
+    taskEntityList.setPreviousPageLink(tasksDocuments.getPreviousPageLink());
 
     return taskEntityList;
   }
 
-  private List<TaskService.State> getEntityDocuments(Optional<String> entityId, Optional<String> entityKind,
-                                                     Optional<String> state, Optional<Integer> pageSize)
+  private ResourceList<TaskService.State> getEntityDocuments(Optional<String> entityId, Optional<String> entityKind,
+                                                             Optional<String> state, Optional<Integer> pageSize)
       throws InvalidQueryParamsException {
+
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
 
     if (entityId.isPresent() && !entityKind.isPresent()) {
@@ -388,10 +367,10 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(TaskService.State.class, termsBuilder.build(),
         pageSize, true);
 
-    return DataTypeConversionUtils.xenonQueryResultToResourceList(TaskService.State.class, queryResult).getItems();
+    return DataTypeConversionUtils.xenonQueryResultToResourceList(TaskService.State.class, queryResult);
   }
 
-  private List<TaskService.State> getTaskDocumentsInProject(
+  private ResourceList<TaskService.State> getTaskDocumentsInProject(
       String projectId, Optional<String> state, Optional<String> entityKind, Optional<Integer> pageSize) {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
 
@@ -405,8 +384,10 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
       termsBuilder.put("state", state.get().toUpperCase());
     }
 
-    // Will consume pageSize in later CR.
-    return dcpClient.queryDocuments(TaskService.State.class, termsBuilder.build());
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(TaskService.State.class, termsBuilder.build(),
+        pageSize, true);
+
+    return DataTypeConversionUtils.xenonQueryResultToResourceList(TaskService.State.class, queryResult);
   }
 
   @Override
@@ -820,6 +801,18 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     stepResource.resourceId = stepResourceEntity.getEntityId();
     stepResource.resourceKind = stepResourceEntity.getEntityKind();
     return stepResource;
+  }
+
+  private ResourceList<Task> toApiRepresentation(ResourceList<TaskEntity> taskEntities) {
+    ResourceList<Task> result = new ResourceList<>();
+    result.setItems(taskEntities.getItems().stream()
+        .map(t -> toApiRepresentation(t))
+        .collect(Collectors.toList())
+    );
+    result.setNextPageLink(taskEntities.getNextPageLink());
+    result.setPreviousPageLink(taskEntities.getPreviousPageLink());
+
+    return result;
   }
 
   private Task toApiRepresentation(TaskEntity taskEntity) {

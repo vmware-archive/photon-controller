@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -196,10 +197,10 @@ public class FlavorDcpBackend implements FlavorBackend {
   }
 
   @Override
-  public List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException {
+  public ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize)
+      throws ExternalException {
     FlavorService.State flavor = findById(id);
-    // will consume pageSize in later CR.
-    return taskBackend.filter(id, flavor.kind, state);
+    return taskBackend.filter(id, flavor.kind, state, pageSize);
   }
 
   @Override
