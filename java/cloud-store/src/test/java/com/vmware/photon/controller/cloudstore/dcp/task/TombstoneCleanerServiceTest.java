@@ -13,14 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocumentQueryResult;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.ServiceStats;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneService;
@@ -31,6 +23,14 @@ import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.ServiceStats;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;

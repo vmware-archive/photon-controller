@@ -69,7 +69,7 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
     AvailabilityZoneService.State state = new AvailabilityZoneService.State();
     state.name = availabilityZone.getName();
     state.state = AvailabilityZoneState.READY;
-    com.vmware.dcp.common.Operation result = dcpClient.post(AvailabilityZoneServiceFactory.SELF_LINK, state);
+    com.vmware.xenon.common.Operation result = dcpClient.post(AvailabilityZoneServiceFactory.SELF_LINK, state);
     AvailabilityZoneService.State createdState = result.getBody(AvailabilityZoneService.State.class);
     AvailabilityZoneEntity availabilityZoneEntity = convertToEntity(createdState);
     return taskBackend.createCompletedTask(availabilityZoneEntity, Operation.CREATE_AVAILABILITYZONE);
@@ -146,7 +146,7 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
   }
 
   private AvailabilityZoneService.State findById(String id) throws ExternalException {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
 
     try {
       result = dcpClient.get(AvailabilityZoneServiceFactory.SELF_LINK + "/" + id);

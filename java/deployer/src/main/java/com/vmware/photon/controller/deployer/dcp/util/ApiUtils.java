@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.deployer.dcp.util;
 
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.api.ApiError;
 import com.vmware.photon.controller.api.Step;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.FutureCallback;
 
@@ -65,14 +65,14 @@ public class ApiUtils {
   /**
    * This method polls the task status asynchronously until the task completes or fails.
    *
-   * @param task Supplies the task object.
-   * @param client Supplies the API client object.
-   * @param service Supplies the DCP micro-service which is waiting on the task completion.
+   * @param task              Supplies the task object.
+   * @param client            Supplies the API client object.
+   * @param service           Supplies the DCP micro-service which is waiting on the task completion.
    * @param queryTaskInterval Supplies the time interval between the task status query.
-   * @param callback Supplies the callback to be invoked when the task completes or fails.
+   * @param callback          Supplies the callback to be invoked when the task completes or fails.
    */
   public static void pollTaskAsync(final Task task, final ApiClient client, final Service service,
-    final int queryTaskInterval, final FutureCallback<Task> callback) {
+                                   final int queryTaskInterval, final FutureCallback<Task> callback) {
 
     switch (task.getState().toUpperCase()) {
       case "QUEUED":
@@ -127,11 +127,11 @@ public class ApiUtils {
   /**
    * This method polls the tasks status asynchronously until all the tasks completes or fails.
    *
-   * @param tasks Supplies a list of task objects.
-   * @param client Supplies the API client object.
-   * @param service Supplies the DCP micro-service which is waiting on the task completion.
+   * @param tasks             Supplies a list of task objects.
+   * @param client            Supplies the API client object.
+   * @param service           Supplies the DCP micro-service which is waiting on the task completion.
    * @param queryTaskInterval Supplies the time interval between the task status query.
-   * @param callback Supplies the callback to be invoked when the task completes or fails.
+   * @param callback          Supplies the callback to be invoked when the task completes or fails.
    */
   public static void pollTasksAsync(
       final List<Task> tasks,

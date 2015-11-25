@@ -13,13 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
@@ -42,6 +35,13 @@ import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.service.exceptions.ExistHostWithSameAddressException;
 import com.vmware.photon.controller.deployer.service.exceptions.InvalidLoginException;
 import com.vmware.photon.controller.deployer.service.exceptions.ManagementVmAddressAlreadyInUseException;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -63,7 +63,7 @@ public class ValidateHostTaskService extends StatefulService {
   /**
    * This class defines the state of a {@link ValidateHostTaskService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current result code for the task.
@@ -149,7 +149,7 @@ public class ValidateHostTaskService extends StatefulService {
 
   public ValidateHostTaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.EAGER_CONSISTENCY, true);
+    super.toggleOption(ServiceOption.ENFORCE_QUORUM, true);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
@@ -331,36 +331,37 @@ public class ValidateHostTaskService extends StatefulService {
     HostUtils.getListeningExecutorService(this).submit(futureTask);
 
     FutureCallback<Integer> futureCallback = new FutureCallback<Integer>() {
-    @Override
-    public void onSuccess(@Nullable Integer result) {
-      try {
-        if (hasManagementVmAddress(state)) {
-          validateManagementVmAddress(state);
-        } else {
-          sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+      @Override
+      public void onSuccess(@Nullable Integer result) {
+        try {
+          if (hasManagementVmAddress(state)) {
+            validateManagementVmAddress(state);
+          } else {
+            sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+          }
+        } catch (Throwable t) {
+          failTask(t);
         }
-      } catch (Throwable t) {
-        failTask(t);
       }
-    }
 
-    @Override
-    public void onFailure(Throwable t) {
-      if (t instanceof InvalidLoginException) {
-        failTask(t, TaskState.ResultCode.InvalidLogin);
-      } else {
-        failTask(t);
+      @Override
+      public void onFailure(Throwable t) {
+        if (t instanceof InvalidLoginException) {
+          failTask(t, TaskState.ResultCode.InvalidLogin);
+        } else {
+          failTask(t);
+        }
       }
-    }};
+    };
 
     Futures.addCallback(futureTask, futureCallback);
   }
 
   private boolean hasManagementVmAddress(State state) {
     return state.usageTags != null &&
-           state.usageTags.contains(UsageTag.MGMT.name()) &&
-           state.metadata != null &&
-           state.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP) != null;
+        state.usageTags.contains(UsageTag.MGMT.name()) &&
+        state.metadata != null &&
+        state.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP) != null;
   }
 
   /**
@@ -377,23 +378,23 @@ public class ValidateHostTaskService extends StatefulService {
     ListenableFutureTask<Boolean> futureTask = ListenableFutureTask.create(hostManagementVmAddressValidator);
     HostUtils.getListeningExecutorService(this).submit(futureTask);
 
-      FutureCallback<Boolean> futureCallback = new FutureCallback<Boolean>() {
-        @Override
-        public void onSuccess(@Nullable Boolean result) {
-            sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-        }
+    FutureCallback<Boolean> futureCallback = new FutureCallback<Boolean>() {
+      @Override
+      public void onSuccess(@Nullable Boolean result) {
+        sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+      }
 
-        @Override
-        public void onFailure(Throwable t) {
-          if (t instanceof ManagementVmAddressAlreadyInUseException) {
-            failTask(t, TaskState.ResultCode.ManagementVmAddressAlreadyInUse);
-          } else {
-            failTask(t);
-          }
+      @Override
+      public void onFailure(Throwable t) {
+        if (t instanceof ManagementVmAddressAlreadyInUseException) {
+          failTask(t, TaskState.ResultCode.ManagementVmAddressAlreadyInUse);
+        } else {
+          failTask(t);
         }
-      };
+      }
+    };
 
-      Futures.addCallback(futureTask, futureCallback);
+    Futures.addCallback(futureTask, futureCallback);
   }
 
   /**

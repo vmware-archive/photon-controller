@@ -13,14 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -36,6 +28,14 @@ import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -212,29 +212,29 @@ public class AddCloudHostWorkflowService extends StatefulService {
 
     FutureCallback<BulkProvisionHostsWorkflowService.State> callback = new
         FutureCallback<BulkProvisionHostsWorkflowService.State>() {
-      @Override
-      public void onSuccess(@Nullable BulkProvisionHostsWorkflowService.State result) {
-        if (result.taskState.stage == TaskState.TaskStage.FAILED) {
-          State state = buildPatch(TaskState.TaskStage.FAILED, null);
-          state.taskState.failure = result.taskState.failure;
-          TaskUtils.sendSelfPatch(service, state);
-          return;
-        }
+          @Override
+          public void onSuccess(@Nullable BulkProvisionHostsWorkflowService.State result) {
+            if (result.taskState.stage == TaskState.TaskStage.FAILED) {
+              State state = buildPatch(TaskState.TaskStage.FAILED, null);
+              state.taskState.failure = result.taskState.failure;
+              TaskUtils.sendSelfPatch(service, state);
+              return;
+            }
 
-        if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
-          TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null));
-          return;
-        }
+            if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
+              TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null));
+              return;
+            }
 
-        ServiceUtils.logInfo(service, "Provision new cloud host completed");
-        TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED, null));
-      }
+            ServiceUtils.logInfo(service, "Provision new cloud host completed");
+            TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED, null));
+          }
 
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        };
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
     startState.deploymentServiceLink = deploymentServiceLink;

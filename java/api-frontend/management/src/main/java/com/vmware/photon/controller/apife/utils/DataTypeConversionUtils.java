@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.utils;
 
-import com.vmware.dcp.common.ServiceDocumentQueryResult;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +27,7 @@ public class DataTypeConversionUtils {
   /**
    * Convert the data returned as ServiceDocumentQueryResult from Xenon to
    * ResourceList, which is being used by api-fe.
-   *
+   * <p>
    * The order of the data will be honored.
    *
    * @param documentType

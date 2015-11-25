@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.clustermanager.statuschecks;
 
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
+import com.vmware.xenon.common.Service;
 
 import com.google.common.base.Preconditions;
 

@@ -13,10 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.service;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.common.dcp.OperationLatch;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
@@ -29,6 +25,10 @@ import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatus;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusCode;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusResponse;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

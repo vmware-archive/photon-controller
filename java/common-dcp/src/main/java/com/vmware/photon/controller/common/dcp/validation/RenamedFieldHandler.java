@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.common.dcp.validation;
 
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.Utils;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.Utils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -56,8 +56,8 @@ public enum RenamedFieldHandler {
   }
 
   private static Object getNamedFieldValue(Object jsonObject, String fieldName, Class fieldType) {
-   Object fieldValue = Utils.getJsonMapValue(jsonObject, fieldName, fieldType);
-   return fieldValue;
+    Object fieldValue = Utils.getJsonMapValue(jsonObject, fieldName, fieldType);
+    return fieldValue;
   }
 
 }

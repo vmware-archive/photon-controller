@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.clustermanager.servicedocuments;
 
-import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.xenon.common.ServiceDocument;
 
 /**
  * This class defines the document state associated with a single
@@ -47,7 +47,7 @@ public class ClusterDeleteTask extends ServiceDocument {
   /**
    * This class defines the state of a ClusterDeleteTaskService instance.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
     /**
      * The current sub-stage of the task.
      */

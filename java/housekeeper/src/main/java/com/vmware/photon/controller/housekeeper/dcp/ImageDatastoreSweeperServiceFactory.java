@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.dcp.common.FactoryService;
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
+import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Service;
 
 /**
  * Implements a factory to create ImageDatastoreSweeperService instances.

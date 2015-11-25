@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.utils;
 
-import com.vmware.dcp.common.ServiceDocumentQueryResult;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
 
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;

@@ -12,15 +12,6 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.clustermanager.entities.InactiveVmFactoryService;
 import com.vmware.photon.controller.clustermanager.entities.InactiveVmService;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
@@ -36,6 +27,15 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.util.concurrent.FutureCallback;
 

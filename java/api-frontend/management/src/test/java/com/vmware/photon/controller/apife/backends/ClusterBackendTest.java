@@ -568,7 +568,7 @@ public class ClusterBackendTest {
       imageSetting.defaultValue = "v2";
       imageServiceState.imageSettings.add(imageSetting);
 
-      com.vmware.dcp.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
+      com.vmware.xenon.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
 
       ImageService.State createdImageState = result.getBody(ImageService.State.class);
 

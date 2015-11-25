@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
-import com.vmware.dcp.common.FactoryService;
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
+import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Service;
 
 /**
  * Class FlavorServiceFactory is a factory to create a FlavorService instances.

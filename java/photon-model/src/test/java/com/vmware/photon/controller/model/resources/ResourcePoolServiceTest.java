@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.model.resources;
 
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocumentDescription;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.TenantFactoryService;
 import com.vmware.photon.controller.model.ModelServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocumentDescription;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.TenantFactoryService;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

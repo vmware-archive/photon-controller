@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends.clients;
 
-import com.vmware.dcp.common.Operation;
 import com.vmware.photon.controller.api.Cluster;
 import com.vmware.photon.controller.api.ClusterCreateSpec;
 import com.vmware.photon.controller.api.ClusterResizeOperation;
@@ -31,6 +30,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmCluster
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.Operation;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -319,7 +319,7 @@ public class ClusterManagerClient {
 
   public Cluster getCluster(String clusterId) throws ClusterNotFoundException {
     String uri = ClusterServiceFactory.SELF_LINK + "/" + clusterId;
-    com.vmware.dcp.common.Operation operation;
+    com.vmware.xenon.common.Operation operation;
     try {
       operation = apiFeDcpClient.get(uri);
     } catch (DocumentNotFoundException ex) {

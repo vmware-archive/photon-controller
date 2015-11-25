@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
@@ -45,6 +36,15 @@ import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkState;
@@ -66,7 +66,7 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
   /**
    * This class defines the state of a {@link AllocateClusterManagerResourcesTaskService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -213,20 +213,20 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
         .setCompletion((Operation operation, Throwable throwable) -> {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(AllocateClusterManagerResourcesTaskService.this, documentLinks);
-              checkState(!documentLinks.isEmpty(), "Found 0 ManagementApi container template entity");
-              queryForLoadBalancerContainer(documentLinks.iterator().next());
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          });
+          try {
+            Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+            QueryTaskUtils.logQueryResults(AllocateClusterManagerResourcesTaskService.this, documentLinks);
+            checkState(!documentLinks.isEmpty(), "Found 0 ManagementApi container template entity");
+            queryForLoadBalancerContainer(documentLinks.iterator().next());
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        });
 
     sendRequest(queryPostOperation);
   }
@@ -252,20 +252,20 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
         .setCompletion((Operation operation, Throwable throwable) -> {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(AllocateClusterManagerResourcesTaskService.this, documentLinks);
-              checkState(!documentLinks.isEmpty(), "Found 0 container entity");
-              getContainerState(documentLinks.iterator().next());
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          });
+          try {
+            Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+            QueryTaskUtils.logQueryResults(AllocateClusterManagerResourcesTaskService.this, documentLinks);
+            checkState(!documentLinks.isEmpty(), "Found 0 container entity");
+            getContainerState(documentLinks.iterator().next());
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        });
 
     sendRequest(queryPostOperation);
   }
@@ -275,14 +275,14 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
         .createGet(this, containerLink)
         .forceRemote()
         .setCompletion((Operation operation, Throwable throwable) -> {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-            ContainerService.State containerState = operation.getBody(ContainerService.State.class);
-            getVmState(containerState.vmServiceLink);
-          });
+          ContainerService.State containerState = operation.getBody(ContainerService.State.class);
+          getVmState(containerState.vmServiceLink);
+        });
 
     sendRequest(getOperation);
   }
@@ -292,24 +292,24 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
         .createGet(this, vmLink)
         .forceRemote()
         .setCompletion((Operation operation, Throwable throwable) -> {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-            try {
-              VmService.State vmState = operation.getBody(VmService.State.class);
-              State patchState = buildPatch(TaskState.TaskStage.STARTED,
-                  TaskState.SubStage.CREATE_MASTER_VM_FLAVOR, null);
-              patchState.loadBalancerAddress = new URL(String.format("%s://%s:%s",
-                  MANAGEMENT_API_PROTOCOL,
-                  vmState.ipAddress,
-                  ServicePortConstants.MANAGEMENT_API_PORT)).toString();
-              TaskUtils.sendSelfPatch(AllocateClusterManagerResourcesTaskService.this, patchState);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          });
+          try {
+            VmService.State vmState = operation.getBody(VmService.State.class);
+            State patchState = buildPatch(TaskState.TaskStage.STARTED,
+                TaskState.SubStage.CREATE_MASTER_VM_FLAVOR, null);
+            patchState.loadBalancerAddress = new URL(String.format("%s://%s:%s",
+                MANAGEMENT_API_PROTOCOL,
+                vmState.ipAddress,
+                ServicePortConstants.MANAGEMENT_API_PORT)).toString();
+            TaskUtils.sendSelfPatch(AllocateClusterManagerResourcesTaskService.this, patchState);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        });
 
     sendRequest(getOperation);
 

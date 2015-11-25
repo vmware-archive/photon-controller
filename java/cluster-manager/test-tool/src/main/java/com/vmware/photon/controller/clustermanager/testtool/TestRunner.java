@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.clustermanager.testtool;
 
-import com.vmware.dcp.common.ServiceDocumentQueryResult;
 import com.vmware.photon.controller.api.Cluster;
 import com.vmware.photon.controller.api.ClusterCreateSpec;
 import com.vmware.photon.controller.api.ClusterState;
@@ -24,6 +23,7 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.RestClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.lang3.time.StopWatch;
@@ -76,7 +76,7 @@ public class TestRunner {
     this.deployerClient = new RestClient(deployerAddress, httpClient);
   }
 
-  public List<TestStats> run() throws Exception{
+  public List<TestStats> run() throws Exception {
     List<TestStats> statsList = new ArrayList<>();
     for (int i = 0; i < arguments.getClusterCount(); i++) {
       TestStats stats = new TestStats();

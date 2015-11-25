@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowService;
@@ -23,6 +20,9 @@ import com.vmware.photon.controller.deployer.gen.ProvisionHostRequest;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatus;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusCode;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusRequest;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
 
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;

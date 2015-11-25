@@ -12,8 +12,8 @@
  */
 package com.vmware.photon.controller.deployer.dcp.entity;
 
-import com.vmware.dcp.common.FactoryService;
-import com.vmware.dcp.common.Service;
+import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Service;
 
 /**
  * Test service factory.

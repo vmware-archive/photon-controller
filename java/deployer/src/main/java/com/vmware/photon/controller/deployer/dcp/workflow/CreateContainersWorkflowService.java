@@ -13,14 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -40,6 +32,14 @@ import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskFact
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -62,7 +62,7 @@ public class CreateContainersWorkflowService extends StatefulService {
   /**
    * This class defines the state of a {@link CreateContainersWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -335,22 +335,22 @@ public class CreateContainersWorkflowService extends StatefulService {
    * This method checks if authentication is enabled and if yes, starts deployment of lightwave container.
    *
    * @param currentState Current state object
-   * @param nextStage Next stage to set
+   * @param nextStage    Next stage to set
    * @param nextSubStage Next substage to set
    */
   private void createLightwaveContainer(final State currentState,
-      final TaskState.TaskStage nextStage, final TaskState.SubStage nextSubStage) {
+                                        final TaskState.TaskStage nextStage, final TaskState.SubStage nextSubStage) {
     final Service service = this;
 
     if (currentState.isAuthEnabled && currentState.isNewDeployment) {
       ServiceUtils.logInfo(service, "Stage %s starting, authentication is enabled",
-        TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
+          TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
       createContainers(currentState, Arrays.asList(ContainersConfig.ContainerType.Lightwave),
-        nextStage,
-        nextSubStage);
+          nextStage,
+          nextSubStage);
     } else {
       ServiceUtils.logInfo(service, "Stage %s completed, authentication is not enabled",
-        TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
+          TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
       TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
     }
   }
@@ -359,11 +359,11 @@ public class CreateContainersWorkflowService extends StatefulService {
    * This method checks if this is a new deployment and if yes, starts deployment of loadbalancer container.
    *
    * @param currentState Current state object
-   * @param nextStage Next stage to set
+   * @param nextStage    Next stage to set
    * @param nextSubStage Next substage to set
    */
   private void createLoadBalancerContainer(final State currentState,
-                                        final TaskState.TaskStage nextStage, final TaskState.SubStage nextSubStage) {
+                                           final TaskState.TaskStage nextStage, final TaskState.SubStage nextSubStage) {
     final Service service = this;
 
     if (currentState.isNewDeployment) {
@@ -386,14 +386,15 @@ public class CreateContainersWorkflowService extends StatefulService {
    * @throws Throwable
    */
   private void processRegisterAuthClient(final State currentState,
-      TaskState.TaskStage nextStage, TaskState.SubStage nextSubStage) throws Throwable {
+                                         TaskState.TaskStage nextStage,
+                                         TaskState.SubStage nextSubStage) throws Throwable {
     log(Level.INFO, "Registering authentication client with Lightwave");
 
     final Service service = this;
     if (!currentState.isAuthEnabled || !currentState.isNewDeployment) {
       log(Level.INFO, "Stage %s finished, no need to register as auth is disabled = " + currentState.isAuthEnabled +
               " or this is not a new deployment",
-        TaskState.SubStage.REGISTER_AUTH_CLIENT);
+          TaskState.SubStage.REGISTER_AUTH_CLIENT);
       TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
       return;
     }

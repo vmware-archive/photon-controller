@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.deployer.dcp.util;
 
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.StatefulService;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.StatefulService;
 
 import org.testng.annotations.Test;
 import static org.mockito.Mockito.doReturn;

@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
 import com.vmware.photon.controller.deployer.gen.EnterMaintenanceModeRequest;
 import com.vmware.photon.controller.host.gen.HostMode;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
 
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
@@ -36,6 +36,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 import java.util.function.Predicate;
+
 /**
  * Implements tests for {@link ChangeHostModeTaskServiceClient}.
  */
@@ -70,31 +71,31 @@ public class ChangeHostModeTaskServiceClientTest {
       returnedDocument.documentSelfLink = "task-id";
 
       setupMock(
-        host,
-        true,
-        ChangeHostModeTaskFactoryService.SELF_LINK,
-        ChangeHostModeTaskService.State.class,
-        (state) -> {
-          assertThat(state.hostServiceLink, is(HostServiceFactory.SELF_LINK + "/" + "host-id"));
-          return true;
-        },
-        returnedDocument);
+          host,
+          true,
+          ChangeHostModeTaskFactoryService.SELF_LINK,
+          ChangeHostModeTaskService.State.class,
+          (state) -> {
+            assertThat(state.hostServiceLink, is(HostServiceFactory.SELF_LINK + "/" + "host-id"));
+            return true;
+          },
+          returnedDocument);
 
       String taskLink = target.changeHostMode(request.getHostId(), HostMode.ENTERING_MAINTENANCE);
       assertThat(taskLink, is("task-id"));
     }
 
-    @Test (expectedExceptions = Exception.class)
+    @Test(expectedExceptions = Exception.class)
     public void failsChangeHostModeWhenDcpHostThrowsException() throws Throwable {
       EnterMaintenanceModeRequest request = createEnterMaintenanceModeRequest();
 
       setupMock(
-        host,
-        false,
-        ChangeHostModeTaskFactoryService.SELF_LINK,
-        ChangeHostModeTaskService.State.class,
-        null,
-        null);
+          host,
+          false,
+          ChangeHostModeTaskFactoryService.SELF_LINK,
+          ChangeHostModeTaskService.State.class,
+          null,
+          null);
 
       target.changeHostMode(request.getHostId(), HostMode.ENTERING_MAINTENANCE);
     }
@@ -141,7 +142,7 @@ public class ChangeHostModeTaskServiceClientTest {
       assertThat(state.stage, is(TaskState.TaskStage.FINISHED));
     }
 
-    @Test (expectedExceptions = Exception.class)
+    @Test(expectedExceptions = Exception.class)
     public void failsGetChangeHostModeStatusWhenDcpHostThrowsException() throws Throwable {
 
       setupMock(

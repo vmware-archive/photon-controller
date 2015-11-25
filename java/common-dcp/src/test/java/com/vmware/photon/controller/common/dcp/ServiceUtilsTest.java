@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceDocumentDescription;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UtilsHelper;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UtilsHelper;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

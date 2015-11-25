@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -97,7 +97,7 @@ public class FlavorDeleteServiceTest {
   }
 
   /**
-   * Tests {@link FlavorDeleteService#handleStart(com.vmware.dcp.common.Operation)}.
+   * Tests {@link FlavorDeleteService#handleStart(com.vmware.xenon.common.Operation)}.
    */
   public class HandleStartTest {
 
@@ -222,7 +222,7 @@ public class FlavorDeleteServiceTest {
   }
 
   /**
-   * Tests {@link FlavorDeleteService#handlePatch(com.vmware.dcp.common.Operation)}.
+   * Tests {@link FlavorDeleteService#handlePatch(com.vmware.xenon.common.Operation)}.
    */
   public class HandlePatchTest {
 

@@ -12,7 +12,6 @@
  */
 package com.vmware.photon.controller.clustermanager.rolloutplans;
 
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.tasks.ClusterWaitTaskFactoryService;
 import com.vmware.photon.controller.clustermanager.tasks.ClusterWaitTaskService;
@@ -25,6 +24,7 @@ import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.clustermanager.utils.ExceptionUtils;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.xenon.common.Service;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.FutureCallback;

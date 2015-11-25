@@ -48,7 +48,7 @@ public class PortGroupDcpBackendTest {
     portGroup.name = name;
     portGroup.usageTags = usageTags;
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(PortGroupServiceFactory.SELF_LINK, portGroup);
+    com.vmware.xenon.common.Operation result = dcpClient.post(PortGroupServiceFactory.SELF_LINK, portGroup);
     return result.getBody(PortGroupService.State.class);
   }
 

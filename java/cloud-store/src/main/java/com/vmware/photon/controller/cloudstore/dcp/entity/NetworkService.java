@@ -13,10 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
@@ -25,6 +21,10 @@ import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotBlank;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.services.common.QueryTask;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

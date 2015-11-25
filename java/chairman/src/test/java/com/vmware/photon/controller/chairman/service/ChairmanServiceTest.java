@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.chairman.service;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.chairman.gen.RegisterHostRequest;
 import com.vmware.photon.controller.chairman.gen.RegisterHostResponse;
@@ -46,6 +44,8 @@ import com.vmware.photon.controller.roles.gen.SchedulerRole;
 import com.vmware.photon.controller.status.gen.GetStatusRequest;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
 
 import com.google.common.collect.Lists;
 import org.apache.thrift.TSerializer;

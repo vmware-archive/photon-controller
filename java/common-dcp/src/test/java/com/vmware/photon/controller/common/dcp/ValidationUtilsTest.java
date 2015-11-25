@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 
 import org.testng.annotations.Test;
 

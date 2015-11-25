@@ -150,7 +150,7 @@ public class AttachedDiskDcpBackend implements AttachedDiskBackend {
         throw new IllegalArgumentException("Create Vm can only attach Ephemeral disk, " +
             "but got: " + diskEntity.getKind());
     }
-    com.vmware.dcp.common.Operation result = dcpClient.post(AttachedDiskServiceFactory.SELF_LINK, state);
+    com.vmware.xenon.common.Operation result = dcpClient.post(AttachedDiskServiceFactory.SELF_LINK, state);
     AttachedDiskService.State createdState = result.getBody(AttachedDiskService.State.class);
 
     AttachedDiskEntity attachedDiskEntity = toAttachedDiskEntity(createdState, diskEntity);
@@ -166,7 +166,7 @@ public class AttachedDiskDcpBackend implements AttachedDiskBackend {
     state.kind = persistentDiskEntity.getKind();
     state.persistentDiskId = persistentDiskEntity.getId();
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(AttachedDiskServiceFactory.SELF_LINK, state);
+    com.vmware.xenon.common.Operation result = dcpClient.post(AttachedDiskServiceFactory.SELF_LINK, state);
     AttachedDiskService.State createdState = result.getBody(AttachedDiskService.State.class);
 
     String id = ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);

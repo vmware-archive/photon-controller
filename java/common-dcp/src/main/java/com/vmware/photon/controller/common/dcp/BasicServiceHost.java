@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.FactoryService;
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.io.FileUtils;
@@ -209,7 +209,7 @@ public class BasicServiceHost
       Service service, ServiceDocument body, String path, Boolean disableOptions) throws Throwable {
 
     if (disableOptions) {
-      service.toggleOption(Service.ServiceOption.EAGER_CONSISTENCY, false);
+      service.toggleOption(Service.ServiceOption.ENFORCE_QUORUM, false);
       service.toggleOption(Service.ServiceOption.OWNER_SELECTION, false);
       service.toggleOption(Service.ServiceOption.REPLICATION, false);
     }

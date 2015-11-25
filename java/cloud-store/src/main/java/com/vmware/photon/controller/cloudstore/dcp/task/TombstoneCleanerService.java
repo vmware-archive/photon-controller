@@ -13,16 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.LuceneQueryTaskFactoryService;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -36,6 +26,16 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import java.net.URI;
 import java.util.Collection;
@@ -274,7 +274,7 @@ public class TombstoneCleanerService extends StatefulService {
     };
 
     URI queryUri = UriUtils.buildBroadcastRequestUri(
-        UriUtils.buildUri(getHost(), com.vmware.dcp.services.common.ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+        UriUtils.buildUri(getHost(), com.vmware.xenon.services.common.ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
         ServiceUriPaths.DEFAULT_NODE_SELECTOR);
 
     Collection<Operation> posts = new LinkedList<>();

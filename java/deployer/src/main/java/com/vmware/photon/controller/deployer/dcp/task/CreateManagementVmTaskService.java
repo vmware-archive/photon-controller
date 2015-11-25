@@ -13,17 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.EphemeralDisk;
 import com.vmware.photon.controller.api.LocalitySpec;
@@ -51,6 +40,17 @@ import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -189,7 +189,7 @@ public class CreateManagementVmTaskService extends StatefulService {
    * This method checks a patch object for validity against a document state object.
    *
    * @param currentState Supplies the start state object.
-   * @param patchState Supplies the patch state object.
+   * @param patchState   Supplies the patch state object.
    */
   protected void validatePatchState(State currentState, State patchState) {
     checkState(!TaskUtils.finalTaskStages.contains(currentState.taskState.stage));
@@ -241,7 +241,7 @@ public class CreateManagementVmTaskService extends StatefulService {
    * sets the state to STARTED.
    *
    * @param currentState Supplies the current state object.
-   * @param vmState Supplies the state object of the VmService entity.
+   * @param vmState      Supplies the state object of the VmService entity.
    */
   private void processStartedStage(final State currentState, final VmService.State vmState) {
 
@@ -311,13 +311,13 @@ public class CreateManagementVmTaskService extends StatefulService {
    * This method performs document state updates in response to an operation which
    * sets the state to STARTED.
    *
-   * @param currentState Supplies the current state object.
-   * @param vmState Supplies the state object of the VmService entity.
-   * @param hostState Supplies the state object of the HostService entity.
-   * @param projectState Supplies the state object of the ProjectService entity.
-   * @param imageState Supplies the state object of the Image Service entity.
-   * @param projectState Supplies the state object of the Project Service entity.
-   * @param vmFlavorState Supplies the state object of the FlavorService entity.
+   * @param currentState    Supplies the current state object.
+   * @param vmState         Supplies the state object of the VmService entity.
+   * @param hostState       Supplies the state object of the HostService entity.
+   * @param projectState    Supplies the state object of the ProjectService entity.
+   * @param imageState      Supplies the state object of the Image Service entity.
+   * @param projectState    Supplies the state object of the Project Service entity.
+   * @param vmFlavorState   Supplies the state object of the FlavorService entity.
    * @param diskFlavorState Supplies the state object of the FlavorService entity.
    */
   private void processStartedStage(final State currentState,
@@ -471,7 +471,7 @@ public class CreateManagementVmTaskService extends StatefulService {
    * This method retrieves the names of the containers from the set of
    * container templates and generates the vm metadata.
    *
-   * @param currentState Supplies the current state object.
+   * @param currentState  Supplies the current state object.
    * @param templateLinks Supplies a set of container template links.
    */
   private void loadNamesFromTemplates(final State currentState, Set<String> templateLinks) {
@@ -513,7 +513,7 @@ public class CreateManagementVmTaskService extends StatefulService {
    * This method retrieves the vmId from the vm service link.
    *
    * @param currentState Supplies the current state object.
-   * @param metadata Supplies the metadata map for vm.
+   * @param metadata     Supplies the metadata map for vm.
    */
   private void getVmId(final State currentState, final Map<String, String> metadata) {
     final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
@@ -544,8 +544,8 @@ public class CreateManagementVmTaskService extends StatefulService {
    * This method sets the metadata by making an async call to the setMetadata api.
    *
    * @param currentState Supplies the current state object.
-   * @param vmId Supplies the vm id returned by API-FE during vm creation.
-   * @param metadata Supplies the metadata map for vm.
+   * @param vmId         Supplies the vm id returned by API-FE during vm creation.
+   * @param metadata     Supplies the metadata map for vm.
    */
   private void setVmMetadata(final State currentState, final String vmId, final Map<String, String> metadata) throws
       IOException {
@@ -582,7 +582,7 @@ public class CreateManagementVmTaskService extends StatefulService {
    * This method is the completion handler for the setMetadataTask.
    *
    * @param currentState Supplies the current state object.
-   * @param task Supplies the task object.
+   * @param task         Supplies the task object.
    */
   private void processSetMetadataTask(final State currentState, final Task task) {
     switch (task.getState().toUpperCase()) {
@@ -603,9 +603,9 @@ public class CreateManagementVmTaskService extends StatefulService {
   /**
    * This method polls the status of the set metadata task.
    *
-   * @param service Supplies the DCP micro-service instance.
+   * @param service      Supplies the DCP micro-service instance.
    * @param currentState Supplies the current state object.
-   * @param taskId Supplies the ID of the create VM task.
+   * @param taskId       Supplies the ID of the create VM task.
    */
   private void scheduleSetMetadataTaskCall(final Service service, final State currentState, final String taskId) {
 
@@ -644,10 +644,10 @@ public class CreateManagementVmTaskService extends StatefulService {
   /**
    * This method creates a VmCreateSpec object for creating an VM.
    *
-   * @param vmState Supplies the state object of the VmService entity.
-   * @param hostState Supplies the state object of the HostService entity.
-   * @param imageState Supplies the state object of the ImageService entity.
-   * @param vmFlavorState Supplies the state object of the FlavorService entity.
+   * @param vmState         Supplies the state object of the VmService entity.
+   * @param hostState       Supplies the state object of the HostService entity.
+   * @param imageState      Supplies the state object of the ImageService entity.
+   * @param vmFlavorState   Supplies the state object of the FlavorService entity.
    * @param diskFlavorState Supplies the state object of the FlavorService entity.
    * @return Returns the VmCreateSpec object.
    */
@@ -722,8 +722,8 @@ public class CreateManagementVmTaskService extends StatefulService {
    * This method builds a state object which can be used to submit a stage
    * progress self-patch.
    *
-   * @param stage    Supplies the stage that the current service instance is moving to.
-   * @param e        Supplies the exception that the current service instance encountered if any.
+   * @param stage Supplies the stage that the current service instance is moving to.
+   * @param e     Supplies the exception that the current service instance encountered if any.
    * @return Returns a patch state object that the current service instance is moving to.
    */
   @VisibleForTesting

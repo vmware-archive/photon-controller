@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -31,6 +26,11 @@ import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;

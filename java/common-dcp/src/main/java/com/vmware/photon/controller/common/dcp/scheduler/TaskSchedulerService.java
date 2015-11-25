@@ -13,16 +13,6 @@
 
 package com.vmware.photon.controller.common.dcp.scheduler;
 
-import com.vmware.dcp.common.NodeSelectorService;
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceDocumentQueryResult;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.LuceneQueryTaskFactoryService;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
@@ -32,6 +22,16 @@ import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.NotBlank;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
+import com.vmware.xenon.common.NodeSelectorService;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
+import com.vmware.xenon.services.common.QueryTask;
 
 import java.util.concurrent.TimeUnit;
 

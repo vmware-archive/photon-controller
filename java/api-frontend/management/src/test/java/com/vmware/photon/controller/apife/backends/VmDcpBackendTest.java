@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.dcp.common.Operation;
 import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DiskState;
@@ -64,6 +63,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.xenon.common.Operation;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;

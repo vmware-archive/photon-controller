@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.dcp.validation;
 
-import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocument;
 
 import com.google.common.collect.ImmutableList;
 import org.testng.annotations.Test;

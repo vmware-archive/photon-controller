@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.common.tests;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
 
 /**
  * TestServiceIgnoresPosts implements a DCP service class that no-ops all POST messages it receives. (i.e. no changes

@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.Flavor;
 import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.PersistentDisk;
@@ -51,6 +42,15 @@ import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -71,7 +71,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
   /**
    * This class defines the state of a {@link RemoveDeploymentWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -790,7 +790,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
 
     try {
       processTask(currentState, task, callback);
-    } catch (Throwable t){
+    } catch (Throwable t) {
       failTask(t);
     }
   }
@@ -856,7 +856,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
     }
   }
 
-  private Operation.CompletionHandler createCompletionHandlerForDeleteDCPEntities(boolean isCloudStoreEntity){
+  private Operation.CompletionHandler createCompletionHandlerForDeleteDCPEntities(boolean isCloudStoreEntity) {
     return new Operation.CompletionHandler() {
       @Override
       public void handle(Operation operation, Throwable throwable) {
@@ -1049,6 +1049,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
   /**
    * This method sends a patch operation to the current service instance to
    * move to a new state.
+   *
    * @param patchStage
    * @param patchSubStage
    */

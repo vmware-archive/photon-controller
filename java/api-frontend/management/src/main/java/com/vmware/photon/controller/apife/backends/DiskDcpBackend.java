@@ -301,7 +301,7 @@ public class DiskDcpBackend implements DiskBackend {
   }
 
   private DiskService.State findById(String id) throws DiskNotFoundException {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
     try {
       result = dcpClient.get(DiskServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
@@ -460,7 +460,7 @@ public class DiskDcpBackend implements DiskBackend {
       diskState.tags.add(tagText);
     }
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(DiskServiceFactory.SELF_LINK, diskState);
+    com.vmware.xenon.common.Operation result = dcpClient.post(DiskServiceFactory.SELF_LINK, diskState);
     DiskService.State createdState = result.getBody(DiskService.State.class);
 
     toBaseDiskEntity(disk, createdState);

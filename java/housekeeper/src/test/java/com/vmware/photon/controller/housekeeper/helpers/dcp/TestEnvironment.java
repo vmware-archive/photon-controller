@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.helpers.dcp;
 
-import com.vmware.dcp.common.ServiceHost;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
@@ -21,6 +20,7 @@ import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceSta
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;
+import com.vmware.xenon.common.ServiceHost;
 
 import org.apache.commons.io.FileUtils;
 import static org.testng.Assert.assertTrue;

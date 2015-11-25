@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
@@ -26,6 +21,11 @@ import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.COMPLETED;
 import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.ERROR;
 import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.QUEUED;

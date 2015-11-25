@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -39,6 +34,11 @@ import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
 import com.vmware.photon.controller.host.gen.HostMode;
 import com.vmware.photon.controller.host.gen.SetHostModeResultCode;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
@@ -400,6 +400,7 @@ public class ChangeHostModeTaskServiceTest {
     private ChangeHostModeTaskService.State startState;
     private TestEnvironment testEnvironment;
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+
     @BeforeClass
     public void setUpClass() throws Throwable {
       cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);

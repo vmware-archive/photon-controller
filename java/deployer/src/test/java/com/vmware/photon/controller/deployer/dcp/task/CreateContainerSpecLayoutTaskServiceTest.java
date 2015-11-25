@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
@@ -39,6 +30,15 @@ import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
@@ -487,10 +487,10 @@ public class CreateContainerSpecLayoutTaskServiceTest {
           if (!CreateContainerSpecLayoutTaskService
               .INCOMPATIBLE_CONTAINER_TYPES.containsKey(incompatibleContainerType) ||
               !CreateContainerSpecLayoutTaskService
-              .INCOMPATIBLE_CONTAINER_TYPES.get(incompatibleContainerType).contains(containerType)) {
+                  .INCOMPATIBLE_CONTAINER_TYPES.get(incompatibleContainerType).contains(containerType)) {
 
             fail("Container compatibility matrix does not contain two-way condition for container types " +
-              containerType + " and " + incompatibleContainerType);
+                containerType + " and " + incompatibleContainerType);
 
           }
         }

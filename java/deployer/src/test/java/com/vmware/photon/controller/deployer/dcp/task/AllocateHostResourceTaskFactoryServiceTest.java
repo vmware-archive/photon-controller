@@ -12,7 +12,7 @@
  */
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Service;
+import com.vmware.xenon.common.Service;
 
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;

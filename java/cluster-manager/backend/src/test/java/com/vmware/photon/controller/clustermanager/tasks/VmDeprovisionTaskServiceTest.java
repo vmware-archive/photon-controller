@@ -12,11 +12,6 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
 import com.vmware.photon.controller.api.ApiError;
 import com.vmware.photon.controller.api.Step;
 import com.vmware.photon.controller.api.Task;
@@ -31,6 +26,11 @@ import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.util.concurrent.FutureCallback;
 import org.hamcrest.Matchers;
@@ -502,7 +502,7 @@ public class VmDeprovisionTaskServiceTest {
 
     @DataProvider(name = "tasksFailedVmNotFound")
     public Object[][] getTasksFailedVmNotFound() {
-      return new Object[][] {
+      return new Object[][]{
           {taskReturnedByStopVm},
           {taskReturnedByDeleteVm}
       };
@@ -519,7 +519,7 @@ public class VmDeprovisionTaskServiceTest {
               VmDeprovisionTaskFactoryService.SELF_LINK,
               startState,
               VmDeprovisionTaskService.State.class,
-              task ->TaskUtils.finalTaskStages.contains(task.taskState.stage));
+              task -> TaskUtils.finalTaskStages.contains(task.taskState.stage));
 
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(serviceState.taskState.failure.message, Matchers.containsString("stop vm failed"));
@@ -536,7 +536,7 @@ public class VmDeprovisionTaskServiceTest {
               VmDeprovisionTaskFactoryService.SELF_LINK,
               startState,
               VmDeprovisionTaskService.State.class,
-              task ->TaskUtils.finalTaskStages.contains(task.taskState.stage));
+              task -> TaskUtils.finalTaskStages.contains(task.taskState.stage));
 
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(serviceState.taskState.failure.message, Matchers.containsString("delete vm failed"));
@@ -545,9 +545,9 @@ public class VmDeprovisionTaskServiceTest {
     private void mockDeleteVm(boolean isSuccess) throws Throwable {
       if (isSuccess) {
         doAnswer(invocation -> {
-            ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByDeleteVm);
-            return null;
-          }).when(vmApi).deleteAsync(any(String.class), any(FutureCallback.class));
+          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByDeleteVm);
+          return null;
+        }).when(vmApi).deleteAsync(any(String.class), any(FutureCallback.class));
       } else {
         doThrow(new RuntimeException("delete vm failed"))
             .when(vmApi).deleteAsync(any(String.class), any(FutureCallback.class));
@@ -557,9 +557,9 @@ public class VmDeprovisionTaskServiceTest {
     private void mockStopVm(boolean isSuccess) throws Throwable {
       if (isSuccess) {
         doAnswer(invocation -> {
-            ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByStopVm);
-            return null;
-          }).when(vmApi).performStopOperationAsync(anyString(), any(FutureCallback.class));
+          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByStopVm);
+          return null;
+        }).when(vmApi).performStopOperationAsync(anyString(), any(FutureCallback.class));
       } else {
         doThrow(new RuntimeException("stop vm failed"))
             .when(vmApi).performStopOperationAsync(anyString(), any(FutureCallback.class));

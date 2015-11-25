@@ -13,12 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -38,6 +32,12 @@ import com.vmware.photon.controller.deployer.dcp.task.WaitForServiceTaskFactoryS
 import com.vmware.photon.controller.deployer.dcp.task.WaitForServiceTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -56,7 +56,7 @@ public class CreateAndValidateContainerWorkflowService extends StatefulService {
   /**
    * This class defines the state of a {@link DeploymentWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.

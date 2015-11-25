@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.dcp.common.ServiceDocumentQueryResult;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.Step;
 import com.vmware.photon.controller.api.Task;
@@ -34,6 +33,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -151,7 +151,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     taskServiceState.operation = operation;
     taskServiceState.queuedTime = DateTime.now().toDate();
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
+    com.vmware.xenon.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
     TaskEntity task = convertToTaskEntity(createdState);
     logger.info("created task: {}", task);
@@ -179,7 +179,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     taskServiceState.endTime = taskServiceState.startedTime;
     taskServiceState.queuedTime = taskServiceState.startedTime;
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
+    com.vmware.xenon.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
     TaskEntity task = convertToTaskEntity(createdState);
     logger.info("created task: {}", task);
@@ -241,7 +241,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
       }
     }
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
+    com.vmware.xenon.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
     TaskEntity task = convertToTaskEntity(createdState);
     task.setSteps(stepEntities); // replacing steps to retain the transient properties
@@ -580,7 +580,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   private TaskService.State getTaskStateById(String taskId) {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
     try {
       result = dcpClient.get(TaskServiceFactory.SELF_LINK + "/" + taskId);
     } catch (DocumentNotFoundException documentNotFoundException) {

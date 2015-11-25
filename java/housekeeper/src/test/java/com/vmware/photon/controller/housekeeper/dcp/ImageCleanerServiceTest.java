@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.ServiceStats;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
@@ -38,6 +29,15 @@ import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuc
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockStartImageScan;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.ServiceStats;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1200,7 +1200,7 @@ public class ImageCleanerServiceTest {
         service.getZookeeperHostMonitor();
         fail("Cast class ServiceHost to ZookeeperHostMonitorProvider should fail");
       } catch (ClassCastException ex) {
-        assertThat(ex.getMessage(), startsWith("com.vmware.dcp.common.ServiceHost"));
+        assertThat(ex.getMessage(), startsWith("com.vmware.xenon.common.ServiceHost"));
       }
     }
   }
@@ -1246,7 +1246,7 @@ public class ImageCleanerServiceTest {
         service.getHostClient();
         fail("Cast class ServiceHost to HostClientProvider should fail");
       } catch (ClassCastException ex) {
-        assertThat(ex.getMessage(), startsWith("com.vmware.dcp.common.ServiceHost"));
+        assertThat(ex.getMessage(), startsWith("com.vmware.xenon.common.ServiceHost"));
       }
     }
   }
@@ -1340,7 +1340,7 @@ public class ImageCleanerServiceTest {
           String.format("Invalid patch count for %s", response.documentSelfLink),
           stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
           greaterThanOrEqualTo(
-                  1.0 + // START:GET_REFERENCE_DATASTORE_INFO
+              1.0 + // START:GET_REFERENCE_DATASTORE_INFO
                   1.0 + // START:TRIGGER_DELETES
                   1.0 + // START:AWAIT_COMPLETION
                   1.0 + // FINISHED
@@ -1523,10 +1523,10 @@ public class ImageCleanerServiceTest {
           stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
           greaterThanOrEqualTo(
               1.0 + // START:GET_REFERENCE_DATASTORE_INFO
-              1.0 + // START:TRIGGER_DELETES
-              1.0 + // START:AWAIT_COMPLETION
-              1.0 + // FINISHED
-              2.0   // At least two query patches
+                  1.0 + // START:TRIGGER_DELETES
+                  1.0 + // START:AWAIT_COMPLETION
+                  1.0 + // FINISHED
+                  2.0   // At least two query patches
           )
       );
     }

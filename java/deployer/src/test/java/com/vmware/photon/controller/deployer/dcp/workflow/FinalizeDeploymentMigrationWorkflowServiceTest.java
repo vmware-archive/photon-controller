@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.AuthInfo;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.NetworkConnection;
@@ -59,6 +50,15 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
@@ -162,6 +162,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
     return startState;
   }
+
   /**
    * This method creates a patch State object which is sufficient to patch a
    * FinalizeDeploymentMigrationWorkflowService instance.
@@ -396,6 +397,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
    */
   public class HandlePatchTest {
     boolean serviceCreated = false;
+
     @BeforeClass
     public void setUpClass() throws Throwable {
       testHost = TestHost.create();
@@ -792,19 +794,19 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       ServiceHost sourceHost = sourceEnvironment.getHosts()[0];
       startState.sourceLoadBalancerAddress = sourceHost.getPublicUri().toString();
 
-      Map<String, String> factoryLinksMap =  ImmutableMap.<String, String>builder()
-        .put("/photon/cloudstore/flavors", "/photon/cloudstore/flavors")
-        .put("/photon/cloudstore/images", "/photon/cloudstore/images")
-        .put("/photon/cloudstore/hosts", "/photon/cloudstore/hosts")
-        .put("/photon/cloudstore/networks", "/photon/cloudstore/networks")
-        .put("/photon/cloudstore/datastores", "/photon/cloudstore/datastores")
-        .put("/photon/cloudstore/tasks", "/photon/cloudstore/tasks")
-        .build();
+      Map<String, String> factoryLinksMap = ImmutableMap.<String, String>builder()
+          .put("/photon/cloudstore/flavors", "/photon/cloudstore/flavors")
+          .put("/photon/cloudstore/images", "/photon/cloudstore/images")
+          .put("/photon/cloudstore/hosts", "/photon/cloudstore/hosts")
+          .put("/photon/cloudstore/networks", "/photon/cloudstore/networks")
+          .put("/photon/cloudstore/datastores", "/photon/cloudstore/datastores")
+          .put("/photon/cloudstore/tasks", "/photon/cloudstore/tasks")
+          .build();
 
       when(deployerContext.getFactoryLinkMapEntries()).thenReturn(factoryLinksMap.entrySet());
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private void mockApiClient(boolean isSuccess) throws Throwable {
 
       ApiClient apiClient = mock(ApiClient.class);
@@ -893,15 +895,15 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           }
         }).when(vmApi).getNetworksAsync(any(String.class), any(FutureCallback.class));
       } else {
-          doAnswer(new Answer() {
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-              ((FutureCallback<ResourceList<Deployment>>) invocation.getArguments()[0]).onFailure(new Exception
-                  ("failed!"));
-              return null;
-            }
-          }).when(deploymentApi).listAllAsync(
-              any(FutureCallback.class));
+        doAnswer(new Answer() {
+          @Override
+          public Object answer(InvocationOnMock invocation) throws Throwable {
+            ((FutureCallback<ResourceList<Deployment>>) invocation.getArguments()[0]).onFailure(new Exception
+                ("failed!"));
+            return null;
+          }
+        }).when(deploymentApi).listAllAsync(
+            any(FutureCallback.class));
       }
 
       doReturn(deploymentApi).when(apiClient).getDeploymentApi();

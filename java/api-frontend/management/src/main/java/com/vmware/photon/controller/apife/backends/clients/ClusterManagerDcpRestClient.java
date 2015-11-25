@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends.clients;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.DeployerServerSet;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
@@ -23,6 +20,9 @@ import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;

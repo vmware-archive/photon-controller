@@ -13,22 +13,22 @@
 
 package com.vmware.photon.controller.model.tasks;
 
-import com.vmware.dcp.common.FactoryService;
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.model.UriPaths;
+import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Service;
 
 /**
  * Factory for compute provisioning tasks.
  */
 public class ProvisionComputeTaskFactoryService extends FactoryService {
-    public static final String SELF_LINK = UriPaths.PROVISIONING + "/compute-tasks";
+  public static final String SELF_LINK = UriPaths.PROVISIONING + "/compute-tasks";
 
-    public ProvisionComputeTaskFactoryService() {
-        super(ProvisionComputeTaskService.ProvisionComputeTaskState.class);
-    }
+  public ProvisionComputeTaskFactoryService() {
+    super(ProvisionComputeTaskService.ProvisionComputeTaskState.class);
+  }
 
-    @Override
-    public Service createServiceInstance() throws Throwable {
-        return new ProvisionComputeTaskService();
-    }
+  @Override
+  public Service createServiceInstance() throws Throwable {
+    return new ProvisionComputeTaskService();
+  }
 }

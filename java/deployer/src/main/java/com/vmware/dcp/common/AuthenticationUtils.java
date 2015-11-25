@@ -10,9 +10,9 @@
  * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.vmware.dcp.common;
+package com.vmware.xenon.common;
 
-import com.vmware.dcp.common.Operation.AuthorizationContext;
+import com.vmware.xenon.common.Operation.AuthorizationContext;
 
 /**
  * This class allows us to use a package private method to set an AuthorizationContext on an Operation.

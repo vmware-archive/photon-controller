@@ -12,15 +12,6 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
@@ -42,6 +33,15 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.util.concurrent.FutureCallback;
 import org.hamcrest.Matchers;
@@ -660,9 +660,9 @@ public class ClusterDeleteTaskServiceTest {
         }
 
         doAnswer(invocation -> {
-            ((FutureCallback<ResourceList<Vm>>) invocation.getArguments()[1]).onSuccess(new ResourceList<>(vmList));
-            return null;
-          }).when(clusterApi).getVmsInClusterAsync(any(String.class), any(FutureCallback.class));
+          ((FutureCallback<ResourceList<Vm>>) invocation.getArguments()[1]).onSuccess(new ResourceList<>(vmList));
+          return null;
+        }).when(clusterApi).getVmsInClusterAsync(any(String.class), any(FutureCallback.class));
       } else {
         doThrow(new RuntimeException("get cluster vms failed"))
             .when(clusterApi).getVmsInClusterAsync(any(String.class), any(FutureCallback.class));
@@ -672,14 +672,14 @@ public class ClusterDeleteTaskServiceTest {
     private void mockDeleteClusterVms(boolean isSuccess) throws Throwable {
       if (isSuccess) {
         doAnswer(invocation -> {
-            ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByStopVm);
-            return null;
-          }).when(vmApi).performStopOperationAsync(anyString(), any(FutureCallback.class));
+          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByStopVm);
+          return null;
+        }).when(vmApi).performStopOperationAsync(anyString(), any(FutureCallback.class));
 
         doAnswer(invocation -> {
-            ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByDeleteVm);
-            return null;
-          }).when(vmApi).deleteAsync(anyString(), any(FutureCallback.class));
+          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByDeleteVm);
+          return null;
+        }).when(vmApi).deleteAsync(anyString(), any(FutureCallback.class));
       } else {
         doThrow(new RuntimeException("stop vm failed"))
             .when(vmApi).performStopOperationAsync(anyString(), any(FutureCallback.class));

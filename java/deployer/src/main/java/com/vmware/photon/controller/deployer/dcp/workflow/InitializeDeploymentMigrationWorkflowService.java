@@ -13,13 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
@@ -49,6 +42,13 @@ import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -72,7 +72,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
   /**
    * This class defines the state of a {@link InitializeDeploymentMigrationWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -302,24 +302,24 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
       throws Throwable {
     final FutureCallback<ResourceList<Deployment>> querySourceDeploymentCallback = new
         FutureCallback<ResourceList<Deployment>>() {
-      @Override
-      public void onSuccess(@Nullable final ResourceList<Deployment> result) {
-        try {
-          checkState(result != null && result.getItems().size() == 1);
+          @Override
+          public void onSuccess(@Nullable final ResourceList<Deployment> result) {
+            try {
+              checkState(result != null && result.getItems().size() == 1);
 
-          Deployment deployment = result.getItems().get(0);
-          String sourceDeploymentId = deployment.getId();
-          pauseDestinationSystem(sourceDeploymentId, destinationDeploymentId, currentState);
-        } catch (Throwable throwable) {
-          failTask(throwable);
-        }
-      }
+              Deployment deployment = result.getItems().get(0);
+              String sourceDeploymentId = deployment.getId();
+              pauseDestinationSystem(sourceDeploymentId, destinationDeploymentId, currentState);
+            } catch (Throwable throwable) {
+              failTask(throwable);
+            }
+          }
 
-      @Override
-      public void onFailure(Throwable throwable) {
-        failTask(throwable);
-      }
-    };
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        };
 
     // Get source deployment first, then pause destination deployment
     getDeployment(currentState, currentState.sourceLoadBalancerAddress, querySourceDeploymentCallback);
@@ -382,7 +382,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     Set<InetSocketAddress> sourceCloudStoreServers
         = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
 
-    return  ServiceUtils.createUriFromServerSet(sourceCloudStoreServers, null);
+    return ServiceUtils.createUriFromServerSet(sourceCloudStoreServers, null);
   }
 
   private QueryTask.QuerySpecification buildHostQuerySpecification() {
@@ -495,14 +495,14 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
     sendRequest(
         Operation.createPost(UriUtils.buildUri(getHost(), MigrationStatusUpdateTriggerFactoryService.SELF_LINK, null))
-          .setBody(startState)
-          .setCompletion((o, t) -> {
-            if (t != null) {
-              failTask(t);
-              return;
-            }
-            sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-          }));
+            .setBody(startState)
+            .setCompletion((o, t) -> {
+              if (t != null) {
+                failTask(t);
+                return;
+              }
+              sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+            }));
   }
 
   private State applyPatch(State currentState, State patchState) {

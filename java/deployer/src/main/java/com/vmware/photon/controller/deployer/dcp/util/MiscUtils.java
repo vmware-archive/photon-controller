@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.util;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.NetworkConnection;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
@@ -36,6 +31,11 @@ import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkState;
@@ -152,7 +152,7 @@ public class MiscUtils {
   }
 
   private static void getVmNetworks(Service service, ApiClient client, String vmId, Integer taskPollDelay,
-                                   FutureCallback<List<String>> callback) throws IOException {
+                                    FutureCallback<List<String>> callback) throws IOException {
     client.getVmApi().getNetworksAsync(vmId, new FutureCallback<Task>() {
       @Override
       public void onSuccess(@Nullable Task task) {
@@ -201,6 +201,7 @@ public class MiscUtils {
 
   /**
    * Returns a query specification for all hosts with given tag or for a specific host.
+   *
    * @param hostServiceLink
    * @return
    */
@@ -250,21 +251,21 @@ public class MiscUtils {
 
     service.sendRequest(
         ((DeployerDcpServiceHost) service.getHost()).getCloudStoreHelper()
-        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-        .setBody(QueryTask.create(querySpecification).setDirect(true))
-        .setCompletion(
-          (completedOp, failure) -> {
-            if (failure != null) {
-              completionHandler.handle(completedOp, failure);
-            } else {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
-              QueryTaskUtils.logQueryResults(service, documentLinks);
-              checkState(documentLinks.size() == 1);
-              updateDeploymentState(service, documentLinks.iterator().next(), deploymentServiceState,
-                  completionHandler);
-            }
-          }
-        ));
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(querySpecification).setDirect(true))
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (failure != null) {
+                    completionHandler.handle(completedOp, failure);
+                  } else {
+                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                    QueryTaskUtils.logQueryResults(service, documentLinks);
+                    checkState(documentLinks.size() == 1);
+                    updateDeploymentState(service, documentLinks.iterator().next(), deploymentServiceState,
+                        completionHandler);
+                  }
+                }
+            ));
   }
 
   public static void updateDeploymentState(Service service, String deploymentServiceLink, DeploymentService.State

@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
 import com.vmware.photon.controller.deployer.gen.CreateHostRequest;
 import com.vmware.photon.controller.resource.gen.Host;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
 
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
@@ -73,31 +73,31 @@ public class ValidateHostTaskServiceClientTest {
       returnedDocument.documentSelfLink = "task-id";
 
       setupMock(
-        host,
-        true,
-        ValidateHostTaskFactoryService.SELF_LINK,
-        ValidateHostTaskService.State.class,
-        (state) -> {
-          assertThat(state.hostAddress, is("host-addr"));
-          return true;
-        },
-        returnedDocument);
+          host,
+          true,
+          ValidateHostTaskFactoryService.SELF_LINK,
+          ValidateHostTaskService.State.class,
+          (state) -> {
+            assertThat(state.hostAddress, is("host-addr"));
+            return true;
+          },
+          returnedDocument);
 
       String taskLink = target.validate(request.getHost());
       assertThat(taskLink, is("task-id"));
     }
 
-    @Test (expectedExceptions = Exception.class)
+    @Test(expectedExceptions = Exception.class)
     public void failsValidateHostWhenDcpHostThrowsException() throws Throwable {
       CreateHostRequest request = createCreateHostRequest();
 
       setupMock(
-        host,
-        false,
-        ValidateHostTaskFactoryService.SELF_LINK,
-        ValidateHostTaskService.State.class,
-        null,
-        null);
+          host,
+          false,
+          ValidateHostTaskFactoryService.SELF_LINK,
+          ValidateHostTaskService.State.class,
+          null,
+          null);
 
       target.validate(request.getHost());
     }
@@ -143,7 +143,7 @@ public class ValidateHostTaskServiceClientTest {
       assertThat(state.stage, is(TaskState.TaskStage.FINISHED));
     }
 
-    @Test (expectedExceptions = Exception.class)
+    @Test(expectedExceptions = Exception.class)
     public void failsGetValidateHostStatusWhenDcpHostThrowsException() throws Throwable {
 
       setupMock(

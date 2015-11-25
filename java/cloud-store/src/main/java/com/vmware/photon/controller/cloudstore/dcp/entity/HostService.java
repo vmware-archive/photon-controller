@@ -13,10 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
@@ -29,6 +25,10 @@ import com.vmware.photon.controller.common.dcp.validation.NotEmpty;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Range;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.services.common.QueryTask;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -45,7 +45,7 @@ public class HostService extends StatefulService {
 
   public HostService() {
     super(State.class);
-    super.toggleOption(ServiceOption.EAGER_CONSISTENCY, true);
+    super.toggleOption(ServiceOption.ENFORCE_QUORUM, true);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);

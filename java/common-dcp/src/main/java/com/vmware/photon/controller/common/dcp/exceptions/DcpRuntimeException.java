@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.common.dcp.exceptions;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceErrorResponse;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceErrorResponse;
 
 /**
  * This is to capture all DCP exceptions that we would normally not handle.

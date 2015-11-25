@@ -13,11 +13,10 @@
 
 package com.vmware.photon.controller.model.resources;
 
-import com.vmware.dcp.common.Service;
+import com.vmware.xenon.common.Service;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;

@@ -13,12 +13,6 @@
 
 package com.vmware.photon.controller.common.dcp.scheduler;
 
-import com.vmware.dcp.common.NodeSelectorService;
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -26,6 +20,12 @@ import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.NotBlank;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
+import com.vmware.xenon.common.NodeSelectorService;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import java.lang.reflect.Type;
 import java.util.concurrent.TimeUnit;

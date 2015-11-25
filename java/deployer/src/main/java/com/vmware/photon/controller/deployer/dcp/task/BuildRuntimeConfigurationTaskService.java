@@ -13,16 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -46,6 +36,16 @@ import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.Pair;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -469,10 +469,11 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         break;
     }
   }
-  
+
   /**
    * Generates a bunch of queries to get the other container type related information
    * which is needed for the current container.
+   *
    * @param currentState
    * @param vmIpAddress
    * @param containerTemplateState
@@ -741,7 +742,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
    * This method creates a docker container by submitting a future task to
    * the executor service for the DCP host. On successful completion, the
    * service is transitioned to the FINISHED state.
-   *
    */
   private void patchContainerWithDynamicParameters(final State currentState, final ContainerService
       .State containerState) {

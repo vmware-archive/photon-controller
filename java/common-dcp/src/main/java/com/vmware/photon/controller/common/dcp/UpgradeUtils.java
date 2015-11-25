@@ -12,8 +12,8 @@
  */
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.photon.controller.common.dcp.validation.RenamedFieldHandler;
+import com.vmware.xenon.common.ServiceDocument;
 
 import com.google.common.collect.ImmutableMap;
 

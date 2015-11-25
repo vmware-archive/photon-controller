@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
@@ -50,6 +41,15 @@ import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -79,7 +79,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
   /**
    * This class defines the state of a {@link AddManagementHostWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -111,7 +111,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
     /**
      * This value represents the states of individual task sub-stages.
-     *
+     * <p>
      * N.B. This value is not actually immutable, but it should never be set in a patch; instead, it is updated
      * synchronously in the start and patch handlers.
      */
@@ -380,8 +380,9 @@ public class AddManagementHostWorkflowService extends StatefulService {
         callback);
   }
 
-  private CreateManagementPlaneLayoutWorkflowService.State createAllocateComplenentsWorkflowState(State currentState,
-           DeploymentService.State deploymentService) {
+  private CreateManagementPlaneLayoutWorkflowService.State createAllocateComplenentsWorkflowState(
+      State currentState,
+      DeploymentService.State deploymentService) {
     CreateManagementPlaneLayoutWorkflowService.State state = new CreateManagementPlaneLayoutWorkflowService.State();
     state.taskPollDelay = currentState.taskPollDelay;
     state.isLoadbalancerEnabled = deploymentService.loadBalancerEnabled;
@@ -858,7 +859,6 @@ public class AddManagementHostWorkflowService extends StatefulService {
   }
 
 
-
   private void createFlavorAndSetLinks(State currentState, DeploymentService.State deploymentService, Collection<String>
       documentLinks) {
 
@@ -980,7 +980,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
   private CreateFlavorTaskService.State generateCreateFlavorTaskServiceState(State currentState, String vmServiceLink) {
     CreateFlavorTaskService.State state = new CreateFlavorTaskService.State();
-    state.taskState = new com.vmware.dcp.common.TaskState();
+    state.taskState = new com.vmware.xenon.common.TaskState();
     state.taskState.stage = TaskState.TaskStage.CREATED;
     state.vmServiceLink = vmServiceLink;
     state.queryTaskInterval = currentState.taskPollDelay;

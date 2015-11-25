@@ -13,22 +13,21 @@
 
 package com.vmware.photon.controller.model.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Operation.CompletionHandler;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceDocumentDescription;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.TaskState.TaskStage;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.model.adapterapi.ComputeBootRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest.InstanceRequestType;
 import com.vmware.photon.controller.model.resources.ComputeDescriptionService.ComputeDescription;
 import com.vmware.photon.controller.model.resources.ComputeService;
 import com.vmware.photon.controller.model.resources.ComputeService.BootDevice;
-import com.vmware.photon.controller.model.tasks.ProvisionComputeTaskService.ProvisionComputeTaskState.SubStage;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Operation.CompletionHandler;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.TaskState.TaskStage;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import org.apache.commons.validator.routines.InetAddressValidator;
 
@@ -74,7 +73,7 @@ public class ProvisionComputeTaskService extends StatefulService {
     /**
      * Task SubStage.
      */
-    public SubStage taskSubStage;
+    public ProvisionComputeTaskState.SubStage taskSubStage;
 
     /**
      * URI reference to compute instance.
@@ -177,7 +176,8 @@ public class ProvisionComputeTaskService extends StatefulService {
       return;
     }
 
-    if (state.taskSubStage == SubStage.CREATING_HOST && state.instanceAdapterReference == null) {
+    if (state.taskSubStage == ProvisionComputeTaskState.SubStage.CREATING_HOST
+        && state.instanceAdapterReference == null) {
       failTask(new IllegalArgumentException(
           "computeHost does not have create service specified"));
       return;
@@ -187,7 +187,7 @@ public class ProvisionComputeTaskService extends StatefulService {
     sendSelfPatch(TaskStage.STARTED, state.taskSubStage, null);
   }
 
-  private void sendSelfPatch(TaskStage newStage, SubStage newSubStage, Throwable ex) {
+  private void sendSelfPatch(TaskStage newStage, ProvisionComputeTaskState.SubStage newSubStage, Throwable ex) {
     ProvisionComputeTaskState patchBody = new ProvisionComputeTaskState();
     patchBody.taskInfo = new TaskState();
     patchBody.taskInfo.stage = newStage;
@@ -202,7 +202,7 @@ public class ProvisionComputeTaskService extends StatefulService {
             (o, e) -> {
               if (e != null) {
                 logWarning("Self patch failed: %s",
-                    com.vmware.dcp.common.Utils.toString(e));
+                    com.vmware.xenon.common.Utils.toString(e));
               }
             });
     sendRequest(patch);
@@ -260,16 +260,16 @@ public class ProvisionComputeTaskService extends StatefulService {
   }
 
   private void processNextSubStage(ProvisionComputeTaskState updatedState) {
-    SubStage newStage = updatedState.taskSubStage;
+    ProvisionComputeTaskState.SubStage newStage = updatedState.taskSubStage;
 
     switch (newStage) {
       case CREATING_HOST:
-        SubStage nextStageOnSuccess = SubStage.BOOTING_FROM_ANY;
+        ProvisionComputeTaskState.SubStage nextStageOnSuccess = ProvisionComputeTaskState.SubStage.BOOTING_FROM_ANY;
 
         // containers and hosted instances don't have a boot operation.
         // They are simply instantiated. Go directly to validation in that case.
         if (updatedState.bootAdapterReference == null) {
-          nextStageOnSuccess = SubStage.VALIDATE_COMPUTE_HOST;
+          nextStageOnSuccess = ProvisionComputeTaskState.SubStage.VALIDATE_COMPUTE_HOST;
         }
 
         // the first reboot needs to be from the network, and the bare metal services
@@ -277,10 +277,10 @@ public class ProvisionComputeTaskService extends StatefulService {
         doSubStageCreateHost(updatedState, nextStageOnSuccess);
         return;
       case BOOTING_FROM_NETWORK:
-        doSubStageBootHost(updatedState, BootDevice.NETWORK, SubStage.VALIDATE_COMPUTE_HOST);
+        doSubStageBootHost(updatedState, BootDevice.NETWORK, ProvisionComputeTaskState.SubStage.VALIDATE_COMPUTE_HOST);
         return;
       case BOOTING_FROM_CDROM:
-        doSubStageBootHost(updatedState, BootDevice.CDROM, SubStage.VALIDATE_COMPUTE_HOST);
+        doSubStageBootHost(updatedState, BootDevice.CDROM, ProvisionComputeTaskState.SubStage.VALIDATE_COMPUTE_HOST);
         return;
       case BOOTING_FROM_ANY:
         BootDevice[] bootDevices = new BootDevice[]{
@@ -288,20 +288,21 @@ public class ProvisionComputeTaskService extends StatefulService {
             BootDevice.CDROM,
             BootDevice.NETWORK
         };
-        doSubStageBootHost(updatedState, bootDevices, SubStage.VALIDATE_COMPUTE_HOST);
+        doSubStageBootHost(updatedState, bootDevices, ProvisionComputeTaskState.SubStage.VALIDATE_COMPUTE_HOST);
         return;
       case VALIDATE_COMPUTE_HOST:
         doSubStageValidateComputeHostState(updatedState);
         return;
       case DONE:
-        sendSelfPatch(TaskStage.FINISHED, SubStage.DONE, null);
+        sendSelfPatch(TaskStage.FINISHED, ProvisionComputeTaskState.SubStage.DONE, null);
         break;
       default:
         break;
     }
   }
 
-  private void doSubStageCreateHost(ProvisionComputeTaskState updatedState, SubStage nextStage) {
+  private void doSubStageCreateHost(ProvisionComputeTaskState updatedState,
+                                    ProvisionComputeTaskState.SubStage nextStage) {
     CompletionHandler c = (o, e) -> {
       if (e != null) {
         failTask(e);
@@ -333,13 +334,13 @@ public class ProvisionComputeTaskService extends StatefulService {
 
   private void doSubStageBootHost(ProvisionComputeTaskState updatedState,
                                   BootDevice bootDevice,
-                                  SubStage nextStage) {
+                                  ProvisionComputeTaskState.SubStage nextStage) {
     doSubStageBootHost(updatedState, new BootDevice[]{bootDevice}, nextStage);
   }
 
   private void doSubStageBootHost(ProvisionComputeTaskState updatedState,
                                   BootDevice[] bootDevices,
-                                  SubStage nextStage) {
+                                  ProvisionComputeTaskState.SubStage nextStage) {
     CompletionHandler c = (o, e) -> {
       if (e != null) {
         failTask(e);
@@ -381,14 +382,15 @@ public class ProvisionComputeTaskService extends StatefulService {
             if (!updatedState.isMockRequest) {
               InetAddressValidator.getInstance().isValidInet4Address(chs.address);
             }
-            sendSelfPatch(TaskStage.FINISHED, SubStage.DONE, null);
+            sendSelfPatch(TaskStage.FINISHED, ProvisionComputeTaskState.SubStage.DONE, null);
           } catch (Throwable ex) {
             failTask(ex);
           }
         }));
   }
 
-  public void createSubTask(CompletionHandler c, SubStage nextStage, ProvisionComputeTaskState currentState) {
+  public void createSubTask(CompletionHandler c, ProvisionComputeTaskState.SubStage nextStage,
+                            ProvisionComputeTaskState currentState) {
     ProvisionComputeTaskState patchBody = new ProvisionComputeTaskState();
     patchBody.taskInfo.stage = TaskStage.STARTED;
     patchBody.taskSubStage = nextStage;
@@ -471,7 +473,7 @@ public class ProvisionComputeTaskService extends StatefulService {
 
   private void failTask(Throwable e) {
     logWarning("Self patching to FAILED, task failure: %s", e.toString());
-    sendSelfPatch(TaskStage.FAILED, SubStage.FAILED, e);
+    sendSelfPatch(TaskStage.FAILED, ProvisionComputeTaskState.SubStage.FAILED, e);
   }
 
   public void validateState(ProvisionComputeTaskState state) {

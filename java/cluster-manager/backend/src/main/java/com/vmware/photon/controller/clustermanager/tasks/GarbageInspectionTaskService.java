@@ -12,13 +12,6 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
@@ -42,6 +35,13 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.FutureCallback;
@@ -110,6 +110,7 @@ public class GarbageInspectionTaskService extends StatefulService {
 
   /**
    * Call cloud store to get cluster state.
+   *
    * @param currentState
    */
   private void getClusterState(final State currentState) {
@@ -130,6 +131,7 @@ public class GarbageInspectionTaskService extends StatefulService {
 
   /**
    * Call api-fe to get slave vms.
+   *
    * @param currentState
    */
   private void getVmsFromApi(final State currentState, final ClusterService.State clusterState) {
@@ -202,7 +204,7 @@ public class GarbageInspectionTaskService extends StatefulService {
         this,
         WaitForNetworkTaskFactoryService.SELF_LINK,
         startState,
-        state->TaskUtils.finalTaskStages.contains(state.taskState.stage),
+        state -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
         WaitForNetworkTaskService.State.class,
         ClusterManagerConstants.DEFAULT_TASK_POLL_DELAY,
         new FutureCallback<WaitForNetworkTaskService.State>() {
@@ -236,6 +238,7 @@ public class GarbageInspectionTaskService extends StatefulService {
 
   /**
    * Call cluster masters to get slave nodes.
+   *
    * @param currentState
    */
   private void getSlavesFromMaster(final State currentState,

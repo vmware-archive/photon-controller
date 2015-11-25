@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -35,6 +26,15 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -354,7 +354,7 @@ public class CreateContainerSpecTaskService extends StatefulService {
    *
    * @param stage
    */
-  private void sendStageProgressPatch(com.vmware.dcp.common.TaskState.TaskStage stage) {
+  private void sendStageProgressPatch(com.vmware.xenon.common.TaskState.TaskStage stage) {
     ServiceUtils.logInfo(this, "sendStageProgressPatch %s", stage);
     TaskUtils.sendSelfPatch(this, buildPatch(stage, null));
   }
@@ -384,9 +384,9 @@ public class CreateContainerSpecTaskService extends StatefulService {
    * @return
    */
   @VisibleForTesting
-  protected State buildPatch(com.vmware.dcp.common.TaskState.TaskStage stage, @Nullable Throwable e) {
+  protected State buildPatch(com.vmware.xenon.common.TaskState.TaskStage stage, @Nullable Throwable e) {
     State state = new State();
-    state.taskState = new com.vmware.dcp.common.TaskState();
+    state.taskState = new com.vmware.xenon.common.TaskState();
     state.taskState.stage = stage;
 
     if (null != e) {

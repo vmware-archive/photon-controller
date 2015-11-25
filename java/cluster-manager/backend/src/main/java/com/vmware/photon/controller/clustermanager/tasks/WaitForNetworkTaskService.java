@@ -13,12 +13,6 @@
 
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.NetworkConnection;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VmNetworks;
@@ -38,6 +32,12 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;

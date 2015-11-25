@@ -16,7 +16,7 @@ package com.vmware.photon.controller.common.dcp;
 /**
  * ESX cloud service paths.
  */
-public class ServiceUriPaths extends com.vmware.dcp.services.common.ServiceUriPaths {
+public class ServiceUriPaths extends com.vmware.xenon.services.common.ServiceUriPaths {
   public static final String SERVICES_ROOT = "/photon";
 
   public static final String STATUS_SERVICE = SERVICES_ROOT + "/status";

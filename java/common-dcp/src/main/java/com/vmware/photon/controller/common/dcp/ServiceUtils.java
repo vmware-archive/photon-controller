@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceDocumentDescription;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.common.UtilsHelper;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.common.UtilsHelper;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.LoggerFactory;
@@ -189,6 +189,7 @@ public class ServiceUtils {
 
   /**
    * Returns the URI of a random server.
+   *
    * @param serverSet
    * @param path
    * @return
@@ -201,6 +202,7 @@ public class ServiceUtils {
 
   /**
    * Returns the URI of a random server.
+   *
    * @param serverInetSet
    * @param path
    * @return

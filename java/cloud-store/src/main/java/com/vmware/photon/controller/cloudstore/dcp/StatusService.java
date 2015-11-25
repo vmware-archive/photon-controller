@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.cloudstore.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.StatelessService;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.StatelessService;
 
 /**
  * Class implementing service to get status of cloud store.

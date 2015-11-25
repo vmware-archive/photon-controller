@@ -13,12 +13,6 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
@@ -28,6 +22,12 @@ import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.gen.DeleteHostRequest;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import java.net.URI;
 import java.util.Map;

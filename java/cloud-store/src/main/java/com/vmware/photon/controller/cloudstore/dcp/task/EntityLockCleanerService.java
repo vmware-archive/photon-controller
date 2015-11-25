@@ -13,17 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.OperationSequence;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceDocumentQueryResult;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
@@ -36,8 +25,19 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultLong;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
-import static com.vmware.dcp.common.OperationJoin.JoinedCompletionHandler;
-import static com.vmware.dcp.common.OperationJoin.create;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.OperationSequence;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
+import static com.vmware.xenon.common.OperationJoin.JoinedCompletionHandler;
+import static com.vmware.xenon.common.OperationJoin.create;
 
 import java.util.Collection;
 import java.util.EnumSet;

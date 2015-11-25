@@ -12,16 +12,6 @@
  */
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.NodeSelectorService;
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationSequence;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState.TaskStage;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -35,6 +25,16 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultString;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
+import com.vmware.xenon.common.NodeSelectorService;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationSequence;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState.TaskStage;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -52,6 +52,7 @@ public class CopyStateTriggerTaskService extends StatefulService {
   private static final long OWNER_SELECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(10);
 
   private static final long DEFAULT_TRIGGER_INTERVAL = TimeUnit.MINUTES.toMicros(5);
+
   /**
    * Service execution stages.
    */
@@ -226,45 +227,45 @@ public class CopyStateTriggerTaskService extends StatefulService {
 
     Operation copyStateTaskQuery = generateQueryCopyStateTaskQuery(currentState);
     OperationSequence.create(copyStateTaskQuery)
-      .setCompletion((os, ts) -> {
-        if (ts != null && !ts.isEmpty()) {
-          failTrigger(currentState, ExceptionUtils.createMultiException(ts.values()));
-          return;
-        }
-        NodeGroupBroadcastResponse queryResponse = os.get(copyStateTaskQuery.getId())
-            .getBody(NodeGroupBroadcastResponse.class);
-        List<CopyStateTaskService.State> copyStates = QueryTaskUtils
-            .getBroadcastQueryDocuments(CopyStateTaskService.State.class, queryResponse);
+        .setCompletion((os, ts) -> {
+          if (ts != null && !ts.isEmpty()) {
+            failTrigger(currentState, ExceptionUtils.createMultiException(ts.values()));
+            return;
+          }
+          NodeGroupBroadcastResponse queryResponse = os.get(copyStateTaskQuery.getId())
+              .getBody(NodeGroupBroadcastResponse.class);
+          List<CopyStateTaskService.State> copyStates = QueryTaskUtils
+              .getBroadcastQueryDocuments(CopyStateTaskService.State.class, queryResponse);
 
-        List<CopyStateTaskService.State> runningStates = copyStates
-            .stream()
-            .filter(state -> !TaskUtils.finalTaskStages.contains(state.taskState.stage))
-            .collect(Collectors.toList());
+          List<CopyStateTaskService.State> runningStates = copyStates
+              .stream()
+              .filter(state -> !TaskUtils.finalTaskStages.contains(state.taskState.stage))
+              .collect(Collectors.toList());
 
-        if (runningStates.isEmpty()) {
-          long latestUpdateTime = copyStates.stream()
-              .filter(state -> state.taskState.stage == TaskStage.FINISHED)
-              .mapToLong(state -> state.lastDocumentUpdateTimeEpoc.longValue())
-              .max()
-              .orElse(0);
-          CopyStateTaskService.State startState = buildCopyStateStartState(currentState, latestUpdateTime);
-          startCopyStateTask(currentState, startState);
-        }
-      })
-      .sendWith(this);
+          if (runningStates.isEmpty()) {
+            long latestUpdateTime = copyStates.stream()
+                .filter(state -> state.taskState.stage == TaskStage.FINISHED)
+                .mapToLong(state -> state.lastDocumentUpdateTimeEpoc.longValue())
+                .max()
+                .orElse(0);
+            CopyStateTaskService.State startState = buildCopyStateStartState(currentState, latestUpdateTime);
+            startCopyStateTask(currentState, startState);
+          }
+        })
+        .sendWith(this);
   }
 
   private void startCopyStateTask(State currentState, CopyStateTaskService.State startState) {
     sendRequest(
         Operation.createPost(UriUtils.buildUri(getHost(), CopyStateTaskFactoryService.SELF_LINK, null))
-          .setBody(startState)
-          .setCompletion((o, t) -> {
-            if (t != null) {
-              failTrigger(currentState, t);
-              return;
-            }
-            succeedTrigger(currentState);
-          }));
+            .setBody(startState)
+            .setCompletion((o, t) -> {
+              if (t != null) {
+                failTrigger(currentState, t);
+                return;
+              }
+              succeedTrigger(currentState);
+            }));
   }
 
   private CopyStateTaskService.State buildCopyStateStartState(State currentState, long lastestUpdateTime) {
@@ -322,10 +323,10 @@ public class CopyStateTriggerTaskService extends StatefulService {
         buildTermQuery(CopyStateTaskService.State.FIELD_NAME_SOURCE_FACTORY_LINK, currentState.sourceFactoryLink));
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
     return Operation
-      .createPost(UriUtils.buildBroadcastRequestUri(
-          UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-          ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-      .setBody(QueryTask.create(querySpecification).setDirect(true));
+        .createPost(UriUtils.buildBroadcastRequestUri(
+            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+        .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 
   private QueryTask.Query buildTermQuery(String properyName, String matchValue) {

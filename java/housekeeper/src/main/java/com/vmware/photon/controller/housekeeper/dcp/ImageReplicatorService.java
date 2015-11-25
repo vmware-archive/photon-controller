@@ -13,14 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationSequence;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.LuceneQueryTaskFactoryService;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
@@ -30,6 +22,14 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
 import com.vmware.photon.controller.resource.gen.Datastore;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationSequence;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.apache.commons.lang3.StringUtils;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -613,7 +613,7 @@ public class ImageReplicatorService extends StatefulService {
   /**
    * Service execution stages.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
     /**
      * The execution substage.
      */

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.api.Cluster;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
@@ -24,6 +23,7 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask.TaskState.SubStage;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.TaskState;
 
 import com.google.common.collect.ImmutableMap;
 

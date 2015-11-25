@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.apife.backends.ClusterBackend;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterResizeTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterResizeTask.TaskState.SubStage;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.TaskState;
 
 import com.google.common.collect.ImmutableMap;
 

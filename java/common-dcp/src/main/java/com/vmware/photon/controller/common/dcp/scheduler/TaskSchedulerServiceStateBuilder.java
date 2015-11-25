@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.common.dcp.scheduler;
 
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
