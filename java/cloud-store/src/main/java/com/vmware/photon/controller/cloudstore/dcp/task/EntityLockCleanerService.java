@@ -34,7 +34,6 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
-import com.vmware.photon.controller.common.dcp.validation.DefaultLong;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import static com.vmware.dcp.common.OperationJoin.JoinedCompletionHandler;
 import static com.vmware.dcp.common.OperationJoin.create;
@@ -52,6 +51,7 @@ import java.util.Map;
 public class EntityLockCleanerService extends StatefulService {
 
   public static final Integer ENTITY_LOCK_DEFAULT_PAGE_LIMIT = 1000;
+  public static final Long ENTITY_LOCK_DEFAULT_DELETE_WATERMARK_TIME_MILLIS = (long) (5 * 60 * 1000);
   private static final String DOCUMENT_UPDATE_TIME_MICROS = "documentUpdateTimeMicros";
 
   public EntityLockCleanerService() {
@@ -94,6 +94,10 @@ public class EntityLockCleanerService extends StatefulService {
    */
   private void initializeState(State current) {
     InitializationUtils.initialize(current);
+    if (current.entityLockDeleteWatermarkTimeInMicros == null) {
+      current.entityLockDeleteWatermarkTimeInMicros =
+          EntityLockCleanerService.ENTITY_LOCK_DEFAULT_DELETE_WATERMARK_TIME_MILLIS;
+    }
 
     if (current.documentExpirationTimeMicros <= 0) {
       current.documentExpirationTimeMicros =
@@ -457,7 +461,6 @@ public class EntityLockCleanerService extends StatefulService {
     /**
      * Duration that controls how old the entity locks should be for cleaning.
      */
-    @DefaultLong(value = 0)
     public Long entityLockDeleteWatermarkTimeInMicros;
 
   }
