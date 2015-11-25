@@ -20,7 +20,7 @@ describe EsxCloud::GoCliClient do
   end
 
   let(:client) {
-    cmd = "/path/to/cli target set localhost:9000"
+    cmd = "/path/to/cli target set --nocertcheck localhost:9000"
     expect(EsxCloud::CmdRunner).to receive(:run).with(cmd)
     EsxCloud::GoCliClient.new("/path/to/cli", "localhost:9000")
   }

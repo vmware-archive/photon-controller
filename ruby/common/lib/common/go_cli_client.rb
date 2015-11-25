@@ -65,7 +65,7 @@ module EsxCloud
         raise ArgumentError, "'#{@cli_path}' file should exist and be executable"
       end
 
-      cmd = "#{@cli_path} target set #{@target_url}"
+      cmd = "#{@cli_path} target set --nocertcheck #{@target_url}"
       EsxCloud::CmdRunner.run(cmd)
     end
 
