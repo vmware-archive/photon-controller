@@ -129,6 +129,8 @@ RSpec.configure do |config|
 
   config.filter_run_excluding upgrade: true unless ENV["UPGRADE"]
 
+  config.filter_run_excluding single_vm_port_group: true if EsxCloud::TestHelpers.get_vm_port_groups.length == 1
+
   if RSpec.configuration.inclusion_filter[:management]
     EsxCloud::TestHelpers.await_system_ready
   end
