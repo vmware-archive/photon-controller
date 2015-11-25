@@ -26,13 +26,13 @@ import java.util.EnumSet;
 /**
  * This class implements tests for the {@link ProvisionAgentTaskFactoryService} class.
  */
-public class UpdateHostDatastoresTaskFactoryServiceTest {
+public class ExtractHostInformationTaskFactoryServiceTest {
 
-  private UpdateHostDatastoresTaskFactoryService factoryService;
+  private ExtractHostInformationTaskFactoryService factoryService;
 
   @BeforeClass
   public void setUpClass() {
-    factoryService = new UpdateHostDatastoresTaskFactoryService();
+    factoryService = new ExtractHostInformationTaskFactoryService();
   }
 
   @Test
@@ -49,6 +49,6 @@ public class UpdateHostDatastoresTaskFactoryServiceTest {
   @Test
   public void testCreateServiceInstance() {
     Service service = factoryService.createServiceInstance();
-    assertThat(service, instanceOf(UpdateHostDatastoresTaskService.class));
+    assertThat(service, instanceOf(ExtractHostInformationTaskService.class));
   }
 }
