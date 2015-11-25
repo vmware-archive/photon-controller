@@ -68,7 +68,6 @@ import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 /**
  * Tests {@link ImageCopyService}.
@@ -747,12 +746,7 @@ public class
           ImageCopyServiceFactory.SELF_LINK,
           copyTask,
           ImageCopyService.State.class,
-          new Predicate<ImageCopyService.State>() {
-            @Override
-            public boolean test(ImageCopyService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FINISHED;
-            }
-          });
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
       //Check Image Service replicatedDatastore counts
       createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
@@ -813,12 +807,7 @@ public class
           ImageCopyServiceFactory.SELF_LINK,
           copyTask,
           ImageCopyService.State.class,
-          new Predicate<ImageCopyService.State>() {
-            @Override
-            public boolean test(ImageCopyService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FINISHED;
-            }
-          });
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
@@ -851,12 +840,7 @@ public class
           ImageCopyServiceFactory.SELF_LINK,
           copyTask,
           ImageCopyService.State.class,
-          new Predicate<ImageCopyService.State>() {
-            @Override
-            public boolean test(ImageCopyService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FAILED;
-            }
-          });
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
@@ -902,12 +886,7 @@ public class
           ImageCopyServiceFactory.SELF_LINK,
           copyTask,
           ImageCopyService.State.class,
-          new Predicate<ImageCopyService.State>() {
-            @Override
-            public boolean test(ImageCopyService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FAILED;
-            }
-          });
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
@@ -964,12 +943,7 @@ public class
           ImageCopyServiceFactory.SELF_LINK,
           copyTask,
           ImageCopyService.State.class,
-          new Predicate<ImageCopyService.State>() {
-            @Override
-            public boolean test(ImageCopyService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FAILED;
-            }
-          });
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
