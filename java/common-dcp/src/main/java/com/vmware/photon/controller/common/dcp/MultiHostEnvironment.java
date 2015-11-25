@@ -253,6 +253,10 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
    * @return
    * @throws Throwable
    */
+  public QueryTask sendQueryAndWait(QueryTask query) throws Throwable {
+    return ServiceHostUtils.sendQueryAndWait(hosts[0], "test-host", query);
+  }
+
   public NodeGroupBroadcastResponse sendBroadcastQueryAndWait(QueryTask query) throws Throwable {
     return ServiceHostUtils.sendBroadcastQueryAndWait(hosts[0], "test-host", query);
   }
