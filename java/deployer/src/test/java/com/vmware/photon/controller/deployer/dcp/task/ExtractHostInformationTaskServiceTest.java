@@ -68,7 +68,7 @@ import java.util.Set;
 /**
  * This class implements tests for the {@link ProvisionAgentTaskService} class.
  */
-public class UpdateHostDatastoresServiceTest {
+public class ExtractHostInformationTaskServiceTest {
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -82,11 +82,11 @@ public class UpdateHostDatastoresServiceTest {
    */
   public class InitializationTest {
 
-    private UpdateHostDatastoresTaskService taskService;
+    private ExtractHostInformationTaskService taskService;
 
     @BeforeMethod
     public void setUpTest() {
-      taskService = new UpdateHostDatastoresTaskService();
+      taskService = new ExtractHostInformationTaskService();
     }
 
     @Test
@@ -106,7 +106,7 @@ public class UpdateHostDatastoresServiceTest {
    */
   public class HandleStartTest {
 
-    private UpdateHostDatastoresTaskService taskService;
+    private ExtractHostInformationTaskService taskService;
     private TestHost testHost;
 
     @BeforeClass
@@ -116,7 +116,7 @@ public class UpdateHostDatastoresServiceTest {
 
     @BeforeMethod
     public void setUpTest() {
-      taskService = new UpdateHostDatastoresTaskService();
+      taskService = new ExtractHostInformationTaskService();
     }
 
     @AfterMethod
@@ -135,12 +135,12 @@ public class UpdateHostDatastoresServiceTest {
 
     @Test(dataProvider = "ValidStartStages")
     public void testStartStateValid(@Nullable TaskState.TaskStage startStage) throws Throwable {
-      UpdateHostDatastoresTaskService.State startState = buildValidStartState(startStage);
+      ExtractHostInformationTaskService.State startState = buildValidStartState(startStage);
       Operation startOperation = testHost.startServiceSynchronously(taskService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      UpdateHostDatastoresTaskService.State serviceState
-          = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
+      ExtractHostInformationTaskService.State serviceState
+        = testHost.getServiceState(ExtractHostInformationTaskService.State.class);
       assertThat(serviceState.hostServiceLink, is("HOST_SERVICE_LINK"));
     }
 
@@ -158,12 +158,12 @@ public class UpdateHostDatastoresServiceTest {
 
     @Test(dataProvider = "StartStagesWhichReturnStarted")
     public void testStartStageReturnsStarted(@Nullable TaskState.TaskStage startStage) throws Throwable {
-      UpdateHostDatastoresTaskService.State startState = buildValidStartState(startStage);
+      ExtractHostInformationTaskService.State startState = buildValidStartState(startStage);
       Operation startOperation = testHost.startServiceSynchronously(taskService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      UpdateHostDatastoresTaskService.State serviceState
-          = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
+      ExtractHostInformationTaskService.State serviceState
+        = testHost.getServiceState(ExtractHostInformationTaskService.State.class);
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
     }
 
@@ -178,12 +178,12 @@ public class UpdateHostDatastoresServiceTest {
 
     @Test(dataProvider = "TerminalStartStages")
     public void testTerminalStartStage(TaskState.TaskStage startStage) throws Throwable {
-      UpdateHostDatastoresTaskService.State startState = buildValidStartState(startStage);
+      ExtractHostInformationTaskService.State startState = buildValidStartState(startStage);
       Operation startOperation = testHost.startServiceSynchronously(taskService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      UpdateHostDatastoresTaskService.State serviceState
-          = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
+      ExtractHostInformationTaskService.State serviceState
+        = testHost.getServiceState(ExtractHostInformationTaskService.State.class);
       assertThat(serviceState.taskState.stage, is(startStage));
     }
 
@@ -198,7 +198,7 @@ public class UpdateHostDatastoresServiceTest {
 
     @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStartStateRequiredFieldMissing(String fieldName) throws Throwable {
-      UpdateHostDatastoresTaskService.State startState = buildValidStartState(null);
+      ExtractHostInformationTaskService.State startState = buildValidStartState(null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
       declaredField.set(startState, null);
       testHost.startServiceSynchronously(taskService, startState);
@@ -208,7 +208,7 @@ public class UpdateHostDatastoresServiceTest {
     public Object[][] getRequiredFieldNames() {
       return TestHelper.toDataProvidersList(
           ReflectionUtils.getAttributeNamesWithAnnotation(
-              UpdateHostDatastoresTaskService.State.class, NotNull.class));
+              ExtractHostInformationTaskService.State.class, NotNull.class));
     }
   }
 
@@ -217,7 +217,7 @@ public class UpdateHostDatastoresServiceTest {
    */
   public class HandlePatchTest {
 
-    private UpdateHostDatastoresTaskService taskService;
+    private ExtractHostInformationTaskService taskService;
     private TestHost testHost;
 
     @BeforeClass
@@ -227,7 +227,7 @@ public class UpdateHostDatastoresServiceTest {
 
     @BeforeMethod
     public void setUpTest() {
-      taskService = new UpdateHostDatastoresTaskService();
+      taskService = new ExtractHostInformationTaskService();
     }
 
     @AfterMethod
@@ -247,11 +247,12 @@ public class UpdateHostDatastoresServiceTest {
     @Test(dataProvider = "ValidStageTransitions")
     public void testValidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
-      UpdateHostDatastoresTaskService.State startState = buildValidStartState(startStage);
+      ExtractHostInformationTaskService.State startState = buildValidStartState(startStage);
       Operation startOperation = testHost.startServiceSynchronously(taskService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      UpdateHostDatastoresTaskService.State patchState = UpdateHostDatastoresTaskService.buildPatch(patchStage, null);
+      ExtractHostInformationTaskService.State patchState =
+          ExtractHostInformationTaskService.buildPatch(patchStage, null);
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
@@ -260,8 +261,8 @@ public class UpdateHostDatastoresServiceTest {
       Operation result = testHost.sendRequestAndWait(patchOperation);
       assertThat(result.getStatusCode(), is(200));
 
-      UpdateHostDatastoresTaskService.State serviceState
-          = testHost.getServiceState(UpdateHostDatastoresTaskService.State.class);
+      ExtractHostInformationTaskService.State serviceState
+        = testHost.getServiceState(ExtractHostInformationTaskService.State.class);
       assertThat(serviceState.taskState.stage, is(patchStage));
     }
 
@@ -283,11 +284,12 @@ public class UpdateHostDatastoresServiceTest {
     @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
-      UpdateHostDatastoresTaskService.State startState = buildValidStartState(startStage);
+      ExtractHostInformationTaskService.State startState = buildValidStartState(startStage);
       Operation startOperation = testHost.startServiceSynchronously(taskService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      UpdateHostDatastoresTaskService.State patchState = UpdateHostDatastoresTaskService.buildPatch(patchStage, null);
+      ExtractHostInformationTaskService.State patchState =
+          ExtractHostInformationTaskService.buildPatch(patchStage, null);
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
@@ -325,12 +327,12 @@ public class UpdateHostDatastoresServiceTest {
 
     @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
     public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
-      UpdateHostDatastoresTaskService.State startState = buildValidStartState(null);
+      ExtractHostInformationTaskService.State startState = buildValidStartState(null);
       Operation startOperation = testHost.startServiceSynchronously(taskService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      UpdateHostDatastoresTaskService.State patchState =
-          UpdateHostDatastoresTaskService.buildPatch(TaskState.TaskStage.STARTED, null);
+      ExtractHostInformationTaskService.State patchState =
+          ExtractHostInformationTaskService.buildPatch(TaskState.TaskStage.STARTED, null);
 
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       declaredField.set(patchState, getDefaultValue(declaredField));
@@ -346,7 +348,7 @@ public class UpdateHostDatastoresServiceTest {
     public Object[][] getImmutableFieldNames() {
       return TestHelper.toDataProvidersList(
           ReflectionUtils.getAttributeNamesWithAnnotation(
-              UpdateHostDatastoresTaskService.State.class, Immutable.class));
+              ExtractHostInformationTaskService.State.class, Immutable.class));
     }
   }
 
@@ -359,7 +361,7 @@ public class UpdateHostDatastoresServiceTest {
 
     private DeployerContext deployerContext;
     private HostClientFactory hostClientFactory;
-    private UpdateHostDatastoresTaskService.State startState;
+    private ExtractHostInformationTaskService.State startState;
     private TestEnvironment testEnvironment;
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
 
@@ -423,6 +425,8 @@ public class UpdateHostDatastoresServiceTest {
       hostConfig.addToDatastores(imageDatastore);
       hostConfig.addToDatastores(datastore);
       hostConfig.addToImage_datastore_ids(imageDatastore.getId());
+      hostConfig.setCpu_count(10);
+      hostConfig.setMemory_mb(512);
 
       HostClientMock hostClientMock = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
@@ -432,23 +436,23 @@ public class UpdateHostDatastoresServiceTest {
 
       doReturn(hostClientMock).when(hostClientFactory).create();
 
-      UpdateHostDatastoresTaskService.State finalState =
+      ExtractHostInformationTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              UpdateHostDatastoresTaskFactoryService.SELF_LINK,
+              ExtractHostInformationTaskFactoryService.SELF_LINK,
               startState,
-              UpdateHostDatastoresTaskService.State.class,
+              ExtractHostInformationTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       DatastoreService.State imageDatastoreService
-          = cloudStoreMachine.getServiceState(DatastoreServiceFactory.SELF_LINK
-          + "/" + imageDatastore.getId(), DatastoreService.State.class);
+        = cloudStoreMachine.getServiceState(DatastoreServiceFactory.SELF_LINK
+            + "/" + imageDatastore.getId(), DatastoreService.State.class);
       assertThat(imageDatastoreService.isImageDatastore, is(true));
       assertThat(imageDatastoreService.name, is(imageDatastore.getName()));
       assertThat(imageDatastoreService.id, is(imageDatastore.getId()));
       DatastoreService.State datastoreService
-          = cloudStoreMachine.getServiceState(DatastoreServiceFactory.SELF_LINK
-          + "/" + datastore.getId(), DatastoreService.State.class);
+        = cloudStoreMachine.getServiceState(DatastoreServiceFactory.SELF_LINK
+            + "/" + datastore.getId(), DatastoreService.State.class);
       assertThat(datastoreService.isImageDatastore, is(false));
       assertThat(datastoreService.name, is(datastore.getName()));
       assertThat(datastoreService.id, is(datastore.getId()));
@@ -462,6 +466,8 @@ public class UpdateHostDatastoresServiceTest {
       assertThat(host.datastoreServiceLinks.size(), is(2));
       assertThat(host.datastoreServiceLinks.get(datastore.getName()), is(datastoreService.documentSelfLink));
       assertThat(host.datastoreServiceLinks.get(imageDatastore.getName()), is(imageDatastoreService.documentSelfLink));
+      assertThat(host.cpuCount, is(10));
+      assertThat(host.memoryMb, is(512));
     }
 
     @Test
@@ -489,11 +495,11 @@ public class UpdateHostDatastoresServiceTest {
           .thenReturn(getHostConfigFailureHostClientMock)
           .thenReturn(getHostConfigSuccessHostClientMock);
 
-      UpdateHostDatastoresTaskService.State finalState =
+      ExtractHostInformationTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              UpdateHostDatastoresTaskFactoryService.SELF_LINK,
+              ExtractHostInformationTaskFactoryService.SELF_LINK,
               startState,
-              UpdateHostDatastoresTaskService.State.class,
+              ExtractHostInformationTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
@@ -510,11 +516,11 @@ public class UpdateHostDatastoresServiceTest {
 
       doReturn(hostClientMock).when(hostClientFactory).create();
 
-      UpdateHostDatastoresTaskService.State finalState =
+      ExtractHostInformationTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              UpdateHostDatastoresTaskFactoryService.SELF_LINK,
+              ExtractHostInformationTaskFactoryService.SELF_LINK,
               startState,
-              UpdateHostDatastoresTaskService.State.class,
+              ExtractHostInformationTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
@@ -537,11 +543,11 @@ public class UpdateHostDatastoresServiceTest {
 
       doReturn(hostClientMock).when(hostClientFactory).create();
 
-      UpdateHostDatastoresTaskService.State finalState =
+      ExtractHostInformationTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              UpdateHostDatastoresTaskFactoryService.SELF_LINK,
+              ExtractHostInformationTaskFactoryService.SELF_LINK,
               startState,
-              UpdateHostDatastoresTaskService.State.class,
+              ExtractHostInformationTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
@@ -550,8 +556,8 @@ public class UpdateHostDatastoresServiceTest {
     }
   }
 
-  private UpdateHostDatastoresTaskService.State buildValidStartState(@Nullable TaskState.TaskStage startStage) {
-    UpdateHostDatastoresTaskService.State startState = new UpdateHostDatastoresTaskService.State();
+  private ExtractHostInformationTaskService.State buildValidStartState(@Nullable TaskState.TaskStage startStage) {
+    ExtractHostInformationTaskService.State startState = new ExtractHostInformationTaskService.State();
     startState.hostServiceLink = "HOST_SERVICE_LINK";
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
 
