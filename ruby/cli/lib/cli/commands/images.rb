@@ -44,11 +44,11 @@ module EsxCloud::Cli
 
         if interactive?
           default_name = File.basename(path)
-          name ||= ask("Image name (default: #{default_name}):")
+          name ||= ask("Image name (default: #{default_name}): ")
           name = default_name if name.empty?
 
           default_image_replication = "EAGER"
-          image_replication ||= ask("Image replication type (default: #{default_image_replication}):")
+          image_replication ||= ask("Image replication type (default: #{default_image_replication}): ")
           image_replication = default_image_replication if image_replication.empty?
         end
 
