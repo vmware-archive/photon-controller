@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.TombstoneEntity;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

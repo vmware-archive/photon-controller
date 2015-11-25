@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -59,6 +50,15 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -120,8 +120,9 @@ public class AddManagementHostWorkflowServiceTest {
    * This method creates a new State object which is sufficient to create a new
    * AddManagementHostTaskService instance.
    */
-  private AddManagementHostWorkflowService.State buildValidStartState(TaskState.TaskStage stage,
-        @Nullable AddManagementHostWorkflowService.TaskState.SubStage startSubStage) {
+  private AddManagementHostWorkflowService.State buildValidStartState(
+      TaskState.TaskStage stage,
+      @Nullable AddManagementHostWorkflowService.TaskState.SubStage startSubStage) {
     AddManagementHostWorkflowService.State startState = new AddManagementHostWorkflowService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
     startState.hostServiceLink = "hostServiceLink1";
@@ -478,7 +479,7 @@ public class AddManagementHostWorkflowServiceTest {
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
           .setBody(patchState);
 
-     testHost.sendRequestAndWait(patchOperation);
+      testHost.sendRequestAndWait(patchOperation);
     }
 
     @DataProvider(name = "InvalidStageUpdates")

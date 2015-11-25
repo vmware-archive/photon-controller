@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.ExampleFactoryService;
-import com.vmware.dcp.services.common.ExampleService;
-import com.vmware.dcp.services.common.LuceneDocumentIndexService;
-import com.vmware.dcp.services.common.LuceneQueryTaskFactoryService;
-import com.vmware.dcp.services.common.QueryTask;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.ExampleFactoryService;
+import com.vmware.xenon.services.common.ExampleService;
+import com.vmware.xenon.services.common.LuceneDocumentIndexService;
+import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.apache.commons.io.FileUtils;
 import org.testng.Assert;
@@ -167,7 +167,7 @@ public class BasicServiceHostTest {
       assertThat(host.isStarted(), is(true));
 
       assertThat(
-          host.checkServiceAvailable(com.vmware.dcp.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP),
+          host.checkServiceAvailable(com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP),
           is(true));
       assertThat(host.checkServiceAvailable(LuceneDocumentIndexService.SELF_LINK), is(true));
       assertThat(host.checkServiceAvailable(LuceneQueryTaskFactoryService.SELF_LINK), is(true));
@@ -181,7 +181,7 @@ public class BasicServiceHostTest {
       assertThat(host.isStarted(), is(true));
 
       assertThat(
-          host.checkServiceAvailable(com.vmware.dcp.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP),
+          host.checkServiceAvailable(com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP),
           is(true));
       assertThat(host.checkServiceAvailable(LuceneDocumentIndexService.SELF_LINK), is(true));
       assertThat(host.checkServiceAvailable(LuceneQueryTaskFactoryService.SELF_LINK), is(true));

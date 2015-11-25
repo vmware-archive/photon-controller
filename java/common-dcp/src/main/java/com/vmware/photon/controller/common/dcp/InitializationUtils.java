@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.photon.controller.common.dcp.validation.DefaultBooleanInitializer;
 import com.vmware.photon.controller.common.dcp.validation.DefaultIntegerInitializer;
 import com.vmware.photon.controller.common.dcp.validation.DefaultLongInitializer;
 import com.vmware.photon.controller.common.dcp.validation.DefaultStringInitializer;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskStateInitializer;
 import com.vmware.photon.controller.common.dcp.validation.DefaultUuidInitializer;
+import com.vmware.xenon.common.ServiceDocument;
 
 /**
  * This class implements utilities to fill in default values.

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.service;
 
-import com.vmware.dcp.common.Operation;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.tests.TestServiceIgnoresPosts;
@@ -27,6 +26,7 @@ import com.vmware.photon.controller.housekeeper.gen.RemoveImageStatusRequest;
 import com.vmware.photon.controller.housekeeper.gen.RemoveImageStatusResponse;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
 
 import com.google.inject.Injector;
 import org.hamcrest.Matchers;
@@ -218,7 +218,7 @@ public class ImageRemoverTest {
       ImageRemoverService.State state = new ImageRemoverService.State();
       state.taskInfo = new ImageRemoverService.TaskState();
       state.taskInfo.stage = ImageRemoverService.TaskState.TaskStage.FAILED;
-      state.taskInfo.failure = new com.vmware.dcp.common.ServiceErrorResponse();
+      state.taskInfo.failure = new com.vmware.xenon.common.ServiceErrorResponse();
       state.taskInfo.failure.message = "Removal fails";
 
       String operationId = startTestService(state);

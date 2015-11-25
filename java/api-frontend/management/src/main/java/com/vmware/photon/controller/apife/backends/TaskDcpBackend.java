@@ -151,7 +151,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     taskServiceState.operation = operation;
     taskServiceState.queuedTime = DateTime.now().toDate();
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
+    com.vmware.xenon.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
     TaskEntity task = convertToTaskEntity(createdState);
     logger.info("created task: {}", task);
@@ -179,7 +179,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     taskServiceState.endTime = taskServiceState.startedTime;
     taskServiceState.queuedTime = taskServiceState.startedTime;
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
+    com.vmware.xenon.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
     TaskEntity task = convertToTaskEntity(createdState);
     logger.info("created task: {}", task);
@@ -241,7 +241,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
       }
     }
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
+    com.vmware.xenon.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
     TaskEntity task = convertToTaskEntity(createdState);
     task.setSteps(stepEntities); // replacing steps to retain the transient properties
@@ -580,7 +580,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   private TaskService.State getTaskStateById(String taskId) {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
     try {
       result = dcpClient.get(TaskServiceFactory.SELF_LINK + "/" + taskId);
     } catch (DocumentNotFoundException documentNotFoundException) {

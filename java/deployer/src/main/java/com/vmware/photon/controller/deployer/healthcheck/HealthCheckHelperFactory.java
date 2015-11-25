@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
+import com.vmware.xenon.common.Service;
 
 import com.google.inject.assistedinject.Assisted;
 

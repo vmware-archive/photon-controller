@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
-import com.vmware.dcp.common.ServiceHost;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
@@ -25,6 +24,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
+import com.vmware.xenon.common.ServiceHost;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;

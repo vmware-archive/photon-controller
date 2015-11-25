@@ -13,17 +13,17 @@
 
 package com.vmware.photon.controller.model.resources;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Operation.CompletionHandler;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceDocumentDescription;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.model.adapterapi.ComputeHealthRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeHealthResponse;
 import com.vmware.photon.controller.model.resources.ComputeDescriptionService.ComputeDescription;
 import com.vmware.photon.controller.model.resources.ComputeDescriptionService.ComputeDescription.ComputeType;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Operation.CompletionHandler;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import org.apache.commons.validator.routines.InetAddressValidator;
 

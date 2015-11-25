@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.model.resources;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceDocumentDescription;
-import com.vmware.dcp.common.StatefulService;
 import com.vmware.photon.controller.model.resources.DiskService.Disk.BootConfig.FileEntry;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
+import com.vmware.xenon.common.StatefulService;
 
 import java.net.URI;
 import java.util.List;
@@ -50,7 +50,7 @@ public class DiskService extends StatefulService {
 
   /**
    * This class represents the document state associated with a
-   * {@link com.vmware.photon.controller.provisioning.resources.DiskService} task.
+   * {@link com.vmware.photon.controller.model.resources.DiskService} task.
    */
   public static class Disk extends ServiceDocument {
     /**
@@ -135,9 +135,9 @@ public class DiskService extends StatefulService {
 
     /**
      * Reference to service that customizes this disk for a particular compute. This service
-     * accepts a POST with a {@link DiskCustomizationRequest} body and streams back the
+     * accepts a POST with a DiskCustomizationRequest body and streams back the
      * resulting artifact.
-     *
+     * <p>
      * It is up to the caller to cache this result and make it available through this service's
      * sourceImageReference.
      */

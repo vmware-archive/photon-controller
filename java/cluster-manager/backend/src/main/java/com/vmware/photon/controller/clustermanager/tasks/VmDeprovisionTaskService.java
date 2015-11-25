@@ -12,13 +12,6 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.utils.ApiUtils;
@@ -33,6 +26,13 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkState;
@@ -142,6 +142,7 @@ public class VmDeprovisionTaskService extends StatefulService {
 
   /**
    * Deletes the VM. On success, moves the task to the FINISHED stage.
+   *
    * @param currentState
    */
   private void deleteVm(State currentState) throws IOException {
@@ -284,7 +285,7 @@ public class VmDeprovisionTaskService extends StatefulService {
     /**
      * This is the task state.
      */
-    public static class TaskState extends com.vmware.dcp.common.TaskState {
+    public static class TaskState extends com.vmware.xenon.common.TaskState {
 
       /**
        * The current sub-stage of the task.

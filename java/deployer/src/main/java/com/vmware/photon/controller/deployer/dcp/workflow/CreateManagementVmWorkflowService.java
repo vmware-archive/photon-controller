@@ -13,12 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -41,6 +35,12 @@ import com.vmware.photon.controller.deployer.dcp.task.WaitForDockerTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -63,7 +63,7 @@ public class CreateManagementVmWorkflowService extends StatefulService {
   /**
    * This class defines the state of a {@link CreateManagementVmWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -335,7 +335,7 @@ public class CreateManagementVmWorkflowService extends StatefulService {
    */
   private CreateManagementVmTaskService.State createVmTaskState(final State currentState) {
     CreateManagementVmTaskService.State state = new CreateManagementVmTaskService.State();
-    state.taskState = new com.vmware.dcp.common.TaskState();
+    state.taskState = new com.vmware.xenon.common.TaskState();
     state.taskState.stage = TaskState.TaskStage.CREATED;
     state.vmServiceLink = currentState.vmServiceLink;
     state.queryCreateVmTaskInterval = currentState.taskPollDelay;
@@ -425,7 +425,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
   /**
    * This method creates a valid start state for the {@link CreateIsoTaskService}.
    *
-   *
    * @param currentState
    * @param vmState
    * @param hostState
@@ -434,7 +433,7 @@ public class CreateManagementVmWorkflowService extends StatefulService {
   private CreateIsoTaskService.State createCreateIsoTaskServiceStartState(
       State currentState, final VmService.State vmState, final HostService.State hostState) {
     CreateIsoTaskService.State state = new CreateIsoTaskService.State();
-    state.taskState = new com.vmware.dcp.common.TaskState();
+    state.taskState = new com.vmware.xenon.common.TaskState();
     state.taskState.stage = TaskState.TaskStage.CREATED;
     state.vmId = vmState.vmId;
 
@@ -448,9 +447,8 @@ public class CreateManagementVmWorkflowService extends StatefulService {
   /**
    * Creates the template for cloud init's user-data file that is later on used by {@link CreateIsoTaskService}.
    *
-   *
    * @param currentState
-   * @param hostState Supplies the {@link HostService.State} object.
+   * @param hostState    Supplies the {@link HostService.State} object.
    * @return
    * @throws IOException
    */
@@ -564,6 +562,7 @@ public class CreateManagementVmWorkflowService extends StatefulService {
           public void onSuccess(@Nullable Task result) {
             TaskUtils.sendSelfPatch(CreateManagementVmWorkflowService.this, patchState);
           }
+
           @Override
           public void onFailure(Throwable t) {
             failTask(t);
@@ -646,7 +645,7 @@ public class CreateManagementVmWorkflowService extends StatefulService {
    * @param subStage Supplies the substate to progress to.
    */
   private void sendProgressPatch(
-      com.vmware.dcp.common.TaskState state,
+      com.vmware.xenon.common.TaskState state,
       TaskState.TaskStage stage,
       TaskState.SubStage subStage) {
     switch (state.stage) {

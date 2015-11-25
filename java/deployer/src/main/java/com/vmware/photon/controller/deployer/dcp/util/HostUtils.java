@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.util;
 
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
@@ -34,6 +33,7 @@ import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddres
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactoryProvider;
+import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 

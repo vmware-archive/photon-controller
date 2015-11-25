@@ -13,20 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.AuthenticationUtils;
-import com.vmware.dcp.common.FactoryService;
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceDocumentQueryResult;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.QueryTask.NumericRange;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
@@ -45,6 +31,20 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
+import com.vmware.xenon.common.AuthenticationUtils;
+import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.QueryTask.NumericRange;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import javax.annotation.Nullable;
 
@@ -331,7 +331,7 @@ public class CopyStateTaskService extends StatefulService {
   private Operation buildPostOperation(Object document, URI uri, State currentState) {
     try {
       Object documentWithRenamedFields = handleRenamedFields(document, currentState);
-      Operation postOp =  Operation
+      Operation postOp = Operation
           .createPost(uri)
           .setUri(uri)
           .setBody(documentWithRenamedFields)
@@ -363,7 +363,7 @@ public class CopyStateTaskService extends StatefulService {
       }
     } catch (Throwable t) {
       // Log and ignore
-      ServiceUtils.logSevere(this, "Ignored error " , t);
+      ServiceUtils.logSevere(this, "Ignored error ", t);
     }
 
     return destinationDocument;
@@ -377,7 +377,7 @@ public class CopyStateTaskService extends StatefulService {
       // Serialize original document into destination
       Class<?> destinationDoc = Class.forName(currentState.destinationServiceClassName);
       @SuppressWarnings("unchecked")
-      Service sd = ((Class < Service >) destinationDoc).newInstance();
+      Service sd = ((Class<Service>) destinationDoc).newInstance();
       ServiceDocument convertedServiceDocument = Utils.fromJson(document, sd.getStateType());
       UpgradeUtils.handleRenamedField(document, convertedServiceDocument);
       // Convert it back to json
@@ -423,12 +423,12 @@ public class CopyStateTaskService extends StatefulService {
   }
 
   private URI buildDestinationFactoryURI(State currentState) {
-      return UriUtils.buildUri(
-          currentState.destinationProtocol,
-          currentState.destinationIp,
-          currentState.destinationPort,
-          currentState.factoryLink,
-          null);
+    return UriUtils.buildUri(
+        currentState.destinationProtocol,
+        currentState.destinationIp,
+        currentState.destinationPort,
+        currentState.factoryLink,
+        null);
   }
 
   private QueryTask.Query buildWildCardQuery(String property, String value) {

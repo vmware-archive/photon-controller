@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.deployer.helpers.dcp;
 
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
@@ -61,6 +60,7 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.host.gen.SetHostModeResultCode;
+import com.vmware.xenon.common.Service;
 
 import com.github.dockerjava.api.DockerException;
 import com.google.common.util.concurrent.FutureCallback;
@@ -229,7 +229,7 @@ public class MockHelper {
   }
 
   public static void mockApiClient(ApiClientFactory apiClientFactory, MultiHostEnvironment<?> machine, boolean
-                                   isSuccess) throws Throwable {
+      isSuccess) throws Throwable {
     ApiClient apiClient = mock(ApiClient.class);
     ProjectApi projectApi = mock(ProjectApi.class);
     TasksApi tasksApi = mock(TasksApi.class);

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.clustermanager.utils;
 
-import com.vmware.dcp.common.Service;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
@@ -22,6 +21,7 @@ import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
 import com.vmware.photon.controller.clustermanager.clients.MesosClient;
 import com.vmware.photon.controller.clustermanager.clients.SwarmClient;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 

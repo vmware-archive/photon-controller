@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
-import com.vmware.dcp.common.FactoryService;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.UpgradeUtils;
+import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -104,14 +104,14 @@ public class UpgradeHelper {
     return currentServices;
   }
 
-  public static  Map<String, HashMap> parseBenchmarkState() throws Throwable {
+  public static Map<String, HashMap> parseBenchmarkState() throws Throwable {
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     String json = UpgradeHelper.class.getResource("/" + FILE_NAME).getPath();
     JsonNode rootNode = mapper.readValue(new File(json), JsonNode.class);
 
     Map<String, HashMap> previousServices = new HashMap<>();
 
-    Iterator<Map.Entry<String, JsonNode>> elements =  rootNode.fields();
+    Iterator<Map.Entry<String, JsonNode>> elements = rootNode.fields();
     while (elements.hasNext()) {
       Map.Entry<String, JsonNode> entry = elements.next();
       String nodeName = entry.getKey();

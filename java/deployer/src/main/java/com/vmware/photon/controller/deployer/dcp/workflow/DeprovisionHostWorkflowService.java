@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -36,6 +31,11 @@ import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.host.gen.HostMode;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -51,7 +51,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
   /**
    * This class defines the state of a {@link DeprovisionHostWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -257,36 +257,36 @@ public class DeprovisionHostWorkflowService extends StatefulService {
 
     FutureCallback<ChangeHostModeTaskService.State> futureCallback = new
         FutureCallback<ChangeHostModeTaskService.State>() {
-      @Override
-      public void onSuccess(@Nullable ChangeHostModeTaskService.State result) {
-        switch (result.taskState.stage) {
-          case FINISHED:
-            sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
-            break;
-          case FAILED:
+          @Override
+          public void onSuccess(@Nullable ChangeHostModeTaskService.State result) {
+            switch (result.taskState.stage) {
+              case FINISHED:
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
+                break;
+              case FAILED:
+                if (ignoreError) {
+                  sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
+                } else {
+                  State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                  patchState.taskState.failure = result.taskState.failure;
+                  TaskUtils.sendSelfPatch(service, patchState);
+                }
+                break;
+              case CANCELLED:
+                sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
+                break;
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
             if (ignoreError) {
               sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
             } else {
-              State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-              patchState.taskState.failure = result.taskState.failure;
-              TaskUtils.sendSelfPatch(service, patchState);
+              failTask(t);
             }
-            break;
-          case CANCELLED:
-            sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
-            break;
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        if (ignoreError) {
-          sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
-        } else {
-          failTask(t);
-        }
-      }
-    };
+          }
+        };
 
     TaskUtils.startTaskAsync(this,
         ChangeHostModeTaskFactoryService.SELF_LINK,
@@ -359,8 +359,8 @@ public class DeprovisionHostWorkflowService extends StatefulService {
 
   private DeleteAgentTaskService.State createDeleteAgentStartState(State currentState) {
     DeleteAgentTaskService.State startState = new DeleteAgentTaskService.State();
-    startState.taskState = new com.vmware.dcp.common.TaskState();
-    startState.taskState.stage = com.vmware.dcp.common.TaskState.TaskStage.CREATED;
+    startState.taskState = new com.vmware.xenon.common.TaskState();
+    startState.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.CREATED;
     startState.hostServiceLink = currentState.hostServiceLink;
     startState.uniqueID = currentState.uniqueId;
     return startState;

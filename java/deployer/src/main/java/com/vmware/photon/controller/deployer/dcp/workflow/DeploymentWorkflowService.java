@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -44,6 +39,11 @@ import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -72,7 +72,7 @@ public class DeploymentWorkflowService extends StatefulService {
   /**
    * This class defines the state of a {@link DeploymentWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -110,7 +110,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
     /**
      * This value represents the states of individual task sub-stages.
-     *
+     * <p>
      * N.B. This value is not actually immutable, but it should never be set in a patch; instead, it is updated
      * synchronously in the start and patch handlers.
      */
@@ -476,7 +476,7 @@ public class DeploymentWorkflowService extends StatefulService {
         = zookeeperClient.getServers(zookeeperQuorum, DeployerModule.DEPLOYER_SERVICE_NAME);
 
     Set<Class<?>> servicesToMigrate
-      = new HashSet<Class<?>>((Arrays.<Class<?>>asList(DeployerDcpServiceHost.FACTORY_SERVICES)));
+        = new HashSet<Class<?>>((Arrays.<Class<?>>asList(DeployerDcpServiceHost.FACTORY_SERVICES)));
     servicesToMigrate.removeAll(HostUtils.getDeployerContext(this).getMigrationExcludedServices());
 
     final AtomicInteger latch = new AtomicInteger(servicesToMigrate.size());
@@ -537,7 +537,7 @@ public class DeploymentWorkflowService extends StatefulService {
         = zookeeperClient.getServers(zookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
 
     Set<Class<?>> servicesToMigrate
-      = new HashSet<Class<?>>(Arrays.<Class<?>>asList(CloudStoreDcpHost.FACTORY_SERVICES));
+        = new HashSet<Class<?>>(Arrays.<Class<?>>asList(CloudStoreDcpHost.FACTORY_SERVICES));
     servicesToMigrate.removeAll(HostUtils.getDeployerContext(this).getMigrationExcludedServices());
 
     final AtomicInteger latch = new AtomicInteger(servicesToMigrate.size());

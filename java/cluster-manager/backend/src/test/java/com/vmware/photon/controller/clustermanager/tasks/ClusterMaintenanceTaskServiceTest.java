@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.NetworkConnection;
@@ -47,6 +38,15 @@ import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelpe
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FutureCallback;
@@ -519,7 +519,7 @@ public class ClusterMaintenanceTaskServiceTest {
 
     @DataProvider(name = "otherClusterExistenceForTestingDeletedCluster")
     public Object[][] getOtherClusterExistenceForTestingDeletedCluster() {
-      return new Object[][] {
+      return new Object[][]{
           {true},
           {false}
       };
@@ -632,9 +632,9 @@ public class ClusterMaintenanceTaskServiceTest {
         }
 
         doAnswer(invocation -> {
-            ((FutureCallback<ResourceList<Vm>>) invocation.getArguments()[1]).onSuccess(new ResourceList<>(vmList));
-            return null;
-          }).when(clusterApi).getVmsInClusterAsync(any(String.class), any(FutureCallback.class));
+          ((FutureCallback<ResourceList<Vm>>) invocation.getArguments()[1]).onSuccess(new ResourceList<>(vmList));
+          return null;
+        }).when(clusterApi).getVmsInClusterAsync(any(String.class), any(FutureCallback.class));
         doAnswer(invocation -> {
           ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(vmNames);
           return null;

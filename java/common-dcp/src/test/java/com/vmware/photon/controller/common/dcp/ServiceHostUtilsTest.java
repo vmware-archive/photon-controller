@@ -13,17 +13,16 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocumentQueryResult;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.services.common.ExampleFactoryService;
-import com.vmware.dcp.services.common.ExampleService;
-import com.vmware.dcp.services.common.NodeGroupService;
-import com.vmware.dcp.services.common.NodeState;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.helpers.services.TestServiceWithSelfLink;
 import com.vmware.photon.controller.common.dcp.helpers.services.TestServiceWithoutSelfLink;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.services.common.ExampleFactoryService;
+import com.vmware.xenon.services.common.ExampleService;
+import com.vmware.xenon.services.common.NodeGroupService;
+import com.vmware.xenon.services.common.NodeState;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.invocation.InvocationOnMock;

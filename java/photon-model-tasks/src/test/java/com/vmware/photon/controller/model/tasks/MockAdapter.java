@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.model.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.StatelessService;
-import com.vmware.dcp.common.TaskState;
 import com.vmware.photon.controller.model.UriPaths;
 import com.vmware.photon.controller.model.adapterapi.ComputeBootRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.StatelessService;
+import com.vmware.xenon.common.TaskState;
 
 /**
  * Mock adapters used by photon model task tests.
@@ -37,6 +37,7 @@ public class MockAdapter {
    */
   public static class MockSuccessInstanceAdapter extends StatelessService {
     public static final String SELF_LINK = UriPaths.PROVISIONING + "/mock_success_instance_adapter";
+
     @Override
     public void handleRequest(Operation op) {
       if (!op.hasBody()) {
@@ -65,6 +66,7 @@ public class MockAdapter {
    */
   public static class MockFailureInstanceAdapter extends StatelessService {
     public static final String SELF_LINK = UriPaths.PROVISIONING + "/mock_failure_instance_adapter";
+
     @Override
     public void handleRequest(Operation op) {
       if (!op.hasBody()) {
@@ -94,6 +96,7 @@ public class MockAdapter {
    */
   public static class MockSuccessBootAdapter extends StatelessService {
     public static final String SELF_LINK = UriPaths.PROVISIONING + "/mock_success_boot_adapter";
+
     @Override
     public void handleRequest(Operation op) {
       if (!op.hasBody()) {
@@ -122,6 +125,7 @@ public class MockAdapter {
    */
   public static class MockFailureBootAdapter extends StatelessService {
     public static final String SELF_LINK = UriPaths.PROVISIONING + "/mock_failure_boot_adapter";
+
     @Override
     public void handleRequest(Operation op) {
       if (!op.hasBody()) {

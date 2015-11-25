@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
@@ -40,6 +35,11 @@ import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -209,7 +209,7 @@ public class CreateProjectTaskService extends StatefulService {
   }
 
   private void createProject(final State currentState, final ResourceTicketService.State resourceTicketState,
-    final TenantService.State tenantState) {
+                             final TenantService.State tenantState) {
 
     FutureCallback<Task> callback = new FutureCallback<Task>() {
       @Override
@@ -242,9 +242,9 @@ public class CreateProjectTaskService extends StatefulService {
 
     ServiceUtils.logInfo(this, String.format(
         "projectname: %s, " +
-        "resourceTicketName: %s, " +
-        "number of line items: %s" +
-        "line items: %s",
+            "resourceTicketName: %s, " +
+            "number of line items: %s" +
+            "line items: %s",
         projectName,
         resourceTicketReservation.getName(),
         resourceTicketReservation.getLimits().size(),

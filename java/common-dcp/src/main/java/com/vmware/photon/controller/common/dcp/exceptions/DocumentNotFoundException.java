@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.dcp.exceptions;
 
-import com.vmware.dcp.common.Operation;
+import com.vmware.xenon.common.Operation;
 
 /**
  * This exception maps to HTTP status code 404.

@@ -13,13 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.ServiceStats;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
@@ -42,6 +35,13 @@ import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorGet
 import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.ServiceStats;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -173,7 +173,7 @@ public class ImageReplicatorServiceTest {
         service.getZookeeperHostMonitor();
         fail("Cast class ServiceHost to zookeeperHostMonitor should fail");
       } catch (ClassCastException ex) {
-        assertThat(ex.getMessage(), startsWith("com.vmware.dcp.common.ServiceHost"));
+        assertThat(ex.getMessage(), startsWith("com.vmware.xenon.common.ServiceHost"));
       }
     }
   }
@@ -496,7 +496,7 @@ public class ImageReplicatorServiceTest {
       task.destinationDataStore = "destinationDatastore";
 
       if (stage == ImageReplicatorService.TaskState.TaskStage.FAILED) {
-        task.taskInfo.failure = new com.vmware.dcp.common.ServiceErrorResponse();
+        task.taskInfo.failure = new com.vmware.xenon.common.ServiceErrorResponse();
         task.taskInfo.failure.message = String.format("ImageCopyService failed");
       }
 
@@ -1127,7 +1127,7 @@ public class ImageReplicatorServiceTest {
       assertThat(stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
           greaterThanOrEqualTo(
               1.0 +       // START:UPDATE_DATASTORE_COUNTS
-              1.0 +       // START:TRIGGER_COPIES
+                  1.0 +       // START:TRIGGER_COPIES
                   1.0 +   // START:AWAIT_COMPLETION
                   1.0 +   // At least one query patch
                   1.0     // FINISHED
@@ -1173,10 +1173,10 @@ public class ImageReplicatorServiceTest {
       assertThat(stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
           is(
               1.0 +     // START:UPDATE_DATASTORE_COUNTS
-              1.0       // FAILED
+                  1.0       // FAILED
           ));
       assertThat(stats.entries.get(
-              ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS.toString()).latestValue, is(1.0));
+          ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS.toString()).latestValue, is(1.0));
     }
 
     @Test(dataProvider = "hostCount")
@@ -1252,7 +1252,7 @@ public class ImageReplicatorServiceTest {
                   1.0     // FINISHED
           ));
       assertThat(stats.entries.get(
-              ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS.toString()).latestValue, is(1.0));
+          ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS.toString()).latestValue, is(1.0));
       assertThat(stats.entries.get(ImageReplicatorService.TaskState.SubStage.TRIGGER_COPIES.toString()).latestValue,
           is(1.0));
       assertThat(stats.entries.get(ImageReplicatorService.TaskState.SubStage.AWAIT_COMPLETION.toString()).latestValue,
@@ -1299,7 +1299,7 @@ public class ImageReplicatorServiceTest {
                   1.0     // FINISHED
           ));
       assertThat(stats.entries.get(
-              ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS.toString()).latestValue, is(1.0));
+          ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS.toString()).latestValue, is(1.0));
       assertThat(stats.entries.get(ImageReplicatorService.TaskState.SubStage.TRIGGER_COPIES.toString()).latestValue,
           is(1.0));
       assertThat(stats.entries.get(ImageReplicatorService.TaskState.SubStage.AWAIT_COMPLETION.toString()).latestValue,

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.dcp.common.Operation;
 import com.vmware.photon.controller.api.AvailabilityZone;
 import com.vmware.photon.controller.api.AvailabilityZoneCreateSpec;
 import com.vmware.photon.controller.api.AvailabilityZoneState;
@@ -28,6 +27,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneServic
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.xenon.common.Operation;
 
 import com.google.inject.Inject;
 import org.junit.AfterClass;

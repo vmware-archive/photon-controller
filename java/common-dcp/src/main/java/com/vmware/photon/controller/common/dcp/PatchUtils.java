@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
+import com.vmware.xenon.common.ServiceDocument;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;

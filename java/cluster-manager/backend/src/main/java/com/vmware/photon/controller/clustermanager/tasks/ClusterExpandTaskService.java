@@ -12,12 +12,6 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
@@ -44,6 +38,12 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotBlank;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.util.concurrent.FutureCallback;
 
@@ -210,7 +210,7 @@ public class ClusterExpandTaskService extends StatefulService {
         this,
         WaitForNetworkTaskFactoryService.SELF_LINK,
         startState,
-        state->TaskUtils.finalTaskStages.contains(state.taskState.stage),
+        state -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
         WaitForNetworkTaskService.State.class,
         ClusterManagerConstants.DEFAULT_TASK_POLL_DELAY,
         new FutureCallback<WaitForNetworkTaskService.State>() {

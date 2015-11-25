@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.helpers;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceHost;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
@@ -26,6 +24,8 @@ import com.vmware.photon.controller.housekeeper.ConfigTest;
 import com.vmware.photon.controller.housekeeper.HousekeeperServer;
 import com.vmware.photon.controller.housekeeper.dcp.DcpConfig;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceHost;
 
 import com.google.inject.Guice;
 import com.google.inject.Inject;

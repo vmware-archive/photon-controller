@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.clustermanager.helpers;
 
-import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
@@ -21,6 +20,7 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.DefaultUuid;
 import com.vmware.photon.controller.common.dcp.validation.NotBlank;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.xenon.common.ServiceDocument;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;

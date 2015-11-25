@@ -13,10 +13,6 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -35,6 +31,10 @@ import com.vmware.photon.controller.deployer.gen.FinalizeMigrateDeploymentReques
 import com.vmware.photon.controller.deployer.gen.InitializeMigrateDeploymentRequest;
 import com.vmware.photon.controller.deployer.gen.RemoveDeploymentRequest;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
 
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;

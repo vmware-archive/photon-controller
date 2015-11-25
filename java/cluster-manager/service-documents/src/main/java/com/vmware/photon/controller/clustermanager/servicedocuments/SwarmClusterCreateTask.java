@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.clustermanager.servicedocuments;
 
-import com.vmware.dcp.common.ServiceDocument;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultString;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
@@ -23,6 +22,7 @@ import com.vmware.photon.controller.common.dcp.validation.NotEmpty;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
+import com.vmware.xenon.common.ServiceDocument;
 
 import java.util.List;
 
@@ -151,7 +151,7 @@ public class SwarmClusterCreateTask extends ServiceDocument {
   /**
    * This class defines the state of a SwarmClusterCreateTaskService task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
     /**
      * The current sub-stage of the task.
      */

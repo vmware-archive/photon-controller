@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.dcp.validation;
 
-import com.vmware.dcp.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocument;
 
 import static com.google.common.base.Preconditions.checkState;
 

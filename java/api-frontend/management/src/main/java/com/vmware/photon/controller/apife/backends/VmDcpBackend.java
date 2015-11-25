@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.AttachedDisk;
 import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.DiskState;
@@ -70,6 +69,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
@@ -691,7 +691,7 @@ public class VmDcpBackend implements VmBackend {
   }
 
   private VmService.State getVmById(String id) throws VmNotFoundException {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
     try {
       result = dcpClient.get(VmServiceFactory.SELF_LINK + "/" + id);
     } catch (DocumentNotFoundException documentNotFoundException) {
@@ -763,7 +763,7 @@ public class VmDcpBackend implements VmBackend {
 
     vm.affinities = spec.getAffinities();
 
-    com.vmware.dcp.common.Operation createOperation = dcpClient.post(VmServiceFactory.SELF_LINK, vm);
+    com.vmware.xenon.common.Operation createOperation = dcpClient.post(VmServiceFactory.SELF_LINK, vm);
     VmService.State createdVm = createOperation.getBody(VmService.State.class);
 
     VmEntity vmEntity = toVmEntity(createdVm);

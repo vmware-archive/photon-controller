@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;

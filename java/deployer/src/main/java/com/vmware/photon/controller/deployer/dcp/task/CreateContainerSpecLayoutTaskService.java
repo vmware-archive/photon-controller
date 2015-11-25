@@ -13,17 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -39,6 +28,17 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -70,7 +70,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
   @VisibleForTesting
   public static final Map<String, List<String>> INCOMPATIBLE_CONTAINER_TYPES = new HashMap<String, List<String>>() {{
     put("LoadBalancer", new ArrayList(Arrays.asList("Lightwave")));
-    put("Lightwave",    new ArrayList(Arrays.asList("LoadBalancer")));
+    put("Lightwave", new ArrayList(Arrays.asList("LoadBalancer")));
   }};
 
   /**
@@ -471,7 +471,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
 
       allowedHosts = allowedHosts.entrySet().stream()
           .filter(entry ->
-            entry.getValue().metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_SERVICES) == null
+                  entry.getValue().metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_SERVICES) == null
           )
           .collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue()));
     }
@@ -538,7 +538,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
    *
    * @param stage
    */
-  private void sendStageProgressPatch(com.vmware.dcp.common.TaskState.TaskStage stage) {
+  private void sendStageProgressPatch(com.vmware.xenon.common.TaskState.TaskStage stage) {
     ServiceUtils.logInfo(this, "sendStageProgressPatch %s", stage);
     TaskUtils.sendSelfPatch(this, buildPatch(stage, null));
   }
@@ -568,9 +568,9 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
    * @return
    */
   @VisibleForTesting
-  protected State buildPatch(com.vmware.dcp.common.TaskState.TaskStage stage, @Nullable Throwable e) {
+  protected State buildPatch(com.vmware.xenon.common.TaskState.TaskStage stage, @Nullable Throwable e) {
     State state = new State();
-    state.taskState = new com.vmware.dcp.common.TaskState();
+    state.taskState = new com.vmware.xenon.common.TaskState();
     state.taskState.stage = stage;
 
     if (null != e) {

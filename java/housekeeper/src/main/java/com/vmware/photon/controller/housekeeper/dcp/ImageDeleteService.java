@@ -13,12 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -36,6 +30,12 @@ import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.host.gen.ImageInfoResponse;
 import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.thrift.async.AsyncMethodCallback;
@@ -334,7 +334,7 @@ public class ImageDeleteService extends StatefulService {
           ServiceUtils.logInfo(ImageDeleteService.this, "DeleteImageResponse %s", r);
           switch (r.getResult()) {
             case OK:
-                sendPatchToDecrementImageReplicatedCount(current);
+              sendPatchToDecrementImageReplicatedCount(current);
               break;
             case IMAGE_IN_USE:
             case IMAGE_NOT_FOUND:
@@ -368,6 +368,7 @@ public class ImageDeleteService extends StatefulService {
 
   /**
    * Sends patch to update replicatedDatastore in image cloud store entity.
+   *
    * @param current
    */
   private void sendPatchToDecrementImageReplicatedCount(final State current) {

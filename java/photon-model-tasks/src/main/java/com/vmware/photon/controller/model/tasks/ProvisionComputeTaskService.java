@@ -13,15 +13,6 @@
 
 package com.vmware.photon.controller.model.tasks;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Operation.CompletionHandler;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceDocumentDescription;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.TaskState.TaskStage;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.model.adapterapi.ComputeBootRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest.InstanceRequestType;
@@ -29,6 +20,15 @@ import com.vmware.photon.controller.model.resources.ComputeDescriptionService.Co
 import com.vmware.photon.controller.model.resources.ComputeService;
 import com.vmware.photon.controller.model.resources.ComputeService.BootDevice;
 import com.vmware.photon.controller.model.tasks.ProvisionComputeTaskService.ProvisionComputeTaskState.SubStage;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Operation.CompletionHandler;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.TaskState.TaskStage;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import org.apache.commons.validator.routines.InetAddressValidator;
 
@@ -202,7 +202,7 @@ public class ProvisionComputeTaskService extends StatefulService {
             (o, e) -> {
               if (e != null) {
                 logWarning("Self patch failed: %s",
-                    com.vmware.dcp.common.Utils.toString(e));
+                    com.vmware.xenon.common.Utils.toString(e));
               }
             });
     sendRequest(patch);

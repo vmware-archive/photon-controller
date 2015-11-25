@@ -13,14 +13,6 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.OperationJoin;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.QueryTask;
-import com.vmware.dcp.services.common.ServiceUriPaths;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.dcp.OperationJoinLatch;
 import com.vmware.photon.controller.common.dcp.OperationLatch;
@@ -49,6 +41,14 @@ import com.vmware.photon.controller.deployer.gen.InitializeMigrateDeploymentStat
 import com.vmware.photon.controller.deployer.gen.RemoveDeploymentRequest;
 import com.vmware.photon.controller.deployer.gen.RemoveDeploymentStatus;
 import com.vmware.photon.controller.deployer.gen.RemoveDeploymentStatusCode;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;

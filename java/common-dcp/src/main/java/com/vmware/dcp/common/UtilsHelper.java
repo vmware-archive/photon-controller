@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.dcp.common;
+package com.vmware.xenon.common;
 
 /**
  * Temporary hack to make a protected method in DCP accessible from our MicroServices.

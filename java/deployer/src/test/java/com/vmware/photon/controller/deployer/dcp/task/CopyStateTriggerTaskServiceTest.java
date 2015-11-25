@@ -13,14 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.TaskState;
-import com.vmware.dcp.common.TaskState.TaskStage;
-import com.vmware.dcp.common.Utils;
-import com.vmware.dcp.services.common.NodeGroupBroadcastResponse;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
@@ -30,6 +22,14 @@ import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.TaskState.TaskStage;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -137,79 +137,79 @@ public class CopyStateTriggerTaskServiceTest {
 
     @Test
     public void successStartsCopyStateService() throws Throwable {
-       startClusters();
+      startClusters();
 
-       CopyStateTriggerTaskService.State state = destinationCluster
-           .callServiceSynchronously(
-               CopyStateTriggerTaskFactoryService.SELF_LINK,
-               startState,
-               CopyStateTriggerTaskService.State.class);
-       CopyStateTriggerTaskService.State patch = new CopyStateTriggerTaskService.State();
-       patch.pulse = Boolean.TRUE;
-       destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
+      CopyStateTriggerTaskService.State state = destinationCluster
+          .callServiceSynchronously(
+              CopyStateTriggerTaskFactoryService.SELF_LINK,
+              startState,
+              CopyStateTriggerTaskService.State.class);
+      CopyStateTriggerTaskService.State patch = new CopyStateTriggerTaskService.State();
+      patch.pulse = Boolean.TRUE;
+      destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
 
-       CopyStateTriggerTaskService.State currentState = destinationCluster
-           .getServiceState(state.documentSelfLink, CopyStateTriggerTaskService.State.class);
-       currentState = waitForTriggerToFinish(currentState);
+      CopyStateTriggerTaskService.State currentState = destinationCluster
+          .getServiceState(state.documentSelfLink, CopyStateTriggerTaskService.State.class);
+      currentState = waitForTriggerToFinish(currentState);
 
-       NodeGroupBroadcastResponse response = destinationCluster.
-           sendBroadcastQueryAndWait(generateQueryCopyStateTaskQuery());
-       List<CopyStateTaskService.State> documents = QueryTaskUtils
-           .getBroadcastQueryDocuments(CopyStateTaskService.State.class, response);
+      NodeGroupBroadcastResponse response = destinationCluster.
+          sendBroadcastQueryAndWait(generateQueryCopyStateTaskQuery());
+      List<CopyStateTaskService.State> documents = QueryTaskUtils
+          .getBroadcastQueryDocuments(CopyStateTaskService.State.class, response);
 
-       assertThat(documents.size(), is(1));
-       assertThat(copyStateHasCorrectValues(documents.get(0), state), is(true));
+      assertThat(documents.size(), is(1));
+      assertThat(copyStateHasCorrectValues(documents.get(0), state), is(true));
     }
 
     @Test
     public void successStartsOnlyOneCopyStateService() throws Throwable {
-       startClusters();
+      startClusters();
 
-       CopyStateTriggerTaskService.State state = destinationCluster
-           .callServiceSynchronously(
-               CopyStateTriggerTaskFactoryService.SELF_LINK,
-               startState,
-               CopyStateTriggerTaskService.State.class);
-       CopyStateTriggerTaskService.State patch = new CopyStateTriggerTaskService.State();
-       patch.pulse = Boolean.TRUE;
-       destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
-       Thread.sleep(100);
-       destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
+      CopyStateTriggerTaskService.State state = destinationCluster
+          .callServiceSynchronously(
+              CopyStateTriggerTaskFactoryService.SELF_LINK,
+              startState,
+              CopyStateTriggerTaskService.State.class);
+      CopyStateTriggerTaskService.State patch = new CopyStateTriggerTaskService.State();
+      patch.pulse = Boolean.TRUE;
+      destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
+      Thread.sleep(100);
+      destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
 
-       CopyStateTriggerTaskService.State currentState = destinationCluster
-           .getServiceState(state.documentSelfLink, CopyStateTriggerTaskService.State.class);
-       currentState = waitForTriggerToFinish(currentState);
+      CopyStateTriggerTaskService.State currentState = destinationCluster
+          .getServiceState(state.documentSelfLink, CopyStateTriggerTaskService.State.class);
+      currentState = waitForTriggerToFinish(currentState);
 
-       NodeGroupBroadcastResponse response = destinationCluster
-           .sendBroadcastQueryAndWait(generateQueryCopyStateTaskQuery());
-       List<CopyStateTaskService.State> documents = QueryTaskUtils
-           .getBroadcastQueryDocuments(CopyStateTaskService.State.class, response);
+      NodeGroupBroadcastResponse response = destinationCluster
+          .sendBroadcastQueryAndWait(generateQueryCopyStateTaskQuery());
+      List<CopyStateTaskService.State> documents = QueryTaskUtils
+          .getBroadcastQueryDocuments(CopyStateTaskService.State.class, response);
 
-       assertThat(documents.size(), is(1));
-       assertThat(copyStateHasCorrectValues(documents.get(0), state), is(true));
+      assertThat(documents.size(), is(1));
+      assertThat(copyStateHasCorrectValues(documents.get(0), state), is(true));
     }
 
     @Test
     public void shouldNotStartCopyStateWhenStopped() throws Throwable {
-       startClusters();
-       startState.executionState = CopyStateTriggerTaskService.ExecutionState.STOPPED;
+      startClusters();
+      startState.executionState = CopyStateTriggerTaskService.ExecutionState.STOPPED;
 
-       CopyStateTriggerTaskService.State state = destinationCluster
-           .callServiceSynchronously(
-               CopyStateTriggerTaskFactoryService.SELF_LINK,
-               startState,
-               CopyStateTriggerTaskService.State.class);
-       CopyStateTriggerTaskService.State patch = new CopyStateTriggerTaskService.State();
-       patch.pulse = Boolean.TRUE;
-       destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
-       Thread.sleep(20);
+      CopyStateTriggerTaskService.State state = destinationCluster
+          .callServiceSynchronously(
+              CopyStateTriggerTaskFactoryService.SELF_LINK,
+              startState,
+              CopyStateTriggerTaskService.State.class);
+      CopyStateTriggerTaskService.State patch = new CopyStateTriggerTaskService.State();
+      patch.pulse = Boolean.TRUE;
+      destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
+      Thread.sleep(20);
 
-       NodeGroupBroadcastResponse response = destinationCluster
-           .sendBroadcastQueryAndWait(generateQueryCopyStateTaskQuery());
-       List<CopyStateTaskService.State> documents = QueryTaskUtils
-           .getBroadcastQueryDocuments(CopyStateTaskService.State.class, response);
+      NodeGroupBroadcastResponse response = destinationCluster
+          .sendBroadcastQueryAndWait(generateQueryCopyStateTaskQuery());
+      List<CopyStateTaskService.State> documents = QueryTaskUtils
+          .getBroadcastQueryDocuments(CopyStateTaskService.State.class, response);
 
-       assertThat(documents.size(), is(0));
+      assertThat(documents.size(), is(0));
     }
 
     @Test
@@ -221,9 +221,9 @@ public class CopyStateTriggerTaskServiceTest {
           CopyStateTaskService.State.class);
 
       destinationCluster.callServiceSynchronously(
-              CopyStateTriggerTaskFactoryService.SELF_LINK,
-              startState,
-              CopyStateTriggerTaskService.State.class);
+          CopyStateTriggerTaskFactoryService.SELF_LINK,
+          startState,
+          CopyStateTriggerTaskService.State.class);
       Thread.sleep(120);
 
       NodeGroupBroadcastResponse response = destinationCluster
@@ -252,9 +252,9 @@ public class CopyStateTriggerTaskServiceTest {
         throws Throwable {
       CopyStateTriggerTaskService.State currentState = state;
       while (currentState.triggersSuccess + currentState.triggersError == 0) {
-         currentState = destinationCluster
-             .getServiceState(state.documentSelfLink, CopyStateTriggerTaskService.State.class);
-       }
+        currentState = destinationCluster
+            .getServiceState(state.documentSelfLink, CopyStateTriggerTaskService.State.class);
+      }
       return currentState;
     }
 

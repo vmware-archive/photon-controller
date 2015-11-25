@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.common.dcp.helpers.services;
 
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
 
 /**
  * Class implements a service without a SELF_LINK static member.

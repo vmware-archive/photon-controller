@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.common.dcp.OperationLatch;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
@@ -23,6 +20,9 @@ import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflo
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
 import com.vmware.photon.controller.deployer.gen.DeprovisionHostStatus;
 import com.vmware.photon.controller.deployer.gen.DeprovisionHostStatusCode;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

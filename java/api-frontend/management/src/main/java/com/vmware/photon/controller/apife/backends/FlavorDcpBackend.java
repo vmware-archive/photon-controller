@@ -113,7 +113,7 @@ public class FlavorDcpBackend implements FlavorBackend {
     state.cost = costEntity;
     state.state = FlavorState.READY;
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(FlavorServiceFactory.SELF_LINK, state);
+    com.vmware.xenon.common.Operation result = dcpClient.post(FlavorServiceFactory.SELF_LINK, state);
 
     FlavorService.State createdState = result.getBody(FlavorService.State.class);
 
@@ -250,7 +250,7 @@ public class FlavorDcpBackend implements FlavorBackend {
   }
 
   private FlavorService.State findById(String id) throws ExternalException {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
 
     try {
       result = dcpClient.get(FlavorServiceFactory.SELF_LINK + "/" + id);

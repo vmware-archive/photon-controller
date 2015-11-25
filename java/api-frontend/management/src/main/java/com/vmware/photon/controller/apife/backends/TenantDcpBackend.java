@@ -113,7 +113,7 @@ public class TenantDcpBackend implements TenantBackend {
 
   @Override
   public TenantEntity findById(String id) throws TenantNotFoundException {
-    com.vmware.dcp.common.Operation result;
+    com.vmware.xenon.common.Operation result;
 
     try {
       result = dcpClient.get(TenantServiceFactory.SELF_LINK + "/" + id);
@@ -193,7 +193,7 @@ public class TenantDcpBackend implements TenantBackend {
     state.securityGroups =
         SecurityGroupUtils.mergeParentSecurityGroups(selfSecurityGroups, deploymentSecurityGroups).getLeft();
 
-    com.vmware.dcp.common.Operation result = dcpClient.post(TenantServiceFactory.SELF_LINK, state);
+    com.vmware.xenon.common.Operation result = dcpClient.post(TenantServiceFactory.SELF_LINK, state);
     TenantService.State createdState = result.getBody(TenantService.State.class);
 
     String id = ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);

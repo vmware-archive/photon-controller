@@ -13,10 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.ServiceDocument;
-import com.vmware.dcp.common.StatefulService;
-import com.vmware.dcp.common.Utils;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
@@ -46,6 +42,10 @@ import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -69,7 +69,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
   /**
    * This class defines the state of a {@link FinalizeDeploymentMigrationWorkflowService} task.
    */
-  public static class TaskState extends com.vmware.dcp.common.TaskState {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
      * This value represents the current sub-stage for the task.
@@ -409,7 +409,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
     startState.taskState = new BulkProvisionHostsWorkflowService.TaskState();
-    startState.taskState.stage = com.vmware.dcp.common.TaskState.TaskStage.STARTED;
+    startState.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.STARTED;
     startState.taskState.subStage = BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB;
     startState.deploymentServiceLink = deploymentState.documentSelfLink;
     startState.chairmanServerList = deploymentState.chairmanServerList;
@@ -427,7 +427,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         provisionCallback);
   }
 
-  private void migrateFinal(State currentState)  {
+  private void migrateFinal(State currentState) {
     ZookeeperClient zookeeperClient
         = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
     Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(

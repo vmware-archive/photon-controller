@@ -13,13 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.dcp.common.Operation;
-import com.vmware.dcp.common.Service;
-import com.vmware.dcp.common.ServiceErrorResponse;
-import com.vmware.dcp.common.ServiceHost;
-import com.vmware.dcp.common.ServiceStats;
-import com.vmware.dcp.common.UriUtils;
-import com.vmware.dcp.services.common.QueryTask;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
@@ -40,6 +33,13 @@ import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorGet
 import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.ServiceStats;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.hamcrest.Matchers;
 import org.testng.Assert;
@@ -904,7 +904,7 @@ public class ImageRemoverServiceTest {
       task.dataStore = "data-store-id";
       task.isSelfProgressionDisabled = true;
 
-      task.taskInfo = new com.vmware.dcp.common.TaskState();
+      task.taskInfo = new com.vmware.xenon.common.TaskState();
       task.taskInfo.stage = stage;
       if (stage == ImageRemoverService.TaskState.TaskStage.FAILED) {
         task.taskInfo.failure = new ServiceErrorResponse();
@@ -958,7 +958,7 @@ public class ImageRemoverServiceTest {
         service.getZookeeperHostMonitor();
         fail("Cast class ServiceHost to ZookeeperHostMonitorProvider should fail");
       } catch (ClassCastException ex) {
-        assertThat(ex.getMessage(), startsWith("com.vmware.dcp.common.ServiceHost"));
+        assertThat(ex.getMessage(), startsWith("com.vmware.xenon.common.ServiceHost"));
       }
     }
   }
