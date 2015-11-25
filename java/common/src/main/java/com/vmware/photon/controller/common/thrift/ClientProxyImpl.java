@@ -106,7 +106,7 @@ public class ClientProxyImpl<C extends TAsyncClient> implements ClientProxy<C> {
       final String methodName = method.getName();
       if (methodName.equals("setTimeout") && args.length == 1) {
         timeout = (long) args[0];
-        logger.info("Timeout acquired for the client {}", timeout);
+        logger.debug("Timeout acquired for the client {}", timeout);
         return null;
       }
 
@@ -117,7 +117,7 @@ public class ClientProxyImpl<C extends TAsyncClient> implements ClientProxy<C> {
         @Override
         public void onSuccess(C client) {
           client.setTimeout(timeout);
-          logger.info("Timeout set for the client {}", timeout);
+          logger.debug("Timeout set for the client {}", timeout);
 
           AsyncMethodCallback wrappedCallback = wrapCallback(client, callback);
           args[args.length - 1] = wrappedCallback;

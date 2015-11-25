@@ -1383,7 +1383,7 @@ public class HostClient {
     ensureClient();
     PlaceRequest placeRequest = new PlaceRequest(resource);
     clientProxy.setTimeout(PLACE_TIMEOUT_MS);
-    logger.info("place resource {}, target {}, request {}", resource, getTarget(), placeRequest);
+    logger.debug("place resource {}, target {}, request {}", resource, getTarget(), placeRequest);
 
     try {
       clientProxy.place(placeRequest, handler);
@@ -1408,7 +1408,7 @@ public class HostClient {
     SyncHandler<PlaceResponse, Host.AsyncClient.place_call> syncHandler = new SyncHandler<>();
     place(resource, syncHandler);
     syncHandler.await();
-    logger.info("finished place resource {}, target {}", resource, getTarget());
+    logger.debug("finished place resource {}, target {}", resource, getTarget());
     return ResponseValidator.checkPlaceResponse(syncHandler.getResponse());
   }
 
@@ -1732,7 +1732,7 @@ public class HostClient {
   }
 
   private void createClientProxyWithAgentId() {
-    logger.info("Creating host async client of agentId {}", this.getAgentId());
+    logger.debug("Creating host async client of agentId {}", this.getAgentId());
     checkNotNull(serverSetFactory, "serverSetFactory should not be null to create serverSet");
     serverSet = serverSetFactory.createHostServerSet(agentId);
     clientPool = clientPoolFactory.create(serverSet, CLIENT_POOL_OPTIONS);
@@ -1740,7 +1740,7 @@ public class HostClient {
   }
 
   private void createClientProxyWithIpAndPort() {
-    logger.info("Creating host async client of hostIp {} and port {}", this.getHostIp(), this.getPort());
+    logger.debug("Creating host async client of hostIp {} and port {}", this.getHostIp(), this.getPort());
     this.clientPool = this.clientPoolFactory.create(
         ImmutableSet.of(new InetSocketAddress(this.getHostIp(), this.getPort())),
         CLIENT_POOL_OPTIONS);
@@ -2373,7 +2373,7 @@ public class HostClient {
      */
     private static PlaceResponse checkPlaceResponse(PlaceResponse placeResponse)
         throws RpcException {
-      logger.info("Checking {}", placeResponse);
+      logger.debug("Checking {}", placeResponse);
       switch (placeResponse.getResult()) {
         case OK:
           break;
