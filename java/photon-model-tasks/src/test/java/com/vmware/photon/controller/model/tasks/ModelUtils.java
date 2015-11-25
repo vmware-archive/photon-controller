@@ -89,8 +89,7 @@ public class ModelUtils {
   }
 
   public static ComputeService.ComputeStateWithDescription createComputeWithDescription(
-      TestHost host,
-      ComputeDescriptionService.ComputeDescription.ComputeType supportedChildren) throws Throwable {
+      TestHost host) throws Throwable {
     return createComputeWithDescription(host, null, null);
   }
 }
