@@ -553,7 +553,8 @@ public class ImageDcpBackendTest {
       imageName = UUID.randomUUID().toString();
       String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
       imageBackend.prepareImageDelete(imageId);
-      List<Task> tasks = imageBackend.getTasks(imageId, Optional.<String>absent(), Optional.<Integer>absent());
+      List<Task> tasks = imageBackend.getTasks(imageId, Optional.<String>absent(), Optional.<Integer>absent())
+          .getItems();
       assertThat(tasks.size(), is(1));
       assertThat(tasks.get(0).getState(), is("QUEUED"));
     }
@@ -563,7 +564,8 @@ public class ImageDcpBackendTest {
       imageName = UUID.randomUUID().toString();
       String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
       imageBackend.prepareImageDelete(imageId);
-      List<Task> tasks = imageBackend.getTasks(imageId, Optional.of("FINISHED"), Optional.<Integer>absent());
+      List<Task> tasks = imageBackend.getTasks(imageId, Optional.of("FINISHED"), Optional.<Integer>absent())
+          .getItems();
       assertThat(tasks.size(), is(0));
     }
 

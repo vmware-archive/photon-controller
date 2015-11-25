@@ -84,57 +84,55 @@ public class TaskFeClient {
   public ResourceList<Task> find(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
                                  Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(taskBackend.filter(entityId, entityKind, state, pageSize));
+    return taskBackend.filter(entityId, entityKind, state, pageSize);
   }
 
   public ResourceList<Task> getTenantTasks(String tenantId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
     tenantBackend.findById(tenantId);
-    return new ResourceList<>(taskBackend.filter(Optional.of(tenantId), Optional.of(TenantEntity.KIND), state,
-        pageSize));
+    return taskBackend.filter(Optional.of(tenantId), Optional.of(TenantEntity.KIND), state, pageSize);
   }
 
   public ResourceList<Task> getProjectTasks(String projectId, Optional<String> state, Optional<String> kind,
                                             Optional<Integer> pagesize) throws ExternalException {
     projectBackend.findById(projectId);
-    return new ResourceList<>(taskBackend.filterInProject(projectId, state, kind, pagesize));
+    return taskBackend.filterInProject(projectId, state, kind, pagesize);
   }
 
   public ResourceList<Task> getResourceTicketTasks(String resourceTicketId, Optional<String> state,
                                                    Optional<Integer> pageSize) throws ExternalException {
     resourceTicketBackend.findById(resourceTicketId);
-    return new ResourceList<>(
-        taskBackend.filter(Optional.of(resourceTicketId), Optional.of(ResourceTicketEntity.KIND), state, pageSize));
+    return taskBackend.filter(Optional.of(resourceTicketId), Optional.of(ResourceTicketEntity.KIND), state, pageSize);
   }
 
   public ResourceList<Task> getVmTasks(String vmId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(vmBackend.getTasks(vmId, state, pageSize));
+    return vmBackend.getTasks(vmId, state, pageSize);
   }
 
   public ResourceList<Task> getDiskTasks(String diskId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(diskBackend.getTasks(diskId, state, pageSize));
+    return diskBackend.getTasks(diskId, state, pageSize);
   }
 
   public ResourceList<Task> getImageTasks(String imageId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(imageBackend.getTasks(imageId, state, pageSize));
+    return imageBackend.getTasks(imageId, state, pageSize);
   }
 
   public ResourceList<Task> getFlavorTasks(String flavorId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(flavorBackend.getTasks(flavorId, state, pageSize));
+    return flavorBackend.getTasks(flavorId, state, pageSize);
   }
 
   public ResourceList<Task> getHostTasks(String hostId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(hostBackend.getTasks(hostId, state, pageSize));
+    return hostBackend.getTasks(hostId, state, pageSize);
   }
 
   public ResourceList<Task> getAvailabilityZoneTasks(String availabilityZoneId, Optional<String> state,
                                                      Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(availabilityZoneBackend.getTasks(availabilityZoneId, state, pageSize));
+    return availabilityZoneBackend.getTasks(availabilityZoneId, state, pageSize);
   }
 }

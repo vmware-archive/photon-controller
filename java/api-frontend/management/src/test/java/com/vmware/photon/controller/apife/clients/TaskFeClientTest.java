@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.clients;
 
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.backends.AvailabilityZoneDcpBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
@@ -32,7 +33,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mock;
+
+import java.util.ArrayList;
 
 /**
  * Tests {@link TaskFeClient}.
@@ -73,6 +77,10 @@ public class TaskFeClientTest {
       Optional kind = Optional.of("kind");
       Optional state = Optional.of("state");
       Optional pageSize = Optional.of(10);
+
+      ResourceList<Task> resourceList = new ResourceList<>();
+      resourceList.setItems(new ArrayList<>());
+      when(taskBackend.filter(id, kind, state, pageSize)).thenReturn(resourceList);
 
       ResourceList result = feClient.find(id, kind, state, pageSize);
       assertThat(result, notNullValue());
