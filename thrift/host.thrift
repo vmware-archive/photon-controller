@@ -45,6 +45,9 @@ enum AgentStatusCode {
 
    // The agent is in the process of restarting
    RESTARTING = 1
+
+   // There is no image datastore connected to host.
+   IMAGE_DATASTORE_NOT_CONNECTED = 2
 }
 
 // Agent status response

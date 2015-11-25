@@ -19,6 +19,8 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
+import com.vmware.photon.controller.host.gen.AgentStatusCode;
+import com.vmware.photon.controller.host.gen.AgentStatusResponse;
 import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
 import com.vmware.photon.controller.host.gen.Host;
@@ -45,8 +47,10 @@ public class HostClientMock extends HostClient {
   private static final Logger logger = LoggerFactory.getLogger(HostClientMock.class);
 
   private GetConfigResultCode getConfigResultCode;
+  private AgentStatusCode agentStatusCode;
   private HostConfig hostConfig;
   private Exception getConfigFailure;
+  private Exception getAgentStatusFailure;
   private ProvisionResultCode provisionResultCode;
   private Exception provisionFailure;
   private Exception setHostModeFailure;
@@ -55,6 +59,8 @@ public class HostClientMock extends HostClient {
   private HostClientMock(Builder builder) {
     super(mock(ClientProxyFactory.class), mock(ClientPoolFactory.class), mock(ZookeeperServerSetFactory.class));
     this.getConfigResultCode = builder.getConfigResultCode;
+    this.agentStatusCode = builder.agentStatusCode;
+    this.getAgentStatusFailure = builder.getAgentStatusFailure;
     this.hostConfig = builder.hostConfig;
     this.getConfigFailure = builder.getConfigFailure;
     this.provisionResultCode = builder.provisionResultCode;
@@ -87,6 +93,33 @@ public class HostClientMock extends HostClient {
 
     } else {
       throw new IllegalStateException("No result or failure specified for getHostConfig");
+    }
+  }
+
+  @Override
+  public void getAgentStatus(AsyncMethodCallback<Host.AsyncClient.get_agent_status_call> handler) {
+
+    logger.info("Agent get status complete invocation");
+
+    if (null != getAgentStatusFailure) {
+      handler.onError(getAgentStatusFailure);
+
+    } else if (null != agentStatusCode) {
+      Host.AsyncClient.get_agent_status_call getAgentStatusCall = mock(Host.AsyncClient.get_agent_status_call.class);
+      AgentStatusResponse agentStatusResponse = new AgentStatusResponse();
+      agentStatusResponse.setStatus(agentStatusCode);
+      agentStatusResponse.setStatusIsSet(true);
+
+      try {
+        when(getAgentStatusCall.getResult()).thenReturn(agentStatusResponse);
+      } catch (TException e) {
+        throw new RuntimeException("Failed to mock getAgentStatusCall.getResult");
+      }
+
+      handler.onComplete(getAgentStatusCall);
+
+    } else {
+      throw new IllegalStateException("No result or failure specified for getAgentStatus");
     }
   }
 
@@ -157,6 +190,8 @@ public class HostClientMock extends HostClient {
   public static class Builder {
 
     private GetConfigResultCode getConfigResultCode;
+    private AgentStatusCode agentStatusCode;
+    private Exception getAgentStatusFailure;
     private HostConfig hostConfig;
     private Exception getConfigFailure;
     private ProvisionResultCode provisionResultCode;
@@ -166,6 +201,16 @@ public class HostClientMock extends HostClient {
 
     public Builder getConfigResultCode(GetConfigResultCode getConfigResultCode) {
       this.getConfigResultCode = getConfigResultCode;
+      return this;
+    }
+
+    public Builder agentStatusCode(AgentStatusCode agentStatusCode) {
+      this.agentStatusCode = agentStatusCode;
+      return this;
+    }
+
+    public Builder getAgentStatusFailure(Exception getAgentStatusFailure) {
+      this.getAgentStatusFailure = getAgentStatusFailure;
       return this;
     }
 
