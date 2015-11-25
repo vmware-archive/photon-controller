@@ -39,6 +39,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.ServiceStats;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
@@ -1105,12 +1106,7 @@ public class ImageReplicatorServiceTest {
       ImageReplicatorService.State response = machine.callServiceAndWaitForState(ImageReplicatorServiceFactory
               .SELF_LINK, newImageReplicator,
           ImageReplicatorService.State.class,
-          new Predicate<ImageReplicatorService.State>() {
-            @Override
-            public boolean test(ImageReplicatorService.State state) {
-              return state.taskInfo.stage == ImageReplicatorService.TaskState.TaskStage.FINISHED;
-            }
-          });
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
       //Check Image Service datastore counts
       createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
@@ -1158,12 +1154,7 @@ public class ImageReplicatorServiceTest {
           ImageReplicatorServiceFactory.SELF_LINK,
           newImageReplicator,
           ImageReplicatorService.State.class,
-          new Predicate<ImageReplicatorService.State>() {
-            @Override
-            public boolean test(ImageReplicatorService.State state) {
-              return state.taskInfo.stage == ImageReplicatorService.TaskState.TaskStage.FAILED;
-            }
-          });
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
 
       // Check response.
       assertThat(response.dataStoreCount, is(nullValue()));
@@ -1194,12 +1185,7 @@ public class ImageReplicatorServiceTest {
           ImageReplicatorServiceFactory.SELF_LINK,
           newImageReplicator,
           ImageReplicatorService.State.class,
-          new Predicate<ImageReplicatorService.State>() {
-            @Override
-            public boolean test(ImageReplicatorService.State state) {
-              return state.taskInfo.stage == ImageReplicatorService.TaskState.TaskStage.FAILED;
-            }
-          });
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
 
       // Check response.
       assertThat(response.dataStoreCount, is(nullValue()));
@@ -1229,12 +1215,7 @@ public class ImageReplicatorServiceTest {
       ImageReplicatorService.State response = machine.callServiceAndWaitForState(ImageReplicatorServiceFactory
               .SELF_LINK, newImageReplicator,
           ImageReplicatorService.State.class,
-          new Predicate<ImageReplicatorService.State>() {
-            @Override
-            public boolean test(ImageReplicatorService.State state) {
-              return state.taskInfo.stage == ImageReplicatorService.TaskState.TaskStage.FAILED;
-            }
-          });
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
 
       // Check response.
       assertThat(response.dataStoreCount, notNullValue());
@@ -1276,12 +1257,7 @@ public class ImageReplicatorServiceTest {
       ImageReplicatorService.State response = machine.callServiceAndWaitForState(ImageReplicatorServiceFactory
               .SELF_LINK, newImageReplicator,
           ImageReplicatorService.State.class,
-          new Predicate<ImageReplicatorService.State>() {
-            @Override
-            public boolean test(ImageReplicatorService.State state) {
-              return state.taskInfo.stage == ImageReplicatorService.TaskState.TaskStage.FAILED;
-            }
-          });
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
 
       // Check response.
       assertThat(response.dataStoreCount, notNullValue());
