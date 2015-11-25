@@ -88,8 +88,8 @@ class PerfManagerCollector(Collector):
 
     @property
     def all_perf_counters(self):
-        """ Get the perf manager for the host
-            rtype: vim.PerformanceManager
+        """ Get the perf counters from the host
+            rtype: list of vim.PerformanceManager.CounterInfo's
         """
         if self._all_counters is None:
             self._all_counters = self.get_perf_manager().perfCounter

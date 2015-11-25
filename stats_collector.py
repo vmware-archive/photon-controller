@@ -11,15 +11,17 @@
 # under the License.
 
 import logging
+import time
 
 import common
 from common.service_name import ServiceName
 from common.thread import Periodic
 from .esx.perfmgr_collector import PerfManagerCollector
+from .memory_tsdb import MemoryTimeSeriesDB
 
 
 class StatsCollector(object):
-    DEFAULT_COLLECT_INTERVAL_SECS = 1.0
+    DEFAULT_COLLECT_INTERVAL_SECS = 20.0
 
     def __init__(self):
         self._logger = logging.getLogger(__name__)
@@ -33,6 +35,12 @@ class StatsCollector(object):
 
         self._collector_thread = None
         self._collectors = []
+
+        # Cache up to 1 hour's worth of metrics
+        self._metric_cache = MemoryTimeSeriesDB()
+        assert(self._collect_interval_secs < 3600)
+        freq_str = "%ds" % self._collect_interval_secs
+        self._metric_cache.set_policy(freq_str, "1h")
 
     def start_collection(self):
         self._collector_thread = Periodic(self.collect,
@@ -59,8 +67,9 @@ class StatsCollector(object):
 
     def collect(self):
         for c in self._collectors:
-            self._logger.info("Collecting from %s" % str(c))
+            self._logger.debug("Collecting from %s" % str(c))
+            timestamp = time.time()
             metrics = c.collect()
             for key in metrics.keys():
+                self._metric_cache.add(key, timestamp, metrics[key])
                 self._logger.debug(" %s -> %s" % (key, metrics[key]))
-                # TODO(vui) cache retreive data next
