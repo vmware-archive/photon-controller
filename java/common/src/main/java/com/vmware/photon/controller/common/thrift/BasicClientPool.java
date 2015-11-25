@@ -106,7 +106,7 @@ public class BasicClientPool<C extends TAsyncClient> implements ClientPool<C> {
 
   @Override
   public synchronized void close() {
-    logger.info("{}, closing client pool {}", options.getServiceName(), System.identityHashCode(this));
+    logger.debug("{}, closing client pool {}", options.getServiceName(), System.identityHashCode(this));
     Preconditions.checkState(!closed);
 
     Iterator<Promise<C>> promiseIterator = promises.iterator();
@@ -126,7 +126,7 @@ public class BasicClientPool<C extends TAsyncClient> implements ClientPool<C> {
 
   @Override
   public synchronized void release(C client, boolean healthy) {
-    logger.info("{}, client pool {}, releasing: {} healthy: {}",
+    logger.debug("{}, client pool {}, releasing: {} healthy: {}",
         options.getServiceName(), System.identityHashCode(this), client, healthy);
     if (closed) {
       logger.warn("{}, client pool {} is closed already", options.getServiceName(), System.identityHashCode(this));
@@ -173,7 +173,7 @@ public class BasicClientPool<C extends TAsyncClient> implements ClientPool<C> {
 
       try {
         C client = createNewClient();
-        logger.info("{}, client pool {}, set promise with client {}",
+        logger.debug("{}, client pool {}, set promise with client {}",
             options.getServiceName(), System.identityHashCode(this), client);
         promises.remove().set(client);
         return;
