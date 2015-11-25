@@ -52,7 +52,7 @@ public class DcpBasedHealthChecker implements HealthChecker {
     OperationLatch syncOp = new OperationLatch(get);
     dcpService.sendRequest(get);
     try {
-      Operation completedOperation = syncOp.awaitForOperationCompletion();
+      Operation completedOperation = syncOp.awaitOperationCompletion();
       Status status = completedOperation.getBody(Status.class);
       return status.getType() == StatusType.READY;
     } catch (Exception e) {

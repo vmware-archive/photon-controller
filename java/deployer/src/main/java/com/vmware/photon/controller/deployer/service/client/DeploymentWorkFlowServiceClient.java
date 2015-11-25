@@ -17,6 +17,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFacto
 import com.vmware.photon.controller.common.dcp.OperationJoinLatch;
 import com.vmware.photon.controller.common.dcp.OperationLatch;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
@@ -93,9 +94,7 @@ public class DeploymentWorkFlowServiceClient {
         .setContextId(LoggingUtils.getRequestId())
         .setBody(state);
 
-    OperationLatch syncOp = new OperationLatch(post);
-    dcpHost.sendRequest(post);
-    Operation operation = syncOp.await();
+    Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, post, REFERRER_PATH);
     return operation.getBody(DeploymentWorkflowService.State.class).documentSelfLink;
   }
 
@@ -114,9 +113,7 @@ public class DeploymentWorkFlowServiceClient {
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setBody(queryTask);
 
-    OperationLatch syncOp = new OperationLatch(queryOperation);
-    dcpHost.sendRequest(queryOperation);
-    Operation operation = syncOp.await();
+    Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, queryOperation, REFERRER_PATH);
 
     List<Operation> opList = new ArrayList<>();
     for (String documentLink : QueryTaskUtils.getQueryResultDocumentLinks(operation)) {
@@ -162,9 +159,9 @@ public class DeploymentWorkFlowServiceClient {
         .setExpiration(Utils.getNowMicrosUtc() + dcpOperationTimeoutMicros)
         .setContextId(LoggingUtils.getRequestId());
 
-    OperationLatch opLatch = new OperationLatch(getOperation);
-    dcpHost.sendRequest(getOperation);
-    DeploymentWorkflowService.State serviceState = opLatch.await().getBody(DeploymentWorkflowService.State.class);
+    DeploymentWorkflowService.State serviceState =
+        ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH)
+            .getBody(DeploymentWorkflowService.State.class);
     DeployStatus deployStatus = new DeployStatus();
     deployStatus.setCode(getDeployStatusCodeForTaskStage(serviceState.taskState.stage));
     switch (serviceState.taskState.stage) {
@@ -231,9 +228,7 @@ public class DeploymentWorkFlowServiceClient {
         .setContextId(LoggingUtils.getRequestId())
         .setBody(state);
 
-    OperationLatch syncOp = new OperationLatch(post);
-    dcpHost.sendRequest(post);
-    Operation operation = syncOp.await();
+    Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, post, REFERRER_PATH);
     return operation.getBody(RemoveDeploymentWorkflowService.State.class).documentSelfLink;
   }
 
@@ -251,10 +246,9 @@ public class DeploymentWorkFlowServiceClient {
         .createGet(UriUtils.buildUri(dcpHost, path))
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setContextId(LoggingUtils.getRequestId());
-    OperationLatch opLatch = new OperationLatch(getOperation);
 
-    dcpHost.sendRequest(getOperation);
-    RemoveDeploymentWorkflowService.State serviceState = opLatch.await()
+    RemoveDeploymentWorkflowService.State serviceState =
+        ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH)
         .getBody(RemoveDeploymentWorkflowService.State.class);
 
     switch (serviceState.taskState.stage) {
@@ -310,7 +304,7 @@ public class DeploymentWorkFlowServiceClient {
 
     OperationLatch syncOp = new OperationLatch(post);
     dcpHost.sendRequest(post);
-    Operation operation = syncOp.await();
+    Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, post, REFERRER_PATH);
     return operation.getBody(InitializeDeploymentMigrationWorkflowService.State.class).documentSelfLink;
   }
 
@@ -328,10 +322,9 @@ public class DeploymentWorkFlowServiceClient {
         .createGet(UriUtils.buildUri(dcpHost, path))
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setContextId(LoggingUtils.getRequestId());
-    OperationLatch opLatch = new OperationLatch(getOperation);
 
-    dcpHost.sendRequest(getOperation);
-    InitializeDeploymentMigrationWorkflowService.State serviceState = opLatch.await()
+    InitializeDeploymentMigrationWorkflowService.State serviceState =
+        ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH)
         .getBody(InitializeDeploymentMigrationWorkflowService.State.class);
 
     switch (serviceState.taskState.stage) {
@@ -385,9 +378,7 @@ public class DeploymentWorkFlowServiceClient {
         .setContextId(LoggingUtils.getRequestId())
         .setBody(state);
 
-    OperationLatch syncOp = new OperationLatch(post);
-    dcpHost.sendRequest(post);
-    Operation operation = syncOp.await();
+    Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, post, REFERRER_PATH);
     return operation.getBody(FinalizeDeploymentMigrationWorkflowService.State.class).documentSelfLink;
   }
 
@@ -405,10 +396,9 @@ public class DeploymentWorkFlowServiceClient {
         .createGet(UriUtils.buildUri(dcpHost, path))
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setContextId(LoggingUtils.getRequestId());
-    OperationLatch opLatch = new OperationLatch(getOperation);
 
-    dcpHost.sendRequest(getOperation);
-    FinalizeDeploymentMigrationWorkflowService.State serviceState = opLatch.await()
+    FinalizeDeploymentMigrationWorkflowService.State serviceState =
+        ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH)
         .getBody(FinalizeDeploymentMigrationWorkflowService.State.class);
 
     switch (serviceState.taskState.stage) {

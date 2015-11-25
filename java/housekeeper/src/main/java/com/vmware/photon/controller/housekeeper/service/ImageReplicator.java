@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.housekeeper.service;
 
 import com.vmware.photon.controller.common.dcp.OperationLatch;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorServiceFactory;
@@ -90,9 +92,9 @@ public class ImageReplicator {
           (ReplicateImageResultCode.OK));
       response.setStatus(getReplicationStatus(state));
       return response;
-    } catch (ServiceHost.ServiceNotFoundException e) {
+    } catch (DocumentNotFoundException e) {
       logger.error("ImageReplicatorService is unavailable", e);
-      return new ReplicateImageStatusResponse(fillServiceNotFoundError(e));
+      return new ReplicateImageStatusResponse(fillServiceNotFoundError());
     } catch (Throwable throwable) {
       logger.error("Unexpected error", throwable);
       return new ReplicateImageStatusResponse(fillSystemError(throwable));
@@ -102,10 +104,9 @@ public class ImageReplicator {
   /**
    * Fill service not found error information from exception.
    *
-   * @param e
    * @return
    */
-  private ReplicateImageResult fillServiceNotFoundError(ServiceHost.ServiceNotFoundException e) {
+  private ReplicateImageResult fillServiceNotFoundError() {
     ReplicateImageResult result = new ReplicateImageResult(ReplicateImageResultCode.SERVICE_NOT_FOUND);
     result.setError("ImageReplicatorService is unavailable");
     return result;
@@ -143,9 +144,8 @@ public class ImageReplicator {
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setExpiration(Utils.getNowMicrosUtc() + dcpOperationTimeoutMicros)
         .setContextId(LoggingUtils.getRequestId());
-    OperationLatch opLatch = new OperationLatch(postOperation);
-    dcpHost.sendRequest(postOperation);
-    Operation op = opLatch.await();
+
+    Operation op = ServiceHostUtils.sendRequestAndWait(dcpHost, postOperation, REFERRER_PATH);
 
     // Return operation id.
     return op.getBody(ImageReplicatorService.State.class).documentSelfLink;
@@ -212,10 +212,8 @@ public class ImageReplicator {
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setExpiration(Utils.getNowMicrosUtc() + dcpOperationTimeoutMicros)
         .setContextId(LoggingUtils.getRequestId());
-    OperationLatch opLatch = new OperationLatch(getOperation);
 
-    dcpHost.sendRequest(getOperation);
-    return opLatch.await()
+    return ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH)
         .getBody(ImageReplicatorService.State.class);
   }
 }

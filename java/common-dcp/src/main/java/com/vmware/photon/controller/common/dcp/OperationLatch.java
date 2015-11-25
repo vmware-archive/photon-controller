@@ -45,23 +45,12 @@ public class OperationLatch {
     this.prepareOperation(op);
   }
 
-  @Deprecated
-  public Operation await() throws Throwable {
-    this.awaitUsingOperationExpiration();
-
-    if (operationResult.operationFailure != null) {
-      throw operationResult.operationFailure;
-    }
-
-    return operationResult.completedOperation;
-  }
-
-  public Operation awaitForOperationCompletion() throws InterruptedException, TimeoutException {
+  public Operation awaitOperationCompletion() throws InterruptedException, TimeoutException {
     this.awaitUsingOperationExpiration();
     return getCompletedOperation();
   }
 
-  public Operation awaitForOperationCompletion(long timeoutMicros) throws InterruptedException, TimeoutException {
+  public Operation awaitOperationCompletion(long timeoutMicros) throws InterruptedException, TimeoutException {
     this.await(timeoutMicros, TimeUnit.MICROSECONDS);
     return getCompletedOperation();
   }

@@ -197,7 +197,7 @@ public class ServiceHostUtils {
     OperationLatch opLatch = new OperationLatch(get);
     localHost.sendRequest(get);
 
-    return opLatch.await().getBody(NodeGroupService.NodeGroupState.class);
+    return opLatch.awaitOperationCompletion().getBody(NodeGroupService.NodeGroupState.class);
   }
 
   /**
@@ -403,7 +403,7 @@ public class ServiceHostUtils {
     }
 
     host.sendRequest(requestedOperation);
-    Operation completedOperation = syncOp.awaitForOperationCompletion();
+    Operation completedOperation = syncOp.awaitOperationCompletion();
     return OperationUtils.handleCompletedOperation(requestedOperation, completedOperation);
   }
 

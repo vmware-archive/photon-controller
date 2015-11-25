@@ -16,8 +16,8 @@ package com.vmware.photon.controller.deployer.service.client;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
-import com.vmware.photon.controller.common.dcp.OperationLatch;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
@@ -65,9 +65,7 @@ public class HostServiceClient {
         .setBody(new ServiceDocument())
         .setContextId(LoggingUtils.getRequestId());
 
-    OperationLatch syncOp = new OperationLatch(delete);
-    dcpHost.sendRequest(delete);
-    syncOp.await();
+    ServiceHostUtils.sendRequestAndWait(dcpHost, delete, REFERRER_PATH);
   }
 
   /**
@@ -102,9 +100,7 @@ public class HostServiceClient {
         .setBody(queryTask)
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH));
 
-    OperationLatch syncOp = new OperationLatch(queryOperation);
-    dcpHost.sendRequest(queryOperation);
-    Operation operation = syncOp.await();
+    Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, queryOperation, REFERRER_PATH);
     return !QueryTaskUtils.getQueryResultDocumentLinks(operation).isEmpty();
   }
 

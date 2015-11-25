@@ -421,7 +421,7 @@ public class DcpRestClient implements DcpClient {
 
     Operation completedOperation = null;
     try {
-      completedOperation = operationLatch.awaitForOperationCompletion(DEFAULT_OPERATION_LATCH_TIMEOUT_MICROS);
+      completedOperation = operationLatch.awaitOperationCompletion(DEFAULT_OPERATION_LATCH_TIMEOUT_MICROS);
       logCompletedOperation(completedOperation);
       handleOperationResult(requestedOperation, completedOperation);
     } catch (TimeoutException timeoutException) {
