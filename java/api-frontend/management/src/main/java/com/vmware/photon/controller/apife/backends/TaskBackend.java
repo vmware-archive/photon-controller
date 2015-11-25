@@ -41,7 +41,8 @@ public interface TaskBackend {
   List<Task> filter(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
                     Optional<Integer> pageSize) throws ExternalException;
 
-  List<Task> filterInProject(String projectId, Optional<String> state, Optional<String> kind);
+  List<Task> filterInProject(String projectId, Optional<String> state, Optional<String> kind,
+                             Optional<Integer> pageSize);
 
   TaskEntity createQueuedTask(BaseEntity entity, Operation operation);
 

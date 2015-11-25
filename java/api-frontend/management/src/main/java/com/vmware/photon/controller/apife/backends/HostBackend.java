@@ -43,7 +43,7 @@ public interface HostBackend {
 
   List<Host> filterByUsage(UsageTag usageTag);
 
-  List<Task> getTasks(String id, Optional<String> state) throws ExternalException;
+  List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   Host toApiRepresentation(String id) throws HostNotFoundException;
 

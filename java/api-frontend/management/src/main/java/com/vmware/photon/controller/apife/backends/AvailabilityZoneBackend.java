@@ -40,7 +40,7 @@ public interface AvailabilityZoneBackend {
 
   TaskEntity prepareAvailabilityZoneDelete(String id) throws ExternalException;
 
-  List<Task> getTasks(String id, Optional<String> state) throws ExternalException;
+  List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   void tombstone(AvailabilityZoneEntity availabilityZone) throws ExternalException;
 }

@@ -94,10 +94,10 @@ public class TaskFeClient {
         pageSize));
   }
 
-  public ResourceList<Task> getProjectTasks(String projectId, Optional<String> state,
-                                            Optional<String> kind) throws ExternalException {
+  public ResourceList<Task> getProjectTasks(String projectId, Optional<String> state, Optional<String> kind,
+                                            Optional<Integer> pagesize) throws ExternalException {
     projectBackend.findById(projectId);
-    return new ResourceList<>(taskBackend.filterInProject(projectId, state, kind));
+    return new ResourceList<>(taskBackend.filterInProject(projectId, state, kind, pagesize));
   }
 
   public ResourceList<Task> getResourceTicketTasks(String resourceTicketId, Optional<String> state,
@@ -122,18 +122,19 @@ public class TaskFeClient {
     return new ResourceList<>(imageBackend.getTasks(imageId, state, pageSize));
   }
 
-  public ResourceList<Task> getFlavorTasks(String flavorId, Optional<String> state)
+  public ResourceList<Task> getFlavorTasks(String flavorId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(flavorBackend.getTasks(flavorId, state));
+    return new ResourceList<>(flavorBackend.getTasks(flavorId, state, pageSize));
   }
 
-  public ResourceList<Task> getHostTasks(String hostId, Optional<String> state)
+  public ResourceList<Task> getHostTasks(String hostId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(hostBackend.getTasks(hostId, state));
+    return new ResourceList<>(hostBackend.getTasks(hostId, state, pageSize));
   }
 
-  public ResourceList<Task> getAvailabilityZoneTasks(String availabilityZoneId, Optional<String> state)
+  public ResourceList<Task> getAvailabilityZoneTasks(String availabilityZoneId, Optional<String> state,
+                                                     Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(availabilityZoneBackend.getTasks(availabilityZoneId, state));
+    return new ResourceList<>(availabilityZoneBackend.getTasks(availabilityZoneId, state, pageSize));
   }
 }

@@ -115,8 +115,9 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   @Override
-  public List<Task> filterInProject(String projectId, Optional<String> state, Optional<String> entityKind) {
-    List<TaskEntity> tasks = getProjectTasks(projectId, state, entityKind);
+  public List<Task> filterInProject(String projectId, Optional<String> state, Optional<String> entityKind,
+                                    Optional<Integer> pageSize) {
+    List<TaskEntity> tasks = getProjectTasks(projectId, state, entityKind, pageSize);
 
     List<Task> result = new ArrayList<>();
 
@@ -338,9 +339,9 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   private List<TaskEntity> getProjectTasks(
-      String projectId, Optional<String> state, Optional<String> entityKind) {
+      String projectId, Optional<String> state, Optional<String> entityKind, Optional<Integer> pageSize) {
 
-    List<TaskService.State> tasksDocuments = getTaskDocumentsInProject(projectId, state, entityKind);
+    List<TaskService.State> tasksDocuments = getTaskDocumentsInProject(projectId, state, entityKind, pageSize);
 
     return getTaskEntitiesFromDocuments(tasksDocuments);
   }
@@ -391,7 +392,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   private List<TaskService.State> getTaskDocumentsInProject(
-      String projectId, Optional<String> state, Optional<String> entityKind) {
+      String projectId, Optional<String> state, Optional<String> entityKind, Optional<Integer> pageSize) {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
 
     termsBuilder.put("projectId", projectId);
@@ -404,6 +405,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
       termsBuilder.put("state", state.get().toUpperCase());
     }
 
+    // Will consume pageSize in later CR.
     return dcpClient.queryDocuments(TaskService.State.class, termsBuilder.build());
   }
 

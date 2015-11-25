@@ -155,7 +155,7 @@ public class HostDcpBackend implements HostBackend {
   }
 
   @Override
-  public List<Task> getTasks(String id, Optional<String> state) throws ExternalException {
+  public List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException {
     HostEntity hostEntity = findById(id);
     return taskBackend.filter(id, hostEntity.getKind(), state);
   }
