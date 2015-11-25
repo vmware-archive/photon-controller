@@ -19,18 +19,18 @@ import com.vmware.xenon.common.Service;
 
 /**
  * This class implements a DCP micro-service which provides a factory for
- * {@link UpdateHostDatastoresTaskService} instances.
+ * {@link ExtractHostInformationTaskService} instances.
  */
-public class UpdateHostDatastoresTaskFactoryService extends FactoryService {
+public class ExtractHostInformationTaskFactoryService extends FactoryService {
 
   public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/updateHostDatastores";
 
-  public UpdateHostDatastoresTaskFactoryService() {
-    super(UpdateHostDatastoresTaskService.State.class);
+  public ExtractHostInformationTaskFactoryService() {
+    super(ExtractHostInformationTaskService.State.class);
   }
 
   @Override
   public Service createServiceInstance() {
-    return new UpdateHostDatastoresTaskService();
+    return new ExtractHostInformationTaskService();
   }
 }

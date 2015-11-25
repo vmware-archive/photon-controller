@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentConfigurationException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -30,9 +31,8 @@ import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
-import com.vmware.photon.controller.host.gen.GetConfigResponse;
+import com.vmware.photon.controller.host.gen.AgentStatusResponse;
 import com.vmware.photon.controller.host.gen.Host;
-import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
@@ -317,7 +317,8 @@ public class ProvisionAgentTaskService extends StatefulService {
     }
   }
 
-  private void processCheckAgent(final State currentState, final HostService.State hostState, final int pollCount) {
+  private void processCheckAgent(final State currentState, final HostService.State hostState, final int pollCount)
+    throws RpcException {
 
     final Retryable retryable = new Retryable() {
       @Override
@@ -331,14 +332,16 @@ public class ProvisionAgentTaskService extends StatefulService {
       }
     };
 
-    final AsyncMethodCallback<Host.AsyncClient.get_host_config_call> handler =
-        new AsyncMethodCallback<Host.AsyncClient.get_host_config_call>() {
+      final AsyncMethodCallback<Host.AsyncClient.get_agent_status_call> handler =
+          new AsyncMethodCallback<Host.AsyncClient.get_agent_status_call>() {
           @Override
-          public void onComplete(Host.AsyncClient.get_host_config_call getHostConfigCall) {
+          public void onComplete(Host.AsyncClient.get_agent_status_call getAgentStatusCall) {
             try {
-              GetConfigResponse configResponse = getHostConfigCall.getResult();
-              HostClient.ResponseValidator.checkGetConfigResponse(configResponse);
-              updateHostDocumentWithConfig(currentState, hostState, configResponse.getHostConfig());
+              AgentStatusResponse agentStatusResponse = getAgentStatusCall.getResult();
+              HostClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse);
+              sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+            } catch (InvalidAgentConfigurationException e) {
+              failTask(new Throwable(e.getMessage() + "Host Address: " + hostState.hostAddress));
             } catch (TException e) {
               retryOrFail(retryable, currentState, new RpcException(e.getMessage()));
             } catch (Throwable t) {
@@ -355,43 +358,12 @@ public class ProvisionAgentTaskService extends StatefulService {
     try {
       HostClient hostClient = HostUtils.getHostClient(this);
       hostClient.setIpAndPort(hostState.hostAddress, ServicePortConstants.AGENT_PORT);
-      hostClient.getHostConfig(handler);
+      hostClient.getAgentStatus(handler);
     } catch (Throwable t) {
       retryOrFail(retryable, currentState, t);
     }
   }
 
-  private void updateHostDocumentWithConfig(final State currentState, final HostService.State hostState, HostConfig
-      hostConfig) {
-    try {
-      HostService.State patchState = new HostService.State();
-      if (hostConfig.isSetMemory_mb() && hostState.memoryMb == null) {
-        patchState.memoryMb = hostConfig.getMemory_mb();
-      }
-      if (hostConfig.isSetCpu_count() && hostState.cpuCount == null) {
-        patchState.cpuCount = hostConfig.getCpu_count();
-      }
-      if (patchState.memoryMb != null || patchState.cpuCount != null) {
-        sendRequest(
-            HostUtils.getCloudStoreHelper(this)
-                .createPatch(currentState.hostServiceLink)
-                .setBody(patchState)
-                .setCompletion(
-                    (completedOp, failure) -> {
-                      if (null != failure) {
-                        failTask(failure);
-                      } else {
-                        sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-                      }
-                    }
-                ));
-      } else {
-        sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-      }
-    } catch (Throwable t) {
-      failTask(t);
-    }
-  }
 
   private void retryOrFail(final Retryable retryable, State currentState, Throwable t) {
     if (!retryable.isRetryable(t)) {
