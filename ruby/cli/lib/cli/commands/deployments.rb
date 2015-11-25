@@ -214,9 +214,9 @@ g2)') do |g|
         puts green("System is paused")
       end
 
-      usage "deployment configure_cluster <id> [<options>]"
-      desc "Configure a cluster of certain type associated with the deployment"
-      def configure_cluster(args = [])
+      usage "deployment enable_cluster_type <id> [<options>]"
+      desc "Enables a cluster of certain type associated with the deployment"
+      def enable_cluster_type(args = [])
         type, image_id = nil, nil
 
         opts_parser = OptionParser.new do |opts|
@@ -238,7 +238,7 @@ g2)') do |g|
               type,
               image_id)
 
-          config = EsxCloud::Deployment.configure_cluster(id, spec)
+          config = EsxCloud::Deployment.enable_cluster_type(id, spec)
 
           puts green("''#{type}' cluster is configured for deployment '#{id}'")
         else
@@ -246,9 +246,9 @@ g2)') do |g|
         end
       end
 
-      usage "deployment delete_cluster_configuration <id> [<options>]"
-      desc "Deletes a cluster configuration of certain cluster type associated with the deployment"
-      def delete_cluster_configuration(args = [])
+      usage "deployment disable_cluster_type <id> [<options>]"
+      desc "Disables a certain cluster type associated with the deployment"
+      def disable_cluster_type(args = [])
         type = nil
 
         opts_parser = OptionParser.new do |opts|
@@ -268,7 +268,7 @@ g2)') do |g|
               type,
               nil)
 
-          EsxCloud::Deployment.delete_cluster_configuration(id, spec)
+          EsxCloud::Deployment.disable_cluster_type(id, spec)
 
           puts green("''#{type}' cluster configuration is deleted for deployment '#{id}'")
         else

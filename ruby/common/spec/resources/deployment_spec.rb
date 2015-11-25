@@ -46,14 +46,23 @@ describe EsxCloud::Deployment do
     EsxCloud::Deployment.update_security_groups("deployment_id", security_groups_in_hash)
   end
 
-  it "delegates configure cluster to client" do
+  it "delegates enable_cluster_type to client" do
     spec = EsxCloud::ClusterConfigurationSpec.new("KUBERNETES", "imageId")
     configuration = EsxCloud::ClusterConfiguration.new("KUBERNETES", "imageId")
-    expect(client).to receive(:configure_cluster)
+    expect(client).to receive(:enable_cluster_type)
                       .with("deployment_id", spec.to_hash)
                       .and_return(configuration)
 
-    EsxCloud::Deployment.configure_cluster("deployment_id", spec)
+    EsxCloud::Deployment.enable_cluster_type("deployment_id", spec)
   end
 
+  it "delegates disable_cluster_type to client" do
+    spec = EsxCloud::ClusterConfigurationSpec.new("KUBERNETES", "imageId")
+    configuration = EsxCloud::ClusterConfiguration.new("KUBERNETES", "imageId")
+    expect(client).to receive(:disable_cluster_type)
+                      .with("deployment_id", spec.to_hash)
+                      .and_return(configuration)
+
+    EsxCloud::Deployment.disable_cluster_type("deployment_id", spec)
+  end
 end

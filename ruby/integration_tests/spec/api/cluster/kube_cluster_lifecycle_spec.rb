@@ -17,14 +17,15 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance
     @cleaner = EsxCloud::SystemCleaner.new(client)
+
     @deployment = @seeder.deployment!
     @kubernetes_image = EsxCloud::ClusterHelper.upload_kubernetes_image(client)
-    @cluster_configuration = EsxCloud::ClusterHelper.configure_cluster(client, @deployment, @kubernetes_image,
-                                                                       "KUBERNETES")
+    EsxCloud::ClusterHelper.enable_cluster_type(client, @deployment, @kubernetes_image, "KUBERNETES")
   end
 
   after(:all) do
     puts "Staring to clean up Kubernetes Cluster lifecycle tests Env"
+    EsxCloud::ClusterHelper.disable_cluster_type(client, @deployment, "KUBERNETES")
     @cleaner.delete_image(@kubernetes_image)
   end
 
