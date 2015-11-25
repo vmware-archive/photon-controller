@@ -17,13 +17,14 @@ describe "Swarm cluster-service lifecycle", cluster: true do
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance
     @cleaner = EsxCloud::SystemCleaner.new(client)
-    @deployment = @seeder.deployment!
+
     @swarm_image = EsxCloud::ClusterHelper.upload_swarm_image(client)
-    @cluster_configuration = EsxCloud::ClusterHelper.configure_cluster(client, @deployment, @swarm_image, "SWARM")
+    EsxCloud::ClusterHelper.enable_cluster_type(client, @deployment, @swarm_image, "SWARM")
   end
 
   after(:all) do
     puts "Staring to clean up Swarm Cluster lifecycle tests Env"
+    EsxCloud::ClusterHelper.disable_cluster_type(client, @deployment, "SWARM")
     @cleaner.delete_image(@swarm_image)
   end
 

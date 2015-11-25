@@ -226,7 +226,7 @@ public class DeploymentResourceTest extends ResourceTest {
     doReturn(configuration).when(feClient).configureCluster(eq(deploymentId), any(ClusterConfigurationSpec.class));
 
     String uri = UriBuilder
-        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.CONFIGURE_CLUSTER_ACTION)
+        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.ENABLE_CLUSTER_TYPE_ACTION)
         .build(deploymentId)
         .toString();
 
@@ -253,7 +253,7 @@ public class DeploymentResourceTest extends ResourceTest {
 
     String uri = UriBuilder
         .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
-            DeploymentResourceRoutes.DELETE_CLUSTER_CONFIGURATION_ACTION)
+            DeploymentResourceRoutes.DISABLE_CLUSTER_TYPE_ACTION)
         .build(deploymentId)
         .toString();
 
@@ -271,7 +271,7 @@ public class DeploymentResourceTest extends ResourceTest {
   public void testDeleteClusterConfigurationWithNullClusterType() throws Exception {
     String uri = UriBuilder
         .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
-            DeploymentResourceRoutes.DELETE_CLUSTER_CONFIGURATION_ACTION)
+            DeploymentResourceRoutes.DISABLE_CLUSTER_TYPE_ACTION)
         .build(deploymentId)
         .toString();
 

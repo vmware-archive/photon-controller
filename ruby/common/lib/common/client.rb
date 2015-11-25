@@ -494,13 +494,13 @@ module EsxCloud
     # @param [String] deployment_id
     # @param [String] payload
     # @return [ClusterConfiguration]
-    def configure_cluster(deployment_id, payload)
+    def enable_cluster_type(deployment_id, payload)
     end
 
     # @param [String] deployment_id
     # @param [String] payload
     # @return [Boolean]
-    def delete_cluster_configuration(deployment_id, payload)
+    def disable_cluster_type(deployment_id, payload)
     end
 
     # @param [Hash] payload
