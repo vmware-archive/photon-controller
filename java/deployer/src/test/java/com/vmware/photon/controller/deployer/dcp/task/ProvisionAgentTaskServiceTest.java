@@ -32,8 +32,7 @@ import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
-import com.vmware.photon.controller.host.gen.GetConfigResultCode;
-import com.vmware.photon.controller.host.gen.HostConfig;
+import com.vmware.photon.controller.host.gen.AgentStatusCode;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
@@ -448,14 +447,10 @@ public class ProvisionAgentTaskServiceTest {
 
     @Test
     public void testEndToEndSuccess() throws Throwable {
-      HostConfig hostConfig = new HostConfig();
-      hostConfig.setCpu_count(2);
-      hostConfig.setMemory_mb(4096);
 
       HostClientMock hostClientMock = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
-          .getConfigResultCode(GetConfigResultCode.OK)
-          .hostConfig(hostConfig)
+          .agentStatusCode(AgentStatusCode.OK)
           .build();
 
       doReturn(hostClientMock).when(hostClientFactory).create();
@@ -471,51 +466,25 @@ public class ProvisionAgentTaskServiceTest {
     }
 
     @Test
-    public void testEndToEndSuccessWhenHostConfigNotSet() throws Throwable {
-      HostConfig hostConfig = new HostConfig();
-
-      HostClientMock hostClientMock = new HostClientMock.Builder()
-          .provisionResultCode(ProvisionResultCode.OK)
-          .getConfigResultCode(GetConfigResultCode.OK)
-          .hostConfig(hostConfig)
-          .build();
-
-      doReturn(hostClientMock).when(hostClientFactory).create();
-
-      ProvisionAgentTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionAgentTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionAgentTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-    }
-
-    @Test
-    public void testEndToEndFailureGetConfigReturnsFailures() throws Throwable {
+    public void testEndToEndFailureGetAgentStatusReturnsFailures() throws Throwable {
 
       HostClientMock provisionSuccessHostClientMock = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .build();
 
-      HostClientMock getHostConfigTExceptionHostClientMock = new HostClientMock.Builder()
-          .getConfigFailure(new TException("Thrift exception during getHostConfig call"))
+      HostClientMock getAgentStatusTExceptionHostClientMock = new HostClientMock.Builder()
+          .getAgentStatusFailure(new TException("Thrift exception during getAgentStatus call"))
           .build();
 
-      HostClientMock getHostConfigFailureHostClientMock = new HostClientMock.Builder()
-          .getConfigResultCode(GetConfigResultCode.SYSTEM_ERROR)
+      HostClientMock getAgentStatusFailureHostClientMock = new HostClientMock.Builder()
+          .agentStatusCode(AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED)
           .build();
 
-      HostClientMock getHostConfigSuccessHostClientMock = new HostClientMock.Builder()
-          .getConfigResultCode(GetConfigResultCode.OK)
-          .build();
 
       when(hostClientFactory.create())
           .thenReturn(provisionSuccessHostClientMock)
-          .thenReturn(getHostConfigTExceptionHostClientMock)
-          .thenReturn(getHostConfigFailureHostClientMock)
-          .thenReturn(getHostConfigSuccessHostClientMock);
+          .thenReturn(getAgentStatusTExceptionHostClientMock)
+          .thenReturn(getAgentStatusFailureHostClientMock);
 
       ProvisionAgentTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -615,20 +584,20 @@ public class ProvisionAgentTaskServiceTest {
     }
 
     @Test
-    public void testEndToEndFailureGetHostConfigCallThrowsRpcException() throws Throwable {
+    public void testEndToEndFailureGetAgentStatusCallThrowsRpcException() throws Throwable {
 
       HostClientMock provisionHostClientMock = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .build();
 
-      HostClient getConfigFailureHostClientMock = mock(HostClient.class);
+      HostClient getAgentStatusFailureHostClientMock = mock(HostClient.class);
 
-      doThrow(new RpcException("Thrift exception during getHostConfig call")).when(getConfigFailureHostClientMock)
-          .getHostConfig(any(AsyncMethodCallback.class));
+      doThrow(new RpcException("Thrift exception during getAgentStatus call")).when(getAgentStatusFailureHostClientMock)
+          .getAgentStatus(any(AsyncMethodCallback.class));
 
       when(hostClientFactory.create())
           .thenReturn(provisionHostClientMock)
-          .thenReturn(getConfigFailureHostClientMock);
+          .thenReturn(getAgentStatusFailureHostClientMock);
 
       ProvisionAgentTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -639,16 +608,16 @@ public class ProvisionAgentTaskServiceTest {
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.failure.message, containsString(
-          "Thrift exception during getHostConfig call"));
+          "Thrift exception during getAgentStatus call"));
     }
 
-    @Test(dataProvider = "GetConfigFailureResultCodes")
-    public void testEndToEndFailureGetHostConfigCallReturnsFailure(GetConfigResultCode getConfigResultCode)
+    @Test(dataProvider = "GetAgentStatusFailureResultCodes")
+    public void testEndToEndFailureGetHostConfigCallReturnsFailure(AgentStatusCode agentStatusCode)
         throws Throwable {
 
       HostClientMock hostClientMock = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
-          .getConfigResultCode(getConfigResultCode)
+          .agentStatusCode(agentStatusCode)
           .build();
 
       doReturn(hostClientMock).when(hostClientFactory).create();
@@ -663,19 +632,19 @@ public class ProvisionAgentTaskServiceTest {
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
     }
 
-    @DataProvider(name = "GetConfigFailureResultCodes")
-    public Object[][] getGetConfigFailureResultCodes() {
+    @DataProvider(name = "GetAgentStatusFailureResultCodes")
+    public Object[][] getGetAgentStatusFailureResultCodes() {
       return new Object[][]{
-          {GetConfigResultCode.SYSTEM_ERROR},
+          {AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED},
       };
     }
 
     @Test
-    public void testEndToEndFailureGetHostConfigResultThrowsTException() throws Throwable {
+    public void testEndToEndFailureGetAgentStatusResultThrowsTException() throws Throwable {
 
       HostClientMock hostClientMock = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
-          .getConfigFailure(new TException("Thrift exception while getting GetHostConfigResponse result"))
+          .getAgentStatusFailure(new TException("Thrift exception while getting AgentStatusResponse result"))
           .build();
 
       doReturn(hostClientMock).when(hostClientFactory).create();
@@ -689,7 +658,7 @@ public class ProvisionAgentTaskServiceTest {
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.failure.message, containsString(
-          "Thrift exception while getting GetHostConfigResponse result"));
+          "Thrift exception while getting AgentStatusResponse result"));
     }
   }
 
