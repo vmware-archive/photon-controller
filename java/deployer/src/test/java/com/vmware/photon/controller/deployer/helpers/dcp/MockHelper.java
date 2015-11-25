@@ -57,6 +57,7 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.host.gen.AgentStatusCode;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.host.gen.SetHostModeResultCode;
@@ -102,6 +103,7 @@ public class MockHelper {
       hostClient = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .getConfigResultCode(GetConfigResultCode.OK)
+          .agentStatusCode(AgentStatusCode.OK)
           .setHostModeResultCode(SetHostModeResultCode.OK)
           .hostConfig(hostConfig)
           .build();
@@ -111,6 +113,8 @@ public class MockHelper {
           .provisionFailure(new Exception("ProvisionHost throws exception"))
           .getConfigResultCode(GetConfigResultCode.SYSTEM_ERROR)
           .getConfigFailure(new Exception("GetHost throws exception"))
+          .agentStatusCode(AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED)
+          .getAgentStatusFailure(new Exception("GetAgentStatus throws Exception"))
           .setHostModeResultCode(SetHostModeResultCode.SYSTEM_ERROR)
           .setHostModeFailure(new Exception("SetHostMode throws exception"))
           .build();
@@ -204,10 +208,12 @@ public class MockHelper {
       hostClient = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .getConfigResultCode(GetConfigResultCode.OK)
+          .agentStatusCode(AgentStatusCode.OK)
           .build();
     } else {
       hostClient = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.SYSTEM_ERROR)
+          .agentStatusCode(AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED)
           .build();
     }
     doReturn(hostClient).when(hostClientFactory).create();

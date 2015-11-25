@@ -31,6 +31,7 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.photon.controller.host.gen.AgentStatusCode;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.xenon.common.Operation;
@@ -556,6 +557,7 @@ public class ProvisionHostWorkflowServiceTest {
       HostClientMock hostClientMock = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .getConfigResultCode(GetConfigResultCode.OK)
+          .agentStatusCode(AgentStatusCode.OK)
           .hostConfig(new HostConfig())
           .build();
 
@@ -591,7 +593,6 @@ public class ProvisionHostWorkflowServiceTest {
     @Test(dataProvider = "HostCounts")
     public void testEndToEndSuccess(Integer hostCount) throws Throwable {
       MockHelper.mockCreateScriptFile(deployerContext, DeployAgentTaskService.SCRIPT_NAME, true);
-      MockHelper.mockProvisionAgent(hostClientFactory, true);
       createTestEnvironment(hostCount);
 
       ProvisionHostWorkflowService.State finalState =
