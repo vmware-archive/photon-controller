@@ -32,6 +32,7 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.photon.controller.host.gen.AgentStatusCode;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.xenon.common.Operation;
@@ -520,6 +521,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
       HostClientMock hostClientMock = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .getConfigResultCode(GetConfigResultCode.OK)
+          .agentStatusCode(AgentStatusCode.OK)
           .hostConfig(new HostConfig())
           .build();
 
@@ -599,7 +601,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
         Integer mixedHostCount) throws Throwable {
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), DeployAgentTaskService.SCRIPT_NAME, true);
-      MockHelper.mockProvisionAgent(hostClientFactory, true);
       createTestEnvironment(hostCount);
       createHostEntities(mgmtHostCount, cloudHostCout, mixedHostCount);
       startState.querySpecification = null;
