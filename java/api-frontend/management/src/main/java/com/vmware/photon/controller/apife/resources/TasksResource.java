@@ -61,10 +61,11 @@ public class TasksResource {
   public Response find(@Context Request request,
                        @QueryParam("entityId") Optional<String> entityId,
                        @QueryParam("entityKind") Optional<String> entityKind,
-                       @QueryParam("state") Optional<String> state) throws ExternalException {
+                       @QueryParam("state") Optional<String> state,
+                       @QueryParam("pageSize") Optional<Integer> pageSize) throws ExternalException {
     return generateResourceListResponse(
         Response.Status.OK,
-        taskFeClient.find(entityId, entityKind, state),
+        taskFeClient.find(entityId, entityKind, state, pageSize),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
 

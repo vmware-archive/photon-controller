@@ -80,15 +80,17 @@ public class TaskFeClient {
     return taskBackend.getApiRepresentation(id);
   }
 
-  public ResourceList<Task> find(Optional<String> entityId, Optional<String> entityKind, Optional<String> state)
+  public ResourceList<Task> find(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
+                                 Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(taskBackend.filter(entityId, entityKind, state));
+    return new ResourceList<>(taskBackend.filter(entityId, entityKind, state, pageSize));
   }
 
   public ResourceList<Task> getTenantTasks(String tenantId, Optional<String> state)
       throws ExternalException {
     tenantBackend.findById(tenantId);
-    return new ResourceList<>(taskBackend.filter(Optional.of(tenantId), Optional.of(TenantEntity.KIND), state));
+    return new ResourceList<>(taskBackend.filter(Optional.of(tenantId), Optional.of(TenantEntity.KIND), state,
+        Optional.<Integer>absent()));
   }
 
   public ResourceList<Task> getProjectTasks(String projectId, Optional<String> state,
@@ -101,7 +103,8 @@ public class TaskFeClient {
       throws ExternalException {
     resourceTicketBackend.findById(resourceTicketId);
     return new ResourceList<>(
-        taskBackend.filter(Optional.of(resourceTicketId), Optional.of(ResourceTicketEntity.KIND), state));
+        taskBackend.filter(Optional.of(resourceTicketId), Optional.of(ResourceTicketEntity.KIND), state,
+            Optional.<Integer>absent()));
   }
 
   public ResourceList<Task> getVmTasks(String vmId, Optional<String> state)
