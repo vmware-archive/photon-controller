@@ -45,17 +45,6 @@ public class OperationLatch {
     this.prepareOperation(op);
   }
 
-  @Deprecated
-  public Operation await() throws Throwable {
-    this.awaitUsingOperationExpiration();
-
-    if (operationResult.operationFailure != null) {
-      throw operationResult.operationFailure;
-    }
-
-    return operationResult.completedOperation;
-  }
-
   public Operation awaitForOperationCompletion() throws InterruptedException, TimeoutException {
     this.awaitUsingOperationExpiration();
     return getCompletedOperation();

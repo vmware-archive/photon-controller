@@ -197,7 +197,7 @@ public class ServiceHostUtils {
     OperationLatch opLatch = new OperationLatch(get);
     localHost.sendRequest(get);
 
-    return opLatch.await().getBody(NodeGroupService.NodeGroupState.class);
+    return opLatch.awaitForOperationCompletion().getBody(NodeGroupService.NodeGroupState.class);
   }
 
   /**

@@ -194,7 +194,7 @@ public class BasicServiceHost
 
     OperationLatch syncPost = new OperationLatch(post);
     startService(post, service);
-    return syncPost.await();
+    return syncPost.awaitForOperationCompletion();
   }
 
   public Operation startServiceSynchronously(Service service, ServiceDocument body) throws Throwable {
@@ -239,7 +239,7 @@ public class BasicServiceHost
 
     OperationLatch syncDelete = new OperationLatch(delete);
     sendRequest(delete);
-    return syncDelete.await();
+    return syncDelete.awaitForOperationCompletion();
   }
 
   public Operation sendRequestAndWait(Operation op) throws Throwable {

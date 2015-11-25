@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.common.dcp.OperationLatch;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowFactoryService;
@@ -63,7 +64,7 @@ public class DeprovisionHostWorkflowServiceClient {
 
     OperationLatch syncOp = new OperationLatch(post);
     dcpHost.sendRequest(post);
-    Operation operation = syncOp.await();
+    Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, post, REFERRER_PATH);
 
     // Return operation id.
     return operation.getBody(DeprovisionHostWorkflowService.State.class).documentSelfLink;
@@ -83,10 +84,9 @@ public class DeprovisionHostWorkflowServiceClient {
         .createGet(UriUtils.buildUri(dcpHost, path))
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setContextId(LoggingUtils.getRequestId());
-    OperationLatch opLatch = new OperationLatch(getOperation);
 
-    dcpHost.sendRequest(getOperation);
-    DeprovisionHostWorkflowService.State serviceState = opLatch.await()
+    DeprovisionHostWorkflowService.State serviceState =
+        ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH)
         .getBody(DeprovisionHostWorkflowService.State.class);
 
     switch (serviceState.taskState.stage) {
