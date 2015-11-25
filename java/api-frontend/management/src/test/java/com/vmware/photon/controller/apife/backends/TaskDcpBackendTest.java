@@ -492,7 +492,7 @@ public class TaskDcpBackendTest {
     @Test
     public void testFilter() throws Throwable {
       List<Task> tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(),
-          Optional.<String>absent(), Optional.<Integer>absent());
+          Optional.<String>absent(), Optional.<Integer>absent()).getItems();
 
       int initialTaskCount = tasks.size();
 
@@ -501,19 +501,19 @@ public class TaskDcpBackendTest {
       taskBackend.createQueuedTask(vmEntity, Operation.CREATE_VM);
 
       tasks = taskBackend.filter(Optional.of(vmEntity.getId()), Optional.of(Vm.KIND), Optional.<String>absent(),
-          Optional.<Integer>absent());
+          Optional.<Integer>absent()).getItems();
       assertThat(tasks.size(), is(1));
 
       tasks = taskBackend.filter(Optional.of(vmEntity.getId()), Optional.of(Vm.KIND),
-          Optional.of(TaskEntity.State.QUEUED.toString()), Optional.<Integer>absent());
+          Optional.of(TaskEntity.State.QUEUED.toString()), Optional.<Integer>absent()).getItems();
       assertThat(tasks.size(), is(1));
 
       tasks = taskBackend.filter(Optional.of(vmEntity.getId()), Optional.of(Vm.KIND),
-          Optional.of(TaskEntity.State.COMPLETED.toString()), Optional.<Integer>absent());
+          Optional.of(TaskEntity.State.COMPLETED.toString()), Optional.<Integer>absent()).getItems();
       assertThat(tasks.size(), is(0));
 
       tasks = taskBackend.filter(Optional.of(UUID.randomUUID().toString()), Optional.of(Vm.KIND),
-          Optional.of(TaskEntity.State.QUEUED.toString()), Optional.<Integer>absent());
+          Optional.of(TaskEntity.State.QUEUED.toString()), Optional.<Integer>absent()).getItems();
       assertThat(tasks.size(), is(0));
 
       PersistentDiskEntity persistentDiskEntity = new PersistentDiskEntity();
@@ -523,7 +523,7 @@ public class TaskDcpBackendTest {
 
       // test with state only
       tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(),
-          Optional.of(TaskEntity.State.QUEUED.toString()), Optional.<Integer>absent());
+          Optional.of(TaskEntity.State.QUEUED.toString()), Optional.<Integer>absent()).getItems();
       assertThat(tasks.size(), is(2));
 
       // test different capitalization of KIND
@@ -531,7 +531,7 @@ public class TaskDcpBackendTest {
           Optional.of(persistentDiskEntity.getId()),
           Optional.of(PersistentDisk.KIND.toUpperCase()),
           Optional.of(TaskEntity.State.QUEUED.toString()),
-          Optional.<Integer>absent());
+          Optional.<Integer>absent()).getItems();
       assertThat(tasks.size(), is(1));
 
       // test different capitalization for state
@@ -539,7 +539,7 @@ public class TaskDcpBackendTest {
           Optional.of(persistentDiskEntity.getId()),
           Optional.of(PersistentDisk.KIND),
           Optional.of(TaskEntity.State.QUEUED.toString().toLowerCase()),
-          Optional.<Integer>absent());
+          Optional.<Integer>absent()).getItems();
       assertThat(tasks.size(), is(1));
 
       // test with missing state and different capitalization of kind
@@ -547,12 +547,12 @@ public class TaskDcpBackendTest {
           Optional.of(persistentDiskEntity.getId()),
           Optional.of(PersistentDisk.KIND.toUpperCase()),
           Optional.<String>absent(),
-          Optional.<Integer>absent());
+          Optional.<Integer>absent()).getItems();
       assertThat(tasks.size(), is(1));
 
       // test with all optional params missing
       tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(), Optional.<String>absent(),
-          Optional.<Integer>absent());
+          Optional.<Integer>absent()).getItems();
       assertThat(tasks.size(), is(initialTaskCount + 2));
     }
 
@@ -572,7 +572,7 @@ public class TaskDcpBackendTest {
     @Test
     public void testFilterInProject() throws Throwable {
       List<Task> tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(),
-          Optional.<String>absent(), Optional.<Integer>absent());
+          Optional.<String>absent(), Optional.<Integer>absent()).getItems();
 
       int initialTaskCount = tasks.size();
 
@@ -587,22 +587,22 @@ public class TaskDcpBackendTest {
       }
 
       tasks = taskBackend.filterInProject(projectId,
-          Optional.<String>absent(), Optional.<String>absent(), Optional.<Integer>absent());
+          Optional.<String>absent(), Optional.<String>absent(), Optional.<Integer>absent()).getItems();
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
 
       tasks = taskBackend.filterInProject(projectId,
-          Optional.of("QUEUED"), Optional.<String>absent(), Optional.<Integer>absent());
+          Optional.of("QUEUED"), Optional.<String>absent(), Optional.<Integer>absent()).getItems();
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
 
       tasks = taskBackend.filterInProject(projectId,
-          Optional.<String>absent(), Optional.of("vm"), Optional.<Integer>absent());
+          Optional.<String>absent(), Optional.of("vm"), Optional.<Integer>absent()).getItems();
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
 
       tasks = taskBackend.filterInProject(projectId,
-          Optional.of("QUEUED"), Optional.of("vm"), Optional.<Integer>absent());
+          Optional.of("QUEUED"), Optional.of("vm"), Optional.<Integer>absent()).getItems();
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
     }

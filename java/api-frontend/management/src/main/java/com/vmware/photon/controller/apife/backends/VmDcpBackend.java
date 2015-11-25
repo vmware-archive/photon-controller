@@ -26,6 +26,7 @@ import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Tag;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
@@ -282,10 +283,11 @@ public class VmDcpBackend implements VmBackend {
   }
 
   @Override
-  public List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException {
+  public ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize)
+      throws ExternalException {
+
     VmEntity vm = findById(id);
-    // Not consuming pageSize now. Too much stuff is using taskBackend.filter
-    return taskBackend.filter(vm.getId(), vm.getKind(), state);
+    return taskBackend.filter(vm.getId(), vm.getKind(), state, pageSize);
   }
 
   @Override

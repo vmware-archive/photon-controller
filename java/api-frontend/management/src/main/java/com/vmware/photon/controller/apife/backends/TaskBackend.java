@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -36,13 +37,14 @@ public interface TaskBackend {
 
   Task getApiRepresentation(TaskEntity task) throws TaskNotFoundException;
 
-  List<Task> filter(String entityId, String entityKind, Optional<String> state) throws ExternalException;
+  ResourceList<Task> filter(String entityId, String entityKind, Optional<String> state,
+                            Optional<Integer> pageSize) throws ExternalException;
 
-  List<Task> filter(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
-                    Optional<Integer> pageSize) throws ExternalException;
+  ResourceList<Task> filter(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
+                            Optional<Integer> pageSize) throws ExternalException;
 
-  List<Task> filterInProject(String projectId, Optional<String> state, Optional<String> kind,
-                             Optional<Integer> pageSize);
+  ResourceList<Task> filterInProject(String projectId, Optional<String> state, Optional<String> kind,
+                                     Optional<Integer> pageSize);
 
   TaskEntity createQueuedTask(BaseEntity entity, Operation operation);
 
@@ -63,8 +65,9 @@ public interface TaskBackend {
 
   void update(TaskEntity task) throws TaskNotFoundException;
 
-  List<TaskEntity> getEntityTasks(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
-                                  Optional<Integer> pageSize) throws InvalidQueryParamsException;
+  ResourceList<TaskEntity> getEntityTasks(Optional<String> entityId, Optional<String> entityKind,
+                                          Optional<String> state, Optional<Integer> pageSize)
+      throws InvalidQueryParamsException;
 
   void delete(TaskEntity task);
 
