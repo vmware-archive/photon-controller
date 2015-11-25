@@ -42,7 +42,7 @@ public interface FlavorBackend {
 
   FlavorEntity getEntityById(String id) throws ExternalException;
 
-  List<Task> getTasks(String id, Optional<String> state) throws ExternalException;
+  List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   void tombstone(FlavorEntity flavor) throws ExternalException;
 }

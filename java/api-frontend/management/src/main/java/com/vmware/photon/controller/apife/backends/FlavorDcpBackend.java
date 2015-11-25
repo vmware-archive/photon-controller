@@ -196,8 +196,9 @@ public class FlavorDcpBackend implements FlavorBackend {
   }
 
   @Override
-  public List<Task> getTasks(String id, Optional<String> state) throws ExternalException {
+  public List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException {
     FlavorService.State flavor = findById(id);
+    // will consume pageSize in later CR.
     return taskBackend.filter(id, flavor.kind, state);
   }
 

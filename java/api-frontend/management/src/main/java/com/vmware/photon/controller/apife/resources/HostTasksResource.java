@@ -59,12 +59,13 @@ public class HostTasksResource {
       response = Task.class, responseContainer = ResourceList.CLASS_NAME)
   public Response get(@Context Request request,
                       @PathParam("id") String id,
-                      @QueryParam("state") Optional<String> state)
+                      @QueryParam("state") Optional<String> state,
+                      @QueryParam("pageSize") Optional<Integer> pageSize)
       throws ExternalException {
 
     return generateResourceListResponse(
         Response.Status.OK,
-        taskFeClient.getHostTasks(id, state),
+        taskFeClient.getHostTasks(id, state, pageSize),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

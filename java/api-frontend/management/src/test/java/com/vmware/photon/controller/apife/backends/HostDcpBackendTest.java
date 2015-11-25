@@ -280,15 +280,15 @@ public class HostDcpBackendTest {
 
     @Test
     public void testGetTasks() throws Throwable {
-      List<Task> taskList = hostBackend.getTasks(hostId, Optional.<String>absent());
+      List<Task> taskList = hostBackend.getTasks(hostId, Optional.<String>absent(), Optional.<Integer>absent());
       assertThat(taskList.size(), is(1));
 
       hostBackend.updateState(hostBackend.findById(hostId), HostState.READY);
       hostBackend.suspend(hostId);
-      taskList = hostBackend.getTasks(hostId, Optional.<String>absent());
+      taskList = hostBackend.getTasks(hostId, Optional.<String>absent(), Optional.<Integer>absent());
       assertThat(taskList.size(), is(2));
 
-      taskList = hostBackend.getTasks(hostId, Optional.of(TaskEntity.State.QUEUED.name()));
+      taskList = hostBackend.getTasks(hostId, Optional.of(TaskEntity.State.QUEUED.name()), Optional.<Integer>absent());
       assertThat(taskList.size(), is(2));
     }
 

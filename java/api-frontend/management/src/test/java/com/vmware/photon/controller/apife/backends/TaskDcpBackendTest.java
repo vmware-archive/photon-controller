@@ -587,22 +587,22 @@ public class TaskDcpBackendTest {
       }
 
       tasks = taskBackend.filterInProject(projectId,
-          Optional.<String>absent(), Optional.<String>absent());
+          Optional.<String>absent(), Optional.<String>absent(), Optional.<Integer>absent());
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
 
       tasks = taskBackend.filterInProject(projectId,
-          Optional.of("QUEUED"), Optional.<String>absent());
+          Optional.of("QUEUED"), Optional.<String>absent(), Optional.<Integer>absent());
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
 
       tasks = taskBackend.filterInProject(projectId,
-          Optional.<String>absent(), Optional.of("vm"));
+          Optional.<String>absent(), Optional.of("vm"), Optional.<Integer>absent());
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
 
       tasks = taskBackend.filterInProject(projectId,
-          Optional.of("QUEUED"), Optional.of("vm"));
+          Optional.of("QUEUED"), Optional.of("vm"), Optional.<Integer>absent());
 
       assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
     }
