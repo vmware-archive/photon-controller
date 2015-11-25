@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.model;
 
 import com.vmware.photon.controller.model.tasks.ProvisionComputeTaskFactoryService;
+import com.vmware.photon.controller.model.tasks.ResourceAllocationTaskFactoryService;
 import com.vmware.photon.controller.model.tasks.ResourceEnumerationTaskFactoryService;
 import com.vmware.photon.controller.model.tasks.ResourceRemovalTaskFactoryService;
 
@@ -23,6 +24,7 @@ import com.vmware.photon.controller.model.tasks.ResourceRemovalTaskFactoryServic
 public class TaskServices {
   public static final Class[] FACTORIES = {
       ProvisionComputeTaskFactoryService.class,
+      ResourceAllocationTaskFactoryService.class,
       ResourceEnumerationTaskFactoryService.class,
       ResourceRemovalTaskFactoryService.class
   };

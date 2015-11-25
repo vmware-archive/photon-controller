@@ -84,9 +84,7 @@ public class ProvisionComputeTaskServiceTest {
 
     @Test
     public void testValidateComputeHost() throws Throwable {
-      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(
-          host,
-          ComputeType.VM_HOST);
+      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(host);
 
       ProvisionComputeTaskService.ProvisionComputeTaskState startState =
           new ProvisionComputeTaskService.ProvisionComputeTaskState();
@@ -99,20 +97,18 @@ public class ProvisionComputeTaskServiceTest {
           startState,
           ProvisionComputeTaskService.ProvisionComputeTaskState.class);
 
-      ProvisionComputeTaskService.ProvisionComputeTaskState startedState = host.waitForServiceState(
+      ProvisionComputeTaskService.ProvisionComputeTaskState completeState = host.waitForServiceState(
           ProvisionComputeTaskService.ProvisionComputeTaskState.class,
           returnState.documentSelfLink,
           state -> TaskState.TaskStage.FINISHED.ordinal() <= state.taskInfo.stage.ordinal()
       );
 
-      assertThat(startedState.taskInfo.stage, is(TaskState.TaskStage.FINISHED));
+      assertThat(completeState.taskInfo.stage, is(TaskState.TaskStage.FINISHED));
     }
 
     @Test
     public void testMissingComputeLink() throws Throwable {
-      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(
-          host,
-          ComputeType.VM_HOST);
+      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(host);
 
       ProvisionComputeTaskService.ProvisionComputeTaskState startState =
           new ProvisionComputeTaskService.ProvisionComputeTaskState();
@@ -127,9 +123,7 @@ public class ProvisionComputeTaskServiceTest {
 
     @Test
     public void testMissingSubStage() throws Throwable {
-      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(
-          host,
-          ComputeType.VM_HOST);
+      ComputeService.ComputeStateWithDescription cs = ModelUtils.createComputeWithDescription(host);
 
       ProvisionComputeTaskService.ProvisionComputeTaskState startState =
           new ProvisionComputeTaskService.ProvisionComputeTaskState();
@@ -166,14 +160,14 @@ public class ProvisionComputeTaskServiceTest {
           startState,
           ProvisionComputeTaskService.ProvisionComputeTaskState.class);
 
-      ProvisionComputeTaskService.ProvisionComputeTaskState startedState = host.waitForServiceState(
+      ProvisionComputeTaskService.ProvisionComputeTaskState completeState = host.waitForServiceState(
           ProvisionComputeTaskService.ProvisionComputeTaskState.class,
           returnState.documentSelfLink,
           state -> TaskState.TaskStage.FINISHED.ordinal() <= state.taskInfo.stage.ordinal()
       );
 
-      assertThat(startedState.taskInfo.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(startedState.taskInfo.failure.message, is("computeHost does not have create service specified"));
+      assertThat(completeState.taskInfo.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(completeState.taskInfo.failure.message, is("computeHost does not have create service specified"));
     }
   }
 
@@ -204,13 +198,13 @@ public class ProvisionComputeTaskServiceTest {
           startState,
           ProvisionComputeTaskService.ProvisionComputeTaskState.class);
 
-      ProvisionComputeTaskService.ProvisionComputeTaskState startedState = host.waitForServiceState(
+      ProvisionComputeTaskService.ProvisionComputeTaskState completeState = host.waitForServiceState(
           ProvisionComputeTaskService.ProvisionComputeTaskState.class,
           returnState.documentSelfLink,
           state -> TaskState.TaskStage.FINISHED.ordinal() <= state.taskInfo.stage.ordinal()
       );
 
-      assertThat(startedState.taskInfo.stage, is(TaskState.TaskStage.FINISHED));
+      assertThat(completeState.taskInfo.stage, is(TaskState.TaskStage.FINISHED));
     }
 
     @Test
@@ -231,13 +225,13 @@ public class ProvisionComputeTaskServiceTest {
           startState,
           ProvisionComputeTaskService.ProvisionComputeTaskState.class);
 
-      ProvisionComputeTaskService.ProvisionComputeTaskState startedState = host.waitForServiceState(
+      ProvisionComputeTaskService.ProvisionComputeTaskState completeState = host.waitForServiceState(
           ProvisionComputeTaskService.ProvisionComputeTaskState.class,
           returnState.documentSelfLink,
           state -> TaskState.TaskStage.FINISHED.ordinal() <= state.taskInfo.stage.ordinal()
       );
 
-      assertThat(startedState.taskInfo.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(completeState.taskInfo.stage, is(TaskState.TaskStage.FAILED));
     }
 
     @Test
@@ -258,13 +252,13 @@ public class ProvisionComputeTaskServiceTest {
           startState,
           ProvisionComputeTaskService.ProvisionComputeTaskState.class);
 
-      ProvisionComputeTaskService.ProvisionComputeTaskState startedState = host.waitForServiceState(
+      ProvisionComputeTaskService.ProvisionComputeTaskState completeState = host.waitForServiceState(
           ProvisionComputeTaskService.ProvisionComputeTaskState.class,
           returnState.documentSelfLink,
           state -> TaskState.TaskStage.FINISHED.ordinal() <= state.taskInfo.stage.ordinal()
       );
 
-      assertThat(startedState.taskInfo.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(completeState.taskInfo.stage, is(TaskState.TaskStage.FAILED));
     }
   }
 }
