@@ -37,6 +37,8 @@ import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryS
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.UpdateHostDatastoresTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UpdateHostDatastoresTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.ValidateAgentTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ValidateAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 
@@ -71,6 +73,7 @@ public class ProvisionHostWorkflowService extends StatefulService {
     public enum SubStage {
       DEPLOY_AGENT,
       PROVISION_AGENT,
+      VALIDATE_AGENT_STATUS,
       UPDATE_DATASTORES
     }
   }
@@ -298,6 +301,9 @@ public class ProvisionHostWorkflowService extends StatefulService {
       case PROVISION_AGENT:
         provisionAgentTask(currentState);
         break;
+      case VALIDATE_AGENT_STATUS:
+        validateAgentTask(currentState);
+        break;
       case UPDATE_DATASTORES:
         updateDataStoreTask(currentState);
         break;
@@ -366,6 +372,61 @@ public class ProvisionHostWorkflowService extends StatefulService {
     return startState;
   }
 
+  private void validateAgentTask(State currentState) {
+    final Service service = this;
+
+    FutureCallback<ValidateAgentTaskService.State> callback = new FutureCallback<ValidateAgentTaskService.State>() {
+      @Override
+      public void onSuccess(@Nullable ValidateAgentTaskService.State result) {
+        switch (result.taskState.stage) {
+          case FINISHED:
+            TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.STARTED,
+                TaskState.SubStage.UPDATE_DATASTORES, null));
+            break;
+          case FAILED:
+            State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+            patchState.taskState.failure = result.taskState.failure;
+            TaskUtils.sendSelfPatch(service, patchState);
+            break;
+          case CANCELLED:
+            TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
+            break;
+          default:
+            failTask(new RuntimeException("Unexected API-FE task.stage [" + result.taskState.stage.name() + "]"));
+            break;
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        failTask(t);
+      }
+    };
+
+    ValidateAgentTaskService.State startState = createValidateAgentTaskState(currentState);
+
+    TaskUtils.startTaskAsync(
+        this,
+        ValidateAgentTaskFactoryService.SELF_LINK,
+        startState,
+        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+        ValidateAgentTaskService.State.class,
+        currentState.taskPollDelay,
+        callback);
+  }
+
+  /**
+   * This method creates a {@link ValidateAgentTaskService.State} object from the current state.
+   *
+   * @param currentState Supplies the current state object.
+   * @return
+   */
+  private ValidateAgentTaskService.State createValidateAgentTaskState(State currentState) {
+    ValidateAgentTaskService.State startState = new ValidateAgentTaskService.State();
+    startState.hostServiceLink = currentState.hostServiceLink;
+    return startState;
+  }
+
   private void provisionAgentTask(State currentState) {
     final Service service = this;
 
@@ -390,7 +451,7 @@ public class ProvisionHostWorkflowService extends StatefulService {
                                 TaskUtils.sendSelfPatch(service,
                                   buildPatch(
                                     TaskState.TaskStage.STARTED,
-                                    TaskState.SubStage.UPDATE_DATASTORES, null));
+                                    TaskState.SubStage.VALIDATE_AGENT_STATUS, null));
                               }
                             }
                         ));
