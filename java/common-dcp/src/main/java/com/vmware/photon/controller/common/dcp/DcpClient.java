@@ -61,6 +61,9 @@ public interface DcpClient {
   Operation query(QueryTask.QuerySpecification spec, boolean isDirect)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
+  Operation query(QueryTask queryTask)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
+
   <T extends ServiceDocument> List<T> queryDocuments(Class<T> documentType,
                                                      ImmutableMap<String, String> terms)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
