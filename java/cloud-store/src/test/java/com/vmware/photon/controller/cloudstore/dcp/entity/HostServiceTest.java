@@ -14,23 +14,36 @@
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocumentDescription;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.collect.ImmutableSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.net.InetSocketAddress;
@@ -38,6 +51,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
@@ -45,6 +59,8 @@ import java.util.concurrent.Executors;
  * This class implements tests for the {@link HostService} class.
  */
 public class HostServiceTest {
+
+  private final Logger logger = LoggerFactory.getLogger(HostServiceTest.class);
 
   private DcpRestClient dcpRestClient;
   private BasicServiceHost host;
@@ -130,6 +146,7 @@ public class HostServiceTest {
       assertThat(savedState.esxVersion, is("6.0"));
       assertThat(savedState.usageTags, is(usageTags));
       assertThat(savedState.reportedImageDatastores, is(new HashSet<>(Arrays.asList("datastore1"))));
+      assertThat(savedState.schedulingConstant, notNullValue());
     }
 
     @DataProvider(name = "UsageTagValues")
@@ -457,6 +474,79 @@ public class HostServiceTest {
           .getBody(HostService.State.class);
       assertThat(savedState.cpuCount, is(2));
       assertThat(savedState.memoryMb, is(4096));
+    }
+  }
+
+  /**
+   * This class implements tests for queries over {@link HostService} documents.
+   */
+  public class QueryTest {
+
+    public static final int HOST_COUNT = 100;
+
+    private final Random random = new Random();
+
+    private TestEnvironment testEnvironment;
+
+    @BeforeClass
+    public void setUpClass() throws Throwable {
+
+      testEnvironment = TestEnvironment.create(1);
+
+      for (int i = 0; i < HOST_COUNT; i++) {
+        HostService.State hostState = TestHelper.getHostServiceStartState();
+        Operation completedOp = testEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK, hostState);
+        assertThat(completedOp.getStatusCode(), is(200));
+      }
+    }
+
+    @AfterClass
+    public void tearDownClass() throws Throwable {
+      testEnvironment.stop();
+    }
+
+    @Test
+    public void queryHosts() throws Throwable {
+
+      QueryTask.Query kindClause = QueryTask.Query.Builder.create()
+          .addKindFieldClause(HostService.State.class)
+          .build();
+
+      QueryTask queryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(kindClause)
+          .build();
+
+      NodeGroupBroadcastResponse broadcastResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(broadcastResponse);
+      assertThat(documentLinks.size(), is(HOST_COUNT));
+    }
+
+    @Test
+    public void queryHostsSortedBySchedulingConstant() throws Throwable {
+
+      QueryTask.Query kindClause = QueryTask.Query.Builder.create()
+          .addKindFieldClause(HostService.State.class)
+          .build();
+
+      QueryTask queryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(kindClause)
+          .orderDescending(HostService.State.FIELD_NAME_SCHEDULING_CONSTANT, ServiceDocumentDescription.TypeName.LONG)
+          .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
+          .build();
+
+      QueryTask completedQueryTask = testEnvironment.sendQueryAndWait(queryTask);
+      ServiceDocumentQueryResult queryResult = completedQueryTask.results;
+      logger.info("Verifying sort order for {} hosts", queryResult.documents.size());
+
+      HostService.State previous = null;
+      for (String documentLink : queryResult.documentLinks) {
+        HostService.State current = Utils.fromJson(queryResult.documents.get(documentLink), HostService.State.class);
+        logger.info("Found host with scheduling constant {}", current.schedulingConstant);
+        if (null != previous) {
+          assertTrue(current.schedulingConstant <= previous.schedulingConstant);
+        }
+        previous = current;
+      }
     }
   }
 }
