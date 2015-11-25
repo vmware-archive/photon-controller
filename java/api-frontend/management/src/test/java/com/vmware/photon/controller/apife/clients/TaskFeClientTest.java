@@ -72,12 +72,13 @@ public class TaskFeClientTest {
       Optional id = Optional.of("id");
       Optional kind = Optional.of("kind");
       Optional state = Optional.of("state");
+      Optional pageSize = Optional.of(10);
 
-      ResourceList result = feClient.find(id, kind, state);
+      ResourceList result = feClient.find(id, kind, state, pageSize);
       assertThat(result, notNullValue());
       assertThat(result.getItems().size(), is(0));
 
-      verify(taskBackend).filter(id, kind, state);
+      verify(taskBackend).filter(id, kind, state, pageSize);
     }
   }
 
