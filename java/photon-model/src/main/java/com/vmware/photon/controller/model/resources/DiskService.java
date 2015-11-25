@@ -50,7 +50,7 @@ public class DiskService extends StatefulService {
 
   /**
    * This class represents the document state associated with a
-   * {@link com.vmware.photon.controller.provisioning.resources.DiskService} task.
+   * {@link com.vmware.photon.controller.model.resources.DiskService} task.
    */
   public static class Disk extends ServiceDocument {
     /**
