@@ -92,15 +92,15 @@ module EsxCloud
       # @param [String] deployment_id
       # @param [String] payload
       # @return [ClusterConfiguration]
-      def configure_cluster(deployment_id, payload)
-        @api_client.configure_cluster(deployment_id, payload)
+      def enable_cluster_type(deployment_id, payload)
+        @api_client.enable_cluster_type(deployment_id, payload)
       end
 
       # @param [String] deployment_id
       # @param [String] payload
       # @return [Boolean]
-      def delete_cluster_configuration(deployment_id, payload)
-        @api_client.delete_cluster_configuration(deployment_id, payload)
+      def disable_cluster_type(deployment_id, payload)
+        @api_client.disable_cluster_type(deployment_id, payload)
       end
     end
   end

@@ -185,7 +185,7 @@ public class DeploymentResource {
   }
 
   @POST
-  @Path(DeploymentResourceRoutes.CONFIGURE_CLUSTER_ACTION)
+  @Path(DeploymentResourceRoutes.ENABLE_CLUSTER_TYPE_ACTION)
   @ApiOperation(value = "Configures a given type of cluster associated with the Deployment",
       response = ClusterConfiguration.class)
   public Response configCluster(@Context Request request,
@@ -196,11 +196,11 @@ public class DeploymentResource {
         Response.Status.OK,
         client.configureCluster(id, spec),
         (ContainerRequest) request,
-        DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.CONFIGURE_CLUSTER_ACTION);
+        DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.ENABLE_CLUSTER_TYPE_ACTION);
   }
 
   @POST
-  @Path(DeploymentResourceRoutes.DELETE_CLUSTER_CONFIGURATION_ACTION)
+  @Path(DeploymentResourceRoutes.DISABLE_CLUSTER_TYPE_ACTION)
   @ApiOperation(value = "Delete cluster configuration for a give cluster type", response = Task.class)
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = "Task created, cluster configuration delete process can be fetched " +

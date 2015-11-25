@@ -216,26 +216,26 @@ describe EsxCloud::ApiClient do
     client.get_deployment_hosts("foo").should == hosts
   end
 
-  it "configures cluster for deployment" do
+  it "enables cluster type for deployment" do
     configuration = double(EsxCloud::ClusterConfiguration)
 
     expect(@http_client).to receive(:post_json)
-                            .with("/deployments/foo/configure_cluster", "payload")
+                            .with("/deployments/foo/enable_cluster_type", "payload")
                             .and_return(ok_response("cluster_configuration"))
     expect(EsxCloud::ClusterConfiguration).to receive(:create_from_json).with("cluster_configuration")
       .and_return(configuration)
 
-    expect(client.configure_cluster("foo", "payload")).to eq configuration
+    expect(client.enable_cluster_type("foo", "payload")).to eq configuration
   end
 
-  it "deletes cluster configuration for deployment" do
+  it "disables cluster type for deployment" do
     expect(@http_client).to receive(:post_json)
-                            .with("/deployments/foo/delete_cluster_configuration", "payload")
+                            .with("/deployments/foo/disable_cluster_type", "payload")
                             .and_return(task_created("randomid"))
     expect(@http_client).to receive(:get)
                             .with(URL_HOST + "/tasks/randomid")
                             .and_return(task_done("randomid", "entity_id"))
-    finished = client.delete_cluster_configuration("foo", "payload")
+    finished = client.disable_cluster_type("foo", "payload")
     expect(finished).to eq(true)
   end
 

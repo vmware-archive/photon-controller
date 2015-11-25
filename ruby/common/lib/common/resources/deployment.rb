@@ -47,15 +47,15 @@ module EsxCloud
     # @param [String] deployment_id
     # @param [ClusterConfigurationSpec] spec
     # @return [ClusterConfiguration]
-    def self.configure_cluster(deployment_id, spec)
-      Config.client.configure_cluster(deployment_id, spec.to_hash)
+    def self.enable_cluster_type(deployment_id, spec)
+      Config.client.enable_cluster_type(deployment_id, spec.to_hash)
     end
 
     # @param [String] deployment_id
     # @param [ClusterConfigurationSpec] spec
     # @return [Boolean]
-    def self.delete_cluster_configuration(deployment_id, spec)
-      Config.client.delete_cluster_configuration(deployment_id, spec.to_hash)
+    def self.disable_cluster_type(deployment_id, spec)
+      Config.client.disable_cluster_type(deployment_id, spec.to_hash)
     end
 
     # @param [String] json
