@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageSetting;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
@@ -238,10 +239,11 @@ public class ImageDcpBackend implements ImageBackend {
   }
 
   @Override
-  public List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException {
+  public ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize)
+      throws ExternalException {
+
     ImageEntity imageEntity = findById(id);
-    // Will consume the pageSize in later CR.
-    return taskBackend.filter(imageEntity.getId(), imageEntity.getKind(), state);
+    return taskBackend.filter(imageEntity.getId(), imageEntity.getKind(), state, pageSize);
   }
 
   @Override

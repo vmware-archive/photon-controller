@@ -43,6 +43,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -342,7 +343,7 @@ public class DcpRestClient implements DcpClient {
     if (pageSize.isPresent() && queryResult.nextPageLink != null) {
       // Pagination case, the first query always return empty set. Need to
       // go ahead and get the first page if the nextPageLink is not null.
-      return queryDocumentPage(queryResult.nextPageLink);
+      return queryDocumentPage(encodePageLink(queryResult.nextPageLink));
     } else {
       // No pagination, the result already has the content.
       return queryResult;
@@ -366,9 +367,15 @@ public class DcpRestClient implements DcpClient {
     checkNotNull(pageLink, "Cannot query documents with null pageLink");
     checkArgument(!pageLink.isEmpty(), "Cannot query documents with empty pageLink");
 
+    pageLink = decodePageLink(pageLink);
+
     Operation result = get(pageLink);
 
-    return result.getBody(QueryTask.class).results;
+    ServiceDocumentQueryResult queryResult = result.getBody(QueryTask.class).results;
+    queryResult.nextPageLink = encodePageLink(queryResult.nextPageLink);
+    queryResult.prevPageLink = encodePageLink(queryResult.prevPageLink);
+
+    return queryResult;
   }
 
   /**
@@ -740,5 +747,21 @@ public class DcpRestClient implements DcpClient {
 
     throw new TimeoutException(String.format("Timeout:{%s}, TimeUnit:{%s}", result.getExpirationMicrosUtc(),
         TimeUnit.MICROSECONDS));
+  }
+
+  private String encodePageLink(String pageLink) {
+    if (pageLink != null) {
+      return Base64.getUrlEncoder().encodeToString(pageLink.getBytes());
+    } else {
+      return null;
+    }
+  }
+
+  private String decodePageLink(String pageLink) {
+    if (pageLink != null) {
+      return new String(Base64.getUrlDecoder().decode(pageLink.getBytes()));
+    } else {
+      return null;
+    }
   }
 }

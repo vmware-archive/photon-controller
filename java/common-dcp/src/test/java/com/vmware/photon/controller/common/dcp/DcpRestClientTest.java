@@ -666,6 +666,9 @@ public class DcpRestClientTest {
 
       doReturn(1L).when(dcpRestClient).getServiceDocumentStatusCheckIntervalMillis();
 
+      checkNoDocumentsRetrieved(Optional.<Integer>absent());
+      checkNoDocumentsRetrieved(Optional.of(pageSize));
+
       Map<String, ExampleService.ExampleServiceState> exampleServiceStateMap = new HashMap<>();
       for (int i = 0; i < numDocuments; i++) {
         ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
@@ -940,6 +943,9 @@ public class DcpRestClientTest {
       final int numDocuments = 100;
       final int pageSize = 30;
 
+      checkNoDocumentsRetrieved(Optional.<Integer>absent());
+      checkNoDocumentsRetrieved(Optional.of(pageSize));
+
       Map<String, ExampleService.ExampleServiceState> exampleServiceStateMap = new HashMap<>();
       for (int i = 0; i < numDocuments; i++) {
         ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
@@ -965,6 +971,15 @@ public class DcpRestClientTest {
         checkDocumentsRetrievedPageByPage(1, pageSize, termsBuilder.build(), true, ImmutableSet.of(entry.getValue()));
       }
     }
+  }
+
+  private void checkNoDocumentsRetrieved(Optional<Integer> pageSize) throws Throwable {
+    ServiceDocumentQueryResult queryResult = dcpRestClient.queryDocuments(ExampleService.ExampleServiceState.class,
+        null, pageSize, false);
+
+    assertThat(queryResult.documentCount, is(0L));
+    assertNull(queryResult.nextPageLink);
+    assertNull(queryResult.prevPageLink);
   }
 
   private void checkDocumentsRetrievedInAll(int numDocuments,
