@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.backends;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
 import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -43,7 +44,7 @@ public interface HostBackend {
 
   List<Host> filterByUsage(UsageTag usageTag);
 
-  List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
+  ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   Host toApiRepresentation(String id) throws HostNotFoundException;
 

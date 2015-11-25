@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.AvailabilityZone;
 import com.vmware.photon.controller.api.AvailabilityZoneCreateSpec;
 import com.vmware.photon.controller.api.AvailabilityZoneState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
@@ -123,10 +124,10 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
   }
 
   @Override
-  public List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException {
+  public ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize)
+      throws ExternalException {
     AvailabilityZoneEntity availabilityZoneEntity = getEntityById(id);
-    // Will consume pageSize in later CR.
-    return taskBackend.filter(availabilityZoneEntity.getId(), availabilityZoneEntity.getKind(), state);
+    return taskBackend.filter(availabilityZoneEntity.getId(), availabilityZoneEntity.getKind(), state, pageSize);
   }
 
   @Override

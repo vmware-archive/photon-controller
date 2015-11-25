@@ -242,14 +242,15 @@ public class FlavorDcpBackendTest {
       TaskEntity taskEntity = flavorBackend.createFlavor(spec);
       String flavorId = taskEntity.getEntityId();
 
-      List<Task> tasks = flavorBackend.getTasks(flavorId, Optional.<String>absent(), Optional.<Integer>absent());
+      List<Task> tasks = flavorBackend.getTasks(flavorId, Optional.<String>absent(), Optional.<Integer>absent())
+          .getItems();
 
       assertThat(tasks.size(), is(1));
       assertThat(tasks.get(0).getState(), is(TaskEntity.State.COMPLETED.toString()));
       assertThat(tasks.get(0).getEntity().getId(), is(flavorId));
 
       tasks = flavorBackend.getTasks(flavorId, Optional.of(TaskEntity.State.QUEUED.toString()),
-          Optional.<Integer>absent());
+          Optional.<Integer>absent()).getItems();
       assertThat(tasks.size(), is(0));
     }
   }

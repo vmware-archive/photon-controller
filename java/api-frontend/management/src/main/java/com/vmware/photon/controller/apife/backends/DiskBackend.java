@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.DiskCreateSpec;
 import com.vmware.photon.controller.api.DiskState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
@@ -56,7 +57,7 @@ public interface DiskBackend {
   void createVmDiskOperationStep(TaskEntity task, VmEntity vm, List<String> diskIds,
                                  Operation operation) throws ExternalException;
 
-  List<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
+  ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   BaseDiskEntity find(String kind, String id) throws DiskNotFoundException;
 
