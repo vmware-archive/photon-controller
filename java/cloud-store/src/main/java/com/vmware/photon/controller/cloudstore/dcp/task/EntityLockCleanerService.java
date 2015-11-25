@@ -52,6 +52,7 @@ import java.util.Map;
 public class EntityLockCleanerService extends StatefulService {
 
   public static final Integer ENTITY_LOCK_DEFAULT_PAGE_LIMIT = 1000;
+  public static final long ENTITY_LOCK_DEFAULT_DELETE_WATERMARK_TIME_MILLIS = 5 * 60 * 1000L;
   private static final String DOCUMENT_UPDATE_TIME_MICROS = "documentUpdateTimeMicros";
 
   public EntityLockCleanerService() {
@@ -457,7 +458,7 @@ public class EntityLockCleanerService extends StatefulService {
     /**
      * Duration that controls how old the entity locks should be for cleaning.
      */
-    @DefaultLong(value = 0)
+    @DefaultLong(value = ENTITY_LOCK_DEFAULT_DELETE_WATERMARK_TIME_MILLIS)
     public Long entityLockDeleteWatermarkTimeInMicros;
 
   }
