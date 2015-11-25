@@ -92,6 +92,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     public enum SubStage {
       CREATE_MANAGEMENT_PLANE_LAYOUT,
       BUILD_RUNTIME_CONFIGURATION,
+      SET_QUORUM_ON_DEPLOYMENT_ENTITY,
       PROVISION_MANAGEMENT_HOSTS,
       CREATE_MANAGEMENT_PLANE,
       PROVISION_CLOUD_HOSTS,
@@ -236,6 +237,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
       switch (currentState.taskState.subStage) {
         case CREATE_MANAGEMENT_PLANE_LAYOUT:
         case BUILD_RUNTIME_CONFIGURATION:
+        case SET_QUORUM_ON_DEPLOYMENT_ENTITY:
         case PROVISION_MANAGEMENT_HOSTS:
         case CREATE_MANAGEMENT_PLANE:
         case PROVISION_CLOUD_HOSTS:
@@ -315,6 +317,9 @@ public class AddManagementHostWorkflowService extends StatefulService {
         break;
       case BUILD_RUNTIME_CONFIGURATION:
         processBuildRuntimeConfiguration(currentState, deploymentService);
+        break;
+      case SET_QUORUM_ON_DEPLOYMENT_ENTITY:
+        queryChairmanContainerTemplate(currentState);
         break;
       case PROVISION_MANAGEMENT_HOSTS:
         processProvisionManagementHosts(currentState, deploymentService);
@@ -410,7 +415,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
           case FINISHED:
             TaskUtils.sendSelfPatch(service, buildPatch(
                 TaskState.TaskStage.STARTED,
-                TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
+                TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY,
                 null));
             break;
           case FAILED:
@@ -453,11 +458,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
   private void processProvisionManagementHosts(State currentState, DeploymentService.State deploymentService)
       throws Throwable {
-    if (null == deploymentService.chairmanServerList) {
-      queryChairmanContainerTemplate(currentState);
-    } else {
-      bulkProvisionManagementHosts(currentState, deploymentService);
-    }
+    bulkProvisionManagementHosts(currentState, deploymentService);
   }
 
   private void queryChairmanContainerTemplate(final State currentState) {
