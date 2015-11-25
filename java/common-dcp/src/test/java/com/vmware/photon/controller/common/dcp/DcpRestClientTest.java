@@ -604,6 +604,8 @@ public class DcpRestClientTest {
       final int numDocuments = 100;
       final int pageSize = 30;
 
+      doReturn(1L).when(dcpRestClient).getServiceDocumentStatusCheckIntervalMillis();
+
       Map<String, ExampleService.ExampleServiceState> exampleServiceStateMap = new HashMap<>();
       for (int i = 0; i < numDocuments; i++) {
         ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
