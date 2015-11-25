@@ -194,8 +194,8 @@ module EsxCloud
       # @param [String] deployment_id
       # @param [String] payload
       # @return [ClusterConfiguration]
-      def configure_cluster(deployment_id, payload)
-        response = @http_client.post_json("#{DEPLOYMENTS_ROOT}/#{deployment_id}/configure_cluster", payload)
+      def enable_cluster_type(deployment_id, payload)
+        response = @http_client.post_json("#{DEPLOYMENTS_ROOT}/#{deployment_id}/enable_cluster_type", payload)
         check_response("Config cluster for deployment '#{deployment_id}'", response, 200)
 
         ClusterConfiguration.create_from_json(response.body)
@@ -204,9 +204,9 @@ module EsxCloud
       # @param [String] deployment_id
       # @param [String] payload
       # @return [Boolean]
-      def delete_cluster_configuration(deployment_id, payload)
+      def disable_cluster_type(deployment_id, payload)
         puts payload
-        response = @http_client.post_json("#{DEPLOYMENTS_ROOT}/#{deployment_id}/delete_cluster_configuration", payload)
+        response = @http_client.post_json("#{DEPLOYMENTS_ROOT}/#{deployment_id}/disable_cluster_type", payload)
 
         check_response("Delete cluster configuration for deployment '#{deployment_id}'", response, 201)
 

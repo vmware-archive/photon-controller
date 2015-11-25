@@ -34,9 +34,9 @@ public class DeploymentResourceRoutes {
 
   public static final String FINALIZE_MIGRATION_ACTION = "/finalize_migration";
 
-  public static final String CONFIGURE_CLUSTER_ACTION = "/configure_cluster";
+  public static final String ENABLE_CLUSTER_TYPE_ACTION = "/enable_cluster_type";
 
-  public static final String DELETE_CLUSTER_CONFIGURATION_ACTION = "/delete_cluster_configuration";
+  public static final String DISABLE_CLUSTER_TYPE_ACTION = "/disable_cluster_type";
 
   public static final String DEPLOYMENT_VMS_PATH = "/deployments/{id}/vms";
 

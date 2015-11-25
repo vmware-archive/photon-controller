@@ -14,31 +14,41 @@ module EsxCloud
     class << self
       def upload_kubernetes_image(client)
         fail("KUBERNETES_IMAGE is not defined") unless ENV["KUBERNETES_IMAGE"]
-        puts "Starting to Upload Kubernetes Image"
+        Config.logger.info "Starting to Upload Kubernetes Image"
         client.create_image(ENV["KUBERNETES_IMAGE"], "photon-kubernetes-vm-disk1.vmdk", "EAGER")
       end
 
       def upload_mesos_image(client)
         fail("MESOS_IMAGE is not defined") unless ENV["MESOS_IMAGE"]
-        puts "Starting to Upload Mesos Image"
+        Config.logger.info "Starting to Upload Mesos Image"
         client.create_image(ENV["MESOS_IMAGE"], "photon-mesos-vm-disk1.vmdk", "EAGER")
       end
 
       def upload_swarm_image(client)
         fail("SWARM_IMAGE is not defined") unless ENV["SWARM_IMAGE"]
-        puts "Starting to Upload Swarm Image"
+        Config.logger.info "Starting to Upload Swarm Image"
         client.create_image(ENV["SWARM_IMAGE"], "photon-swarm-vm-disk1.vmdk", "EAGER")
       end
 
-      def configure_cluster(client, deployment, image, cluster_type)
+      def enable_cluster_type(client, deployment, image, cluster_type)
         spec = EsxCloud::ClusterConfigurationSpec.new(
             cluster_type,
             image.id)
 
-        puts "Spec: #{spec.to_hash}"
-        puts "Deployment: #{deployment.to_hash}"
+        Config.logger.info "Spec: #{spec.to_hash}"
+        Config.logger.info "Deployment: #{deployment.to_hash}"
 
-        client.configure_cluster(deployment.id, spec.to_hash)
+        client.enable_cluster_type(deployment.id, spec.to_hash)
+      end
+
+      def disable_cluster_type(client, deployment, cluster_type)
+        spec = EsxCloud::ClusterConfigurationSpec.new(
+            cluster_type)
+
+        Config.logger.info "Spec: #{spec.to_hash}"
+        Config.logger.info "Deployment: #{deployment.to_hash}"
+
+        client.disable_cluster_type(deployment.id, spec.to_hash)
       end
 
       def show_logs(project, client)

@@ -16,7 +16,7 @@ module EsxCloud
 
     # @param [String] type
     # @param [String] image_id
-    def initialize(type, image_id)
+    def initialize(type, image_id = nil)
       @type = type
       @image_id = image_id
     end

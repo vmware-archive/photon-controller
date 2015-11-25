@@ -121,15 +121,15 @@ describe EsxCloud::CliClient do
     client.update_security_groups("foo", security_groups)
   end
 
-  it "configures cluster for deployment" do
-    expect(@api_client).to receive(:configure_cluster).with("foo", "payload")
+  it "enable_cluster_type for deployment" do
+    expect(@api_client).to receive(:enable_cluster_type).with("foo", "payload")
 
-    client.configure_cluster("foo", "payload")
+    client.enable_cluster_type("foo", "payload")
   end
 
-  it "deletes cluster configuration for deployment" do
-    expect(@api_client).to receive(:delete_cluster_configuration).with("foo", "payload")
+  it "enable_cluster_type for deployment" do
+    expect(@api_client).to receive(:disable_cluster_type).with("foo", "payload")
 
-    client.delete_cluster_configuration("foo", "payload")
+    client.disable_cluster_type("foo", "payload")
   end
 end
