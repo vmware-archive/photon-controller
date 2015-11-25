@@ -15,21 +15,16 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.NetworkConnection;
-import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmNetworks;
-import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.api.common.exceptions.external.UnsupportedOperationException;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
-import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.host.gen.GetVmNetworkResponse;
 import com.vmware.photon.controller.host.gen.VmNetworkInfo;
 
@@ -95,29 +90,7 @@ public class VmGetNetworksStepCmd extends StepCommand {
 
   private GetVmNetworkResponse getVmNetworksOp(VmEntity vm)
       throws ApiFeException, InterruptedException, RpcException {
-    GetVmNetworkResponse response;
-    try {
-      response = taskCommand.getHostClient(vm).getVmNetworks(vm.getId());
-    } catch (VmNotFoundException ex) {
-      response = getVmNetworksOpWithNoHostCachedInfo(vm);
-    }
-    return response;
-  }
-
-  private GetVmNetworkResponse getVmNetworksOpWithNoHostCachedInfo(VmEntity vm)
-      throws ApiFeException, InterruptedException, RpcException {
-    GetVmNetworkResponse response;
-    try {
-      response = taskCommand.getHostClient(vm, false).getVmNetworks(vm.getId());
-    } catch (com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException ex) {
-      logger.error("Failed trying to get Networks info for vm {} in {} state.",
-          vm.getId(), vm.getState());
-      if (vm.getState().equals(VmState.ERROR)) {
-        throw new UnsupportedOperationException(vm, Operation.GET_NETWORKS, vm.getState());
-      }
-      throw new InternalException(ex);
-    }
-    return response;
+    return taskCommand.getHostClient(vm).getVmNetworks(vm.getId());
   }
 
   private VmNetworks toApiRepresentation(List<VmNetworkInfo> networkInfoList) {

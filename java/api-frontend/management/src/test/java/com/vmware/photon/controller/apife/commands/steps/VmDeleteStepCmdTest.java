@@ -35,8 +35,6 @@ import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
-import com.vmware.photon.controller.host.gen.DeleteVmResponse;
-import com.vmware.photon.controller.host.gen.DeleteVmResultCode;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
@@ -44,8 +42,11 @@ import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -115,30 +116,28 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
         rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
-    when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
   }
 
   @Test
   public void testSuccessfulDeleteNoDisks() throws Exception {
     VmDeleteStepCmd cmd = getVmDeleteStepCmd();
     vm.setState(VmState.STOPPED);
+    doReturn(hostClient).when(taskCommand).getHostClient(vm);
 
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
     inOrder.verify(hostClient).deleteVm("vm-1", null);
     inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
     inOrder.verify(vmBackend).isosAttached(vm);
     inOrder.verify(vmBackend).tombstone(vm);
-
     verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend);
   }
 
   @Test
   public void testSuccessfulDeleteWithDisks() throws Exception {
     VmDeleteStepCmd cmd = getVmDeleteStepCmd();
+    doReturn(hostClient).when(taskCommand).getHostClient(vm);
     vm.setState(VmState.STOPPED);
     vm.setAttachedDisks(getAttachedDisks());
     for (EphemeralDiskEntity disk : getEphemeralDisks()) {
@@ -147,8 +146,6 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
     inOrder.verify(hostClient).deleteVm("vm-1", null);
     inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
     inOrder.verify(vmBackend).isosAttached(vm);
@@ -165,7 +162,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     iso.setName("iso-name");
     iso.setVm(vm);
     when(vmBackend.isosAttached(vm)).thenReturn(ImmutableList.of(iso));
-
+    doReturn(hostClient).when(taskCommand).getHostClient(vm);
     VmDeleteStepCmd cmd = getVmDeleteStepCmd();
     vm.setState(VmState.STOPPED);
     vm.setAttachedDisks(getAttachedDisks());
@@ -176,8 +173,6 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
     inOrder.verify(hostClient).deleteVm("vm-1", null);
     inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
     inOrder.verify(vmBackend).isosAttached(vm);
@@ -214,21 +209,16 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     vm.setAgent("old-agent-id");
 
     when(hostClient.deleteVm("vm-1", null))
-        .thenThrow(new VmNotFoundException("Error")).thenReturn(new DeleteVmResponse(DeleteVmResultCode.OK));
-
-    cmd.execute();
-
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("old-agent-id");
-    inOrder.verify(hostClient).deleteVm(vm.getId(), null);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    inOrder.verify(hostClient).deleteVm("vm-1", null);
-    inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
-    inOrder.verify(vmBackend).isosAttached(vm);
-    inOrder.verify(vmBackend).tombstone(vm);
-
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend);
+        .thenThrow(new VmNotFoundException("Error"));
+    try {
+      cmd.execute();
+      Assert.fail("Didn't throw VmNotFoundException");
+    } catch (VmNotFoundException ex) {
+      InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
+      inOrder.verify(hostClient).setAgentId("old-agent-id");
+      inOrder.verify(hostClient).deleteVm(vm.getId(), null);
+      verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend);
+    }
   }
 
   @Test
@@ -237,31 +227,25 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     vm.setState(VmState.CREATING);
     vm.setAgent("agent-id");
 
-    when(hostClient.deleteVm(vm.getId(), null)).thenThrow(new VmNotFoundException("Error"));
-    when(rootSchedulerClient.findVm("vm-1")).thenThrow(new VmNotFoundException("Error"));
-
+    //when(hostClient.deleteVm(vm.getId(), null)).thenThrow(new VmNotFoundException("Error"));
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
     inOrder.verify(hostClient).setAgentId("agent-id");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
+    inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
     inOrder.verify(vmBackend).isosAttached(vm);
     inOrder.verify(vmBackend).tombstone(vm);
 
     verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend);
   }
 
-  @Test
+  @Test(expectedExceptions = VmNotFoundException.class)
   public void testDeleteMissingVm() throws Exception {
     VmDeleteStepCmd cmd = getVmDeleteStepCmd();
-
     vm.setState(VmState.STOPPED);
     vm.setAgent("agent-id");
-
     when(hostClient.deleteVm("vm-1", null)).thenThrow(new VmNotFoundException("Error"));
-    when(rootSchedulerClient.findVm("vm-1")).thenThrow(new VmNotFoundException("Error"));
-
     cmd.execute();
   }
 
@@ -287,24 +271,21 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
       step.addTransientResourceEntity(disk);
     }
 
-    when(hostClient.deleteVm(vm.getId(), null)).thenThrow(new VmNotFoundException("Error"));
-    when(rootSchedulerClient.findVm(vm.getId())).thenThrow(new VmNotFoundException("Error"));
-
     cmd.execute();
 
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
+    InOrder inOrder = inOrder(hostClient, vmBackend, diskBackend);
     inOrder.verify(hostClient).setAgentId("agent-id");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
-    inOrder.verify(rootSchedulerClient).findVm(vm.getId());
+    inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
     inOrder.verify(vmBackend).isosAttached(vm);
     inOrder.verify(vmBackend).tombstone(vm);
     inOrder.verify(diskBackend).tombstone(eDisk1.getKind(), eDisk1.getId());
     inOrder.verify(diskBackend).tombstone(eDisk2.getKind(), eDisk2.getId());
 
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend);
+    verifyNoMoreInteractions(hostClient, vmBackend);
   }
 
-  @Test
+  @Test(enabled = false)
   public void testForceDeleteVmNotFound() throws Exception {
     VmDeleteStepCmd cmd = getVmDeleteStepCmd();
     vm.setAttachedDisks(getAttachedDisks());
@@ -316,14 +297,12 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     vm.setAgent("agent-id");
 
     when(hostClient.deleteVm(vm.getId(), null)).thenThrow(new VmNotFoundException("Error"));
-    when(rootSchedulerClient.findVm("vm-1")).thenThrow(new VmNotFoundException("Error"));
 
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
     inOrder.verify(hostClient).setAgentId("agent-id");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
     inOrder.verify(vmBackend).isosAttached(vm);
     inOrder.verify(vmBackend).tombstone(vm);
     inOrder.verify(diskBackend).tombstone(eDisk1.getKind(), eDisk1.getId());

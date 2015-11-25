@@ -32,7 +32,6 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateExce
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.host.gen.VmDiskOpError;
 import com.vmware.photon.controller.host.gen.VmDiskOpResultCode;
 import com.vmware.photon.controller.host.gen.VmDisksOpResponse;
@@ -100,21 +99,17 @@ public class VmDiskOpStepCmd extends StepCommand {
 
   private VmDisksOpResponse vmDiskOp(VmEntity vm, List<String> diskIds)
       throws RpcException, InterruptedException, ExternalException {
-    try {
-      return processDiskOp(vm, diskIds, true);
-    } catch (VmNotFoundException ex) {
-      return processDiskOp(vm, diskIds, false);
-    }
+     return processDiskOp(vm, diskIds);
   }
 
-  private VmDisksOpResponse processDiskOp(VmEntity vm, List<String> diskIds, boolean useCachedHostInfo)
+  private VmDisksOpResponse processDiskOp(VmEntity vm, List<String> diskIds)
       throws RpcException, InterruptedException, ExternalException {
     try {
       switch (operation) {
         case ATTACH_DISK:
-          return taskCommand.getHostClient(vm, useCachedHostInfo).attachDisks(vm.getId(), diskIds);
+          return taskCommand.getHostClient(vm).attachDisks(vm.getId(), diskIds);
         case DETACH_DISK:
-          return taskCommand.getHostClient(vm, useCachedHostInfo).detachDisks(vm.getId(), diskIds);
+          return taskCommand.getHostClient(vm).detachDisks(vm.getId(), diskIds);
         default:
           logger.info("Unknown Disk Operation: {}", operation);
           throw new NotImplementedException();

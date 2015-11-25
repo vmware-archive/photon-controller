@@ -72,6 +72,7 @@ public class RootSchedulerClient implements StatusProvider {
     this.proxy = proxy;
   }
 
+  /*
   public FindResponse findVm(String vmId) throws RpcException, InterruptedException {
     try {
       Locator locator = new Locator();
@@ -92,7 +93,9 @@ public class RootSchedulerClient implements StatusProvider {
       throw new DiskNotFoundException(e);
     }
   }
+  */
 
+  /*
   public FindResponse findWithRetries(Locator locator) throws RpcException, InterruptedException {
     int retries = FIND_MAX_RETRIES;
 
@@ -108,7 +111,8 @@ public class RootSchedulerClient implements StatusProvider {
     logger.warn("gave up finding resource: {}", locator);
     throw new NotFoundException();
   }
-
+  */
+/*
   @RpcMethod
   public FindResponse find(Locator locator) throws RpcException, InterruptedException {
     try {
@@ -140,7 +144,7 @@ public class RootSchedulerClient implements StatusProvider {
       throw new RpcException(e);
     }
   }
-
+*/
   @RpcMethod
   public PlaceResponse place(Resource resource) throws RpcException, InterruptedException {
     try {

@@ -33,9 +33,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.Resource;
-import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
@@ -196,63 +194,21 @@ public class TaskCommand extends BaseCommand {
 
   public HostClient getHostClient(VmEntity vm)
       throws RpcException, InterruptedException, VmNotFoundException {
-    return getHostClient(vm, true);
-  }
-
-  public HostClient getHostClient(VmEntity vm, boolean useCachedHostInfo)
-      throws RpcException, InterruptedException, VmNotFoundException {
     checkNotNull(hostClient);
-    if (useCachedHostInfo) {
-      if (StringUtils.isNotBlank(vm.getAgent())) {
-        hostClient.setAgentId(vm.getAgent());
-        return hostClient;
-      } else if (StringUtils.isNotBlank(vm.getHost())) {
-        hostClient.setHostIp(vm.getHost());
-        return hostClient;
-      }
+    if (vm != null && StringUtils.isNotBlank(vm.getAgent())) {
+      hostClient.setAgentId(vm.getAgent());
+      return hostClient;
+    } else if (vm != null && StringUtils.isNotBlank(vm.getHost())) {
+      hostClient.setHostIp(vm.getHost());
+      return hostClient;
     }
-    invokeRootScheduler(vm);
-    return hostClient;
+    throw new VmNotFoundException("VM not found: " + vm);
   }
 
   public HostClient findHost(BaseDiskEntity disk)
       throws RpcException, InterruptedException, DiskNotFoundException {
     checkNotNull(hostClient);
     hostClient.setAgentId(disk.getAgent());
-    if (disk.getAgent() == null || !hostClient.findDisk(disk.getId())) {
-      invokeRootScheduler(disk);
-    }
-
     return hostClient;
   }
-
-  private void invokeRootScheduler(BaseDiskEntity disk)
-      throws RpcException, InterruptedException, DiskNotFoundException {
-    logger.info("no cached agent or stale agent id, looking up from the scheduler");
-    try {
-      FindResponse response = rootSchedulerClient.findDisk(disk.getId());
-      disk.setAgent(response.getAgent_id());
-      ServerAddress serverAddress = response.getAddress();
-      hostClient.setIpAndPort(serverAddress.getHost(), serverAddress.getPort());
-    } catch (com.vmware.photon.controller.common.clients.exceptions.DiskNotFoundException ex) {
-      throw new DiskNotFoundException(disk.getKind(), disk.getId());
-    }
-  }
-
-  private void invokeRootScheduler(VmEntity vm)
-      throws RpcException, InterruptedException, VmNotFoundException {
-    logger.info("no cached agent or host id, looking up from the scheduler");
-    try {
-      FindResponse response = rootSchedulerClient.findVm(vm.getId());
-      vm.setAgent(response.getAgent_id());
-      if (response.getDatastore() != null) {
-        vm.setDatastore(response.getDatastore().getId());
-      }
-      ServerAddress serverAddress = response.getAddress();
-      hostClient.setIpAndPort(serverAddress.getHost(), serverAddress.getPort());
-    } catch (com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException ex) {
-      throw new VmNotFoundException(vm.getId());
-    }
-  }
-
 }

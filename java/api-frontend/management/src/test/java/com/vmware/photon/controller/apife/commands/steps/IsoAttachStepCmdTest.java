@@ -38,7 +38,6 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -92,7 +91,6 @@ public class IsoAttachStepCmdTest extends PowerMockTestCase {
   public void beforeMethod() throws Exception {
     command = new IsoAttachStepCmd(taskCommand, stepBackend, step, vmBackend, entityLockBackend);
     when(taskCommand.getHostClient(vmEntity)).thenReturn(hostClient);
-    when(taskCommand.getHostClient(vmEntity, false)).thenReturn(hostClient);
   }
 
   @Test
@@ -131,20 +129,12 @@ public class IsoAttachStepCmdTest extends PowerMockTestCase {
     verifyNoMoreInteractions(hostClient, vmBackend);
   }
 
-  @Test
+  @Test(expectedExceptions = VmNotFoundException.class)
   public void testStaleAgent() throws Exception {
     when(hostClient.attachISO(anyString(), anyString()))
         .thenThrow(new VmNotFoundException("Error")).thenReturn(attachISOResponse);
     doNothing().when(vmBackend).addIso(isoEntity, vmEntity);
 
     command.execute();
-
-    InOrder inOrder = inOrder(hostClient, vmBackend);
-    inOrder.verify(hostClient, times(2)).attachISO(vmEntity.getId(),
-        String.format("%s/%s", vmEntity.buildVmFolderPath(), isoEntity.getName()));
-    inOrder.verify(vmBackend).addIso(isoEntity, vmEntity);
-    verifyNoMoreInteractions(hostClient, vmBackend);
-
-    assertThat(vmEntity.getIsos().get(0), is(isoEntity));
   }
 }

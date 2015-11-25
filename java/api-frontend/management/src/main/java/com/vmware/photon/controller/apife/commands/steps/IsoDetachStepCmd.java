@@ -23,7 +23,6 @@ import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.NoIsoAttachedException;
 import com.vmware.photon.controller.common.clients.exceptions.IsoNotAttachedException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,11 +70,7 @@ public class IsoDetachStepCmd extends StepCommand {
 
   private void detachIsoOp(VmEntity vmEntity)
       throws ApiFeException, InterruptedException, RpcException {
-    try {
-      taskCommand.getHostClient(vmEntity).detachISO(vmEntity.getId(), true);
-    } catch (VmNotFoundException ex) {
-      taskCommand.getHostClient(vmEntity, false).detachISO(vmEntity.getId(), true);
-    }
+    taskCommand.getHostClient(vmEntity).detachISO(vmEntity.getId(), true);
   }
 
   @Override

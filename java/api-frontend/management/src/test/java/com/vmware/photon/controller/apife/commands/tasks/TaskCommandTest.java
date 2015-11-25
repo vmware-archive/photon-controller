@@ -40,8 +40,6 @@ import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
-import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
-import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
@@ -68,14 +66,12 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
-import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -337,46 +333,6 @@ public class TaskCommandTest {
   }
 
   @Test
-  public void testFindVmHostWithNoAgentId() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
-        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
-
-    when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
-    VmEntity vm = new VmEntity();
-    vm.setId("vm-1");
-    command.getHostClient(vm);
-
-    assertThat(vm.getAgent(), is("agent-id"));
-    assertThat(vm.getDatastore(), is("datastore-id"));
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
-  }
-
-  @Test
-  public void testFindVmHostWithVmNotFoundException() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
-        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
-
-    when(rootSchedulerClient.findVm("vm-1"))
-        .thenThrow(new com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException("Error"));
-    VmEntity vm = new VmEntity();
-    vm.setId("vm-1");
-
-    try {
-      command.getHostClient(vm);
-      fail();
-    } catch (VmNotFoundException ex) {
-    }
-
-    assertThat(vm.getAgent(), is(nullValue()));
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
-  }
-
-  @Test
   public void testFindVmHostWithAgentId() throws Exception {
     TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
@@ -389,46 +345,6 @@ public class TaskCommandTest {
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
     inOrder.verify(hostClient).setAgentId("agent-id");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
-  }
-
-  @Test
-  public void testVmGetHostClientHostWithNoAgentIdOrHost() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
-        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
-    when(rootSchedulerClient.findVm(anyString())).thenReturn(findResponse);
-
-    VmEntity vm = new VmEntity();
-    vm.setId("vm-1");
-    command.getHostClient(vm);
-
-    assertThat(vm.getAgent(), is("agent-id"));
-    assertThat(vm.getDatastore(), is("datastore-id"));
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(rootSchedulerClient).findVm(vm.getId());
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
-  }
-
-  @Test
-  public void testVmGetHostclientWithVmNotFoundException() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
-        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
-
-    when(rootSchedulerClient.findVm("vm-1"))
-        .thenThrow(new com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException("Error"));
-    VmEntity vm = new VmEntity();
-    vm.setId("vm-1");
-
-    try {
-      command.getHostClient(vm);
-      fail();
-    } catch (VmNotFoundException ex) {
-    }
-
-    assertThat(vm.getAgent(), is(nullValue()));
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
   }
 
@@ -487,65 +403,6 @@ public class TaskCommandTest {
   }
 
   @Test(dataProvider = "getDiskEntitiesParam")
-  public void testFindDiskHostWithNoAgentId(BaseDiskEntity disk) throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
-        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
-
-    when(rootSchedulerClient.findDisk("disk-1")).thenReturn(findResponse);
-    disk.setId("disk-1");
-    command.findHost(disk);
-
-    assertThat(disk.getAgent(), is("agent-id"));
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId(null);
-    inOrder.verify(rootSchedulerClient).findDisk("disk-1");
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
-  }
-
-  @Test(dataProvider = "getDiskEntitiesParam")
-  public void testFindDiskHostWithDiskNotFoundException(BaseDiskEntity disk) throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
-        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
-
-    when(rootSchedulerClient.findDisk("disk-1"))
-        .thenThrow(new com.vmware.photon.controller.common.clients.exceptions.DiskNotFoundException("Error"));
-    disk.setId("disk-1");
-
-    try {
-      command.findHost(disk);
-      fail();
-    } catch (DiskNotFoundException ex) {
-    }
-
-    assertThat(disk.getAgent(), is(nullValue()));
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId(null);
-    inOrder.verify(rootSchedulerClient).findDisk("disk-1");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
-  }
-
-  @Test(dataProvider = "getDiskEntitiesParam")
-  public void testFindDiskHostWithStaleAgentId(BaseDiskEntity disk) throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
-        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
-
-    when(hostClient.findDisk("disk-1")).thenReturn(false);
-    when(rootSchedulerClient.findDisk("disk-1")).thenReturn(findResponse);
-    disk.setId("disk-1");
-    disk.setAgent("stale-agent-id");
-    command.findHost(disk);
-
-    assertThat(disk.getAgent(), is("agent-id"));
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId("stale-agent-id");
-    inOrder.verify(hostClient).findDisk("disk-1");
-    inOrder.verify(rootSchedulerClient).findDisk("disk-1");
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
-  }
-
-  @Test(dataProvider = "getDiskEntitiesParam")
   public void testFindDiskHostWithAgentId(BaseDiskEntity disk) throws Exception {
     TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
@@ -554,10 +411,9 @@ public class TaskCommandTest {
     disk.setId("disk-1");
     disk.setAgent("agent-id");
     command.findHost(disk);
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
+    InOrder inOrder = inOrder(hostClient);
     inOrder.verify(hostClient).setAgentId("agent-id");
-    inOrder.verify(hostClient).findDisk("disk-1");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
+    verifyNoMoreInteractions(hostClient);
   }
 
   private StepEntity createDisableStep(String id, StepEntity.State stepState) {

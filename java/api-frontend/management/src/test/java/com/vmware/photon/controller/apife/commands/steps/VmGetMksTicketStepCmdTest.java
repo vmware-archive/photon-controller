@@ -36,10 +36,13 @@ import com.vmware.photon.controller.scheduler.gen.FindResponse;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -112,23 +115,19 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
         rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
-    when(rootSchedulerClient.findVm(vmId)).thenReturn(findResponse);
-
     when(taskCommand.getTask()).thenReturn(task);
   }
 
   @Test
   public void testSuccessfulGetMksTicket() throws Exception {
-    when(hostClient.getVmMksTicket(vmId))
-        .thenReturn(mksTicketResponse);
-
+    doReturn(hostClient).when(taskCommand).getHostClient(any(VmEntity.class));
+    when(hostClient.getVmMksTicket(vmId)).thenReturn(mksTicketResponse);
     VmGetMksTicketStepCmd command = getCommand();
     command.execute();
 
     InOrder inOrder = inOrder(hostClient, taskBackend);
     inOrder.verify(hostClient).getVmMksTicket(vmId);
     inOrder.verify(taskBackend).setTaskResourceProperties(any(TaskEntity.class), any(String.class));
-
     verifyNoMoreInteractions(taskBackend);
   }
 
@@ -136,39 +135,23 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
   public void testStaleAgent() throws Exception {
     vm.setAgent("staled-agent");
     VmGetMksTicketStepCmd command = getCommand();
+    when(hostClient.getVmMksTicket(anyString())).thenThrow(new VmNotFoundException("Error"));
 
-    when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
-    when(hostClient.getVmMksTicket(anyString())).thenThrow(
-        new VmNotFoundException("Error")).thenReturn(mksTicketResponse);
-
-    command.execute();
-
-    InOrder inOrder = inOrder(hostClient, taskBackend, rootSchedulerClient);
-    inOrder.verify(hostClient).setAgentId("staled-agent");
-    inOrder.verify(hostClient).getVmMksTicket(vmId);
-    inOrder.verify(rootSchedulerClient).findVm(vmId);
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    inOrder.verify(hostClient).getVmMksTicket(vmId);
-    inOrder.verify(taskBackend).setTaskResourceProperties(any(TaskEntity.class), any(String.class));
-    verifyNoMoreInteractions(hostClient, taskBackend, rootSchedulerClient);
-  }
-
-  @Test
-  public void testVmNotFoundException() throws Exception {
-    when(rootSchedulerClient.findVm(vmId)).thenThrow(new VmNotFoundException("Error"));
-
-    VmGetMksTicketStepCmd command = getCommand();
     try {
       command.execute();
-      fail("should have failed due to VmNotFoundException exception");
-    } catch (com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException ex) {
+      Assert.fail("Didn't throw VmNotFoundException");
+    } catch (VmNotFoundException ex) {
+      InOrder inOrder = inOrder(hostClient, taskBackend, rootSchedulerClient);
+      inOrder.verify(hostClient).setAgentId("staled-agent");
+      inOrder.verify(hostClient).getVmMksTicket(vmId);
+      verifyNoMoreInteractions(hostClient, taskBackend, rootSchedulerClient);
     }
   }
 
   @Test
   public void testFailedGetMksTicket() throws Throwable {
-    when(hostClient.getVmMksTicket(vmId)).thenThrow(new SystemErrorException("e"));
-
+    doReturn(hostClient).when(taskCommand).getHostClient(any(VmEntity.class));
+    doThrow(new SystemErrorException("e")).when(hostClient).getVmMksTicket(vmId);
     VmGetMksTicketStepCmd command = getCommand();
     try {
       command.execute();

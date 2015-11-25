@@ -15,7 +15,6 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.VmState;
-import com.vmware.photon.controller.api.common.exceptions.external.UnsupportedOperationException;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
@@ -24,7 +23,6 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
-import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
@@ -44,10 +42,9 @@ import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.inOrder;
@@ -136,8 +133,6 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
         rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
-    when(rootSchedulerClient.findVm(vmId)).thenReturn(findResponse);
-
     when(taskCommand.getTask()).thenReturn(task);
   }
 
@@ -205,50 +200,25 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
     vm.setAgent("staled-agent");
     VmGetNetworksStepCmd command = getCommand();
 
-    when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
     when(hostClient.getVmNetworks(anyString())).thenThrow(
-        new VmNotFoundException("Error")).thenReturn(vmNetworkResponse);
+        new VmNotFoundException("Error"));
 
-    command.execute();
-
-    InOrder inOrder = inOrder(hostClient, taskBackend, rootSchedulerClient);
-    inOrder.verify(hostClient).setAgentId("staled-agent");
-    inOrder.verify(hostClient).getVmNetworks(vmId);
-    inOrder.verify(rootSchedulerClient).findVm(vmId);
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    inOrder.verify(hostClient).getVmNetworks(vmId);
-    inOrder.verify(taskBackend).setTaskResourceProperties(any(TaskEntity.class), any(String.class));
-    verifyNoMoreInteractions(hostClient, taskBackend, rootSchedulerClient);
+    try {
+      command.execute();
+      Assert.fail("Didn't throw VmNotFoundException");
+    } catch (VmNotFoundException ex) {
+      InOrder inOrder = inOrder(hostClient, taskBackend, rootSchedulerClient);
+      inOrder.verify(hostClient).setAgentId("staled-agent");
+      inOrder.verify(hostClient).getVmNetworks(vmId);
+      verifyNoMoreInteractions(hostClient, taskBackend, rootSchedulerClient);
+    }
   }
 
-  @Test
+  @Test(expectedExceptions = VmNotFoundException.class)
   public void testVmNotFoundExceptionInNonErrorState() throws Exception {
-    when(rootSchedulerClient.findVm(vmId)).thenThrow(new VmNotFoundException("Error"));
     when(hostClient.getVmNetworks(vmId)).thenThrow(new VmNotFoundException("Error"));
-
     VmGetNetworksStepCmd command = getCommand();
-    try {
-      command.execute();
-      fail("should have failed due to Internal exception");
-    } catch (InternalException ex) {
-    }
-  }
-
-  @Test
-  public void testVmNotFoundExceptionInErrorState() throws Throwable {
-    vm.setState(VmState.ERROR);
-    when(rootSchedulerClient.findVm(vmId)).thenThrow(new VmNotFoundException("Error"));
-    when(hostClient.getVmNetworks(vmId)).thenThrow(new VmNotFoundException("Error"));
-
-    VmGetNetworksStepCmd command = getCommand();
-    try {
-      command.execute();
-      fail("should have failed due to Internal exception");
-    } catch (UnsupportedOperationException ex) {
-      assertThat(ex.getMessage(), containsString(
-          String.format("Unsupported operation GET_NETWORKS for vm/%s in state %s", vm.getId(), vm.getState())));
-    }
-
+    command.execute();
   }
 
   @Test

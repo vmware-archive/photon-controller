@@ -93,11 +93,7 @@ public class VmDeleteStepCmd extends StepCommand {
     if (vm.getState() == VmState.DELETED) {
       return;
     }
-    try {
-      taskCommand.getHostClient(vm).deleteVm(vm.getId(), null);
-    } catch (com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException ex) {
-      taskCommand.getHostClient(vm, false).deleteVm(vm.getId(), null);
-    }
+    taskCommand.getHostClient(vm).deleteVm(vm.getId(), null);
     logger.info("deleted VM: {}", vm.getId());
     vmBackend.updateState(vm, VmState.DELETED);
   }

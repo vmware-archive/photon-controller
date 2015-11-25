@@ -38,6 +38,7 @@ import com.vmware.photon.controller.scheduler.gen.FindResponse;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -113,21 +114,17 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     vm.setAgent("some-agent");
     step.setOperation(operation);
 
-    when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
-    when(hostClient.powerVmOp(anyString(), any(PowerVmOp.class))).thenThrow(
-        new VmNotFoundException("Error")).thenReturn(new PowerVmOpResponse(PowerVmOpResultCode.OK));
+    when(hostClient.powerVmOp(anyString(), any(PowerVmOp.class))).thenThrow(new VmNotFoundException("Error"));
 
-    command.execute();
-
-    InOrder inOrder = inOrder(hostClient, rootSchedulerClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("some-agent");
-    inOrder.verify(hostClient).powerVmOp("vm-1", PowerVmOp.ON);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    inOrder.verify(hostClient).powerVmOp("vm-1", PowerVmOp.ON);
-    inOrder.verify(vmBackend).updateState(vm, VmState.STARTED);
-
-    verifyNoMoreInteractions(hostClient, rootSchedulerClient, vmBackend);
+    try {
+      command.execute();
+      Assert.fail("Didn't throw VmNotFoundException");
+    } catch (VmNotFoundException ex) {
+      InOrder inOrder = inOrder(hostClient, vmBackend);
+      inOrder.verify(hostClient).setAgentId("some-agent");
+      inOrder.verify(hostClient).powerVmOp("vm-1", PowerVmOp.ON);
+      verifyNoMoreInteractions(hostClient, vmBackend);
+    }
   }
 
   @Test
@@ -135,7 +132,6 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     VmPowerOpStepCmd command = getVmPowerOpStepCmd();
     Operation operation = Operation.START_VM;
     step.setOperation(operation);
-    when(rootSchedulerClient.findVm("vm-1")).thenThrow(new VmNotFoundException("Error"));
 
     try {
       command.execute();
