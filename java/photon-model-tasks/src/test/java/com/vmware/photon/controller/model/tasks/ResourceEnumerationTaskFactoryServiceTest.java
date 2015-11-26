@@ -26,25 +26,26 @@ import java.util.EnumSet;
 /**
  * This class implements tests for the {@link ProvisionComputeTaskFactoryService} class.
  */
-public class ProvisionComputeTaskFactoryServiceTest {
-  private ProvisionComputeTaskFactoryService provisionComputeTaskFactoryService;
+public class ResourceEnumerationTaskFactoryServiceTest {
+  private ResourceEnumerationTaskFactoryService resourceEnumerationTaskFactoryService;
 
   @BeforeMethod
   public void setUpTest() {
-    provisionComputeTaskFactoryService = new ProvisionComputeTaskFactoryService();
+    resourceEnumerationTaskFactoryService = new ResourceEnumerationTaskFactoryService();
   }
 
   @Test
   public void testServiceOptions() {
     EnumSet<Service.ServiceOption> expected = EnumSet.of(
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
+        Service.ServiceOption.REPLICATION,
         Service.ServiceOption.FACTORY);
-    assertThat(provisionComputeTaskFactoryService.getOptions(), is(expected));
+    assertThat(resourceEnumerationTaskFactoryService.getOptions(), is(expected));
   }
 
   @Test
   public void testCreateServiceInstance() throws Throwable {
-    Service service = provisionComputeTaskFactoryService.createServiceInstance();
-    assertThat(service, instanceOf(ProvisionComputeTaskService.class));
+    Service service = resourceEnumerationTaskFactoryService.createServiceInstance();
+    assertThat(service, instanceOf(ResourceEnumerationTaskService.class));
   }
 }
