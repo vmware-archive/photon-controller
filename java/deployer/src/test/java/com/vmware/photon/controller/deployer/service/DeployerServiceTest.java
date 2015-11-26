@@ -72,8 +72,8 @@ import com.vmware.photon.controller.deployer.gen.ProvisionHostResultCode;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusRequest;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusResponse;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
-import com.vmware.photon.controller.deployer.service.client.AddCloudHostWorkflowServiceClient;
-import com.vmware.photon.controller.deployer.service.client.AddCloudHostWorkflowServiceClientFactory;
+import com.vmware.photon.controller.deployer.service.client.AddHostWorkflowServiceClient;
+import com.vmware.photon.controller.deployer.service.client.AddHostWorkflowServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.ChangeHostModeTaskServiceClient;
 import com.vmware.photon.controller.deployer.service.client.ChangeHostModeTaskServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.DeploymentWorkFlowServiceClient;
@@ -665,35 +665,35 @@ public class DeployerServiceTest {
 
     private HostServiceClientFactory entityClientFactory;
     private HostServiceClient entityClient;
-    private AddCloudHostWorkflowServiceClientFactory addCloudHostWorkflowServiceClientFactory;
-    private AddCloudHostWorkflowServiceClient addCloudHostWorkflowServiceClient;
+    private AddHostWorkflowServiceClientFactory addHostWorkflowServiceClientFactory;
+    private AddHostWorkflowServiceClient addHostWorkflowServiceClient;
     private ProvisionHostRequest request;
 
     @BeforeMethod
     public void setUp() {
       entityClientFactory = mock(HostServiceClientFactory.class);
       entityClient = mock(HostServiceClient.class);
-      addCloudHostWorkflowServiceClientFactory = mock(AddCloudHostWorkflowServiceClientFactory.class);
-      addCloudHostWorkflowServiceClient = mock(AddCloudHostWorkflowServiceClient.class);
+      addHostWorkflowServiceClientFactory = mock(AddHostWorkflowServiceClientFactory.class);
+      addHostWorkflowServiceClient = mock(AddHostWorkflowServiceClient.class);
       ServerSet serverSet = mock(ServerSet.class);
       when(entityClientFactory.getInstance(any(DeployerDcpServiceHost.class))).thenReturn(entityClient);
-      when(addCloudHostWorkflowServiceClientFactory.getInstance(any(DeployerDcpServiceHost.class))).
-          thenReturn(addCloudHostWorkflowServiceClient);
+      when(addHostWorkflowServiceClientFactory.getInstance(any(DeployerDcpServiceHost.class))).
+          thenReturn(addHostWorkflowServiceClient);
       service = new DeployerService(serverSet, null, entityClientFactory, null, null,
-          addCloudHostWorkflowServiceClientFactory, null, null, null);
+          addHostWorkflowServiceClientFactory, null, null, null);
       request = createProvisionHostRequest();
     }
 
     @Test
     public void success() throws Throwable {
       ProvisionHostResponse provisionHostResponse = service.provision_host(request);
-      verify(addCloudHostWorkflowServiceClient).create(anyString());
+      verify(addHostWorkflowServiceClient).create(anyString());
       assertThat(provisionHostResponse.getResult().getCode(), is(ProvisionHostResultCode.OK));
     }
 
     @Test
     public void failOnSystemError() throws Throwable {
-      when(addCloudHostWorkflowServiceClient.create(anyString())).thenThrow(new RuntimeException());
+      when(addHostWorkflowServiceClient.create(anyString())).thenThrow(new RuntimeException());
       ProvisionHostResponse provisionHostResponse = service.provision_host(request);
       assertThat(provisionHostResponse.getResult().getCode(), is(ProvisionHostResultCode.SYSTEM_ERROR));
     }
@@ -760,35 +760,35 @@ public class DeployerServiceTest {
 
     private HostServiceClientFactory entityClientFactory;
     private HostServiceClient entityClient;
-    private AddCloudHostWorkflowServiceClientFactory addCloudHostWorkflowServiceClientFactory;
-    private AddCloudHostWorkflowServiceClient addCloudHostWorkflowServiceClient;
+    private AddHostWorkflowServiceClientFactory addHostWorkflowServiceClientFactory;
+    private AddHostWorkflowServiceClient addHostWorkflowServiceClient;
     private ProvisionHostStatusRequest request;
 
     @BeforeMethod
     public void setUp() {
       entityClientFactory = mock(HostServiceClientFactory.class);
       entityClient = mock(HostServiceClient.class);
-      addCloudHostWorkflowServiceClientFactory = mock(AddCloudHostWorkflowServiceClientFactory.class);
-      addCloudHostWorkflowServiceClient = mock(AddCloudHostWorkflowServiceClient.class);
+      addHostWorkflowServiceClientFactory = mock(AddHostWorkflowServiceClientFactory.class);
+      addHostWorkflowServiceClient = mock(AddHostWorkflowServiceClient.class);
       ServerSet serverSet = mock(ServerSet.class);
       when(entityClientFactory.getInstance(any(DeployerDcpServiceHost.class))).thenReturn(entityClient);
-      when(addCloudHostWorkflowServiceClientFactory.getInstance(any(DeployerDcpServiceHost.class))).
-          thenReturn(addCloudHostWorkflowServiceClient);
+      when(addHostWorkflowServiceClientFactory.getInstance(any(DeployerDcpServiceHost.class))).
+          thenReturn(addHostWorkflowServiceClient);
       service = new DeployerService(serverSet, null, entityClientFactory, null, null,
-          addCloudHostWorkflowServiceClientFactory, null, null, null);
+          addHostWorkflowServiceClientFactory, null, null, null);
       request = createProvisionHostStatusRequest();
     }
 
     @Test
     public void success() throws Throwable {
       ProvisionHostStatusResponse provisionHostStatusResponse = service.provision_host_status(request);
-      verify(addCloudHostWorkflowServiceClient).getStatus(anyString());
+      verify(addHostWorkflowServiceClient).getStatus(anyString());
       assertThat(provisionHostStatusResponse.getResult().getCode(), is(ProvisionHostResultCode.OK));
     }
 
     @Test
     public void failOnServiceNotFound() throws Throwable {
-      when(addCloudHostWorkflowServiceClient.getStatus(anyString()))
+      when(addHostWorkflowServiceClient.getStatus(anyString()))
           .thenThrow(new ServiceHost.ServiceNotFoundException());
       ProvisionHostStatusResponse provisionHostStatusResponse = service.provision_host_status(request);
       assertThat(provisionHostStatusResponse.getResult().getCode(), is(ProvisionHostResultCode.SERVICE_NOT_FOUND));
@@ -796,7 +796,7 @@ public class DeployerServiceTest {
 
     @Test
     public void failOnSystemError() throws Throwable {
-      when(addCloudHostWorkflowServiceClient.getStatus(anyString())).thenThrow(new RuntimeException());
+      when(addHostWorkflowServiceClient.getStatus(anyString())).thenThrow(new RuntimeException());
       ProvisionHostStatusResponse provisionHostStatusResponse = service.provision_host_status(request);
       assertThat(provisionHostStatusResponse.getResult().getCode(), is(ProvisionHostResultCode.SYSTEM_ERROR));
     }

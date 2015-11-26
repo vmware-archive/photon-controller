@@ -13,11 +13,15 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
+import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowService;
+import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowService;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatus;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusCode;
 import com.vmware.xenon.common.Operation;
@@ -30,15 +34,15 @@ import org.slf4j.LoggerFactory;
 /**
  * This class implements functionality to provision new cloud hosts.
  */
-public class AddCloudHostWorkflowServiceClient {
+public class AddHostWorkflowServiceClient {
 
-  private static final Logger logger = LoggerFactory.getLogger(AddCloudHostWorkflowServiceClient.class);
+  private static final Logger logger = LoggerFactory.getLogger(AddHostWorkflowServiceClient.class);
 
   private static final String REFERRER_PATH = "/thrift-endpoint/provision-host-client";
 
   private DeployerDcpServiceHost dcpHost;
 
-  public AddCloudHostWorkflowServiceClient(DeployerDcpServiceHost dcpHost) {
+  public AddHostWorkflowServiceClient(DeployerDcpServiceHost dcpHost) {
     this.dcpHost = dcpHost;
   }
 
@@ -50,16 +54,33 @@ public class AddCloudHostWorkflowServiceClient {
    * @throws Throwable
    */
   public String create(String hostServiceLink) throws Throwable {
+    // Let's find out what type of host this is
+    Operation getHostOperation = dcpHost.getCloudStoreHelper().createGet(hostServiceLink);
 
-    AddCloudHostWorkflowService.State addCloudHostState = new AddCloudHostWorkflowService.State();
-    addCloudHostState.hostServiceLink = hostServiceLink;
+    HostService.State hostState =
+        ServiceHostUtils.sendRequestAndWait(dcpHost, getHostOperation, REFERRER_PATH)
+            .getBody(HostService.State.class);
 
-    Operation post = Operation
-        .createPost(UriUtils.buildUri(dcpHost, AddCloudHostWorkflowFactoryService.SELF_LINK, null))
-        .setBody(addCloudHostState)
-        .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
-        .setContextId(LoggingUtils.getRequestId());
+    Operation post = null;
+    if (hostState.usageTags.contains(UsageTag.CLOUD.name()) && hostState.usageTags.size() == 1) {
+      AddCloudHostWorkflowService.State addCloudHostState = new AddCloudHostWorkflowService.State();
+      addCloudHostState.hostServiceLink = hostServiceLink;
 
+      post = Operation
+          .createPost(UriUtils.buildUri(dcpHost, AddCloudHostWorkflowFactoryService.SELF_LINK, null))
+          .setBody(addCloudHostState)
+          .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
+          .setContextId(LoggingUtils.getRequestId());
+    } else {
+      AddManagementHostWorkflowService.State addMgmtHostState = new AddManagementHostWorkflowService.State();
+      addMgmtHostState.hostServiceLink = hostServiceLink;
+
+      post = Operation
+          .createPost(UriUtils.buildUri(dcpHost, AddManagementHostWorkflowFactoryService.SELF_LINK, null))
+          .setBody(addMgmtHostState)
+          .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
+          .setContextId(LoggingUtils.getRequestId());
+    }
     Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, post, REFERRER_PATH);
 
     // Return operation id.
