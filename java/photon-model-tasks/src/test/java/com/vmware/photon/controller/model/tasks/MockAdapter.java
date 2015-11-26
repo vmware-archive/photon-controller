@@ -15,6 +15,7 @@ package com.vmware.photon.controller.model.tasks;
 
 import com.vmware.photon.controller.model.UriPaths;
 import com.vmware.photon.controller.model.adapterapi.ComputeBootRequest;
+import com.vmware.photon.controller.model.adapterapi.ComputeEnumerateResourceRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
@@ -29,7 +30,9 @@ public class MockAdapter {
       MockSuccessInstanceAdapter.class,
       MockFailureInstanceAdapter.class,
       MockSuccessBootAdapter.class,
-      MockFailureBootAdapter.class
+      MockFailureBootAdapter.class,
+      MockSuccessEnumerationAdapter.class,
+      MockFailureEnumerationAdapter.class,
   };
 
   /**
@@ -143,6 +146,64 @@ public class MockAdapter {
           sendRequest(Operation
               .createPatch(request.provisioningTaskReference)
               .setBody(provisioningTaskBody));
+          break;
+        default:
+          super.handleRequest(op);
+      }
+    }
+  }
+
+  /**
+   * Mock boot adapter that always succeeds.
+   */
+  public static class MockSuccessEnumerationAdapter extends StatelessService {
+    public static final String SELF_LINK = UriPaths.PROVISIONING + "/mock_success_enumeration_adapter";
+
+    @Override
+    public void handleRequest(Operation op) {
+      if (!op.hasBody()) {
+        op.fail(new IllegalArgumentException("body is required"));
+        return;
+      }
+      switch (op.getAction()) {
+        case PATCH:
+          ComputeEnumerateResourceRequest request = op.getBody(ComputeEnumerateResourceRequest.class);
+          ResourceEnumerationTaskService.ResourceEnumerationTaskState patchState =
+              new ResourceEnumerationTaskService.ResourceEnumerationTaskState();
+          patchState.taskInfo = new TaskState();
+          patchState.taskInfo.stage = TaskState.TaskStage.FINISHED;
+          sendRequest(Operation
+              .createPatch(request.enumerationTaskReference)
+              .setBody(patchState));
+          break;
+        default:
+          super.handleRequest(op);
+      }
+    }
+  }
+
+  /**
+   * Mock boot adapter that always fails.
+   */
+  public static class MockFailureEnumerationAdapter extends StatelessService {
+    public static final String SELF_LINK = UriPaths.PROVISIONING + "/mock_failure_enumeration_adapter";
+
+    @Override
+    public void handleRequest(Operation op) {
+      if (!op.hasBody()) {
+        op.fail(new IllegalArgumentException("body is required"));
+        return;
+      }
+      switch (op.getAction()) {
+        case PATCH:
+          ComputeEnumerateResourceRequest request = op.getBody(ComputeEnumerateResourceRequest.class);
+          ResourceEnumerationTaskService.ResourceEnumerationTaskState patchState =
+              new ResourceEnumerationTaskService.ResourceEnumerationTaskState();
+          patchState.taskInfo = new TaskState();
+          patchState.taskInfo.stage = TaskState.TaskStage.FAILED;
+          sendRequest(Operation
+              .createPatch(request.enumerationTaskReference)
+              .setBody(patchState));
           break;
         default:
           super.handleRequest(op);

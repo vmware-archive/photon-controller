@@ -11,17 +11,26 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.model;
-
-import com.vmware.photon.controller.model.tasks.ProvisionComputeTaskFactoryService;
-import com.vmware.photon.controller.model.tasks.ResourceEnumerationTaskFactoryService;
+package com.vmware.photon.controller.model.adapterapi;
 
 /**
- * Service factories used in Photon Model Task package.
+ * Enumeration action that will be used by the
+ * enumeration adapter.
  */
-public class TaskServices {
-  public static final Class[] FACTORIES = {
-      ProvisionComputeTaskFactoryService.class,
-      ResourceEnumerationTaskFactoryService.class
-  };
+public enum EnumerationAction {
+  /**
+   * Starts unsolicited notification mode, allowing
+   * the adapter to send updates to resources at any time.
+   */
+  START,
+
+  /**
+   * Stops notification mode.
+   */
+  STOP,
+
+  /**
+   * Just refresh the resources once.
+   */
+  RERESH
 }
