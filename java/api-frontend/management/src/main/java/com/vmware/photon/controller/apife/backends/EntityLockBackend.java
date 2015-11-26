@@ -13,19 +13,13 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
-import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 
 /**
  * Entity Lock operation.
  */
 public interface EntityLockBackend {
-
-  void setStepLock(BaseEntity entity, StepEntity step) throws ConcurrentTaskException;
-
-  void clearLocks(StepEntity step);
 
   void setTaskLock(String entityId, TaskEntity task) throws ConcurrentTaskException;
 

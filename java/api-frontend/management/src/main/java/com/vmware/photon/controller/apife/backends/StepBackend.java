@@ -27,8 +27,6 @@ import java.util.Map;
  * StepBackend is performing common step operations.
  */
 public interface StepBackend {
-  String getStepOption(StepEntity stepEntity, String key);
-
   Step toApiRepresentation(StepEntity stepEntity);
 
   void update(StepEntity step) throws TaskNotFoundException;

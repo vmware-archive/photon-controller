@@ -424,11 +424,6 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   @Override
-  public String getStepOption(StepEntity stepEntity, String key) {
-    return getStepOptions(stepEntity).get(key);
-  }
-
-  @Override
   public Step toApiRepresentation(StepEntity stepEntity) {
     Step step = new Step();
 
