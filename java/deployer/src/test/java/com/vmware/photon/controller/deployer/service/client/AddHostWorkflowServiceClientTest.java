@@ -13,21 +13,29 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
+import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowService;
+import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowService;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostRequest;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatus;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusCode;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusRequest;
+import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 
+import com.google.common.collect.ImmutableSet;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
@@ -36,13 +44,15 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
+import java.util.Collections;
 import java.util.function.Predicate;
 
 /**
- * This class tests the {@link AddCloudHostWorkflowServiceClient}.
+ * This class tests the {@link AddHostWorkflowServiceClient}.
  */
-public class AddCloudHostWorkflowServiceClientTest {
+public class AddHostWorkflowServiceClientTest {
 
   @Test
   private void dummy() {
@@ -53,21 +63,35 @@ public class AddCloudHostWorkflowServiceClientTest {
    */
   public class CreateAddCloudHostTaskEntity {
 
-    private AddCloudHostWorkflowServiceClient target;
+    private AddHostWorkflowServiceClient target;
     private DeployerDcpServiceHost host;
+    private TestEnvironment testEnvironment;
+    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+
 
     @BeforeMethod
-    public void before() {
-      host = mock(DeployerDcpServiceHost.class);
-      target = new AddCloudHostWorkflowServiceClient(host);
+    public void before() throws Throwable {
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      testEnvironment = new TestEnvironment.Builder().cloudServerSet(cloudStoreMachine.getServerSet())
+          .hostCount(1).build();
+      host = spy(testEnvironment.getHosts()[0]);
+      target = new AddHostWorkflowServiceClient(host);
+    }
+
+    @AfterMethod
+    public void after() throws Throwable {
+      cloudStoreMachine.stop();
+      testEnvironment.stop();
     }
 
     @Test
-    public void successCreate() throws Throwable {
+    public void successCreateCloudHost() throws Throwable {
       ProvisionHostRequest request = createProvisionHostRequest();
+      HostService.State hostService = TestHelper.createHostService(cloudStoreMachine, Collections.singleton(
+          UsageTag.CLOUD.name()));
 
       AddCloudHostWorkflowService.State returnedDocument = new AddCloudHostWorkflowService.State();
-      returnedDocument.hostServiceLink = "host-id";
+      returnedDocument.hostServiceLink = hostService.documentSelfLink;
       returnedDocument.documentSelfLink = "task-id";
 
       setupMock(
@@ -76,12 +100,37 @@ public class AddCloudHostWorkflowServiceClientTest {
           AddCloudHostWorkflowFactoryService.SELF_LINK,
           AddCloudHostWorkflowService.State.class,
           (state) -> {
-            assertThat(state.hostServiceLink, is("host-id"));
+            assertThat(state.hostServiceLink, is(hostService.documentSelfLink));
             return true;
           },
           returnedDocument);
 
-      String taskLink = target.create(request.getHost_id());
+      String taskLink = target.create(hostService.documentSelfLink);
+      assertThat(taskLink, is("task-id"));
+    }
+
+    @Test
+    public void successCreateManagementHost() throws Throwable {
+      ProvisionHostRequest request = createProvisionHostRequest();
+      HostService.State hostService = TestHelper.createHostService(cloudStoreMachine, ImmutableSet.of(
+          UsageTag.MGMT.name(), UsageTag.CLOUD.name()));
+
+      AddManagementHostWorkflowService.State returnedDocument = new AddManagementHostWorkflowService.State();
+      returnedDocument.hostServiceLink = hostService.documentSelfLink;
+      returnedDocument.documentSelfLink = "task-id";
+
+      setupMock(
+          host,
+          true,
+          AddManagementHostWorkflowFactoryService.SELF_LINK,
+          AddManagementHostWorkflowService.State.class,
+          (state) -> {
+            assertThat(state.hostServiceLink, is(hostService.documentSelfLink));
+            return true;
+          },
+          returnedDocument);
+
+      String taskLink = target.create(hostService.documentSelfLink);
       assertThat(taskLink, is("task-id"));
     }
 
@@ -105,13 +154,13 @@ public class AddCloudHostWorkflowServiceClientTest {
    */
   public class GetStatusAddCloudHostTask {
 
-    private AddCloudHostWorkflowServiceClient target;
+    private AddHostWorkflowServiceClient target;
     private DeployerDcpServiceHost host;
 
     @BeforeMethod
     public void before() {
       host = mock(DeployerDcpServiceHost.class);
-      target = new AddCloudHostWorkflowServiceClient(host);
+      target = new AddHostWorkflowServiceClient(host);
     }
 
     @Test
