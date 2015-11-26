@@ -13,10 +13,8 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
@@ -47,16 +45,6 @@ public class EntityLockDcpBackend implements EntityLockBackend {
   public EntityLockDcpBackend(ApiFeDcpRestClient dcpClient) {
     this.dcpClient = dcpClient;
     this.dcpClient.start();
-  }
-
-  @Override
-  public void setStepLock(BaseEntity entity, StepEntity step) throws ConcurrentTaskException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void clearLocks(StepEntity step) {
-    throw new UnsupportedOperationException();
   }
 
   @Override
