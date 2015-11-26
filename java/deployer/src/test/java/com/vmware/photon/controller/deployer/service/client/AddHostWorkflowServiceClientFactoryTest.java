@@ -13,14 +13,26 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
- * This class implements a factory for {@link AddCloudHostWorkflowServiceClient}.
+ * This class tests the {@link AddHostWorkflowServiceClientFactory}.
  */
-public class AddCloudHostWorkflowServiceClientFactory {
+public class AddHostWorkflowServiceClientFactoryTest {
 
-  public AddCloudHostWorkflowServiceClient getInstance(DeployerDcpServiceHost dcpHost) {
-    return new AddCloudHostWorkflowServiceClient(dcpHost);
+  private AddHostWorkflowServiceClientFactory target;
+
+  @BeforeMethod
+  public void before() {
+    target = new AddHostWorkflowServiceClientFactory();
+  }
+
+  @Test
+  public void instancesDiffer() {
+    assertThat(target.getInstance(null), not(is(target.getInstance(null))));
   }
 }
