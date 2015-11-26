@@ -103,8 +103,8 @@ import com.vmware.photon.controller.deployer.gen.RemoveDeploymentResultCode;
 import com.vmware.photon.controller.deployer.gen.RemoveDeploymentStatus;
 import com.vmware.photon.controller.deployer.gen.RemoveDeploymentStatusRequest;
 import com.vmware.photon.controller.deployer.gen.RemoveDeploymentStatusResponse;
-import com.vmware.photon.controller.deployer.service.client.AddCloudHostWorkflowServiceClient;
-import com.vmware.photon.controller.deployer.service.client.AddCloudHostWorkflowServiceClientFactory;
+import com.vmware.photon.controller.deployer.service.client.AddHostWorkflowServiceClient;
+import com.vmware.photon.controller.deployer.service.client.AddHostWorkflowServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.ChangeHostModeTaskServiceClient;
 import com.vmware.photon.controller.deployer.service.client.ChangeHostModeTaskServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.DeploymentWorkFlowServiceClient;
@@ -149,7 +149,7 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
   private final DeployerDcpServiceHost dcpHost;
   private final BuildInfo buildInfo;
 
-  private final AddCloudHostWorkflowServiceClientFactory addCloudHostWorkflowServiceClientFactory;
+  private final AddHostWorkflowServiceClientFactory addHostWorkflowServiceClientFactory;
   private final ValidateHostTaskServiceClientFactory validateHostTaskServiceClientFactory;
   private final DeprovisionHostWorkflowServiceClientFactory deprovisionHostClientFactory;
   private final HostServiceClientFactory hostServiceClientFactory;
@@ -163,7 +163,7 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
       HostServiceClientFactory hostServiceClientFactory,
       ChangeHostModeTaskServiceClientFactory changeHostModeTaskServiceClientFactory,
       DeploymentWorkflowServiceClientFactory deploymentWorkflowServiceClientFactory,
-      AddCloudHostWorkflowServiceClientFactory addCloudHostWorkflowServiceClientFactory,
+      AddHostWorkflowServiceClientFactory addHostWorkflowServiceClientFactory,
       ValidateHostTaskServiceClientFactory validateHostTaskServiceClientFactory,
       DeprovisionHostWorkflowServiceClientFactory deprovisionHostClientFactory,
       BuildInfo buildInfo) {
@@ -171,7 +171,7 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
     this.hostServiceClientFactory = hostServiceClientFactory;
     this.changeHostModeTaskServiceClientFactory = changeHostModeTaskServiceClientFactory;
     this.deploymentWorkflowServiceClientFactory = deploymentWorkflowServiceClientFactory;
-    this.addCloudHostWorkflowServiceClientFactory = addCloudHostWorkflowServiceClientFactory;
+    this.addHostWorkflowServiceClientFactory = addHostWorkflowServiceClientFactory;
     this.validateHostTaskServiceClientFactory = validateHostTaskServiceClientFactory;
     this.deprovisionHostClientFactory = deprovisionHostClientFactory;
     this.buildInfo = buildInfo;
@@ -465,8 +465,8 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
     ProvisionHostResponse response = new ProvisionHostResponse();
 
     try {
-      AddCloudHostWorkflowServiceClient addCloudHostClient =
-          addCloudHostWorkflowServiceClientFactory.getInstance(dcpHost);
+      AddHostWorkflowServiceClient addCloudHostClient =
+          addHostWorkflowServiceClientFactory.getInstance(dcpHost);
       String taskDocumentLink
           = addCloudHostClient.create(HostServiceFactory.SELF_LINK + "/" + request.getHost_id());
       response.setOperation_id(taskDocumentLink);
@@ -710,7 +710,7 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
     ProvisionHostResult result = new ProvisionHostResult();
 
     try {
-      ProvisionHostStatus status = addCloudHostWorkflowServiceClientFactory.getInstance(dcpHost)
+      ProvisionHostStatus status = addHostWorkflowServiceClientFactory.getInstance(dcpHost)
           .getStatus(request.getOperation_id());
 
       result.setCode(ProvisionHostResultCode.OK);

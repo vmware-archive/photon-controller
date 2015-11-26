@@ -54,7 +54,7 @@ import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperNameSpace;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
-import com.vmware.photon.controller.deployer.service.client.AddCloudHostWorkflowServiceClientFactory;
+import com.vmware.photon.controller.deployer.service.client.AddHostWorkflowServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.ChangeHostModeTaskServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.DeploymentWorkflowServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.DeprovisionHostWorkflowServiceClientFactory;
@@ -272,8 +272,8 @@ public class DeployerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  AddCloudHostWorkflowServiceClientFactory getAddCloudHostWorkflowServiceClientFactory() {
-    return new AddCloudHostWorkflowServiceClientFactory();
+  AddHostWorkflowServiceClientFactory getAddCloudHostWorkflowServiceClientFactory() {
+    return new AddHostWorkflowServiceClientFactory();
   }
 
   @Provides
