@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
@@ -52,11 +53,15 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Matchers.isNotNull;
+import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.mock;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -554,6 +559,33 @@ public class TaskDcpBackendTest {
       tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(), Optional.<String>absent(),
           Optional.<Integer>absent()).getItems();
       assertThat(tasks.size(), is(initialTaskCount + 2));
+    }
+
+    @Test
+    public void testFilterWithPagination() throws Throwable {
+      ResourceList<Task> tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(),
+          Optional.<String>absent(), Optional.<Integer>absent());
+      assertThat(tasks.getItems().size(), is(0));
+
+      final int documentCount = 5;
+      final int pageSize = 2;
+      for (int i = 0; i < documentCount; i++) {
+        VmEntity vmEntity = new VmEntity();
+        vmEntity.setId(UUID.randomUUID().toString());
+        taskBackend.createQueuedTask(vmEntity, Operation.CREATE_VM);
+      }
+
+      Set<Task> taskSet = new HashSet<>();
+      tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(), Optional.<String>absent(),
+          Optional.of(pageSize));
+      taskSet.addAll(tasks.getItems());
+
+      while (tasks.getNextPageLink() != null) {
+        tasks = taskBackend.getTasksPage(tasks.getNextPageLink());
+        taskSet.addAll(tasks.getItems());
+      }
+
+      assertThat(taskSet.size(), is(documentCount));
     }
 
     @Test(expectedExceptions = InvalidQueryParamsException.class,
