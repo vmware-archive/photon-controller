@@ -118,6 +118,12 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   @Override
+  public ResourceList<Task> getTasksPage(String pageLink) {
+    ResourceList<TaskEntity> taskEntities = getEntityTasksPage(pageLink);
+    return toApiRepresentation(taskEntities);
+  }
+
+  @Override
   public TaskEntity createQueuedTask(BaseEntity entity, Operation operation) {
 
     TaskService.State taskServiceState = new TaskService.State();
@@ -298,6 +304,15 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
     ResourceList<TaskService.State> tasksDocuments = getEntityDocuments(entityId, entityKind, state, pageSize);
     return getTaskEntitiesFromDocuments(tasksDocuments);
+  }
+
+  @Override
+  public ResourceList<TaskEntity> getEntityTasksPage(String pageLink) {
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocumentPage(pageLink);
+    ResourceList<TaskService.State> taskStates = DataTypeConversionUtils.xenonQueryResultToResourceList(
+        TaskService.State.class, queryResult);
+
+    return getTaskEntitiesFromDocuments(taskStates);
   }
 
   private void patchTaskService(String taskId, TaskService.State taskServiceState) throws TaskNotFoundException {

@@ -32,11 +32,13 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 /**
  * Tests {@link TaskFeClient}.
@@ -69,10 +71,10 @@ public class TaskFeClientTest {
     }
 
     /**
-     * Tests that taskBackend is invoked with correct params.
+     * Tests that taskBackend filter function is invoked with correct params.
      */
     @Test
-    public void testTaskBackendIsCalled() throws Throwable {
+    public void testTaskBackendFilterIsCalled() throws Throwable {
       Optional id = Optional.of("id");
       Optional kind = Optional.of("kind");
       Optional state = Optional.of("state");
@@ -87,6 +89,24 @@ public class TaskFeClientTest {
       assertThat(result.getItems().size(), is(0));
 
       verify(taskBackend).filter(id, kind, state, pageSize);
+    }
+
+    /**
+     * Tests that taskBackend getTasksPage function is called with correct params.
+     * @throws Throwable
+     */
+    @Test
+    public void testTaskBackendGetPageIsCalled() throws Throwable {
+      ResourceList<Task> resourceList = new ResourceList<>();
+      resourceList.setItems(new ArrayList<>());
+      when(taskBackend.getTasksPage(anyString())).thenReturn(resourceList);
+
+      String pageLink = UUID.randomUUID().toString();
+      ResourceList result = feClient.getPage(pageLink);
+      assertThat(result, notNullValue());
+      assertThat(result.getItems().size(), is(0));
+
+      verify(taskBackend).getTasksPage(pageLink);
     }
   }
 

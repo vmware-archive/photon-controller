@@ -46,6 +46,8 @@ public interface TaskBackend {
   ResourceList<Task> filterInProject(String projectId, Optional<String> state, Optional<String> kind,
                                      Optional<Integer> pageSize);
 
+  ResourceList<Task> getTasksPage(String pageLink);
+
   TaskEntity createQueuedTask(BaseEntity entity, Operation operation);
 
   TaskEntity createCompletedTask(BaseEntity entity, Operation operation);
@@ -68,6 +70,8 @@ public interface TaskBackend {
   ResourceList<TaskEntity> getEntityTasks(Optional<String> entityId, Optional<String> entityKind,
                                           Optional<String> state, Optional<Integer> pageSize)
       throws InvalidQueryParamsException;
+
+  ResourceList<TaskEntity> getEntityTasksPage(String pageLink);
 
   void delete(TaskEntity task);
 
