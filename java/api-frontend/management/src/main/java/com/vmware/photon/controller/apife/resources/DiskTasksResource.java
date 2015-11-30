@@ -25,6 +25,8 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 import org.glassfish.jersey.server.ContainerRequest;
 
 import javax.ws.rs.Consumes;
@@ -55,17 +57,27 @@ public class DiskTasksResource {
   }
 
   @GET
-  @ApiOperation(value = "Find tasks associated with a DISK, such as CREATE_DISK",
-      response = Task.class, responseContainer = ResourceList.CLASS_NAME)
+  @ApiOperation(value = "Find tasks associated with a DISK, such as CREATE_DISK. If pageLink is provided, " +
+      "then get the tasks on that specific page", response = Task.class, responseContainer = ResourceList.CLASS_NAME)
+  @ApiResponses(value = {@ApiResponse(code = 200, message = "List of tasks for a disk")})
   public Response get(@Context Request request,
                       @PathParam("id") String id,
                       @QueryParam("state") Optional<String> state,
-                      @QueryParam("pageSize") Optional<Integer> pageSize)
+                      @QueryParam("pageSize") Optional<Integer> pageSize,
+                      @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
-    return generateResourceListResponse(
-        Response.Status.OK,
-        taskFeClient.getDiskTasks(id, state, pageSize),
-        (ContainerRequest) request,
-        TaskResourceRoutes.TASK_PATH);
+    if (pageLink.isPresent()) {
+      return generateResourceListResponse(
+          Response.Status.OK,
+          taskFeClient.getPage(pageLink.get()),
+          (ContainerRequest) request,
+          TaskResourceRoutes.TASK_PATH);
+    } else {
+      return generateResourceListResponse(
+          Response.Status.OK,
+          taskFeClient.getDiskTasks(id, state, pageSize),
+          (ContainerRequest) request,
+          TaskResourceRoutes.TASK_PATH);
+    }
   }
 }
