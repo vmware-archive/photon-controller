@@ -327,7 +327,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     assertThat(actual.name, is(expected.name));
     assertThat(actual.type, is(expected.type));
     assertThat(actual.tags, is(expected.tags));
-    assertThat(actual.documentSelfLink, is("/" + expected.id));
+    assertThat(actual.documentSelfLink, is(expected.id));
   }
 
   @Test
