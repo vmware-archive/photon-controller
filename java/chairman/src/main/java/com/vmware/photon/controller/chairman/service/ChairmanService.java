@@ -53,6 +53,7 @@ import com.vmware.photon.controller.roles.gen.SchedulerRole;
 import com.vmware.photon.controller.status.gen.GetStatusRequest;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
+import com.vmware.xenon.common.Utils;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -170,9 +171,8 @@ public class ChairmanService implements Chairman.Iface {
   void setDatastoreState(List<Datastore> datastores, List<String> imageDatastores) throws Throwable {
     // Create datastore documents.
     for (Datastore datastore: datastores) {
-      String link = DatastoreServiceFactory.getDocumentLink(datastore.getId());
       DatastoreService.State datastoreState = new DatastoreService.State();
-      datastoreState.documentSelfLink = "/" + datastore.getId();
+      datastoreState.documentSelfLink = datastore.getId();
       datastoreState.id = datastore.getId();
       datastoreState.name = datastore.getName();
       datastoreState.type = datastore.getType().toString();
@@ -220,43 +220,43 @@ public class ChairmanService implements Chairman.Iface {
                     List<Network> networks, List<String> imageDatastores) {
     String link = null;
     HostService.State hostState = null;
+
+    datastores = datastores == null ? new ArrayList<>() : datastores;
+    networks = networks == null ? new ArrayList<>() : networks;
+    imageDatastores = imageDatastores == null ? new ArrayList<>() : imageDatastores;
+
     try {
       link = getHostDocumentLink(hostId);
       hostState = new HostService.State();
       hostState.agentState = state;
-      if (datastores != null) {
-        hostState.reportedDatastores = new HashSet<>();
-        for (Datastore datastore : datastores) {
-          hostState.reportedDatastores.add(datastore.getId());
+      hostState.reportedDatastores = new HashSet<>();
+      hostState.datastoreServiceLinks = new HashMap<>();
+      for (Datastore datastore : datastores) {
+        hostState.reportedDatastores.add(datastore.getId());
+        hostState.datastoreServiceLinks
+          .put(datastore.getName(), DatastoreServiceFactory.getDocumentLink(datastore.getId()));
+      }
+      hostState.reportedNetworks = new HashSet<>();
+      for (Network network : networks) {
+        if (network.getTypes() != null && network.getTypes().contains(NetworkType.VM)) {
+          // TEMPORARY WORKAROUND: Currently the portgroup document doesn't
+          // contain the network type information, so we are filtering them
+          // here so that chairman only sees VM networks while building the
+          // scheduler tree.
+          hostState.reportedNetworks.add(network.getId());
         }
       }
-      if (networks != null) {
-        hostState.reportedNetworks = new HashSet<>();
-        for (Network network : networks) {
-          if (network.getTypes() != null && network.getTypes().contains(NetworkType.VM)) {
-            // TEMPORARY WORKAROUND: Currently the portgroup document doesn't
-            // contain the network type information, so we are filtering them
-            // here so that chairman only sees VM networks while building the
-            // scheduler tree.
-            hostState.reportedNetworks.add(network.getId());
-          }
-        }
-      if (imageDatastores != null) {
-        hostState.reportedImageDatastores = new HashSet<>();
-        for (String datastoreId: imageDatastores) {
-            hostState.reportedImageDatastores.add(datastoreId);
-          }
-        }
+      hostState.reportedImageDatastores = new HashSet<>();
+      for (String datastoreId: imageDatastores) {
+        hostState.reportedImageDatastores.add(datastoreId);
       }
       dcpRestClient.patch(link, hostState);
 
       // Update datastore state
-      if (datastores != null && imageDatastores != null) {
-        setDatastoreState(datastores, imageDatastores);
-      }
-      logger.info("Updated {} with new state: {}", link, hostState);
+      setDatastoreState(datastores, imageDatastores);
+      logger.info("Updated {} with new state: {}", link, Utils.toJson(hostState));
     } catch (Throwable ex) {
-      logger.warn("Failed to update {} with state: {}", link, hostState, ex);
+      logger.warn("Failed to update {} with state: {}", link, Utils.toJson(hostState), ex);
     }
   }
 
