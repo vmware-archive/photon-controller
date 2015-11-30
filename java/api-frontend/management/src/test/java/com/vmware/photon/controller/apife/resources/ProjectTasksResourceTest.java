@@ -27,6 +27,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
 import javax.ws.rs.client.WebTarget;
@@ -37,6 +38,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Tests {@link ProjectTasksResource}.
@@ -101,6 +103,30 @@ public class ProjectTasksResourceTest extends ResourceTest {
     }
   }
 
+  @Test
+  public void testGetProjectTasksPage() throws Exception {
+    ResourceList<Task> expectedTasksPage = new ResourceList<Task>(ImmutableList.of(task1, task2));
+    when(client.getPage(anyString())).thenReturn(expectedTasksPage);
+
+    List<String> expectedSelfLinks = ImmutableList.of(taskRoutePath1, taskRoutePath2);
+
+    Response response = getTasks(UUID.randomUUID().toString());
+    assertThat(response.getStatus(), is(200));
+
+    List<Task> tasks = response.readEntity(
+        new GenericType<ResourceList<Task>>() {
+        }
+    ).getItems();
+
+    assertThat(tasks.size(), is(expectedTasksPage.getItems().size()));
+
+    for (int i = 0; i < tasks.size(); i++) {
+      assertThat(new URI(tasks.get(i).getSelfLink()).isAbsolute(), is(true));
+      assertThat(tasks.get(i), is(expectedTasksPage.getItems().get(i)));
+      assertThat(tasks.get(i).getSelfLink().endsWith(expectedSelfLinks.get(i)), is(true));
+    }
+  }
+
   @DataProvider(name = "pageSizes")
   private Object[][] getPageSize() {
     return new Object[][] {
@@ -132,6 +158,13 @@ public class ProjectTasksResourceTest extends ResourceTest {
     if (pageSize.isPresent()) {
       uri += "?pageSize=" + pageSize.get();
     }
+
+    WebTarget resource = client().target(uri);
+    return resource.request().get();
+  }
+
+  private Response getTasks(String pageLink) {
+    String uri = projectTasksRoutePath + "?pageLink=" + pageLink;
 
     WebTarget resource = client().target(uri);
     return resource.request().get();
