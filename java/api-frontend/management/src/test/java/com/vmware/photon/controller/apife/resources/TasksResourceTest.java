@@ -27,6 +27,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
 import javax.ws.rs.client.WebTarget;
@@ -37,6 +38,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Tests {@link TasksResource}.
@@ -107,6 +109,32 @@ public class TasksResourceTest extends ResourceTest {
       assertThat(new URI(tasks.get(i).getSelfLink()).isAbsolute(), CoreMatchers.is(true));
       assertThat(tasks.get(i), is(expectedTasks.get(i)));
       assertThat(tasks.get(i).getSelfLink().endsWith(expectedLinks.get(i)), is(true));
+    }
+  }
+
+  @Test
+  public void testGetTasksPage() throws Exception {
+    ResourceList<Task> expectedTasksPage = new ResourceList<Task>(ImmutableList.of(t1, t2));
+    when(taskFeClient.getPage(anyString())).thenReturn(expectedTasksPage);
+
+    List<String> expectedSelfLinks = ImmutableList.of(link1, link2);
+
+    String uri = UriBuilder.fromPath(TaskResourceRoutes.API + TaskResourceRoutes.TASKS_PAGE_API)
+        .build(UUID.randomUUID()).toString();
+    Response response = client().target(uri).request().get();
+    assertThat(response.getStatus(), is(200));
+
+    List<Task> tasks = response.readEntity(
+        new GenericType<ResourceList<Task>>() {
+        }
+    ).getItems();
+
+    assertThat(tasks.size(), is(expectedTasksPage.getItems().size()));
+
+    for (int i = 0; i < tasks.size(); i++) {
+      assertThat(new URI(tasks.get(i).getSelfLink()).isAbsolute(), is(true));
+      assertThat(tasks.get(i), is(expectedTasksPage.getItems().get(i)));
+      assertThat(tasks.get(i).getSelfLink().endsWith(expectedSelfLinks.get(i)), is(true));
     }
   }
 

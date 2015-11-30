@@ -21,4 +21,6 @@ public class TaskResourceRoutes {
   public static final String API = "/tasks";
 
   public static final String TASK_PATH = "/tasks/{id}";
+
+  public static  final String TASKS_PAGE_API = "/page/{id}";
 }

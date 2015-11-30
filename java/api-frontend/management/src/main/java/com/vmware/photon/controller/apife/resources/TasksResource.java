@@ -31,6 +31,7 @@ import org.glassfish.jersey.server.ContainerRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
@@ -57,7 +58,7 @@ public class TasksResource {
   @GET
   @ApiOperation(value = "Find tasks, filtering by entityId and entityKind",
       response = Task.class, responseContainer = ResourceList.CLASS_NAME)
-  @ApiResponses(value = {@ApiResponse(code = 200, message = "List of tasks")})
+  @ApiResponses(value = {@ApiResponse(code = 200, message = "First page of tasks")})
   public Response find(@Context Request request,
                        @QueryParam("entityId") Optional<String> entityId,
                        @QueryParam("entityKind") Optional<String> entityKind,
@@ -69,5 +70,18 @@ public class TasksResource {
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
 
+  }
+
+  @GET
+  @Path(TaskResourceRoutes.TASKS_PAGE_API)
+  @ApiOperation(value = "Get a page of tasks", response = Task.class, responseContainer = ResourceList.CLASS_NAME)
+  @ApiResponses(value = {@ApiResponse(code = 200, message = "Page of tasks")})
+  public Response getPage(@Context Request request, @PathParam("pageLink") String pageLink) {
+    return generateResourceListResponse(
+        Response.Status.OK,
+        taskFeClient.getPage(pageLink),
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH
+    );
   }
 }
