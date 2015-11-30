@@ -38,9 +38,13 @@ public class DataTypeConversionUtils {
   public static <T> ResourceList<T> xenonQueryResultToResourceList(Class<T> documentType,
                                                                    ServiceDocumentQueryResult queryResult) {
 
+    // The documents links stored in documentLinks are sorted while documents are not, and
+    // the following loop iterates on the documentLinks to preserve this order.
     List<T> documents = new ArrayList<>();
-    for (String link : queryResult.documentLinks) {
-      documents.add(Utils.fromJson(queryResult.documents.get(link), documentType));
+    if (queryResult.documentLinks != null) {
+      for (String link : queryResult.documentLinks) {
+        documents.add(Utils.fromJson(queryResult.documents.get(link), documentType));
+      }
     }
 
     ResourceList<T> resourceList = new ResourceList<>();
