@@ -54,9 +54,10 @@ start() {
   export PYTHONPATH=$PHOTON_CONTROLLER_ROOT/$PYVER/site-packages
 
   # Remove empty folders in python path to guarantee a clean environment
-  for f in `ls $PHOTON_CONTROLLER_ROOT/$PYVER/site-packages`; do
-    if [ `ls $f | wc -l` -eq 0 ]; then
-      rmdir $f
+  SITE_PACKAGES=$PHOTON_CONTROLLER_ROOT/$PYVER/site-packages
+  for f in `ls $SITE_PACKAGES`; do
+    if [ `ls $SITE_PACKAGES/$f | wc -l` -eq 0 ]; then
+      rmdir $SITE_PACKAGES/$f
     fi
   done
 
