@@ -55,19 +55,27 @@ public class TasksResource {
   }
 
   @GET
-  @ApiOperation(value = "Find tasks, filtering by entityId and entityKind",
-      response = Task.class, responseContainer = ResourceList.CLASS_NAME)
+  @ApiOperation(value = "Find tasks, filtering by entityId and entityKind. If pageLink is provided, " +
+      "then get the tasks on that specific page", response = Task.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of tasks")})
   public Response find(@Context Request request,
                        @QueryParam("entityId") Optional<String> entityId,
                        @QueryParam("entityKind") Optional<String> entityKind,
                        @QueryParam("state") Optional<String> state,
-                       @QueryParam("pageSize") Optional<Integer> pageSize) throws ExternalException {
-    return generateResourceListResponse(
-        Response.Status.OK,
-        taskFeClient.find(entityId, entityKind, state, pageSize),
-        (ContainerRequest) request,
-        TaskResourceRoutes.TASK_PATH);
-
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
+    if (pageLink.isPresent()) {
+      return generateResourceListResponse(
+          Response.Status.OK,
+          taskFeClient.getPage(pageLink.get()),
+          (ContainerRequest) request,
+          TaskResourceRoutes.TASK_PATH);
+    } else {
+      return generateResourceListResponse(
+          Response.Status.OK,
+          taskFeClient.find(entityId, entityKind, state, pageSize),
+          (ContainerRequest) request,
+          TaskResourceRoutes.TASK_PATH);
+    }
   }
 }
