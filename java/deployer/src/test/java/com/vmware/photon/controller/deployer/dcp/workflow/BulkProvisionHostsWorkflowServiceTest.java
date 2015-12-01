@@ -153,8 +153,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
           {null, null},
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB},
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_HOSTS},
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.DELETE_VIB},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
@@ -286,28 +284,16 @@ public class BulkProvisionHostsWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB},
           {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB,
-              TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_HOSTS},
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_HOSTS,
-              TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.DELETE_VIB},
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.DELETE_VIB,
               TaskState.TaskStage.FINISHED, null},
 
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB,
               TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_HOSTS,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.DELETE_VIB,
-              TaskState.TaskStage.FAILED, null},
 
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_HOSTS,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.DELETE_VIB,
               TaskState.TaskStage.CANCELLED, null},
       };
     }
@@ -338,26 +324,10 @@ public class BulkProvisionHostsWorkflowServiceTest {
           {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB,
               TaskState.TaskStage.CREATED, null},
 
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_HOSTS,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_HOSTS,
-              TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB},
-
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.DELETE_VIB,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.DELETE_VIB,
-              TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB},
-          {TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.DELETE_VIB,
-              TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_HOSTS},
-
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_HOSTS},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.DELETE_VIB},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FINISHED, null,
@@ -370,10 +340,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB},
           {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_HOSTS},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.DELETE_VIB},
-          {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FAILED, null},
@@ -384,10 +350,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_HOSTS},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.DELETE_VIB},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null,
@@ -441,11 +403,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
       if (TaskState.TaskStage.STARTED == patchStage) {
         switch (patchSubStage) {
           case UPLOAD_VIB:
-            break;
-          case PROVISION_HOSTS:
-            patchState.vibPath = "VIB_PATH";
-            break;
-          case DELETE_VIB:
             break;
         }
       }
@@ -655,10 +612,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
       if (TaskState.TaskStage.STARTED == startStage) {
         switch (startSubStage) {
-          case DELETE_VIB:
-          case PROVISION_HOSTS:
-            startState.vibPath = "VIB_PATH";
-            // fall through
           case UPLOAD_VIB:
             break;
         }

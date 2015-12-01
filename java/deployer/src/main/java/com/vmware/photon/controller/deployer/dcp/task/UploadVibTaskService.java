@@ -265,9 +265,13 @@ public class UploadVibTaskService extends StatefulService {
     for (File sourceFile : sourceFiles) {
       HttpFileServiceClient httpFileServiceClient = HostUtils.getHttpFileServiceClientFactory(this).create(
           hostState.hostAddress, hostState.userName, hostState.password);
-      String dsPath = "/vibs/" + currentState.uniqueId + "/" + sourceFile.getName();
-      ListenableFutureTask<Integer> task = ListenableFutureTask.create(httpFileServiceClient.uploadFileToDatastore(
-          sourceFile.getAbsolutePath(), deploymentState.imageDataStoreNames.iterator().next(), dsPath));
+
+      String dsPath = "/tmp/vibs/" + ServiceUtils.getIDFromDocumentSelfLink(currentState.deploymentServiceLink) +
+          "/" + sourceFile.getName();
+
+      ListenableFutureTask<Integer> task = ListenableFutureTask.create(httpFileServiceClient.uploadFile(
+          sourceFile.getAbsolutePath(), dsPath, false));
+
       HostUtils.getListeningExecutorService(this).submit(task);
       Futures.addCallback(task, new FutureCallback<Integer>() {
         @Override

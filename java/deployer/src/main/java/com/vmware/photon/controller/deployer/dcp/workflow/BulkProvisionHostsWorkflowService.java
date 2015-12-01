@@ -24,9 +24,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.dcp.task.DeleteVibTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.DeleteVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
@@ -46,6 +43,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -69,8 +67,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
      */
     public enum SubStage {
       UPLOAD_VIB,
-      PROVISION_HOSTS,
-      DELETE_VIB,
     }
   }
 
@@ -125,12 +121,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
      */
     @Immutable
     public Integer taskPollDelay;
-
-    /**
-     * This value represents the relative path on the shared image data store to which the VIB was uploaded.
-     */
-    @WriteOnce
-    public String vibPath;
   }
 
   public BulkProvisionHostsWorkflowService() {
@@ -241,11 +231,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
 
     if (TaskState.TaskStage.STARTED == state.taskState.stage) {
       switch (state.taskState.subStage) {
-        case DELETE_VIB:
-        case PROVISION_HOSTS:
-          checkState(null != state.vibPath);
-          // fall through
-        case UPLOAD_VIB:
+          case UPLOAD_VIB:
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + state.taskState.subStage);
@@ -287,10 +273,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       startState.taskState = patchState.taskState;
     }
 
-    if (null != patchState.vibPath) {
-      startState.vibPath = patchState.vibPath;
-    }
-
     return startState;
   }
 
@@ -298,12 +280,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     switch (currentState.taskState.subStage) {
       case UPLOAD_VIB:
         processUploadVibSubStage(currentState);
-        break;
-      case PROVISION_HOSTS:
-        processProvisionHostsSubStage(currentState);
-        break;
-      case DELETE_VIB:
-        processDeleteVibSubStage(currentState);
         break;
     }
   }
@@ -333,7 +309,39 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
                     } else {
                       checkState(documentLinks.size() > 0);
                     }
-                    processUploadVibSubStage(currentState, documentLinks.iterator().next());
+
+                    Iterator<String> it = documentLinks.iterator();
+                    final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
+                    FutureCallback<ProvisionHostWorkflowService.State> provisionHostFutureCallback =
+                        new FutureCallback<ProvisionHostWorkflowService.State>() {
+                          @Override
+                          public void onSuccess(@Nullable ProvisionHostWorkflowService.State result) {
+                            switch (result.taskState.stage) {
+                              case FINISHED:
+                                if (0 == pendingChildren.decrementAndGet()) {
+                                  sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+                                }
+                                break;
+                              case FAILED:
+                                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                                patchState.taskState.failure = result.taskState.failure;
+                                TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this, patchState);
+                                break;
+                              case CANCELLED:
+                                sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
+                                break;
+                            }
+                          }
+
+                          @Override
+                          public void onFailure(Throwable t) {
+                            failTask(t);
+                          }
+                        };
+
+                    while (it.hasNext()) {
+                      processUploadVibSubStage(currentState, it.next(), provisionHostFutureCallback);
+                    }
                   } catch (Throwable t) {
                     failTask(t);
                   }
@@ -341,7 +349,9 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
             ));
   }
 
-  private void processUploadVibSubStage(State currentState, String hostServiceLink) {
+  private void processUploadVibSubStage(State currentState, String hostServiceLink,
+                                        FutureCallback<ProvisionHostWorkflowService.State> provisionHostFutureCallback)
+  {
     final Service service = this;
 
     FutureCallback<UploadVibTaskService.State> futureCallback = new FutureCallback<UploadVibTaskService.State>() {
@@ -349,9 +359,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       public void onSuccess(@Nullable UploadVibTaskService.State result) {
         switch (result.taskState.stage) {
           case FINISHED: {
-            State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_HOSTS, null);
-            patchState.vibPath = result.vibPath;
-            TaskUtils.sendSelfPatch(service, patchState);
+            provisionHost(currentState, hostServiceLink, result.vibPath, provisionHostFutureCallback);
             break;
           }
           case FAILED: {
@@ -393,160 +401,22 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     return startState;
   }
 
-  private void processProvisionHostsSubStage(final State currentState) {
-
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-            .setBody(QueryTask.create(currentState.querySpecification).setDirect(true))
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
-
-                  try {
-                    NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
-                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
-                    if (UsageTag.CLOUD.name().equals(currentState.usageTag)) {
-                      if (documentLinks.isEmpty()) {
-                        TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this,
-                            buildPatch(TaskState.TaskStage.FINISHED, null, null));
-                        return;
-                      }
-                    } else {
-                      checkState(documentLinks.size() > 0);
-                    }
-                    processHostQueryResults(currentState, documentLinks);
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-
-                }
-            ));
-  }
-
-  private void processHostQueryResults(State currentState, Set<String> documentLinks) {
-    final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
-    final Service service = this;
-
-    FutureCallback<ProvisionHostWorkflowService.State> futureCallback =
-        new FutureCallback<ProvisionHostWorkflowService.State>() {
-          @Override
-          public void onSuccess(@Nullable ProvisionHostWorkflowService.State result) {
-            switch (result.taskState.stage) {
-              case FINISHED:
-                if (0 == pendingChildren.decrementAndGet()) {
-                  sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_VIB);
-                }
-                break;
-              case FAILED:
-                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                patchState.taskState.failure = result.taskState.failure;
-                TaskUtils.sendSelfPatch(service, patchState);
-                break;
-              case CANCELLED:
-                sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
-                break;
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-
-    ProvisionHostWorkflowService.State startState = new ProvisionHostWorkflowService.State();
-    startState.vibPath = currentState.vibPath;
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.chairmanServerList = currentState.chairmanServerList;
-    startState.taskPollDelay = currentState.taskPollDelay;
-
-    for (String hostServiceLink : documentLinks) {
-      startState.hostServiceLink = hostServiceLink;
-      TaskUtils.startTaskAsync(
-          this,
-          ProvisionHostWorkflowFactoryService.SELF_LINK,
-          startState,
-          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-          ProvisionHostWorkflowService.State.class,
-          currentState.taskPollDelay,
-          futureCallback);
-    }
-  }
-
-  private void processDeleteVibSubStage(final State currentState) {
-
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-            .setBody(QueryTask.create(currentState.querySpecification).setDirect(true))
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
-
-                  try {
-                    NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
-                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
-                    checkState(documentLinks.size() > 0);
-                    processDeleteVibSubStage(currentState, documentLinks.iterator().next());
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            ));
-  }
-
-  private void processDeleteVibSubStage(State currentState, String hostServiceLink) {
-    final Service service = this;
-
-    FutureCallback<DeleteVibTaskService.State> futureCallback = new FutureCallback<DeleteVibTaskService.State>() {
-      @Override
-      public void onSuccess(@Nullable DeleteVibTaskService.State result) {
-        switch (result.taskState.stage) {
-          case FINISHED:
-            sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-            break;
-          case FAILED:
-            State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-            patchState.taskState.failure = result.taskState.failure;
-            TaskUtils.sendSelfPatch(service, patchState);
-            break;
-          case CANCELLED:
-            sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
-            break;
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-
-    DeleteVibTaskService.State startState = createDeleteVibTaskState(currentState, hostServiceLink);
-
+  private void provisionHost(State currentState, String hostServiceLink, String vibPath,
+                             FutureCallback<ProvisionHostWorkflowService.State> provisionHostFutureCallback) {
+    ProvisionHostWorkflowService.State provisionStartState = new ProvisionHostWorkflowService.State();
+    provisionStartState.vibPath = vibPath;
+    provisionStartState.deploymentServiceLink = currentState.deploymentServiceLink;
+    provisionStartState.chairmanServerList = currentState.chairmanServerList;
+    provisionStartState.taskPollDelay = currentState.taskPollDelay;
+    provisionStartState.hostServiceLink = hostServiceLink;
     TaskUtils.startTaskAsync(
         this,
-        DeleteVibTaskFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        DeleteVibTaskService.State.class,
+        ProvisionHostWorkflowFactoryService.SELF_LINK,
+        provisionStartState,
+        (provisionState) -> TaskUtils.finalTaskStages.contains(provisionState.taskState.stage),
+        ProvisionHostWorkflowService.State.class,
         currentState.taskPollDelay,
-        futureCallback);
-  }
-
-  private DeleteVibTaskService.State createDeleteVibTaskState(State currentState, String hostServiceLink) {
-    DeleteVibTaskService.State startState = new DeleteVibTaskService.State();
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.hostServiceLink = hostServiceLink;
-    startState.vibPath = currentState.vibPath;
-    return startState;
+        provisionHostFutureCallback);
   }
 
   private void sendStageProgressPatch(TaskState.TaskStage stage, TaskState.SubStage subStage) {
