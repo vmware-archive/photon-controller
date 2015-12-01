@@ -632,6 +632,11 @@ public class SwarmClusterCreateTaskServiceTest {
         machine = null;
       }
 
+      if (null != cloudStoreMachine) {
+        cloudStoreMachine.stop();
+        cloudStoreMachine = null;
+      }
+
       startState = null;
       taskReturnedByCreateVm = null;
       taskReturnedByAttachIso = null;

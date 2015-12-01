@@ -466,6 +466,11 @@ public class ClusterExpandTaskServiceTest {
         machine = null;
       }
 
+      if (null != cloudStoreMachine) {
+        cloudStoreMachine.stop();
+        cloudStoreMachine = null;
+      }
+
       FileUtils.deleteDirectory(storageDirectory);
     }
 
