@@ -27,6 +27,7 @@ public class PortGroupServiceFactory extends FactoryService {
 
   public PortGroupServiceFactory() {
     super(PortGroupService.State.class);
+    super.setPeerNodeSelectorPath(com.vmware.xenon.services.common.ServiceUriPaths.SHA1_3X_NODE_SELECTOR);
   }
 
   @Override

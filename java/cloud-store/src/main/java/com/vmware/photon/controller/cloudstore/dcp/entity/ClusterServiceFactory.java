@@ -27,6 +27,7 @@ public class ClusterServiceFactory extends FactoryService {
 
   public ClusterServiceFactory() {
     super(ClusterService.State.class);
+    super.setPeerNodeSelectorPath(com.vmware.xenon.services.common.ServiceUriPaths.SHA1_3X_NODE_SELECTOR);
   }
 
   @Override

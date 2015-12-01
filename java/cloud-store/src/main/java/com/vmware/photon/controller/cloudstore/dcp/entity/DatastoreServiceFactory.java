@@ -27,6 +27,7 @@ public class DatastoreServiceFactory extends FactoryService {
 
   public DatastoreServiceFactory() {
     super(DatastoreService.State.class);
+    super.setPeerNodeSelectorPath(com.vmware.xenon.services.common.ServiceUriPaths.SHA1_3X_NODE_SELECTOR);
   }
 
   @Override

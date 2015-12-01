@@ -14,10 +14,12 @@
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
@@ -44,6 +46,7 @@ public class HostServiceFactoryTest {
         Service.ServiceOption.REPLICATION);
 
     assertThat(hostServiceFactory.getOptions(), is(expected));
+    assertThat(hostServiceFactory.getPeerNodeSelectorPath(), is(equalTo(ServiceUriPaths.SHA1_3X_NODE_SELECTOR)));
   }
 
   @Test

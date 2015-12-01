@@ -14,10 +14,12 @@
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -44,6 +46,7 @@ public class ImageServiceFactoryTest {
         Service.ServiceOption.FACTORY,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING);
     assertThat(factory.getOptions(), is(expected));
+    assertThat(factory.getPeerNodeSelectorPath(), is(equalTo(ServiceUriPaths.SHA1_3X_NODE_SELECTOR)));
   }
 
   @Test
