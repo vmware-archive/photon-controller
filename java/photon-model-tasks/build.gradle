@@ -1,5 +1,7 @@
 apply plugin: 'java'
 
+uploadArchives.enabled = true
+
 dependencies {
   compile "commons-io:commons-io:2.4"
   compile "com.vmware.xenon:xenon-common:${versions.xenon_common}"
@@ -32,8 +34,22 @@ jar {
   }
 }
 
+task javadocJar(type: Jar) {
+  classifier = 'javadoc'
+  from javadoc
+}
+
+task sourcesJar(type: Jar) {
+  classifier = 'sources'
+  from sourceSets.main.allSource
+}
+
 tasks.withType(Test) {
   scanForTestClasses = false
   include "**/*Test.class"
   exclude "**/helpers/*.class"
+}
+
+artifacts {
+  archives javadocJar, sourcesJar
 }
