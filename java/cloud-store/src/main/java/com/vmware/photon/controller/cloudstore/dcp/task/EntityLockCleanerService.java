@@ -293,6 +293,7 @@ public class EntityLockCleanerService extends StatefulService {
         ServiceUtils.logInfo(this, "No unreleased entityLocks found.");
         finishPatch.deletedEntityLocks = 0;
         finishTask(finishPatch);
+        return;
       }
 
       OperationJoin join = create(deleteOperations);
