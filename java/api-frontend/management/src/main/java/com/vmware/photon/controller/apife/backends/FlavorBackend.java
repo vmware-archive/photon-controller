@@ -15,8 +15,6 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Flavor;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -42,8 +40,6 @@ public interface FlavorBackend {
   FlavorEntity getEntityByNameAndKind(String name, String kind) throws ExternalException;
 
   FlavorEntity getEntityById(String id) throws ExternalException;
-
-  ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   void tombstone(FlavorEntity flavor) throws ExternalException;
 }

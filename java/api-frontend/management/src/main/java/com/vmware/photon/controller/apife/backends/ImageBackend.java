@@ -17,13 +17,9 @@ import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ImageCreateSpec;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-
-import com.google.common.base.Optional;
 
 import java.io.InputStream;
 import java.util.List;
@@ -58,8 +54,6 @@ public interface ImageBackend {
   List<Image> getListApiRepresentation() throws ExternalException;
 
   void updateSettings(ImageEntity imageEntity, Map<String, String> imageSettings) throws ExternalException;
-
-  ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   ImageEntity findById(String id) throws ExternalException;
 }

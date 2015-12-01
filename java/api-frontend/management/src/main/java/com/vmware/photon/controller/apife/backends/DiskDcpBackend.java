@@ -25,8 +25,6 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -199,13 +197,6 @@ public class DiskDcpBackend implements DiskBackend {
   public void createVmDiskOperationStep(TaskEntity task, VmEntity vm, List<String> diskIds,
                                         Operation operation) throws ExternalException {
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize)
-      throws ExternalException {
-    BaseDiskEntity diskEntity = find(PersistentDisk.KIND, id);
-    return taskBackend.filter(diskEntity.getId(), diskEntity.getKind(), state, pageSize);
   }
 
   @Override
