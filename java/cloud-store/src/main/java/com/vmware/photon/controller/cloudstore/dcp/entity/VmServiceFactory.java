@@ -26,6 +26,7 @@ public class VmServiceFactory extends FactoryService {
 
   public VmServiceFactory() {
     super(VmService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
   }
 
   @Override

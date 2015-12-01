@@ -27,6 +27,7 @@ public class ClusterServiceFactory extends FactoryService {
 
   public ClusterServiceFactory() {
     super(ClusterService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
   }
 
   @Override

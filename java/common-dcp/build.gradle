@@ -12,6 +12,7 @@ dependencies {
   testCompile "org.powermock:powermock-api-mockito:${versions.powermock}"
   testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
   testCompile "commons-collections:commons-collections:3.2.1"
+  testCompile "com.vmware.xenon:xenon-common:${versions.xenon_common}:tests"
 }
 
 tasks.withType(Test) {

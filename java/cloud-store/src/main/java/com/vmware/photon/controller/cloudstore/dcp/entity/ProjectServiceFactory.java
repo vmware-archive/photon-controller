@@ -26,6 +26,7 @@ public class ProjectServiceFactory extends FactoryService {
 
   public ProjectServiceFactory() {
     super(ProjectService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
   }
 
   @Override

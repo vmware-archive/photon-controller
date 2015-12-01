@@ -26,6 +26,7 @@ public class ImageServiceFactory extends FactoryService {
 
   public ImageServiceFactory() {
     super(ImageService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
   }
 
   @Override

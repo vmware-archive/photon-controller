@@ -13,11 +13,13 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.xenon.common.Service;
 
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
@@ -44,6 +46,8 @@ public class PortGroupServiceFactoryTest {
         Service.ServiceOption.REPLICATION);
 
     assertThat(portGroupServiceFactory.getOptions(), is(expected));
+    assertThat(portGroupServiceFactory.getPeerNodeSelectorPath(),
+        is(equalTo(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR)));
   }
 
   @Test

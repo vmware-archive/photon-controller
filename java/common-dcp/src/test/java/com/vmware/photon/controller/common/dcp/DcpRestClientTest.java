@@ -23,6 +23,8 @@ import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.ExampleFactoryService;
 import com.vmware.xenon.services.common.ExampleService;
+import com.vmware.xenon.services.common.LimitedReplicationExampleFactoryService;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Optional;
@@ -32,6 +34,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,6 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -136,6 +140,7 @@ public class DcpRestClientTest {
 
     StaticServerSet serverSet = new StaticServerSet(servers);
     dcpRestClient = spy(new DcpRestClient(serverSet, Executors.newFixedThreadPool(1)));
+    dcpRestClient.start();
     return hosts;
   }
 
@@ -751,15 +756,8 @@ public class DcpRestClientTest {
     public void setUp() throws Throwable {
       hosts = setUpMultipleHosts(5);
       dcpRestClients = setupDcpRestClients(hosts);
-      InetSocketAddress[] servers = new InetSocketAddress[hosts.length];
-      for (int i = 0; i < hosts.length; i++) {
-        servers[i] = new InetSocketAddress(hosts[i].getPreferredAddress(), hosts[i].getPort());
-      }
-      StaticServerSet staticServerSet = new StaticServerSet(servers);
-      dcpRestClient = spy(new DcpRestClient(staticServerSet, Executors.newFixedThreadPool(1)));
       doReturn(TimeUnit.SECONDS.toMicros(5)).when(dcpRestClient).getGetOperationExpirationMicros();
       doReturn(TimeUnit.SECONDS.toMicros(5)).when(dcpRestClient).getQueryOperationExpirationMicros();
-      dcpRestClient.start();
     }
 
     @AfterMethod
@@ -1091,6 +1089,121 @@ public class DcpRestClientTest {
 
       //the selected URI should be using local address
       assertThat(result2.getHost().equals(localHostAddress), is(true));
+    }
+  }
+
+  /**
+   * Tests asymmetric replication with multiple hosts.
+   */
+  public class ReplicationTest {
+
+    private BasicServiceHost[] hosts;
+
+    @DataProvider(name = "hostCountProvider")
+    private Object[][] getHostCount() {
+      return new Object[][]{
+          {1},
+          {2},
+          {3},
+          {4},
+          {5},
+      };
+    }
+
+    @BeforeMethod
+    public void setUp(Object[] testArgs) throws Throwable {
+      hosts = setUpMultipleHosts((Integer) testArgs[0]);
+      for (BasicServiceHost host : hosts) {
+        host.startServiceSynchronously(new LimitedReplicationExampleFactoryService(), null,
+            LimitedReplicationExampleFactoryService.SELF_LINK);
+      }
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (hosts != null) {
+        for (BasicServiceHost host : hosts) {
+          host.destroy();
+        }
+      }
+
+      if (dcpRestClient != null) {
+        dcpRestClient.stop();
+      }
+    }
+
+    @Test(dataProvider = "hostCountProvider")
+    public void test3xReplication(final Integer hostCount) throws Throwable {
+      final Integer replicationFactor = 3;
+      final String exampleServiceStateName = UUID.randomUUID().toString();
+      ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
+      exampleServiceState.name = exampleServiceStateName;
+
+      Operation result = dcpRestClient.post(LimitedReplicationExampleFactoryService.SELF_LINK, exampleServiceState);
+      assertThat(result.getStatusCode(), is(200));
+      ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
+      assertThat(createdState.name, is(equalTo(exampleServiceState.name)));
+
+      final CountDownLatch countDownLatch = new CountDownLatch(1);
+      final Integer expectedLinkCount = Math.min(hostCount, replicationFactor);
+      Thread t = new Thread(() -> {
+        Integer actualLinkCount = 0;
+        while (!Thread.currentThread().isInterrupted()) {
+          try {
+            actualLinkCount = getActualLinkCount(exampleServiceStateName);
+            if ((actualLinkCount == expectedLinkCount)) {
+              countDownLatch.countDown();
+              break;
+            }
+          } catch (Throwable e) {
+            break;
+          }
+        }
+      });
+
+      t.start();
+
+      Long timeoutMillis = TimeUnit.SECONDS.toMillis(10);
+      Boolean linkCountMatchFound = countDownLatch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+      if (!linkCountMatchFound) {
+        t.interrupt();
+        Assert.fail("Failed to find correct number of replicated links within specified timeout (Millis): "
+            + timeoutMillis);
+      }
+
+      Integer actualLinkCount = getActualLinkCount(exampleServiceState.name);
+      assertThat(actualLinkCount, is(expectedLinkCount));
+    }
+
+    private Integer getActualLinkCount(String exampleServiceStateName) throws Throwable {
+      Integer actualLinkCount = 0;
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(ExampleService.ExampleServiceState.class));
+
+      QueryTask.Query nameClause = new QueryTask.Query()
+          .setTermPropertyName("name")
+          .setTermMatchValue(exampleServiceStateName);
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.query.addBooleanClause(nameClause);
+
+      Operation queryResult = dcpRestClient.postToBroadcastQueryService(spec);
+      assertThat(queryResult.getStatusCode(), is(200));
+
+      NodeGroupBroadcastResponse queryResponse = queryResult.getBody(NodeGroupBroadcastResponse.class);
+      assertThat(queryResponse.failures.isEmpty(), is(true));
+
+      for (Map.Entry<URI, String> entry : queryResponse.jsonResponses.entrySet()) {
+        QueryTask queryTask = Utils.fromJson(entry.getValue(), QueryTask.class);
+        if (null != queryTask.results
+            && null != queryTask.results.documentLinks
+            && queryTask.results.documentLinks.size() > 0) {
+          actualLinkCount += queryTask.results.documentLinks.size();
+        }
+      }
+      return actualLinkCount;
     }
   }
 }
