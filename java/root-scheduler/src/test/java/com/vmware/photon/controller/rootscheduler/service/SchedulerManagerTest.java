@@ -87,6 +87,7 @@ public class SchedulerManagerTest extends PowerMockTestCase {
   private SchedulerFactory schedulerFactory;
   @Mock
   private HealthChecker healthChecker;
+  private ScoreCalculator scoreCalculator;
   private SchedulerManager manager;
   private ManagedScheduler foo = mock(ManagedScheduler.class);
   private ManagedScheduler bar = mock(ManagedScheduler.class);
@@ -107,7 +108,7 @@ public class SchedulerManagerTest extends PowerMockTestCase {
     config.initRootPlaceParams();
 
     hostPrefix = "hostOf-";
-    manager = spy(new SchedulerManager(schedulerFactory, config, new RandomStrategy()));
+    manager = spy(new SchedulerManager(schedulerFactory, config, new RandomStrategy(), new ScoreCalculator(config)));
     manager.healthChecker = healthChecker;
 
     when(foo.getWeight()).thenReturn(8);
@@ -195,7 +196,7 @@ public class SchedulerManagerTest extends PowerMockTestCase {
 
     RandomStrategy randomStrategy = mock(RandomStrategy.class);
 
-    manager = spy(new SchedulerManager(schedulerFactory, config, randomStrategy));
+    manager = spy(new SchedulerManager(schedulerFactory, config, randomStrategy, new ScoreCalculator(config)));
 
     ChildInfo c1 = new ChildInfo("foo", "foo", 1024);
     ChildInfo c2 = new ChildInfo("bar", "bar", 1024);
