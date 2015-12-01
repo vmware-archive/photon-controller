@@ -66,6 +66,7 @@ public class HousekeeperDcpServiceHost
   private static final Class[] FACTORY_SERVICES = {
       ImageReplicatorServiceFactory.class,
       ImageCopyServiceFactory.class,
+      ImageHostToHostCopyServiceFactory.class,
 
       ImageRemoverServiceFactory.class,
       ImageCleanerTriggerServiceFactory.class,
@@ -150,6 +151,7 @@ public class HousekeeperDcpServiceHost
 
     return checkServiceAvailable(ImageReplicatorServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageCopyServiceFactory.SELF_LINK)
+        && checkServiceAvailable(ImageHostToHostCopyServiceFactory.SELF_LINK)
 
         && checkServiceAvailable(ImageRemoverServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageCleanerTriggerServiceFactory.SELF_LINK)

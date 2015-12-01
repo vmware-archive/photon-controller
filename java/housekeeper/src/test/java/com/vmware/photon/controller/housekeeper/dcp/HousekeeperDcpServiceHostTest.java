@@ -63,6 +63,7 @@ public class HousekeeperDcpServiceHostTest {
   private String[] serviceSelfLinks = new String[]{
       ImageReplicatorServiceFactory.SELF_LINK,
       ImageCopyServiceFactory.SELF_LINK,
+      ImageHostToHostCopyServiceFactory.SELF_LINK,
       ImageRemoverServiceFactory.SELF_LINK,
       ImageDatastoreSweeperServiceFactory.SELF_LINK,
       ImageCleanerServiceFactory.SELF_LINK,
