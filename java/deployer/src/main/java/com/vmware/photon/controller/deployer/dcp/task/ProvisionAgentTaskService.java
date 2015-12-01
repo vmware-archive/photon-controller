@@ -16,6 +16,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService.State;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -247,6 +248,11 @@ public class ProvisionAgentTaskService extends StatefulService {
       public boolean isRetryable(Throwable t) {
         return retryCount < currentState.maximumPollCount;
       }
+
+      @Override
+      public HostService.State getHostState() {
+        return hostState;
+      }
     };
 
     final AsyncMethodCallback<Host.AsyncClient.provision_call> handler =
@@ -328,6 +334,11 @@ public class ProvisionAgentTaskService extends StatefulService {
       public boolean isRetryable(Throwable t) {
         return pollCount < currentState.maximumPollCount;
       }
+
+      @Override
+      public HostService.State getHostState() {
+        return hostState;
+      }
     };
 
     final AsyncMethodCallback<Host.AsyncClient.get_host_config_call> handler =
@@ -394,7 +405,14 @@ public class ProvisionAgentTaskService extends StatefulService {
 
   private void retryOrFail(final Retryable retryable, State currentState, Throwable t) {
     if (!retryable.isRetryable(t)) {
-      failTask(t);
+      HostService.State hostState = retryable.getHostState();
+
+      failTask(new RuntimeException(
+          "Agent is unreachable. ["
+        + hostState.documentSelfLink
+        + " - "
+        + hostState.hostAddress
+        + "]", t));
       return;
     }
 
@@ -444,5 +462,7 @@ public class ProvisionAgentTaskService extends StatefulService {
     void retry() throws Throwable;
 
     boolean isRetryable(Throwable t);
+
+    HostService.State getHostState();
   }
 }

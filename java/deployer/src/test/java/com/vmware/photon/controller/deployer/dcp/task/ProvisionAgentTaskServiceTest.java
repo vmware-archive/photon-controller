@@ -559,7 +559,7 @@ public class ProvisionAgentTaskServiceTest {
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.failure.message, containsString(
-          "Thrift exception during provision call"));
+          "Agent is unreachable."));
     }
 
     @Test(dataProvider = "ProvisionFailureResultCodes")
@@ -609,7 +609,7 @@ public class ProvisionAgentTaskServiceTest {
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.failure.message, containsString(
-          "Thrift exception while getting ProvisionResponse result"));
+          "Agent is unreachable."));
     }
 
     @Test
@@ -637,7 +637,7 @@ public class ProvisionAgentTaskServiceTest {
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.failure.message, containsString(
-          "Thrift exception during getHostConfig call"));
+          "Agent is unreachable."));
     }
 
     @Test(dataProvider = "GetConfigFailureResultCodes")
@@ -687,7 +687,7 @@ public class ProvisionAgentTaskServiceTest {
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.failure.message, containsString(
-          "Thrift exception while getting GetHostConfigResponse result"));
+          "Agent is unreachable."));
     }
   }
 
