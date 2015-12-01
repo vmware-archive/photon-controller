@@ -398,7 +398,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         transfer_image_request = TransferImageRequest(
             source_image_id=image_id,
             source_datastore_id=datastore.id,
-            destination_host=ServerAddress(host=self.server, port=8835),
+            destination_host=ServerAddress(host="localhost", port=8835),
             destination_datastore_id=datastore.id,
             destination_image_id=image_id_2)
         res = self.host_client.transfer_image(transfer_image_request)

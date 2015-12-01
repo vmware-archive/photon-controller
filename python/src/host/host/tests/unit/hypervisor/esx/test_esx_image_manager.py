@@ -38,6 +38,7 @@ from host.hypervisor.image_manager import ImageNotFoundException
 
 from host.hypervisor.esx.image_manager import EsxImageManager, GC_IMAGE_FOLDER
 from host.hypervisor.esx.vim_client import VimClient
+from host.hypervisor.esx.vm_config import MANIFEST_FILE_EXT
 from host.hypervisor.esx.vm_config import METADATA_FILE_EXT
 
 
@@ -158,7 +159,8 @@ class TestEsxImageManager(unittest.TestCase):
                         _mv_dir, _rmtree, _copy, _makedirs, _exists,
                         _uuid, _wait_for_task):
         _exists.side_effect = (True,  # dest image vmdk missing
-                               True)   # source meta file present
+                               True,  # source meta file present
+                               True)  # source manifest file present
 
         self.image_manager.copy_image("ds1", "foo", "ds2", "bar")
 
@@ -166,9 +168,15 @@ class TestEsxImageManager(unittest.TestCase):
         os_path_prefix2 = '/vmfs/volumes/ds2/images'
         os_tmp_path_prefix = '/vmfs/volumes/ds2/tmp_images'
 
-        _copy.assert_called_once_with(
-            '%s/fo/foo/foo.%s' % (os_path_prefix1, METADATA_FILE_EXT),
-            '/vmfs/volumes/ds2/tmp_images/fake_id')
+        assert_that(_copy.call_count, equal_to(2))
+        _copy.assert_has_calls([
+            call('%s/fo/foo/foo.%s' % (os_path_prefix1, METADATA_FILE_EXT),
+                 '/vmfs/volumes/ds2/tmp_images/fake_id/bar.%s' %
+                 METADATA_FILE_EXT),
+            call('%s/fo/foo/foo.%s' % (os_path_prefix1, MANIFEST_FILE_EXT),
+                 '/vmfs/volumes/ds2/tmp_images/fake_id/bar.%s' %
+                 MANIFEST_FILE_EXT),
+        ])
 
         ds_path_prefix1 = '[] ' + os_path_prefix1
         ds_tmp_path_prefix = '[] ' + os_tmp_path_prefix
@@ -211,7 +219,7 @@ class TestEsxImageManager(unittest.TestCase):
         # Common case is the same as the one covered by test_copy_image.
 
         # Check that things work when the src metadata file doesn't exist.
-        _exists.side_effect = (False, True)
+        _exists.side_effect = (False, False, True)
         ds_path_prefix1 = '[] /vmfs/volumes/ds1/images'
         expected_tmp_disk_ds_path = \
             "[] /vmfs/volumes/ds2/tmp_images/fake_id/bar.vmdk"
