@@ -30,8 +30,11 @@ from gen.host.ttypes import ReceiveImageResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
+from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import EsxVmConfig
+from host.hypervisor.esx.vm_config import os_image_manifest_path
+from host.hypervisor.esx.vm_config import os_metadata_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from pyVmomi import vim
 
@@ -354,7 +357,7 @@ class HttpNfcTransferer(HttpTransferer):
 
     def _register_imported_image_at_host(self, agent_client,
                                          image_id, destination_datastore,
-                                         imported_vm_name):
+                                         imported_vm_name, metadata, manifest):
         """ Installs an image at another host.
 
         Image data was transferred via ImportVApp to said host.
@@ -363,16 +366,39 @@ class HttpNfcTransferer(HttpTransferer):
         request = ReceiveImageRequest(
             image_id=image_id,
             datastore_id=destination_datastore,
-            transferred_image_id=imported_vm_name)
+            transferred_image_id=imported_vm_name,
+            metadata=metadata,
+            manifest=manifest,
+        )
 
         response = agent_client.receive_image(request)
         if response.result != ReceiveImageResultCode.OK:
             raise ReceiveImageException(response.result, response.error)
 
+    def _read_metadata(self, image_datastore, image_id):
+        try:
+            # Transfer raw manifest
+            manifest_path = os_image_manifest_path(image_datastore, image_id)
+            with open(manifest_path) as f:
+                manifest = f.read()
+
+            # Transfer raw metadata
+            metadata_path = os_metadata_path(image_datastore, image_id,
+                                             IMAGE_FOLDER_NAME)
+            with open(metadata_path, 'r') as f:
+                metadata = f.read()
+
+            return manifest, metadata
+        except:
+            self._logger.exception("Failed to read metadata")
+            raise
+
     @lock_non_blocking
     def send_image_to_host(self, image_id, image_datastore,
                            destination_image_id, destination_datastore,
                            host, port, intermediate_file_path=None):
+        manifest, metadata = self._read_metadata(image_datastore, image_id)
+
         read_lease, disk_url = self._get_image_stream_from_shadow_vm(
             image_id, image_datastore)
 
@@ -415,7 +441,7 @@ class HttpNfcTransferer(HttpTransferer):
 
             self._register_imported_image_at_host(
                 agent_client, destination_image_id, destination_datastore,
-                imported_vm_name)
+                imported_vm_name, metadata, manifest)
 
         finally:
             agent_client.close()
