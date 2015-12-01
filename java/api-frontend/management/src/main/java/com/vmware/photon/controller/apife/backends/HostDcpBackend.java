@@ -19,8 +19,6 @@ import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
@@ -153,14 +151,6 @@ public class HostDcpBackend implements HostBackend {
     logger.info("created Task: {}", taskEntity);
 
     return taskEntity;
-  }
-
-  @Override
-  public ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize)
-      throws ExternalException {
-
-    HostEntity hostEntity = findById(id);
-    return taskBackend.filter(id, hostEntity.getKind(), state, pageSize);
   }
 
   @Override

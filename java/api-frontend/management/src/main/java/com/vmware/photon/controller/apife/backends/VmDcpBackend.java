@@ -26,9 +26,7 @@ import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Tag;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.VmDiskOperation;
@@ -280,14 +278,6 @@ public class VmDcpBackend implements VmBackend {
   @Override
   public Vm toApiRepresentation(String id) throws ExternalException {
     return toApiRepresentation(findById(id));
-  }
-
-  @Override
-  public ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize)
-      throws ExternalException {
-
-    VmEntity vm = findById(id);
-    return taskBackend.filter(vm.getId(), vm.getKind(), state, pageSize);
   }
 
   @Override

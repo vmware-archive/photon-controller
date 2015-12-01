@@ -13,8 +13,12 @@
 
 package com.vmware.photon.controller.apife.clients;
 
+import com.vmware.photon.controller.api.AvailabilityZone;
+import com.vmware.photon.controller.api.Flavor;
+import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.AvailabilityZoneBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
@@ -26,6 +30,8 @@ import com.vmware.photon.controller.apife.backends.ResourceTicketBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.entities.HostEntity;
+import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
 import com.vmware.photon.controller.apife.entities.TenantEntity;
 
@@ -111,32 +117,44 @@ public class TaskFeClient {
 
   public ResourceList<Task> getVmTasks(String vmId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return vmBackend.getTasks(vmId, state, pageSize);
+
+    vmBackend.findById(vmId);
+    return taskBackend.filter(Optional.of(vmId), Optional.of(Vm.KIND), state, pageSize);
   }
 
   public ResourceList<Task> getDiskTasks(String diskId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return diskBackend.getTasks(diskId, state, pageSize);
+
+    diskBackend.find(PersistentDisk.KIND, diskId);
+    return taskBackend.filter(Optional.of(diskId), Optional.of(PersistentDisk.KIND), state, pageSize);
   }
 
   public ResourceList<Task> getImageTasks(String imageId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return imageBackend.getTasks(imageId, state, pageSize);
+
+    imageBackend.findById(imageId);
+    return taskBackend.filter(Optional.of(imageId), Optional.of(ImageEntity.KIND), state, pageSize);
   }
 
   public ResourceList<Task> getFlavorTasks(String flavorId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return flavorBackend.getTasks(flavorId, state, pageSize);
+
+    flavorBackend.getEntityById(flavorId);
+    return taskBackend.filter(Optional.of(flavorId), Optional.of(Flavor.KIND), state, pageSize);
   }
 
   public ResourceList<Task> getHostTasks(String hostId, Optional<String> state, Optional<Integer> pageSize)
       throws ExternalException {
-    return hostBackend.getTasks(hostId, state, pageSize);
+
+    hostBackend.findById(hostId);
+    return taskBackend.filter(Optional.of(hostId), Optional.of(HostEntity.KIND), state, pageSize);
   }
 
   public ResourceList<Task> getAvailabilityZoneTasks(String availabilityZoneId, Optional<String> state,
                                                      Optional<Integer> pageSize)
       throws ExternalException {
-    return availabilityZoneBackend.getTasks(availabilityZoneId, state, pageSize);
+
+    availabilityZoneBackend.getEntityById(availabilityZoneId);
+    return taskBackend.filter(Optional.of(availabilityZoneId), Optional.of(AvailabilityZone.KIND), state, pageSize);
   }
 }

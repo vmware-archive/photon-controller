@@ -16,15 +16,11 @@ package com.vmware.photon.controller.apife.backends;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
 import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
-
-import com.google.common.base.Optional;
 
 import java.util.List;
 
@@ -43,8 +39,6 @@ public interface HostBackend {
   HostEntity findById(String id) throws HostNotFoundException;
 
   List<Host> filterByUsage(UsageTag usageTag);
-
-  ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   Host toApiRepresentation(String id) throws HostNotFoundException;
 

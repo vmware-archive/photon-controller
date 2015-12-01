@@ -13,8 +13,12 @@
 
 package com.vmware.photon.controller.apife.clients;
 
+import com.vmware.photon.controller.api.AvailabilityZone;
+import com.vmware.photon.controller.api.Flavor;
+import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.apife.backends.AvailabilityZoneDcpBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
@@ -25,6 +29,10 @@ import com.vmware.photon.controller.apife.backends.ResourceTicketBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.entities.HostEntity;
+import com.vmware.photon.controller.apife.entities.ImageEntity;
+import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
+import com.vmware.photon.controller.apife.entities.TenantEntity;
 
 import com.google.common.base.Optional;
 import org.testng.annotations.BeforeMethod;
@@ -108,6 +116,86 @@ public class TaskFeClientTest {
 
       verify(taskBackend).getTasksPage(pageLink);
     }
-  }
 
+    @Test
+    public void testGetTenantTasks() throws Throwable {
+      String tenantId = "id";
+      Optional state = Optional.of("state");
+      Optional pageSize = Optional.of(10);
+
+      feClient.getTenantTasks(tenantId, state, pageSize);
+      verify(taskBackend).filter(Optional.of(tenantId), Optional.of(TenantEntity.KIND), state, pageSize);
+    }
+
+    @Test
+    public void testGetResourceTicketTasks() throws Throwable {
+      String resourceTicketId = "id";
+      Optional state = Optional.of("state");
+      Optional pageSize = Optional.of(10);
+
+      feClient.getResourceTicketTasks(resourceTicketId, state, pageSize);
+      verify(taskBackend).filter(Optional.of(resourceTicketId), Optional.of(ResourceTicketEntity.KIND), state,
+          pageSize);
+    }
+
+    @Test
+    public void testGetVmTasks() throws Throwable {
+      String vmId = "id";
+      Optional state = Optional.of("state");
+      Optional pageSize = Optional.of(10);
+
+      feClient.getVmTasks(vmId, state, pageSize);
+      verify(taskBackend).filter(Optional.of(vmId), Optional.of(Vm.KIND), state, pageSize);
+    }
+
+    @Test
+    public void testGetDiskTasks() throws Throwable {
+      String diskId = "id";
+      Optional state = Optional.of("state");
+      Optional pageSize = Optional.of(10);
+
+      feClient.getDiskTasks(diskId, state, pageSize);
+      verify(taskBackend).filter(Optional.of(diskId), Optional.of(PersistentDisk.KIND), state, pageSize);
+    }
+
+    @Test
+    public void testGetImageTasks() throws Throwable {
+      String imageId = "id";
+      Optional state = Optional.of("state");
+      Optional pageSize = Optional.of(10);
+
+      feClient.getImageTasks(imageId, state, pageSize);
+      verify(taskBackend).filter(Optional.of(imageId), Optional.of(ImageEntity.KIND), state, pageSize);
+    }
+
+    @Test
+    public void testGetFlavorTasks() throws Throwable {
+      String flavorId = "id";
+      Optional state = Optional.of("state");
+      Optional pageSize = Optional.of(10);
+
+      feClient.getFlavorTasks(flavorId, state, pageSize);
+      verify(taskBackend).filter(Optional.of(flavorId), Optional.of(Flavor.KIND), state, pageSize);
+    }
+
+    @Test
+    public void testGetHostTasks() throws Throwable {
+      String hostId = "id";
+      Optional state = Optional.of("state");
+      Optional pageSize = Optional.of(10);
+
+      feClient.getHostTasks(hostId, state, pageSize);
+      verify(taskBackend).filter(Optional.of(hostId), Optional.of(HostEntity.KIND), state, pageSize);
+    }
+
+    @Test
+    public void testGetAvailabilityZoneTasks() throws Throwable {
+      String availabilityZoneId = "id";
+      Optional state = Optional.of("state");
+      Optional pageSize = Optional.of(10);
+
+      feClient.getAvailabilityZoneTasks(availabilityZoneId, state, pageSize);
+      verify(taskBackend).filter(Optional.of(availabilityZoneId), Optional.of(AvailabilityZone.KIND), state, pageSize);
+    }
+  }
 }

@@ -18,7 +18,6 @@ import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
@@ -30,7 +29,6 @@ import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundExcept
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
-import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -276,32 +274,6 @@ public class HostDcpBackendTest {
 
       hosts = hostBackend.filterByUsage(UsageTag.MGMT);
       assertThat(hosts.size(), is(0));
-    }
-
-    @Test
-    public void testGetTasks() throws Throwable {
-      List<Task> taskList = hostBackend.getTasks(hostId, Optional.<String>absent(), Optional.<Integer>absent())
-          .getItems();
-      assertThat(taskList.size(), is(1));
-
-      hostBackend.updateState(hostBackend.findById(hostId), HostState.READY);
-      hostBackend.suspend(hostId);
-      taskList = hostBackend.getTasks(hostId, Optional.<String>absent(), Optional.<Integer>absent()).getItems();
-      assertThat(taskList.size(), is(2));
-
-      taskList = hostBackend.getTasks(hostId, Optional.of(TaskEntity.State.QUEUED.name()), Optional.<Integer>absent())
-          .getItems();
-      assertThat(taskList.size(), is(2));
-    }
-
-    @Test
-    public void testGetInvalidHost() throws Throwable {
-      try {
-        hostBackend.toApiRepresentation("invalid-host");
-        fail("should have failed with HostNotFoundException");
-      } catch (HostNotFoundException e) {
-        assertThat(e.getMessage(), is("Host #invalid-host not found"));
-      }
     }
   }
 

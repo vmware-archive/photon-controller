@@ -15,9 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.ImageCreateSpec;
 import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Tag;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.VmState;
@@ -54,8 +52,6 @@ public interface VmBackend {
   String findDatastoreByVmId(String id) throws VmNotFoundException;
 
   Vm toApiRepresentation(String id) throws ExternalException;
-
-  ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   void tombstone(VmEntity vm) throws ExternalException;
 
