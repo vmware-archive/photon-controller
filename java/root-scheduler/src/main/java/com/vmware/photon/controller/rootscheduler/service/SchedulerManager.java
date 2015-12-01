@@ -30,13 +30,11 @@ import com.vmware.photon.controller.scheduler.gen.PlaceParams;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
-import com.vmware.photon.controller.scheduler.gen.Score;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Doubles;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
@@ -66,19 +64,6 @@ public class SchedulerManager {
 
   private static final Logger logger = LoggerFactory.getLogger(SchedulerManager.class);
 
-  private final Ordering<PlaceResponse> scoreOrdering = new Ordering<PlaceResponse>() {
-    @Override
-    public int compare(PlaceResponse left, PlaceResponse right) {
-      return Doubles.compare(score(left), score(right));
-    }
-  };
-
-  private double score(PlaceResponse placeResponse) {
-    double ratio = this.config.getRoot().getUtilizationTransferRatio();
-    Score score = placeResponse.getScore();
-    return (ratio * score.getUtilization() + score.getTransfer()) / (ratio + 1);
-  }
-
   private final SchedulerFactory schedulerFactory;
   private final Config config;
   private final Strategy placementStrategy;
@@ -86,16 +71,19 @@ public class SchedulerManager {
   ImmutableMap<String, ManagedScheduler> managedSchedulers;
   @VisibleForTesting
   HealthChecker healthChecker;
+  private final ScoreCalculator scoreCalculator;
 
   @Inject
   public SchedulerManager(SchedulerFactory schedulerFactory,
                           Config config,
-                          Strategy placementStrategy) {
+                          Strategy placementStrategy,
+                          ScoreCalculator scoreCalculator) {
     this.schedulerFactory = schedulerFactory;
     this.config = config;
     this.placementStrategy = placementStrategy;
 
     managedSchedulers = ImmutableMap.of();
+    this.scoreCalculator = scoreCalculator;
   }
 
   public synchronized void applyConfiguration(ConfigureRequest configuration) throws IOException {
@@ -220,7 +208,7 @@ public class SchedulerManager {
     int fastPlaceResponseMinCount = (int) (rootPlaceParams.getFastPlaceResponseRatio() * placementSchedulers.size());
     fastPlaceResponseMinCount = Math.max(fastPlaceResponseMinCount, rootPlaceParams.getFastPlaceResponseMinCount());
 
-    final List<PlaceResponse> okResponses = Collections.synchronizedList(new ArrayList<PlaceResponse>());
+    final Set<PlaceResponse> okResponses = Sets.newConcurrentHashSet();
     final Map<PlaceResultCode, Integer> responses = Collections.synchronizedMap(new HashMap<PlaceResultCode,
         Integer>());
 
@@ -286,10 +274,7 @@ public class SchedulerManager {
       logger.debug("PlaceResultCode: {} - Count: {}", responsesCount.getKey(), responsesCount.getValue());
     }
 
-    //noinspection SynchronizationOnLocalVariableOrMethodParameter
-    synchronized (okResponses) {
-      bestResponse = pickBestResponse(okResponses);
-    }
+    bestResponse = scoreCalculator.pickBestResponse(okResponses);
 
     if (bestResponse == null) {
       if (returnCode.contains(PlaceResultCode.NOT_ENOUGH_CPU_RESOURCE)) {
@@ -315,15 +300,6 @@ public class SchedulerManager {
     long endTime = System.currentTimeMillis();
     logger.info("Returning bestResponse: {} in roughly {} ms", bestResponse, (endTime - startTime));
     return bestResponse;
-  }
-
-  private PlaceResponse pickBestResponse(List<PlaceResponse> responses) {
-    if (responses.isEmpty()) {
-      return null;
-    }
-
-    responses = scoreOrdering.reverse().sortedCopy(responses);
-    return responses.get(0);
   }
 
   public FindResponse find(FindRequest request) throws InterruptedException {
