@@ -279,6 +279,7 @@ public class EntityLockCleanerServiceTest {
     public void tearDown() throws Throwable {
       if (machine != null) {
         machine.stop();
+        machine = null;
       }
     }
 
@@ -317,8 +318,6 @@ public class EntityLockCleanerServiceTest {
 
       assertThat(response.danglingEntityLocks, is(0));
       assertThat(response.deletedEntityLocks, is(0));
-
-      freeTestEnvironment(machine);
     }
 
     /**
@@ -344,14 +343,6 @@ public class EntityLockCleanerServiceTest {
           is(Integer.min(danglingEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
       assertThat(response.deletedEntityLocks,
           is(Integer.min(danglingEntityLocks, EntityLockCleanerService.ENTITY_LOCK_DEFAULT_PAGE_LIMIT)));
-
-      freeTestEnvironment(machine);
-    }
-
-    private void freeTestEnvironment(TestEnvironment machine) throws Throwable {
-      for (String selfLink : testSelfLinks) {
-        machine.deleteService(selfLink);
-      }
     }
 
     @DataProvider(name = "Success")
