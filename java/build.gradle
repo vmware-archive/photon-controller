@@ -17,6 +17,7 @@ ext {
       commons_lang3: '3.1',
       xenon_common: '0.3.0',
   ]
+  isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
 buildscript {
@@ -33,6 +34,7 @@ subprojects {
 
   sourceCompatibility = 1.8
   targetCompatibility = 1.8
+  uploadArchives.enabled = false
 
   buildscript {
     repositories {
