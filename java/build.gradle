@@ -33,6 +33,7 @@ subprojects {
 
   sourceCompatibility = 1.8
   targetCompatibility = 1.8
+  uploadArchives.enabled = false
 
   buildscript {
     repositories {
@@ -80,6 +81,68 @@ subprojects {
     testLogging.events "failed", "passed"
 //    jvmArgs '-XX:-UseSplitVerifier'
     jvmArgs '-noverify'
+  }
+}
+
+configure([project(":photon-model"), project(":photon-model-tasks")]) {
+  apply plugin: 'signing'
+  apply plugin: 'maven'
+  ext {
+    version '0.1.0-SNAPSHOT'
+  }
+  signing {
+    def hasRequiredSigningProps = project.hasProperty('signing.keyId') &&
+        project.hasProperty('signing.password') &&
+        project.hasProperty('signing.secretKeyRingFile')
+
+    required = !version.endsWith('SNAPSHOT') && hasRequiredSigningProps
+    sign configurations.archives
+  }
+
+  uploadArchives {
+    repositories {
+      mavenDeployer {
+        beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+        repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2') {
+          authentication(userName: ossrhUsername, password: ossrhPassword)
+        }
+
+        snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots') {
+          authentication(userName: ossrhUsername, password: ossrhPassword)
+        }
+
+        pom.project {
+          groupId 'com.vmware.photon.controller'
+          packaging 'jar'
+          description 'Photon Controller is an open-source system for managing hardware, containers, ' +
+              'and clusters at scale'
+          url 'https://github.com/vmware/photon-controller'
+          scm {
+            connection 'scm:git@github.com:vmware/photon-controller.git'
+            developerConnection 'git@github.com:vmware/photon-controller.git'
+            url 'https://github.com/vmware/photon-controller'
+          }
+          licenses {
+            license {
+              name 'License'
+              url 'https://github.com/vmware/photon-controller/blob/master/LICENSE.txt'
+            }
+            license {
+              name 'Notice '
+              url 'https://github.com/vmware/photon-controller/blob/master/Notice.txt'
+            }
+          }
+          developers {
+            developer {
+              id 'jaked@vmware.com'
+              name 'Jake Dsouza'
+              email 'jaked@vmware.com'
+            }
+          }
+        }
+      }
+    }
   }
 }
 
