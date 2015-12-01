@@ -26,6 +26,7 @@ public class AvailabilityZoneServiceFactory extends FactoryService {
 
   public AvailabilityZoneServiceFactory() {
     super(AvailabilityZoneService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_NODE_SELECTOR);
   }
 
   @Override

@@ -26,6 +26,7 @@ public class TenantServiceFactory extends FactoryService {
 
   public TenantServiceFactory() {
     super(TenantService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_NODE_SELECTOR);
   }
 
   @Override

@@ -26,6 +26,7 @@ public class TaskServiceFactory extends FactoryService {
 
   public TaskServiceFactory() {
     super(TaskService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_NODE_SELECTOR);
   }
 
   @Override

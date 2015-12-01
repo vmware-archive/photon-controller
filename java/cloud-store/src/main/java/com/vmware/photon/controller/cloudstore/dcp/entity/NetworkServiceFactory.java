@@ -26,6 +26,7 @@ public class NetworkServiceFactory extends FactoryService {
 
   public NetworkServiceFactory() {
     super(NetworkService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_NODE_SELECTOR);
   }
 
   @Override

@@ -27,6 +27,7 @@ public class PortGroupServiceFactory extends FactoryService {
 
   public PortGroupServiceFactory() {
     super(PortGroupService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_NODE_SELECTOR);
   }
 
   @Override

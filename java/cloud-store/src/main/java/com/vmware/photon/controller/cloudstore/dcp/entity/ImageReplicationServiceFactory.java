@@ -26,6 +26,7 @@ public class ImageReplicationServiceFactory extends FactoryService {
 
   public ImageReplicationServiceFactory() {
     super(ImageReplicationService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_NODE_SELECTOR);
   }
 
   @Override

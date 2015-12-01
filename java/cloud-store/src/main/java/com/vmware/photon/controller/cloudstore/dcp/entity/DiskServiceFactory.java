@@ -26,6 +26,7 @@ public class DiskServiceFactory extends FactoryService {
 
   public DiskServiceFactory() {
     super(DiskService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_NODE_SELECTOR);
   }
 
   @Override

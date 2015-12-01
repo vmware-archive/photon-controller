@@ -27,6 +27,7 @@ public class TombstoneCleanerFactoryService extends FactoryService {
 
   public TombstoneCleanerFactoryService() {
     super(TombstoneCleanerService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_NODE_SELECTOR);
   }
 
   @Override

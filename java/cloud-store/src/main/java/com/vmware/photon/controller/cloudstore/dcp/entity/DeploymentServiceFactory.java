@@ -27,6 +27,7 @@ public class DeploymentServiceFactory extends FactoryService {
 
   public DeploymentServiceFactory() {
     super(DeploymentService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_NODE_SELECTOR);
   }
 
   @Override

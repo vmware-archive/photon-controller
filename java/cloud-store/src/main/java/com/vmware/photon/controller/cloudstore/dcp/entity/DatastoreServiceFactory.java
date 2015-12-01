@@ -27,6 +27,7 @@ public class DatastoreServiceFactory extends FactoryService {
 
   public DatastoreServiceFactory() {
     super(DatastoreService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_NODE_SELECTOR);
   }
 
   @Override
