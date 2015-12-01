@@ -27,6 +27,7 @@ public class ClusterConfigurationServiceFactory extends FactoryService {
 
   public ClusterConfigurationServiceFactory() {
     super(ClusterConfigurationService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.MAX_3X_REPLICATION_NODE_SELECTOR);
   }
 
   @Override

@@ -27,6 +27,7 @@ public class HostServiceFactory extends FactoryService {
 
   public HostServiceFactory() {
     super(HostService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.MAX_3X_REPLICATION_NODE_SELECTOR);
   }
 
   @Override

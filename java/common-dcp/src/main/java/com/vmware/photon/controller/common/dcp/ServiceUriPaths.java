@@ -40,4 +40,6 @@ public class ServiceUriPaths extends com.vmware.xenon.services.common.ServiceUri
   public static final String SWARM_CLUSTER_CREATE_TASK_SERVICE =
       CLUSTERMANAGER_ROOT + "/swarm-cluster-create-tasks";
 
+  public static final String MAX_3X_REPLICATION_NODE_SELECTOR =
+      com.vmware.xenon.services.common.ServiceUriPaths.SHA1_3X_NODE_SELECTOR;
 }

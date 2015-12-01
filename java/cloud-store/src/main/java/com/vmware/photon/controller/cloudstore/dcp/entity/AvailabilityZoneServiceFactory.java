@@ -26,6 +26,7 @@ public class AvailabilityZoneServiceFactory extends FactoryService {
 
   public AvailabilityZoneServiceFactory() {
     super(AvailabilityZoneService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.MAX_3X_REPLICATION_NODE_SELECTOR);
   }
 
   @Override

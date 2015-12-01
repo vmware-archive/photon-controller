@@ -13,11 +13,13 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.task;
 
+import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.xenon.common.Service;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -56,6 +58,7 @@ public class TombstoneCleanerFactoryServiceTest {
           Service.ServiceOption.REPLICATION,
           Service.ServiceOption.CONCURRENT_UPDATE_HANDLING);
       assertThat(factory.getOptions(), is(expected));
+      assertThat(factory.getPeerNodeSelectorPath(), is(equalTo(ServiceUriPaths.MAX_3X_REPLICATION_NODE_SELECTOR)));
     }
   }
 

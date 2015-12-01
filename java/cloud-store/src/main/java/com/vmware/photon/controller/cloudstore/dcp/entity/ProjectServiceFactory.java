@@ -26,6 +26,7 @@ public class ProjectServiceFactory extends FactoryService {
 
   public ProjectServiceFactory() {
     super(ProjectService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.MAX_3X_REPLICATION_NODE_SELECTOR);
   }
 
   @Override

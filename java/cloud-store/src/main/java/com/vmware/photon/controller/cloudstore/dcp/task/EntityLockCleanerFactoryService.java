@@ -27,6 +27,7 @@ public class EntityLockCleanerFactoryService extends FactoryService {
 
   public EntityLockCleanerFactoryService() {
     super(EntityLockCleanerService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.MAX_3X_REPLICATION_NODE_SELECTOR);
   }
 
   @Override

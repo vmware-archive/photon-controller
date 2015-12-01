@@ -26,6 +26,7 @@ public class ResourceTicketServiceFactory extends FactoryService {
 
   public ResourceTicketServiceFactory() {
     super(ResourceTicketService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.MAX_3X_REPLICATION_NODE_SELECTOR);
   }
 
   @Override

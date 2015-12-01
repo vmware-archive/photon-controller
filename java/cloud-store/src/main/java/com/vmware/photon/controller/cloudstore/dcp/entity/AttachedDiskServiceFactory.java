@@ -26,6 +26,7 @@ public class AttachedDiskServiceFactory extends FactoryService {
 
   public AttachedDiskServiceFactory() {
     super(AttachedDiskService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.MAX_3X_REPLICATION_NODE_SELECTOR);
   }
 
   @Override

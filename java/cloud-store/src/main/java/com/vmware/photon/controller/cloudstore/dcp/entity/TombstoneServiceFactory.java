@@ -26,6 +26,7 @@ public class TombstoneServiceFactory extends FactoryService {
 
   public TombstoneServiceFactory() {
     super(TombstoneService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.MAX_3X_REPLICATION_NODE_SELECTOR);
   }
 
   @Override

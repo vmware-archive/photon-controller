@@ -26,6 +26,7 @@ public class EntityLockServiceFactory extends FactoryService {
 
   public EntityLockServiceFactory() {
     super(EntityLockService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.MAX_3X_REPLICATION_NODE_SELECTOR);
   }
 
   @Override
