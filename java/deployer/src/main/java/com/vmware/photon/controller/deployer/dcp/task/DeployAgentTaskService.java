@@ -40,7 +40,6 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
 
@@ -217,11 +216,7 @@ public class DeployAgentTaskService extends StatefulService {
     command.add(hostState.userName);
     command.add(hostState.password);
 
-    String vibPath = VMFS_VOLUMES + "/" +
-        StringUtils.strip(deploymentState.imageDataStoreNames.iterator().next(), "/") + "/" +
-        StringUtils.strip(currentState.vibPath, "/");
-
-    command.add(vibPath);
+    command.add(currentState.vibPath);
 
     if (null != deploymentState.syslogEndpoint) {
       command.add("-l");

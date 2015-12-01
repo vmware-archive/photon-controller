@@ -60,8 +60,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class implements a DCP micro-service which performs the task of
@@ -419,7 +421,40 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
           NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
           Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
           if (documentLinks.size() > 0) {
-            processUploadVibSubStage(currentState, documentLinks.iterator().next());
+            Iterator<String> it = documentLinks.iterator();
+            final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
+            FutureCallback<UploadVibTaskService.State> futureCallback = new FutureCallback<UploadVibTaskService.State>()
+            {
+              @Override
+              public void onSuccess(@Nullable UploadVibTaskService.State result) {
+                switch (result.taskState.stage) {
+                  case FINISHED: {
+                    if (0 == pendingChildren.decrementAndGet()) {
+                      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONTIONUS_MIGRATE_DATA);
+                    }
+                    break;
+                  }
+                  case FAILED: {
+                    State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                    patchState.taskState.failure = result.taskState.failure;
+                    TaskUtils.sendSelfPatch(InitializeDeploymentMigrationWorkflowService.this, patchState);
+                    break;
+                  }
+                  case CANCELLED:
+                    sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
+                    break;
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                failTask(t);
+              }
+            };
+
+            while (it.hasNext()) {
+              processUploadVibSubStage(currentState, it.next(), futureCallback);
+            }
           } else {
             sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONTIONUS_MIGRATE_DATA);
           }
@@ -437,35 +472,11 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
   }
 
-  private void processUploadVibSubStage(State currentState, String hostServiceLink) {
-
-    FutureCallback<UploadVibTaskService.State> futureCallback = new FutureCallback<UploadVibTaskService.State>() {
-      @Override
-      public void onSuccess(@Nullable UploadVibTaskService.State result) {
-        switch (result.taskState.stage) {
-          case FINISHED: {
-            sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
-            break;
-          }
-          case FAILED: {
-            State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-            patchState.taskState.failure = result.taskState.failure;
-            TaskUtils.sendSelfPatch(InitializeDeploymentMigrationWorkflowService.this, patchState);
-            break;
-          }
-          case CANCELLED:
-            sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
-            break;
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-
-    UploadVibTaskService.State startState = createUploadVibTaskState(currentState, hostServiceLink);
+  private void processUploadVibSubStage(State currentState, String hostServiceLink,
+                                        FutureCallback<UploadVibTaskService.State> futureCallback) {
+    UploadVibTaskService.State startState = new UploadVibTaskService.State();
+    startState.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + currentState.destinationDeploymentId;
+    startState.hostServiceLink = hostServiceLink;
 
     TaskUtils.startTaskAsync(
         this,
@@ -476,16 +487,6 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         currentState.taskPollDelay,
         futureCallback);
   }
-
-  private UploadVibTaskService.State createUploadVibTaskState(
-      final State currentState,
-      String hostServiceLink) {
-    UploadVibTaskService.State startState = new UploadVibTaskService.State();
-    startState.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + currentState.destinationDeploymentId;
-    startState.hostServiceLink = hostServiceLink;
-    return startState;
-  }
-
 
   private void migrateDataContionously(State currentState) {
     // Start MigrationStatusUpdateService

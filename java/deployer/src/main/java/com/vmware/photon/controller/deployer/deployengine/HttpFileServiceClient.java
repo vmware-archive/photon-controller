@@ -64,6 +64,10 @@ public class HttpFileServiceClient {
   }
 
   public Callable<Integer> uploadFile(String sourceFilePath, String destinationPath) {
+    return uploadFile(sourceFilePath, destinationPath, true);
+  }
+
+  public Callable<Integer> uploadFile(String sourceFilePath, String destinationPath, boolean shouldOverride) {
     checkNotNull(sourceFilePath);
     checkNotNull(destinationPath);
 
@@ -78,6 +82,14 @@ public class HttpFileServiceClient {
 
     return () -> {
       URL destinationURL = new URL("https", this.hostAddress, destinationPath);
+
+      if (!shouldOverride) {
+        HttpsURLConnection urlConnection = createHttpConnection(destinationURL, "HEAD");
+        if (urlConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
+          logger.info("File {} already exists", destinationURL.toString());
+          return HttpsURLConnection.HTTP_OK;
+        }
+      }
       logger.info("Uploading file {} to destination URL {}", sourceFile.getAbsolutePath(), destinationURL.toString());
       return performFileUpload(sourceFile, destinationURL);
     };
@@ -234,16 +246,26 @@ public class HttpFileServiceClient {
       this.httpConnection.setRequestProperty(HTTP.CONTENT_LEN, Long.toString(sourceFile.length()));
     }
 
-    InputStream inputStream = new FileInputStream(sourceFile);
-    OutputStream outputStream = this.httpConnection.getOutputStream();
-    IOUtils.copy(inputStream, outputStream);
-    inputStream.close();
-    outputStream.close();
+    InputStream inputStream = null;
+    OutputStream outputStream = null;
+    try {
+      inputStream = new FileInputStream(sourceFile);
+      outputStream = this.httpConnection.getOutputStream();
+      IOUtils.copy(inputStream, outputStream);
+    } finally {
+      if (inputStream != null) {
+        inputStream.close();
+      }
+      if (outputStream != null) {
+        outputStream.close();
+      }
+    }
 
     int responseCode = httpConnection.getResponseCode();
     logger.info("Uploading file {} to URL {} returned HTTP response code {}", sourceFile.getAbsolutePath(),
         destinationURL.toString(), responseCode);
-    if (responseCode != HttpsURLConnection.HTTP_CREATED) {
+    // HTTP_OK is returned when the file is already there
+    if (responseCode != HttpsURLConnection.HTTP_CREATED && responseCode != HttpsURLConnection.HTTP_OK) {
       throw new RuntimeException(String.format("Uploading file %s to URL %s failed with HTTP response %d",
           sourceFile.getAbsolutePath(), destinationURL.toString(), httpConnection.getResponseCode()));
     }

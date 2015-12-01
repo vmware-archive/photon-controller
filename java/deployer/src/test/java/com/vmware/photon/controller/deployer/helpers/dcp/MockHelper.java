@@ -123,12 +123,12 @@ public class MockHelper {
                                                boolean isSuccess) throws Throwable {
     HttpFileServiceClient httpFileServiceClient = mock(HttpFileServiceClient.class);
     if (isSuccess) {
-      when(httpFileServiceClient.uploadFile(anyString(), anyString())).thenReturn(() -> 201);
+      when(httpFileServiceClient.uploadFile(anyString(), anyString(), anyBoolean())).thenReturn(() -> 201);
       when(httpFileServiceClient.uploadFileToDatastore(anyString(), anyString(), anyString())).thenReturn(() -> 201);
       when(httpFileServiceClient.deleteFileFromDatastore(anyString(), anyString())).thenReturn(() -> 204);
       when(httpFileServiceClient.getDirectoryListingOfDatastores()).thenReturn(() -> 200);
     } else {
-      when(httpFileServiceClient.uploadFile(anyString(), anyString())).thenThrow(
+      when(httpFileServiceClient.uploadFile(anyString(), anyString(), anyBoolean())).thenThrow(
           new RuntimeException(new IOException("Copy failed")));
       when(httpFileServiceClient.uploadFileToDatastore(anyString(), anyString(), anyString())).thenThrow(
           new RuntimeException(new IOException("Copy failed")));

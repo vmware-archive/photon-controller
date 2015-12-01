@@ -202,13 +202,15 @@ public class DeployerDcpServiceHost
       RemoveDeploymentWorkflowFactoryService.class,
   };
 
+  private static final int DEFAULT_TASK_LIMIT = 8;
+
   protected static final String PROVISION_HOST_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/workflow/provision-host";
 
   private static final Map<String, TaskSchedulerServiceStateBuilder> TASK_SCHEDULERS =
       ImmutableMap.<String, TaskSchedulerServiceStateBuilder>builder()
           .put(PROVISION_HOST_SCHEDULER_SERVICE,
-              new TaskSchedulerServiceStateBuilder(ProvisionHostWorkflowService.class, 1))
+              new TaskSchedulerServiceStateBuilder(ProvisionHostWorkflowService.class, DEFAULT_TASK_LIMIT))
           .build();
 
   private static final String DEPLOYER_URI = "deployer";
