@@ -28,6 +28,8 @@ import com.vmware.xenon.common.Operation;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,8 +57,8 @@ public class ConstraintCheckerPerfTest {
 
   private Random random = new Random();
 
-  @DataProvider(name = "default")
-  public Object[][] createDefault() throws Throwable {
+  @BeforeClass
+  public void setUpClass() throws Throwable {
     cloudStoreTestEnvironment = TestEnvironment.create(1);
     int numHosts = 10000;
     int numDatastores = 1000;
@@ -113,16 +115,27 @@ public class ConstraintCheckerPerfTest {
       Operation result = cloudStoreTestEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK, initialState);
       assertThat(result.getStatusCode(), is(200));
     }
+  }
 
+  @AfterClass
+  public void tearDownClass() throws Throwable {
+    if (null != cloudStoreTestEnvironment) {
+      cloudStoreTestEnvironment.stop();
+      cloudStoreTestEnvironment = null;
+    }
+  }
+
+  @DataProvider(name = "default")
+  public Object[][] createDefault() throws Throwable {
     DcpRestClient dcpRestClient = new DcpRestClient(
         cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
     dcpRestClient.start();
 
     ConstraintChecker inMemory = new InMemoryConstraintChecker(dcpRestClient);
     return new Object[][]{
-        {inMemory, hosts, 1},
-        {inMemory, hosts, 4},
-        {inMemory, hosts, 8},
+        {inMemory, 1},
+        {inMemory, 4},
+        {inMemory, 8},
     };
   }
 
@@ -130,8 +143,7 @@ public class ConstraintCheckerPerfTest {
    * Performance tests for constraint checker. Disabled by default.
    */
   @Test(dataProvider = "default", enabled = false)
-  public void testPerformance(ConstraintChecker checker, Map<String, HostService.State> expectedHosts,
-                              int numThreads) throws Exception{
+  public void testPerformance(ConstraintChecker checker, int numThreads) throws Exception {
     // no constraint
     int numRequests = 1000000;
 
