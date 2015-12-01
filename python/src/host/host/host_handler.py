@@ -679,7 +679,7 @@ class HostHandler(Host.Iface):
                 return CreateVmResponse(
                     CreateVmResultCode.SYSTEM_ERROR,
                     "Failed to set the ip/mac address of the VM %s"
-                    % sys.exc_info()[0])
+                    % sys.exc_info()[1])
 
         self._logger.debug(
             "VM create, done updating network spec vm, vm-id: %s" % vm.id)
@@ -732,7 +732,7 @@ class HostHandler(Host.Iface):
             return CreateVmResponse(rc.OK)
         except InvalidImageState:
             # tombstone
-            self._logger.debug(sys.exc_info()[0])
+            self._logger.debug(sys.exc_info()[1])
             return CreateVmResponse(rc.IMAGE_TOMBSTONED,
                                     "%s has been tombstoned" % image_id)
         except Exception as e:
@@ -1737,7 +1737,7 @@ class HostHandler(Host.Iface):
                                         response)
         except:
             return self._error_response(GetVmNetworkResultCode.SYSTEM_ERROR,
-                                        str(sys.exc_info()[0]),
+                                        str(sys.exc_info()[1]),
                                         response)
 
     @log_request
@@ -1772,13 +1772,13 @@ class HostHandler(Host.Iface):
         except VmNotFoundException:
             response.result = AttachISOResultCode.VM_NOT_FOUND
         except TypeError:
-            self._logger.info(sys.exc_info()[0])
+            self._logger.info(sys.exc_info()[1])
             response.result = AttachISOResultCode.SYSTEM_ERROR
-            response.error = str(sys.exc_info()[0])
+            response.error = str(sys.exc_info()[1])
         except Exception:
-            self._logger.info(sys.exc_info()[0])
+            self._logger.info(sys.exc_info()[1])
             response.result = AttachISOResultCode.SYSTEM_ERROR
-            response.error = str(sys.exc_info()[0])
+            response.error = str(sys.exc_info()[1])
 
         return response
 
@@ -1816,10 +1816,10 @@ class HostHandler(Host.Iface):
                 "No ISO is attached to VM %s" % request.vm_id,
                 response)
         except Exception:
-            self._logger.info(sys.exc_info()[0])
+            self._logger.info(sys.exc_info()[1])
             return self._error_response(
                 DetachISOResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[0]),
+                str(sys.exc_info()[1]),
                 response)
 
         try:
@@ -1899,7 +1899,7 @@ class HostHandler(Host.Iface):
         except:
             return self._error_response(
                 HttpTicketResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[0]),
+                str(sys.exc_info()[1]),
                 HttpTicketResponse())
 
     @log_request
@@ -1988,7 +1988,7 @@ class HostHandler(Host.Iface):
         except:
             return self._error_response(
                 CreateImageResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[0]),
+                str(sys.exc_info()[1]),
                 CreateImageResponse())
 
         return CreateImageResponse(CreateImageResultCode.OK)
@@ -2013,7 +2013,7 @@ class HostHandler(Host.Iface):
         except:
             return self._error_response(
                 TransferImageResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[0]),
+                str(sys.exc_info()[1]),
                 TransferImageResponse())
 
         return TransferImageResponse(TransferImageResultCode.OK)
@@ -2038,7 +2038,7 @@ class HostHandler(Host.Iface):
         except:
             return self._error_response(
                 ReceiveImageResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[0]),
+                str(sys.exc_info()[1]),
                 ReceiveImageResponse())
 
         return ReceiveImageResponse(ReceiveImageResultCode.OK)
@@ -2098,7 +2098,7 @@ class HostHandler(Host.Iface):
         except:
             return self._error_response(
                 CreateImageFromVmResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[0]),
+                str(sys.exc_info()[1]),
                 CreateImageFromVmResponse())
 
         return CreateImageFromVmResponse(CreateImageFromVmResultCode.OK)
@@ -2127,7 +2127,7 @@ class HostHandler(Host.Iface):
         except:
             return self._error_response(
                 DeleteDirectoryResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[0]),
+                str(sys.exc_info()[1]),
                 DeleteDirectoryResponse())
 
         return DeleteDirectoryResponse(DeleteDirectoryResultCode.OK)
