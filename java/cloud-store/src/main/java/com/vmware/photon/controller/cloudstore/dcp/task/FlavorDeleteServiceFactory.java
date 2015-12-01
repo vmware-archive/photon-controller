@@ -26,6 +26,7 @@ public class FlavorDeleteServiceFactory extends FactoryService {
 
   public FlavorDeleteServiceFactory() {
     super(FlavorDeleteService.State.class);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
   }
 
   @Override
