@@ -15,13 +15,9 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.AvailabilityZone;
 import com.vmware.photon.controller.api.AvailabilityZoneCreateSpec;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-
-import com.google.common.base.Optional;
 
 import java.util.List;
 
@@ -40,8 +36,6 @@ public interface AvailabilityZoneBackend {
   List<AvailabilityZoneEntity> getAll() throws ExternalException;
 
   TaskEntity prepareAvailabilityZoneDelete(String id) throws ExternalException;
-
-  ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize) throws ExternalException;
 
   void tombstone(AvailabilityZoneEntity availabilityZone) throws ExternalException;
 }

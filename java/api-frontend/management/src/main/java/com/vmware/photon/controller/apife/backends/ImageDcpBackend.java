@@ -19,8 +19,6 @@ import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageSetting;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -236,14 +234,6 @@ public class ImageDcpBackend implements ImageBackend {
     ImageService.State imageState = new ImageService.State();
     imageState.imageSettings = imageSettingsList;
     patchImageService(imageEntity.getId(), imageState);
-  }
-
-  @Override
-  public ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize)
-      throws ExternalException {
-
-    ImageEntity imageEntity = findById(id);
-    return taskBackend.filter(imageEntity.getId(), imageEntity.getKind(), state, pageSize);
   }
 
   @Override

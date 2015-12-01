@@ -17,8 +17,6 @@ import com.vmware.photon.controller.api.AvailabilityZone;
 import com.vmware.photon.controller.api.AvailabilityZoneCreateSpec;
 import com.vmware.photon.controller.api.AvailabilityZoneState;
 import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
@@ -121,13 +119,6 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
     }
 
     return taskBackend.createCompletedTask(availabilityZoneEntity, Operation.DELETE_AVAILABILITYZONE);
-  }
-
-  @Override
-  public ResourceList<Task> getTasks(String id, Optional<String> state, Optional<Integer> pageSize)
-      throws ExternalException {
-    AvailabilityZoneEntity availabilityZoneEntity = getEntityById(id);
-    return taskBackend.filter(availabilityZoneEntity.getId(), availabilityZoneEntity.getKind(), state, pageSize);
   }
 
   @Override

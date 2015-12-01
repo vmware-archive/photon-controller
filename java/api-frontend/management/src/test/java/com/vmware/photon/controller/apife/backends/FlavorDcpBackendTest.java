@@ -21,7 +21,6 @@ import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
@@ -201,57 +200,6 @@ public class FlavorDcpBackendTest {
     public void testCreateFlavorDuplicateNameAndKind() throws Exception {
       flavorBackend.createFlavor(spec);
       flavorBackend.createFlavor(spec);
-    }
-  }
-
-  /**
-   * Tests for retrieving tasks related to a flavor.
-   */
-  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
-  public static class TaskTest {
-    @Inject
-    private BasicServiceHost basicServiceHost;
-
-    @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
-
-    @Inject
-    private FlavorBackend flavorBackend;
-
-    private FlavorCreateSpec spec;
-
-    @BeforeMethod
-    public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
-
-      spec = createTestFlavorSpec();
-    }
-
-    @AfterMethod
-    public void tearDown() throws Throwable {
-      commonHostDocumentsCleanup();
-    }
-
-    @AfterClass
-    public static void afterClassCleanup() throws Throwable {
-      commonHostAndClientTeardown();
-    }
-
-    @Test
-    public void testGetTasks() throws Exception {
-      TaskEntity taskEntity = flavorBackend.createFlavor(spec);
-      String flavorId = taskEntity.getEntityId();
-
-      List<Task> tasks = flavorBackend.getTasks(flavorId, Optional.<String>absent(), Optional.<Integer>absent())
-          .getItems();
-
-      assertThat(tasks.size(), is(1));
-      assertThat(tasks.get(0).getState(), is(TaskEntity.State.COMPLETED.toString()));
-      assertThat(tasks.get(0).getEntity().getId(), is(flavorId));
-
-      tasks = flavorBackend.getTasks(flavorId, Optional.of(TaskEntity.State.QUEUED.toString()),
-          Optional.<Integer>absent()).getItems();
-      assertThat(tasks.size(), is(0));
     }
   }
 

@@ -17,7 +17,6 @@ import com.vmware.photon.controller.api.ImageCreateSpec;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
@@ -39,7 +38,6 @@ import com.vmware.photon.controller.common.dcp.DcpClient;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.junit.AfterClass;
@@ -510,69 +508,6 @@ public class ImageDcpBackendTest {
           termsBuilder.build());
       assertThat(results.size(), is(1));
       assertThat(results.get(0).imageDatastoreId, is(imageDatastoreId));
-    }
-  }
-
-  /**
-   * Tests for getting tasks related to an Image.
-   */
-  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
-  public static class ImageTasksTest {
-
-    private static String imageName;
-
-    @Mock
-    private InputStream inputStream;
-
-    @Inject
-    private BasicServiceHost basicServiceHost;
-
-    @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
-
-    @Inject
-    private ImageBackend imageBackend;
-
-    @BeforeMethod
-    public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
-    }
-
-    @AfterMethod
-    public void tearDown() throws Throwable {
-      commonHostDocumentsCleanup();
-    }
-
-    @AfterClass
-    public static void afterClassCleanup() throws Throwable {
-      commonHostAndClientTeardown();
-    }
-
-    @Test
-    public void testGetTasks() throws Throwable {
-      imageName = UUID.randomUUID().toString();
-      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
-      imageBackend.prepareImageDelete(imageId);
-      List<Task> tasks = imageBackend.getTasks(imageId, Optional.<String>absent(), Optional.<Integer>absent())
-          .getItems();
-      assertThat(tasks.size(), is(1));
-      assertThat(tasks.get(0).getState(), is("QUEUED"));
-    }
-
-    @Test
-    public void testGetTasksWithGivenState() throws Throwable {
-      imageName = UUID.randomUUID().toString();
-      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
-      imageBackend.prepareImageDelete(imageId);
-      List<Task> tasks = imageBackend.getTasks(imageId, Optional.of("FINISHED"), Optional.<Integer>absent())
-          .getItems();
-      assertThat(tasks.size(), is(0));
-    }
-
-    @Test(expectedExceptions = ImageNotFoundException.class,
-        expectedExceptionsMessageRegExp = "^Image id 'image1' not found$")
-    public void testGetTasksWithInvalidImageId() throws Exception {
-      imageBackend.getTasks("image1", Optional.<String>absent(), Optional.<Integer>absent());
     }
   }
 }
