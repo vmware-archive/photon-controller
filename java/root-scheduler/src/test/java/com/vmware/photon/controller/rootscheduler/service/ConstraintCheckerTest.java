@@ -30,9 +30,10 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
@@ -52,10 +53,13 @@ import java.util.concurrent.Executors;
  * Test Constraint Checker.
  */
 public class ConstraintCheckerTest {
+
   private TestEnvironment cloudStoreTestEnvironment;
 
+  private Map<String, HostService.State> expectedHosts = new HashMap<>();
+
   /**
-   * Default data provider.
+   * Default host data.
    *
    * - 10 hosts: host0, host1, ..., host9
    * - 1 network per host: host0 => nw0, host1 => nw1, ..., host9 => nw9
@@ -64,10 +68,9 @@ public class ConstraintCheckerTest {
    * - 1 tag per datastore: ds0 => dstag0, ds1 => dstag1, ..., ds9 => dstag9
    * - 5 management hosts host0, host2, host4, host6, host8
    */
-  @DataProvider(name = "default")
-  public Object[][] createDefault() throws Throwable {
+  @BeforeClass
+  public void setUpClass() throws Throwable {
     cloudStoreTestEnvironment = TestEnvironment.create(1);
-    Map<String, HostService.State> hosts = new HashMap<>();
     Map<String, DatastoreService.State> datastores = new HashMap<>();
     for (int i = 0; i < 10; i++) {
       String hostName = "host" + i;
@@ -95,7 +98,7 @@ public class ConstraintCheckerTest {
       } else {
         host.usageTags = new HashSet<>(Arrays.asList(UsageTag.CLOUD.name()));
       }
-      hosts.put(hostName, host);
+      expectedHosts.put(hostName, host);
 
       DatastoreService.State datastore = new DatastoreService.State();
       datastore.id = dsName;
@@ -112,24 +115,35 @@ public class ConstraintCheckerTest {
       assertThat(result.getStatusCode(), is(200));
     }
 
-    for (Map.Entry<String, HostService.State> entry : hosts.entrySet()) {
+    for (Map.Entry<String, HostService.State> entry : expectedHosts.entrySet()) {
       HostService.State initialState = entry.getValue();
       initialState.documentSelfLink = entry.getKey();
       Operation result = cloudStoreTestEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK, initialState);
       assertThat(result.getStatusCode(), is(200));
     }
+  }
 
+  @AfterClass
+  public void tearDownClass() throws Throwable {
+    if (null != cloudStoreTestEnvironment) {
+      cloudStoreTestEnvironment.stop();
+      cloudStoreTestEnvironment = null;
+    }
+  }
+
+  @DataProvider(name = "default")
+  public Object[][] createDefault() {
     DcpRestClient dcpRestClient = new DcpRestClient(
         cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
     dcpRestClient.start();
     ConstraintChecker inMemory = new InMemoryConstraintChecker(dcpRestClient);
     return new Object[][]{
-        {inMemory, hosts},
+        {inMemory},
     };
   }
 
   @Test(dataProvider = "default")
-  public void testDefault(ConstraintChecker checker, Map<String, HostService.State> expectedHosts) {
+  public void testDefault(ConstraintChecker checker) {
     Set<String> hosts = checker.getManagementHosts();
     assertThat(hosts, containsInAnyOrder("host0", "host2", "host4", "host6", "host8"));
 
@@ -156,7 +170,7 @@ public class ConstraintCheckerTest {
     }
   }
   @Test(dataProvider = "default")
-  public void testSingleConstraint(ConstraintChecker checker, Map<String, HostService.State> expectedHosts) {
+  public void testSingleConstraint(ConstraintChecker checker) {
     Map<String, ServerAddress> allHosts = checker.getHostMap();
     assertEquals(allHosts.keySet(), expectedHosts.keySet());
     for (Map.Entry<String, ServerAddress> entry: allHosts.entrySet()) {
@@ -229,7 +243,7 @@ public class ConstraintCheckerTest {
   }
 
   @Test(dataProvider = "default")
-  public void testNoConstraint(ConstraintChecker checker, Map<String, HostService.State> expectedHosts) {
+  public void testNoConstraint(ConstraintChecker checker) {
     // expect to get all the hosts without any constraint.
     Map<String, ServerAddress> allHosts = checker.getHostMap();
     List<ResourceConstraint> constraints = new LinkedList<>();
@@ -248,7 +262,7 @@ public class ConstraintCheckerTest {
   }
 
   @Test(dataProvider = "default")
-  public void testNoMatch(ConstraintChecker checker, Map<String, HostService.State> expectedHosts) {
+  public void testNoMatch(ConstraintChecker checker) {
     // non-existent datastore
     List<ResourceConstraint> constraints = new LinkedList<>();
     ResourceConstraint constraint = new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList("invalid"));
