@@ -17,16 +17,22 @@ from common.photon_thrift.decorators import log_request
 from .gen import StatsService
 from .gen.ttypes import SetCollectionLevelResponse
 from .gen.ttypes import SetCollectionLevelResultCode
+from .memory_tsdb import MemoryTimeSeriesDB
 from stats_collector import StatsCollector
+from stats_publisher import StatsPublisher
 
 
 class StatsHandler(StatsService.Iface):
 
     def __init__(self):
+        self._db = MemoryTimeSeriesDB()
         self._logger = logging.getLogger(__name__)
-        self._collector = StatsCollector()
+        self._collector = StatsCollector(self._db)
         self._collector.configure_collectors()
         self._collector.start_collection()
+        self._publisher = StatsPublisher(self._db)
+        self._publisher.configure_publishers()
+        self._publisher.start_publishing()
 
     def _error_response(self, code, error, response):
         self._logger.debug(error)

@@ -92,11 +92,11 @@ class TestUnitMemoryDB(unittest.TestCase):
         since = 12
         for key in ["foo", "bar"]:
             values = db.get_values_since(since, key)
-            assert_that(len(values), equal_to(3))
-            for i in xrange(3):
+            assert_that(len(values), equal_to(2))
+            for i in xrange(2):
                 (timestamp, data) = values[i]
-                assert_that(timestamp, equal_to(i+since))
-                assert_that(data, equal_to(i+since))
+                assert_that(timestamp, equal_to(i+since+1))
+                assert_that(data, equal_to(i+since+1))
 
 
 if __name__ == "__main__":

@@ -28,12 +28,17 @@ class TestStats(unittest.TestCase):
         agent_config = MagicMock()
         common.services.register(ServiceName.AGENT_CONFIG, agent_config)
 
+    @patch('stats.stats.StatsPublisher.start_publishing')
+    @patch('stats.stats.StatsPublisher.configure_publishers')
     @patch('stats.stats.StatsCollector.start_collection')
     @patch('stats.stats.StatsCollector.configure_collectors')
-    def test_stats_handler(self, _config_collectors, _start_collection):
+    def test_stats_handler(self, _config_collectors, _start_collection,
+                           _config_publishers, _start_publishing):
         stats.stats.StatsHandler()
         _config_collectors.assert_called_once_with()
         _start_collection.assert_called_once_with()
+        _config_publishers.assert_called_once_with()
+        _start_publishing.assert_called_once_with()
 
     @patch('stats.stats.StatsHandler')
     def test_plugin(self, _handler):

@@ -33,8 +33,11 @@
 
 from collections import defaultdict
 from collections import deque
-import re
 import math
+import re
+import threading
+
+from common.lock import locked
 
 
 class MemoryTimeSeriesDBPolicyError(Exception):
@@ -48,11 +51,12 @@ class MemoryTimeSeriesDB(object):
         _db: dict that uses the time series keys as identifiers
         _num_samples: Number of samples the DB will retain
 
-    Note: This class is not thread safe
     """
     def __init__(self):
         self._db = None
+        self.lock = threading.Lock()
 
+    @locked
     def set_policy(self, frequency="10s", duration="60s"):
         """ Calculate _num_samples based on given retention policy
 
@@ -104,6 +108,7 @@ class MemoryTimeSeriesDB(object):
                     seconds += int(value)
         return seconds
 
+    @locked
     def add(self, key, timestamp, data):
         """ Add a new entry to the time series DB.
 
@@ -118,17 +123,23 @@ class MemoryTimeSeriesDB(object):
         """
         self._db[key].append((timestamp, data))
 
+    @locked
     def get_values_since(self, since, key):
         """ Get values added since particular time.
 
         Returns a list of zero or more (timestamp, value) tuples whose timstamp
-        field is greater than or equal to since.
+        field is greater than since.
         """
         result = []
         for idx in reversed(xrange(0, len(self._db[key]))):
             value = self._db[key][idx]
-            if value[0] >= since:
+            if value[0] > since:
                 result.insert(0, value)
             else:
                 break
         return result
+
+    @locked
+    def get_keys(self):
+        """ Get list of metric keys stored in the db. """
+        return self._db.keys()

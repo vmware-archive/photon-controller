@@ -10,20 +10,19 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
+from datetime import datetime
 import logging
-import time
 
 import common
 from common.service_name import ServiceName
 from common.thread import Periodic
 from .esx.perfmgr_collector import PerfManagerCollector
-from .memory_tsdb import MemoryTimeSeriesDB
 
 
 class StatsCollector(object):
     DEFAULT_COLLECT_INTERVAL_SECS = 20.0
 
-    def __init__(self):
+    def __init__(self, tsdb):
         self._logger = logging.getLogger(__name__)
 
         # XXX plugin configuration should be decoupled from agent_config arg
@@ -37,10 +36,11 @@ class StatsCollector(object):
         self._collectors = []
 
         # Cache up to 1 hour's worth of metrics
-        self._metric_cache = MemoryTimeSeriesDB()
+        self._metric_cache = tsdb
         assert(self._collect_interval_secs < 3600)
         freq_str = "%ds" % self._collect_interval_secs
         self._metric_cache.set_policy(freq_str, "1h")
+        self._last_publish_ts = datetime.now()
 
     def start_collection(self):
         self._collector_thread = Periodic(self.collect,
@@ -68,8 +68,10 @@ class StatsCollector(object):
     def collect(self):
         for c in self._collectors:
             self._logger.debug("Collecting from %s" % str(c))
-            timestamp = time.time()
-            metrics = c.collect()
+            since = self._last_publish_ts
+            self._last_publish_ts = datetime.now()
+            metrics = c.collect(since=since)
             for key in metrics.keys():
-                self._metric_cache.add(key, timestamp, metrics[key])
                 self._logger.debug(" %s -> %s" % (key, metrics[key]))
+                for value_tuple in metrics[key]:
+                    self._metric_cache.add(key, value_tuple[0], value_tuple[1])

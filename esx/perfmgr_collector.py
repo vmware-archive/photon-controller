@@ -13,10 +13,11 @@
 from datetime import datetime
 from datetime import timedelta
 import logging
-import common
+import time
 
 from pyVmomi import vim
 
+import common
 from common.service_name import ServiceName
 from stats.collector import Collector
 
@@ -28,11 +29,11 @@ class PerfManagerCollector(Collector):
         # level 1 => default collection level
         [
             "mem.consumed",
-            "storageAdapter.totalReadLatency"
+            "rescpu.actav1"
         ],
         # level 2
         [
-            "rescpu.actav1"
+            "storageAdapter.totalReadLatency"
         ],
         # level 3
         [
@@ -129,6 +130,15 @@ class PerfManagerCollector(Collector):
         self._logger.info("Collector initialized")
         self._initialized = True
 
+    def _get_timestamps(self, sample_info_csv):
+        # extract timestamps from sampleInfoCSV
+        # format is '20,2015-12-03T18:39:20Z,20,2015-12-03T18:39:40Z...'
+        timestamps = sample_info_csv.split(',')[1::2]
+        return [
+            time.mktime(datetime.strptime(dt,
+                                          '%Y-%m-%dT%H:%M:%SZ').timetuple())
+            for dt in timestamps]
+
     def get_perf_manager_stats(self, start_time, end_time=None):
         """ Returns the host statistics by querying the perf manager on the
             host for the configured performance counters.
@@ -157,11 +167,13 @@ class PerfManagerCollector(Collector):
             return results
 
         for stat in stats:
+            timestamps = self._get_timestamps(stat.sampleInfoCSV)
             values = stat.value
             for value in values:
                 id = value.id.counterId
                 counter_values = [float(i) for i in value.value.split(',')]
-                results[self._counter_to_metric_map[id]] = counter_values
+                results[self._counter_to_metric_map[id]] = zip(timestamps,
+                                                               counter_values)
         return results
 
     def collect(self, since=None):

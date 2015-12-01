@@ -14,7 +14,7 @@ import unittest
 
 from hamcrest import *  # noqa
 from matchers import *  # noqa
-from mock import MagicMock, patch
+from mock import call, MagicMock, patch
 
 import common
 from common.service_name import ServiceName
@@ -25,13 +25,14 @@ class TestStatsCollector(unittest.TestCase):
 
     def setUp(self):
         agent_config = MagicMock()
+        self._mock_db = MagicMock()
         common.services.register(ServiceName.AGENT_CONFIG, agent_config)
 
     @patch('stats.stats_collector.Periodic')
     def test_start_stop_collection(self, _periodic_cls):
         mock_thread = MagicMock()
         _periodic_cls.return_value = mock_thread
-        collector = StatsCollector()
+        collector = StatsCollector(self._mock_db)
 
         collector.start_collection()
 
@@ -47,7 +48,7 @@ class TestStatsCollector(unittest.TestCase):
 
     @patch('stats.stats_collector.PerfManagerCollector')
     def test_configure_collectors(self, _perfmgr_coll_cls):
-        collector = StatsCollector()
+        collector = StatsCollector(self._mock_db)
         mock_collector = MagicMock()
         _perfmgr_coll_cls.return_value = mock_collector
 
@@ -57,16 +58,28 @@ class TestStatsCollector(unittest.TestCase):
         assert_that(collector._collectors, contains(mock_collector))
 
     @patch('stats.stats_collector.PerfManagerCollector')
-    def test_collect(self, _perfmgr_coll_cls):
-        collector = StatsCollector()
-        mock_collector = MagicMock()
-        _perfmgr_coll_cls.return_value = mock_collector
+    @patch('stats.stats_collector.datetime')
+    def test_collect(self, _datetime_cls, _perfmgr_coll_cls):
+        mock_now = MagicMock()
+        _datetime_cls.now.return_value = mock_now
+        collector = StatsCollector(self._mock_db)
+        mock_perfmgr_collector = MagicMock()
+        _perfmgr_coll_cls.return_value = mock_perfmgr_collector
+        mock_perfmgr_collector.collect.return_value = {
+            "key1": [(1000000, 1), (1000020, 2)],
+            "key2": [(1000000, 3), (1000020, 4)]}
+
         collector.configure_collectors()
 
         collector.collect()
 
-        mock_collector.collect.assert_called_once_with()
+        mock_perfmgr_collector.collect.assert_called_once_with(since=mock_now)
+        calls = [call("key1", 1000000, 1),
+                 call("key1", 1000020, 2),
+                 call("key2", 1000000, 3),
+                 call("key2", 1000020, 4)]
 
+        self._mock_db.add.assert_has_calls(calls, any_order=True)
 
 if __name__ == '__main__':
     unittest.main()
