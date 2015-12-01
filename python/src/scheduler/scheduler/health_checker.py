@@ -172,8 +172,8 @@ class HealthChecker(object):
                 self._logger.warn("Failed to send %s: %s" % (request, rc))
                 return False
             return True
-        except Exception:
-            self._logger.warn("Failed to send %s" % request, exc_info=True)
+        except Exception as e:
+            self._logger.warn("Failed to send %s: %s" % (request, e))
             return False
         finally:
             if client:
@@ -200,8 +200,8 @@ class HealthChecker(object):
                 self._logger.warn("Failed to send %s: %s" % (request, rc))
                 return False
             return True
-        except Exception:
-            self._logger.warn("Failed to send %s" % request, exc_info=True)
+        except Exception as e:
+            self._logger.warn("Failed to send %s: %s" % (request, e))
             return False
         finally:
             if client:
