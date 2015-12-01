@@ -235,8 +235,9 @@ class TestHttpTransfer(unittest.TestCase):
         self.assertEqual(lease, lease_mock)
         self.assertEqual(url, url_mock)
 
+    @patch("__builtin__.open")
     @patch("os.unlink")
-    def test_send_image_to_host(self, mock_unlink):
+    def test_send_image_to_host(self, mock_unlink, mock_open):
         host = "mock_host"
         port = 8835
         image_id = "fake_image_id"
@@ -248,6 +249,12 @@ class TestHttpTransfer(unittest.TestCase):
         to_url_mock = MagicMock()
         import_spec_mock = MagicMock()
         xferer = self.http_transferer
+
+        file_contents = ["fake_metadata", "fake_manifest"]
+
+        def fake_read():
+            return file_contents.pop()
+        mock_open().__enter__().read.side_effect = fake_read
 
         xferer._get_image_stream_from_shadow_vm = MagicMock(
             return_value=(read_lease_mock, from_url_mock))
@@ -267,6 +274,12 @@ class TestHttpTransfer(unittest.TestCase):
 
         self.http_transferer.send_image_to_host(
             image_id, image_datastore, None, destination_datastore, host, port)
+
+        assert_that(agent_conn_mock.receive_image.call_args_list,
+                    has_length(1))
+        request = agent_conn_mock.receive_image.call_args_list[0][0][0]
+        assert_that(request.metadata, equal_to("fake_metadata"))
+        assert_that(request.manifest, equal_to("fake_manifest"))
 
         xferer._get_image_stream_from_shadow_vm.assert_called_once_with(
             image_id, image_datastore)

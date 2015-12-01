@@ -188,6 +188,14 @@ def partial_path(disk_id, name_no_extension, extension):
                         "%s.%s" % (name_no_extension, extension))
 
 
+def metadata_filename(disk_id):
+    return "%s.%s" % (disk_id, METADATA_FILE_EXT)
+
+
+def manifest_filename(disk_id):
+    return "%s.%s" % (disk_id, MANIFEST_FILE_EXT)
+
+
 def partial_vmdk_path(disk_id):
     return partial_path(disk_id, disk_id, "vmdk")
 
