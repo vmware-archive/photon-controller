@@ -39,6 +39,7 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 import static com.vmware.xenon.common.OperationJoin.JoinedCompletionHandler;
 import static com.vmware.xenon.common.OperationJoin.create;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedList;
@@ -188,7 +189,7 @@ public class EntityLockCleanerService extends StatefulService {
         .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
         .setBody(buildEntityLockQuery(current));
 
-    Operation getFirstPageOfEntityLocks = Operation.createGet(null);
+    Operation getFirstPageOfEntityLocks = Operation.createGet(UriUtils.buildUri(getHost(), this.getSelfLink()));
 
     OperationSequence
         .create(queryEntityLocksPagination)
@@ -203,7 +204,6 @@ public class EntityLockCleanerService extends StatefulService {
             getFirstPageOfEntityLocks.setUri(UriUtils.buildUri(getHost(), results.nextPageLink, null));
           } else {
             ServiceUtils.logInfo(this, "No entityLocks found.");
-            finishTask(finishPatch);
           }
 
         }))
@@ -213,7 +213,9 @@ public class EntityLockCleanerService extends StatefulService {
             failTask(throwable.values().iterator().next());
             return;
           }
-          if (getFirstPageOfEntityLocks.getUri() != null) {
+          URI selfLink = UriUtils.buildUri(getHost(), this.getSelfLink());
+          URI entityLocksPageLink = getFirstPageOfEntityLocks.getUri();
+          if (!selfLink.equals(entityLocksPageLink)) {
             Operation op = ops.get(getFirstPageOfEntityLocks.getId());
 
             List<EntityLockService.State> entityLockList =
@@ -226,6 +228,9 @@ public class EntityLockCleanerService extends StatefulService {
             }
 
             deleteUnreleasedEntityLocks(finishPatch, entityLockList);
+          } else {
+            finishTask(finishPatch);
+            return;
           }
         })
         .sendWith(this);
@@ -293,6 +298,7 @@ public class EntityLockCleanerService extends StatefulService {
         ServiceUtils.logInfo(this, "No unreleased entityLocks found.");
         finishPatch.deletedEntityLocks = 0;
         finishTask(finishPatch);
+        return;
       }
 
       OperationJoin join = create(deleteOperations);
