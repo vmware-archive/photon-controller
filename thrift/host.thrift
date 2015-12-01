@@ -632,6 +632,10 @@ struct ReceiveImageRequest {
   // The id to lookup transferred image data at the receiving host
   3: required string transferred_image_id
 
+  // Raw image metadata
+  4: required string metadata
+  5: required string manifest
+
   99: optional tracing.TracingInfo tracing_info
 }
 enum ReceiveImageResultCode {
