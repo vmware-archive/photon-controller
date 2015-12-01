@@ -316,6 +316,16 @@ class EsxImageManager(ImageManager):
                                            source_meta)
                     raise
 
+            # Copy the manifest file if it exists
+            source_manifest = os_image_manifest_path(source_datastore,
+                                                     source_id)
+            if os.path.exists(source_manifest):
+                try:
+                    shutil.copy(source_manifest, tmp_image_dir_path)
+                except:
+                    # Swallow it. Not critical.
+                    pass
+
             # Create the timestamp file
             self._create_image_timestamp_file(tmp_image_dir_path)
 
@@ -782,7 +792,8 @@ class EsxImageManager(ImageManager):
                               name=dst_vmdk_ds_path)
             raise
 
-    def receive_image(self, image_id, datastore_id, imported_vm_name):
+    def receive_image(self, image_id, datastore_id, imported_vm_name, metadata,
+                      manifest):
         """ Creates an image using the data from the imported vm.
 
         This is run at the destination host end of the host-to-host
@@ -792,6 +803,18 @@ class EsxImageManager(ImageManager):
         vm = self._vim_client.get_vm_obj_in_cache(imported_vm_name)
         vmx_os_path = datastore_to_os_path(vm.config.files.vmPathName)
         vm_dir = os.path.dirname(vmx_os_path)
+
+        # Save raw manifest
+        manifest_path = os_image_manifest_path(datastore_id, image_id)
+        with open(manifest_path, 'w') as f:
+            f.write(manifest)
+
+        # Save raw metadata
+        metadata_path = os_metadata_path(datastore_id, image_id,
+                                         IMAGE_FOLDER_NAME)
+        with open(metadata_path, 'w') as f:
+            f.write(metadata)
+
         vm.Unregister()
         if self.check_image_dir(image_id, datastore_id):
             self._logger.info("Image %s on datastore %s already exists" %

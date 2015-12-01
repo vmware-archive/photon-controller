@@ -2027,7 +2027,9 @@ class HostHandler(Host.Iface):
                 request.datastore_id)
             self.hypervisor.receive_image(request.image_id,
                                           datastore_id,
-                                          request.transferred_image_id)
+                                          request.transferred_image_id,
+                                          request.metadata,
+                                          request.manifest)
         except DiskAlreadyExistException:
             return self._error_response(
                 ReceiveImageResultCode.IMAGE_ALREADY_EXIST,
