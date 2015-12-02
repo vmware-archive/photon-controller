@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.clients.TaskFeClient;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.utils.DataTypeConversionUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
 import com.google.common.base.Optional;
@@ -68,18 +69,15 @@ public class ProjectTasksResource {
                       @QueryParam("kind") Optional<String> kind,
                       @QueryParam("pageSize") Optional<Integer> pageSize,
                       @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
-    if (pageLink.isPresent()) {
-      return generateResourceListResponse(
-          Response.Status.OK,
-          taskFeClient.getPage(pageLink.get()),
-          (ContainerRequest) request,
-          TaskResourceRoutes.TASK_PATH);
-    } else {
-      return generateResourceListResponse(
-          Response.Status.OK,
-          taskFeClient.getProjectTasks(id, state, kind, pageSize),
-          (ContainerRequest) request,
-          TaskResourceRoutes.TASK_PATH);
-    }
+
+    ResourceList<Task> resourceList = pageLink.isPresent()
+        ? taskFeClient.getPage(pageLink.get())
+        : taskFeClient.getProjectTasks(id, state, kind, pageSize);
+
+    return generateResourceListResponse(
+        Response.Status.OK,
+        DataTypeConversionUtils.formalizePageLinks(resourceList, ProjectResourceRoutes.API),
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
   }
 }

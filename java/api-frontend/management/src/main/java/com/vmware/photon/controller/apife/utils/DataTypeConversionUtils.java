@@ -54,4 +54,24 @@ public class DataTypeConversionUtils {
 
     return resourceList;
   }
+
+  /**
+   * The page links returned from xenon cannot be directly used. This util
+   * function is to formalize it to a format like "/tasks?pageLink=xxxxxx"
+   * @param resourceList
+   * @param apiRoute
+   * @param <T>
+   * @return
+   */
+  public static <T> ResourceList<T> formalizePageLinks(ResourceList<T> resourceList, String apiRoute) {
+    if (resourceList.getNextPageLink() != null) {
+      resourceList.setNextPageLink(apiRoute + "?pageLink=" + resourceList.getNextPageLink());
+    }
+
+    if (resourceList.getPreviousPageLink() != null) {
+      resourceList.setPreviousPageLink(apiRoute + "?pageLink=" + resourceList.getPreviousPageLink());
+    }
+
+    return resourceList;
+  }
 }
