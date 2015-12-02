@@ -398,9 +398,10 @@ public class VmDcpBackend implements VmBackend {
 
   @Override
   public TaskEntity prepareVmCreate(String projectId, VmCreateSpec spec) throws ExternalException {
-    VmEntity vm = create(projectId, spec);
+    ProjectEntity project = projectBackend.findById(projectId);
+    VmEntity vm = create(project, spec);
     logger.info("created VM: {}", vm);
-    TaskEntity task = createTask(vm);
+    TaskEntity task = createTask(project, vm);
     logger.info("created Task: {}", task);
     return task;
   }
@@ -702,9 +703,8 @@ public class VmDcpBackend implements VmBackend {
     return result.getBody(VmService.State.class);
   }
 
-  private VmEntity create(String projectId, VmCreateSpec spec) throws ExternalException {
+  private VmEntity create(ProjectEntity project, VmCreateSpec spec) throws ExternalException {
     Stopwatch createWatch = Stopwatch.createStarted();
-    ProjectEntity project = projectBackend.findById(projectId);
     FlavorEntity flavorEntity = flavorBackend.getEntityByNameAndKind(spec.getFlavor(), Vm.KIND);
     if (!FlavorState.READY.equals(flavorEntity.getState())) {
       throw new InvalidFlavorStateException(
@@ -783,8 +783,7 @@ public class VmDcpBackend implements VmBackend {
     return vmEntity;
   }
 
-  private TaskEntity createTask(VmEntity vm) throws ExternalException {
-
+  private TaskEntity createTask(ProjectEntity project, VmEntity vm) throws ExternalException {
     List<StepEntity> stepEntities = new ArrayList<>();
     List<BaseEntity> entityList = new ArrayList<>();
     entityList.add(vm);
@@ -792,6 +791,7 @@ public class VmDcpBackend implements VmBackend {
     StepEntity step = new StepEntity();
     stepEntities.add(step);
     step.addResources(entityList);
+    step.addTransientResourceEntity(project);
     step.setOperation(Operation.RESERVE_RESOURCE);
     for (Throwable warning : vm.getWarnings()) {
       step.addWarning(warning);

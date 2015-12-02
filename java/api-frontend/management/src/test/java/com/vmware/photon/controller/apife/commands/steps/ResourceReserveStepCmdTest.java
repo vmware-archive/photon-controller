@@ -34,11 +34,13 @@ import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.LocalityEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
+import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
+import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidSchedulerException;
@@ -144,12 +146,18 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   @Captor
   private ArgumentCaptor<Resource> resourceCaptor;
 
+  private ProjectEntity project;
+
   private VmEntity vm;
 
   private PersistentDiskEntity disk;
 
   @BeforeMethod
   public void setUp() throws ExternalException {
+    project = new ProjectEntity();
+    project.setId("project-id");
+    project.setTenantId("tenant-id");
+
     List<QuotaLineItemEntity> quotaLineItemEntities = new ArrayList<>();
     quotaLineItemEntities.add(new QuotaLineItemEntity("vm.cost", 100.0, QuotaUnit.COUNT));
 
@@ -170,6 +178,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     vm.setId("foo");
     vm.setFlavorId(vmFlavorEntity.getId());
     vm.setCost(quotaLineItemEntities);
+    vm.setProjectId(project.getId());
 
     disk = new PersistentDiskEntity();
     disk.setId("disk-1");
@@ -192,6 +201,50 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     expectedFlavor.setName("vm-100");
     expectedFlavor.setCost(quotaLineItems);
 
+    PlaceResponse placeResponse = generateResourcePlacementList();
+    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+
+    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
+    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+
+    ResourceReserveStepCmd command = getVmReservationCommand();
+    command.execute();
+
+    verify(rootSchedulerClient).place(resourceCaptor.capture());
+    Resource resource = resourceCaptor.getValue();
+    assertThat(resource.getVm().getId(), is("foo"));
+    assertThat(resource.getVm().getFlavor(), is("vm-100"));
+    assertThat(resource.getVm().getFlavor_info(), is(expectedFlavor));
+    assertThat(resource.getVm().getProject_id(), is(project.getId()));
+    assertThat(resource.getVm().getTenant_id(), is(project.getTenantId()));
+    assertThat(resource.getVm().isSetResource_constraints(), is(false));
+
+    assertThat(resource.getPlacement_list().getPlacements().size(), is(1));
+    assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
+    assertThat(resource.getPlacement_list().getPlacements().get(0).getResource_id(), is("vm-id"));
+
+    verify(rootSchedulerClient).place(resourceCaptor.capture());
+    verify(hostClient).reserve(resourceCaptor.capture(), eq(42));
+    assertThat(resourceCaptor.getValue(), is(resource));
+  }
+
+  @Test
+  public void testSuccessfulVmExecutionWithDiskAffinities() throws Throwable {
+    List<QuotaLineItem> quotaLineItems = new ArrayList<>();
+    quotaLineItems.add(new QuotaLineItem("vm.cost", "100.0", com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
+
+    Flavor expectedFlavor = new Flavor();
+    expectedFlavor.setName("vm-100");
+    expectedFlavor.setCost(quotaLineItems);
+
+    PersistentDiskEntity disk1 = new PersistentDiskEntity();
+    PersistentDiskEntity disk2 = new PersistentDiskEntity();
+    disk1.setDatastore("datastore-1");
+    disk2.setDatastore("datastore-1");
+
+    when(diskBackend.find(PersistentDisk.KIND, "disk-1")).thenReturn(disk1);
+    when(diskBackend.find(PersistentDisk.KIND, "disk-2")).thenReturn(disk2);
+
     List<LocalityEntity> affinities = new ArrayList<>();
     LocalityEntity localityEntity1 = new LocalityEntity();
     localityEntity1.setResourceId("disk-1");
@@ -204,40 +257,85 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     affinities.add(localityEntity2);
     vm.setAffinities(affinities);
 
-    ResourceReserveStepCmd command = getVmReservationCommand();
-
     PlaceResponse placeResponse = generateResourcePlacementList();
     placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
 
     when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
     when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
-    PersistentDiskEntity disk1 = new PersistentDiskEntity();
-    PersistentDiskEntity disk2 = new PersistentDiskEntity();
-    disk1.setDatastore("datastore-1");
-    disk2.setDatastore("datastore-1");
 
-    when(diskBackend.find(PersistentDisk.KIND, "disk-1")).thenReturn(disk1);
-    when(diskBackend.find(PersistentDisk.KIND, "disk-2")).thenReturn(disk2);
+    ResourceReserveStepCmd command = getVmReservationCommand();
+    command.execute();
+
+    verify(rootSchedulerClient).place(resourceCaptor.capture());
+    Resource resource = resourceCaptor.getValue();
+    assertThat(resource.getVm().getResource_constraints().size(), is(vm.getAffinities().size()));
+    assertThat(resource.getVm().getResource_constraints().get(0).getType(), is(ResourceConstraintType.DATASTORE));
+    assertThat(resource.getVm().getResource_constraints().get(0).getValues().equals(ImmutableList.of("datastore-1")),
+        is(true));
+    assertThat(resource.getVm().getResource_constraints().get(1).getType(), is(ResourceConstraintType.DATASTORE));
+    assertThat(resource.getVm().getResource_constraints().get(1).getValues().equals(ImmutableList.of("datastore-1")),
+        is(true));
+
+    verify(rootSchedulerClient).place(resourceCaptor.capture());
+    verify(hostClient).reserve(resourceCaptor.capture(), eq(42));
+    assertThat(resourceCaptor.getValue(), is(resource));
+  }
+
+  @Test
+  public void testSuccessfulVmExecutionWithEphemeralDiskAttached() throws Exception {
+    List<QuotaLineItem> quotaLineItems = new ArrayList<>();
+    quotaLineItems.add(new QuotaLineItem("ephemeral-disk.cost", "10000.0",
+        com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
+    quotaLineItems.add(new QuotaLineItem("ephemeral-disk.capacity", "0.0",
+        com.vmware.photon.controller.flavors.gen.QuotaUnit.GB));
+    quotaLineItems.add(new QuotaLineItem("storage.SHARED_VMFS", "1.0",
+        com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
+
+    Flavor expectedDiskFlavor = new Flavor();
+    expectedDiskFlavor.setName("ephemeral-disk-10000");
+    expectedDiskFlavor.setCost(quotaLineItems);
+
+    attachEphemeralDisk(vm);
+    ResourceReserveStepCmd command = getVmReservationCommand();
+
+    PlaceResponse placeResponse = generateResourcePlacementList();
+    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
+    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
+    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     command.execute();
 
     verify(rootSchedulerClient).place(resourceCaptor.capture());
     Resource resource = resourceCaptor.getValue();
-    assertThat(resource.getVm().getId(), is("foo"));
-    assertThat(resource.getVm().getFlavor(), is("vm-100"));
-    assertThat(resource.getVm().getFlavor_info(), is(expectedFlavor));
 
-    assertThat(resource.getVm().getResource_constraints().get(0).getType(), is(ResourceConstraintType.DATASTORE));
-    assertThat(resource.getVm().getResource_constraints().get(0).getValues().equals(ImmutableList.of("datastore-1")),
-        is(true));
-    assertThat(resource.getVm().getResource_constraints().get(1).getValues().equals(ImmutableList.of("datastore-1")),
-        is(true));
+    assertThat(resource.getVm().isSetResource_constraints(), is(false));
+    assertThat(resource.getVm().getDisks().size(), is(vm.getAttachedDisks().size()));
+    assertThat(resource.getVm().getDisks().get(0).getId(), is("disk1"));
+    assertThat(resource.getVm().getDisks().get(0).getFlavor_info(), is(expectedDiskFlavor));
+    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getType(), is(ResourceConstraintType
+        .DATASTORE_TAG));
+    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getValues().equals(ImmutableList.of
+        ("SHARED_VMFS")), is(true));
+
+    assertThat(resource.getPlacement_list().getPlacements().size(), is(1 + vm.getAttachedDisks().size()));
     assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
-    assertThat(resource.getPlacement_list().getPlacements().get(0).getResource_id(), is("vm-id"));
+    assertThat(resource.getPlacement_list().getPlacements().get(1).getType(), is(ResourcePlacementType.DISK));
+  }
 
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    verify(hostClient).reserve(resourceCaptor.capture(), eq(42));
-    assertThat(resourceCaptor.getValue(), is(resource));
+  @Test(expectedExceptions = InternalException.class,
+        expectedExceptionsMessageRegExp = "Project entity not found in the step.")
+  public void testFailedVmExecutionNoProject() throws Throwable {
+    ResourceReserveStepCmd command = getVmReservationCommand(false);
+    command.execute();
+  }
+
+  @Test(expectedExceptions = InternalException.class,
+        expectedExceptionsMessageRegExp = "Project entity in transient resource list did not match VMs project.")
+  public void testFailedVmExecutionProjectEntityIdDoesNotMatchVmProjectId() throws Throwable {
+    vm.setProjectId("some-other-id");
+    ResourceReserveStepCmd command = getVmReservationCommand();
+    command.execute();
   }
 
   @Test
@@ -255,12 +353,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     affinities.add(localityEntity2);
     disk.setAffinities(affinities);
 
-    StepEntity step = new StepEntity();
-    step.setId("step-id");
-    step.addResource(disk);
-
-    ResourceReserveStepCmd command = spy(new ResourceReserveStepCmd(taskCommand, stepBackend, step,
-        diskBackend, vmBackend, networkBackend, flavorBackend));
+    ResourceReserveStepCmd command = getDiskReservationCommand();
 
     PlaceResponse placeResponse = generateResourcePlacementList();
     placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
@@ -294,43 +387,6 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     verify(rootSchedulerClient).place(resourceCaptor.capture());
     verify(hostClient).reserve(resourceCaptor.capture(), eq(42));
     assertThat(resourceCaptor.getValue(), is(resource));
-  }
-
-  @Test
-  public void testSuccessfulEphemeralDiskAttachedExecution() throws Exception {
-    List<QuotaLineItem> quotaLineItems = new ArrayList<>();
-    quotaLineItems.add(new QuotaLineItem("ephemeral-disk.cost", "10000.0",
-        com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
-    quotaLineItems.add(new QuotaLineItem("ephemeral-disk.capacity", "0.0",
-        com.vmware.photon.controller.flavors.gen.QuotaUnit.GB));
-    quotaLineItems.add(new QuotaLineItem("storage.SHARED_VMFS", "1.0",
-        com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
-
-    Flavor expectedDiskFlavor = new Flavor();
-    expectedDiskFlavor.setName("ephemeral-disk-10000");
-    expectedDiskFlavor.setCost(quotaLineItems);
-
-    attachEphemeralDisk(vm);
-    ResourceReserveStepCmd command = getVmReservationCommand();
-
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
-
-    command.execute();
-
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    Resource resource = resourceCaptor.getValue();
-    assertThat(resource.getVm().getDisks().get(0).getId(), is("disk1"));
-    assertThat(resource.getVm().getDisks().get(0).getFlavor_info(), is(expectedDiskFlavor));
-    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getType(), is(ResourceConstraintType
-        .DATASTORE_TAG));
-    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getValues().equals(ImmutableList.of
-        ("SHARED_VMFS")), is(true));
-    assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
-    assertThat(resource.getPlacement_list().getPlacements().get(1).getType(), is(ResourcePlacementType.DISK));
   }
 
   @Test
@@ -516,12 +572,20 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   }
 
   private ResourceReserveStepCmd getVmReservationCommand() {
+    return this.getVmReservationCommand(true);
+  }
+
+  private ResourceReserveStepCmd getVmReservationCommand(boolean addProjectEntity) {
     StepEntity step = new StepEntity();
     step.setId("step-1");
     step.addResource(vm);
 
-    return spy(new ResourceReserveStepCmd(taskCommand, stepBackend, step,
-        diskBackend, vmBackend, networkBackend, flavorBackend));
+    if (addProjectEntity) {
+      step.addTransientResourceEntity(project);
+    }
+
+    return spy(new ResourceReserveStepCmd(
+        taskCommand, stepBackend, step, diskBackend, vmBackend, networkBackend, flavorBackend));
   }
 
   private ResourceReserveStepCmd getDiskReservationCommand() {
@@ -529,8 +593,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     step.setId("step-1");
     step.addResource(disk);
 
-    return spy(new ResourceReserveStepCmd(taskCommand, stepBackend, step,
-        diskBackend, vmBackend, networkBackend, flavorBackend));
+    return spy(new ResourceReserveStepCmd(
+        taskCommand, stepBackend, step, diskBackend, vmBackend, networkBackend, flavorBackend));
   }
 
   private void attachEphemeralDisk(VmEntity vm) throws ExternalException {
