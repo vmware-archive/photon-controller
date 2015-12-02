@@ -50,15 +50,17 @@ public class HousekeeperDcpServiceHost
     implements DcpHostInfoProvider,
     HostClientProvider, ZookeeperHostMonitorProvider {
 
-
   protected static final String IMAGE_COPY_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/image-copy";
   protected static final String IMAGE_DELETE_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/image-delete";
+  protected static final String IMAGE_TRANSFER_SCHEDULER_SERVICE =
+      TaskSchedulerServiceFactory.SELF_LINK + "/image-host-to-host-copiers";
 
   private static final Map<String, TaskSchedulerServiceStateBuilder> TASK_SCHEDULERS = ImmutableMap.of(
       IMAGE_COPY_SCHEDULER_SERVICE, new TaskSchedulerServiceStateBuilder(ImageCopyService.class, 10),
-      IMAGE_DELETE_SCHEDULER_SERVICE, new TaskSchedulerServiceStateBuilder(ImageDeleteService.class, 10)
+      IMAGE_DELETE_SCHEDULER_SERVICE, new TaskSchedulerServiceStateBuilder(ImageDeleteService.class, 10),
+      IMAGE_TRANSFER_SCHEDULER_SERVICE, new TaskSchedulerServiceStateBuilder(ImageHostToHostCopyService.class, 1)
   );
 
   private static final String TRIGGER_CLEANER_SERVICE_SUFFIX = "/singleton";

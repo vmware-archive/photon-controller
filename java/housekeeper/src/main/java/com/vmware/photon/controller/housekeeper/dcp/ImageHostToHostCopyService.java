@@ -13,11 +13,17 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.HostClientProvider;
+import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
+import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
-import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
+import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
+import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.photon.controller.host.gen.TransferImageResponse;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
@@ -25,11 +31,12 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
-import com.google.common.annotations.VisibleForTesting;
+import org.apache.thrift.async.AsyncMethodCallback;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.io.IOException;
 import java.net.URI;
 
 /**
@@ -125,11 +132,6 @@ public class ImageHostToHostCopyService extends StatefulService {
     }
   }
 
-  @VisibleForTesting
-  protected ZookeeperHostMonitor getZookeeperHostMonitor() {
-    return ((ZookeeperHostMonitorProvider) getHost()).getZookeeperHostMonitor();
-  }
-
   /**
    * Validate patch correctness.
    *
@@ -190,7 +192,7 @@ public class ImageHostToHostCopyService extends StatefulService {
    * @param current
    */
   protected void handleStartedStage(final State current) {
-    copyImage(current);
+    copyImageHostToHost(current);
   }
 
   /**
@@ -198,9 +200,51 @@ public class ImageHostToHostCopyService extends StatefulService {
    *
    * @param current
    */
-  private void copyImage(final State current) {
-    ServiceUtils.logInfo(this, "Copying image from host to host hasn't been implemented yet");
-    sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
+  private void copyImageHostToHost(final State current) {
+    if (current.sourceDataStore.equals(current.destinationDataStore)) {
+      ServiceUtils.logInfo(this, "Skip copying image to source itself");
+      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
+      return;
+    }
+
+    ServiceUtils.logInfo(this, "Calling agent to do host to host image copy.");
+    AsyncMethodCallback callback = new AsyncMethodCallback() {
+      @Override
+      public void onComplete(Object o) {
+        try {
+          TransferImageResponse r = ((Host.AsyncClient.transfer_image_call) o).getResult();
+          ServiceUtils.logInfo(ImageHostToHostCopyService.this, "TransferImageResponse %s", r);
+          switch (r.getResult()) {
+            case OK:
+              sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
+              ;
+              break;
+            case TRANSFER_IN_PROGRESS:
+              throw new ImageTransferInProgressException(r.getError());
+            case SYSTEM_ERROR:
+              throw new SystemErrorException(r.getError());
+            default:
+              throw new UnknownError(
+                  String.format("Unknown result code %s", r.getResult()));
+          }
+        } catch (Exception e) {
+          onError(e);
+        }
+      }
+
+      @Override
+      public void onError(Exception e) {
+        failTask(e);
+      }
+    };
+
+    try {
+      getHostClient(current).transferImage(current.image, current.sourceDataStore, current.destinationDataStore,
+          current.destinationHost, callback);
+
+    } catch (RpcException | IOException e) {
+      failTask(e);
+    }
   }
 
   /**
@@ -259,6 +303,18 @@ public class ImageHostToHostCopyService extends StatefulService {
   }
 
   /**
+   * Get a host client.
+   *
+   * @param current
+   * @return
+   */
+  private HostClient getHostClient(final State current) throws IOException {
+    HostClient client = ((HostClientProvider) getHost()).getHostClient();
+    client.setHostIp(current.host);
+    return client;
+  }
+
+  /**
    * Durable service state data. Class encapsulating the data for image copy between hosts.
    */
   public static class State extends ServiceDocument {
@@ -282,6 +338,16 @@ public class ImageHostToHostCopyService extends StatefulService {
      * The store where the image will be copied to.
      */
     public String destinationDataStore;
+
+    /**
+     * The host connecting to the source image datastore.
+     */
+    public String host;
+
+    /**
+     * The host connecting to the destination image datastore.
+     */
+    public ServerAddress destinationHost;
 
     /**
      * When isSelfProgressionDisabled is true, the service does not automatically update its stages.
