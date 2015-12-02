@@ -1,5 +1,5 @@
 # hierarchical or flat. default to hierarchical
-mode: hierachical
+mode: flat
 # memory or dcp. default to memory
 constraintChecker: memory
 # Refresh interval for in-memory constraint checker cache in seconds.
