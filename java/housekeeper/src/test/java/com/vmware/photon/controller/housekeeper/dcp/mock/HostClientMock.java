@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
+import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.CopyImageResponse;
 import com.vmware.photon.controller.host.gen.CopyImageResultCode;
 import com.vmware.photon.controller.host.gen.DeleteImageResponse;
@@ -32,6 +33,8 @@ import com.vmware.photon.controller.host.gen.ImageInfoResultCode;
 import com.vmware.photon.controller.host.gen.StartImageOperationResultCode;
 import com.vmware.photon.controller.host.gen.StartImageScanResponse;
 import com.vmware.photon.controller.host.gen.StartImageSweepResponse;
+import com.vmware.photon.controller.host.gen.TransferImageResponse;
+import com.vmware.photon.controller.host.gen.TransferImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.MethodCallBuilder;
 import com.vmware.photon.controller.resource.gen.ImageInfo;
 import com.vmware.photon.controller.resource.gen.InactiveImageDescriptor;
@@ -73,6 +76,8 @@ public class HostClientMock extends HostClient {
 
   private DeleteImageResultCode deleteImageResultCode;
 
+  private TransferImageResultCode transferImageResultCode;
+
   private List<String> imagesForGetImagesRequest;
 
   private ImageInfo imageInfo;
@@ -89,6 +94,7 @@ public class HostClientMock extends HostClient {
     copyImageResultCode = CopyImageResultCode.OK;
     getImagesResultCode = GetImagesResultCode.OK;
     imageInfoResultCode = ImageInfoResultCode.OK;
+    transferImageResultCode = TransferImageResultCode.OK;
 
     deleteImageResultCode = DeleteImageResultCode.OK;
     imagesForGetImagesRequest = new ArrayList<>();
@@ -96,6 +102,10 @@ public class HostClientMock extends HostClient {
 
   public void setCopyImageResultCode(CopyImageResultCode copyImageResultCode) {
     this.copyImageResultCode = copyImageResultCode;
+  }
+
+  public void setTransferImageResultCode(TransferImageResultCode transferImageResultCode) {
+    this.transferImageResultCode = transferImageResultCode;
   }
 
   public void setGetImagesResultCode(GetImagesResultCode getImagesResultCode) {
@@ -143,6 +153,26 @@ public class HostClientMock extends HostClient {
       throw new RuntimeException("Failed to mock copyImageCall.getResult");
     }
     callback.onComplete(copyImageCall);
+  }
+
+  @Override
+  public void transferImage(String imageId, String source, String destination,
+                            ServerAddress destinationHost, AsyncMethodCallback callback) {
+    if (source.equals(destination)) {
+      fail("Same source and destination should not be passed to call HostClient");
+    }
+
+    logger.info("Host transferImage complete invocation");
+    TransferImageResponse response = new TransferImageResponse();
+    response.setResult(transferImageResultCode);
+
+    Host.AsyncClient.transfer_image_call transferImageCall = mock(Host.AsyncClient.transfer_image_call.class);
+    try {
+      when(transferImageCall.getResult()).thenReturn(response);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to mock copyImageCall.getResult");
+    }
+    callback.onComplete(transferImageCall);
   }
 
   @Override
