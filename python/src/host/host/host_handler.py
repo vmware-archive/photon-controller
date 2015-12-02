@@ -299,6 +299,8 @@ class HostHandler(Host.Iface):
                                    (agent_config.image_datastore,
                                     config.datastores))
 
+        config.memory_mb = self._hypervisor.system.total_vmusable_memory_mb()
+        config.cpu_count = self._hypervisor.system.num_physical_cpus()
         response.hostConfig = config
         return response
 
