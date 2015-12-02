@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.chairman.service;
 
 import com.vmware.photon.controller.api.AgentState;
+import com.vmware.photon.controller.chairman.Config;
 import com.vmware.photon.controller.chairman.gen.RegisterHostRequest;
 import com.vmware.photon.controller.chairman.gen.RegisterHostResponse;
 import com.vmware.photon.controller.chairman.gen.RegisterHostResultCode;
@@ -103,6 +104,9 @@ public class ChairmanServiceTest extends PowerMockTestCase {
   @Mock
   private BuildInfo buildInfo;
 
+  @Mock
+  private Config config;
+
   @Captor
   private ArgumentCaptor<List<String>> missingCapture;
 
@@ -169,7 +173,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
 
   @BeforeMethod
   public void setUp() {
-    service = new ChairmanService(hierarchyUtils, configDict, missingDict, dcpRestClient, buildInfo);
+    service = new ChairmanService(hierarchyUtils, configDict, missingDict, dcpRestClient, buildInfo, config);
     this.datastores = new LinkedHashSet<>();
     this.networks = new LinkedHashSet<>();
   }
