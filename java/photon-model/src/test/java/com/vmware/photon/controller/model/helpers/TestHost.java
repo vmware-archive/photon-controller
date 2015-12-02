@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.model.helpers;
 
+import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
@@ -128,6 +129,21 @@ public class TestHost extends VerificationHost {
     this.sendRequest(patchOperation);
     this.testWait();
   }
+
+    public <T extends ServiceDocument> int patchServiceSynchronously(
+            String serviceUri, ComputeInstanceRequest patchBody) throws Throwable {
+
+        this.testStart(1);
+        Operation patchOperation = Operation
+                .createPatch(UriUtils.buildUri(this, serviceUri))
+                .setBody(patchBody)
+                .setReferer(this.getUri())
+                .setCompletion(getCompletion());
+
+      this.sendRequest(patchOperation);
+      this.testWait();
+      return patchOperation.getStatusCode();
+    }
 
   public <T extends ServiceDocument> T getServiceSynchronously(
       String serviceUri, Class<T> type) throws Throwable {
