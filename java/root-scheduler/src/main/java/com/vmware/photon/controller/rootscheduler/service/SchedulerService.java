@@ -175,6 +175,8 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
 
     // Send place request to the candidates.
     final Set<PlaceResponse> okResponses = Sets.newConcurrentHashSet();
+    final Set<PlaceResultCode> returnCodes = Sets.newConcurrentHashSet();
+
     final CountDownLatch done = new CountDownLatch(candidates.size());
 
     logger.info("Sending place requests to {} with timeout {} ms", candidates, timeoutMs);
@@ -182,7 +184,7 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
       try {
         HostClient hostClient = hostClientFactory.create();
         hostClient.setIpAndPort(entry.getValue().getHost(), entry.getValue().getPort());
-        hostClient.place(request.getResource(), new PlaceCallback(request, entry, done, okResponses));
+        hostClient.place(request.getResource(), new PlaceCallback(request, entry, done, okResponses, returnCodes));
       } catch (RpcException ex) {
         logger.warn("Failed to send a place request to {}", entry, ex);
       }
@@ -199,10 +201,23 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
     PlaceResponse response = scoreCalculator.pickBestResponse(okResponses);
     watch.stop();
     if (response == null) {
-      response = new PlaceResponse(PlaceResultCode.SYSTEM_ERROR);
-      String msg = String.format("Received no response in %d ms", watch.elapsed(TimeUnit.MILLISECONDS));
-      response.setError(msg);
-      logger.error(msg);
+      // TODO(mmutsuzaki) Arbitrarily defining a precedence for return codes doesn't make sense.
+      if (returnCodes.contains(PlaceResultCode.NOT_ENOUGH_CPU_RESOURCE)) {
+        response = new PlaceResponse(PlaceResultCode.NOT_ENOUGH_CPU_RESOURCE);
+      } else if (returnCodes.contains(PlaceResultCode.NOT_ENOUGH_MEMORY_RESOURCE)) {
+        response = new PlaceResponse(PlaceResultCode.NOT_ENOUGH_MEMORY_RESOURCE);
+      } else if (returnCodes.contains((PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY))) {
+        response = new PlaceResponse(PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY);
+      } else if (returnCodes.contains(PlaceResultCode.NO_SUCH_RESOURCE)) {
+        response = new PlaceResponse(PlaceResultCode.NO_SUCH_RESOURCE);
+      } else if (returnCodes.contains(PlaceResultCode.INVALID_SCHEDULER)) {
+        response = new PlaceResponse(PlaceResultCode.INVALID_SCHEDULER);
+      } else {
+        response = new PlaceResponse(PlaceResultCode.SYSTEM_ERROR);
+        String msg = String.format("Received no response in %d ms", watch.elapsed(TimeUnit.MILLISECONDS));
+        response.setError(msg);
+        logger.error(msg);
+      }
     } else {
       logger.info("Returning bestResponse: {} in {} ms", response, watch.elapsed(TimeUnit.MILLISECONDS));
     }
@@ -214,13 +229,16 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
     final Map.Entry<String, ServerAddress> entry;
     final CountDownLatch latch;
     final Set<PlaceResponse> responses;
+    final Set<PlaceResultCode> returnCodes;
 
     public PlaceCallback(PlaceRequest request, Map.Entry<String, ServerAddress> entry,
-                         CountDownLatch latch, Set<PlaceResponse> responses) {
+                         CountDownLatch latch, Set<PlaceResponse> responses,
+                         Set<PlaceResultCode> returnCodes) {
       this.request = request;
       this.entry = entry;
       this.latch = latch;
       this.responses = responses;
+      this.returnCodes = returnCodes;
     }
 
     @Override
@@ -234,6 +252,7 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
         return;
       }
       logger.info("Received a place response from {}: {}", entry, response);
+      returnCodes.add(response.getResult());
       if (response.getResult() == PlaceResultCode.OK) {
         responses.add(response);
       }
