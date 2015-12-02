@@ -1,0 +1,77 @@
+# Cutting a release for photon-model and photon-model-tasks
+
+### Prerequisites
+
+* Several of these steps are only available to VMware employees.
+* Create a key pair, publish it to a key server (see [working with PGP signatures][working-with-pgp-signatures])
+* Set up access to Sonatype OSS Repository Hosting: they manage [Maven Central](http://search.maven.org/):
+  * Make an account at [Sonatype Issues](https://issues.sonatype.org/)
+  * Get permission to push artifacts (e.g. through a ticket to Sonatype)
+* Observe [Semantic Versioning][semver]
+
+[working-with-pgp-signatures]: http://central.sonatype.org/pages/working-with-pgp-signatures.html
+[semver]: http://semver.org/
+
+#### Notes
+
+**Q**: Why not use the maven-publish plugin?
+**A**: The plugin is still in incubation as of gradle 2.8. We should consider it once it is publicly available.
+
+### Marking a release
+
+(Assume current version is 0.1.0-SNAPSHOT)
+
+* Update the `version` string in the root `build.gradle` file to a release version e.g 0.1.0
+* Commit `Mark 0.1.0 release`
+* Update the `version` string in the root `build.gradle` file to next version snapshot e.g 0.1.1-SNAPSHOT
+* Commit `Mark 0.1.1-SNAPSHOT for development`
+* Push commits to Gerrit
+* Wait for +1/+2 for **both** commits
+* Merge them at the **same time** (so no other commits can be interleaved)
+
+### Deploying a release
+
+**After** both commits have been merged you know the bits you're about to release won't change.
+
+Make sure you have the GPG agent running so you don't have to repeatedly enter your key's passphrase:
+
+```
+$ eval $(gpg-agent)
+```
+(Warning: the gpg-agent once interfered with a `git pull --rebase`. Turn it off as necessary)
+
+Make sure Gradle can find credentials to Sonatype OSSRH by modifying `~/.gradle/gradle.properties`
+The signing properties are available from the keypair created in the [Prerequisites](#Prerequisites)
+
+```
+signing.keyId= KEYID
+signing.password= secretPass
+signing.secretKeyRingFile= pathtokeyringfile
+```
+Update java/gradle.properties with your username and password
+```
+ossrhUsername = myself
+ossrhPassword= secret
+```
+
+Double check you're actually releasing `0.1.0`:
+
+```
+$ git show --oneline HEAD | head -1
+6bb595a Mark 0.1.0 release
+```
+
+Perform the release:
+
+```
+$ ./gradlew uploadArchives
+```
+
+Release the deployment to maven central by following [these instructions](http://central.sonatype.org/pages/releasing-the-deployment.html). You will do two steps: Closing the Staging repositories, and making the release public. Useful links for this process:
+* [Manage Sonatype Staging Repositories via Web UI](https://oss.sonatype.org/#stagingRepositories)
+* [Deploy snapshot artifacts into repository](https://oss.sonatype.org/content/repositories/snapshots)
+* [Download snapshot, release and staged artifacts from staging group](https://oss.sonatype.org/content/groups/staging)
+* [Download snapshot and release artifacts from group](https://oss.sonatype.org/content/groups/public)
+* [See the released artifacts on Maven Central](https://repo1.maven.org/maven2/com/vmware/photon/controller)
+
+Done!
