@@ -1,0 +1,42 @@
+apply plugin: 'java'
+
+dependencies {
+    compile "commons-io:commons-io:2.4"
+    compile "com.vmware.xenon:xenon-common:${versions.xenon_common}"
+    compile 'commons-validator:commons-validator:1.4.0'
+    compile 'com.amazonaws:aws-java-sdk-core:1.9.6'
+    compile 'com.amazonaws:aws-java-sdk-ec2:1.9.6'
+    compile(project(':photon-model'))
+    compile(project(':photon-model-tasks'))
+
+    testCompile("org.apache.curator:curator-test:${versions.curator}") {
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+        exclude group: 'log4j', module: 'log4j'
+    }
+
+    testCompile 'org.hamcrest:hamcrest-all:1.3'
+    testCompile 'org.testng:testng:6.8'
+    testCompile "org.powermock:powermock-api-mockito:${versions.powermock}"
+    testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
+    testCompile "com.vmware.xenon:xenon-common:${versions.xenon_common}:tests"
+    testCompile(project(path: ':photon-model', configuration: 'tests'))
+}
+
+jar {
+    baseName = 'photon-model-aws-adapter'
+    manifest {
+        attributes 'Specification-Title': 'AWS Adapter used by Photon Controller',
+                'Specification-Version': version,
+                'Built-By': System.getProperty('user.name'),
+                'Built-Date': new Date(),
+                'Built-JDK': System.getProperty('java.version'),
+                'Built-Gradle': gradle.gradleVersion,
+                'Git-Commit': "git rev-parse --short HEAD".execute().text.trim()
+    }
+}
+
+tasks.withType(Test) {
+    scanForTestClasses = false
+    include "**/*Test.class"
+    exclude "**/helpers/*.class"
+}
