@@ -27,7 +27,6 @@ import com.vmware.photon.controller.host.gen.TransferImageResponse;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
@@ -60,6 +59,7 @@ public class ImageHostToHostCopyService extends StatefulService {
     State s = new State();
     s.taskInfo = new TaskState();
     s.taskInfo.stage = TaskState.TaskStage.STARTED;
+    s.taskInfo.subStage = TaskState.SubStage.RETRIEVE_HOSTS;
     return s;
   }
 
@@ -82,7 +82,7 @@ public class ImageHostToHostCopyService extends StatefulService {
       validateState(s);
       start.setBody(s).complete();
 
-      sendStageProgressPatch(s, s.taskInfo.stage);
+      sendStageProgressPatch(s, s.taskInfo.stage, s.taskInfo.subStage);
     } catch (RuntimeException e) {
       ServiceUtils.logSevere(this, e);
       if (!OperationUtils.isCompleted(start)) {
@@ -170,6 +170,31 @@ public class ImageHostToHostCopyService extends StatefulService {
     checkNotNull(current.destinationDataStore, "destination datastore not provided");
 
     checkState(current.documentExpirationTimeMicros > 0, "documentExpirationTimeMicros needs to be greater than 0");
+
+
+    switch (current.taskInfo.stage) {
+      case STARTED:
+        checkState(current.taskInfo.subStage != null, "subStage cannot be null");
+        switch (current.taskInfo.subStage) {
+          case RETRIEVE_HOSTS:
+            break;
+          case TRANSFER_IMAGE:
+            checkArgument(current.host != null, "host not found");
+            checkArgument(current.destinationDataStore != null, "destination host not found");
+            break;
+          default:
+            checkState(false, "unsupported sub-state: " + current.taskInfo.subStage.toString());
+        }
+        break;
+      case CREATED:
+      case FAILED:
+      case FINISHED:
+      case CANCELLED:
+        checkState(current.taskInfo.subStage == null, "Invalid stage update. subStage must be null");
+        break;
+      default:
+        checkState(false, "cannot process patches in state: " + current.taskInfo.stage.toString());
+    }
   }
 
   protected void applyPatch(State currentState, State patchState) {
@@ -192,7 +217,17 @@ public class ImageHostToHostCopyService extends StatefulService {
    * @param current
    */
   protected void handleStartedStage(final State current) {
-    copyImageHostToHost(current);
+    // Handle task sub-state.
+    switch (current.taskInfo.subStage) {
+      case RETRIEVE_HOSTS:
+        getHostsFromDataStores(current);
+        break;
+      case TRANSFER_IMAGE:
+        copyImageHostToHost(current);
+        break;
+      default:
+        throw new IllegalStateException("Un-supported substage" + current.taskInfo.subStage.toString());
+    }
   }
 
   /**
@@ -203,7 +238,7 @@ public class ImageHostToHostCopyService extends StatefulService {
   private void copyImageHostToHost(final State current) {
     if (current.sourceDataStore.equals(current.destinationDataStore)) {
       ServiceUtils.logInfo(this, "Skip copying image to source itself");
-      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
+      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
       return;
     }
 
@@ -216,7 +251,7 @@ public class ImageHostToHostCopyService extends StatefulService {
           ServiceUtils.logInfo(ImageHostToHostCopyService.this, "TransferImageResponse %s", r);
           switch (r.getResult()) {
             case OK:
-              sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
+              sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
               ;
               break;
             case TRANSFER_IN_PROGRESS:
@@ -254,7 +289,7 @@ public class ImageHostToHostCopyService extends StatefulService {
    */
   private void failTask(Throwable e) {
     ServiceUtils.logSevere(this, e);
-    this.sendSelfPatch(buildPatch(TaskState.TaskStage.FAILED, e));
+    this.sendSelfPatch(buildPatch(TaskState.TaskStage.FAILED, null, e));
   }
 
   /**
@@ -273,27 +308,31 @@ public class ImageHostToHostCopyService extends StatefulService {
    * Send a patch message to ourselves to update the execution stage.
    *
    * @param stage
+   * @param subStage
    */
-  private void sendStageProgressPatch(State current, TaskState.TaskStage stage) {
+  private void sendStageProgressPatch(State current, TaskState.TaskStage stage, TaskState.SubStage subStage) {
     if (current.isSelfProgressionDisabled) {
       return;
     }
 
-    sendSelfPatch(buildPatch(stage, null));
+    sendSelfPatch(buildPatch(stage, subStage, null));
   }
+
 
   /**
    * Build a state object that can be used to submit a stage progress
    * self patch.
    *
    * @param stage
+   * @param subStage
    * @param e
    * @return
    */
-  private State buildPatch(TaskState.TaskStage stage, Throwable e) {
-    State s = new ImageHostToHostCopyService.State();
+  private State buildPatch(TaskState.TaskStage stage, TaskState.SubStage subStage, Throwable e) {
+    State s = new State();
     s.taskInfo = new TaskState();
     s.taskInfo.stage = stage;
+    s.taskInfo.subStage = subStage;
 
     if (e != null) {
       s.taskInfo.failure = Utils.toServiceErrorResponse(e);
@@ -312,6 +351,37 @@ public class ImageHostToHostCopyService extends StatefulService {
     HostClient client = ((HostClientProvider) getHost()).getHostClient();
     client.setHostIp(current.host);
     return client;
+  }
+
+  /**
+   * Retrieve hosts that connect to the given source image datastore and destination datastore respectively.
+   *
+   * @param current
+   */
+  private void getHostsFromDataStores(final State current) {
+    if (!current.isSelfProgressionDisabled) {
+      ImageHostToHostCopyService.State patch = buildPatch(com.vmware.xenon.common.TaskState.TaskStage.STARTED,
+          TaskState.SubStage.TRANSFER_IMAGE, null);
+      this.sendSelfPatch(patch);
+    }
+  }
+
+  /**
+   * Service execution stages.
+   */
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+    /**
+     * The execution substage.
+     */
+    public SubStage subStage;
+
+    /**
+     * Execution sub-stage.
+     */
+    public static enum SubStage {
+      RETRIEVE_HOSTS,
+      TRANSFER_IMAGE,
+    }
   }
 
   /**
