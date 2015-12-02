@@ -265,7 +265,7 @@ public class ImageDcpBackend implements ImageBackend {
     termsBuilder.put("isImageDatastore", "true");
     List<DatastoreService.State> datastores = dcpClient.queryDocuments(DatastoreService.State.class,
         termsBuilder.build());
-    checkState(datastores.size() == 1, "more than one image datastore has the same name");
+    checkState(datastores.size() == 1, "expected exactly 1 imageDatastore found [" + datastores.size() + "]");
 
     try {
       ImageReplicationService.State imageReplicationServiceState = new ImageReplicationService.State();
