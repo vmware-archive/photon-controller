@@ -49,6 +49,7 @@ public class ChairmanModule extends AbstractModule {
 
   @Override
   protected void configure() {
+    bind(Config.class).toInstance(config);
     bindConstant().annotatedWith(Config.Bind.class).to(config.getBind());
     bindConstant().annotatedWith(Config.RegistrationAddress.class).to(config.getRegistrationAddress());
     bindConstant().annotatedWith(Config.Port.class).to(config.getPort());
