@@ -77,19 +77,19 @@ public class TasksResourceTest extends ResourceTest {
     when(
         taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
             Optional.<Integer>absent())
-    ).thenReturn(new ResourceList<>(ImmutableList.of(t1, t2)));
+    ).thenReturn(new ResourceList<>(ImmutableList.of(t1, t2), null, null));
     when(
         taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
             Optional.of(2))
-    ).thenReturn(new ResourceList<>(ImmutableList.of(t1, t2)));
+    ).thenReturn(new ResourceList<>(ImmutableList.of(t1, t2), null, null));
     when(
         taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
             Optional.of(1))
-    ).thenReturn(new ResourceList<>(ImmutableList.of(t1)));
+    ).thenReturn(new ResourceList<>(ImmutableList.of(t1), UUID.randomUUID().toString(), null));
     when(
         taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
             Optional.of(3))
-    ).thenReturn(new ResourceList<>(Collections.emptyList()));
+    ).thenReturn(new ResourceList<>(Collections.emptyList(), null, null));
   }
 
   @Test(dataProvider = "pageSizes")
@@ -100,21 +100,24 @@ public class TasksResourceTest extends ResourceTest {
     Response response = getTasks(entity.getId(), entity.getKind(), state, pageSize);
     assertThat(response.getStatus(), is(200));
 
-    List<Task> tasks = response.readEntity(
+    ResourceList<Task> tasks = response.readEntity(
         new GenericType<ResourceList<Task>>() {
         }
-    ).getItems();
+    );
 
-    for (int i = 0; i < tasks.size(); i++) {
-      assertThat(new URI(tasks.get(i).getSelfLink()).isAbsolute(), CoreMatchers.is(true));
-      assertThat(tasks.get(i), is(expectedTasks.get(i)));
-      assertThat(tasks.get(i).getSelfLink().endsWith(expectedLinks.get(i)), is(true));
+    for (int i = 0; i < tasks.getItems().size(); i++) {
+      assertThat(new URI(tasks.getItems().get(i).getSelfLink()).isAbsolute(), CoreMatchers.is(true));
+      assertThat(tasks.getItems().get(i), is(expectedTasks.get(i)));
+      assertThat(tasks.getItems().get(i).getSelfLink().endsWith(expectedLinks.get(i)), is(true));
     }
+
+    verifyPageLinks(tasks);
   }
 
   @Test
   public void testGetTasksPage() throws Exception {
-    ResourceList<Task> expectedTasksPage = new ResourceList<Task>(ImmutableList.of(t1, t2));
+    ResourceList<Task> expectedTasksPage = new ResourceList<Task>(ImmutableList.of(t1, t2),
+        UUID.randomUUID().toString(), UUID.randomUUID().toString());
     when(taskFeClient.getPage(anyString())).thenReturn(expectedTasksPage);
 
     List<String> expectedSelfLinks = ImmutableList.of(link1, link2);
@@ -122,18 +125,20 @@ public class TasksResourceTest extends ResourceTest {
     Response response = getTasks(UUID.randomUUID().toString());
     assertThat(response.getStatus(), is(200));
 
-    List<Task> tasks = response.readEntity(
+    ResourceList<Task> tasks = response.readEntity(
         new GenericType<ResourceList<Task>>() {
         }
-    ).getItems();
+    );
 
-    assertThat(tasks.size(), is(expectedTasksPage.getItems().size()));
+    assertThat(tasks.getItems().size(), is(expectedTasksPage.getItems().size()));
 
-    for (int i = 0; i < tasks.size(); i++) {
-      assertThat(new URI(tasks.get(i).getSelfLink()).isAbsolute(), is(true));
-      assertThat(tasks.get(i), is(expectedTasksPage.getItems().get(i)));
-      assertThat(tasks.get(i).getSelfLink().endsWith(expectedSelfLinks.get(i)), is(true));
+    for (int i = 0; i < tasks.getItems().size(); i++) {
+      assertThat(new URI(tasks.getItems().get(i).getSelfLink()).isAbsolute(), is(true));
+      assertThat(tasks.getItems().get(i), is(expectedTasksPage.getItems().get(i)));
+      assertThat(tasks.getItems().get(i).getSelfLink().endsWith(expectedSelfLinks.get(i)), is(true));
     }
+
+    verifyPageLinks(tasks);
   }
 
   @DataProvider(name = "pageSizes")
@@ -177,5 +182,16 @@ public class TasksResourceTest extends ResourceTest {
 
     WebTarget resource = client().target(uri);
     return resource.request().get();
+  }
+
+  private void verifyPageLinks(ResourceList<Task> resourceList) {
+    String expectedPrefix = TaskResourceRoutes.API + "?pageLink=";
+
+    if (resourceList.getNextPageLink() != null) {
+      assertThat(resourceList.getNextPageLink().startsWith(expectedPrefix), is(true));
+    }
+    if (resourceList.getPreviousPageLink() != null) {
+      assertThat(resourceList.getPreviousPageLink().startsWith(expectedPrefix), is(true));
+    }
   }
 }
