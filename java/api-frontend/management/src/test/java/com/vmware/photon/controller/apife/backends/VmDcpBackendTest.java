@@ -567,6 +567,14 @@ public class VmDcpBackendTest {
     @Test
     public void testPrepareVmCreate() throws Throwable {
       String vmId = createdVmTaskEntity.getEntityId();
+      assertThat(createdVmTaskEntity.getSteps().size(), is(2));
+      assertThat(createdVmTaskEntity.getSteps().get(0).getOperation(),
+          is(com.vmware.photon.controller.api.Operation.RESERVE_RESOURCE));
+      assertThat(createdVmTaskEntity.getSteps().get(0).getTransientResourceEntities(ProjectEntity.KIND).size(), is(1));
+      assertThat(createdVmTaskEntity.getSteps().get(0).getTransientResourceEntities(ProjectEntity.KIND).get(0).getId(),
+          is(projectId));
+      assertThat(createdVmTaskEntity.getSteps().get(1).getOperation(),
+          is(com.vmware.photon.controller.api.Operation.CREATE_VM));
       assertThat(createdVmTaskEntity.getLockableEntityIds().size(), is(1));
       assertThat(createdVmTaskEntity.getLockableEntityIds().get(0), is(vmId));
 
