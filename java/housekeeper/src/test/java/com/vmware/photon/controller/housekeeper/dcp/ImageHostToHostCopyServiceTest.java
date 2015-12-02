@@ -15,13 +15,16 @@ package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
+import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
+import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
-import com.vmware.photon.controller.host.gen.CopyImageResultCode;
+import com.vmware.photon.controller.host.gen.TransferImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
+import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientTransferImageErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
@@ -39,10 +42,10 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -52,7 +55,6 @@ import static org.testng.Assert.fail;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 /**
  * Tests {@link com.vmware.photon.controller.housekeeper.dcp.ImageHostToHostCopyService}.
@@ -476,14 +478,22 @@ public class ImageHostToHostCopyServiceTest {
       };
     }
 
+    @DataProvider(name = "transferImageSuccessCode")
+    public Object[][] getTransferImageSuccessCode() {
+      return new Object[][]{
+          {1, TransferImageResultCode.OK},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK},
+      };
+    }
+
     /**
      * Tests copy success scenarios.
      *
      * @param code Result code return from HostClient.
      * @throws Throwable
      */
-    @Test(dataProvider = "copyImageSuccessCode")
-    public void testSuccess(int hostCount, CopyImageResultCode code) throws Throwable {
+    @Test(dataProvider = "transferImageSuccessCode")
+    public void testSuccess(int hostCount, TransferImageResultCode code) throws Throwable {
       HostClientMock hostClient = new HostClientMock();
 
       zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
@@ -491,7 +501,7 @@ public class ImageHostToHostCopyServiceTest {
           hostCount,
           ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
 
-      hostClient.setCopyImageResultCode(code);
+      hostClient.setTransferImageResultCode(code);
       doReturn(hostClient).when(hostClientFactory).create();
 
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
@@ -501,17 +511,13 @@ public class ImageHostToHostCopyServiceTest {
           ImageHostToHostCopyServiceFactory.SELF_LINK,
           copyTask,
           ImageHostToHostCopyService.State.class,
-          new Predicate<ImageHostToHostCopyService.State>() {
-            @Override
-            public boolean test(ImageHostToHostCopyService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FINISHED;
-            }
-          });
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
       assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
-      assertThat(response.destinationDataStore, not(isEmptyOrNullString()));
+      assertThat(response.destinationDataStore, is(copyTask.destinationDataStore));
+      assertThat(response.host, isEmptyOrNullString());
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
@@ -520,9 +526,105 @@ public class ImageHostToHostCopyServiceTest {
           greaterThanOrEqualTo(
               1.0 + // Create Patch
                   1.0 + // Scheduler start patch
-                  1.0 + // Host and dest data store retrieved
                   1.0   // FINISHED
           ));
+    }
+
+    @Test(dataProvider = "hostCount")
+    public void testFailWithTransferImageException(int hostCount) throws Throwable {
+      doReturn(new HostClientTransferImageErrorMock()).when(hostClientFactory).create();
+
+      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
+          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
+          hostCount,
+          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
+
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+
+      // Call Service.
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
+          copyTask,
+          ImageHostToHostCopyService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
+
+      // Check response.
+      assertThat(response.image, is(copyTask.image));
+      assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
+      assertThat(response.destinationDataStore, is(copyTask.destinationDataStore));
+      assertThat(response.host, isEmptyOrNullString());
+      assertThat(response.taskInfo.failure.message, containsString("transferImage error"));
+
+      // Check stats.
+      ServiceStats stats = machine.getOwnerServiceStats(response);
+      assertThat(
+          stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
+          greaterThanOrEqualTo(
+              1.0 + // Create patch
+                  1.0 + // Scheduler start patch
+                  1.0   // FAILED
+          ));
+    }
+
+    /**
+     * Test error scenario when HostClient returns error codes.
+     *
+     * @param code Result code return from HostClient.
+     * @throws Throwable
+     */
+    @Test(dataProvider = "transferImageErrorCode")
+    public void testFailWithCopyImageErrorCode(
+        int hostCount, TransferImageResultCode code, String exception)
+        throws Throwable {
+      HostClientMock hostClient = new HostClientMock();
+      hostClient.setTransferImageResultCode(code);
+      doReturn(hostClient).when(hostClientFactory).create();
+
+      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
+          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
+          hostCount,
+          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
+
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+
+      // Call Service.
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
+          copyTask,
+          ImageHostToHostCopyService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
+
+      // Check response.
+      assertThat(response.image, is(copyTask.image));
+      assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
+      assertThat(response.destinationDataStore, is(copyTask.destinationDataStore));
+      assertThat(response.host, isEmptyOrNullString());
+
+      // Check stats.
+      ServiceStats stats = machine.getOwnerServiceStats(response);
+      assertThat(
+          stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
+          greaterThanOrEqualTo(
+              1.0 + // Create Patch
+                  1.0 + // Scheduler start patch
+                  1.0   // FAILED
+          ));
+    }
+
+    @DataProvider(name = "transferImageErrorCode")
+    public Object[][] getTransferImageErrorCode() {
+      return new Object[][]{
+          {
+              1,
+              TransferImageResultCode.TRANSFER_IN_PROGRESS,
+              ImageTransferInProgressException.class.toString()
+          },
+          {
+              1,
+              TransferImageResultCode.SYSTEM_ERROR,
+              SystemErrorException.class.toString()
+          }
+      };
     }
   }
 }
