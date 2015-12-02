@@ -233,6 +233,7 @@ public class
       ImageCopyService.State savedState = host.getServiceState(ImageCopyService.State.class);
       assertThat(savedState.taskInfo, notNullValue());
       assertThat(savedState.taskInfo.stage, is(TaskState.TaskStage.CREATED));
+      assertThat(savedState.taskInfo.subStage, nullValue());
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
           is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
@@ -247,6 +248,7 @@ public class
       ImageCopyService.State savedState = host.getServiceState(ImageCopyService.State.class);
       assertThat(savedState.taskInfo, notNullValue());
       assertThat(savedState.taskInfo.stage, is(TaskState.TaskStage.CREATED));
+      assertThat(savedState.taskInfo.subStage, nullValue());
     }
 
     @Test
@@ -277,12 +279,13 @@ public class
      */
     @Test(dataProvider = "targetStages")
     public void testStartStageIsNotChanged(TaskState.TaskStage targetStage, ImageCopyService.TaskState.SubStage
-        substage) throws Throwable {
-      host.startServiceSynchronously(service, buildValidStartupState(targetStage, substage));
+        targetSubStage) throws Throwable {
+      host.startServiceSynchronously(service, buildValidStartupState(targetStage, targetSubStage));
 
       ImageCopyService.State savedState = host.getServiceState(ImageCopyService.State.class);
       assertThat(savedState.taskInfo, notNullValue());
       assertThat(savedState.taskInfo.stage, is(targetStage));
+      assertThat(savedState.taskInfo.subStage, is(targetSubStage));
     }
 
     @Test
@@ -332,6 +335,26 @@ public class
         fail("Fail to catch missing substage");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), containsString("subStage cannot be null"));
+      }
+    }
+
+    /**
+     * Test start with missing host in STARTED state COPY_IMAGE substage.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testCopyImageSubstageMissingHost() throws Throwable {
+      ImageCopyService.State state =
+          buildValidStartupState(ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.COPY_IMAGE);
+      state.host = null;
+
+      try {
+        host.startServiceSynchronously(service, state);
+        fail("Fail to catch host not found");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), containsString("host not found"));
       }
     }
 
@@ -425,7 +448,9 @@ public class
      * Test that we can move to the "next" stage by sending a self-patch with a different stage.
      *
      * @param startStage
-     * @param transitionStage
+     * @param startSubStage
+     * @param targetStage
+     * @param targetSubStage
      * @throws Throwable
      */
     /**
