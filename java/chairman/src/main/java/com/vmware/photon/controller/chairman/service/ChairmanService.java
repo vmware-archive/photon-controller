@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.chairman.service;
 
 import com.vmware.photon.controller.api.AgentState;
+import com.vmware.photon.controller.chairman.Config;
 import com.vmware.photon.controller.chairman.HostConfigRegistry;
 import com.vmware.photon.controller.chairman.HostMissingRegistry;
 import com.vmware.photon.controller.chairman.gen.Chairman;
@@ -83,6 +84,7 @@ public class ChairmanService implements Chairman.Iface {
   private final DataDictionary missingDictionary;
   private final DcpRestClient dcpRestClient;
   private final BuildInfo buildInfo;
+  private final Config config;
   private TSerializer serializer = new TSerializer();
 
   @Inject
@@ -90,12 +92,14 @@ public class ChairmanService implements Chairman.Iface {
                          @HostConfigRegistry DataDictionary configDictionary,
                          @HostMissingRegistry DataDictionary missingDictionary,
                          DcpRestClient dcpRestClient,
-                         BuildInfo buildInfo) {
+                         BuildInfo buildInfo,
+                         Config config) {
     this.hierarchyUtils = hierarchyUtils;
     this.configDictionary = configDictionary;
     this.missingDictionary = missingDictionary;
     this.dcpRestClient = dcpRestClient;
     this.buildInfo = buildInfo;
+    this.config = config;
   }
 
   @Override
@@ -217,7 +221,7 @@ public class ChairmanService implements Chairman.Iface {
    *                        datastore list doesn't need to be updated.
    */
   void setHostState(String hostId, AgentState state, List<Datastore> datastores,
-                    List<Network> networks, List<String> imageDatastores) {
+                    List<Network> networks, List<String> imageDatastores) throws Throwable {
     String link = null;
     HostService.State hostState = null;
 
@@ -257,6 +261,9 @@ public class ChairmanService implements Chairman.Iface {
       logger.info("Updated {} with new state: {}", link, Utils.toJson(hostState));
     } catch (Throwable ex) {
       logger.warn("Failed to update {} with state: {}", link, Utils.toJson(hostState), ex);
+      if (!config.getIgnoreCloudStoreErrors()) {
+        throw ex;
+      }
     }
   }
 
@@ -278,12 +285,16 @@ public class ChairmanService implements Chairman.Iface {
     }
     response.setResult(RegisterHostResultCode.OK);
     logger.info("Registered host: {} , {}", request, response);
-    // converting the image datastore id from string to list since we'll be
-    // adding multiple image datastore support soon.
-    setHostState(request.getId(), AgentState.ACTIVE,
-        request.getConfig().getDatastores(),
-        request.getConfig().getNetworks(),
-        new ArrayList<>(request.getConfig().getImage_datastore_ids()));
+
+    try {
+      setHostState(request.getId(), AgentState.ACTIVE,
+          request.getConfig().getDatastores(),
+          request.getConfig().getNetworks(),
+          new ArrayList<>(request.getConfig().getImage_datastore_ids()));
+    } catch (Throwable ex) {
+      response.setResult(RegisterHostResultCode.SYSTEM_ERROR);
+      response.setError(ex.toString());
+    }
     return response;
   }
 
@@ -316,8 +327,13 @@ public class ChairmanService implements Chairman.Iface {
     }
 
     response.setResult(ReportResurrectedResultCode.OK);
-    for (String hostId : changeSet.keySet()) {
-      setHostState(hostId, AgentState.ACTIVE, null, null, null);
+    try {
+      for (String hostId : changeSet.keySet()) {
+        setHostState(hostId, AgentState.ACTIVE, null, null, null);
+      }
+    } catch (Throwable ex) {
+      response.setResult(ReportResurrectedResultCode.SYSTEM_ERROR);
+      response.setError(ex.toString());
     }
     return response;
   }
@@ -345,8 +361,13 @@ public class ChairmanService implements Chairman.Iface {
     }
 
     response.setResult(ReportMissingResultCode.OK);
-    for (String hostId : missingIds) {
-      setHostState(hostId, AgentState.MISSING, null, null, null);
+    try {
+      for (String hostId : missingIds) {
+        setHostState(hostId, AgentState.MISSING, null, null, null);
+      }
+    } catch (Throwable ex) {
+      response.setResult(ReportMissingResultCode.SYSTEM_ERROR);
+      response.setError(ex.toString());
     }
     return response;
   }
