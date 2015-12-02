@@ -41,6 +41,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -50,7 +51,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import java.io.InputStream;
 import java.nio.file.Paths;
@@ -265,7 +265,11 @@ public class ImageDcpBackend implements ImageBackend {
     termsBuilder.put("isImageDatastore", "true");
     List<DatastoreService.State> datastores = dcpClient.queryDocuments(DatastoreService.State.class,
         termsBuilder.build());
-    checkState(datastores.size() == 1, "more than one image datastore has the same name");
+
+    if (datastores.size() != 1) {
+      logger.error("expected exactly 1 imageDatastore found {} [{}]", datastores.size(), Utils.toJson(datastores));
+      throw new ExternalException("expected exactly 1 imageDatastore found [" + datastores.size() + "]");
+    }
 
     try {
       ImageReplicationService.State imageReplicationServiceState = new ImageReplicationService.State();
