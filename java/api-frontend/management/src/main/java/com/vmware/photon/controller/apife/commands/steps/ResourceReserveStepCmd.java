@@ -34,6 +34,7 @@ import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.LocalityEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
+import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
@@ -75,6 +76,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * StepCommand for resource reservation.
@@ -113,10 +115,15 @@ public class ResourceReserveStepCmd extends StepCommand {
   @Override
   protected void execute() throws ApiFeException, InterruptedException, RpcException {
     List<BaseEntity> entityList = step.getTransientResourceEntities();
-    Preconditions.checkArgument(entityList.size() == 1,
-        "There should be 1 entities referenced by step %s", step.getId());
+    for (BaseEntity entity : entityList) {
+      if (entity.getKind() != Vm.KIND && entity.getKind() != PersistentDisk.KIND) {
+        continue;
+      }
 
-    infrastructureEntity = (InfrastructureEntity) entityList.get(0);
+      infrastructureEntity = (InfrastructureEntity) entity;
+    }
+    Preconditions.checkArgument(infrastructureEntity != null,
+        "There should be at least one InfrastructureEntity refrenced by step %s", step.getId());
 
     Resource resource = createResource(infrastructureEntity);
     taskCommand.setResource(resource);
@@ -214,6 +221,8 @@ public class ResourceReserveStepCmd extends StepCommand {
     vm.setDisks(attachedDisks);
     vm.setState(com.vmware.photon.controller.resource.gen.State.STOPPED);
     vm.setFlavor_info(getFlavor(entity));
+    vm.setProject_id(entity.getProjectId());
+    vm.setTenant_id(this.getTenantId(entity));
 
     setEnvironments(entity, vm);
     createAffinityConstraints(entity, vm);
@@ -411,6 +420,24 @@ public class ResourceReserveStepCmd extends StepCommand {
 
     flavorInfo.setCost(quotaLineItemList);
     return flavorInfo;
+  }
+
+  private String getTenantId(InfrastructureEntity entity) throws InternalException {
+    List<ProjectEntity> projectEntityList = this.step.getTransientResourceEntities(ProjectEntity.KIND);
+    if (projectEntityList == null || projectEntityList.size() != 1) {
+      logger.error("Could not find Project entity in transient resource list.");
+      throw new InternalException("Project entity not found in the step.");
+    }
+
+    ProjectEntity projectEntity = projectEntityList.get(0);
+    if (!Objects.equals(projectEntity.getId(), entity.getProjectId())) {
+      logger.error(
+          "Project entity in transient resource list did not match VMs project. (VM proj. = {}), (List proj. = {})",
+          entity.getProjectId(), projectEntity.getId());
+      throw new InternalException("Project entity in transient resource list did not match VMs project.");
+    }
+
+    return projectEntity.getTenantId();
   }
 
   private void setEnvironments(VmEntity entity, com.vmware.photon.controller.resource.gen.Vm vm) {
