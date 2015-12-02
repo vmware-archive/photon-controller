@@ -24,5 +24,4 @@ public class UriPaths {
   public static final String PROVISIONING = "/provisioning";
   public static final String RESOURCES = "/resources";
   public static final String RESOURCES_NETWORKS = RESOURCES + "/networks";
-
 }
