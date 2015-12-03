@@ -40,7 +40,7 @@ import java.util.UUID;
  */
 public class DiskServiceTest {
 
-  private DiskService.Disk buildValidStartState() throws Throwable {
+  public static DiskService.Disk buildValidStartState() throws Throwable {
     DiskService.Disk disk = new DiskService.Disk();
 
     disk.id = UUID.randomUUID().toString();
