@@ -22,7 +22,6 @@ import mock
 import common
 from agent.agent_config import AgentConfig
 from agent.agent_config import InvalidConfig
-from agent.multi_agent import MultiAgent
 from common.file_util import mkdtemp
 from common.mode import Mode
 from common.service_name import ServiceName
@@ -44,10 +43,6 @@ class TestUnitAgent(unittest.TestCase):
         common.services.register(ServiceName.MODE, Mode(state))
         common.services.register(ServiceName.DATASTORE_TAGS,
                                  DatastoreTags(state))
-        self.multi_agent = MultiAgent(2200,
-                                      AgentConfig.DEFAULT_CONFIG_PATH,
-                                      AgentConfig.DEFAULT_CONFIG_FILE)
-
         self.agent = AgentConfig(["--config-path", self.agent_conf_dir])
 
     def tearDown(self):
@@ -68,60 +63,6 @@ class TestUnitAgent(unittest.TestCase):
 
         assert_that(self.agent._options.hypervisor,
                     equal_to("fake"))
-
-    def create_local_thread(self, target, args):
-        arguments = args[0]
-        assert_that(arguments[0], contains_string("--multi-agent-id"))
-        assert_that(arguments[2], contains_string("--config-path"))
-        assert_that(arguments[4], contains_string("--logging-file"))
-        assert_that(arguments[6], contains_string("--port"))
-        assert_that(arguments[8], contains_string("--datastores"))
-        assert_that(arguments[10], contains_string("--vm-network"))
-        return mock.MagicMock()
-
-    def test_multi_agent(self):
-        self.multi_agent.parse_arguments(
-            ["--agent-count", 20, "--port", 2222])
-
-        assert_that(self.multi_agent.agent_count,
-                    equal_to(20))
-        assert_that(self.multi_agent.agent_port,
-                    equal_to(2222))
-
-        setpgrp_patch = mock.patch('os.setpgrp')
-        setpgrp_patch.start()
-
-        isfile_patch = mock.patch('os.path.isfile')
-        mocked_isfile = isfile_patch.start()
-        mocked_isfile.return_value = True
-
-        thread_patch = mock.patch('threading.Thread')
-        mocked_thread = thread_patch.start()
-        mocked_thread.side_effect = self.create_local_thread
-
-        signal_patch = mock.patch('signal.signal')
-        signal_patch.start()
-        pause_patch = mock.patch('signal.pause')
-        pause_patch.start()
-
-        popen_patch = mock.patch('subprocess.Popen')
-        popen_patch.start()
-        kill_patch = mock.patch('os.kill')
-        kill_patch.start()
-        exit_patch = mock.patch('sys.exit')
-        exit_patch.start()
-
-        try:
-            self.multi_agent.spawn_agents()
-        finally:
-            setpgrp_patch.stop()
-            isfile_patch.stop()
-            thread_patch.stop()
-            signal_patch.stop()
-            pause_patch.stop()
-            popen_patch.stop()
-            kill_patch.stop()
-            exit_patch.stop()
 
     def test_agent_config_encoding(self):
         conf_file = os.path.join(self.agent_conf_dir, "config.json")

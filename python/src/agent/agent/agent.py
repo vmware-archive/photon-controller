@@ -50,8 +50,6 @@ from common.state import State
 from pthrift.multiplex import TMultiplexedProcessor
 from tserver.thrift_server import TNonblockingServer
 
-from multi_agent import MultiAgent
-
 
 class Agent:
     def __init__(self):
@@ -218,14 +216,6 @@ class BootstrapPoller(threading.Thread):
 
 
 def main():
-    multi_agent = MultiAgent(AgentConfig.DEFAULT_PORT_NUMBER,
-                             AgentConfig.DEFAULT_CONFIG_PATH,
-                             AgentConfig.DEFAULT_CONFIG_FILE)
-
-    if multi_agent.parse_arguments(sys.argv):
-        multi_agent.spawn_agents()
-        return
-
     agent = Agent()
     agent._write_pid_file()
     agent._setup_signal_handler()

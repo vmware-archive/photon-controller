@@ -35,7 +35,6 @@ class FakeHypervisor(object):
 
     def __init__(self, agent_config):
         self.logger = logging.getLogger(__name__)
-        self._multi_agent_id = agent_config.multi_agent_id
         prefix = socket.gethostname()
         suffix = str(agent_config.host_port)
         self._uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, prefix + suffix))
@@ -69,10 +68,6 @@ class FakeHypervisor(object):
         config = gen.hypervisor.fake.ttypes.FakeConfig()
         config.fake_id = "value"
         return TSerialization.serialize(config)
-
-    @property
-    def multi_agent_id(self):
-        return self._config.multi_agent_id
 
     def normalized_load(self):
         return 42
