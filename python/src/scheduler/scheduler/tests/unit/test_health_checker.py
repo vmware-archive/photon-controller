@@ -11,10 +11,8 @@
 # under the License.
 
 import common
-import tempfile
 import unittest
 
-from agent.agent import AgentConfig
 from common.service_name import ServiceName
 from gen.agent import AgentControl
 from gen.chairman.ttypes import ReportMissingRequest
@@ -35,11 +33,12 @@ class HealthCheckerTestCase(unittest.TestCase):
         self._chairman_clients = {}
         agent_control_handler = MagicMock()
         common.services.register(AgentControl.Iface, agent_control_handler)
-        agent_config = MagicMock()
-        agent_config.host_id = "local-id"
-        agent_config.reboot_required = False
-        common.services.register(ServiceName.AGENT_CONFIG, agent_config)
-        self.conf = AgentConfig(["--config-path", tempfile.mkdtemp()])
+        self.conf = MagicMock()
+        self.conf.host_id = "local-id"
+        self.conf.reboot_required = False
+        self.conf.heartbeat_interval_sec = 10
+        self.conf.heartbeat_timeout_factor = 6
+        common.services.register(ServiceName.AGENT_CONFIG, self.conf)
 
     def test_stop(self):
         """Make sure start() starts threads and stop() stops them"""
