@@ -36,7 +36,7 @@ class FakeHypervisor(object):
     def __init__(self, agent_config):
         self.logger = logging.getLogger(__name__)
         prefix = socket.gethostname()
-        suffix = str(agent_config.host_port)
+        suffix = "%s:%i" % (agent_config.hostname, agent_config.host_port)
         self._uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, prefix + suffix))
 
         tempdir = mkdtemp(prefix='disk', delete=True)
