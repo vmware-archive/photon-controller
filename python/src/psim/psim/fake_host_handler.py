@@ -59,10 +59,11 @@ class Host(HostHandler):
                                                 overcommit)
 
         # need agent_config for create/delete vm.
-        agent_config = AgentConfig(["--config-path", conf_dir,
-                                    "--hostname", "localhost",
-                                    "--port", "1234",
-                                    "--host-id", id])
+        agent_config = AgentConfig()
+        agent_config.config_path = conf_dir
+        agent_config.hostname = "localhost"
+        agent_config.port = 1234
+        agent_config.host_id = id
         common.services.register(ServiceName.AGENT_CONFIG, agent_config)
         super(Host, self).__init__(self.hv)
 
@@ -84,7 +85,7 @@ class Host(HostHandler):
         since the fake classes are shared by the integration tests.
         TODO: Cleanup
         """
-        config = MagicMock(AgentConfig.__class__)
+        config = AgentConfig()
         config.hypervisor = "fake"
         config.datastores = datastores
         config.networks = networks
@@ -92,7 +93,8 @@ class Host(HostHandler):
         config.cpu_overcommit = overcommit["cpu"]
         config.image_datastores = [{"name": datastores[0],
                                     "used_for_vms": True}]
-        config.host_port = "localhost:1234"
+        config.hostname = "localhost"
+        config.port = 1234
         hv = hypervisor.Hypervisor(config)
         hv.hypervisor._uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS,
                                              str(id)))
