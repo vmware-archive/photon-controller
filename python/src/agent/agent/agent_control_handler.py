@@ -15,7 +15,7 @@ import logging
 import common
 
 from . import version
-from .agent_config import InvalidState, InvalidConfig
+from .agent_config import InvalidConfig
 from common.photon_thrift.decorators import error_handler
 from common.photon_thrift.decorators import log_request
 from common.service_name import ServiceName
@@ -57,9 +57,6 @@ class AgentControlHandler(AgentControl.Iface):
         try:
             agent_config = common.services.get(ServiceName.AGENT_CONFIG)
             agent_config.update_config(request)
-        except InvalidState:
-            return ProvisionResponse(ProvisionResultCode.INVALID_STATE,
-                                     "Invalid state")
         except InvalidConfig as e:
             return ProvisionResponse(ProvisionResultCode.INVALID_CONFIG,
                                      str(e))
