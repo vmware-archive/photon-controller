@@ -99,6 +99,8 @@ public class AvailabilityZoneService extends StatefulService {
    */
   public static class State extends ServiceDocument {
 
+    public static final String FIELD_NAME_STATE = "state";
+
     @NotNull
     @Immutable
     public String name;
