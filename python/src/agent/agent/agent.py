@@ -171,7 +171,7 @@ class Agent:
         common.services.register(ThreadPoolExecutor, threadpool)
 
         self._registrant = ChairmanRegistrant(self._config.chairman_list)
-        self._config.on_config_change(self._config.CHAIRMAN,
+        self._config.on_config_change(self._config.callback_type.CHAIRMAN,
                                       self._registrant.update_chairman_list)
         common.services.register(ServiceName.REGISTRANT, self._registrant)
 
