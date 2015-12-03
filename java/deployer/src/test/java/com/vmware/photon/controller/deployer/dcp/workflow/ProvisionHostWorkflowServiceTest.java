@@ -622,8 +622,8 @@ public class ProvisionHostWorkflowServiceTest {
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString(DeployAgentTaskService.SCRIPT_NAME +
-          " returned 1"));
+      assertThat(finalState.taskState.failure.message, containsString(
+          "Installing the agent on host hostAddress failed with exit code 1"));
     }
 
     @Test(dataProvider = "HostCounts", enabled = false)

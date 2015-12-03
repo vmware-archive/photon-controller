@@ -474,7 +474,7 @@ public class DeprovisionHostWorkflowServiceTest {
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.failure.message, containsString(
-          DeleteAgentTaskService.SCRIPT_NAME + " returned 1"));
+          "Deleting the agent on host hostAddress failed with exit code 1"));
     }
 
 

@@ -448,7 +448,7 @@ public class DeployAgentTaskServiceTest {
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.failure.message, containsString(
-          DeployAgentTaskService.SCRIPT_NAME + " returned 1"));
+          "Installing the agent on host hostAddress failed with exit code 1"));
     }
 
     @Test
