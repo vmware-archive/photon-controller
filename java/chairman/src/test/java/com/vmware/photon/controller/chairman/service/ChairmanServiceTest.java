@@ -61,11 +61,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
@@ -332,6 +334,24 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     assertThat(actual.type, is(expected.type));
     assertThat(actual.tags, is(expected.tags));
     assertThat(actual.documentSelfLink, is(expected.id));
+  }
+
+  /**
+   * Verify that reportedDatastores/reportedImageDatastores/reportedNetworks
+   * don't get reset when datastores/imageDatastores/networks are null.
+   */
+  @Test
+  public void testSetHostStateEmpty() throws Throwable {
+    service.setHostState("host-id", AgentState.ACTIVE, null, null, null);
+    ArgumentCaptor<String> arg1 = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<ServiceDocument> arg2 = ArgumentCaptor.forClass(ServiceDocument.class);
+    verify(dcpRestClient).patch(arg1.capture(), arg2.capture());
+    HostService.State patch = (HostService.State) arg2.getValue();
+    assertThat(patch.agentState, is(AgentState.ACTIVE));
+    assertThat(patch.reportedDatastores, is(nullValue()));
+    assertThat(patch.reportedImageDatastores, is(nullValue()));
+    assertThat(patch.reportedNetworks, is(nullValue()));
+    verifyNoMoreInteractions(dcpRestClient);
   }
 
   @Test
