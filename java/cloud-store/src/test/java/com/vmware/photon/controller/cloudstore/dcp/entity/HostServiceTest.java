@@ -122,6 +122,8 @@ public class HostServiceTest {
       HostService.State savedState = host.getServiceState(
           HostService.State.class, createdState.documentSelfLink);
       assertThat(savedState.hostAddress, is("hostAddress"));
+      //Not setting this field in test set up but checking the default value expected.
+      assertThat(savedState.agentPort, is(8835));
       assertThat(savedState.userName, is("userName"));
       assertThat(savedState.password, is("password"));
       assertThat(savedState.availabilityZone, is("availabilityZone"));
@@ -318,6 +320,25 @@ public class HostServiceTest {
         fail("should have failed with IllegalStateException");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("hostAddress is immutable"));
+      }
+    }
+
+    @Test
+    public void testInvalidPatchWithPort() throws Throwable {
+      host.startServiceSynchronously(new HostServiceFactory(), null);
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
+          TestHelper.getHostServiceStartState());
+      assertThat(result.getStatusCode(), is(200));
+      HostService.State createdState = result.getBody(HostService.State.class);
+
+      HostService.State patchState = new HostService.State();
+      patchState.agentPort = 1000;
+
+      try {
+        dcpRestClient.patch(createdState.documentSelfLink, patchState);
+        fail("should have failed with IllegalStateException");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), containsString("agentPort is immutable"));
       }
     }
 
