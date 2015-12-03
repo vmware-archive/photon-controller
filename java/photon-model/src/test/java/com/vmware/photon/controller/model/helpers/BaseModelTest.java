@@ -39,11 +39,15 @@ public abstract class BaseModelTest {
 
   protected abstract Class[] getFactoryServices();
 
+  protected TestHost constructTestHost(int hostPort, Path sandboxDirectory, Class[] factoryServices) throws Throwable {
+    return new TestHost(hostPort, sandboxDirectory, factoryServices);
+  }
+
   @BeforeClass
   public void setUpClass() throws Throwable {
     if (host == null) {
       sandboxDirectory = Files.createTempDirectory(null);
-      host = new TestHost(HOST_PORT, sandboxDirectory, getFactoryServices());
+      host = constructTestHost(HOST_PORT, sandboxDirectory, getFactoryServices());
       host.start();
     }
   }
