@@ -17,6 +17,7 @@ import com.vmware.photon.controller.model.UriPaths;
 import com.vmware.photon.controller.model.adapterapi.ComputeBootRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeEnumerateResourceRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
+import com.vmware.photon.controller.model.adapterapi.NetworkInstanceRequest;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.StatelessService;
@@ -33,6 +34,8 @@ public class MockAdapter {
       MockFailureBootAdapter.class,
       MockSuccessEnumerationAdapter.class,
       MockFailureEnumerationAdapter.class,
+      MockNetworkInstanceSuccessAdapter.class,
+      MockNetworkInstanceFailureAdapter.class
   };
 
   /**
@@ -204,6 +207,64 @@ public class MockAdapter {
           sendRequest(Operation
               .createPatch(request.enumerationTaskReference)
               .setBody(patchState));
+          break;
+        default:
+          super.handleRequest(op);
+      }
+    }
+  }
+
+  /**
+   * Mock instance adapter that always succeeds.
+   */
+  public static class MockNetworkInstanceSuccessAdapter extends StatelessService {
+    public static final String SELF_LINK = UriPaths.PROVISIONING + "/mock_network_service_success_adapter";
+
+    @Override
+    public void handleRequest(Operation op) {
+      if (!op.hasBody()) {
+        op.fail(new IllegalArgumentException("body is required"));
+        return;
+      }
+      switch (op.getAction()) {
+        case PATCH:
+          NetworkInstanceRequest request = op.getBody(NetworkInstanceRequest.class);
+          ProvisionNetworkTaskService.ProvisionNetworkTaskState provisionNetworkTaskState =
+              new ProvisionNetworkTaskService.ProvisionNetworkTaskState();
+          provisionNetworkTaskState.taskInfo = new TaskState();
+          provisionNetworkTaskState.taskInfo.stage = TaskState.TaskStage.FINISHED;
+          sendRequest(Operation
+              .createPatch(request.provisioningTaskReference)
+              .setBody(provisionNetworkTaskState));
+          break;
+        default:
+          super.handleRequest(op);
+      }
+    }
+  }
+
+  /**
+   * Mock network instance adapter that always fails.
+   */
+  public static class MockNetworkInstanceFailureAdapter extends StatelessService {
+    public static final String SELF_LINK = UriPaths.PROVISIONING + "/mock_network_service_failure_adapter";
+
+    @Override
+    public void handleRequest(Operation op) {
+      if (!op.hasBody()) {
+        op.fail(new IllegalArgumentException("body is required"));
+        return;
+      }
+      switch (op.getAction()) {
+        case PATCH:
+          NetworkInstanceRequest request = op.getBody(NetworkInstanceRequest.class);
+          ProvisionNetworkTaskService.ProvisionNetworkTaskState provisionNetworkTaskState =
+              new ProvisionNetworkTaskService.ProvisionNetworkTaskState();
+          provisionNetworkTaskState.taskInfo = new TaskState();
+          provisionNetworkTaskState.taskInfo.stage = TaskState.TaskStage.FAILED;
+          sendRequest(Operation
+              .createPatch(request.provisioningTaskReference)
+              .setBody(provisionNetworkTaskState));
           break;
         default:
           super.handleRequest(op);
