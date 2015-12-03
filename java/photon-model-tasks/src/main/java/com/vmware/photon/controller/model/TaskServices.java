@@ -17,6 +17,8 @@ import com.vmware.photon.controller.model.tasks.ProvisionComputeTaskFactoryServi
 import com.vmware.photon.controller.model.tasks.ResourceAllocationTaskFactoryService;
 import com.vmware.photon.controller.model.tasks.ResourceEnumerationTaskFactoryService;
 import com.vmware.photon.controller.model.tasks.ResourceRemovalTaskFactoryService;
+import com.vmware.photon.controller.model.tasks.SnapshotTaskFactoryService;
+
 
 /**
  * Service factories used in Photon Model Task package.
@@ -26,6 +28,7 @@ public class TaskServices {
       ProvisionComputeTaskFactoryService.class,
       ResourceAllocationTaskFactoryService.class,
       ResourceEnumerationTaskFactoryService.class,
-      ResourceRemovalTaskFactoryService.class
+      ResourceRemovalTaskFactoryService.class,
+      SnapshotTaskFactoryService.class
   };
 }
