@@ -31,8 +31,10 @@ hv = hypervisor.Hypervisor(config)
 hv.add_update_listener(registrant)
 
 # When configuration changes, notify hypervisor
-config.on_config_change(config.CPU_OVERCOMMIT, hv.set_cpu_overcommit)
-config.on_config_change(config.MEMORY_OVERCOMMIT, hv.set_memory_overcommit)
+config.on_config_change(config.callback_type.CPU_OVERCOMMIT,
+                        hv.set_cpu_overcommit)
+config.on_config_change(config.callback_type.MEMORY_OVERCOMMIT,
+                        hv.set_memory_overcommit)
 
 # Register hypervisor in services
 common.services.register(ServiceName.HYPERVISOR, hv)
