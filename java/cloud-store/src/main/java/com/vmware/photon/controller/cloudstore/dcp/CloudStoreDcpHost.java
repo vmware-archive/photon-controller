@@ -34,9 +34,11 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.FlavorDeleteServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryService;
+import com.vmware.photon.controller.cloudstore.dcp.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.TombstoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
@@ -74,7 +76,10 @@ public class CloudStoreDcpHost
           TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE_MILLIS),
       new EntityLockCleanerTriggerBuilder(
           EntityLockCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
-          EntityLockCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
+          EntityLockCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
+      new AvailabilityZoneCleanerTriggerBuilder(
+          AvailabilityZoneCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          AvailabilityZoneCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
   };
 
   public static final Class[] FACTORY_SERVICES = {
@@ -103,7 +108,8 @@ public class CloudStoreDcpHost
       // Tasks
       EntityLockCleanerFactoryService.class,
       TaskTriggerFactoryService.class,
-      TombstoneCleanerFactoryService.class
+      TombstoneCleanerFactoryService.class,
+      AvailabilityZoneCleanerFactoryService.class
   };
 
   private BuildInfo buildInfo;
@@ -175,13 +181,16 @@ public class CloudStoreDcpHost
         //tasks
         && checkServiceAvailable(EntityLockCleanerFactoryService.SELF_LINK)
         && checkServiceAvailable(TombstoneCleanerFactoryService.SELF_LINK)
+        && checkServiceAvailable(AvailabilityZoneCleanerFactoryService.SELF_LINK)
 
         // triggers
         && checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
         && checkServiceAvailable(
         TaskTriggerFactoryService.SELF_LINK + EntityLockCleanerTriggerBuilder.TRIGGER_SELF_LINK)
         && checkServiceAvailable(
-        TaskTriggerFactoryService.SELF_LINK + TombstoneCleanerTriggerBuilder.TRIGGER_SELF_LINK);
+        TaskTriggerFactoryService.SELF_LINK + TombstoneCleanerTriggerBuilder.TRIGGER_SELF_LINK)
+        && checkServiceAvailable(
+        TaskTriggerFactoryService.SELF_LINK + AvailabilityZoneCleanerTriggerBuilder.TRIGGER_SELF_LINK);
   }
 
   @Override

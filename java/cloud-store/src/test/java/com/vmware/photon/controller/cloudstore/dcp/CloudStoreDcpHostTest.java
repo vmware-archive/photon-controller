@@ -16,6 +16,7 @@ package com.vmware.photon.controller.cloudstore.dcp;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfigTest;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AttachedDiskServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
@@ -36,9 +37,11 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactor
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.UpgradeHelper;
+import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.FlavorDeleteServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryService;
+import com.vmware.photon.controller.cloudstore.dcp.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.TombstoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.common.config.BadConfigException;
@@ -105,15 +108,18 @@ public class CloudStoreDcpHostTest {
       TombstoneServiceFactory.SELF_LINK,
       ClusterServiceFactory.SELF_LINK,
       ClusterConfigurationServiceFactory.SELF_LINK,
+      AvailabilityZoneServiceFactory.SELF_LINK,
 
       // triggers
       TaskTriggerFactoryService.SELF_LINK,
       TaskTriggerFactoryService.SELF_LINK + EntityLockCleanerTriggerBuilder.TRIGGER_SELF_LINK,
       TaskTriggerFactoryService.SELF_LINK + TombstoneCleanerTriggerBuilder.TRIGGER_SELF_LINK,
+      TaskTriggerFactoryService.SELF_LINK + AvailabilityZoneCleanerTriggerBuilder.TRIGGER_SELF_LINK,
 
       // tasks
       EntityLockCleanerFactoryService.SELF_LINK,
-      TombstoneCleanerFactoryService.SELF_LINK
+      TombstoneCleanerFactoryService.SELF_LINK,
+      AvailabilityZoneCleanerFactoryService.SELF_LINK
   };
 
   /**
