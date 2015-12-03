@@ -56,7 +56,6 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyDouble;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.anySetOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -540,7 +539,6 @@ public class ProvisionAgentTaskServiceTest {
               anyListOf(String.class),
               anyString(),
               anyInt(),
-              anyMapOf(String.class, String.class),
               anyListOf(String.class),
               anyDouble(),
               anyString(),

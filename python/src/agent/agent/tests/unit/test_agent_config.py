@@ -216,8 +216,6 @@ class TestUnitAgent(unittest.TestCase):
         req.chairman_server = [ServerAddress("h1", 13000),
                                ServerAddress("h2", 13000)]
         req.address = addr
-        req.environment = {}
-        req.environment["hypervisor"] = "fake"
         req.host_id = "host1"
         self.agent.update_config(req)
 
@@ -226,7 +224,6 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.host_port, equal_to(2345))
         assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
         assert_that(self.agent.networks, equal_to(["Public"]))
-        assert_that(self.agent.options.hypervisor, equal_to("fake"))
         assert_that(self.agent.chairman_list,
                     equal_to([ServerAddress("h1", 13000),
                               ServerAddress("h2", 13000)]))
@@ -266,8 +263,6 @@ class TestUnitAgent(unittest.TestCase):
         req.chairman_server = [ServerAddress("h1", 13000),
                                ServerAddress("h2", 13000)]
         req.address = addr
-        req.environment = {}
-        req.environment["hypervisor"] = "fake"
 
         # Verify an exception is raised.
         self.assertRaises(InvalidConfig, self.agent.update_config, req)
@@ -295,8 +290,6 @@ class TestUnitAgent(unittest.TestCase):
         req.networks = ["Public"]
         addr = ServerAddress(host="localhost", port=2345)
         req.address = addr
-        req.environment = {}
-        req.environment["hypervisor"] = "fake"
         self.agent.update_config(req)
         # Verify that the bootstrap is still false as zk config is not
         # specified.
@@ -309,8 +302,6 @@ class TestUnitAgent(unittest.TestCase):
         req.networks = ["Public"]
         addr = ServerAddress(host="localhost", port=2345)
         req.address = addr
-        req.environment = {}
-        req.environment["hypervisor"] = "fake"
         self.agent.update_config(req)
         self.assertTrue(self.agent.reboot_required)
 
@@ -372,18 +363,6 @@ class TestUnitAgent(unittest.TestCase):
         self.assertEqual(self.agent.heartbeat_interval_sec, 1)
         self.assertEqual(self.agent.heartbeat_timeout_factor, 2)
         self.assertEqual(self.agent.thrift_timeout_sec, 3)
-
-    def test_refcount_settings(self):
-        """ Simple test that sets and reads refcount settings"""
-        self.agent._parse_options([])
-        self.assertEqual(self.agent.refcount_lock_retries, 1000)
-        self.agent._parse_options(["--refcount-lock-retries", "1"])
-        self.assertEqual(self.agent.refcount_lock_retries, 1)
-
-        self.agent._parse_options([])
-        self.assertEqual(self.agent.refcount_max_backoff_ms, 40)
-        self.agent._parse_options(["--refcount-max-backoff-ms", "100"])
-        self.assertEqual(self.agent.refcount_max_backoff_ms, 100)
 
     def test_logging_settings(self):
         """ Simple test that sets and reads logging settings"""
