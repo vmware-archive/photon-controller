@@ -18,8 +18,6 @@ package com.vmware.photon.controller.deployer.dcp.constant;
  */
 public class ServicePortConstants {
 
-  public static final int AGENT_PORT = 8835;
-
   public static final int CHAIRMAN_PORT = 13000;
 
   public static final int DEPLOYER_PORT = 18000;

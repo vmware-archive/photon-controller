@@ -26,7 +26,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
@@ -192,7 +191,7 @@ public class UpdateHostDatastoresTaskService extends StatefulService {
 
     try {
       HostClient hostClient = HostUtils.getHostClient(this);
-      hostClient.setIpAndPort(hostState.hostAddress, ServicePortConstants.AGENT_PORT);
+      hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
       hostClient.getHostConfig(handler);
     } catch (Throwable t) {
       failTask(t);
