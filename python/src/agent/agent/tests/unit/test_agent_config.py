@@ -154,7 +154,6 @@ class TestUnitAgent(unittest.TestCase):
 
         # Without chairman config we can't be provision ready
         self.assertFalse(self.agent.bootstrap_ready)
-        self.assertTrue(self.agent.provision_ready)
         self.assertFalse(self.agent.reboot_required)
 
         req = ProvisionRequest()
