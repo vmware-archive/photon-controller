@@ -37,6 +37,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
+import org.apache.commons.io.FileUtils;
 
 import javax.annotation.Nullable;
 
@@ -254,10 +255,8 @@ public class DeleteAgentTaskService extends StatefulService {
       public void onSuccess(@Nullable Integer result) {
         if (null == result) {
           failTask(new NullPointerException(SCRIPT_NAME + " returned null"));
-
         } else if (0 != result) {
-          failTask(new Exception(SCRIPT_NAME + " returned " + result.toString()));
-
+          logScriptErrorAndFail(hostState, result, scriptLogFile);
         } else {
           sendStageProgressPatch(TaskState.TaskStage.FINISHED);
         }
@@ -270,6 +269,19 @@ public class DeleteAgentTaskService extends StatefulService {
     };
 
     Futures.addCallback(futureTask, futureCallback);
+  }
+
+  private void logScriptErrorAndFail(HostService.State hostState, Integer result, File scriptLogFile) {
+
+    try {
+      ServiceUtils.logSevere(this, SCRIPT_NAME + " returned " + result.toString());
+      ServiceUtils.logSevere(this, "Script output: " + FileUtils.readFileToString(scriptLogFile));
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+    }
+
+    failTask(new IllegalStateException("Deleting the agent on host " + hostState.hostAddress +
+        " failed with exit code " + result.toString()));
   }
 
   /**
