@@ -298,11 +298,6 @@ class AgentConfig(object):
 
     @property
     @locked
-    def multi_agent_id(self):
-        return self._options.multi_agent_id
-
-    @property
-    @locked
     def bootstrap_poll_frequency(self):
         return self._options.bootstrap_poll_frequency
 
@@ -462,9 +457,6 @@ class AgentConfig(object):
                           default=None,
                           help="Comma separated list of vm networks")
         parser.add_option("--workers", dest="workers", type="int", default=32)
-        parser.add_option("--multi-agent-id", dest="multi_agent_id",
-                          action="store_true",
-                          default=None, help="Multi agent run.")
         parser.add_option("--bootstrap-poll-frequency",
                           dest="bootstrap_poll_frequency",
                           type="int", default=5)

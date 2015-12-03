@@ -92,7 +92,6 @@ class Host(HostHandler):
         config.cpu_overcommit = overcommit["cpu"]
         config.image_datastores = [{"name": datastores[0],
                                     "used_for_vms": True}]
-        config.multi_agent_id = None
         config.host_port = "localhost:1234"
         hv = hypervisor.Hypervisor(config)
         hv.hypervisor._uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS,
