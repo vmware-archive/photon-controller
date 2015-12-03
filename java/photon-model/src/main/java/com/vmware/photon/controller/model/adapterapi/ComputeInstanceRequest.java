@@ -13,13 +13,15 @@
 
 package com.vmware.photon.controller.model.adapterapi;
 
+import com.vmware.xenon.common.ServiceDocument;
+
 import java.net.URI;
 
 /**
  * Request to create a compute host. The host reference provides detailed information on the host
  * type and required services to complete the request.
  */
-public class ComputeInstanceRequest {
+public class ComputeInstanceRequest extends ServiceDocument {
 
   /**
    * Instance request type.
