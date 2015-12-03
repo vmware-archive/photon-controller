@@ -12,7 +12,8 @@
   "volumeBindings": {
     "/var/log": "/var/log",
     "/var/esxcloud/packages":"/var/esxcloud/packages",
-    "/etc/esxcloud-deployer":"/etc/esxcloud-deployer"
+    "/etc/esxcloud-deployer":"/etc/esxcloud-deployer",
+    "/usr/lib/esxcloud/deployer/scripts":"/usr/lib/esxcloud/deployer/scripts"
   },
   "dynamicParameters": {
     "DEPLOYER_BIND_ADDRESS": "0.0.0.0",

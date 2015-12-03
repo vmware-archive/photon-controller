@@ -44,7 +44,7 @@ public class ContainersConfigTest {
     assertThat(spec.getContainerImage(), is("esxcloud/deployer"));
     assertThat(spec.getPortBindings().size(), is(2));
     assertThat(spec.getPortBindings().get(new Integer(18001)), is(18001));
-    assertThat(spec.getVolumeBindings().size(), is(3));
+    assertThat(spec.getVolumeBindings().size(), is(4));
     assertThat(spec.getDynamicParameters().size(), is(11));
   }
 
