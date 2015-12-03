@@ -127,7 +127,7 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
         continue;
       }
 
-      hostBuilder.put(host.getKey(), new ServerAddress(host.getValue().hostAddress, DEFAULT_AGENT_PORT));
+      hostBuilder.put(host.getKey(), new ServerAddress(host.getValue().hostAddress, host.getValue().agentPort));
       if (host.getValue().usageTags.contains(UsageTag.MGMT.name())) {
         managementHostBuilder.add(host.getKey());
       }
