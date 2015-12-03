@@ -24,11 +24,6 @@ from common.lock import lock_with
 from gen.common.ttypes import ServerAddress
 
 
-class InvalidState(Exception):
-    """ Exception thrown when an agent config cannot be updated """
-    pass
-
-
 class InvalidConfig(Exception):
     """ Exception thrown when an agent config is not valid """
     pass
@@ -206,12 +201,6 @@ class AgentConfig(object):
             reboot |= self._check_and_set_attr(
                 self.IMAGE_DATASTORES, image_datastores)
 
-        if (provision_req.environment):
-            self._logger.info(provision_req.environment)
-            for k in provision_req.environment:
-                reboot |= self._check_and_set_attr(
-                    k, provision_req.environment[k])
-
         if provision_req.management_only:
             reboot |= self._check_and_set_attr(
                 self.MANAGEMENT_ONLY,
@@ -378,16 +367,6 @@ class AgentConfig(object):
 
     @property
     @locked
-    def refcount_lock_retries(self):
-        return self._options.refcount_lock_retries
-
-    @property
-    @locked
-    def refcount_max_backoff_ms(self):
-        return self._options.refcount_max_backoff_ms
-
-    @property
-    @locked
     def utilization_transfer_ratio(self):
         return self._options.utilization_transfer_ratio
 
@@ -542,27 +521,6 @@ class AgentConfig(object):
         parser.add_option("--thrift-timeout-sec",
                           dest="thrift_timeout_sec", type="int",
                           default=3, help="Thrift client timeout in seconds")
-
-        # Reference counting
-        refcount_help = "Maximum number of retries to acquire a lock for " + \
-                        "refcount file before giving up."
-
-        parser.add_option("--refcount-lock-retries",
-                          dest="refcount_lock_retries", type="int",
-                          default=1000, help=refcount_help)
-
-        backoff_help = "Maximum random backoff interval in milliseconds. " + \
-                       "Each backoff interval is chosen randomly with a " + \
-                       "uniform distribution between 0 and this max value. " \
-                       "The default is 40 ms, which means the average " + \
-                       "backoff duration is 20 ms. With the default " + \
-                       "max retry count of 1000, agent tries to acquire a " + \
-                       "lock for 20 seconds on average. These values are" + \
-                       "based on the VMFS lock timeout of 16 seconds."
-
-        parser.add_option("--refcount-max-backoff-ms",
-                          dest="refcount_max_backoff_ms", type="int",
-                          default=40, help=backoff_help)
 
         parser.add_option("--utilization-transfer-ratio",
                           dest="utilization_transfer_ratio", type="float",
