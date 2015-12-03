@@ -29,7 +29,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
-import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.host.gen.AgentStatusCode;
@@ -279,7 +278,7 @@ public class ProvisionAgentTaskService extends StatefulService {
         };
 
     HostClient hostClient = HostUtils.getHostClient(this);
-    hostClient.setIpAndPort(hostState.hostAddress, ServicePortConstants.AGENT_PORT);
+    hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
 
     List<String> dataStores = null;
     if (null != hostState.metadata && hostState.metadata.containsKey(
@@ -311,7 +310,7 @@ public class ProvisionAgentTaskService extends StatefulService {
           deploymentState.imageDataStoreUsedForVMs,
           networks,
           hostState.hostAddress,
-          ServicePortConstants.AGENT_PORT,
+          hostState.agentPort,
           new ArrayList<>(currentState.chairmanServerList),
           0, // memory overcommit is not implemented
           deploymentState.syslogEndpoint,
@@ -373,7 +372,7 @@ public class ProvisionAgentTaskService extends StatefulService {
 
     try {
       HostClient hostClient = HostUtils.getHostClient(this);
-      hostClient.setIpAndPort(hostState.hostAddress, ServicePortConstants.AGENT_PORT);
+      hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
       hostClient.getAgentStatus(handler);
     } catch (Throwable t) {
       retryOrFail(retryable, currentState, t);
