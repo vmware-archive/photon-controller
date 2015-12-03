@@ -174,28 +174,32 @@ public class ChairmanService implements Chairman.Iface {
    * to true.
    */
   void setDatastoreState(List<Datastore> datastores, List<String> imageDatastores) throws Throwable {
-    // Create datastore documents.
-    for (Datastore datastore: datastores) {
-      DatastoreService.State datastoreState = new DatastoreService.State();
-      datastoreState.documentSelfLink = datastore.getId();
-      datastoreState.id = datastore.getId();
-      datastoreState.name = datastore.getName();
-      datastoreState.type = datastore.getType().toString();
-      datastoreState.tags = datastore.getTags();
-      datastoreState.isImageDatastore = false;
-      try {
-        dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, datastoreState);
-      } catch (DcpException | DcpRuntimeException ex) {
-        logger.debug("Ignoring datastore document creation failure", ex);
+    if (datastores != null) {
+      // Create datastore documents.
+      for (Datastore datastore : datastores) {
+        DatastoreService.State datastoreState = new DatastoreService.State();
+        datastoreState.documentSelfLink = datastore.getId();
+        datastoreState.id = datastore.getId();
+        datastoreState.name = datastore.getName();
+        datastoreState.type = datastore.getType().toString();
+        datastoreState.tags = datastore.getTags();
+        datastoreState.isImageDatastore = false;
+        try {
+          dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, datastoreState);
+        } catch (DcpException | DcpRuntimeException ex) {
+          logger.debug("Ignoring datastore document creation failure", ex);
+        }
       }
     }
 
-    // Set isImageDatastore flag to true.
-    for (String datastoreId: imageDatastores) {
-      String link = DatastoreServiceFactory.getDocumentLink(datastoreId);
-      DatastoreService.State datastoreState = new DatastoreService.State();
-      datastoreState.isImageDatastore = true;
-      dcpRestClient.patch(link, datastoreState);
+    if (imageDatastores != null) {
+      // Set isImageDatastore flag to true.
+      for (String datastoreId : imageDatastores) {
+        String link = DatastoreServiceFactory.getDocumentLink(datastoreId);
+        DatastoreService.State datastoreState = new DatastoreService.State();
+        datastoreState.isImageDatastore = true;
+        dcpRestClient.patch(link, datastoreState);
+      }
     }
   }
 
@@ -226,34 +230,39 @@ public class ChairmanService implements Chairman.Iface {
     String link = null;
     HostService.State hostState = null;
 
-    datastores = datastores == null ? new ArrayList<>() : datastores;
-    networks = networks == null ? new ArrayList<>() : networks;
-    imageDatastores = imageDatastores == null ? new ArrayList<>() : imageDatastores;
-
     try {
       link = getHostDocumentLink(hostId);
       hostState = new HostService.State();
       hostState.agentState = state;
-      hostState.reportedDatastores = new HashSet<>();
-      hostState.datastoreServiceLinks = new HashMap<>();
-      for (Datastore datastore : datastores) {
-        hostState.reportedDatastores.add(datastore.getId());
-        hostState.datastoreServiceLinks
-          .put(datastore.getName(), DatastoreServiceFactory.getDocumentLink(datastore.getId()));
-      }
-      hostState.reportedNetworks = new HashSet<>();
-      for (Network network : networks) {
-        if (network.getTypes() != null && network.getTypes().contains(NetworkType.VM)) {
-          // TEMPORARY WORKAROUND: Currently the portgroup document doesn't
-          // contain the network type information, so we are filtering them
-          // here so that chairman only sees VM networks while building the
-          // scheduler tree.
-          hostState.reportedNetworks.add(network.getId());
+
+      if (datastores != null) {
+        hostState.reportedDatastores = new HashSet<>();
+        hostState.datastoreServiceLinks = new HashMap<>();
+        for (Datastore datastore : datastores) {
+          hostState.reportedDatastores.add(datastore.getId());
+          hostState.datastoreServiceLinks
+              .put(datastore.getName(), DatastoreServiceFactory.getDocumentLink(datastore.getId()));
         }
       }
-      hostState.reportedImageDatastores = new HashSet<>();
-      for (String datastoreId: imageDatastores) {
-        hostState.reportedImageDatastores.add(datastoreId);
+
+      if (networks != null) {
+        hostState.reportedNetworks = new HashSet<>();
+        for (Network network : networks) {
+          if (network.getTypes() != null && network.getTypes().contains(NetworkType.VM)) {
+            // TEMPORARY WORKAROUND: Currently the portgroup document doesn't
+            // contain the network type information, so we are filtering them
+            // here so that chairman only sees VM networks while building the
+            // scheduler tree.
+            hostState.reportedNetworks.add(network.getId());
+          }
+        }
+      }
+
+      if (imageDatastores != null) {
+        hostState.reportedImageDatastores = new HashSet<>();
+        for (String datastoreId : imageDatastores) {
+          hostState.reportedImageDatastores.add(datastoreId);
+        }
       }
       dcpRestClient.patch(link, hostState);
 
