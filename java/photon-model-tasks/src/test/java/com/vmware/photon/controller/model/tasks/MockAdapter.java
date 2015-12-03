@@ -17,6 +17,7 @@ import com.vmware.photon.controller.model.UriPaths;
 import com.vmware.photon.controller.model.adapterapi.ComputeBootRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeEnumerateResourceRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
+import com.vmware.photon.controller.model.adapterapi.SnapshotRequest;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.StatelessService;
@@ -33,6 +34,8 @@ public class MockAdapter {
       MockFailureBootAdapter.class,
       MockSuccessEnumerationAdapter.class,
       MockFailureEnumerationAdapter.class,
+      MockSnapshotSuccessAdapter.class,
+      MockSnapshotFailureAdapter.class
   };
 
   /**
@@ -204,6 +207,64 @@ public class MockAdapter {
           sendRequest(Operation
               .createPatch(request.enumerationTaskReference)
               .setBody(patchState));
+          break;
+        default:
+          super.handleRequest(op);
+      }
+    }
+  }
+
+  /**
+   * Mock snapshot adapter that always succeeds.
+   */
+  public static class MockSnapshotSuccessAdapter extends StatelessService {
+    public static final String SELF_LINK = UriPaths.PROVISIONING + "/mock_snapshot_success_adapter";
+
+    @Override
+    public void handleRequest(Operation op) {
+      if (!op.hasBody()) {
+        op.fail(new IllegalArgumentException("body is required"));
+        return;
+      }
+      switch (op.getAction()) {
+        case PATCH:
+          SnapshotRequest request = op.getBody(SnapshotRequest.class);
+          ComputeSubTaskService.ComputeSubTaskState computeSubTaskState =
+              new ComputeSubTaskService.ComputeSubTaskState();
+          computeSubTaskState.taskInfo = new TaskState();
+          computeSubTaskState.taskInfo.stage = TaskState.TaskStage.FINISHED;
+          sendRequest(Operation
+              .createPatch(request.snapshotTaskReference)
+              .setBody(computeSubTaskState));
+          break;
+        default:
+          super.handleRequest(op);
+      }
+    }
+  }
+
+  /**
+   * Mock snapshot adapter that always fails.
+   */
+  public static class MockSnapshotFailureAdapter extends StatelessService {
+    public static final String SELF_LINK = UriPaths.PROVISIONING + "/mock_snapshot_failure_adapter";
+
+    @Override
+    public void handleRequest(Operation op) {
+      if (!op.hasBody()) {
+        op.fail(new IllegalArgumentException("body is required"));
+        return;
+      }
+      switch (op.getAction()) {
+        case PATCH:
+          SnapshotRequest request = op.getBody(SnapshotRequest.class);
+          ComputeSubTaskService.ComputeSubTaskState computeSubTaskState =
+              new ComputeSubTaskService.ComputeSubTaskState();
+          computeSubTaskState.taskInfo = new TaskState();
+          computeSubTaskState.taskInfo.stage = TaskState.TaskStage.FAILED;
+          sendRequest(Operation
+              .createPatch(request.snapshotTaskReference)
+              .setBody(computeSubTaskState));
           break;
         default:
           super.handleRequest(op);
