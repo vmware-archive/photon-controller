@@ -16,6 +16,7 @@ package com.vmware.photon.controller.common.dcp;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
@@ -117,7 +118,8 @@ public class DcpRestClient implements DcpClient {
         .setUri(serviceUri)
         .setExpiration(Utils.getNowMicrosUtc() + getPostOperationExpirationMicros())
         .setBody(body)
-        .setReferer(this.localHostUri);
+        .setReferer(this.localHostUri)
+        .setContextId(LoggingUtils.getRequestId());
 
     return send(postOperation);
   }
@@ -132,7 +134,8 @@ public class DcpRestClient implements DcpClient {
         .setUri(serviceUri)
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getGetOperationExpirationMicros())
-        .setReferer(this.localHostUri);
+        .setReferer(this.localHostUri)
+        .setContextId(LoggingUtils.getRequestId());
 
     return send(getOperation);
   }
@@ -146,7 +149,8 @@ public class DcpRestClient implements DcpClient {
         .setUri(documentServiceUri)
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getGetOperationExpirationMicros())
-        .setReferer(this.localHostUri);
+        .setReferer(this.localHostUri)
+        .setContextId(LoggingUtils.getRequestId());
 
     return send(getOperation);
   }
@@ -174,7 +178,8 @@ public class DcpRestClient implements DcpClient {
           .setUri(serviceUri)
           .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
           .setExpiration(Utils.getNowMicrosUtc() + batchCount * getGetOperationExpirationMicros())
-          .setReferer(this.localHostUri);
+          .setReferer(this.localHostUri)
+          .setContextId(LoggingUtils.getRequestId());
 
       operations.put(getOperation.getId(), getOperation);
       sourceLinks.put(getOperation.getId(), documentSelfLink);
@@ -194,6 +199,7 @@ public class DcpRestClient implements DcpClient {
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getDeleteOperationExpirationMicros())
         .setReferer(this.localHostUri)
+        .setContextId(LoggingUtils.getRequestId())
         .setBody(body);
 
     return send(deleteOperation);
@@ -215,7 +221,8 @@ public class DcpRestClient implements DcpClient {
         .setUri(serviceUri)
         .setExpiration(Utils.getNowMicrosUtc() + getQueryOperationExpirationMicros())
         .setBody(query)
-        .setReferer(this.localHostUri);
+        .setReferer(this.localHostUri)
+        .setContextId(LoggingUtils.getRequestId());
 
     return send(queryOperation);
   }
@@ -231,7 +238,8 @@ public class DcpRestClient implements DcpClient {
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getPatchOperationExpirationMicros())
         .setBody(body)
-        .setReferer(this.localHostUri);
+        .setReferer(this.localHostUri)
+        .setContextId(LoggingUtils.getRequestId());
 
     return send(patchOperation);
   }
@@ -253,7 +261,8 @@ public class DcpRestClient implements DcpClient {
         .setUri(queryFactoryUri)
         .setExpiration(Utils.getNowMicrosUtc() + getQueryOperationExpirationMicros())
         .setBody(queryTask)
-        .setReferer(this.localHostUri);
+        .setReferer(this.localHostUri)
+        .setContextId(LoggingUtils.getRequestId());
 
     return send(queryOperation);
   }

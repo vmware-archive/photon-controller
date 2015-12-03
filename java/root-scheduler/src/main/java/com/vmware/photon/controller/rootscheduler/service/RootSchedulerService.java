@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
+import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
@@ -43,7 +44,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -108,14 +108,7 @@ public class RootSchedulerService implements RootScheduler.Iface, ServiceNodeEve
       requestId = UUID.randomUUID().toString();
     }
 
-    removeRequestIdFromMDC();
-    MDC.put("request", " [Req: " + requestId + "]");
-    MDC.put("requestId", requestId);
-  }
-
-  private static void removeRequestIdFromMDC() {
-    MDC.remove("request");
-    MDC.remove("requestId");
+    LoggingUtils.setRequestId(requestId);
   }
 
   /**
@@ -153,7 +146,7 @@ public class RootSchedulerService implements RootScheduler.Iface, ServiceNodeEve
   }
 
   @Override
-  public synchronized Status get_status(GetStatusRequest request) throws TException{
+  public synchronized Status get_status(GetStatusRequest request) throws TException {
     Status response = new Status();
     boolean zkConnected = zkClient.getZookeeperClient().isConnected();
 

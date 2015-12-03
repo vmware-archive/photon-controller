@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.rootscheduler.interceptors;
 
+import com.vmware.photon.controller.common.logging.LoggingUtils;
+
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.MDC;
@@ -27,7 +29,7 @@ public class RequestIdInterceptor implements MethodInterceptor {
   public Object invoke(MethodInvocation invocation) throws Throwable {
     try {
       String requestId = UUID.randomUUID().toString();
-      MDC.put("request", " [Req: " + requestId + "]");
+      LoggingUtils.setRequestId(requestId);
       return invocation.proceed();
     } finally {
       MDC.clear();

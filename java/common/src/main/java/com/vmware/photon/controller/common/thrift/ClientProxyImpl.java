@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.common.thrift;
 
+import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.tracing.gen.TracingInfo;
 
 import com.google.common.util.concurrent.FutureCallback;
@@ -31,7 +32,6 @@ import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TNonblockingTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.inject.Named;
@@ -144,7 +144,7 @@ public class ClientProxyImpl<C extends TAsyncClient> implements ClientProxy<C> {
 
   private TracingInfo getRequestTracingInfo() {
     TracingInfo tracingInfo = new TracingInfo();
-    String requestId = MDC.get("requestId");
+    String requestId = LoggingUtils.getRequestId();
     if (requestId != null) {
       tracingInfo.setRequest_id(requestId);
     }
