@@ -47,6 +47,20 @@ task removeServicebase(type: DockerRemoveImage) {
   targetImageId { servicebase.tag }
 }
 
+task removeAllContainers(type: Exec) {
+  commandLine './docker-rm-all.sh'
+  ignoreExitValue = true
+}
+
+task removeAllImages(type: Exec) {
+  commandLine './docker-rmi-all.sh'
+  ignoreExitValue = true
+}
+
 task clean() {
   dependsOn removeZookeeper, removeHaproxy, removeServicebase
+}
+
+task cleanAll() {
+  dependsOn removeAllContainers, removeAllImages
 }

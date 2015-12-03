@@ -1,1 +1,1 @@
-../../../../../../cloud-store/src/dist/configuration/run.sh
+../../../../../../cloud-store/src/dist/container/config/run.sh

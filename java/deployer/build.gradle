@@ -1,7 +1,23 @@
 apply plugin: 'application'
 apply plugin: 'thrift'
+apply plugin: 'com.bmuschko.docker-remote-api'
+
+import com.bmuschko.gradle.docker.tasks.container.*
+import com.bmuschko.gradle.docker.tasks.image.*
 
 mainClassName = 'com.vmware.photon.controller.deployer.Main'
+
+// TODO: move this into some common part of the build
+def getDockerUrl() {
+  // TODO: docker-machine is Docker Toolbox only, make work on Linux
+  def result = "docker-machine url default".execute().text.trim().replaceAll("tcp", "https")
+  return result
+}
+
+docker {
+  // Default for Docker Toolbox
+  url = getDockerUrl()
+}
 
 dependencies {
   compile project(':api-client')
@@ -60,4 +76,18 @@ tasks.withType(Test) {
   scanForTestClasses = false
   include "**/*Test.class"
   exclude "**/helpers/*.class"
+}
+
+task container(type: DockerBuildImage) {
+  dependsOn "build", ":containers:servicebase"
+  inputDir = file("src/dist/container")
+  tag = "photon/deployer"
+}
+
+task cleanContainer(type: DockerRemoveImage) {
+  targetImageId { container.tag }
+}
+
+task clean() {
+  dependsOn cleanContainer
 }

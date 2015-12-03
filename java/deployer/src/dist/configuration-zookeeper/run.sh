@@ -1,1 +1,1 @@
-../../../../containers/zookeeper/run.sh
+../../../../containers/zookeeper/config/run.sh

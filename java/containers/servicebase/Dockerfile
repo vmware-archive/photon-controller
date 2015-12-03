@@ -1,6 +1,7 @@
 FROM vmware/photon
 
 RUN tdnf clean all \
+  && tdnf update -y tdnf \
   && tdnf install -y tar \
   && tdnf install -y gzip \
   && tdnf install -y gawk \
