@@ -24,7 +24,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.host.gen.Host;
@@ -193,7 +192,7 @@ public class ChangeHostModeTaskService extends StatefulService {
         };
 
     HostClient hostClient = HostUtils.getHostClient(this);
-    hostClient.setIpAndPort(hostState.hostAddress, ServicePortConstants.AGENT_PORT);
+    hostClient.setIpAndPort(hostState.hostAddress, hostState.port);
     hostClient.setHostMode(currentState.hostMode, handler);
   }
 
