@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
+import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotEmpty;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
@@ -201,6 +202,14 @@ public class HostService extends StatefulService {
     @NotNull
     @Immutable
     public String hostAddress;
+
+    /**
+     * This value represents the port of the agent.
+     */
+    @NotNull
+    @Immutable
+    @DefaultInteger(8835)
+    public Integer agentPort;
 
     /**
      * This value represents the user name to use when authenticating to the
