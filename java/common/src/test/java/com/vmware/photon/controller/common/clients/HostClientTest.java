@@ -3562,7 +3562,6 @@ public class HostClientTest {
     private List<String> networkList = Arrays.asList("network1", "network2", "network3");
     private String hostAddress = "hostAddress";
     private int hostPort = 8000;
-    private Map<String, String> environment;
     private List<String> chairmanServerList = Arrays.asList("localhost:2181");
     private double memoryOverCommit = 1.0;
     private String loggingEndpoint = "loggingEndpoint";
@@ -3605,7 +3604,7 @@ public class HostClientTest {
       hostClient.setClientProxy(clientProxy);
 
       assertThat(hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)),
-              usedForVms, networkList, hostAddress, hostPort, environment, chairmanServerList, memoryOverCommit,
+              usedForVms, networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit,
               loggingEndpoint, logLevel, managementOnly, hostId, ntpEndpoint),
           is(provisionResponse));
       verify(clientProxy).provision(request.capture(), any(AsyncMethodCallback.class));
@@ -3617,7 +3616,7 @@ public class HostClientTest {
     public void testFailureNullHostIp() throws Exception {
       try {
         hostClient.provision(availabilityZone, dataStoreList, Collections.singleton(imageDataStore), usedForVms,
-            networkList, hostAddress, hostPort, environment, chairmanServerList, memoryOverCommit, loggingEndpoint,
+            networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
             logLevel, managementOnly, hostId, ntpEndpoint);
         fail("Synchronous provision call should throw with null async clientProxy");
       } catch (IllegalArgumentException e) {
@@ -3634,7 +3633,7 @@ public class HostClientTest {
 
       try {
         hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
-            networkList, hostAddress, hostPort, environment, chairmanServerList, memoryOverCommit, loggingEndpoint,
+            networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
             logLevel, managementOnly, hostId, ntpEndpoint);
         fail("Synchronous provision call should convert TException on call to RpcException");
       } catch (RpcException e) {
@@ -3653,7 +3652,7 @@ public class HostClientTest {
 
       try {
         hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
-            networkList, hostAddress, hostPort, environment, chairmanServerList, memoryOverCommit, loggingEndpoint,
+            networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
             logLevel, managementOnly, hostId, ntpEndpoint);
         fail("Synchronous provision call should convert TException on call to RpcException");
       } catch (RpcException e) {
@@ -3677,7 +3676,7 @@ public class HostClientTest {
 
       try {
         hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
-            networkList, hostAddress, hostPort, environment, chairmanServerList, memoryOverCommit, loggingEndpoint,
+            networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
             logLevel, managementOnly, hostId, ntpEndpoint);
         fail("Synchronous provision call should throw on failure result: " + resultCode.toString());
       } catch (Exception e) {

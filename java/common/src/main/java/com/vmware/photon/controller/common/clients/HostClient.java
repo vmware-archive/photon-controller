@@ -1527,7 +1527,6 @@ public class HostClient {
    * @param networkList
    * @param hostAddress
    * @param hostPort
-   * @param environment
    * @param chairmanServerList
    * @param memoryOverCommit
    * @param loggingEndpoint
@@ -1547,7 +1546,6 @@ public class HostClient {
       List<String> networkList,
       String hostAddress,
       int hostPort,
-      Map<String, String> environment,
       List<String> chairmanServerList,
       double memoryOverCommit,
       String loggingEndpoint,
@@ -1569,7 +1567,6 @@ public class HostClient {
     provisionRequest.setDatastores(dataStoreList);
     provisionRequest.setNetworks(networkList);
     provisionRequest.setAddress(new ServerAddress(hostAddress, hostPort));
-    provisionRequest.setEnvironment(environment);
     provisionRequest.setChairman_server(Util.getServerAddressList(chairmanServerList));
     provisionRequest.setMemory_overcommit(memoryOverCommit);
     provisionRequest.setManagement_only(managementOnly);
@@ -1597,7 +1594,6 @@ public class HostClient {
    * @param networkList
    * @param hostAddress
    * @param hostPort
-   * @param environment
    * @param chairmanServerList
    * @param memoryOverCommit
    * @param loggingEndpoint
@@ -1619,7 +1615,6 @@ public class HostClient {
       List<String> networkList,
       String hostAddress,
       int hostPort,
-      Map<String, String> environment,
       List<String> chairmanServerList,
       double memoryOverCommit,
       String loggingEndpoint,
@@ -1630,7 +1625,7 @@ public class HostClient {
       throws InterruptedException, RpcException {
     SyncHandler<ProvisionResponse, Host.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
     provision(availabilityZone, dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
-        environment, chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, managementOnly, hostId,
+        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, managementOnly, hostId,
         ntpEndpoint, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkProvisionResponse(syncHandler.getResponse());
