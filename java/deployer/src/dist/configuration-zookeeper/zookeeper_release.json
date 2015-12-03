@@ -1,4 +1,5 @@
 {
+  "serviceName": "Zookeeper",
   "cpuCount": 1,
   "memoryMb": 1024,
   "diskGb": 1,
