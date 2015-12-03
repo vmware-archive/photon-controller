@@ -163,7 +163,7 @@ public class HostService extends StatefulService {
     public static final String FIELD_NAME_USAGE_TAGS = "usageTags";
     public static final String FIELD_NAME_REPORTED_DATASTORES = "reportedDatastores";
     public static final String FIELD_NAME_REPORTED_IMAGE_DATASTORES = "reportedImageDatastores";
-
+    public static final String FIELD_NAME_AVAILABILITY_ZONE = "availabilityZone";
 
     public static final String USAGE_TAGS_KEY =
         QueryTask.QuerySpecification.buildCollectionItemName(FIELD_NAME_USAGE_TAGS);
