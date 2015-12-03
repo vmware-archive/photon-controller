@@ -1,7 +1,5 @@
 {
-  "CHAIRMAN_BIND_ADDRESS": "0.0.0.0",
-  "CHAIRMAN_REGISTRATION_ADDRESS": "localhost",
-  "CHAIRMAN_PORT": 13000,
+  "VM_IP": "localhost",
   "ZOOKEEPER_QUORUM": "localhost:2181",
   "LOG_DIRECTORY": "/vagrant/log",
   "CHAIRMAN_INSTALL_DIRECTORY": "/usr/lib/esxcloud/chairman",

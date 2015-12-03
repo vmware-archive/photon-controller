@@ -4,10 +4,10 @@ server:
   registerDefaultExceptionMappers: false
   applicationConnectors:
     - type: http
-      port: {{{MANAGEMENT-API_PORT}}}
-      bindHost: "{{{MANAGEMENT-API_BIND_ADDRESS}}}"
+      port: 9000
+      bindHost: "0.0.0.0"
 
-registrationAddress: "{{{MANAGEMENT-API_REGISTRATION_ADDRESS}}}"
+registrationAddress: "{{{VM_IP}}}"
 
 # to add console logging add '- type: console' below
 logging:
@@ -18,10 +18,12 @@ logging:
       archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/management-api-%d.log.gz
       archivedFileCount: 5
       logFormat: "%-5p [%d{ISO8601}]%X{request}%X{task} %c: %m\n%ex"
+{{#ENABLE_SYSLOG}}
     - type: syslog
       host: "{{{SYSLOG_ENDPOINT}}}"
       logFormat: "%-5p [%d{ISO8601}]%X{request}%X{task} %c: %m\n%ex"
       facility: LOCAL0
+{{/ENABLE_SYSLOG}}
 
 zookeeper:
   quorum: "{{{ZOOKEEPER_QUORUM}}}"
