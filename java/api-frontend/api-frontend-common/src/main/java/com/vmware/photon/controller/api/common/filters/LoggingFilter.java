@@ -14,12 +14,12 @@
 package com.vmware.photon.controller.api.common.filters;
 
 import com.vmware.photon.controller.api.common.RequestId;
+import com.vmware.photon.controller.common.logging.LoggingUtils;
 
 import com.google.inject.Inject;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import javax.inject.Provider;
 import javax.servlet.Filter;
@@ -60,8 +60,7 @@ public class LoggingFilter implements Filter {
       HttpServletResponse httpResponse = (HttpServletResponse) response;
       String requestId = requestIdProvider.get().toString();
 
-      MDC.put("request", " [Req: " + requestId + "]");
-      MDC.put("requestId", requestId);
+      LoggingUtils.setRequestId(requestId);
       logger.debug("Request: {} {}", httpRequest.getMethod(), httpRequest.getPathInfo());
 
       StopWatch stopwatch = new StopWatch();
@@ -78,8 +77,7 @@ public class LoggingFilter implements Filter {
           logger.info(msg);
         }
 
-        MDC.remove("request");
-        MDC.remove("requestId");
+        LoggingUtils.clearRequestId();
       }
     } else {
       chain.doFilter(request, response);

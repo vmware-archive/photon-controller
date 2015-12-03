@@ -19,8 +19,8 @@ import org.slf4j.MDC;
  * Logging helper functions.
  */
 public class LoggingUtils {
-  protected static final String REQUEST_ID_KEY = "requestId";
-  protected static final String REQUEST_KEY = "request";
+  public static final String REQUEST_ID_KEY = "requestId";
+  public static final String REQUEST_KEY = "request";
 
   public static String getRequestId() {
     return MDC.get(REQUEST_ID_KEY);
@@ -33,5 +33,10 @@ public class LoggingUtils {
 
   public static String formatRequestIdLogSection(String requestId) {
     return String.format(" [Req: %s]", requestId);
+  }
+
+  public static void clearRequestId() {
+    MDC.remove(REQUEST_KEY);
+    MDC.remove(REQUEST_ID_KEY);
   }
 }

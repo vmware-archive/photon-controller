@@ -20,11 +20,11 @@ import com.vmware.photon.controller.api.base.Base;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidEntityException;
+import com.vmware.photon.controller.common.logging.LoggingUtils;
 
 import com.google.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.server.ContainerRequest;
-import org.slf4j.MDC;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.servlet.http.HttpServletRequest;
@@ -244,7 +244,7 @@ public class Responses {
     builder.header(VERSION_HEADER, Version.VERSION);
 
     // add request id
-    String requestId = MDC.get("requestId");
+    String requestId = LoggingUtils.getRequestId();
     if (StringUtils.isNotBlank(requestId)) {
       builder.header(REQUEST_ID_HEADER, requestId);
     }

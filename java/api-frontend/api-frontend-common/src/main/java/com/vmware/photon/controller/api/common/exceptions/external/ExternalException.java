@@ -14,8 +14,7 @@
 package com.vmware.photon.controller.api.common.exceptions.external;
 
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-
-import org.slf4j.MDC;
+import com.vmware.photon.controller.common.logging.LoggingUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -69,7 +68,7 @@ public class ExternalException extends ApiFeException {
       return (ExternalException) t;
     }
 
-    String errorMessage = "Please contact the system administrator about request #" + MDC.get("requestId");
+    String errorMessage = "Please contact the system administrator about request #" + LoggingUtils.getRequestId();
     return new ExternalException(ErrorCode.INTERNAL_ERROR, errorMessage, new HashMap<String, String>());
   }
 

@@ -16,6 +16,7 @@ package com.vmware.photon.controller.api.common.serialization;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.Responses;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.common.logging.LoggingUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 import static com.vmware.photon.controller.api.common.exceptions.external.ErrorCode.INTERNAL_ERROR;
@@ -61,7 +62,7 @@ public class ResponseSerializationTest extends PowerMockTestCase {
   @BeforeMethod
   public void setUp() throws URISyntaxException {
     when(request.getBaseUri()).thenReturn(new URI("http://localhost:9080/"));
-    MDC.put("requestId", "requestId");
+    MDC.put(LoggingUtils.REQUEST_ID_KEY, "requestId");
   }
 
   @AfterMethod
