@@ -1,4 +1,5 @@
 {
+  "serviceName": "Chariman",
   "cpuCount": 1,
   "memoryMb": 1024,
   "diskGb": 1,
@@ -12,8 +13,6 @@
     "/var/log": "/var/log"
   },
   "dynamicParameters": {
-    "CHAIRMAN_BIND_ADDRESS": "0.0.0.0",
-    "CHAIRMAN_PORT": 13000,
     "LOG_DIRECTORY": "/var/log/esxcloud",
     "CHAIRMAN_INSTALL_DIRECTORY": "/usr/lib/esxcloud/chairman"
   }
