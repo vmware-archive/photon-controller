@@ -31,6 +31,8 @@ import com.google.common.collect.ImmutableMap;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -143,6 +145,32 @@ public class MesosClusterCreateStepCmdTest extends PowerMockTestCase {
         assertTrue(e.getMessage().contains("testFailure"));
       }
       verify(clusterManagerClient, times(1)).createMesosCluster(any(String.class), any(ClusterCreateSpec.class));
+    }
+
+    @Test
+    public void testMissingProjectId() throws Throwable {
+      currentStep.createOrUpdateTransientResource(MesosClusterCreateStepCmd.PROJECT_ID_RESOURCE_KEY, null);
+      command = new MesosClusterCreateStepCmd(taskCommand, stepBackend, currentStep, clusterBackend);
+
+      try {
+        command.execute();
+        fail("should have failed with NullPointerException");
+      } catch (NullPointerException e) {
+        assertThat(e.getMessage(), is("project-id is not defined in TransientResource"));
+      }
+    }
+
+    @Test
+    public void testMissingCreateSpec() throws Throwable {
+      currentStep.createOrUpdateTransientResource(MesosClusterCreateStepCmd.CREATE_SPEC_RESOURCE_KEY, null);
+      command = new MesosClusterCreateStepCmd(taskCommand, stepBackend, currentStep, clusterBackend);
+
+      try {
+        command.execute();
+        fail("should have failed with NullPointerException");
+      } catch (NullPointerException e) {
+        assertThat(e.getMessage(), is("create-spec is not defined in TransientResource"));
+      }
     }
   }
 }

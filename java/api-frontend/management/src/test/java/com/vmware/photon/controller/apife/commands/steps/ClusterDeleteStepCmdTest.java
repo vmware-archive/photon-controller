@@ -27,6 +27,8 @@ import com.google.common.collect.ImmutableList;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -122,6 +124,19 @@ public class ClusterDeleteStepCmdTest extends PowerMockTestCase {
         assertTrue(e.getMessage().contains("testFailure"));
       }
       verify(clusterManagerClient, times(1)).deleteCluster(any(String.class));
+    }
+
+    @Test
+    public void testMissingClusterId() throws Throwable {
+      currentStep.createOrUpdateTransientResource(ClusterDeleteStepCmd.CLUSTER_ID_RESOURCE_KEY, null);
+      command = new ClusterDeleteStepCmd(taskCommand, stepBackend, currentStep, clusterBackend);
+
+      try {
+        command.execute();
+        fail("should have failed with NullPointerException");
+      } catch (NullPointerException e) {
+        assertThat(e.getMessage(), is("cluster-id is not defined in TransientResource"));
+      }
     }
   }
 }
