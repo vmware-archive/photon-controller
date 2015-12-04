@@ -835,14 +835,14 @@ class VimClient(object):
 
     def filter_spec(self):
         PC = vmodl.query.PropertyCollector
-        ds_spec = self.datastore_filter_spec()
         nw_spec = self.network_filter_spec()
         task_spec = self.task_filter_spec()
         vm_spec = self.vm_filter_spec()
-        propSet = ds_spec.propSet + nw_spec.propSet + task_spec.propSet + \
-            vm_spec.propSet
-        objectSet = ds_spec.objectSet + nw_spec.objectSet + \
-            task_spec.objectSet + vm_spec.objectSet
+        # TODO(mmutsuzaki) Temporarily ignore datastore updates while figuring
+        # out why we are getting datastore name change callbacks even when the
+        # datastore name doesn't change.
+        propSet = nw_spec.propSet + task_spec.propSet + vm_spec.propSet
+        objectSet = nw_spec.objectSet + task_spec.objectSet + vm_spec.objectSet
         return PC.FilterSpec(propSet=propSet, objectSet=objectSet)
 
     def _apply_ds_update(self, obj_update):
