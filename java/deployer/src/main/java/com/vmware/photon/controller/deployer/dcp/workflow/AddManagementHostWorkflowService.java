@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -43,6 +44,8 @@ import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
@@ -94,7 +97,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     public enum SubStage {
       CREATE_MANAGEMENT_PLANE_LAYOUT,
       BUILD_RUNTIME_CONFIGURATION,
-      SET_QUORUM_ON_DEPLOYMENT_ENTITY,
+      SET_ZOOKEEPER_QUORUM,
       PROVISION_MANAGEMENT_HOSTS,
       CREATE_MANAGEMENT_PLANE,
       PROVISION_CLOUD_HOSTS,
@@ -239,7 +242,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
       switch (currentState.taskState.subStage) {
         case CREATE_MANAGEMENT_PLANE_LAYOUT:
         case BUILD_RUNTIME_CONFIGURATION:
-        case SET_QUORUM_ON_DEPLOYMENT_ENTITY:
+        case SET_ZOOKEEPER_QUORUM:
         case PROVISION_MANAGEMENT_HOSTS:
         case CREATE_MANAGEMENT_PLANE:
         case PROVISION_CLOUD_HOSTS:
@@ -320,8 +323,8 @@ public class AddManagementHostWorkflowService extends StatefulService {
       case BUILD_RUNTIME_CONFIGURATION:
         processBuildRuntimeConfiguration(currentState, deploymentService);
         break;
-      case SET_QUORUM_ON_DEPLOYMENT_ENTITY:
-        queryChairmanContainerTemplate(currentState);
+      case SET_ZOOKEEPER_QUORUM:
+        processSetZookeeperQuorum(currentState);
         break;
       case PROVISION_MANAGEMENT_HOSTS:
         processProvisionManagementHosts(currentState, deploymentService);
@@ -333,6 +336,53 @@ public class AddManagementHostWorkflowService extends StatefulService {
         updateCloudHostAgentConfiguration(currentState, deploymentService);
         break;
     }
+  }
+
+  private void processSetZookeeperQuorum(State currentState) {
+    if (currentState.isNewDeployment) {
+      queryChairmanContainerTemplate(currentState);
+    } else {
+      reconfigureZookeeper(currentState);
+    }
+  }
+
+  private void reconfigureZookeeper(State currentState) {
+    FutureCallback callback = new FutureCallback() {
+      @Override
+      public void onSuccess(@Nullable Object result) {
+        queryChairmanContainerTemplate(currentState);
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        failTask(t);
+      }
+    };
+
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.hostServiceLink)
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+
+                  HostService.State hostState = operation.getBody(HostService.State.class);
+                  try {
+                    ZookeeperClient zookeeperClient
+                        = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+
+                    zookeeperClient.addServer(HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+                        hostState.hostAddress, ZOOKEEPER_PORT, callback);
+
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            )
+    );
   }
 
   private void processCreateManagementPlaneLayout(State currentState, DeploymentService.State deploymentService)
@@ -417,7 +467,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
           case FINISHED:
             TaskUtils.sendSelfPatch(service, buildPatch(
                 TaskState.TaskStage.STARTED,
-                TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY,
+                TaskState.SubStage.SET_ZOOKEEPER_QUORUM,
                 null));
             break;
           case FAILED:
@@ -603,7 +653,6 @@ public class AddManagementHostWorkflowService extends StatefulService {
   }
 
   private void patchDeploymentService(State currentState, Set<String> chairmanIpAddresses, String zookeeperQuorum) {
-
     DeploymentService.State deploymentService = new DeploymentService.State();
     deploymentService.chairmanServerList = chairmanIpAddresses;
     deploymentService.zookeeperQuorum = zookeeperQuorum;
