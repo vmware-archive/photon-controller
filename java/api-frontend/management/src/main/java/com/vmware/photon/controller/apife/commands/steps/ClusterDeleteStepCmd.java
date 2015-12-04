@@ -39,11 +39,12 @@ public class ClusterDeleteStepCmd extends StepCommand {
     this.clusterBackend = clusterBackend;
 
     clusterId = (String) step.getTransientResource(CLUSTER_ID_RESOURCE_KEY);
-    checkNotNull(clusterId, "cluster-id is not defined in TransientResource");
   }
 
   @Override
   protected void execute() {
+    checkNotNull(clusterId, "cluster-id is not defined in TransientResource");
+
     logger.info("ClusterDeleteStepCmd started, clusterId={}", clusterId);
 
     ClusterDeleteTask serviceDocument = clusterBackend.getClusterManagerClient()
