@@ -16,6 +16,8 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -26,6 +28,8 @@ import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
@@ -36,9 +40,12 @@ import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.io.FileUtils;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -50,6 +57,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -58,6 +69,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.concurrent.Executors;
 
 /**
@@ -399,6 +411,7 @@ public class DeprovisionHostWorkflowServiceTest {
     private ApiClientFactory apiClientFactory;
     private TestEnvironment testEnvironment;
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private DeploymentService.State deploymentServiceState;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
@@ -410,6 +423,7 @@ public class DeprovisionHostWorkflowServiceTest {
 
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       apiClientFactory = mock(ApiClientFactory.class);
+      deploymentServiceState = TestHelper.createDeploymentService(cloudStoreMachine);
     }
 
     @BeforeMethod
@@ -477,7 +491,6 @@ public class DeprovisionHostWorkflowServiceTest {
           "Deleting the agent on host hostAddress failed with exit code 1"));
     }
 
-
     @Test(dataProvider = "HostCounts")
     public void testSuccessForUnprovisonedHost(Integer hostCount) throws Throwable {
       startTestEnvironment(hostCount, HostState.CREATING);
@@ -500,23 +513,42 @@ public class DeprovisionHostWorkflowServiceTest {
     }
 
     private void startTestEnvironment(Integer hostCount, HostState hostState) throws Throwable {
-
+      ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);
       testEnvironment = new TestEnvironment.Builder()
           .deployerContext(deployerContext)
           .listeningExecutorService(listeningExecutorService)
           .apiClientFactory(apiClientFactory)
           .hostClientFactory(hostClientFactory)
           .cloudServerSet(cloudStoreMachine.getServerSet())
+          .zookeeperServersetBuilderFactory(zkFactory)
           .hostCount(hostCount)
           .build();
 
-      startState.hostServiceLink = TestHelper.createHostService(cloudStoreMachine,
-          Collections.singleton(UsageTag.MGMT.name()), hostState).documentSelfLink;
+      HostService.State hostService = TestHelper.createHostService(cloudStoreMachine,
+          Collections.singleton(UsageTag.MGMT.name()), hostState);
+      startState.hostServiceLink = hostService.documentSelfLink;
 
       ApiClient apiClient = mock(ApiClient.class);
       doReturn(apiClient).when(apiClientFactory).create();
 
       MockHelper.mockHostClient(hostClientFactory, true);
+
+      ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
+      doReturn(zkBuilder).when(zkFactory).create();
+      doAnswer(new Answer<Object>() {
+                 public Object answer(InvocationOnMock invocation) {
+                   ((FutureCallback) invocation.getArguments()[2]).onSuccess(null);
+                   return null;
+                 }
+               }
+      ).when(zkBuilder).removeServer(anyString(), anyInt(), anyObject());
+
+      // Update deploymentService with the map
+      HashMap<Integer, String> zkMap = new HashMap<>();
+      zkMap.put(1, hostService.hostAddress);
+      DeploymentService.State deploymentState = new DeploymentService.State();
+      deploymentState.zookeeperIdToIpMap = zkMap;
+      cloudStoreMachine.sendPatchAndWait(deploymentServiceState.documentSelfLink, deploymentState);
     }
   }
 }

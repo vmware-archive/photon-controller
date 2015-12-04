@@ -60,10 +60,13 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.io.FileUtils;
 import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -74,7 +77,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -107,6 +114,10 @@ public class AddManagementHostWorkflowServiceTest {
 
   private AddManagementHostWorkflowService addManagementHostWorkflowService;
   private TestHost testHost;
+
+  @Test
+  private void dummy() {
+  }
 
   /**
    * This method creates a new State object which is sufficient to create a new
@@ -449,10 +460,17 @@ public class AddManagementHostWorkflowServiceTest {
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
-              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
+              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
+              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
@@ -501,11 +519,30 @@ public class AddManagementHostWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
               TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
               TaskState.TaskStage.CREATED, null},
 
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
+              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
+
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
               TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
+              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
@@ -544,6 +581,9 @@ public class AddManagementHostWorkflowServiceTest {
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
+          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER},
 
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
               TaskState.TaskStage.STARTED,
@@ -565,6 +605,9 @@ public class AddManagementHostWorkflowServiceTest {
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
@@ -591,6 +634,9 @@ public class AddManagementHostWorkflowServiceTest {
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED,
@@ -615,6 +661,9 @@ public class AddManagementHostWorkflowServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED,
+              AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
@@ -768,6 +817,7 @@ public class AddManagementHostWorkflowServiceTest {
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
           .cloudServerSet(remoteStore.getServerSet())
+          .zookeeperServersetBuilderFactory(zkFactory)
           .hostCount(remoteNodeCount)
           .build();
 
@@ -785,6 +835,13 @@ public class AddManagementHostWorkflowServiceTest {
       doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1", remoteStore.getHosts()[0].getState().httpPort)))
           .when(zkBuilder)
           .getServers(Matchers.startsWith("0.0.0.0:2181"), eq("cloudstore"));
+      doAnswer(new Answer<Object>() {
+                 public Object answer(InvocationOnMock invocation) {
+                   ((FutureCallback) invocation.getArguments()[4]).onSuccess(null);
+                   return null;
+                 }
+               }
+      ).when(zkBuilder).addServer(anyString(), anyString(), anyString(), anyInt(), anyObject());
     }
 
     @AfterMethod
@@ -906,6 +963,7 @@ public class AddManagementHostWorkflowServiceTest {
         DeployerDcpServiceHost remoteHost = remoteDeployer.getHosts()[0];
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP,
             bindAddress != null ? bindAddress : remoteHost.getState().bindAddress);
+        hostStartState.hostAddress = bindAddress != null ? bindAddress : remoteHost.getState().bindAddress;
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_DEPLOYER_DCP_PORT,
             Integer.toString(remoteHost.getPort()));
       }
