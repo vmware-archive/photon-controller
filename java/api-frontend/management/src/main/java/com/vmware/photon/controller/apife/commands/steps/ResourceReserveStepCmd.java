@@ -77,6 +77,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * StepCommand for resource reservation.
@@ -84,6 +85,8 @@ import java.util.Objects;
 public class ResourceReserveStepCmd extends StepCommand {
 
   private static final int MAX_PLACEMENT_RETRIES = 5;
+  private static final long PLACEMENT_RETRY_INTERVAL = TimeUnit.SECONDS.toMillis(1);
+
   private static final String DISK_KIND = "disk";
   private static final String VM_KIND = "vm";
   private static final String HOST_KIND = "host";
@@ -392,12 +395,22 @@ public class ResourceReserveStepCmd extends StepCommand {
       } catch (ResourceConstraintException e) {
         logger.error("reserve resource failed: {}", e);
         throw new UnfulfillableAffinitiesException();
-      } catch (StaleGenerationException | InvalidSchedulerException e) {
+      } catch (StaleGenerationException e) {
         if (++retries >= MAX_PLACEMENT_RETRIES) {
           throw e;
         }
+
+        logger.info("retrying: {}", e.getClass().toString());
+      } catch (InvalidSchedulerException e) {
+        if (++retries >= MAX_PLACEMENT_RETRIES) {
+          throw e;
+        }
+
+        // we should sleep here a bit between retries to give the scheduling tree some time to stabilize.
+        Thread.sleep(PLACEMENT_RETRY_INTERVAL);
         logger.info("retrying: {}", e.getClass().toString());
       }
+
     }
   }
 
