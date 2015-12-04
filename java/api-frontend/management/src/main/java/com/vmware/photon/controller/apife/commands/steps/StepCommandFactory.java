@@ -108,16 +108,22 @@ public class StepCommandFactory {
     checkNotNull(stepEntity);
     switch (stepEntity.getOperation()) {
       case RESERVE_RESOURCE:
-        return new ResourceReserveStepCmd(taskCommand, stepBackend, stepEntity,
-            diskBackend, vmBackend, networkBackend, flavorBackend);
-      case CREATE_VM:
-        return new VmCreateStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend);
+        return new ResourceReserveStepCmd(
+            taskCommand, stepBackend, stepEntity, diskBackend, vmBackend, networkBackend, flavorBackend);
       case CREATE_DISK:
         return new DiskCreateStepCmd(taskCommand, stepBackend, stepEntity, diskBackend);
-      case DELETE_VM:
-        return new VmDeleteStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend);
       case DELETE_DISK:
         return new DiskDeleteStepCmd(taskCommand, stepBackend, stepEntity, diskBackend, attachedDiskBackend);
+      case CREATE_VM:
+        return new VmCreateStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend);
+      case DELETE_VM:
+        return new VmDeleteStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend);
+      case START_VM:
+      case STOP_VM:
+      case RESTART_VM:
+      case SUSPEND_VM:
+      case RESUME_VM:
+        return new VmPowerOpStepCmd(taskCommand, stepBackend, stepEntity, vmBackend);
       case ATTACH_DISK:
       case DETACH_DISK:
         return new VmDiskOpStepCmd(taskCommand, stepBackend, stepEntity, diskBackend, attachedDiskBackend);
@@ -125,44 +131,38 @@ public class StepCommandFactory {
         return new IsoAttachStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, entityLockBackend);
       case DETACH_ISO:
         return new IsoDetachStepCmd(taskCommand, stepBackend, stepEntity, vmBackend);
-      case START_VM:
-      case STOP_VM:
-      case RESTART_VM:
-      case SUSPEND_VM:
-      case RESUME_VM:
-        return new VmPowerOpStepCmd(taskCommand, stepBackend, stepEntity, vmBackend);
+      case UPLOAD_ISO:
+        return new IsoUploadStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, isoStore);
       case GET_NETWORKS:
         return new VmGetNetworksStepCmd(taskCommand, stepBackend, stepEntity, taskBackend, networkBackend);
       case GET_MKS_TICKET:
         return new VmGetMksTicketStepCmd(taskCommand, stepBackend, stepEntity, taskBackend);
       case CREATE_VM_IMAGE:
         return new VmCreateImageStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore);
-      case DELETE_IMAGE:
-        return new ImageDeleteStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore);
-      case DELETE_IMAGE_REPLICAS:
-        return new ImageReplicasDeleteStepCmd(taskCommand, stepBackend, stepEntity);
       case UPLOAD_IMAGE:
         return new ImageUploadStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore, imageConfig);
       case REPLICATE_IMAGE:
         return new ImageReplicateStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore);
-      case UPLOAD_ISO:
-        return new IsoUploadStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, isoStore);
+      case DELETE_IMAGE:
+        return new ImageDeleteStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore);
+      case DELETE_IMAGE_REPLICAS:
+        return new ImageReplicasDeleteStepCmd(taskCommand, stepBackend, stepEntity);
       case CREATE_HOST:
         return new HostCreateStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case PROVISION_HOST:
         return new HostProvisionStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
+      case DEPROVISION_HOST:
+        return new HostDeprovisionStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case DELETE_HOST:
         return new HostDeleteStepCmd(taskCommand, stepBackend, stepEntity, hostBackend, vmBackend);
       case SUSPEND_HOST:
         return new HostEnterSuspendedModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
+      case RESUME_HOST:
+        return new HostResumeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case ENTER_MAINTENANCE_MODE:
         return new HostEnterMaintenanceModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend, vmBackend);
       case EXIT_MAINTENANCE_MODE:
         return new HostExitMaintenanceModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
-      case RESUME_HOST:
-        return new HostResumeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
-      case DEPROVISION_HOST:
-        return new HostDeprovisionStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case PREPARE_DEPLOYMENT:
         return new DeploymentImageConfigUpdateStepCmd(
             taskCommand, stepBackend, stepEntity, deploymentBackend, hostBackend, imageConfig);
