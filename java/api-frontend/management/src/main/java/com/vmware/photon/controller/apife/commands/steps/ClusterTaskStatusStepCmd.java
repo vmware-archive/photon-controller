@@ -47,7 +47,7 @@ public class ClusterTaskStatusStepCmd extends StepCommand {
   private long pollInterval;
   private long documentNotFoundMaxCount;
   private long documentNotFoundOccurrence;
-  protected final String remoteTaskLink;
+  private final String remoteTaskLink;
   private final int targetSubStage;
   private final ClusterTaskStatusPoller clusterTaskStatusPoller;
 
@@ -74,7 +74,6 @@ public class ClusterTaskStatusStepCmd extends StepCommand {
 
     // get remoteTaskLink and recent status past from previous step
     remoteTaskLink = (String) step.getTransientResource(REMOTE_TASK_LINK_RESOURCE_KEY);
-    checkNotNull(remoteTaskLink, "remote-task-link is not defined in TransientResource");
   }
 
   @VisibleForTesting
@@ -94,6 +93,8 @@ public class ClusterTaskStatusStepCmd extends StepCommand {
 
   @Override
   protected void execute() throws ApiFeException, InterruptedException, RpcException {
+    checkNotNull(remoteTaskLink, "remote-task-link is not defined in TransientResource");
+
     logger.info("ClusterTaskStatusStepCmd started, operation={}, remoteTaskLink={}",
         step.getOperation(), remoteTaskLink);
 

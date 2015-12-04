@@ -41,14 +41,15 @@ public class ClusterResizeStepCmd extends StepCommand {
     super(taskCommand, stepBackend, step);
     this.clusterBackend = clusterBackend;
 
-    clusterId = (String) step.getTransientResource(CLUSTER_ID_RESOURCE_KEY);
-    checkNotNull(clusterId, "cluster-id is not defined in TransientResource");
-    resizeOperation = (ClusterResizeOperation) step.getTransientResource(RESIZE_OPERATION_RESOURCE_KEY);
-    checkNotNull(resizeOperation, "resize-operation is not defined in TransientResource");
+    this.clusterId = (String) step.getTransientResource(CLUSTER_ID_RESOURCE_KEY);
+    this.resizeOperation = (ClusterResizeOperation) step.getTransientResource(RESIZE_OPERATION_RESOURCE_KEY);
   }
 
   @Override
   protected void execute() {
+    checkNotNull(clusterId, "cluster-id is not defined in TransientResource");
+    checkNotNull(resizeOperation, "resize-operation is not defined in TransientResource");
+
     logger.info("ClusterResizeStepCmd started, clusterId={}, newSlaveCount={}",
         clusterId, resizeOperation.getNewSlaveCount());
 

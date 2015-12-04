@@ -144,5 +144,23 @@ public class SwarmClusterCreateStepCmdTest extends PowerMockTestCase {
       }
       verify(clusterManagerClient, times(1)).createSwarmCluster(any(String.class), any(ClusterCreateSpec.class));
     }
+
+    @Test(expectedExceptions = NullPointerException.class,
+        expectedExceptionsMessageRegExp = "project-id is not defined in TransientResource")
+    public void testMissingProjectId() throws Throwable {
+      currentStep.createOrUpdateTransientResource(SwarmClusterCreateStepCmd.PROJECT_ID_RESOURCE_KEY, null);
+      command = new SwarmClusterCreateStepCmd(taskCommand, stepBackend, currentStep, clusterBackend);
+
+      command.execute();
+    }
+
+    @Test(expectedExceptions = NullPointerException.class,
+        expectedExceptionsMessageRegExp = "create-spec is not defined in TransientResource")
+    public void testMissingCreateSpec() throws Throwable {
+      currentStep.createOrUpdateTransientResource(SwarmClusterCreateStepCmd.CREATE_SPEC_RESOURCE_KEY, null);
+      command = new SwarmClusterCreateStepCmd(taskCommand, stepBackend, currentStep, clusterBackend);
+
+      command.execute();
+    }
   }
 }

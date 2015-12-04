@@ -144,5 +144,23 @@ public class MesosClusterCreateStepCmdTest extends PowerMockTestCase {
       }
       verify(clusterManagerClient, times(1)).createMesosCluster(any(String.class), any(ClusterCreateSpec.class));
     }
+
+    @Test(expectedExceptions = NullPointerException.class,
+        expectedExceptionsMessageRegExp = "project-id is not defined in TransientResource")
+    public void testMissingProjectId() throws Throwable {
+      currentStep.createOrUpdateTransientResource(MesosClusterCreateStepCmd.PROJECT_ID_RESOURCE_KEY, null);
+      command = new MesosClusterCreateStepCmd(taskCommand, stepBackend, currentStep, clusterBackend);
+
+      command.execute();
+    }
+
+    @Test(expectedExceptions = NullPointerException.class,
+        expectedExceptionsMessageRegExp = "create-spec is not defined in TransientResource")
+    public void testMissingCreateSpec() throws Throwable {
+      currentStep.createOrUpdateTransientResource(MesosClusterCreateStepCmd.CREATE_SPEC_RESOURCE_KEY, null);
+      command = new MesosClusterCreateStepCmd(taskCommand, stepBackend, currentStep, clusterBackend);
+
+      command.execute();
+    }
   }
 }

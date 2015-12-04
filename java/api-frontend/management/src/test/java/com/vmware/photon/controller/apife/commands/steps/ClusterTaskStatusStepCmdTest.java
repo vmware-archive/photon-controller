@@ -100,6 +100,26 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
   }
 
   /**
+   * Tests that needed transient resources are present.
+   */
+  public class StepValidationTest {
+
+    @BeforeMethod
+    public void setUp() throws JsonProcessingException {
+      setUpCommon(true, 1);
+
+      currentStep.createOrUpdateTransientResource(ClusterTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY, null);
+      command = new ClusterTaskStatusStepCmd(taskCommand, stepBackend, currentStep, clusterTaskStatusPoller);
+    }
+
+    @Test(expectedExceptions = NullPointerException.class,
+          expectedExceptionsMessageRegExp = "remote-task-link is not defined in TransientResource")
+    public void testMissingRemoteTaskId() throws Throwable {
+      command.execute();
+    }
+  }
+
+  /**
    * Tests for stage changes.
    */
   public class StageTest {
