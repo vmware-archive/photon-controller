@@ -43,6 +43,8 @@ import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
@@ -594,7 +596,10 @@ public class AddManagementHostWorkflowService extends StatefulService {
                 ops.values().stream().map(operation -> operation.getBody(VmService.State.class).ipAddress)
                     .collect(Collectors.toList()),
                 ZOOKEEPER_PORT);
+            ZookeeperClient zookeeperClient
+                = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
 
+            //zookeeperClient.
             patchDeploymentService(currentState, chairmanIpAddresses, zookeeperQuorum);
           } catch (Throwable t) {
             failTask(t);
@@ -604,7 +609,6 @@ public class AddManagementHostWorkflowService extends StatefulService {
   }
 
   private void patchDeploymentService(State currentState, Set<String> chairmanIpAddresses, String zookeeperQuorum) {
-
     DeploymentService.State deploymentService = new DeploymentService.State();
     deploymentService.chairmanServerList = chairmanIpAddresses;
     deploymentService.zookeeperQuorum = zookeeperQuorum;

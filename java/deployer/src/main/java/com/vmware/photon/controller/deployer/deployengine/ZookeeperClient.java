@@ -19,12 +19,19 @@ import com.google.inject.Inject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.BoundedExponentialBackoffRetry;
+import org.apache.http.concurrent.FutureCallback;
+import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -47,16 +54,7 @@ public class ZookeeperClient {
 
   public Set<InetSocketAddress> getServers(String zookeeperInstance, String serviceName) {
     try (CuratorFramework zkClient =
-             CuratorFrameworkFactory
-                 .builder()
-                 .connectString(zookeeperInstance)
-                 .namespace(namespace)
-                 .retryPolicy(new BoundedExponentialBackoffRetry(
-                     BASE_SLEEP_TIME_MS,
-                     MAX_SLEEP_TIME_MS,
-                     MAX_RETRIES))
-                 .build()) {
-      zkClient.start();
+             connectToZookeeper(zookeeperInstance)){
       ZookeeperServiceReader reader = new ZookeeperServiceReader();
 
       Set<InetSocketAddress> servers = reader.nodePaths(zkClient, serviceName).stream()
@@ -69,6 +67,74 @@ public class ZookeeperClient {
       logger.error("Rethrowing error ", e);
       throw new RuntimeException(e);
     }
+  }
+
+  public Set<InetSocketAddress> getServers(CuratorFramework zkClient, String zookeeperInstance, String serviceName) {
+    try {
+      ZookeeperServiceReader reader = new ZookeeperServiceReader();
+
+      Set<InetSocketAddress> servers = reader.nodePaths(zkClient, serviceName).stream()
+          .map(nodePath -> toInetAdrress(nodePath, reader, zkClient))
+          .filter(address -> address != null)
+          .collect(Collectors.toSet());
+
+      return servers;
+    } catch (Exception e) {
+      logger.error("Rethrowing error ", e);
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void addServer(String zookeeperInstance, String joiningServerIp, String joiningServerZookeeperPort,
+                        FutureCallback callback) {
+    AsyncCallback.DataCallback dataCallback = new AsyncCallback.DataCallback() {
+      @Override
+      public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
+        switch (KeeperException.Code.get(rc)) {
+          case OK:
+            logger.info("Zookeeper successfully reconfigured");
+            callback.completed(null);
+            break;
+          default:
+            logger.error("Zookeeper returned error code " + KeeperException.Code.get(rc));
+            callback.failed(new RuntimeException("Failed to reconfigure zookeeper"));
+        }
+      }
+    };
+
+    try (CuratorFramework zkClient =
+             connectToZookeeper(zookeeperInstance)) {
+
+      CuratorFramework zkLocalClient = connectToZookeeper(joiningServerIp + ":" + joiningServerZookeeperPort);
+      long index = zkLocalClient.getZookeeperClient().getInstanceIndex();
+
+      List<String> joiningServers = new ArrayList<>();
+      String serverStr = "server." + index + "=" + joiningServerIp + ":2888:3888;" + joiningServerZookeeperPort;
+      logger.info("Adding server: " + serverStr);
+      joiningServers.add(serverStr);
+      LinkedList<Integer> results = new LinkedList<Integer>();
+      zkClient.getZookeeperClient().getZooKeeper().reconfig(joiningServers, null,
+          null, -1, dataCallback, results);
+
+    } catch (Exception e) {
+      logger.error("Rethrowing error ", e);
+      throw new RuntimeException(e);
+    }
+  }
+
+  private CuratorFramework connectToZookeeper(String zookeeperInstance) {
+    CuratorFramework zkClient =
+        CuratorFrameworkFactory
+            .builder()
+            .connectString(zookeeperInstance)
+            .namespace(namespace)
+            .retryPolicy(new BoundedExponentialBackoffRetry(
+                BASE_SLEEP_TIME_MS,
+                MAX_SLEEP_TIME_MS,
+                MAX_RETRIES))
+            .build();
+      zkClient.start();
+      return zkClient;
   }
 
   private InetSocketAddress toInetAdrress(String nodePath, ZookeeperServiceReader reader, CuratorFramework zkClient) {

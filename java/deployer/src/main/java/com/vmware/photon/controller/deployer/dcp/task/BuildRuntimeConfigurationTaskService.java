@@ -727,9 +727,8 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
         containerState.dynamicParameters.put(ENV_ZOOKEEPER_MY_ID, result.getFirst().toString());
         containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM, new Gson().toJson(result.getSecond()));
-        if (ipList.size() == 1) {
-          containerState.dynamicParameters.put(ENV_ZOOKEEPER_STANDALONE, Boolean.toString(true));
-        }
+        // Since ZK is always reconfigurable to support add/remove servers this had to be set to false
+        containerState.dynamicParameters.put(ENV_ZOOKEEPER_STANDALONE, Boolean.toString(false));
         break;
       case Lightwave:
         break;
