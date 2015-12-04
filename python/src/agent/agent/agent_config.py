@@ -629,6 +629,7 @@ class AgentConfig(object):
             for address in server_addresses:
                 server_str = str(address.host) + ":" + str(address.port)
                 servers.append(server_str)
+        servers.sort()
         return servers
 
     def _convert_image_datastores(self, image_datastores):
