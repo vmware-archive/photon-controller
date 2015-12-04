@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.common.dcp.OperationLatch;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.xenon.common.Operation;
@@ -32,30 +32,28 @@ import java.net.URI;
 public class DcpBasedHealthChecker implements HealthChecker {
   private static final Logger logger = LoggerFactory.getLogger(DcpBasedHealthChecker.class);
 
-  private final Service dcpService;
+  private final Service service;
   private final String address;
   private final int port;
 
-  public DcpBasedHealthChecker(Service dcpService, String address, int port) {
-    this.dcpService = dcpService;
+  public DcpBasedHealthChecker(Service service, String address, int port) {
+    this.service = service;
     this.address = address;
     this.port = port;
   }
 
   @Override
   public boolean isReady() {
-    URI uri = UriUtils.buildUri("http", address, port, ServiceUriPaths.STATUS_SERVICE, null);
-    Operation get = Operation
-        .createGet(uri)
-        .setUri(uri)
-        .forceRemote();
-    OperationLatch syncOp = new OperationLatch(get);
-    dcpService.sendRequest(get);
     try {
-      Operation completedOperation = syncOp.awaitOperationCompletion();
+      URI uri = UriUtils.buildUri("http", address, port, ServiceUriPaths.STATUS_SERVICE, null);
+      Operation getOperation = Operation
+          .createGet(uri)
+          .setUri(uri)
+          .forceRemote();
+      Operation completedOperation = ServiceUtils.doServiceOperation(service, getOperation);
       Status status = completedOperation.getBody(Status.class);
       return status.getType() == StatusType.READY;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       logger.error("GET to DCP service failed [{}:{}]: {}", address, port, e);
       return false;
     }
