@@ -713,6 +713,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     zookeeperServers = new Gson().toJson(result.getSecond());
     containerState.dynamicParameters.put(ENV_ZOOKEEPER_MY_ID, myId);
     containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM, zookeeperServers);
+    // Since ZK is always reconfigurable to support add/remove servers this had to be set to false
     containerState.dynamicParameters.put(ENV_ZOOKEEPER_STANDALONE, Boolean.toString(false));
   }
 
