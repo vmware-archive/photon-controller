@@ -23,6 +23,8 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationProcessingChain;
+import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
@@ -42,6 +44,27 @@ public class DeploymentService extends StatefulService {
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
+  }
+
+  @Override
+  public OperationProcessingChain getOperationProcessingChain() {
+    if (super.getOperationProcessingChain() != null) {
+      return super.getOperationProcessingChain();
+    }
+
+    RequestRouter myRouter = new RequestRouter();
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<HostListChangeRequest>(
+            HostListChangeRequest.class, "kind",
+            HostListChangeRequest.PatchType.UPDATE_ZOOKEEPER_INFO),
+        this::handlePatchUpdateHostListInfo, "UpdateHostListInfo");
+
+    OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
+    opProcessingChain.add(myRouter);
+
+    setOperationProcessingChain(opProcessingChain);
+    return opProcessingChain;
   }
 
   @Override
@@ -78,6 +101,27 @@ public class DeploymentService extends StatefulService {
     }
   }
 
+  private void handlePatchUpdateHostListInfo(Operation patchOperation) {
+    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    try {
+      State currentState = getState(patchOperation);
+      HostListChangeRequest patchState = patchOperation.getBody(HostListChangeRequest.class);
+
+      // Implement this with the next change
+
+      validateState(currentState);
+
+      setState(patchOperation, currentState);
+      patchOperation.setBody(currentState);
+      patchOperation.complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patchOperation.fail(t);
+    }
+  }
+
   @Override
   public ServiceDocument getDocumentTemplate() {
     ServiceDocument template = super.getDocumentTemplate();
@@ -96,6 +140,25 @@ public class DeploymentService extends StatefulService {
   private State applyPatch(State startState, State patchState) {
     PatchUtils.patchState(startState, patchState);
     return startState;
+  }
+
+  /**
+   * The request to change host list related fields.
+   */
+  public static class HostListChangeRequest {
+    public PatchType patchtype = PatchType.NONE;
+
+    public String zookeeperIpToAdd;
+
+    public String zookeeperIpToRemove;
+
+    /**
+     * Defines the purpose of the patch.
+     */
+    public enum PatchType {
+      NONE,
+      UPDATE_ZOOKEEPER_INFO,
+    }
   }
 
   /**
