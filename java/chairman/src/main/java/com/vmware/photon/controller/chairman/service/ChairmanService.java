@@ -39,7 +39,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactor
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
-import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpException;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.zookeeper.DataDictionary;
 import com.vmware.photon.controller.resource.gen.Datastore;
@@ -184,7 +184,7 @@ public class ChairmanService implements Chairman.Iface {
       datastoreState.isImageDatastore = false;
       try {
         dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, datastoreState);
-      } catch (BadRequestException ex) {
+      } catch (DcpException ex) {
         logger.debug("Ignoring datastore document creation failure", ex);
       }
     }
