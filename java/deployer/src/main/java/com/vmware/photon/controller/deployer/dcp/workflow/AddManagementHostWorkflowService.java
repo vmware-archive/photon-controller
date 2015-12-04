@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -43,6 +44,8 @@ import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
@@ -97,6 +100,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
       SET_QUORUM_ON_DEPLOYMENT_ENTITY,
       PROVISION_MANAGEMENT_HOSTS,
       CREATE_MANAGEMENT_PLANE,
+      RECONFIGURE_ZOOKEEPER,
       PROVISION_CLOUD_HOSTS,
     }
   }
@@ -242,6 +246,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
         case SET_QUORUM_ON_DEPLOYMENT_ENTITY:
         case PROVISION_MANAGEMENT_HOSTS:
         case CREATE_MANAGEMENT_PLANE:
+        case RECONFIGURE_ZOOKEEPER:
         case PROVISION_CLOUD_HOSTS:
           break;
         default:
@@ -329,9 +334,74 @@ public class AddManagementHostWorkflowService extends StatefulService {
       case CREATE_MANAGEMENT_PLANE:
         processCreateManagementPlane(currentState, deploymentService);
         break;
+      case RECONFIGURE_ZOOKEEPER:
+        reconfigureZookeeper(currentState, deploymentService);
+        break;
       case PROVISION_CLOUD_HOSTS:
         updateCloudHostAgentConfiguration(currentState, deploymentService);
         break;
+    }
+  }
+
+  private void reconfigureZookeeper(State currentState, DeploymentService.State deploymentService) {
+    if (currentState.hostServiceLink == null) {
+      TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(
+          TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_CLOUD_HOSTS, null));
+    } else {
+
+      FutureCallback callback = new FutureCallback() {
+        @Override
+        public void onSuccess(@Nullable Object result) {
+          TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(
+              TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_CLOUD_HOSTS, null));
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+          failTask(t);
+        }
+      };
+
+      sendRequest(
+          HostUtils.getCloudStoreHelper(this)
+              .createGet(currentState.hostServiceLink)
+              .setCompletion(
+                  (operation, throwable) -> {
+                    if (null != throwable) {
+                      failTask(throwable);
+                      return;
+                    }
+
+                    HostService.State hostState = operation.getBody(HostService.State.class);
+                    String hostAddress = hostState.hostAddress.trim();
+                    // Find the host
+                    if (!deploymentService.zookeeperIdToIpMap.containsValue(hostAddress)) {
+                      // Really should NEVER EVER happen. But just a sanity check
+                      Throwable t = new RuntimeException("Zookeeper replica list doesn't contain host: " + hostAddress);
+                      failTask(t);
+                      return;
+                    }
+
+                    Integer myId = null;
+                    for (Map.Entry<Integer, String> entry : deploymentService.zookeeperIdToIpMap.entrySet()) {
+                      if (entry.getValue().equals(hostAddress)) {
+                        myId = entry.getKey();
+                        break;
+                      }
+                    }
+
+                    try {
+                      ZookeeperClient zookeeperClient
+                          = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+
+                      zookeeperClient.addServer(HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+                          hostState.hostAddress, ZOOKEEPER_PORT, myId, callback);
+                    } catch (Throwable t) {
+                      failTask(t);
+                    }
+                  }
+              )
+      );
     }
   }
 
@@ -603,7 +673,6 @@ public class AddManagementHostWorkflowService extends StatefulService {
   }
 
   private void patchDeploymentService(State currentState, Set<String> chairmanIpAddresses, String zookeeperQuorum) {
-
     DeploymentService.State deploymentService = new DeploymentService.State();
     deploymentService.chairmanServerList = chairmanIpAddresses;
     deploymentService.zookeeperQuorum = zookeeperQuorum;
@@ -762,7 +831,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
       throws Throwable {
     if (currentState.hostServiceLink == null) {
       TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(
-          TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_CLOUD_HOSTS, null));
+          TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER, null));
     } else {
       createManagementVmsAndContainersOnHost(currentState, deploymentService);
     }
@@ -952,7 +1021,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
             switch (result.taskState.stage) {
               case FINISHED:
                 TaskUtils.sendSelfPatch(service, buildPatch(
-                    TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_CLOUD_HOSTS, null));
+                    TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER, null));
                 break;
               case FAILED:
                 State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
