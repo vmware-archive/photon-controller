@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.common.dcp;
 
+import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.xenon.common.Operation;
@@ -37,6 +39,7 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Utility functions for DCP services.
@@ -229,5 +232,13 @@ public class ServiceUtils {
     logSevere(service, e);
     operation.setStatusCode(Operation.STATUS_CODE_BAD_REQUEST);
     operation.fail(e, failureBody);
+  }
+
+  public static Operation doServiceOperation(Service service, Operation requestedOperation)
+      throws TimeoutException, DocumentNotFoundException, BadRequestException, InterruptedException {
+    OperationLatch syncOp = new OperationLatch(requestedOperation);
+    service.sendRequest(requestedOperation);
+    Operation completedOperation = syncOp.awaitOperationCompletion();
+    return OperationUtils.handleCompletedOperation(requestedOperation, completedOperation);
   }
 }
