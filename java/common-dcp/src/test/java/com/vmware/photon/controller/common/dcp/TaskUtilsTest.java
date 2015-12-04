@@ -11,9 +11,8 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.deployer.dcp.util;
+package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -62,6 +61,7 @@ public class TaskUtilsTest {
       operation = mock(Operation.class);
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
     public void success() throws Throwable {
       final AtomicInteger count = new AtomicInteger(0);
@@ -100,6 +100,7 @@ public class TaskUtilsTest {
       assertThat(count.get(), is(1));
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
     public void invokesFailureWhenThrowableNotNull() {
       final AtomicInteger count = new AtomicInteger(0);
@@ -145,6 +146,7 @@ public class TaskUtilsTest {
       operation = mock(Operation.class);
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
     public void successWithoutRetry() {
       final AtomicInteger count = new AtomicInteger(0);
@@ -181,9 +183,9 @@ public class TaskUtilsTest {
       assertThat(count.get(), is(1));
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
     public void shouldRetry() {
-      final AtomicInteger count = new AtomicInteger(0);
       ServiceDocument document = new ServiceDocument();
       document.documentSelfLink = "selfLink";
       when(operation.getBody(any(Class.class))).thenReturn(document);
@@ -205,6 +207,7 @@ public class TaskUtilsTest {
       verify(service, times(2)).getHost();
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
     public void invokesFailureWhenThrowableNotNull() {
       final AtomicInteger count = new AtomicInteger(0);
