@@ -713,7 +713,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     zookeeperServers = new Gson().toJson(result.getSecond());
     containerState.dynamicParameters.put(ENV_ZOOKEEPER_MY_ID, myId);
     containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM, zookeeperServers);
-    containerState.dynamicParameters.put(ENV_ZOOKEEPER_STANDALONE, Boolean.toString(false));
   }
 
   /**
