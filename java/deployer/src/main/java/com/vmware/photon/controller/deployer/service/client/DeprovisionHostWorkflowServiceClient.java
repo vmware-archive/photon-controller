@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.photon.controller.common.dcp.OperationLatch;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
@@ -62,8 +61,6 @@ public class DeprovisionHostWorkflowServiceClient {
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setContextId(LoggingUtils.getRequestId());
 
-    OperationLatch syncOp = new OperationLatch(post);
-    dcpHost.sendRequest(post);
     Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, post, REFERRER_PATH);
 
     // Return operation id.
