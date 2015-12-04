@@ -23,6 +23,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FutureCallback;
 
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -47,6 +48,8 @@ public class TaskUtils {
       @Override
       public void handle(Operation operation, Throwable throwable) {
         if (null != throwable) {
+          ServiceUtils.logSevere(service, "error when contacting [" + factoryLink + "] " + throwable.getMessage());
+          ServiceUtils.logSevere(service, throwable);
           callback.onFailure(throwable);
           return;
         }
@@ -71,14 +74,22 @@ public class TaskUtils {
       final int taskPollDelay,
       final FutureCallback<T> callback) {
 
+    try {
+      Thread.sleep(Math.abs(new Random().nextLong()) % (taskPollDelay + 1) + 1);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+
     Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
       @Override
       public void handle(Operation operation, Throwable throwable) {
         if (null != throwable) {
+          ServiceUtils.logSevere(service, "error when contacting [" + serviceLink + "] " + throwable.getMessage());
+          ServiceUtils.logSevere(service, throwable);
           callback.onFailure(throwable);
           return;
         }
-        T state = operation.getBody(type);
+        final T state = operation.getBody(type);
 
         if (predicate.apply(state)) {
           callback.onSuccess(state);
@@ -91,6 +102,9 @@ public class TaskUtils {
             try {
               checkProgress(service, serviceLink, predicate, type, taskPollDelay, callback);
             } catch (Throwable t) {
+              ServiceUtils.logSevere(service,
+                  "error when contacting [" + state.documentSelfLink + "]" + t.getMessage());
+              ServiceUtils.logSevere(service, t);
               callback.onFailure(t);
             }
           }
