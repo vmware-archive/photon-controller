@@ -43,13 +43,14 @@ public class KubernetesClusterCreateStepCmd extends StepCommand {
     this.clusterBackend = clusterBackend;
 
     projectId = (String) step.getTransientResource(PROJECT_ID_RESOURCE_KEY);
-    checkNotNull(projectId, "project-id is not defined in TransientResource");
     spec = (ClusterCreateSpec) step.getTransientResource(CREATE_SPEC_RESOURCE_KEY);
-    checkNotNull(spec, "create-spec is not defined in TransientResource");
   }
 
   @Override
   protected void execute() throws SpecInvalidException {
+    checkNotNull(projectId, "project-id is not defined in TransientResource");
+    checkNotNull(spec, "create-spec is not defined in TransientResource");
+
     logger.info("KubernetesClusterCreateStepCmd started, projectId={}, clusterName={}", projectId, spec.getName());
 
     KubernetesClusterCreateTask serviceDocument = clusterBackend.getClusterManagerClient()

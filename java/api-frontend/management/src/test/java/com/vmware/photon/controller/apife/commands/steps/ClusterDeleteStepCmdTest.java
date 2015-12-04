@@ -123,5 +123,14 @@ public class ClusterDeleteStepCmdTest extends PowerMockTestCase {
       }
       verify(clusterManagerClient, times(1)).deleteCluster(any(String.class));
     }
+
+    @Test(expectedExceptions = NullPointerException.class,
+          expectedExceptionsMessageRegExp = "cluster-id is not defined in TransientResource")
+    public void testMissingClusterId() throws Throwable {
+      currentStep.createOrUpdateTransientResource(ClusterDeleteStepCmd.CLUSTER_ID_RESOURCE_KEY, null);
+      command = new ClusterDeleteStepCmd(taskCommand, stepBackend, currentStep, clusterBackend);
+
+      command.execute();
+    }
   }
 }

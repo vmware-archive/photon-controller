@@ -138,5 +138,23 @@ public class KubernetesClusterCreateStepCmdTest extends PowerMockTestCase {
       }
       verify(clusterManagerClient, times(1)).createKubernetesCluster(any(String.class), any(ClusterCreateSpec.class));
     }
+
+    @Test(expectedExceptions = NullPointerException.class,
+        expectedExceptionsMessageRegExp = "project-id is not defined in TransientResource")
+    public void testMissingProjectId() throws Throwable {
+      currentStep.createOrUpdateTransientResource(KubernetesClusterCreateStepCmd.PROJECT_ID_RESOURCE_KEY, null);
+      command = new KubernetesClusterCreateStepCmd(taskCommand, stepBackend, currentStep, clusterBackend);
+
+      command.execute();
+    }
+
+    @Test(expectedExceptions = NullPointerException.class,
+        expectedExceptionsMessageRegExp = "create-spec is not defined in TransientResource")
+    public void testMissingCreateSpec() throws Throwable {
+      currentStep.createOrUpdateTransientResource(KubernetesClusterCreateStepCmd.CREATE_SPEC_RESOURCE_KEY, null);
+      command = new KubernetesClusterCreateStepCmd(taskCommand, stepBackend, currentStep, clusterBackend);
+
+      command.execute();
+    }
   }
 }
