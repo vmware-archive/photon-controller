@@ -11,7 +11,7 @@
 
 require "spec_helper"
 
-describe "provisioning scenarios", promote: true, life_cycle: true do
+describe "provisioning scenarios", life_cycle: true do
 
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance
@@ -194,6 +194,11 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       end
 
       before(:each) do
+        stop_to_maintain @host
+        resume @host
+      end
+
+      after(:all) do
         stop_to_maintain @host
         resume @host
       end
