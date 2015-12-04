@@ -302,8 +302,6 @@ public class DeploymentWorkFlowServiceClient {
         .setContextId(LoggingUtils.getRequestId())
         .setBody(state);
 
-    OperationLatch syncOp = new OperationLatch(post);
-    dcpHost.sendRequest(post);
     Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, post, REFERRER_PATH);
     return operation.getBody(InitializeDeploymentMigrationWorkflowService.State.class).documentSelfLink;
   }
