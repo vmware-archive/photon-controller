@@ -39,7 +39,8 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactor
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
-import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpException;
+import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.zookeeper.DataDictionary;
 import com.vmware.photon.controller.resource.gen.Datastore;
@@ -184,7 +185,7 @@ public class ChairmanService implements Chairman.Iface {
       datastoreState.isImageDatastore = false;
       try {
         dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, datastoreState);
-      } catch (BadRequestException ex) {
+      } catch (DcpException | DcpRuntimeException ex) {
         logger.debug("Ignoring datastore document creation failure", ex);
       }
     }
@@ -284,7 +285,6 @@ public class ChairmanService implements Chairman.Iface {
       return response;
     }
     response.setResult(RegisterHostResultCode.OK);
-    logger.info("Registered host: {} , {}", request, response);
 
     try {
       setHostState(request.getId(), AgentState.ACTIVE,
@@ -295,6 +295,7 @@ public class ChairmanService implements Chairman.Iface {
       response.setResult(RegisterHostResultCode.SYSTEM_ERROR);
       response.setError(ex.toString());
     }
+    logger.info("Registration response: {} , {}", request, response);
     return response;
   }
 
