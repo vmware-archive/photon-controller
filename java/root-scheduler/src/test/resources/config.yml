@@ -3,9 +3,6 @@ zookeeper:
   quorum: localhost:2181
   retries:
     max_retries: 3
-healthcheck:
-  period_ms: 1000
-  timeout_ms: 5000
 logging:
   level: INFO
   console:
@@ -21,12 +18,3 @@ root:
   fast_place_response_timeout_ratio: 0.25
   fast_place_response_ratio: 0.5
   fast_place_response_min_count: 2
-leaf:
-  place_timeout_ms: 8000
-  find_timeout_ms: 10000
-  fan_out_ratio: 0.25
-  max_fan_out_count: 6
-  min_fan_out_count: 3
-  fast_place_response_timeout_ratio: 0.35
-  fast_place_response_ratio: 0.6
-  fast_place_response_min_count: 3
