@@ -13,28 +13,19 @@
 
 package com.vmware.photon.controller.chairman;
 
-import com.vmware.photon.controller.chairman.hierarchy.FlowFactory;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
-import com.vmware.photon.controller.common.thrift.ClientPool;
-import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
-import com.vmware.photon.controller.common.thrift.ClientPoolOptions;
-import com.vmware.photon.controller.common.thrift.ClientProxy;
-import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.zookeeper.DataDictionary;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
-import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.assistedinject.FactoryModuleBuilder;
 import org.apache.curator.framework.CuratorFramework;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Chairman Guice module.
@@ -53,48 +44,10 @@ public class ChairmanModule extends AbstractModule {
     bindConstant().annotatedWith(Config.Bind.class).to(config.getBind());
     bindConstant().annotatedWith(Config.RegistrationAddress.class).to(config.getRegistrationAddress());
     bindConstant().annotatedWith(Config.Port.class).to(config.getPort());
-    bind(HierarchyConfig.class).toInstance(config.getHierarchy());
     bind(BuildInfo.class).toInstance(BuildInfo.get(ChairmanModule.class));
 
-    install(new FactoryModuleBuilder().build(FlowFactory.class));
     bind(ScheduledExecutorService.class)
         .toInstance(Executors.newScheduledThreadPool(4));
-  }
-
-  @Provides
-  @Singleton
-  @RootSchedulerServerSet
-  public ServerSet getRootSchedulerServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet("root-scheduler", true);
-  }
-
-  @Provides
-  @Singleton
-  ClientPool<RootScheduler.AsyncClient> getRootSchedulerClientPool(
-      @RootSchedulerServerSet ServerSet serverSet,
-      ClientPoolFactory<RootScheduler.AsyncClient> clientPoolFactory) {
-
-    ClientPoolOptions options = new ClientPoolOptions()
-        .setMaxClients(10)
-        .setMaxWaiters(10)
-        .setTimeout(10, TimeUnit.SECONDS)
-        .setServiceName("RootScheduler");
-
-    return clientPoolFactory.create(serverSet, options);
-  }
-
-  @Provides
-  ClientProxy<RootScheduler.AsyncClient> getRootSchedulerClientProxy(
-      ClientProxyFactory<RootScheduler.AsyncClient> factory,
-      ClientPool<RootScheduler.AsyncClient> clientPool) {
-    return factory.create(clientPool);
-  }
-
-  @Provides
-  @Singleton
-  @ChairmanServerSet
-  public ServerSet getChairmanLeaderServerSet(ZookeeperServerSetFactory serverSetFactory) {
-        return serverSetFactory.createServiceServerSet("chairman", true);
   }
 
   @Provides
@@ -102,20 +55,6 @@ public class ChairmanModule extends AbstractModule {
   @HostConfigRegistry
   public DataDictionary getConfigDictionary(CuratorFramework zkClient) {
     return new DataDictionary(zkClient, Executors.newCachedThreadPool(), "hosts");
-  }
-
-  @Provides
-  @Singleton
-  @HostMissingRegistry
-  public DataDictionary getMissingDictionary(CuratorFramework zkClient) {
-    return new DataDictionary(zkClient, Executors.newCachedThreadPool(), "missing");
-  }
-
-  @Provides
-  @Singleton
-  @RolesRegistry
-  public DataDictionary getRolesDictionary(CuratorFramework zkClient) {
-    return new DataDictionary(zkClient, Executors.newCachedThreadPool(), "roles");
   }
 
   @Provides
