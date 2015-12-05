@@ -1,5 +1,3 @@
-# hierarchical or flat. default to flat
-mode: flat
 # memory or dcp. default to memory
 constraintChecker: memory
 # Refresh interval for in-memory constraint checker cache in seconds.
@@ -33,15 +31,3 @@ root:
   fast_place_response_timeout_ratio: 0.1
   fast_place_response_ratio: 0.5
   fast_place_response_min_count: 2
-leaf:
-  place_timeout_ms: 20000
-  find_timeout_ms: 60000
-  fan_out_ratio: 0.15
-  max_fan_out_count: 4
-  min_fan_out_count: 2
-  fast_place_response_timeout_ratio: 0.1
-  fast_place_response_ratio: 0.5
-  fast_place_response_min_count: 2
-healthcheck:
-  period_ms: 60000
-  timeout_ms: 60000
