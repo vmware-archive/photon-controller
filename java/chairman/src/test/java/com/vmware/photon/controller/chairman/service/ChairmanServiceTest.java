@@ -18,14 +18,9 @@ import com.vmware.photon.controller.chairman.Config;
 import com.vmware.photon.controller.chairman.gen.RegisterHostRequest;
 import com.vmware.photon.controller.chairman.gen.RegisterHostResponse;
 import com.vmware.photon.controller.chairman.gen.RegisterHostResultCode;
-import com.vmware.photon.controller.chairman.gen.ReportMissingRequest;
-import com.vmware.photon.controller.chairman.gen.ReportResurrectedRequest;
 import com.vmware.photon.controller.chairman.gen.UnregisterHostRequest;
 import com.vmware.photon.controller.chairman.gen.UnregisterHostResponse;
 import com.vmware.photon.controller.chairman.gen.UnregisterHostResultCode;
-import com.vmware.photon.controller.chairman.hierarchy.HierarchyUtils;
-import com.vmware.photon.controller.chairman.hierarchy.Host;
-import com.vmware.photon.controller.chairman.hierarchy.Scheduler;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
@@ -34,21 +29,13 @@ import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.zookeeper.DataDictionary;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.HostConfig;
+import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.DatastoreType;
+import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.photon.controller.resource.gen.NetworkType;
-import com.vmware.photon.controller.roles.gen.ChildInfo;
-import com.vmware.photon.controller.roles.gen.GetSchedulersRequest;
-import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
-import com.vmware.photon.controller.roles.gen.GetSchedulersResultCode;
-import com.vmware.photon.controller.roles.gen.SchedulerEntry;
-import com.vmware.photon.controller.roles.gen.SchedulerRole;
-import com.vmware.photon.controller.status.gen.GetStatusRequest;
-import com.vmware.photon.controller.status.gen.Status;
-import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 
-import com.google.common.collect.Lists;
 import org.apache.thrift.TSerializer;
 import org.hamcrest.Matchers;
 import org.mockito.ArgumentCaptor;
@@ -62,8 +49,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -71,12 +56,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -86,9 +69,6 @@ import java.util.concurrent.ScheduledExecutorService;
 public class ChairmanServiceTest extends PowerMockTestCase {
 
   @Mock
-  private HierarchyUtils hierarchyUtils;
-
-  @Mock
   private ScheduledExecutorService executorService;
 
   @Mock
@@ -96,9 +76,6 @@ public class ChairmanServiceTest extends PowerMockTestCase {
 
   @Mock
   private DataDictionary rolesDict;
-
-  @Mock
-  private DataDictionary missingDict;
 
   @Mock
   private DcpRestClient dcpRestClient;
@@ -114,56 +91,28 @@ public class ChairmanServiceTest extends PowerMockTestCase {
 
   private ChairmanService service;
 
-  private Set<Datastore> datastores;
+  private List<Datastore> datastores;
 
-  private Set<Network> networks;
+  private List<Network> networks;
 
-  public static RegisterHostRequest createRegReq(Set<Datastore> datastores) {
-    return createRegReq(datastores, new LinkedHashSet<>(), null);
-  }
-
-  public static RegisterHostRequest createRegReq(Set<Datastore> datastores, Set<Network> networks,
+  public static RegisterHostRequest createRegReq(List<Datastore> datastores, List<Network> networks,
                                                  Set<String> imageDatastoreIds) {
     return createRegReq("host", "DefaultAZ", datastores, networks, "192.168.0.1", 22,
                         imageDatastoreIds);
   }
 
-  public static RegisterHostRequest createRegReq(String id, String fd, Set<Datastore> datastores,
-                                                 Set<Network> networks, String addr, int port,
+  public static RegisterHostRequest createRegReq(String id, String az, List<Datastore> datastores,
+                                                 List<Network> networks, String addr, int port,
                                                  Set<String> imageDatastoreIds) {
     RegisterHostRequest request = new RegisterHostRequest();
 
     HostConfig hostConfig = new HostConfig();
     hostConfig.setAgent_id(id);
-    hostConfig.setAddress(new ServerAddress("192.168.0.1", 22));
-    hostConfig.setAvailability_zone("DefaultAZ");
-    if (!datastores.isEmpty()) {
-      ArrayList<com.vmware.photon.controller.resource.gen.Datastore> ds =
-          new ArrayList<com.vmware.photon.controller.resource.gen.Datastore>();
-      for (Datastore datastore : datastores) {
-        com.vmware.photon.controller.resource.gen.Datastore newDs =
-            new com.vmware.photon.controller.resource.gen.Datastore(datastore.getId());
-        // Use ID as the name to make it easy to test
-        newDs.setName(datastore.getId());
-        newDs.setType(datastore.getType());
-        newDs.setTags(datastore.getTags());
-        ds.add(newDs);
-      }
-      hostConfig.setDatastores(ds);
-      // use the first datastore as the image datastore
-      hostConfig.setImage_datastore_ids(imageDatastoreIds);
-    }
-    if (!networks.isEmpty()) {
-      ArrayList<com.vmware.photon.controller.resource.gen.Network> reqnetworks =
-          new ArrayList<com.vmware.photon.controller.resource.gen.Network>();
-      for (Network net : networks) {
-        com.vmware.photon.controller.resource.gen.Network network =
-            new com.vmware.photon.controller.resource.gen.Network(net.getId());
-        network.setTypes(net.getType());
-        reqnetworks.add(network);
-      }
-      hostConfig.setNetworks(reqnetworks);
-    }
+    hostConfig.setAddress(new ServerAddress(addr, port));
+    hostConfig.setAvailability_zone(az);
+    hostConfig.setDatastores(datastores);
+    hostConfig.setImage_datastore_ids(imageDatastoreIds);
+    hostConfig.setNetworks(networks);
     request.setConfig(hostConfig);
     return request;
   }
@@ -175,86 +124,9 @@ public class ChairmanServiceTest extends PowerMockTestCase {
 
   @BeforeMethod
   public void setUp() {
-    service = new ChairmanService(hierarchyUtils, configDict, missingDict, dcpRestClient, buildInfo, config);
-    this.datastores = new LinkedHashSet<>();
-    this.networks = new LinkedHashSet<>();
-  }
-
-  @Test
-  public void testGetSchedulersOk() throws Exception {
-    Host root = new Host("ROOT", new AvailabilityZone("az1"), "localhost", 1234);
-    Scheduler rootSch = new Scheduler("ROOT");
-    rootSch.setOwner(root);
-
-    HashMap<String, Scheduler> schedulers = new HashMap();
-
-    Host schedulerHost = new Host("h1", new AvailabilityZone("az1"), "localhost", 12345);
-    Scheduler leaf = new Scheduler("leaf");
-    leaf.setOwner(schedulerHost);
-
-    Host childHost = new Host("h2", new AvailabilityZone("az1"), "localhost", 123456);
-    leaf.addHost(childHost);
-    leaf.addHost(schedulerHost);
-    rootSch.addChild(leaf);
-
-    schedulers.put(rootSch.getId(), rootSch);
-    schedulers.put(leaf.getId(), leaf);
-
-    when(hierarchyUtils.readSchedulersFromZk(any())).thenReturn(schedulers);
-
-    GetSchedulersRequest request = new GetSchedulersRequest();
-    GetSchedulersResponse response = service.get_schedulers(request);
-
-    assertThat(response.getResult(), is(GetSchedulersResultCode.OK));
-    assertThat(response.getSchedulers().size(), is(schedulers.size()));
-
-    Map<String, SchedulerRole> retSch = new HashMap();
-    // Map Schedulers
-    for (SchedulerEntry entry : response.getSchedulers()) {
-      retSch.put(entry.getAgent(), entry.getRole());
-    }
-
-    // Verify the root scheduler role
-    SchedulerRole rootRole = retSch.get(root.getId());
-    assertThat(rootRole.isSetHost_children(), is(false));
-    assertThat(rootRole.getScheduler_children().size(), is(rootSch.getChildren().size()));
-    ChildInfo retLeaf = rootRole.getScheduler_children().get(0);
-    assertThat(retLeaf.getId(), is(leaf.getId()));
-    assertThat(retLeaf.getAddress(), is(schedulerHost.getAddress()));
-    assertThat(retLeaf.getPort(), is(schedulerHost.getPort()));
-
-    // Verify leaf scheduler role
-    SchedulerRole leafRole = retSch.get(schedulerHost.getId());
-    assertThat(leafRole.getHost_children().size(), is(leaf.getHosts().size()));
-    // Map children
-    List<ChildInfo> childHosts = leafRole.getHost_children();
-    Map<String, ChildInfo> children = new HashMap();
-    for (ChildInfo child : childHosts) {
-      children.put(child.getId(), child);
-    }
-    assertThat(children.size(), is(2));
-    // Verify host children addresses
-    ChildInfo retSchHost = children.get(schedulerHost.getId());
-    assertThat(retSchHost.getPort(), is(schedulerHost.getPort()));
-    assertThat(retSchHost.getAddress(), is(schedulerHost.getAddress()));
-
-    ChildInfo otherHost = children.get(childHost.getId());
-    assertThat(childHost.getPort(), is(otherHost.getPort()));
-    assertThat(childHost.getAddress(), is(otherHost.getAddress()));
-  }
-
-  @Test
-  public void testGetStatusReady() throws Exception {
-    Map<String, Host> hosts = new HashMap();
-    Host childHost = new Host("h1", new AvailabilityZone("az1"), "localhost", 123456);
-    childHost.setDirty(false);
-    childHost.setConfigured(true);
-    hosts.put(childHost.getId(), childHost);
-    when(hierarchyUtils.readHostsFromZk()).thenReturn(hosts);
-
-    GetStatusRequest request = new GetStatusRequest();
-    Status response = service.get_status(request);
-    assertThat(response.getType(), is(StatusType.READY));
+    service = new ChairmanService(configDict, dcpRestClient, buildInfo, config);
+    this.datastores = new LinkedList<>();
+    this.networks = new LinkedList<>();
   }
 
   @Test
@@ -267,12 +139,22 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     ds1.name = "ds1";
     ds1.type = "SHARED_VMFS";
     ds1.tags = new LinkedHashSet<>();
+    Datastore datastore1 = new Datastore(ds1.id);
+    datastore1.setName(ds1.name);
+    datastore1.setType(DatastoreType.SHARED_VMFS);
+    datastore1.setTags(ds1.tags);
+    datastores.add(datastore1);
 
     DatastoreService.State ds2 = new DatastoreService.State();
     ds2.id = "ds2";
     ds2.name = "ds2";
     ds2.type = "SHARED_VMFS";
     ds2.tags = new LinkedHashSet<>();
+    Datastore datastore2 = new Datastore(ds2.id);
+    datastore2.setName(ds2.name);
+    datastore2.setType(DatastoreType.SHARED_VMFS);
+    datastore2.setTags(ds2.tags);
+    datastores.add(datastore2);
 
     String dsLink1 = DatastoreServiceFactory.getDocumentLink(ds1.id);
     String dsLink2 = DatastoreServiceFactory.getDocumentLink(ds2.id);
@@ -282,13 +164,17 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     when(result.getBody(HostService.State.class)).thenReturn(hostState);
     when(dcpRestClient.get(link)).thenReturn(result);
 
-    datastores.add(new Datastore(ds1.id, DatastoreType.SHARED_VMFS));
-    datastores.add(new Datastore(ds2.id, DatastoreType.SHARED_VMFS));
-
     // Non-VM networks should get filtered out.
-    networks.add(new Network("nw1", Arrays.asList(NetworkType.VM)));
-    networks.add(new Network("nw2", Arrays.asList(NetworkType.VM, NetworkType.VMOTION)));
-    networks.add(new Network("nw3", Arrays.asList(NetworkType.MANAGEMENT, NetworkType.VMOTION)));
+    Network nw1 = new Network("nw1");
+    nw1.setTypes(Arrays.asList(NetworkType.VM));
+    networks.add(nw1);
+    Network nw2 = new Network("nw2");
+    nw2.setTypes(Arrays.asList(NetworkType.VM, NetworkType.VMOTION));
+    networks.add(nw2);
+    Network nw3 = new Network("nw3");
+    nw3.setTypes(Arrays.asList(NetworkType.MANAGEMENT, NetworkType.VMOTION));
+    networks.add(nw3);
+
     RegisterHostRequest request = createRegReq(datastores, networks, new LinkedHashSet<>(Arrays.asList("ds1", "ds2")));
     request.setId(hostId);
     request.getConfig().setAgent_id(hostId);
@@ -296,7 +182,6 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     assertThat(response.getResult(), Matchers.is(RegisterHostResultCode.OK));
 
     verify(configDict).write(hostId, serialize(request.getConfig()));
-    verify(missingDict).write(hostId, null);
 
     // Verify that patch gets called with "READY" state.
     ArgumentCaptor<String> arg1 = ArgumentCaptor.forClass(String.class);
@@ -356,7 +241,9 @@ public class ChairmanServiceTest extends PowerMockTestCase {
 
   @Test
   public void testSimpleRegistrationFail() throws Exception {
-    datastores.add(new Datastore("ds1", DatastoreType.SHARED_VMFS));
+    Datastore datastore1 = new Datastore("ds1");
+    datastore1.setType(DatastoreType.SHARED_VMFS);
+    datastores.add(datastore1);
     RegisterHostRequest request = createRegReq(datastores, networks, new LinkedHashSet<>(Arrays.asList("ds1")));
     request.setId("host1");
     request.getConfig().setAgent_id("host1");
@@ -367,64 +254,6 @@ public class ChairmanServiceTest extends PowerMockTestCase {
   }
 
   @Test
-  public void testRemoveMissingChildren() throws Throwable {
-    // Set up initial host state in cloudstore.
-    String link1 = service.getHostDocumentLink("h1");
-    String link2 = service.getHostDocumentLink("h2");
-    HostService.State hostState = new HostService.State();
-    hostState.agentState = AgentState.ACTIVE;
-    Operation result = mock(Operation.class);
-    when(result.getBody(HostService.State.class)).thenReturn(hostState);
-    when(dcpRestClient.get(link1)).thenReturn(result);
-    when(dcpRestClient.get(link2)).thenReturn(result);
-
-    List<String> hostIds = Lists.newArrayList("h1", "h2");
-    List<String> schedulerIds = Lists.newArrayList("s1", "s2");
-
-    ReportMissingRequest request = createMissingChildrenReport(hostIds, schedulerIds);
-    service.report_missing(request);
-    verify(missingDict).write(missingCapture.capture());
-
-    assertThat(missingCapture.getValue().contains("h1"), is(true));
-    assertThat(missingCapture.getValue().contains("h2"), is(true));
-    assertThat(missingCapture.getValue().contains("s1"), is(true));
-    assertThat(missingCapture.getValue().contains("s2"), is(true));
-
-    // Verify that patch gets called with "Missing" agentState.
-    ArgumentCaptor<ServiceDocument> arg = ArgumentCaptor.forClass(ServiceDocument.class);
-    verify(dcpRestClient).patch(eq(link1), arg.capture());
-    assertThat(((HostService.State) (arg.getValue())).agentState, is(AgentState.MISSING));
-    verify(dcpRestClient).patch(eq(link2), arg.capture());
-    assertThat(((HostService.State) (arg.getValue())).agentState, is(AgentState.MISSING));
-  }
-
-  @Test
-  public void testRportResurrected() throws Throwable {
-    // Set up initial host state in cloudstore.
-    String link1 = service.getHostDocumentLink("h1");
-    String link2 = service.getHostDocumentLink("h2");
-    HostService.State hostState = new HostService.State();
-    hostState.agentState = AgentState.MISSING;
-    Operation result = mock(Operation.class);
-    when(result.getBody(HostService.State.class)).thenReturn(hostState);
-    when(dcpRestClient.get(link1)).thenReturn(result);
-    when(dcpRestClient.get(link2)).thenReturn(result);
-
-    List<String> hostIds = Lists.newArrayList("h1", "h2");
-    List<String> schedulerIds = Lists.newArrayList();
-
-    ReportResurrectedRequest request = createResurrectedRequest(hostIds, schedulerIds);
-    service.report_resurrected(request);
-
-    // Verify that patch gets called with "ERROR" state.
-    ArgumentCaptor<ServiceDocument> arg = ArgumentCaptor.forClass(ServiceDocument.class);
-    verify(dcpRestClient).patch(eq(link1), arg.capture());
-    assertThat(((HostService.State) (arg.getValue())).agentState, is(AgentState.ACTIVE));
-    verify(dcpRestClient).patch(eq(link2), arg.capture());
-    assertThat(((HostService.State) (arg.getValue())).agentState, is(AgentState.ACTIVE));
-  }
-
-  @Test
   public void testUnregisterHost() throws Exception {
     UnregisterHostRequest request = new UnregisterHostRequest();
     request.setId("host1");
@@ -432,7 +261,6 @@ public class ChairmanServiceTest extends PowerMockTestCase {
 
     assertThat(response.getResult(), Matchers.is(UnregisterHostResultCode.OK));
     verify(configDict).write("host1", null);
-    verify(missingDict).write("host1", null);
   }
 
   @Test
@@ -443,37 +271,5 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     doThrow(new Exception()).when(configDict).write("host1", null);
     UnregisterHostResponse response = service.unregister_host(request);
     assertThat(response.getResult(), is(UnregisterHostResultCode.NOT_IN_MAJORITY));
-  }
-
-  private ReportMissingRequest createMissingChildrenReport(List<String> missingHostIds,
-                                                           List<String> missingSchedulerIds) {
-    ReportMissingRequest request = new ReportMissingRequest();
-    request.setScheduler_id("reporter");
-
-    for (String hostId : missingHostIds) {
-      request.addToHosts(hostId);
-    }
-
-    for (String schedulerId : missingSchedulerIds) {
-      request.addToSchedulers(schedulerId);
-    }
-
-    return request;
-  }
-
-  private ReportResurrectedRequest createResurrectedRequest(List<String> resurrectedHostIds,
-                                                            List<String> resurrectedSchedulerIds) {
-    ReportResurrectedRequest request = new ReportResurrectedRequest();
-    request.setScheduler_id("reporter");
-
-    for (String hostId : resurrectedHostIds) {
-      request.addToHosts(hostId);
-    }
-
-    for (String schedulerId : resurrectedSchedulerIds) {
-      request.addToSchedulers(schedulerId);
-    }
-
-    return request;
   }
 }
