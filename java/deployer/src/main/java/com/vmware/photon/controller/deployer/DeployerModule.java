@@ -13,12 +13,7 @@
 
 package com.vmware.photon.controller.deployer;
 
-import com.vmware.photon.controller.chairman.HierarchyConfig;
 import com.vmware.photon.controller.chairman.HostConfigRegistry;
-import com.vmware.photon.controller.chairman.HostMissingRegistry;
-import com.vmware.photon.controller.chairman.RolesRegistry;
-import com.vmware.photon.controller.chairman.RootSchedulerServerSet;
-import com.vmware.photon.controller.chairman.hierarchy.FlowFactory;
 import com.vmware.photon.controller.client.SharedSecret;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
@@ -26,11 +21,6 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
-import com.vmware.photon.controller.common.thrift.ClientPool;
-import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
-import com.vmware.photon.controller.common.thrift.ClientPoolOptions;
-import com.vmware.photon.controller.common.thrift.ClientProxy;
-import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.zookeeper.DataDictionary;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
@@ -60,7 +50,6 @@ import com.vmware.photon.controller.deployer.service.client.DeploymentWorkflowSe
 import com.vmware.photon.controller.deployer.service.client.DeprovisionHostWorkflowServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.HostServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.ValidateHostTaskServiceClientFactory;
-import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -126,7 +115,6 @@ public class DeployerModule extends AbstractModule {
     bind(DcpConfig.class).toInstance(deployerConfig.getDcp());
     bind(DeployerContext.class).toInstance(deployerConfig.getDeployerContext());
     bind(ContainersConfig.class).toInstance(deployerConfig.getContainersConfig());
-    bind(HierarchyConfig.class).toInstance(deployerConfig.getHierarchy());
     bind(BuildInfo.class).toInstance(BuildInfo.get(DeployerModule.class));
     deployerConfig.getDeployerContext().setZookeeperQuorum(deployerConfig.getZookeeper().getQuorum());
 
@@ -170,8 +158,6 @@ public class DeployerModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(HostManagementVmAddressValidator.class, HostManagementVmAddressValidator.class)
         .build(HostManagementVmAddressValidatorFactory.class));
-
-    install(new FactoryModuleBuilder().build(FlowFactory.class));
 
     bind(ScheduledExecutorService.class)
         .toInstance(Executors.newScheduledThreadPool(4));
@@ -324,52 +310,9 @@ public class DeployerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  @HostMissingRegistry
-  public DataDictionary getMissingDictionary(CuratorFramework zkClient) {
-    return new DataDictionary(zkClient, Executors.newCachedThreadPool(), "missing");
-  }
-
-  @Provides
-  @Singleton
-  @RolesRegistry
-  public DataDictionary getRolesDictionary(CuratorFramework zkClient) {
-    return new DataDictionary(zkClient, Executors.newCachedThreadPool(), "roles");
-  }
-
-  @Provides
-  @Singleton
   public DcpRestClient getDcpRestClient(@CloudStoreServerSet ServerSet serverSet) {
     DcpRestClient client = new DcpRestClient(serverSet, Executors.newFixedThreadPool(4));
     client.start();
     return client;
-  }
-
-  @Provides
-  @Singleton
-  @RootSchedulerServerSet
-  public ServerSet getRootSchedulerServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet("root-scheduler", true);
-  }
-
-  @Provides
-  @Singleton
-  ClientPool<RootScheduler.AsyncClient> getRootSchedulerClientPool(
-      @RootSchedulerServerSet ServerSet serverSet,
-      ClientPoolFactory<RootScheduler.AsyncClient> clientPoolFactory) {
-
-    ClientPoolOptions options = new ClientPoolOptions()
-        .setMaxClients(10)
-        .setMaxWaiters(10)
-        .setTimeout(10, TimeUnit.SECONDS)
-        .setServiceName("RootScheduler");
-
-    return clientPoolFactory.create(serverSet, options);
-  }
-
-  @Provides
-  ClientProxy<RootScheduler.AsyncClient> getRootSchedulerClientProxy(
-      ClientProxyFactory<RootScheduler.AsyncClient> factory,
-      ClientPool<RootScheduler.AsyncClient> clientPool) {
-    return factory.create(clientPool);
   }
 }
