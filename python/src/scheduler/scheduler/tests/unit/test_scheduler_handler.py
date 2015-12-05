@@ -63,23 +63,6 @@ class SchedulerHandlerTestCase(unittest.TestCase):
             ValueError, handler.configure,
             [SchedulerRole("scheduler-id", "parent-id", ["foo"], ["bar"])])
 
-    @patch("scheduler.scheduler_handler.BranchScheduler")
-    def test_configure_create_branch_scheduler(self, branch_scheduler_cls):
-        branch_scheduler = MagicMock()
-        branch_scheduler_cls.return_value = branch_scheduler
-
-        handler = SchedulerHandler()
-        assert_that(handler._schedulers, is_(empty()))
-
-        handler.configure(
-            [SchedulerRole("branch-scheduler", "parent-id",
-                           scheduler_children=[ChildInfo(id="foo")])])
-        assert_that(handler._schedulers, has_length(1))
-
-        scheduler = handler._schedulers["branch-scheduler"]
-        assert_that(scheduler.id, is_(branch_scheduler.id))
-        scheduler.configure.assert_called_once_with([ChildInfo(id="foo")])
-
     @patch("scheduler.scheduler_handler.LeafScheduler")
     def test_configure_create_leaf_scheduler(self, leaf_scheduler_cls):
         leaf_scheduler = MagicMock()
@@ -213,7 +196,7 @@ class SchedulerHandlerTestCase(unittest.TestCase):
         # Configure scheduler handler with leaf scheduler
         handler.configure(
             [SchedulerRole("foo", "parent-id",
-                           scheduler_children=[ChildInfo(id="child")])])
+                           host_children=[ChildInfo(id="child")])])
         assert_that(handler._schedulers, has_length(1))
 
         concurrency = 5
