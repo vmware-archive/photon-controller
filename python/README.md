@@ -145,13 +145,6 @@ provided and points to an extracted Zookeeper installation:
 ZOOKEEPER_PATH=/usr/local/Cellar/zookeeper/3.4.5/libexec make test
 ```
 
-ZOOKEEPER\_PATH environment variable must be set in order to run
-integration tests agaist chairman and root scheduler:
-
-```bash
-ZOOKEEPER_PATH=/usr/local/Cellar/zookeeper/3.4.5/libexec make test SCHEDULER_INTEGRATION=1
-```
-
 ### Run agent stress test
 
 There is a stress test that creates multiple VMs concurrently. To run it, do:
