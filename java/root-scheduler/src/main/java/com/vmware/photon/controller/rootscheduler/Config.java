@@ -40,8 +40,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  */
 @SuppressWarnings("UnusedDeclaration")
 public class Config {
-  private String mode;
-
   private String constraintChecker;
 
   // Refresh interval for in-memory constraint checker cache in seconds.
@@ -80,19 +78,9 @@ public class Config {
 
   @Valid
   @NotNull
-  @JsonProperty("healthcheck")
-  private HealthCheckConfig healthCheck = new HealthCheckConfig();
-
-  @Valid
-  @NotNull
   private SchedulerConfig root = new SchedulerConfig();
 
-  @Valid
-  @NotNull
-  private SchedulerConfig leaf = new SchedulerConfig();
-
   private PlaceParams rootPlaceParams;
-  private PlaceParams leafPlaceParams;
 
   @Valid
   @NotNull
@@ -103,10 +91,6 @@ public class Config {
     } catch (UnknownHostException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  public String getMode() {
-    return mode;
   }
 
   public String getConstraintChecker() {
@@ -137,16 +121,8 @@ public class Config {
     return zookeeper;
   }
 
-  public HealthCheckConfig getHealthCheck() {
-    return healthCheck;
-  }
-
   public SchedulerConfig getRoot() {
     return root;
-  }
-
-  public SchedulerConfig getLeaf() {
-    return leaf;
   }
 
   /**
@@ -189,20 +165,5 @@ public class Config {
 
   public PlaceParams getRootPlaceParams() {
     return rootPlaceParams;
-  }
-
-  public void initLeafPlaceParams() {
-    leafPlaceParams = new PlaceParams();
-    leafPlaceParams.setTimeout(leaf.getPlaceTimeoutMs());
-    leafPlaceParams.setFanoutRatio(leaf.getFanoutRatio());
-    leafPlaceParams.setMinFanoutCount(leaf.getMinFanoutCount());
-    leafPlaceParams.setMaxFanoutCount(leaf.getMaxFanoutCount());
-    leafPlaceParams.setFastPlaceResponseRatio(leaf.getFastPlaceResponseRatio());
-    leafPlaceParams.setFastPlaceResponseTimeoutRatio(leaf.getFastPlaceResponseTimeoutRatio());
-    leafPlaceParams.setFastPlaceResponseMinCount(leaf.getFastPlaceResponseMinCount());
-  }
-
-  public PlaceParams getLeafPlaceParams() {
-    return leafPlaceParams;
   }
 }
