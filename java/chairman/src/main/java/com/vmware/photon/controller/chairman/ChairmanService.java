@@ -11,29 +11,20 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.chairman.service;
+package com.vmware.photon.controller.chairman;
 
 import com.vmware.photon.controller.api.AgentState;
-import com.vmware.photon.controller.chairman.Config;
-import com.vmware.photon.controller.chairman.HostConfigRegistry;
-import com.vmware.photon.controller.chairman.HostMissingRegistry;
 import com.vmware.photon.controller.chairman.gen.Chairman;
 import com.vmware.photon.controller.chairman.gen.RegisterHostRequest;
 import com.vmware.photon.controller.chairman.gen.RegisterHostResponse;
 import com.vmware.photon.controller.chairman.gen.RegisterHostResultCode;
 import com.vmware.photon.controller.chairman.gen.ReportMissingRequest;
 import com.vmware.photon.controller.chairman.gen.ReportMissingResponse;
-import com.vmware.photon.controller.chairman.gen.ReportMissingResultCode;
 import com.vmware.photon.controller.chairman.gen.ReportResurrectedRequest;
 import com.vmware.photon.controller.chairman.gen.ReportResurrectedResponse;
-import com.vmware.photon.controller.chairman.gen.ReportResurrectedResultCode;
 import com.vmware.photon.controller.chairman.gen.UnregisterHostRequest;
 import com.vmware.photon.controller.chairman.gen.UnregisterHostResponse;
 import com.vmware.photon.controller.chairman.gen.UnregisterHostResultCode;
-import com.vmware.photon.controller.chairman.hierarchy.Hierarchy;
-import com.vmware.photon.controller.chairman.hierarchy.HierarchyUtils;
-import com.vmware.photon.controller.chairman.hierarchy.Host;
-import com.vmware.photon.controller.chairman.hierarchy.Scheduler;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
@@ -46,12 +37,8 @@ import com.vmware.photon.controller.common.zookeeper.DataDictionary;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.photon.controller.resource.gen.NetworkType;
-import com.vmware.photon.controller.roles.gen.ChildInfo;
 import com.vmware.photon.controller.roles.gen.GetSchedulersRequest;
 import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
-import com.vmware.photon.controller.roles.gen.GetSchedulersResultCode;
-import com.vmware.photon.controller.roles.gen.SchedulerEntry;
-import com.vmware.photon.controller.roles.gen.SchedulerRole;
 import com.vmware.photon.controller.status.gen.GetStatusRequest;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
@@ -68,7 +55,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 /**
  * ChairmanService implements all methods required by Chairman thrift service definition.
@@ -80,24 +66,18 @@ import java.util.Map;
 public class ChairmanService implements Chairman.Iface {
 
   private static final Logger logger = LoggerFactory.getLogger(ChairmanService.class);
-  private final HierarchyUtils hierarchyUtils;
   private final DataDictionary configDictionary;
-  private final DataDictionary missingDictionary;
   private final DcpRestClient dcpRestClient;
   private final BuildInfo buildInfo;
   private final Config config;
   private TSerializer serializer = new TSerializer();
 
   @Inject
-  public ChairmanService(HierarchyUtils hierarchyUtils,
-                         @HostConfigRegistry DataDictionary configDictionary,
-                         @HostMissingRegistry DataDictionary missingDictionary,
+  public ChairmanService(@HostConfigRegistry DataDictionary configDictionary,
                          DcpRestClient dcpRestClient,
                          BuildInfo buildInfo,
                          Config config) {
-    this.hierarchyUtils = hierarchyUtils;
     this.configDictionary = configDictionary;
-    this.missingDictionary = missingDictionary;
     this.dcpRestClient = dcpRestClient;
     this.buildInfo = buildInfo;
     this.config = config;
@@ -105,42 +85,7 @@ public class ChairmanService implements Chairman.Iface {
 
   @Override
   public GetSchedulersResponse get_schedulers(GetSchedulersRequest request) throws TException {
-    GetSchedulersResponse response = new GetSchedulersResponse();
-    Map<String, Host> hosts = hierarchyUtils.readHostsFromZk();
-    for (Scheduler scheduler : hierarchyUtils.readSchedulersFromZk(hosts).values()) {
-      SchedulerRole role = new SchedulerRole(scheduler.getId());
-
-      if (scheduler.getParent() != null) {
-        role.setParent_id(scheduler.getParent().getId());
-      } else if (!scheduler.isRootScheduler()) {
-        // Parent won't be set for leaf schedulers if there is no active root
-        // scheduler. We explicitly set the parent here since we know who that
-        // parent is.
-        role.setParent_id(Hierarchy.ROOT_SCHEDULER_ID);
-      }
-      // Add child hosts
-      for (Host host : scheduler.getHosts().values()) {
-          ChildInfo child = new ChildInfo(host.getId(), host.getAddress(), host.getPort());
-          role.addToHost_children(child);
-      }
-      // Add child leaves
-      for (Scheduler sch : scheduler.getChildren().values()) {
-          Host host = sch.getOwner();
-          ChildInfo child = new ChildInfo(sch.getId(), host.getAddress(), host.getPort());
-          role.addToScheduler_children(child);
-      }
-
-      SchedulerEntry entry = new SchedulerEntry();
-      entry.setRole(role);
-      if (scheduler.getOwner() != null) {
-        entry.setAgent(scheduler.getOwner().getId());
-      }
-
-      response.addToSchedulers(entry);
-    }
-    response.setResult(GetSchedulersResultCode.OK);
-    logger.info("Returning in-memory hierarchy {}", response);
-    return response;
+    return new GetSchedulersResponse();
   }
 
   @Override
@@ -271,9 +216,7 @@ public class ChairmanService implements Chairman.Iface {
       logger.info("Updated {} with new state: {}", link, Utils.toJson(hostState));
     } catch (Throwable ex) {
       logger.warn("Failed to update {} with state: {}", link, Utils.toJson(hostState), ex);
-      if (!config.getIgnoreCloudStoreErrors()) {
-        throw ex;
-      }
+      throw ex;
     }
   }
 
@@ -286,8 +229,6 @@ public class ChairmanService implements Chairman.Iface {
     serializedHostConfig = serializer.serialize(request.getConfig());
     try {
       configDictionary.write(request.getId(), serializedHostConfig);
-      // Delete the host id from /missing if it exists
-      missingDictionary.write(request.getId(), null);
     } catch (Exception e) {
       logger.error("Failed to register {}", request, e);
       response.setResult(RegisterHostResultCode.NOT_IN_MAJORITY);
@@ -311,75 +252,13 @@ public class ChairmanService implements Chairman.Iface {
   @Override
   public ReportResurrectedResponse report_resurrected(ReportResurrectedRequest request) throws TException {
     logger.info("Received resurrected children report: {}", request);
-    ReportResurrectedResponse response = new ReportResurrectedResponse();
-
-    Map<String, byte[]> changeSet = new HashMap();
-
-    if (request.isSetHosts()) {
-      for (String resurrectedHost : request.getHosts()) {
-        changeSet.put(resurrectedHost, null);
-      }
-    }
-
-    if (request.isSetSchedulers()) {
-      for (String resurrectedScheduler : request.getSchedulers()) {
-        changeSet.put(resurrectedScheduler, null);
-      }
-    }
-
-    try {
-      missingDictionary.write(changeSet);
-    } catch (Exception e) {
-      logger.error("Failed to remove resurrected children {} from zk, dropping request from scheduler {}",
-              changeSet.keySet(), request.getScheduler_id(), e);
-      response.setResult(ReportResurrectedResultCode.NOT_IN_MAJORITY);
-      return response;
-    }
-
-    response.setResult(ReportResurrectedResultCode.OK);
-    try {
-      for (String hostId : changeSet.keySet()) {
-        setHostState(hostId, AgentState.ACTIVE, null, null, null);
-      }
-    } catch (Throwable ex) {
-      response.setResult(ReportResurrectedResultCode.SYSTEM_ERROR);
-      response.setError(ex.toString());
-    }
-    return response;
+    return new ReportResurrectedResponse();
   }
 
   @Override
   public ReportMissingResponse report_missing(ReportMissingRequest request) throws TException {
     logger.info("Received missing children report: {}", request);
-    ReportMissingResponse response = new ReportMissingResponse();
-    List<String> missingIds = new ArrayList();
-
-    if (request.isSetHosts()) {
-      missingIds.addAll(request.getHosts());
-    }
-    if (request.isSetSchedulers()) {
-      missingIds.addAll(request.getSchedulers());
-    }
-
-    try {
-      missingDictionary.write(missingIds);
-    } catch (Exception e) {
-      logger.error("Failed to write to zk, dropping missing update for {} from scheduler {}",
-              missingIds, request.getScheduler_id(), e);
-      response.setResult(ReportMissingResultCode.NOT_IN_MAJORITY);
-      return response;
-    }
-
-    response.setResult(ReportMissingResultCode.OK);
-    try {
-      for (String hostId : missingIds) {
-        setHostState(hostId, AgentState.MISSING, null, null, null);
-      }
-    } catch (Throwable ex) {
-      response.setResult(ReportMissingResultCode.SYSTEM_ERROR);
-      response.setError(ex.toString());
-    }
-    return response;
+    return new ReportMissingResponse();
   }
 
   @Override
@@ -390,8 +269,6 @@ public class ChairmanService implements Chairman.Iface {
     try {
       // Delete the host id from /hosts
       configDictionary.write(request.getId(), null);
-      // Delete the host id from /missing if it exists for unregister hosts
-      missingDictionary.write(request.getId(), null);
     } catch (Exception e) {
       logger.error("Failed to unregister {}", request, e);
       response.setResult(UnregisterHostResultCode.NOT_IN_MAJORITY);
