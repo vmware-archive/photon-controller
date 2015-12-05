@@ -24,7 +24,6 @@ from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import PlaceResponse
 from gen.scheduler.ttypes import PlaceResultCode
 from scheduler.base_scheduler import InvalidScheduler
-from scheduler.branch_scheduler import BranchScheduler
 from scheduler.leaf_scheduler import LeafScheduler
 
 
@@ -58,12 +57,6 @@ class SchedulerHandler(Scheduler.Iface):
                                                        enable_health_checker,
                                                        self.ut_ratio)
                     scheduler.configure(role.host_children)
-                elif role.scheduler_children:
-                    # Branch Scheduler
-                    scheduler = self._create_scheduler(
-                        role.id, BranchScheduler, enable_health_checker,
-                        self.ut_ratio)
-                    scheduler.configure(role.scheduler_children)
                 else:
                     raise ValueError("scheduler without children")
 
@@ -133,7 +126,7 @@ class SchedulerHandler(Scheduler.Iface):
         """Returns a scheduler for the given id.
 
         :type scheduler_id: str
-        :rtype: LeafScheduler or BranchScheduler
+        :rtype: LeafScheduler
         :raise: InvalidScheduler
         """
         if scheduler_id is None:
@@ -149,7 +142,7 @@ class SchedulerHandler(Scheduler.Iface):
         :type scheduler_id: str
         :type scheduler_type: class
         :type enable_health_checker: bool
-        :rtype: BranchScheduler or LeafScheduler
+        :rtype: LeafScheduler
         """
         return scheduler_type(scheduler_id, ut_ratio,
                               enable_health_checker)
