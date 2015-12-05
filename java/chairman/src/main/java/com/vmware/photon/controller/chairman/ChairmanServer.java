@@ -14,8 +14,6 @@
 package com.vmware.photon.controller.chairman;
 
 import com.vmware.photon.controller.chairman.gen.Chairman;
-import com.vmware.photon.controller.chairman.hierarchy.HierarchyManager;
-import com.vmware.photon.controller.chairman.service.ChairmanService;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
@@ -56,7 +54,6 @@ public class ChairmanServer {
   private final int port;
   private TServer server;
   private ServiceNode serviceNode;
-  private HierarchyManager manager;
 
   @Inject
   public ChairmanServer(ServiceNodeFactory serviceNodeFactory,
@@ -67,8 +64,7 @@ public class ChairmanServer {
                         BuildInfo buildInfo,
                         @Config.Bind String bind,
                         @Config.RegistrationAddress String registrationAddress,
-                        @Config.Port int port,
-                        HierarchyManager manager) {
+                        @Config.Port int port) {
     this.serviceNodeFactory = serviceNodeFactory;
     this.transportFactory = transportFactory;
     this.protocolFactory = protocolFactory;
@@ -78,7 +74,6 @@ public class ChairmanServer {
     this.bind = bind;
     this.registrationAddress = registrationAddress;
     this.port = port;
-    this.manager = manager;
   }
 
   public void serve() throws TTransportException, IOException {
@@ -109,7 +104,7 @@ public class ChairmanServer {
         transport.getServerSocket().getLocalPort());
     serviceNode = serviceNodeFactory.createLeader("chairman", registrationSocketAddress);
 
-    ServiceNodeUtils.joinService(serviceNode, retryIntervalMsec, manager);
+    ServiceNodeUtils.joinService(serviceNode, retryIntervalMsec);
 
     logger.info("Starting chairman ({})", buildInfo);
     logger.info("Listening on: {}", bindSocketAddress);
