@@ -231,5 +231,7 @@ public class DeploymentService extends StatefulService {
      * This value represents the number of vibs still uploading.
      */
     public Long vibsUploading;
+
+    public Map<Integer, String> zookeeperIdToIpMap;
   }
 }

@@ -564,8 +564,6 @@ public class BuildRuntimeConfigurationTaskServiceTest {
         List<ZookeeperServer> serverList = new Gson().fromJson(servers, listType);
         assertThat(serverList.size(), is(3));
         assertThat(serverList.get(0).getZookeeperInstance().startsWith("server.1"), is(true));
-        assertThat(containerService.dynamicParameters.containsKey(BuildRuntimeConfigurationTaskService
-            .ENV_ZOOKEEPER_STANDALONE), is(false));
       }
     }
 

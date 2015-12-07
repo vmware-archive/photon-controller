@@ -369,7 +369,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       case CloudStore:
       case Zookeeper:
         scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-            Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
+            deploymentState, Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
         break;
 
       case ManagementApi:
@@ -384,6 +384,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
               try {
                 containerState.dynamicParameters.put(ENV_ESX_HOST, op.getBody(HostService.State.class).hostAddress);
                 scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
+                    deploymentState,
                     (deploymentState.oAuthEnabled && currentState.isNewDeployment) ?
                         Arrays.asList(ContainersConfig.ContainerType.Zookeeper,
                             ContainersConfig.ContainerType.Lightwave) :
@@ -401,12 +402,12 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
             Arrays.asList(ContainersConfig.ContainerType.Zookeeper, ContainersConfig.ContainerType.LoadBalancer) :
             Collections.singletonList(ContainersConfig.ContainerType.Zookeeper);
         scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-            containerTypes);
+            deploymentState, containerTypes);
         break;
 
       case LoadBalancer:
         scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-            Collections.singletonList(ContainersConfig.ContainerType.ManagementApi));
+            deploymentState, Collections.singletonList(ContainersConfig.ContainerType.ManagementApi));
         break;
 
       case Lightwave:
@@ -424,7 +425,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
               }
 
               try {
-                patchContainerWithDynamicParameters(currentState, containerState);
+                patchContainerWithDynamicParametersAndPatchDeployment(currentState, containerState, deploymentState);
               } catch (Throwable t) {
                 failTask(t);
               }
@@ -435,7 +436,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
       default:
         ServiceUtils.logInfo(this, "No runtime environment needs to be generated for: ", containerType);
-        patchContainerWithDynamicParameters(currentState, containerState);
+        patchContainerWithDynamicParametersAndPatchDeployment(currentState, containerState, deploymentState);
         break;
     }
   }
@@ -455,6 +456,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       final String vmIpAddress,
       final ContainerTemplateService.State containerTemplateState,
       final ContainerService.State containerState,
+      final DeploymentService.State deploymentState,
       List<ContainersConfig.ContainerType> containerTypeList) {
     final AtomicInteger pendingRequests = new AtomicInteger(containerTypeList.size());
     final Map<ContainersConfig.ContainerType, List<String>> response = new ConcurrentHashMap<>();
@@ -467,10 +469,10 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
             if (0 == pendingRequests.decrementAndGet()) {
               for (Map.Entry<ContainersConfig.ContainerType, List<String>> entry : response.entrySet()) {
-                buildRuntimeEnvironmentVars(vmIpAddress, containerState, containerTemplateState, entry.getValue(), entry
-                    .getKey());
+                buildRuntimeEnvironmentVars(vmIpAddress, containerState, deploymentState, containerTemplateState,
+                    entry.getValue(), entry.getKey());
               }
-              patchContainerWithDynamicParameters(currentState, containerState);
+              patchContainerWithDynamicParametersAndPatchDeployment(currentState, containerState, deploymentState);
             }
           }
 
@@ -636,6 +638,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   private void buildRuntimeEnvironmentVars(
       final String vmIpAddress,
       final ContainerService.State containerState,
+      final DeploymentService.State deploymentState,
       final ContainerTemplateService.State containerTemplateState,
       List<String> ipList,
       ContainersConfig.ContainerType containerTypeForIpList) {
@@ -688,13 +691,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         // in same order
         Collections.sort(ipList);
 
-        Pair<Integer, List<ZookeeperServer>> result = generateZookeeperQuorumList(ipList, vmIpAddress);
-
-        containerState.dynamicParameters.put(ENV_ZOOKEEPER_MY_ID, result.getFirst().toString());
-        containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM, new Gson().toJson(result.getSecond()));
-        if (ipList.size() == 1) {
-          containerState.dynamicParameters.put(ENV_ZOOKEEPER_STANDALONE, Boolean.toString(true));
-        }
+        getOrCreateZookeeperQuorumList(containerState, deploymentState, ipList, vmIpAddress);
         break;
       case Lightwave:
         break;
@@ -703,13 +700,29 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     }
   }
 
+  private void getOrCreateZookeeperQuorumList(ContainerService.State containerState,
+                                              DeploymentService.State deploymentState,
+                                              List<String> ipList, String vmIpAddress) {
+
+    String myId = null;
+    String zookeeperServers = null;
+    Pair<Integer, List<ZookeeperServer>> result = null;
+    // New deployment or no management host on this deployment
+    result = generateZookeeperQuorumList(ipList, vmIpAddress, deploymentState);
+    myId = result.getFirst().toString();
+    zookeeperServers = new Gson().toJson(result.getSecond());
+    containerState.dynamicParameters.put(ENV_ZOOKEEPER_MY_ID, myId);
+    containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM, zookeeperServers);
+    containerState.dynamicParameters.put(ENV_ZOOKEEPER_STANDALONE, Boolean.toString(false));
+  }
+
   /**
    * This method creates a docker container by submitting a future task to
    * the executor service for the DCP host. On successful completion, the
    * service is transitioned to the FINISHED state.
    */
-  private void patchContainerWithDynamicParameters(final State currentState, final ContainerService
-      .State containerState) {
+  private void patchContainerWithDynamicParametersAndPatchDeployment(final State currentState, final ContainerService
+      .State containerState, DeploymentService.State deploymentService) {
     final Service service = this;
 
     Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
@@ -720,8 +733,25 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           return;
         }
 
-        State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-        TaskUtils.sendSelfPatch(service, patchState);
+        DeploymentService.State patchState = new DeploymentService.State();
+        patchState.zookeeperIdToIpMap = deploymentService.zookeeperIdToIpMap;
+
+        sendRequest(
+            HostUtils.getCloudStoreHelper(BuildRuntimeConfigurationTaskService.this)
+                .createPatch(deploymentService.documentSelfLink)
+                .setBody(patchState)
+                .setCompletion(
+                    (completedOp, failure) -> {
+                      if (failure != null) {
+                        ServiceUtils.logSevere(BuildRuntimeConfigurationTaskService.this, failure);
+                        failTask(failure);
+                        return;
+                      }
+
+                      State selfPatchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+                      TaskUtils.sendSelfPatch(service, selfPatchState);
+                    }
+                ));
       }
     };
 
@@ -758,22 +788,36 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     return serverList;
   }
 
-  private Pair<Integer, List<ZookeeperServer>> generateZookeeperQuorumList(
-      List<String> zookeeperReplicas,
-      String myIp) {
+  private Pair<Integer, List<ZookeeperServer>> generateZookeeperQuorumList(List<String> zookeeperReplicas,
+      String myIp, DeploymentService.State deploymentState) {
     int myId = 1;
 
     //'server.1=zookeeper1:2888:3888', 'server.2=zookeeper2:2888:3888',
     List<ZookeeperServer> quorumConfig = new ArrayList<>();
+    Map<Integer, String> finalMap = deploymentState.zookeeperIdToIpMap;
+    if (finalMap == null) {
+      finalMap = new HashMap<>();
+    }
+
     boolean matchFound = false;
     for (int i = 0; i < zookeeperReplicas.size(); i++) {
       String replicaIp = zookeeperReplicas.get(i).trim();
+      int idx = i + 1;
       if (replicaIp.equals(myIp)) {
-        myId = i + 1;
+        if (deploymentState.zookeeperIdToIpMap == null || deploymentState.zookeeperIdToIpMap.isEmpty()) {
+          myId = idx;
+        } else {
+          if (!deploymentState.zookeeperIdToIpMap.containsKey(idx)) {
+            myId = idx;
+          }
+        }
         matchFound = true;
       }
 
-      quorumConfig.add(new ZookeeperServer(String.format("server.%s=%s:2888:3888", i + 1, replicaIp)));
+      if (!finalMap.containsKey(idx)) {
+        finalMap.put(idx, replicaIp);
+      }
+      quorumConfig.add(new ZookeeperServer(String.format("server.%s=%s:2888:3888", idx, replicaIp)));
     }
 
     if (!matchFound) {
@@ -782,8 +826,11 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     }
 
     ServiceUtils.logInfo(this, "Generated Zookeeper(%s) Quorum: %s", myId, quorumConfig.toString());
+    deploymentState.zookeeperIdToIpMap = finalMap;
+
     return new Pair<Integer, List<ZookeeperServer>>(myId, quorumConfig);
   }
+
 
   /**
    * This method builds a state object which can be used to submit a stage
