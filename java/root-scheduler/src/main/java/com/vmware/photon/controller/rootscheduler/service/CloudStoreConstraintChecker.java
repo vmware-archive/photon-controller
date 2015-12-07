@@ -31,6 +31,7 @@ import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -139,6 +140,12 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
         Operation completedOp = dcpRestClient.query(queryTask);
         ServiceDocumentQueryResult queryResult = completedOp.getBody(QueryTask.class).results;
         Set<String> documentLinks = new HashSet<>(numCandidates);
+
+        // N.B. This is a temporary workaround until we can pick up Xenon 0.3.1.
+        if (queryResult.nextPageLink != null) {
+          queryResult.nextPageLink = Base64.getEncoder().encodeToString(queryResult.nextPageLink.getBytes());
+        }
+
         while (queryResult.nextPageLink != null && documentLinks.size() < numCandidates) {
           queryResult = dcpRestClient.queryDocumentPage(queryResult.nextPageLink);
           documentLinks.addAll(queryResult.documentLinks);
@@ -173,6 +180,12 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
       Operation completedOp = dcpRestClient.query(queryTask);
       ServiceDocumentQueryResult queryResult = completedOp.getBody(QueryTask.class).results;
       Set<String> documentLinks = new HashSet<>();
+
+      // N.B. This is a temporary workaround until we can pick up Xenon 0.3.1.
+      if (queryResult.nextPageLink != null) {
+        queryResult.nextPageLink = Base64.getEncoder().encodeToString(queryResult.nextPageLink.getBytes());
+      }
+
       while (queryResult.nextPageLink != null) {
         queryResult = dcpRestClient.queryDocumentPage(queryResult.nextPageLink);
         documentLinks.addAll(queryResult.documentLinks);
