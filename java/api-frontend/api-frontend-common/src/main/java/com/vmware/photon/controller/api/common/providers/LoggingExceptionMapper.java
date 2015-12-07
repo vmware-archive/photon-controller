@@ -29,7 +29,7 @@ import javax.ws.rs.ext.Provider;
 /**
  * The logging exception exception mapper is designed to catch and process all exceptions that
  * occur during API operations but that are unexpected and therefore not handled by the specific
- * WebApplicationExceptionMapper or InvalidEntityExceptionMapper or ConstraintViolationExceptionMapper.
+ * WebApplicationExceptionMapper or ConstraintViolationExceptionMapper.
  * IF exceptions hit here they should be analyzed and a specific mapper should be written to deal with
  * the exception correctly.
  * By they time they get this far, all we return is a generic 500 server error.

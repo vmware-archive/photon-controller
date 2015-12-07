@@ -15,7 +15,6 @@ package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.common.providers.ConstraintViolationExceptionMapper;
 import com.vmware.photon.controller.api.common.providers.ExternalExceptionMapper;
-import com.vmware.photon.controller.api.common.providers.InvalidEntityExceptionMapper;
 import com.vmware.photon.controller.api.common.providers.JsonProcessingExceptionMapper;
 import com.vmware.photon.controller.api.common.providers.LoggingExceptionMapper;
 import com.vmware.photon.controller.api.common.providers.WebApplicationExceptionMapper;
@@ -95,7 +94,6 @@ public abstract class ResourceTest extends PowerMockTestCase {
 
     addProvider(new LoggingExceptionMapper());
     addProvider(new WebApplicationExceptionMapper());
-    addProvider(new InvalidEntityExceptionMapper());
     addProvider(new ConstraintViolationExceptionMapper());
     addProvider(new ExternalExceptionMapper());
     addProvider(new JsonProcessingExceptionMapper());
