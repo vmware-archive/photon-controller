@@ -690,6 +690,12 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
         Pair<Integer, List<ZookeeperServer>> result = generateZookeeperQuorumList(ipList, vmIpAddress);
 
+        // Zookeeper 3.5.1 fails if this file is empty. It will fail on installer
+        String myId = result.getFirst().toString();
+        if (myId == null || myId.trim().length() == 0) {
+          myId = "1";
+        }
+
         containerState.dynamicParameters.put(ENV_ZOOKEEPER_MY_ID, result.getFirst().toString());
         containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM, new Gson().toJson(result.getSecond()));
         if (ipList.size() == 1) {
