@@ -326,16 +326,24 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
               client.getDeploymentApi().pauseSystemAsync(sourceDeploymentId, new FutureCallback<Task>() {
                 @Override
                 public void onSuccess(@Nullable Task result) {
+                  moveToStopMigrateTasks(sourceDeploymentId, zookeeperQuorum);
+                }
+
+                @Override
+                public void onFailure(Throwable throwable) {
+                  if (throwable.getMessage().contains("SystemPaused")) {
+                    moveToStopMigrateTasks(sourceDeploymentId, zookeeperQuorum);
+                  } else {
+                    failTask(throwable);
+                  }
+                }
+
+                private void moveToStopMigrateTasks(final String sourceDeploymentId, String zookeeperQuorum) {
                   State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.STOP_MIGRATE_TASKS,
                       null);
                   patchState.sourceDeploymentId = sourceDeploymentId;
                   patchState.sourceZookeeperQuorum = zookeeperQuorum;
                   TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
-                }
-
-                @Override
-                public void onFailure(Throwable throwable) {
-                  failTask(throwable);
                 }
               });
 
@@ -397,6 +405,13 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
               case CANCELLED:
                 TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, buildPatch(TaskState.TaskStage
                     .CANCELLED, null, null));
+                break;
+              default:
+                failPatchState = buildPatch(
+                    TaskState.TaskStage.FAILED,
+                    null,
+                    new RuntimeException("Unexpected stage [" + result.taskState.stage + "]"));
+                TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, failPatchState);
                 break;
             }
           }
@@ -462,6 +477,13 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
                 case CANCELLED:
                   errors.add(new Throwable(
                       "service: " + result.documentSelfLink + " did not finish. " + result.taskState.failure.message));
+                  break;
+                default:
+                  State failPatchState = buildPatch(
+                      TaskState.TaskStage.FAILED,
+                      null,
+                      new RuntimeException("Unexpected stage [" + result.taskState.stage + "]"));
+                  TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, failPatchState);
                   break;
               }
 
