@@ -866,6 +866,8 @@ public class AddManagementHostWorkflowServiceTest {
       DeploymentService.State deploymentServiceRemoteOriginal = (queryForServiceStates(DeploymentService.State.class,
           remoteStore)).get(0);
 
+      // We have a deployment with 1 host
+      assertThat(deploymentServiceRemoteOriginal.zookeeperIdToIpMap.size() == 1, is(true));
       for (int i = 1; i <= hostCount; i++) {
         if (isOnlyMgmtHost) {
           HostService.State mgmtHost = createHostService(Collections.singleton(UsageTag.MGMT.name()), remoteStore);
@@ -888,6 +890,7 @@ public class AddManagementHostWorkflowServiceTest {
         DeploymentService.State deploymentServiceRemote = (queryForServiceStates(DeploymentService.State.class,
             remoteStore)).get(0);
 
+        assertThat(deploymentServiceRemote.zookeeperIdToIpMap.size() == 1 + i, is(true));
         verifyZookeeperQuorumChange(deploymentServiceRemoteOriginal, deploymentServiceRemote, i);
         verifyVmServiceStates(1 + i);
       }
