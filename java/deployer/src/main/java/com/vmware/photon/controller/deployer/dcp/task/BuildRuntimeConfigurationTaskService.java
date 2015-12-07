@@ -35,6 +35,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.dcp.util.IPUtils;
 import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
@@ -690,7 +691,9 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
         Pair<Integer, List<ZookeeperServer>> result = generateZookeeperQuorumList(ipList, vmIpAddress);
 
-        containerState.dynamicParameters.put(ENV_ZOOKEEPER_MY_ID, result.getFirst().toString());
+        String myId = IPUtils.getNumericStringFromIpAddress(this, vmIpAddress);
+
+        containerState.dynamicParameters.put(ENV_ZOOKEEPER_MY_ID, myId);
         containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM, new Gson().toJson(result.getSecond()));
         if (ipList.size() == 1) {
           containerState.dynamicParameters.put(ENV_ZOOKEEPER_STANDALONE, Boolean.toString(true));
