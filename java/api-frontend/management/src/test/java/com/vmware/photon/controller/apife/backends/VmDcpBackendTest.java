@@ -87,8 +87,11 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.testng.Assert.fail;
 import static org.testng.AssertJUnit.assertTrue;
 
+import javax.validation.ConstraintViolationException;
+
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -743,6 +746,16 @@ public class VmDcpBackendTest {
       } catch (NotImplementedException e) {
         // do nothing
       }
+    }
+
+    @Test (expectedExceptions = ConstraintViolationException.class)
+    public void testNullImageSizeThrowsConstraintViolationException() throws Throwable {
+      AttachedDiskCreateSpec disk = new AttachedDiskCreateSpec();
+      disk.setBootDisk(true);
+      ImageEntity image = new ImageEntity();
+      image.setSize(null);
+      List<Throwable> warnings = new ArrayList<>();
+      VmDcpBackend.updateBootDiskCapacity(Arrays.asList(disk), image, warnings);
     }
 
     @DataProvider(name = "IsoFileNames")
