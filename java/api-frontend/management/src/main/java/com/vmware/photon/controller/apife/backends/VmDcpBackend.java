@@ -37,7 +37,6 @@ import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.InvalidEntityException;
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
@@ -72,9 +71,9 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.services.common.QueryTask;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
@@ -820,14 +819,15 @@ public class VmDcpBackend implements VmBackend {
   /**
    * Find boot disk and update capacityGb to be image size.
    */
-  private void updateBootDiskCapacity(List<AttachedDiskCreateSpec> disks, ImageEntity image, List<Throwable> warnings)
-      throws InvalidVmDisksSpecException, InvalidEntityException {
+  @VisibleForTesting
+  protected static void updateBootDiskCapacity(List<AttachedDiskCreateSpec> disks, ImageEntity image,
+                                        List<Throwable> warnings)
+      throws InvalidVmDisksSpecException, InvalidImageStateException {
     for (AttachedDiskCreateSpec disk : disks) {
       if (disk.isBootDisk()) {
         if (image.getSize() == null) {
-          throw new InvalidEntityException(
-              "Image " + image.getId() + " has null size",
-              ImmutableList.of("Image " + image.toString() + " has null size"));
+          throw new InvalidImageStateException(
+              "Image " + image.getId() + " has null size");
         }
 
         if (disk.getCapacityGb() != null) {

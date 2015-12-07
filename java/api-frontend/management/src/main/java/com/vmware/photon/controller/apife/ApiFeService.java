@@ -18,7 +18,6 @@ import com.vmware.photon.controller.api.common.filters.UrlTrailingSlashFilter;
 import com.vmware.photon.controller.api.common.jackson.GuiceModule;
 import com.vmware.photon.controller.api.common.providers.ConstraintViolationExceptionMapper;
 import com.vmware.photon.controller.api.common.providers.ExternalExceptionMapper;
-import com.vmware.photon.controller.api.common.providers.InvalidEntityExceptionMapper;
 import com.vmware.photon.controller.api.common.providers.JsonProcessingExceptionMapper;
 import com.vmware.photon.controller.api.common.providers.LoggingExceptionMapper;
 import com.vmware.photon.controller.api.common.providers.WebApplicationExceptionMapper;
@@ -205,7 +204,6 @@ public class ApiFeService extends Application<ApiFeConfiguration> {
 
     environment.getObjectMapper().registerModule(injector.getInstance(GuiceModule.class));
     environment.jersey().register(injector.getInstance(ExternalExceptionMapper.class));
-    environment.jersey().register(injector.getInstance(InvalidEntityExceptionMapper.class));
     environment.jersey().register(injector.getInstance(ConstraintViolationExceptionMapper.class));
     environment.jersey().register(injector.getInstance(JsonProcessingExceptionMapper.class));
     environment.jersey().register(injector.getInstance(LoggingExceptionMapper.class));

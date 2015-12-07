@@ -51,6 +51,7 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.TombstoneEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.apife.exceptions.external.ProjectNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
@@ -89,6 +90,7 @@ import static org.testng.AssertJUnit.assertTrue;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -743,6 +745,16 @@ public class VmDcpBackendTest {
       } catch (NotImplementedException e) {
         // do nothing
       }
+    }
+
+    @Test (expectedExceptions = InvalidImageStateException.class)
+    public void testNullImageSizeThrowsInvalidImageStateException() throws Throwable {
+      AttachedDiskCreateSpec disk = new AttachedDiskCreateSpec();
+      disk.setBootDisk(true);
+      ImageEntity image = new ImageEntity();
+      image.setSize(null);
+      List<Throwable> warnings = new ArrayList<>();
+      VmDcpBackend.updateBootDiskCapacity(Arrays.asList(disk), image, warnings);
     }
 
     @DataProvider(name = "IsoFileNames")
