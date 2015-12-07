@@ -15,7 +15,7 @@ ext {
       powermock   : '1.6.2',
       mockito     : '1.10.17',
       commons_lang3: '3.1',
-      xenon_common: '0.3.0',
+      xenon_common: '0.3.1',
   ]
 }
 
