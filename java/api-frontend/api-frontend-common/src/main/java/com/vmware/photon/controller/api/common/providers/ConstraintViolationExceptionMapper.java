@@ -25,7 +25,7 @@ import javax.ws.rs.ext.Provider;
 
 /**
  * The constraint violation exception mapper is designed to generate a common response format
- * when entity validation checks fail. This is similar to InvalidEntityExceptionMapper.
+ * when entity validation checks fail.
  */
 @Provider
 public class ConstraintViolationExceptionMapper implements ExceptionMapper<ConstraintViolationException> {
