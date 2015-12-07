@@ -20,6 +20,8 @@ import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
 import com.google.common.base.Objects.ToStringHelper;
 
+import javax.validation.constraints.NotNull;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +37,7 @@ public class ImageEntity extends BaseEntity implements Named {
 
   private String name;
 
+  @NotNull
   private Long size;
 
   private Integer totalImageDatastore;
