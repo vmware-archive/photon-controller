@@ -16,23 +16,6 @@ module EsxCloud
       DEPLOYMENT_URL = "/deployment"
       DEPLOYMENTS_ROOT = "/deployments"
 
-      # @param [String] id of manifest
-      # @return [Task] task
-      def create_deployment(flavor, dry_run, poll=true)
-        url_path = "#{DEPLOYMENT_URL}/deploy"
-        url_path += "/#{flavor}" unless flavor.nil?
-        url_path += "?dryRun=true" if dry_run
-
-        response = @http_client.post(url_path, nil)
-        check_response("Started deployment", response, 201)
-
-        task = JSON.parse(response.body)
-
-        return task["id"] unless poll
-
-        poll_response(response)
-      end
-
       # @param [Hash] payload
       # @return [Deployment]
       def create_api_deployment(payload)
@@ -106,42 +89,6 @@ module EsxCloud
         check_response("Update security groups of deployment '#{id}'", response, 200)
 
         poll_response(response)
-      end
-
-      def find_all_deployments
-        response = @http_client.get(DEPLOYMENT_URL)
-        check_response("Find all deployments", response, [200, 201, 404])
-        if response.code == 404
-          nil
-        else
-          JSON.parse(response.body)
-        end
-      end
-
-      def delete_deployment(poll=false)
-        response = @http_client.delete(DEPLOYMENT_URL)
-        check_response("Delete deployment", response, 201)
-
-        task = JSON.parse(response.body)
-
-        return task["id"] unless poll
-
-        poll_response(response)
-      end
-
-      def find_all_manifests
-        response = @http_client.get("#{DEPLOYMENT_URL}/manifests")
-        check_response("Find all manifests", response, 200)
-        JSON.parse(response.body)
-      end
-
-      def find_manifest_by_id(id)
-        if id.nil?
-          id = "null"
-        end
-        response = @http_client.get("#{DEPLOYMENT_URL}/manifest/#{id}")
-        check_response("Find manifest by ID '#{id}'", response, 200)
-        response.body
       end
 
       # @param [String] id
