@@ -29,16 +29,18 @@ class StatsHandler(StatsService.Iface):
         self._logger = logging.getLogger(__name__)
         self._collector = StatsCollector(self._db)
         self._collector.configure_collectors()
-        self._collector.start_collection()
         self._publisher = StatsPublisher(self._db)
         self._publisher.configure_publishers()
-        self._publisher.start_publishing()
 
     def _error_response(self, code, error, response):
         self._logger.debug(error)
         response.result = code
         response.error = str(error)
         return response
+
+    def start(self):
+        self._collector.start_collection()
+        self._publisher.start_publishing()
 
     @log_request
     @error_handler(SetCollectionLevelResponse, SetCollectionLevelResultCode)

@@ -10,7 +10,6 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
-import stats.stats
 import unittest
 
 from hamcrest import *  # noqa
@@ -20,6 +19,7 @@ from mock import patch
 
 import common
 from common.service_name import ServiceName
+import stats.stats
 
 
 class TestStats(unittest.TestCase):
@@ -34,17 +34,28 @@ class TestStats(unittest.TestCase):
     @patch('stats.stats.StatsCollector.configure_collectors')
     def test_stats_handler(self, _config_collectors, _start_collection,
                            _config_publishers, _start_publishing):
-        stats.stats.StatsHandler()
+        handler = stats.stats.StatsHandler()
         _config_collectors.assert_called_once_with()
-        _start_collection.assert_called_once_with()
         _config_publishers.assert_called_once_with()
+        _start_collection.assert_not_called()
+        _start_publishing.assert_not_called()
+        handler.start()
+        _start_collection.assert_called_once_with()
         _start_publishing.assert_called_once_with()
 
     @patch('stats.stats.StatsHandler')
-    def test_plugin(self, _handler):
+    @patch('common.plugin.ThriftService')
+    @patch('common.plugin.Plugin.add_thrift_service')
+    def test_import_plugin(self, _add_svc, _thrift_svc_cls, _handler_cls):
+        mock_svc = MagicMock()
+        _thrift_svc_cls.return_value = mock_svc
         import stats.plugin
+
         assert_that(stats.plugin.plugin, not_none())
-        _handler.assert_called_once_with()
+        stats.plugin.plugin.init()
+        _handler_cls.assert_called_once_with()
+        assert_that(_thrift_svc_cls.call_count, is_(1))
+        _add_svc.assert_called_once_with(mock_svc)
 
 
 if __name__ == '__main__':

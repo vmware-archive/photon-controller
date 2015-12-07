@@ -177,14 +177,8 @@ class PerfManagerCollector(Collector):
         return results
 
     def collect(self, since=None):
-        results = {}
-
         if not self._initialized:
-            try:
-                self.initialize_host_counters()
-            except ValueError:
-                self._logger.info("Failed to initialize")
-                return results
+            self.initialize_host_counters()
 
         now = datetime.now()
         if since is None:

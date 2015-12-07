@@ -16,12 +16,23 @@ from .gen import StatsService
 from .stats import StatsHandler
 
 
-handler = StatsHandler()
+class StatsPlugin(common.plugin.Plugin):
+    def __init__(self):
+        super(StatsPlugin, self).__init__("Stats")
 
+    def init(self):
+        self._handler = StatsHandler()
 
-plugin = common.plugin.Plugin(
-    name="StatsService",
-    service=StatsService,
-    handler=handler,
-    num_threads=2,
-)
+        service = common.plugin.ThriftService(
+            name="StatsService",
+            service=StatsService,
+            handler=self._handler,
+            num_threads=2,
+        )
+
+        self.add_thrift_service(service)
+
+    def start(self):
+        self._handler.start()
+
+plugin = StatsPlugin()
