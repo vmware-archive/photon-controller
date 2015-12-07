@@ -18,6 +18,7 @@ import logging
 
 from thrift import TSerialization
 
+from common.file_util import rm_rf
 from common.util import suicide
 import gen.hypervisor.esx.ttypes
 from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
@@ -32,6 +33,7 @@ from host.hypervisor.esx.system import EsxSystem
 
 class EsxHypervisor(object):
     """Manage ESX Hypervisor."""
+    VIB_DIRECTORY = "/tmp/photon-controller-vibs"
 
     def __init__(self, agent_config):
         self.logger = logging.getLogger(__name__)
@@ -64,6 +66,12 @@ class EsxHypervisor(object):
         self.image_transferer = HttpNfcTransferer(self.vim_client,
                                                   image_datastores)
         atexit.register(self.image_manager.cleanup)
+
+        # Deployer uploads the vib file under VIB_DIRECTORY.
+        self._cleanup_vib_directory()
+
+    def _cleanup_vib_directory(self):
+        rm_rf(self.VIB_DIRECTORY)
 
     @property
     def uuid(self):
