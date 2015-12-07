@@ -88,7 +88,7 @@ configure([project(":photon-model"), project(":photon-model-tasks")]) {
   apply plugin: 'signing'
   apply plugin: 'maven'
   ext {
-    version '0.1.0'
+    version '0.1.1-SNAPSHOT'
   }
   signing {
     def hasRequiredSigningProps = project.hasProperty('signing.keyId') &&
