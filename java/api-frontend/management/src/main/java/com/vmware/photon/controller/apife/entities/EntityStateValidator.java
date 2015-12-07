@@ -17,6 +17,12 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.groups.Default;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -42,6 +48,14 @@ public class EntityStateValidator {
     Set<T> states = operationPrereqStates.get(operation);
     if (states != null && !states.contains(originalState)) {
       throw new InvalidOperationStateException(entity, operation, originalState);
+    }
+  }
+
+  public static <T extends BaseEntity> void validateState(T entity) throws ConstraintViolationException {
+    Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+    Set<ConstraintViolation<T>> violations = validator.validate(entity, Default.class);
+    if (!violations.isEmpty()) {
+      throw new ConstraintViolationException(violations);
     }
   }
 }
