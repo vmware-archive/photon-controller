@@ -38,7 +38,7 @@ public class FlavoredCompact extends BaseCompact {
       required = true)
   @NotNull
   @Size(min = 1, max = 63)
-  @Pattern(regexp = PATTERN)
+  @Pattern(regexp = PATTERN, message = ": The specified flavored compact name does not match pattern: " + Named.PATTERN)
   protected String kind;
 
   @JsonProperty

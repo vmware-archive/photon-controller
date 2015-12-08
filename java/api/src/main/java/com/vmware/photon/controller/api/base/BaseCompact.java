@@ -43,7 +43,7 @@ public class BaseCompact implements Named {
   @ApiModelProperty(value = "name", required = true)
   @NotNull
   @Size(min = 1, max = 63)
-  @Pattern(regexp = Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified compact name does not match pattern: " + Named.PATTERN)
   protected String name;
 
   public static BaseCompact create(String id, String name) {
