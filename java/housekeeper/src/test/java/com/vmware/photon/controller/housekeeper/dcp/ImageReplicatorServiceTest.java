@@ -33,6 +33,7 @@ import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
+import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientCopyImageErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorGetAllDatastoresErrorMock;
@@ -476,7 +477,7 @@ public class ImageReplicatorServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = spy(new ImageReplicatorService());
-      host = TestHost.create(mock(HostClient.class), mock(ZookeeperHostMonitor.class));
+      host = TestHost.create(mock(HostClient.class), mock(ZookeeperHostMonitor.class), new CloudStoreHelperMock());
     }
 
     @AfterMethod
@@ -827,6 +828,10 @@ public class ImageReplicatorServiceTest {
     @DataProvider(name = "ValidStageUpdates")
     public Object[][] getValidStageUpdatesData() throws Throwable {
       return new Object[][]{
+          {ImageReplicatorService.TaskState.TaskStage.STARTED,
+              ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
+              ImageReplicatorService.TaskState.TaskStage.STARTED,
+              ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS},
           {ImageReplicatorService.TaskState.TaskStage.STARTED,
               ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
               ImageReplicatorService.TaskState.TaskStage.STARTED,

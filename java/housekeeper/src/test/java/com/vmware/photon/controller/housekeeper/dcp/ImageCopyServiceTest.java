@@ -35,6 +35,7 @@ import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFac
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.CopyImageResultCode;
+import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientCopyImageErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorGetHostsForDatastoreErrorMock;
@@ -48,6 +49,7 @@ import com.vmware.xenon.common.ServiceStats;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
+import org.mockito.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -65,6 +67,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -377,7 +380,9 @@ public class
     @BeforeMethod
     public void setUp() throws Throwable {
       service = spy(new ImageCopyService());
-      host = TestHost.create(mock(HostClient.class), new ZookeeperHostMonitorSuccessMock());
+      doNothing().when(service).sendRequest(Matchers.any());
+      host = TestHost.create(mock(HostClient.class), new ZookeeperHostMonitorSuccessMock(),
+          new CloudStoreHelperMock());
     }
 
     @AfterMethod
@@ -462,6 +467,10 @@ public class
     @DataProvider(name = "ValidStageUpdates")
     public Object[][] getValidStageUpdatesData() throws Throwable {
       return new Object[][]{
+          {ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST,
+              ImageCopyService.TaskState.TaskStage.STARTED,
+              ImageCopyService.TaskState.SubStage.RETRIEVE_HOST},
           {ImageCopyService.TaskState.TaskStage.STARTED,
               ImageCopyService.TaskState.SubStage.RETRIEVE_HOST,
               ImageCopyService.TaskState.TaskStage.STARTED,
