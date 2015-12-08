@@ -44,7 +44,7 @@ public class ProjectCreateSpec implements Named {
   @JsonProperty
   @NotNull
   @Size(min = 1, max = 63)
-  @Pattern(regexp = Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified project name does not match pattern: " + Named.PATTERN)
   private String name;
 
   @ApiModelProperty(value = "This property is used to specify which tenant resource ticket the project will draw" +

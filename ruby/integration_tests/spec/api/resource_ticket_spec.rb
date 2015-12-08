@@ -43,7 +43,7 @@ describe "resource ticket", management: true do
   end
 
   it "should complain on invalid name" do
-    error_msg = "name must match \"^[a-zA-Z][a-zA-Z0-9-]*\" (was 1foo)"
+    error_msg = "name : The specified resource ticket name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was 1foo)"
 
     begin
       @tenant.create_resource_ticket(:name => "1foo", :limits => create_small_limits)

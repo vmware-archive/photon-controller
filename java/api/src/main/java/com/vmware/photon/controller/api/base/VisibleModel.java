@@ -36,7 +36,7 @@ public abstract class VisibleModel extends Model implements Named {
       required = true)
   @Size(min = 1, max = 63)
   @NotNull
-  @Pattern(regexp = PATTERN)
+  @Pattern(regexp = Named.PATTERN)
   private String name;
 
   @JsonProperty

@@ -122,7 +122,7 @@ describe "project", management: true do
     end
 
     it "should complain on invalid name" do
-      error_msg = "name must match \"^[a-zA-Z][a-zA-Z0-9-]*\" (was 1foo)"
+      error_msg = "name : The specified project name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was 1foo)"
 
       begin
         @seeder.tenant!.create_project(name: "1foo",

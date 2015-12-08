@@ -123,7 +123,7 @@ describe "tenant", management: true do
   end
 
   it "should complain on invalid name" do
-    error_msg = "name must match \"^[a-zA-Z][a-zA-Z0-9-]*\" (was 1foo)"
+    error_msg = "name : The specified tenant name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was 1foo)"
 
     begin
       create_tenant(:name => "1foo")
