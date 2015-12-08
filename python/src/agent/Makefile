@@ -22,7 +22,11 @@ endif
 ifdef CHAIRMAN
 	TEST_OPTS += --tc=agent_remote_test.chairman:$(CHAIRMAN)
 endif
+ifdef SANITY
+	TESTS += agent/tests/integration/test_remote_agent.py:TestRemoteAgent.test_power_ops
+else
 	TESTS += agent/tests/integration
+endif
 endif
 
 include ../python.mk
