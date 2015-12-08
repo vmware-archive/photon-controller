@@ -45,7 +45,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -279,7 +278,8 @@ public class MiscUtils {
   }
 
   public static float getManagementVmHostRatio(HostService.State hostState) {
-    return hostState.usageTags.containsAll(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())) ?
-        DeployerDefaults.MANAGEMENT_VM_TO_HOST_RESOURCE_RATIO : 1.0f;
+    return hostState.usageTags.contains(UsageTag.CLOUD.name()) ?
+        DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO :
+        DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO;
   }
 }

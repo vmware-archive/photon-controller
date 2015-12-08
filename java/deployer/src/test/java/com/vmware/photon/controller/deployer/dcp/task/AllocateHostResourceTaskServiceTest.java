@@ -82,7 +82,7 @@ public class AllocateHostResourceTaskServiceTest {
   /**
    * Dummy function to make IntelliJ think that this is a test class.
    */
-  @Test
+  @Test(enabled = false)
   private void dummy() {
   }
 
@@ -485,7 +485,7 @@ public class AllocateHostResourceTaskServiceTest {
     }
 
     @Test
-    private void testTaskSuccess() throws Throwable {
+    public void testTaskSuccess() throws Throwable {
       machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
 
       HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(1, 3, 8, 8192, false);
@@ -503,8 +503,10 @@ public class AllocateHostResourceTaskServiceTest {
       String vmServiceLink = getVmService(hostService.documentSelfLink);
       Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
       assertThat(containerServices.size(), is(9));
-      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).sum(), lessThan(8192));
-      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).max().getAsInt(), lessThan(8192));
+      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).sum(),
+          lessThan((int) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
+      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).max().getAsInt(),
+          lessThan((int) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
           lessThanOrEqualTo(ContainerService.State.DOCKER_CPU_SHARES_MAX)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
@@ -515,7 +517,7 @@ public class AllocateHostResourceTaskServiceTest {
     }
 
     @Test
-    private void testTaskSuccessWithMixedHostConfig() throws Throwable {
+    public void testTaskSuccessWithMixedHostConfig() throws Throwable {
       machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
 
       HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(1, 3, 8, 8192, true);
@@ -534,9 +536,9 @@ public class AllocateHostResourceTaskServiceTest {
       Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
       assertThat(containerServices.size(), is(9));
       assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).sum(), lessThan((int) (8192 *
-          DeployerDefaults.MANAGEMENT_VM_TO_HOST_RESOURCE_RATIO)));
+          DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
       assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).max().getAsInt(), lessThan((int) (8192 *
-          DeployerDefaults.MANAGEMENT_VM_TO_HOST_RESOURCE_RATIO)));
+          DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
           lessThanOrEqualTo(ContainerService.State.DOCKER_CPU_SHARES_MAX)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
@@ -547,7 +549,7 @@ public class AllocateHostResourceTaskServiceTest {
     }
 
     @Test
-    private void testTaskSuccessWithoutHostConfig() throws Throwable {
+    public void testTaskSuccessWithoutHostConfig() throws Throwable {
       machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
 
       HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(1, 3, null, null, false);
@@ -564,7 +566,7 @@ public class AllocateHostResourceTaskServiceTest {
     }
 
     @Test
-    private void testTaskFailureInvalidHostLink() throws Throwable {
+    public void testTaskFailureInvalidHostLink() throws Throwable {
       machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
 
       AllocateHostResourceTaskService.State finalState =
