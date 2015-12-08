@@ -129,7 +129,8 @@ public class ProjectVmsResourceTest extends ResourceTest {
 
     ApiError errors = response.readEntity(ApiError.class);
     assertThat(errors.getCode(), equalTo("InvalidEntity"));
-    assertThat(errors.getMessage(), containsString("name must match"));
+    assertThat(errors.getMessage(),
+        containsString("name : The specified vm name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was  bad name )"));
     assertThat(errors.getMessage(), containsString("(was  bad name )"));
   }
 
@@ -200,8 +201,8 @@ public class ProjectVmsResourceTest extends ResourceTest {
 
     ApiError errors = response.readEntity(ApiError.class);
     assertThat(errors.getCode(), equalTo("InvalidEntity"));
-    assertThat(errors.getMessage(), containsString("[0].flavor must match"));
-    assertThat(errors.getMessage(), containsString("[0].name must match"));
+    assertThat(errors.getMessage(), containsString("[0].flavor : The specified flavor name does not match pattern"));
+    assertThat(errors.getMessage(), containsString("[0].name : The specified disk name does not match pattern"));
   }
 
   @Test
@@ -222,7 +223,8 @@ public class ProjectVmsResourceTest extends ResourceTest {
     ApiError errors = response.readEntity(ApiError.class);
     assertThat(errors.getCode(), equalTo("InvalidEntity"));
     assertThat(errors.getMessage(), equalTo(
-        String.format("[kind must match \"%s\" (was permanent-disk)]", LocalitySpec.VALID_KINDS)));
+        String.format(
+            "[kind : The specified kind does not match pattern: %s (was permanent-disk)]", LocalitySpec.VALID_KINDS)));
   }
 
   @Test

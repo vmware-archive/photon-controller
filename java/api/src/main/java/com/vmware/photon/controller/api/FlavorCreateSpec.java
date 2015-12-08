@@ -43,7 +43,7 @@ public class FlavorCreateSpec implements Named {
       + "property when creating VMs, specifying attached disks, etc.", required = true)
   @NotNull
   @Size(min = 1, max = 63)
-  @Pattern(regexp = Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified flavor name does not match pattern: " + Named.PATTERN)
   private String name;
 
   @JsonProperty
@@ -51,7 +51,8 @@ public class FlavorCreateSpec implements Named {
       + "persistent-disk, ephemeral-disk or vm.", required = true)
   @NotNull
   @Size(min = 1, max = 63)
-  @Pattern(regexp = "(persistent\\-disk|ephemeral\\-disk|vm)")
+  @Pattern(regexp = "(persistent\\-disk|ephemeral\\-disk|vm)",
+      message = ": The specified kind name does not match pattern: (persistent\\-disk|ephemeral\\-disk|vm)")
   private String kind;
 
   @JsonProperty

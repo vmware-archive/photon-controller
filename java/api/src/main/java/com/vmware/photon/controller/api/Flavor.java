@@ -45,7 +45,7 @@ public class Flavor extends VisibleModel {
       + "persistent-disk, ephemeral-disk or vm.", required = true)
   @NotNull
   @Size(min = 1, max = 63)
-  @Pattern(regexp = Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified kind name does not match pattern: " + Named.PATTERN)
   private String kind;
 
   @JsonProperty
