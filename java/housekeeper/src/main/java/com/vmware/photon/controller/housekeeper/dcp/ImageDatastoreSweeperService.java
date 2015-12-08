@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.OperationInProgressException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -539,7 +540,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
     spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     sendRequest(
-        ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
+        ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
             .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
             .setBody(QueryTask.create(spec).setDirect(true))
             .setCompletion(
@@ -622,7 +623,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
     datastoreCountRequest.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT;
 
     sendRequest(
-        ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
+        ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
             .createPatch(ServiceUriPaths.CLOUDSTORE_ROOT + "/images/" + imageId)
             .setBody(datastoreCountRequest)
             .setCompletion(completionHandler));

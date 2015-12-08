@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
@@ -326,7 +327,7 @@ public class ImageCopyService extends StatefulService {
     try {
       ImageService.DatastoreCountRequest requestBody = constructDatastoreCountRequest(1);
       sendRequest(
-          ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
+          ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
               .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
               .setBody(requestBody)
               .setCompletion(
@@ -369,7 +370,7 @@ public class ImageCopyService extends StatefulService {
       QueryTask.QuerySpecification querySpecification = buildHostQuery(current);
 
       sendRequest(
-          ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
+          ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
               .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
               .setBody(QueryTask.create(querySpecification).setDirect(true))
               .setCompletion(
@@ -515,7 +516,7 @@ public class ImageCopyService extends StatefulService {
 
     try {
       sendRequest(
-          ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
+          ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
               .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
               .setBody(QueryTask.create(querySpecification).setDirect(true))
               .setCompletion(

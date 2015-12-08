@@ -29,6 +29,7 @@ import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFac
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.DeleteImageResultCode;
+import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientDeleteImageErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorGetHostsForDatastoreErrorMock;
@@ -351,7 +352,7 @@ public class ImageDeleteServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = spy(new ImageDeleteService());
-      host = TestHost.create(mock(HostClient.class), mock(ZookeeperHostMonitor.class));
+      host = TestHost.create(mock(HostClient.class), mock(ZookeeperHostMonitor.class), new CloudStoreHelperMock());
     }
 
     @AfterMethod

@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerService;
@@ -48,8 +49,7 @@ import java.util.Map;
 public class HousekeeperDcpServiceHost
     extends ServiceHost
     implements DcpHostInfoProvider,
-    HostClientProvider, ZookeeperHostMonitorProvider {
-
+    HostClientProvider, ZookeeperHostMonitorProvider, CloudStoreHelperProvider {
 
   protected static final String IMAGE_COPY_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/image-copy";
@@ -104,6 +104,7 @@ public class HousekeeperDcpServiceHost
     this.initialize(arguments);
   }
 
+  @Override
   public CloudStoreHelper getCloudStoreHelper() {
     return cloudStoreHelper;
   }
