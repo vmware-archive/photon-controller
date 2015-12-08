@@ -38,4 +38,6 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "highline", "~>1.7.3"
   spec.add_runtime_dependency "json", "~>1.8"
   spec.add_runtime_dependency "terminal-table", "~>1.4.5"
+  spec.add_runtime_dependency "netaddr", "~>1.5.0"
+  spec.add_runtime_dependency "formatador", "~>0.2.5"
 end

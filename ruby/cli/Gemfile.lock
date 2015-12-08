@@ -1,3 +1,14 @@
+PATH
+  remote: ../
+  specs:
+    photon-cli (0.0.4)
+      faraday (~> 0.8.7)
+      formatador (~> 0.2.5)
+      highline (~> 1.7.3)
+      json (~> 1.8)
+      netaddr (~> 1.5.0)
+      terminal-table (~> 1.4.5)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -14,9 +25,5 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  faraday (~> 0.8.7)
-  formatador
-  highline (~> 1.7.3)
-  json (~> 1.8)
-  netaddr
-  terminal-table (~> 1.4.5)
+  bundler
+  photon-cli!
