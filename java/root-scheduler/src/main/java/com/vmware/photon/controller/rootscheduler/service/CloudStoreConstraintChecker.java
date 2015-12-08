@@ -134,22 +134,13 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
           .orderDescending(HostService.State.FIELD_NAME_SCHEDULING_CONSTANT,
               ServiceDocumentDescription.TypeName.LONG)
           .setResultLimit(numCandidates)
+          .addOption(QueryTask.QuerySpecification.QueryOption.TOP_RESULTS)
           .build();
 
       try {
         Operation completedOp = dcpRestClient.query(queryTask);
         ServiceDocumentQueryResult queryResult = completedOp.getBody(QueryTask.class).results;
-        Set<String> documentLinks = new HashSet<>(numCandidates);
-
-        // N.B. This is a temporary workaround until we can pick up Xenon 0.3.1.
-        if (queryResult.nextPageLink != null) {
-          queryResult.nextPageLink = Base64.getEncoder().encodeToString(queryResult.nextPageLink.getBytes());
-        }
-
-        while (queryResult.nextPageLink != null && documentLinks.size() < numCandidates) {
-          queryResult = dcpRestClient.queryDocumentPage(queryResult.nextPageLink);
-          documentLinks.addAll(queryResult.documentLinks);
-        }
+        List<String> documentLinks = queryResult.documentLinks;
 
         if (documentLinks.size() > 0) {
           Map<String, Operation> operations = dcpRestClient.get(documentLinks, documentLinks.size());
