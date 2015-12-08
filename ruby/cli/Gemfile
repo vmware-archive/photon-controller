@@ -11,9 +11,4 @@
 
 source "https://rubygems.org"
 
-gem "faraday", "~>0.8.7"
-gem "highline", "~>1.7.3"
-gem "json", "~>1.8"
-gem "terminal-table", "~>1.4.5"
-gem "netaddr"
-gem "formatador"
+gemspec :path => "../"
