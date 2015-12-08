@@ -16,6 +16,8 @@ package com.vmware.photon.controller.housekeeper.helpers.dcp;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
 
@@ -24,15 +26,18 @@ import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorPr
  */
 public class TestHost
     extends BasicServiceHost
-    implements HostClientProvider, ZookeeperHostMonitorProvider {
+    implements HostClientProvider, ZookeeperHostMonitorProvider, CloudStoreHelperProvider {
 
   private final HostClient hostClient;
   private final ZookeeperHostMonitor zookeeperHostMonitor;
+  private final CloudStoreHelper cloudStoreHelper;
 
-  private TestHost(HostClient hostClient, ZookeeperHostMonitor zookeeperHostMonitor) {
+  private TestHost(HostClient hostClient, ZookeeperHostMonitor zookeeperHostMonitor,
+                   CloudStoreHelper cloudStoreHelper) {
     super();
     this.hostClient = hostClient;
     this.zookeeperHostMonitor = zookeeperHostMonitor;
+    this.cloudStoreHelper = cloudStoreHelper;
   }
 
   public static TestHost create(HostClient hostClient) throws Throwable {
@@ -41,7 +46,13 @@ public class TestHost
 
   public static TestHost create(HostClient hostClient,
                                 ZookeeperHostMonitor zookeeperHostMonitor) throws Throwable {
-    TestHost host = new TestHost(hostClient, zookeeperHostMonitor);
+    return create(hostClient, zookeeperHostMonitor, null);
+  }
+
+  public static TestHost create(HostClient hostClient,
+                                ZookeeperHostMonitor zookeeperHostMonitor, CloudStoreHelper cloudStoreHelper)
+      throws Throwable {
+    TestHost host = new TestHost(hostClient, zookeeperHostMonitor, cloudStoreHelper);
     host.initialize();
     host.startWithCoreServices();
     return host;
@@ -55,6 +66,11 @@ public class TestHost
   @Override
   public ZookeeperHostMonitor getZookeeperHostMonitor() {
     return zookeeperHostMonitor;
+  }
+
+  @Override
+  public CloudStoreHelper getCloudStoreHelper() {
+    return cloudStoreHelper;
   }
 
 }

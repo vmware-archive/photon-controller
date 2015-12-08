@@ -43,7 +43,6 @@ public class ZookeeperHostMonitorSuccessMock extends ZookeeperHostMonitor {
 
     this(imageDataStoreCount, HOST_COUNT_DEFAULT);
   }
-
   public ZookeeperHostMonitorSuccessMock(int imageDataStoreCount, int hostCount) throws Exception {
     this(imageDataStoreCount, hostCount, DATASTORE_COUNT_DEFAULT);
   }

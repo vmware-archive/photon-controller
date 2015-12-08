@@ -29,6 +29,7 @@ import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.GetMonitoredImagesResultCode;
 import com.vmware.photon.controller.host.gen.StartImageOperationResultCode;
+import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorGetHostsForDatastoreErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
@@ -528,7 +529,8 @@ public class ImageDatastoreSweeperServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = spy(new ImageDatastoreSweeperService());
-      host = TestHost.create(mock(HostClient.class), new ZookeeperHostMonitorSuccessMock());
+      host = TestHost.create(mock(HostClient.class), new ZookeeperHostMonitorSuccessMock(),
+          new CloudStoreHelperMock());
     }
 
     @AfterMethod

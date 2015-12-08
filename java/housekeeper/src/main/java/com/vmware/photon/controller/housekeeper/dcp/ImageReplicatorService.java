@@ -16,6 +16,7 @@ package com.vmware.photon.controller.housekeeper.dcp;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -396,7 +397,7 @@ public class ImageReplicatorService extends StatefulService {
   }
 
   protected CloudStoreHelper getCloudStoreHelper() {
-    return ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper();
+    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper();
   }
 
   /**

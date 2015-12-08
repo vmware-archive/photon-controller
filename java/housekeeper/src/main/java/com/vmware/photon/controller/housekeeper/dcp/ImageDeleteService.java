@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.clients.exceptions.DatastoreNotFoundE
 import com.vmware.photon.controller.common.clients.exceptions.InvalidRefCountException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
@@ -374,7 +375,7 @@ public class ImageDeleteService extends StatefulService {
   private void sendPatchToDecrementImageReplicatedCount(final State current) {
     ImageService.DatastoreCountRequest requestBody = constructDatastoreCountRequest(-1);
     sendRequest(
-        ((HousekeeperDcpServiceHost) getHost()).getCloudStoreHelper()
+        ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
             .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
             .setBody(requestBody)
             .setCompletion(
