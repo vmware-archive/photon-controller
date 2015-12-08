@@ -121,7 +121,13 @@ public class DeployerDefaults {
 
   /**
    * This is the ratio which decides the amount of resource to be allocated to the management vm on a host which is
+   * tagged with only the MGMT usage tag.
+   */
+  public static final float MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO = 0.8f;
+
+  /**
+   * This is the ratio which decides the amount of resource to be allocated to the management vm on a host which is
    * tagged with both MGMT and CLOUD usage tags.
    */
-  public static final float MANAGEMENT_VM_TO_HOST_RESOURCE_RATIO = 0.25f;
+  public static final float MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO = 0.25f;
 }
