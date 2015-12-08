@@ -70,7 +70,7 @@ describe "vm", management: true, image: true do
       network2 = EsxCloud::Config.client.create_network(spec.to_hash)
 
       vm_name = random_name("vm-")
-      create_vm(@project, name: vm_name, networks: [network1.id, network2.id])
+      create_vm(@project, name: vm_name, networks: [network1.id, network2.id, network1.id])
 
       vms = client.find_vms_by_name(@project.id, vm_name).items
       vms.size.should == 1
@@ -78,7 +78,8 @@ describe "vm", management: true, image: true do
       vm = vms[0]
       vm_id = vm.id
       networks = client.get_vm_networks(vm_id).network_connections
-      networks.size.should == 2
+      networks.size.should == 3
+      puts network.inspect
     ensure
       ignoring_all_errors { vm.delete if vm }
       ignoring_all_errors { network2.delete if network2 }
