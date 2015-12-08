@@ -65,7 +65,8 @@ public class ConstraintCheckerTest {
    * - 10 hosts: host0, host1, ..., host9
    * - 1 network per host: host0 => nw0, host1 => nw1, ..., host9 => nw9
    * - 1 datastore per host: host0 => ds0, host1 => ds1, ..., host9 => ds9
-   * - each host with a unique availability zone: host0 => az0, host1 => az1, ..., host9 => az9
+   * - each host with a unique availability zone: host0 => az0, host1 => az1, ..., host8 => az8
+   *   except for host9, which doesn't have the availability zone set.
    * - 1 tag per datastore: ds0 => dstag0, ds1 => dstag1, ..., ds9 => dstag9
    * - 5 management hosts host0, host2, host4, host6, host8
    */
@@ -78,7 +79,10 @@ public class ConstraintCheckerTest {
       String dsName = "ds" + i;
       String dsTag = "dstag" + i;
       String nwName = "nw" + i;
-      String azName = "az" + i;
+      String azName = null;
+      if (i != 9) {
+        azName = "az" + i;
+      }
       HostService.State host = new HostService.State();
       host.hostAddress = hostName;
       host.userName = "username";
@@ -163,11 +167,18 @@ public class ConstraintCheckerTest {
       assertThat(hosts, containsInAnyOrder(hostName));
       hosts = getHostsWithNetwork(checker, nwName, expectedHosts.size());
       assertThat(hosts, containsInAnyOrder(hostName));
-      hosts = getHostsInAvailabilityZone(checker, azName, expectedHosts.size());
-      assertThat(hosts, containsInAnyOrder(hostName));
-      hosts = getHostsNotInAvailabilityZone(checker, azName, expectedHosts.size());
-      assertEquals(hosts,
-                   Sets.filter(expectedHosts.keySet(), Predicates.not(Predicates.equalTo(hostName))));
+      if (i != 9) {
+        hosts = getHostsInAvailabilityZone(checker, azName, expectedHosts.size());
+        assertThat(hosts, containsInAnyOrder(hostName));
+        hosts = getHostsNotInAvailabilityZone(checker, azName, expectedHosts.size());
+        assertEquals(hosts,
+            Sets.filter(expectedHosts.keySet(), Predicates.not(Predicates.equalTo(hostName))));
+      } else {
+        hosts = getHostsInAvailabilityZone(checker, azName, expectedHosts.size());
+        assertThat(hosts.size(), is(0));
+        hosts = getHostsNotInAvailabilityZone(checker, azName, expectedHosts.size());
+        assertEquals(hosts, expectedHosts.keySet());
+      }
     }
   }
   @Test(dataProvider = "default")
@@ -229,17 +240,25 @@ public class ConstraintCheckerTest {
       constraint = new ResourceConstraint(ResourceConstraintType.AVAILABILITY_ZONE, Arrays.asList(azName));
       constraints.add(constraint);
       candidates = checker.getCandidates(constraints, 2);
-      assertEquals(candidates, ImmutableMap.of(hostName, address));
-
+      if (i != 9) {
+        assertEquals(candidates, ImmutableMap.of(hostName, address));
+      } else {
+        assertThat(candidates.size(), is(0));
+      }
       // negative availability zone
       constraints = new LinkedList<>();
       constraint = new ResourceConstraint(ResourceConstraintType.AVAILABILITY_ZONE, Arrays.asList(azName));
       constraint.setNegative(true);
       constraints.add(constraint);
       candidates = checker.getCandidates(constraints, expectedHosts.size());
-      assertThat(candidates.size(), is(expectedHosts.size() - 1));
-      assertEquals(candidates,
-                   Maps.filterKeys(candidates, Predicates.not(Predicates.equalTo(hostName))));
+      if (i != 9) {
+        assertThat(candidates.size(), is(expectedHosts.size() - 1));
+        assertEquals(candidates,
+            Maps.filterKeys(candidates, Predicates.not(Predicates.equalTo(hostName))));
+      } else {
+        assertThat(candidates.size(), is(expectedHosts.size()));
+        assertThat(candidates.keySet(), is(expectedHosts.keySet()));
+      }
     }
   }
 
