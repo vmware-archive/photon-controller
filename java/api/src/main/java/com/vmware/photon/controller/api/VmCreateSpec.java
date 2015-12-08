@@ -48,7 +48,7 @@ public class VmCreateSpec implements Flavorful, Named {
       required = true)
   @NotNull
   @Size(min = 1, max = 63)
-  @Pattern(regexp = Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified vm name does not match pattern: " + Named.PATTERN)
   private String name;
   @JsonProperty
   @ApiModelProperty(value = "This property specifies the desired flavor of the VM.",
