@@ -43,7 +43,7 @@ public class LocalitySpecTest {
     Assert.assertEquals(errors.size(), 3);
     Assert.assertEquals("id may not be null (was null)", errors.get(0));
     Assert.assertEquals(
-        String.format("kind must match \"%s\" (was )", LocalitySpec.VALID_KINDS),
+        String.format("kind : The specified kind does not match pattern: %s (was )", LocalitySpec.VALID_KINDS),
         errors.get(1));
     Assert.assertEquals("kind size must be between 1 and 2147483647 (was )", errors.get(2));
   }
@@ -57,7 +57,8 @@ public class LocalitySpecTest {
     ImmutableList<String> errors = validator.validate(localitySpec);
     Assert.assertEquals(errors.size(), 1);
     Assert.assertEquals(
-        String.format("kind must match \"%s\" (was invalidKind)", LocalitySpec.VALID_KINDS),
+        String.format("kind : The specified kind does not match pattern: %s (was invalidKind)",
+            LocalitySpec.VALID_KINDS),
         errors.get(0));
   }
 

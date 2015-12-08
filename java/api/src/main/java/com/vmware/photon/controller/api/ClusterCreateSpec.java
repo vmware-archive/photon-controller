@@ -42,7 +42,7 @@ public class ClusterCreateSpec implements Named {
       required = true)
   @NotNull
   @Size(min = 1, max = 63)
-  @Pattern(regexp = Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified name does not match pattern: " + Named.PATTERN)
   private String name;
 
   @Enumerated(EnumType.STRING)
@@ -56,7 +56,7 @@ public class ClusterCreateSpec implements Named {
   @ApiModelProperty(value = "This property specifies the desired VM flavor of " +
       "the component. If omitted, default flavor will be used.", required = false)
   @Size(min = 0, max = 63)
-  @Pattern(regexp = Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified vmFlavor name does not match pattern: " + Named.PATTERN)
   private String vmFlavor;
 
   @JsonProperty
@@ -64,7 +64,7 @@ public class ClusterCreateSpec implements Named {
       "of the component. Each VM is attached one disk.  If omitted, default flavor " +
       "will be used.", required = false)
   @Size(min = 0, max = 63)
-  @Pattern(regexp = Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified diskFlavor name does not match pattern: " + Named.PATTERN)
   private String diskFlavor;
 
   @JsonProperty

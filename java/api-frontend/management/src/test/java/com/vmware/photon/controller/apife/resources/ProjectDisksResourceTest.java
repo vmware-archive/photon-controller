@@ -153,14 +153,15 @@ public class ProjectDisksResourceTest extends ResourceTest {
 
   @Test
   public void testInvalidDisk() throws Exception {
-    spec.setName(" bad name ");
+    spec.setName("bad name");
     Response response = createDisk(PersistentDisk.KIND);
     assertThat(response.getStatus(), is(400));
 
     ApiError errors = response.readEntity(ApiError.class);
     assertThat(errors.getCode(), equalTo("InvalidEntity"));
-    assertThat(errors.getMessage(), containsString("name must match"));
-    assertThat(errors.getMessage(), containsString("(was  bad name )"));
+    assertThat(errors.getMessage(),
+        containsString("name : The specified disk name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was bad name)"));
+    assertThat(errors.getMessage(), containsString("(was bad name)"));
   }
 
   @Test
@@ -170,7 +171,8 @@ public class ProjectDisksResourceTest extends ResourceTest {
 
     ApiError errors = response.readEntity(ApiError.class);
     assertThat(errors.getCode(), equalTo("InvalidEntity"));
-    assertThat(errors.getMessage(), containsString("kind must match"));
+    assertThat(errors.getMessage(),
+        containsString("kind : The specified kind does not match : persistent-disk|persistent (was ephemeral-disk)"));
     assertThat(errors.getMessage(), containsString("(was ephemeral-disk)"));
   }
 
@@ -181,7 +183,8 @@ public class ProjectDisksResourceTest extends ResourceTest {
 
     ApiError errors = response.readEntity(ApiError.class);
     assertThat(errors.getCode(), equalTo("InvalidEntity"));
-    assertThat(errors.getMessage(), containsString("kind must match"));
+    assertThat(errors.getMessage(),
+        containsString("kind : The specified kind does not match : persistent-disk|persistent (was invalid kind)"));
     assertThat(errors.getMessage(), containsString("(was invalid kind)"));
   }
 

@@ -38,7 +38,7 @@ public class TenantCreateSpec implements Named {
   @JsonProperty
   @NotNull
   @Size(min = 1, max = 63)
-  @Pattern(regexp = Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified tenant name does not match pattern: " + Named.PATTERN)
   private String name;
 
   @JsonProperty

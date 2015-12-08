@@ -40,7 +40,7 @@ public class Cluster extends Base implements Named {
       required = true)
   @NotNull
   @Size(min = 1, max = 63)
-  @Pattern(regexp = Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified cluster name does not match pattern: " + Named.PATTERN)
   private String name;
   @JsonProperty
   @ApiModelProperty(value = "This property specifies the cluster type.",

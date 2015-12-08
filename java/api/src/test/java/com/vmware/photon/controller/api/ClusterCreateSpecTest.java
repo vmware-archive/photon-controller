@@ -90,8 +90,8 @@ public class ClusterCreateSpecTest {
     @DataProvider(name = "invalidVmFlavors")
     public Object[][] getInvalidVmFlavors() {
       return new Object[][]{
-          {"", "vmFlavor must match \"^[a-zA-Z][a-zA-Z0-9-]*\" (was )"},
-          {"123", "vmFlavor must match \"^[a-zA-Z][a-zA-Z0-9-]*\" (was 123)"}
+          {"", "vmFlavor : The specified vmFlavor name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was )"},
+          {"123", "vmFlavor : The specified vmFlavor name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was 123)"}
       };
     }
   }
@@ -131,8 +131,8 @@ public class ClusterCreateSpecTest {
     @DataProvider(name = "invalidDiskFlavors")
     public Object[][] getInvalidDiskFlavors() {
       return new Object[][]{
-          {"", "diskFlavor must match \"^[a-zA-Z][a-zA-Z0-9-]*\" (was )"},
-          {"123", "diskFlavor must match \"^[a-zA-Z][a-zA-Z0-9-]*\" (was 123)"}
+          {"", "diskFlavor : The specified diskFlavor name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was )"},
+          {"123", "diskFlavor : The specified diskFlavor name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was 123)"}
       };
     }
   }
