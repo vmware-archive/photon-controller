@@ -38,7 +38,7 @@ public class NetworkCreateSpec implements Named {
   @JsonProperty
   @ApiModelProperty(value = "Name of network", required = true)
   @NotNull
-  @Pattern(regexp = Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified network name does not match pattern: " + Named.PATTERN)
   private String name;
 
   @JsonProperty

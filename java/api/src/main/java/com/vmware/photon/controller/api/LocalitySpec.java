@@ -47,7 +47,7 @@ public class LocalitySpec {
       required = true)
   @NotNull
   @Size(min = 1)
-  @Pattern(regexp = VALID_KINDS)
+  @Pattern(regexp = VALID_KINDS, message = ": The specified kind does not match pattern: " + VALID_KINDS)
   private String kind;
 
   public LocalitySpec(String name, String kind) {

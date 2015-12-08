@@ -41,7 +41,7 @@ public abstract class Infrastructure extends Base implements Flavorful, Named {
       required = true)
   @Size(min = 1, max = 63)
   @NotNull
-  @Pattern(regexp = PATTERN)
+  @Pattern(regexp = PATTERN, message = ": The specified infrastructure name does not match pattern: " + Named.PATTERN)
   private String name;
 
   @JsonProperty
