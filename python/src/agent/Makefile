@@ -2,7 +2,6 @@ DEPS=common host pthrift scheduler
 TESTS=agent/tests/unit
 EXTRA_CLEANUP_TARGETS=$(BUILD)/$(NAME).log
 
-ifdef INTEGRATION
 ifdef REMOTE_SERVER
 	TEST_OPTS += --tc=agent_remote_test.server:$(REMOTE_SERVER) -s \
                      --tc agent_remote_stress_test.host:$(REMOTE_SERVER)
@@ -22,7 +21,11 @@ endif
 ifdef CHAIRMAN
 	TEST_OPTS += --tc=agent_remote_test.chairman:$(CHAIRMAN)
 endif
+ifdef INTEGRATION
 	TESTS += agent/tests/integration
+endif
+ifdef INTEGRATION_SANITY
+	TESTS += agent/tests/integration/test_remote_agent.py:TestRemoteAgent.test_power_ops
 endif
 
 include ../python.mk
