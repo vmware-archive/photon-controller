@@ -114,10 +114,6 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
     ImmutableSetMultimap.Builder<String, String> availabilityZoneBuilder = new ImmutableSetMultimap.Builder<>();
 
     for (Map.Entry<String, HostService.State> host: hosts.entrySet()) {
-      if (host.getValue().availabilityZone == null) {
-        logger.warn("Ignoring {}. The availabilityZone field is null.", host);
-        continue;
-      }
       if (host.getValue().reportedDatastores == null) {
         logger.warn("Ignoring {}. The reportedDatastores field is null.", host);
         continue;
@@ -147,7 +143,12 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
       for (String networkId: host.getValue().reportedNetworks) {
         networkBuilder.put(networkId, host.getKey());
       }
-      availabilityZoneBuilder.put(host.getValue().availabilityZone, host.getKey());
+
+      if (host.getValue().availabilityZone == null) {
+        logger.info("{} doesn't have the availabilityZone field set.", host);
+      } else {
+        availabilityZoneBuilder.put(host.getValue().availabilityZone, host.getKey());
+      }
     }
     this.hosts = hostBuilder.build();
     this.managementHosts = managementHostBuilder.build();
