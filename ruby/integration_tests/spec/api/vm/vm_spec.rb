@@ -73,12 +73,12 @@ describe "vm", management: true, image: true do
       create_vm(@project, name: vm_name, networks: [network1.id, network2.id])
 
       vms = client.find_vms_by_name(@project.id, vm_name).items
-      vms.size.should == 1
-
+      expect(vms.size).to eq 1
       vm = vms[0]
-      vm_id = vm.id
-      networks = client.get_vm_networks(vm_id).network_connections
-      networks.size.should == 2
+
+      networks = client.get_vm_networks(vm.id).network_connections
+      network_ids = networks.map { |n| n.network }
+      expect(network_ids).to include(network1.id, network2.id)
     ensure
       ignoring_all_errors { vm.delete if vm }
       ignoring_all_errors { network2.delete if network2 }
