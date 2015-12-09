@@ -28,7 +28,7 @@ public class DiskFactoryService extends FactoryService {
   public static final String SELF_LINK = UriPaths.RESOURCES + "/disks";
 
   public DiskFactoryService() {
-    super(DiskService.Disk.class);
+    super(DiskService.DiskState.class);
   }
 
   @Override
@@ -38,7 +38,7 @@ public class DiskFactoryService extends FactoryService {
       return;
     }
 
-    DiskService.Disk initState = post.getBody(DiskService.Disk.class);
+    DiskService.DiskState initState = post.getBody(DiskService.DiskState.class);
 
     if (initState.id == null) {
       initState.id = UUID.randomUUID().toString();
