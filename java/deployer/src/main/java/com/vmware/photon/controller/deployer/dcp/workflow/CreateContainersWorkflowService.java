@@ -482,7 +482,7 @@ public class CreateContainersWorkflowService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(CreateContainersWorkflowService.this, documentLinks);
               checkState(1 == documentLinks.size());
               queryContainersForTemplate(currentState, documentLinks.iterator().next(), futureCallback);
@@ -526,7 +526,7 @@ public class CreateContainersWorkflowService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(CreateContainersWorkflowService.this, documentLinks);
               checkState(documentLinks.size() > 0);
               createContainerTasks(currentState, documentLinks, futureCallback);

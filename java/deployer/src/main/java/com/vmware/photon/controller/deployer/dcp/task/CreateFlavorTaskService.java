@@ -251,7 +251,7 @@ public class CreateFlavorTaskService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(CreateFlavorTaskService.this, documentLinks);
               getContainerEntities(currentState, vmState, hostState, documentLinks);
             } catch (Throwable t) {

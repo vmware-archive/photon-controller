@@ -412,12 +412,12 @@ public class DcpRestClientTest {
       Operation result = dcpRestClient.postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
-      Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(result);
+      Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(result);
       assertThat(documentLinks.size(), is(1));
       assertThat(documentLinks.iterator().next(), is(equalTo(documentSelfLink)));
 
       List<ExampleService.ExampleServiceState> results =
-          QueryTaskUtils.getQueryResultDocuments(
+          QueryTaskUtils.getBroadcastQueryDocuments(
               ExampleService.ExampleServiceState.class, result);
       assertThat(results.size(), is(1));
       assertThat(results.get(0).documentSelfLink, is(equalTo(documentSelfLink)));
@@ -437,7 +437,7 @@ public class DcpRestClientTest {
       Operation result = dcpRestClient.postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
-      Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(result);
+      Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(result);
       assertThat(documentLinks.size(), is(0));
     }
   }
@@ -876,12 +876,12 @@ public class DcpRestClientTest {
       Operation result = dcpRestClient.postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
-      Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(result);
+      Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(result);
       assertThat(documentLinks.size(), is(1));
       assertThat(documentLinks.iterator().next(), is(equalTo(documentSelfLink)));
 
       List<ExampleService.ExampleServiceState> results =
-          QueryTaskUtils.getQueryResultDocuments(
+          QueryTaskUtils.getBroadcastQueryDocuments(
               ExampleService.ExampleServiceState.class, result);
       assertThat(results.size(), is(1));
       assertThat(results.get(0).documentSelfLink, is(equalTo(documentSelfLink)));
@@ -915,7 +915,7 @@ public class DcpRestClientTest {
       Operation result = dcpRestClients[1].postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
-      Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(result);
+      Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(result);
       assertThat(documentLinks.size(), is(1));
       assertThat(documentLinks.iterator().next(), is(equalTo(documentSelfLink)));
     }

@@ -242,7 +242,7 @@ public class CreateContainerSpecTaskService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(CreateContainerSpecTaskService.this, documentLinks);
               getExistingContainers(currentState, containerTemplateServiceState, documentLinks);
             } catch (Throwable t) {

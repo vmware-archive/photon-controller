@@ -555,7 +555,7 @@ public class RemoveDeploymentWorkflowServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
 
       return documentLinks.size();
     }
@@ -703,7 +703,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
       try {
         NodeGroupBroadcastResponse queryResponse = multiHostEnvironment.sendBroadcastQueryAndWait(queryTask);
-        Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+        Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
 
         List<T> states = new ArrayList<>();
         for (String documentLink : documentLinks) {

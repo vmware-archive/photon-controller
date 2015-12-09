@@ -490,7 +490,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
           }
 
           try {
-            Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
             QueryTaskUtils.logQueryResults(AddManagementHostWorkflowService.this, documentLinks);
             checkState(1 == documentLinks.size());
             queryChairmanContainers(currentState, documentLinks.iterator().next());
@@ -531,7 +531,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(AddManagementHostWorkflowService.this, documentLinks);
               checkState(documentLinks.size() > 0);
               getChairmanContainerEntities(currentState, documentLinks);
@@ -696,7 +696,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
                   }
 
                   try {
-                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                    Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(completedOp);
                     QueryTaskUtils.logQueryResults(this, documentLinks);
                     checkState(documentLinks.size() >= 1);
                     allocateHostResource(currentState, documentLinks);
@@ -801,7 +801,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(AddManagementHostWorkflowService.this, documentLinks);
               createFlavorAndSetLinks(currentState, deploymentService, documentLinks);
             } catch (Throwable t) {
@@ -1035,7 +1035,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
                     try {
                       NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
-                      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+                      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
                       if (documentLinks.isEmpty()) {
                         TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this,
                             buildPatch(TaskState.TaskStage.FINISHED, null, null));

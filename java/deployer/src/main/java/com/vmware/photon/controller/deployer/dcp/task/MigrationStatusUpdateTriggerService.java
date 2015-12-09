@@ -193,7 +193,7 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
         ServiceUtils.logSevere(this, t);
         return;
       }
-      List<State> resultDocuments = QueryTaskUtils.getQueryResultDocuments(State.class, o);
+      List<State> resultDocuments = QueryTaskUtils.getBroadcastQueryDocuments(State.class, o);
       if (resultDocuments.isEmpty()) {
         return;
       }

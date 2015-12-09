@@ -170,7 +170,7 @@ public class CreateVmSpecTaskService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(CreateVmSpecTaskService.this, documentLinks);
               if (0 != documentLinks.size()) {
                 sendStageProgressPatch(TaskState.TaskStage.FINISHED);

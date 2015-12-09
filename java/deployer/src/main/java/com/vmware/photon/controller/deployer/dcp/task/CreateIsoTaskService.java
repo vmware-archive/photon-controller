@@ -282,7 +282,7 @@ public class CreateIsoTaskService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(CreateIsoTaskService.this, documentLinks);
               queryContainersForVm(currentState, documentLinks.iterator().next());
             } catch (Throwable t) {
@@ -322,7 +322,7 @@ public class CreateIsoTaskService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(CreateIsoTaskService.this, documentLinks);
               getContainerEntities(currentState, documentLinks);
             } catch (Throwable t) {

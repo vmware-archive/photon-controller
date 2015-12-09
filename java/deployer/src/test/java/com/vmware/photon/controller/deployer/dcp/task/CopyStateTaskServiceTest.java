@@ -534,7 +534,7 @@ public class CopyStateTaskServiceTest {
       querySpecification.query = kindClause;
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
-      return QueryTaskUtils.getBroadcastQueryResults(cluster.sendBroadcastQueryAndWait(queryTask));
+      return QueryTaskUtils.getBroadcastQueryDocumentLinks(cluster.sendBroadcastQueryAndWait(queryTask));
     }
 
     private List<ContainerTemplateService.State> createDocuments(TestEnvironment cluster, int documentCount)

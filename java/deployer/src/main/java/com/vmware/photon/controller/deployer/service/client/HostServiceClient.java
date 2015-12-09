@@ -101,7 +101,7 @@ public class HostServiceClient {
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH));
 
     Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, queryOperation, REFERRER_PATH);
-    return !QueryTaskUtils.getQueryResultDocumentLinks(operation).isEmpty();
+    return !QueryTaskUtils.getBroadcastQueryDocumentLinks(operation).isEmpty();
   }
 
   private QueryTask.QuerySpecification buildQuerySpecification(

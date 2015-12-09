@@ -174,7 +174,7 @@ public class SwarmClusterCreateTaskService extends StatefulService {
                   }
 
                   NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-                  Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+                  Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
                   if (documentLinks.isEmpty()) {
                     failTask(new IllegalStateException(String.format(
                         "Cannot find cluster configuration for %s",

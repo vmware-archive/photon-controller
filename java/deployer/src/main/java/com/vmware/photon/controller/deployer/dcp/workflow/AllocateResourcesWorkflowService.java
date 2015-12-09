@@ -308,7 +308,7 @@ public class AllocateResourcesWorkflowService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(AllocateResourcesWorkflowService.this, documentLinks);
               if (documentLinks.isEmpty()) {
                 throw new RuntimeException("Found 0 vms");

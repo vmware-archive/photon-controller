@@ -516,7 +516,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(BuildRuntimeConfigurationTaskService.this, documentLinks);
               checkState(1 == documentLinks.size());
               queryContainersForTemplate(documentLinks.iterator().next(), containerType, callback);
@@ -561,7 +561,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(BuildRuntimeConfigurationTaskService.this, documentLinks);
               getContainerEntities(documentLinks, containerType, callback);
             } catch (Throwable t) {

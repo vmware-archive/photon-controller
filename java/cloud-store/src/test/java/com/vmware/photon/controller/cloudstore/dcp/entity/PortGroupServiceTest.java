@@ -277,7 +277,7 @@ public class PortGroupServiceTest {
       querySpecification.expectedResultCount = 1L;
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
       NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
-      assertThat(QueryTaskUtils.getBroadcastQueryResults(queryResponse).size(), is(1));
+      assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(1));
     }
 
     @Test
@@ -305,7 +305,7 @@ public class PortGroupServiceTest {
       querySpecification.query.addBooleanClause(serviceTagsClause);
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
       NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
-      assertThat(QueryTaskUtils.getBroadcastQueryResults(queryResponse).size(), is(0));
+      assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(0));
     }
   }
 

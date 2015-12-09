@@ -514,7 +514,7 @@ public class ClusterMaintenanceTaskServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = machine.sendBroadcastQueryAndWait(queryTask);
-      assertThat(QueryTaskUtils.getBroadcastQueryResults(queryResponse).size(), is(0));
+      assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(0));
     }
 
     @DataProvider(name = "otherClusterExistenceForTestingDeletedCluster")
@@ -554,7 +554,7 @@ public class ClusterMaintenanceTaskServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = cloudStoreMachine.sendBroadcastQueryAndWait(queryTask);
-      return QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+      return QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
     }
 
     private ClusterMaintenanceTaskService.State startMaintenance() throws Throwable {

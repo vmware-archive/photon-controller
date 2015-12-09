@@ -557,7 +557,7 @@ public class GarbageInspectionTaskServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = machine.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
 
       assertThat(documentLinks.size(), is(1));
       InactiveVmService.State clusterState = machine.getServiceState(documentLinks.iterator().next(),

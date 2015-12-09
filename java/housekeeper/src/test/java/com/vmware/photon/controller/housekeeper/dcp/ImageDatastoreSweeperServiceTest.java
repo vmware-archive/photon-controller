@@ -1008,7 +1008,7 @@ public class ImageDatastoreSweeperServiceTest {
       querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
       NodeGroupBroadcastResponse queryResponse = machine.sendBroadcastQueryAndWait(queryTask);
-      assertThat(QueryTaskUtils.getBroadcastQueryResults(queryResponse).size(), lessThanOrEqualTo(deletedImages));
+      assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), lessThanOrEqualTo(deletedImages));
     }
 
     @DataProvider(name = "Success")

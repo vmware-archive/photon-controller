@@ -398,7 +398,7 @@ public class SetDatastoreTagsTaskServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = cloudStoreTestEnvironment.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
 
       Set<DatastoreService.State> result = new HashSet<>();
       for (String documentLink : documentLinks) {
