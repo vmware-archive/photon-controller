@@ -85,6 +85,26 @@ describe "vm", management: true, image: true do
     end
   end
 
+  it "should create a vm with multiple nics on same network", disable_for_cli_test: true do
+    begin
+      network1 = EsxCloud::SystemSeeder.instance.network!
+
+      vm_name = random_name("vm-")
+      create_vm(@project, name: vm_name, networks: [network1.id, network1.id])
+
+      vms = client.find_vms_by_name(@project.id, vm_name).items
+      expect(vms.size).to eq 1
+      vm = vms[0]
+
+      networks = client.get_vm_networks(vm.id).network_connections
+      network_ids = networks.map { |n| n.network }
+      network_ids.should =~ [network1.id, network1.id]
+    ensure
+      ignoring_all_errors { vm.delete if vm }
+      ignoring_all_errors { network2.delete if network2 }
+    end
+  end
+
   it "should fail to delete vm with persistent disk attached" do
     persistent_disk = @project.create_disk(
         name: random_name("disk-"),
