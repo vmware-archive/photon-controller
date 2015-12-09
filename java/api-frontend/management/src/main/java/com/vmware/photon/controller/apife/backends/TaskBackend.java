@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -46,7 +47,7 @@ public interface TaskBackend {
   ResourceList<Task> filterInProject(String projectId, Optional<String> state, Optional<String> kind,
                                      Optional<Integer> pageSize);
 
-  ResourceList<Task> getTasksPage(String pageLink);
+  ResourceList<Task> getTasksPage(String pageLink) throws PageExpiredException;
 
   TaskEntity createQueuedTask(BaseEntity entity, Operation operation);
 
@@ -71,7 +72,7 @@ public interface TaskBackend {
                                           Optional<String> state, Optional<Integer> pageSize)
       throws InvalidQueryParamsException;
 
-  ResourceList<TaskEntity> getEntityTasksPage(String pageLink);
+  ResourceList<TaskEntity> getEntityTasksPage(String pageLink) throws PageExpiredException;
 
   void delete(TaskEntity task);
 

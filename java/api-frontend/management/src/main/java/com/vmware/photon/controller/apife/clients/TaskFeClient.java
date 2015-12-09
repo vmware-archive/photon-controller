@@ -93,7 +93,7 @@ public class TaskFeClient {
     return taskBackend.filter(entityId, entityKind, state, pageSize);
   }
 
-  public ResourceList<Task> getPage(String pageLink) {
+  public ResourceList<Task> getPage(String pageLink) throws ExternalException {
     return taskBackend.getTasksPage(pageLink);
   }
 

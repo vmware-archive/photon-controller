@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.Step;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -118,7 +119,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   @Override
-  public ResourceList<Task> getTasksPage(String pageLink) {
+  public ResourceList<Task> getTasksPage(String pageLink) throws PageExpiredException {
     ResourceList<TaskEntity> taskEntities = getEntityTasksPage(pageLink);
     return toApiRepresentation(taskEntities);
   }
@@ -307,8 +308,14 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   @Override
-  public ResourceList<TaskEntity> getEntityTasksPage(String pageLink) {
-    ServiceDocumentQueryResult queryResult = dcpClient.queryDocumentPage(pageLink);
+  public ResourceList<TaskEntity> getEntityTasksPage(String pageLink) throws PageExpiredException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
     ResourceList<TaskService.State> taskStates = DataTypeConversionUtils.xenonQueryResultToResourceList(
         TaskService.State.class, queryResult);
 
