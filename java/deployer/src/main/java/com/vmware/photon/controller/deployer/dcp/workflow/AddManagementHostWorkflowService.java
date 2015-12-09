@@ -66,7 +66,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -815,35 +814,97 @@ public class AddManagementHostWorkflowService extends StatefulService {
   }
 
 
-  private void createFlavorAndSetLinks(State currentState, DeploymentService.State deploymentService, Collection<String>
-      documentLinks) {
+  private void createFlavorAndSetLinks(State currentState,
+                                       DeploymentService.State deploymentService,
+                                       Collection<String> documentLinks) {
 
     final AtomicInteger latch = new AtomicInteger(documentLinks.size());
-    final Service service = this;
-    final Map<String, Throwable> exceptions = new ConcurrentHashMap<>();
-    for (final String documentLink : documentLinks) {
-      createFlavorAndSetLinks(currentState, deploymentService, documentLink);
 
-      if (0 == latch.decrementAndGet()) {
-        createContainers(currentState, deploymentService);
-      }
+    for (String documentLink : documentLinks) {
+
+      TaskUtils.startTaskAsync(this,
+          CreateFlavorTaskFactoryService.SELF_LINK,
+          generateCreateFlavorTaskServiceState(currentState, documentLink),
+          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+          CreateFlavorTaskService.State.class,
+          currentState.taskPollDelay,
+          new FutureCallback<CreateFlavorTaskService.State>() {
+            @Override
+            public void onSuccess(@Nullable CreateFlavorTaskService.State state) {
+              switch (state.taskState.stage) {
+                case FINISHED:
+                  updateVmLinks(currentState, deploymentService, documentLink, latch);
+                  break;
+                case FAILED:
+                  State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                  patchState.taskState.failure = state.taskState.failure;
+                  TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, patchState);
+                  break;
+                case CANCELLED:
+                  TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this,
+                      buildPatch(TaskState.TaskStage.CANCELLED, null, null));
+                  break;
+              }
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              failTask(throwable);
+            }
+          });
     }
   }
 
-  private void createFlavorAndSetLinks(State currentState, DeploymentService.State deploymentService, String
-      vmServiceLink) {
+  private void updateVmLinks(State currentState,
+                             DeploymentService.State deploymentService,
+                             String vmServiceLink,
+                             AtomicInteger latch) {
 
-    FutureCallback<CreateFlavorTaskService.State> setLinksCallback = new
-        FutureCallback<CreateFlavorTaskService.State>() {
+    VmService.State vmPatchState = new VmService.State();
+    vmPatchState.imageServiceLink = ImageServiceFactory.SELF_LINK + "/" + deploymentService.imageId;
+    vmPatchState.projectServiceLink = ProjectServiceFactory.SELF_LINK + "/" + deploymentService.projectId;
+
+    Operation
+        .createPatch(this, vmServiceLink)
+        .setBody(vmPatchState)
+        .setCompletion((completedOp, failure) -> {
+          if (null != failure) {
+            failTask(failure);
+            return;
+          }
+
+          try {
+            createManagementVm(currentState, deploymentService, vmServiceLink, latch);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void createManagementVm(State currentState,
+                                  DeploymentService.State deploymentService,
+                                  String vmServiceLink,
+                                  AtomicInteger latch) {
+
+    TaskUtils.startTaskAsync(this,
+        CreateManagementVmWorkflowFactoryService.SELF_LINK,
+        createVmWorkflowState(currentState, deploymentService, vmServiceLink),
+        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+        CreateManagementPlaneLayoutWorkflowService.State.class,
+        currentState.taskPollDelay,
+        new FutureCallback<CreateManagementPlaneLayoutWorkflowService.State>() {
           @Override
-          public void onSuccess(@Nullable CreateFlavorTaskService.State result) {
-            switch (result.taskState.stage) {
+          public void onSuccess(@Nullable CreateManagementPlaneLayoutWorkflowService.State state) {
+            switch (state.taskState.stage) {
               case FINISHED:
-                updateVmLinks(currentState, deploymentService, vmServiceLink);
+                if (0 == latch.decrementAndGet()) {
+                  createContainers(currentState, deploymentService);
+                }
                 break;
               case FAILED:
                 State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                patchState.taskState.failure = result.taskState.failure;
+                patchState.taskState.failure = state.taskState.failure;
                 TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, patchState);
                 break;
               case CANCELLED:
@@ -854,87 +915,25 @@ public class AddManagementHostWorkflowService extends StatefulService {
           }
 
           @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-
-    CreateFlavorTaskService.State createFlavorState =
-        generateCreateFlavorTaskServiceState(currentState, vmServiceLink);
-
-    TaskUtils.startTaskAsync(
-        this,
-        CreateFlavorTaskFactoryService.SELF_LINK,
-        createFlavorState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        CreateFlavorTaskService.State.class,
-        currentState.taskPollDelay,
-        setLinksCallback);
-  }
-
-  private void updateVmLinks(State currentState, DeploymentService.State deploymentService, String
-      vmServiceLink) {
-    VmService.State vmPatchState = new VmService.State();
-    vmPatchState.imageServiceLink = ImageServiceFactory.SELF_LINK + "/" + deploymentService.imageId;
-    vmPatchState.projectServiceLink = ProjectServiceFactory.SELF_LINK + "/" + deploymentService.projectId;
-
-    this.sendRequest(Operation
-        .createPatch(this, vmServiceLink)
-        .setBody(vmPatchState)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            createManagementVm(currentState, deploymentService, vmServiceLink);
-          }
-        }));
-  }
-
-  private void createManagementVm(State currentState, DeploymentService.State deploymentService, String
-      vmServiceLink) {
-    FutureCallback<CreateManagementVmWorkflowService.State> futureCallback =
-        new FutureCallback<CreateManagementVmWorkflowService.State>() {
-          @Override
-          public void onSuccess(@Nullable CreateManagementVmWorkflowService.State state) {
-            if (state.taskState.stage != TaskState.TaskStage.FINISHED) {
-              failTask(new RuntimeException("CreateManagementWorkFlow did not finish."));
-              return;
-            }
-          }
-
-          @Override
           public void onFailure(Throwable throwable) {
             failTask(throwable);
-            return;
           }
-        };
-
-    CreateManagementVmWorkflowService.State startState = createVmWorkflowState(currentState, deploymentService,
-        vmServiceLink);
-
-    TaskUtils.startTaskAsync(
-        this,
-        CreateManagementVmWorkflowFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        CreateManagementVmWorkflowService.State.class,
-        currentState.taskPollDelay,
-        futureCallback);
+        });
   }
 
-  private CreateManagementVmWorkflowService.State createVmWorkflowState(State currentState, DeploymentService
-      .State deploymentService, String vmServiceLink) {
+  private CreateManagementVmWorkflowService.State createVmWorkflowState(State currentState,
+                                                                        DeploymentService.State deploymentService,
+                                                                        String vmServiceLink) {
+
     CreateManagementVmWorkflowService.State state = new CreateManagementVmWorkflowService.State();
     state.vmServiceLink = vmServiceLink;
     state.ntpEndpoint = deploymentService.ntpEndpoint;
     return state;
   }
 
-  private CreateFlavorTaskService.State generateCreateFlavorTaskServiceState(State currentState, String vmServiceLink) {
+  private CreateFlavorTaskService.State generateCreateFlavorTaskServiceState(State currentState,
+                                                                             String vmServiceLink) {
+
     CreateFlavorTaskService.State state = new CreateFlavorTaskService.State();
     state.taskState = new com.vmware.xenon.common.TaskState();
     state.taskState.stage = TaskState.TaskStage.CREATED;
