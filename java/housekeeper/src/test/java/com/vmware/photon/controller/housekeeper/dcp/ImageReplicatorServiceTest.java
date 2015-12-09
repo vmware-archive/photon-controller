@@ -52,6 +52,7 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
+import org.mockito.Matchers;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -65,6 +66,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -477,6 +479,7 @@ public class ImageReplicatorServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = spy(new ImageReplicatorService());
+      doNothing().when(service).sendRequest(Matchers.any());
       host = TestHost.create(mock(HostClient.class), mock(ZookeeperHostMonitor.class), new CloudStoreHelperMock());
     }
 
@@ -828,10 +831,6 @@ public class ImageReplicatorServiceTest {
     @DataProvider(name = "ValidStageUpdates")
     public Object[][] getValidStageUpdatesData() throws Throwable {
       return new Object[][]{
-          {ImageReplicatorService.TaskState.TaskStage.STARTED,
-              ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
-              ImageReplicatorService.TaskState.TaskStage.STARTED,
-              ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS},
           {ImageReplicatorService.TaskState.TaskStage.STARTED,
               ImageReplicatorService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
               ImageReplicatorService.TaskState.TaskStage.STARTED,
