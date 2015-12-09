@@ -219,7 +219,7 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
           }
 
           try {
-            Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
             QueryTaskUtils.logQueryResults(AllocateClusterManagerResourcesTaskService.this, documentLinks);
             checkState(!documentLinks.isEmpty(), "Found 0 ManagementApi container template entity");
             queryForLoadBalancerContainer(documentLinks.iterator().next());
@@ -258,7 +258,7 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
           }
 
           try {
-            Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
             QueryTaskUtils.logQueryResults(AllocateClusterManagerResourcesTaskService.this, documentLinks);
             checkState(!documentLinks.isEmpty(), "Found 0 container entity");
             getContainerState(documentLinks.iterator().next());

@@ -209,7 +209,7 @@ public class CreateVmSpecLayoutTaskService extends StatefulService {
                     return;
                   }
                   try {
-                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                    Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(completedOp);
                     QueryTaskUtils.logQueryResults(CreateVmSpecLayoutTaskService.this, documentLinks);
                     getHostEntities(currentState, documentLinks);
                   } catch (Throwable t) {

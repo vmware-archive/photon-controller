@@ -116,7 +116,7 @@ public class DeploymentWorkFlowServiceClient {
     Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, queryOperation, REFERRER_PATH);
 
     List<Operation> opList = new ArrayList<>();
-    for (String documentLink : QueryTaskUtils.getQueryResultDocumentLinks(operation)) {
+    for (String documentLink : QueryTaskUtils.getBroadcastQueryDocumentLinks(operation)) {
       Operation getOperation = Operation
           .createGet(UriUtils.buildUri(dcpHost, documentLink))
           .forceRemote()

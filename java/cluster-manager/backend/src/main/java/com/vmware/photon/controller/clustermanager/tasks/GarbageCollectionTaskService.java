@@ -136,7 +136,7 @@ public class GarbageCollectionTaskService extends StatefulService {
           }
 
           try {
-            Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
             List<String> vmIds = new ArrayList<>(documentLinks.size());
             for (String documentLink : documentLinks) {
               vmIds.add(ServiceUtils.getIDFromDocumentSelfLink(documentLink));

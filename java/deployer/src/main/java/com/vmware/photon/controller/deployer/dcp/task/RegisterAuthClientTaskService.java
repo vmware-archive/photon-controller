@@ -261,7 +261,7 @@ public class RegisterAuthClientTaskService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(RegisterAuthClientTaskService.this, documentLinks);
               checkState(1 == documentLinks.size());
               queryLoadBalancerContainer(currentState, documentLinks.iterator().next());
@@ -303,7 +303,7 @@ public class RegisterAuthClientTaskService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(RegisterAuthClientTaskService.this, documentLinks);
               checkState(1 == documentLinks.size());
               getLoadBalancerContainerEntity(currentState, documentLinks.iterator().next());

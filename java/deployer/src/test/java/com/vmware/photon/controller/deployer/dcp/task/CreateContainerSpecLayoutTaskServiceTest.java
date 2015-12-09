@@ -508,7 +508,7 @@ public class CreateContainerSpecLayoutTaskServiceTest {
       QueryTask query = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(query);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
 
       // Verify that we created the exact number of AllocateContainerTaskService instances as there are
       // containerTemplate document links.

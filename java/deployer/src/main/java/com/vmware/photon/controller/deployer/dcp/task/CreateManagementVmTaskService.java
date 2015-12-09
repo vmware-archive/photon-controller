@@ -434,7 +434,7 @@ public class CreateManagementVmTaskService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(CreateManagementVmTaskService.this, documentLinks);
               checkState(documentLinks.size() > 0);
               getContainerTemplates(currentState, documentLinks);

@@ -257,7 +257,7 @@ public class MiscUtils {
                   if (failure != null) {
                     completionHandler.handle(completedOp, failure);
                   } else {
-                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                    Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(completedOp);
                     QueryTaskUtils.logQueryResults(service, documentLinks);
                     checkState(documentLinks.size() == 1);
                     updateDeploymentState(service, documentLinks.iterator().next(), deploymentServiceState,

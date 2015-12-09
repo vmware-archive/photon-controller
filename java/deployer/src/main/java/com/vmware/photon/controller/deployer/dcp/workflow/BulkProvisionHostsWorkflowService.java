@@ -299,7 +299,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
 
                   try {
                     NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
-                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
                     if (UsageTag.CLOUD.name().equals(currentState.usageTag)) {
                       if (documentLinks.isEmpty()) {
                         TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this,

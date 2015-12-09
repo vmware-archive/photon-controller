@@ -226,7 +226,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
                   }
                   try {
                     NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
-                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
                     if (documentLinks.isEmpty()) {
                       failTask(new DcpRuntimeException("No HostService.State documents found"));
                     } else {
@@ -281,7 +281,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
           try {
             NodeGroupBroadcastResponse vmQueryResponse =
                 ops.get(vmQueryPostOperation.getId()).getBody(NodeGroupBroadcastResponse.class);
-            Set<String> vmLinks = QueryTaskUtils.getBroadcastQueryResults(vmQueryResponse);
+            Set<String> vmLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(vmQueryResponse);
             QueryTaskUtils.logQueryResults(CreateContainerSpecLayoutTaskService.this, vmLinks);
             if (vmLinks.isEmpty()) {
               throw new DcpRuntimeException("Found 0 VmService entities representing docker vms");
@@ -290,7 +290,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
             NodeGroupBroadcastResponse containerTemplateQueryResponse =
                 ops.get(containerTemplateQueryPostOperation.getId()).getBody(NodeGroupBroadcastResponse.class);
             Set<String> containerTemplateLinks =
-                QueryTaskUtils.getBroadcastQueryResults(containerTemplateQueryResponse);
+                QueryTaskUtils.getBroadcastQueryDocumentLinks(containerTemplateQueryResponse);
             QueryTaskUtils.logQueryResults(CreateContainerSpecLayoutTaskService.this, containerTemplateLinks);
             if (containerTemplateLinks.isEmpty()) {
               throw new DcpRuntimeException(
