@@ -137,15 +137,15 @@ public class ResourceAllocationTaskServiceTest {
   }
 
   private static List<String> createDiskDescription(TestHost host) throws Throwable {
-    DiskService.Disk d = new DiskService.Disk();
+    DiskService.DiskState d = new DiskService.DiskState();
     d.id = UUID.randomUUID().toString();
     d.type = DiskService.DiskType.HDD;
     d.name = "friendly-name";
     d.capacityMBytes = 100L;
-    DiskService.Disk d1 = host.postServiceSynchronously(
+    DiskService.DiskState d1 = host.postServiceSynchronously(
         DiskFactoryService.SELF_LINK,
         d,
-        DiskService.Disk.class);
+        DiskService.DiskState.class);
     List<String> links = new ArrayList<>();
     links.add(d1.documentSelfLink);
     return links;

@@ -15,7 +15,7 @@ package com.vmware.photon.controller.model.adapters.awsadapter;
 
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
 import com.vmware.photon.controller.model.resources.ComputeService.ComputeStateWithDescription;
-import com.vmware.photon.controller.model.resources.DiskService.Disk;
+import com.vmware.photon.controller.model.resources.DiskService.DiskState;
 import com.vmware.photon.controller.model.resources.DiskService.DiskType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.AuthCredentialsService;
@@ -36,7 +36,7 @@ public class AWSAllocation {
   public ComputeStateWithDescription parent;
   public AmazonEC2AsyncClient amazonEC2Client;
   public AuthCredentialsService.AuthCredentialsServiceState parentAuth;
-  public Map<DiskType, Disk> childDisks;
+  public Map<DiskType, DiskState> childDisks;
   public String securityGroupId;
   public Throwable error;
 

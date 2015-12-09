@@ -51,7 +51,7 @@ public class DiskService extends StatefulService {
    * This class represents the document state associated with a
    * {@link com.vmware.photon.controller.model.resources.DiskService} task.
    */
-  public static class Disk extends ServiceDocument {
+  public static class DiskState extends ServiceDocument {
     /**
      * Identifier of this disk service instance.
      */
@@ -190,7 +190,7 @@ public class DiskService extends StatefulService {
   }
 
   public DiskService() {
-    super(Disk.class);
+    super(DiskState.class);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
@@ -202,14 +202,14 @@ public class DiskService extends StatefulService {
       if (!start.hasBody()) {
         throw new IllegalArgumentException("body is required");
       }
-      validateState(start.getBody(Disk.class));
+      validateState(start.getBody(DiskState.class));
       start.complete();
     } catch (Throwable e) {
       start.fail(e);
     }
   }
 
-  private void validateState(Disk state) {
+  private void validateState(DiskState state) {
     if (state.id == null) {
       throw new IllegalArgumentException("id is required");
     }
@@ -233,7 +233,7 @@ public class DiskService extends StatefulService {
     }
 
     if (state.bootConfig != null) {
-      for (Disk.BootConfig.FileEntry entry : state.bootConfig.files) {
+      for (DiskState.BootConfig.FileEntry entry : state.bootConfig.files) {
         if (entry.path == null || entry.path.length() == 0) {
           throw new IllegalArgumentException("FileEntry.path is required");
         }
@@ -243,8 +243,8 @@ public class DiskService extends StatefulService {
 
   @Override
   public void handlePatch(Operation patch) {
-    Disk currentState = getState(patch);
-    Disk patchBody = patch.getBody(Disk.class);
+    DiskState currentState = getState(patch);
+    DiskState patchBody = patch.getBody(DiskState.class);
 
     boolean isChanged = false;
 
@@ -279,7 +279,7 @@ public class DiskService extends StatefulService {
   @Override
   public ServiceDocument getDocumentTemplate() {
     ServiceDocument td = super.getDocumentTemplate();
-    Disk template = (Disk) td;
+    DiskState template = (DiskState) td;
 
     ServiceDocumentDescription.expandTenantLinks(td.documentDescription);
 
