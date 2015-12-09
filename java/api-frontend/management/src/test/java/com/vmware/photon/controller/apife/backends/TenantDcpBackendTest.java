@@ -263,7 +263,6 @@ public class TenantDcpBackendTest {
       Tenant tenant = tenantBackend.getApiRepresentation(tenantEntity.getId());
       assertThat(tenant.getId(), is(tenantEntity.getId()));
       assertThat(tenant.getName(), is(tenantEntity.getName()));
-      assertThat(tenant.getProjects().size(), is(0));
 
       spec.setName("t2");
       tenantBackend.createTenant(spec);

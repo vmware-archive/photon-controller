@@ -292,14 +292,8 @@ public class TenantDcpBackend implements TenantBackend {
     tenant.setId(tenantEntity.getId());
     tenant.setName(tenantEntity.getName());
 
-    List<BaseCompact> projects = new ArrayList<>();
     List<BaseCompact> tickets = new ArrayList<>();
     Set<String> tags = new HashSet<>();
-
-    for (ProjectService.State project : filterProjectByTenant(tenantEntity.getId())) {
-      String id = ServiceUtils.getIDFromDocumentSelfLink(project.documentSelfLink);
-      projects.add(BaseCompact.create(id, project.name));
-    }
 
     for (ResourceTicketService.State ticket : filterResourceTicketByTenant(tenantEntity.getId())) {
       String id = ServiceUtils.getIDFromDocumentSelfLink(ticket.documentSelfLink);
@@ -310,7 +304,6 @@ public class TenantDcpBackend implements TenantBackend {
       tags.add(tag.getValue());
     }
 
-    tenant.setProjects(projects);
     tenant.setResourceTickets(tickets);
     tenant.setTags(tags);
     tenant.setSecurityGroups(SecurityGroupUtils.toApiRepresentation(tenantEntity.getSecurityGroups()));
