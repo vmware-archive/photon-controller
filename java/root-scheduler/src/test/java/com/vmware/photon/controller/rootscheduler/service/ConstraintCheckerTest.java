@@ -30,6 +30,8 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -48,12 +50,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.Executors;
 
 /**
  * Test Constraint Checker.
  */
 public class ConstraintCheckerTest {
+  private static final Logger logger = LoggerFactory.getLogger(ConstraintCheckerTest.class);
 
   private TestEnvironment cloudStoreTestEnvironment;
 
@@ -336,4 +340,39 @@ public class ConstraintCheckerTest {
     constraint.setNegative(true);
     return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
   }
+
+  @Test(dataProvider = "default")
+  public void testNoConstraintCount(ConstraintChecker checker) throws Throwable {
+    Map<String, Integer> count = new HashMap<>();
+    for (int i = 0; i < 10000; i++) {
+      List<ResourceConstraint> constraints = new LinkedList<>();
+      Map<String, ServerAddress> candidates = checker.getCandidates(constraints, 4);
+      for (String candidate: candidates.keySet()) {
+        if (count.containsKey(candidate)) {
+          count.put(candidate, count.get(candidate) + 1);
+        } else {
+          count.put(candidate, 1);
+        }
+      }
+    }
+
+    // map from scheduler index to host id sorted by scheduler index
+    Map<Long, Set<String>> indexMap = new TreeMap<>();
+    for (Map.Entry<String, Integer> entry: count.entrySet()) {
+      String hostUrl = HostServiceFactory.SELF_LINK + "/" + entry.getKey();
+      HostService.State host = cloudStoreTestEnvironment.getServiceState(hostUrl, HostService.State.class);
+      if (indexMap.containsKey(host.schedulingConstant)) {
+        indexMap.get(host.schedulingConstant).add(entry.getKey());
+      } else {
+        indexMap.put(host.schedulingConstant, new HashSet<>(Arrays.asList(entry.getKey())));
+      }
+    }
+
+    for (Map.Entry<Long, Set<String>> entry: indexMap.entrySet()) {
+      for (String key: entry.getValue()) {
+        logger.info("{} scheduler index: {} count: {}", key, entry.getKey(), count.get(key));
+      }
+    }
+  }
+
 }
