@@ -12,16 +12,6 @@
             "name": "rt2name"
         }
     ],
-    "projects": [
-        {
-            "id": "p1",
-            "name": "p1name"
-        },
-        {
-            "id": "p2",
-            "name": "p2name"
-        }
-    ],
     "kind": "tenant",
     "tags": ["foo", "bar"]
 }

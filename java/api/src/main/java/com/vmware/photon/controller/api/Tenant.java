@@ -45,10 +45,6 @@ public class Tenant extends VisibleModel {
   private List<BaseCompact> resourceTickets = new ArrayList<>();
 
   @JsonProperty
-  @ApiModelProperty(value = "Compact representation (id, name) of tenant projects", required = true)
-  private List<BaseCompact> projects = new ArrayList<>();
-
-  @JsonProperty
   @ApiModelProperty(value = "This property is the list of security groups of this tenant")
   private List<SecurityGroup> securityGroups;
 
@@ -63,14 +59,6 @@ public class Tenant extends VisibleModel {
 
   public void setResourceTickets(List<BaseCompact> resourceTickets) {
     this.resourceTickets = resourceTickets;
-  }
-
-  public List<BaseCompact> getProjects() {
-    return projects;
-  }
-
-  public void setProjects(List<BaseCompact> projects) {
-    this.projects = projects;
   }
 
   public List<SecurityGroup> getSecurityGroups() {
