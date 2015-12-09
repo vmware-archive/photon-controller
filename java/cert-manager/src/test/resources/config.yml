@@ -1,0 +1,9 @@
+bind: localhost
+port: 16000
+logging:
+  level: INFO
+  console:
+    logFormat: "%-5p [%d{ISO8601}]%X{request} %c: %m\n%ex"
+  loggers:
+    "com.vmware.esxcloud.housekeeper": DEBUG
+

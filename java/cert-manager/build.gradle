@@ -1,0 +1,35 @@
+apply plugin: 'application'
+
+mainClassName = 'com.vmware.photon.controller.housekeeper.Main'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+  compile project(':common')
+  compile project(':common-dcp')
+  compile project(':common-logging')
+  compile project(':cloud-store')
+  compile project(':common-tests')
+
+  compile "com.google.guava:guava:${versions.guava}"
+  compile "com.google.inject.extensions:guice-assistedinject:${versions.guice}"
+  compile "com.google.inject:guice:${versions.guice}"
+  compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'
+  compile 'joda-time:joda-time:2.2'
+
+  testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+jar {
+  manifest {
+    attributes 'Specification-Title': 'Photon Controller Cert Manager',
+        'Specification-Version': version,
+        'Built-By': System.getProperty('user.name'),
+        'Built-Date': new Date(),
+        'Built-JDK': System.getProperty('java.version'),
+        'Built-Gradle': gradle.gradleVersion,
+        'Git-Commit': "git rev-parse --short HEAD".execute().text.trim()
+  }
+}
