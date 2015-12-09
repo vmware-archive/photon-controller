@@ -112,7 +112,6 @@ module EsxCloud
 
     def self.hosts_routes(id = SecureRandom.uuid)
       [
-        EsxCloud::ApiRoute.new(:get, "/hosts", 200, 200, 403, 403, 403),
         EsxCloud::ApiRoute.new(:get, "/hosts/#{id}", 404, 404, 403, 403, 403),
         EsxCloud::ApiRoute.new(:post, "/hosts/#{id}/enter_maintenance", 404, 404, 403, 403, 403),
         EsxCloud::ApiRoute.new(:post, "/hosts/#{id}/exit_maintenance", 404, 404, 403, 403, 403),
