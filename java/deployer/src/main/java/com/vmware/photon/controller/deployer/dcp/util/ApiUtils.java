@@ -25,7 +25,6 @@ import com.google.common.util.concurrent.FutureCallback;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class implements helper routines for calls to the ESX Cloud REST API.
@@ -121,59 +120,6 @@ public class ApiUtils {
       default:
         callback.onFailure(new RuntimeException("Unknown task state: " + task.getState()));
         break;
-    }
-  }
-
-  /**
-   * This method polls the tasks status asynchronously until all the tasks completes or fails.
-   *
-   * @param tasks             Supplies a list of task objects.
-   * @param client            Supplies the API client object.
-   * @param service           Supplies the DCP micro-service which is waiting on the task completion.
-   * @param queryTaskInterval Supplies the time interval between the task status query.
-   * @param callback          Supplies the callback to be invoked when the task completes or fails.
-   */
-  public static void pollTasksAsync(
-      final List<Task> tasks,
-      final ApiClient client,
-      final Service service,
-      final int queryTaskInterval,
-      final FutureCallback<List<Task>> callback) {
-
-    final AtomicInteger latch = new AtomicInteger(tasks.size());
-    final List<Task> finalTasks = new ArrayList<>();
-    final List<Throwable> failures = new ArrayList<>();
-
-    FutureCallback<Task> internalCallback = new FutureCallback<Task>() {
-      @Override
-      public void onSuccess(Task result) {
-        synchronized (finalTasks) {
-          finalTasks.add(result);
-        }
-
-        if (0 == latch.decrementAndGet()) {
-          if (!failures.isEmpty()) {
-            callback.onFailure(ExceptionUtils.createMultiException(failures));
-          } else {
-            callback.onSuccess(finalTasks);
-          }
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable throwable) {
-        synchronized (failures) {
-          failures.add(throwable);
-        }
-
-        if (0 == latch.decrementAndGet()) {
-          callback.onFailure(ExceptionUtils.createMultiException(failures));
-        }
-      }
-    };
-
-    for (Task task : tasks) {
-      pollTaskAsync(task, client, service, queryTaskInterval, internalCallback);
     }
   }
 }

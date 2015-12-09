@@ -32,7 +32,6 @@ import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
-import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.xenon.common.Operation;
@@ -416,7 +415,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
             .map(documentLink -> Operation.createPatch(this, documentLink).setBody(patchState)))
         .setCompletion((ops, exs) -> {
           if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
+            failTask(exs.values());
           } else {
             updateDeploymentState(currentState, imageServiceLink);
           }
@@ -538,7 +537,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
                   TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.STARTED,
                       TaskState.SubStage.CREATE_CONTAINERS));
                 } else {
-                  failTask(ExceptionUtils.createMultiException(exceptions.values()));
+                  failTask(exceptions.values());
                 }
               }
             }
@@ -547,7 +546,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
             public void onFailure(Throwable throwable) {
               exceptions.put(documentLink, throwable);
               if (0 == latch.decrementAndGet()) {
-                failTask(ExceptionUtils.createMultiException(exceptions.values()));
+                failTask(exceptions.values());
               }
             }
           };
@@ -659,9 +658,9 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, e));
   }
 
-  private void failTask(Map<Long, Throwable> exs) {
-    exs.values().forEach(e -> ServiceUtils.logSevere(this, e));
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, exs.values().iterator().next()));
+  private void failTask(Collection<Throwable> failures) {
+    failures.forEach(e -> ServiceUtils.logSevere(this, e));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
   }
 
   /**
