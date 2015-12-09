@@ -48,7 +48,6 @@ import com.vmware.photon.controller.apife.resources.FlavorsResource;
 import com.vmware.photon.controller.apife.resources.HostResource;
 import com.vmware.photon.controller.apife.resources.HostTasksResource;
 import com.vmware.photon.controller.apife.resources.HostVmsResource;
-import com.vmware.photon.controller.apife.resources.HostsResource;
 import com.vmware.photon.controller.apife.resources.ImageResource;
 import com.vmware.photon.controller.apife.resources.ImageTasksResource;
 import com.vmware.photon.controller.apife.resources.ImagesResource;
@@ -256,7 +255,6 @@ public class ApiFeService extends Application<ApiFeConfiguration> {
     resources.add(FlavorsResource.class);
     resources.add(FlavorTasksResource.class);
     resources.add(HostResource.class);
-    resources.add(HostsResource.class);
     resources.add(HostTasksResource.class);
     resources.add(HostVmsResource.class);
     resources.add(NetworkPortGroupsSetResource.class);

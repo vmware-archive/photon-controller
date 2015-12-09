@@ -65,13 +65,6 @@ module EsxCloud::Cli
         puts ("  Metadata: #{host.metadata}")
       end
 
-      usage "host list"
-      desc "List hosts"
-      def list(args = [])
-        hosts = client.mgmt_find_all_hosts.items
-        render_hosts(hosts)
-      end
-
       usage "host delete <id>"
       desc "Delete a host"
       def delete_host(args = [])

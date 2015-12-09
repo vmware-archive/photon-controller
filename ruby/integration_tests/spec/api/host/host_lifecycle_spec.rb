@@ -22,8 +22,8 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       context "when using a provisioned host" do
         context "with vms" do
           before(:all) do
-            @host = client.mgmt_find_all_hosts.items.select { |host| host.usage_tags == ["CLOUD"] }.first
             @deployment = client.find_all_api_deployments.items.first
+            @host = client.get_deployment_hosts(@deployment.id).items.select { |host| host.usage_tags == ["CLOUD"] }.first
             stop_to_maintain @host
             resume @host
             2.times do
@@ -70,8 +70,8 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
 
         context "without vms" do
           before(:all) do
-            @host = client.mgmt_find_all_hosts.items.select { |host| host.usage_tags == ["CLOUD"] }.first
             @deployment = client.find_all_api_deployments.items.first
+            @host = client.get_deployment_hosts(@deployment.id).items.select { |host| host.usage_tags == ["CLOUD"] }.first
           end
 
           it "de-provisions and re-provisions" do
@@ -109,7 +109,8 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
   describe "maintenance mode transitions", order: :defined do
     context "when using a host with vms" do
       before(:all) do
-        @host = client.mgmt_find_all_hosts.items.select { |host| host.usage_tags == ["CLOUD"] }.first
+        @deployment = client.find_all_api_deployments.items.first
+        @host = client.get_deployment_hosts(@deployment.id).items.select { |host| host.usage_tags == ["CLOUD"] }.first
         stop_to_maintain @host
         resume @host
         2.times do
@@ -190,7 +191,8 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
 
     context "when using a host without vms" do
       before(:all) do
-        @host = client.mgmt_find_all_hosts.items.select { |host| host.usage_tags == ["CLOUD"] }.first
+        @deployment = client.find_all_api_deployments.items.first
+        @host = client.get_deployment_hosts(@deployment.id).items.select { |host| host.usage_tags == ["CLOUD"] }.first
       end
 
       before(:each) do
