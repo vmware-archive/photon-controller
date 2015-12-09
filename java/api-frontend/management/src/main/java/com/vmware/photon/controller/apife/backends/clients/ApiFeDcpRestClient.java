@@ -154,11 +154,11 @@ public class ApiFeDcpRestClient extends DcpRestClient {
   }
 
   @Override
-  public ServiceDocumentQueryResult queryDocumentPage(String pageLink) {
+  public ServiceDocumentQueryResult queryDocumentPage(String pageLink) throws DocumentNotFoundException {
 
     try {
       return super.queryDocumentPage(pageLink);
-    } catch (DocumentNotFoundException | BadRequestException e) {
+    } catch (BadRequestException e) {
       throw  new DcpRuntimeException(e);
     } catch (TimeoutException | InterruptedException e) {
       throw new RuntimeException(e);
