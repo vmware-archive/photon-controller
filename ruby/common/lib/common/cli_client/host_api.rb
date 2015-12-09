@@ -28,7 +28,7 @@ module EsxCloud
 
         run_cli(cmd)
 
-        hosts = mgmt_find_all_hosts.items.select { |h| h.address == payload[:address] }
+        hosts = get_deployment_hosts(deployment_id).items.select { |h| h.address == payload[:address] }
         if hosts.size > 1
           fail EsxCloud::CliError, "There are more than one Hosts."
         end
@@ -40,10 +40,6 @@ module EsxCloud
         @api_client.find_all_hosts
       end
 
-      # @return [HostList]
-      def mgmt_find_all_hosts
-        @api_client.mgmt_find_all_hosts
-      end
 
       # @param [String] id
       # @return [Host]

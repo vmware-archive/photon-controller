@@ -103,15 +103,6 @@ describe EsxCloud::ApiClient do
     expect(client.mgmt_get_host_vms("foo")).to eq(vms)
   end
 
-  it "find all host" do
-    hosts = double(EsxCloud::HostList)
-
-    expect(@http_client).to receive(:get).with("/hosts").and_return(ok_response("hosts"))
-    expect(EsxCloud::HostList).to receive(:create_from_json).with("hosts").and_return(hosts)
-
-    expect(client.mgmt_find_all_hosts).to eq hosts
-  end
-
   it "list tasks for host" do
     tasks = double(EsxCloud::TaskList)
     expect(@http_client).to receive(:get).with("/hosts/#{host_id}/tasks").and_return(ok_response("tasks"))

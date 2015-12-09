@@ -33,13 +33,6 @@ module EsxCloud
         JSON.parse(response.body)
       end
 
-      # @return [HostList]
-      def mgmt_find_all_hosts
-        response = @http_client.get(HOSTS_ROOT)
-        check_response("Find all hosts", response, 200)
-        HostList.create_from_json(response.body)
-      end
-
       # @param [String] id
       # @return [Host]
       def find_host_by_id(id, property = nil, subId = nil)

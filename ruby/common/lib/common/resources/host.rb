@@ -35,11 +35,6 @@ module EsxCloud
       new(hash["id"], hash["state"], hash["username"], hash["password"], hash["availabilityZone"], hash["usageTags"], hash["address"], hash["metadata"])
     end
 
-    # @return [HostList]
-    def self.find_all
-      Config.client.mgmt_find_all_hosts
-    end
-
     # @param [String] host_id
     # @return [Host]
     def self.find_host_by_id(host_id)
