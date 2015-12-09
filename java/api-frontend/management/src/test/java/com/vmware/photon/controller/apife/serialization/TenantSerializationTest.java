@@ -41,9 +41,6 @@ public class TenantSerializationTest {
     tenant.setResourceTickets(ImmutableList.of(BaseCompact.create("rt1", "rt1name"),
         BaseCompact.create("rt2", "rt2name")));
 
-    tenant.setProjects(ImmutableList.of(BaseCompact.create("p1", "p1name"),
-        BaseCompact.create("p2", "p2name")));
-
     tenant.setTags(ImmutableSet.of("foo", "bar"));
 
     assertThat(asJson(tenant), sameJSONAs(jsonFixture("fixtures/tenant.json")).allowingAnyArrayOrdering());
