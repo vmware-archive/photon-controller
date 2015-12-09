@@ -59,8 +59,11 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
 
         self._datastore_id_to_name_map = {}
         for ds in self._datastores:
-            datastore_mkdirs(self._hypervisor.vim_client, ds.name)
-            self._datastore_id_to_name_map[ds.id] = ds.name
+            try:
+                datastore_mkdirs(self._hypervisor.vim_client, ds.name)
+                self._datastore_id_to_name_map[ds.id] = ds.name
+            except:
+                self.logger.exception("Failed to initialize %s" % ds)
 
         # make sure there is at least one datastore for cloud VMs. Here we
         # can't simply throw an exception since the agent needs to continue
