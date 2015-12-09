@@ -231,6 +231,7 @@ public class HostDcpBackend implements HostBackend {
 
     if (isDeploymentReady(deploymentId)) {
       taskBackend.getStepBackend().createQueuedStep(task, host, Operation.PROVISION_HOST);
+      task.getLockableEntityIds().add(deploymentId);
     }
 
     return task;
