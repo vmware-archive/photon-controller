@@ -409,9 +409,6 @@ module EsxCloud
     def mgmt_find_host_by_id(id)
     end
 
-    # @return [HostList]
-    def mgmt_find_all_hosts
-    end
 
     # @param [String] id
     # @return [Metadata]
