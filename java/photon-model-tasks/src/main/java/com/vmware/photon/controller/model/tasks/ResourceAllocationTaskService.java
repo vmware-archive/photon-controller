@@ -651,7 +651,7 @@ public class ResourceAllocationTaskService extends StatefulService {
         return;
       }
 
-      DiskService.Disk newDiskState = o.getBody(DiskService.Disk.class);
+      DiskService.DiskState newDiskState = o.getBody(DiskService.DiskState.class);
       synchronized (diskLinks) {
         diskLinks.add(newDiskState.documentSelfLink);
         if (diskLinks.size() != currentState.diskDescriptionLinks.size()) {
@@ -676,8 +676,8 @@ public class ResourceAllocationTaskService extends StatefulService {
                   return;
                 }
 
-                DiskService.Disk templateDisk =
-                    o.getBody(DiskService.Disk.class);
+                DiskService.DiskState templateDisk =
+                    o.getBody(DiskService.DiskState.class);
                 // create a new disk based off the template but use a unique ID
                 templateDisk.id = UUID.randomUUID().toString();
                 sendRequest(Operation

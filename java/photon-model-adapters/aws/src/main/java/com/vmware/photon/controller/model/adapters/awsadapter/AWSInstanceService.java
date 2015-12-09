@@ -17,7 +17,8 @@ import com.vmware.photon.controller.model.UriPaths;
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest.InstanceRequestType;
 import com.vmware.photon.controller.model.resources.ComputeService.ComputeStateWithDescription;
-import com.vmware.photon.controller.model.resources.DiskService.Disk;
+import com.vmware.photon.controller.model.resources.DiskService;
+import com.vmware.photon.controller.model.resources.DiskService.DiskState;
 import com.vmware.photon.controller.model.resources.DiskService.DiskType;
 import com.vmware.photon.controller.model.resources.NetworkInterfaceFactoryService;
 import com.vmware.photon.controller.model.resources.NetworkInterfaceService.NetworkInterfaceState;
@@ -287,7 +288,7 @@ public class AWSInstanceService extends StatelessService {
 
           aws.childDisks = new HashMap<>();
           for (Operation op : ops.values()) {
-            Disk disk = op.getBody(Disk.class);
+            DiskService.DiskState disk = op.getBody(DiskState.class);
             aws.childDisks.put(disk.type, disk);
           }
           aws.stage = next;
@@ -302,7 +303,7 @@ public class AWSInstanceService extends StatelessService {
       return;
     }
 
-    Disk bootDisk = aws.childDisks.get(DiskType.HDD);
+    DiskState bootDisk = aws.childDisks.get(DiskType.HDD);
     if (bootDisk == null) {
       AWSUtils.sendFailurePatchToTask(this,
           aws.computeRequest.provisioningTaskReference,

@@ -111,7 +111,7 @@ public class ResourcePoolService extends StatefulService {
     public Double maxCpuCostPerMinute;
 
     /**
-     * Maximum Disk cost (per minute) in this resource pool.
+     * Maximum DiskState cost (per minute) in this resource pool.
      */
     public Double maxDiskCostPerMinute;
 
