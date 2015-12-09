@@ -330,11 +330,18 @@ public class CreateFlavorTaskService extends StatefulService {
             // If host memory and cpu count is set, consume them entirely for the management vm.
             if (hostState.memoryMb != null) {
               finalMemoryMb = (int) (hostState.memoryMb * mgmtVmHostRatio);
+              ServiceUtils.logInfo(this, "Using memory override value of %d MB (%f * %d)", finalMemoryMb,
+                  mgmtVmHostRatio, hostState.memoryMb);
             }
+
             if (hostState.cpuCount != null) {
               finalCpuCount = (int) (hostState.cpuCount * mgmtVmHostRatio);
+              ServiceUtils.logInfo(this, "Using CPU count override value of %d (%f * %d)", finalCpuCount,
+                  mgmtVmHostRatio, hostState.cpuCount);
             }
+
             createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryMb, finalDiskGb);
+
           } catch (Throwable t) {
             failTask(t);
           }
