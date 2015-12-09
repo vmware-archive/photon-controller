@@ -186,7 +186,7 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(BuildContainersConfigurationWorkflowService.this, documentLinks);
               checkState(documentLinks.size() >= 1);
               buildConfiguration(currentState, documentLinks.iterator());

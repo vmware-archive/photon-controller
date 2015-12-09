@@ -705,7 +705,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = machine.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
 
       assertThat(documentLinks.size(), is(1));
       return documentLinks.iterator().next();
@@ -728,7 +728,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = machine.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
 
       Set<ContainerService.State> containerServices = new HashSet<>();
       for (String documentLink : documentLinks) {

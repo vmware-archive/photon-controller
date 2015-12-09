@@ -446,7 +446,7 @@ public class CreateContainerSpecTaskServiceTest {
       QueryTask query = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(query);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
 
       // Verify that count(replicas) == count(dockerVms) i.e. 1 container per vm
       int expectedReplicaCount = isReplicated ? dockerVms.size() : 1;

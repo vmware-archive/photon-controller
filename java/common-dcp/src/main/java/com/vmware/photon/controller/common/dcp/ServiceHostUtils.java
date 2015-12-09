@@ -574,7 +574,7 @@ public class ServiceHostUtils {
     NodeGroupBroadcastResponse queryResponse =
         ServiceHostUtils.sendBroadcastQueryAndWait(host, referrer, queryTask);
 
-    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
 
     if (documentLinks == null || documentLinks.size() <= 0) {
       return;

@@ -673,7 +673,7 @@ public class KubernetesClusterCreateTaskServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = cloudStoreMachine.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
 
       assertThat(documentLinks.size(), is(1));
       ClusterService.State clusterState = cloudStoreMachine.getServiceState(documentLinks.iterator().next(),

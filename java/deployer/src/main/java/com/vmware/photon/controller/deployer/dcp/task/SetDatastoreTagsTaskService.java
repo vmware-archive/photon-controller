@@ -277,7 +277,7 @@ public class SetDatastoreTagsTaskService extends StatefulService {
                   }
 
                   try {
-                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                    Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(completedOp);
                     QueryTaskUtils.logQueryResults(SetDatastoreTagsTaskService.this, documentLinks);
                     if (documentLinks.size() == 0) {
                       throw new IllegalStateException("Could not find a datastore to match the query.");

@@ -628,7 +628,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
       querySpecification.query = kindClause;
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
       NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
       assertThat(documentLinks.size(), is(containersConfig.getContainerSpecs().size()));
 
       Set<String> jobsToCreate = new HashSet<>(containersConfig.getContainerSpecs().keySet());

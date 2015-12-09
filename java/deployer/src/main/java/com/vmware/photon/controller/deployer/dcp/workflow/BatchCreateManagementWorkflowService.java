@@ -389,7 +389,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
 
             try {
               NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-              Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+              Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
               QueryTaskUtils.logQueryResults(BatchCreateManagementWorkflowService.this, documentLinks);
               updateVmStates(currentState, documentLinks, imageServiceLink);
             } catch (Throwable t) {
@@ -505,7 +505,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
             }
 
             try {
-              Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(BatchCreateManagementWorkflowService.this, documentLinks);
               createVms(currentState, documentLinks);
             } catch (Throwable t) {

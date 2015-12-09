@@ -177,7 +177,7 @@ public class AddCloudHostWorkflowService extends StatefulService {
                   }
 
                   try {
-                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                    Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(completedOp);
                     QueryTaskUtils.logQueryResults(AddCloudHostWorkflowService.this, documentLinks);
                     checkState(documentLinks.size() >= 1);
                     getDeploymentService(currentState, documentLinks.iterator().next());

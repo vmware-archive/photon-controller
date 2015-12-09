@@ -628,7 +628,7 @@ public class ClusterDeleteTaskServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = cloudStoreMachine.sendBroadcastQueryAndWait(queryTask);
-      return (QueryTaskUtils.getBroadcastQueryResults(queryResponse).size() == 0);
+      return (QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size() == 0);
     }
 
     private boolean isTombstoneCreated(String clusterId) throws Throwable {
@@ -646,7 +646,7 @@ public class ClusterDeleteTaskServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = cloudStoreMachine.sendBroadcastQueryAndWait(queryTask);
-      return (QueryTaskUtils.getBroadcastQueryResults(queryResponse).size() == 1);
+      return (QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size() == 1);
     }
 
     private void mockGetClusterVms(int nodeCount, boolean isSuccess) throws Throwable {

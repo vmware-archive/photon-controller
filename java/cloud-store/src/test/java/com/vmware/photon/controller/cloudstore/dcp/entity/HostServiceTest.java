@@ -517,7 +517,7 @@ public class HostServiceTest {
           .build();
 
       NodeGroupBroadcastResponse broadcastResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(broadcastResponse);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(broadcastResponse);
       assertThat(documentLinks.size(), is(HOST_COUNT));
     }
 

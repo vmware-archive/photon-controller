@@ -866,7 +866,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
         }
 
         try {
-          Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(operation);
+          Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
           QueryTaskUtils.logQueryResults(RemoveDeploymentWorkflowService.this, documentLinks);
           if (documentLinks.size() > 0) {
             processDeleteFromDCP(documentLinks, isCloudStoreEntity);
@@ -962,7 +962,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
                   }
 
                   try {
-                    Collection<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(completedOp);
+                    Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(completedOp);
                     QueryTaskUtils.logQueryResults(RemoveDeploymentWorkflowService.this, documentLinks);
                     if (documentLinks.size() > 0) {
                       deprovisionHosts(currentState, documentLinks);

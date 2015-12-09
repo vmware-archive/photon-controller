@@ -1020,7 +1020,7 @@ public class DeploymentWorkflowServiceTest {
           QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
           NodeGroupBroadcastResponse queryResponse = localDeployer.sendBroadcastQueryAndWait(queryTask);
-          Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+          Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
 
           // For each VmService entity and each ContainerTemplate entity, there is one and only one
           // ContainerService entity to link them together, if the container is not replicated.
@@ -1097,7 +1097,7 @@ public class DeploymentWorkflowServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       NodeGroupBroadcastResponse queryResponse = multiHostEnvironment.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
       List<T> states = new ArrayList<>();
       for (String documentLink : documentLinks) {
         states.add((T) multiHostEnvironment.getServiceState(documentLink, classType));

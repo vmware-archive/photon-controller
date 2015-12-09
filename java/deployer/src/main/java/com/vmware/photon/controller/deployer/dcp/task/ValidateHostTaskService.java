@@ -261,7 +261,7 @@ public class ValidateHostTaskService extends StatefulService {
         }
 
         try {
-          if (!QueryTaskUtils.getQueryResultDocumentLinks(operation).isEmpty()) {
+          if (!QueryTaskUtils.getBroadcastQueryDocumentLinks(operation).isEmpty()) {
             throw new ExistHostWithSameAddressException(
                 String.format("Find existing HostService entity with the same hostAddress %s", state.hostAddress));
           }

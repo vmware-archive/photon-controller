@@ -290,7 +290,7 @@ public class DcpRestClient implements DcpClient {
     spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
     Operation result = postToBroadcastQueryService(spec);
 
-    return QueryTaskUtils.getQueryResultDocuments(documentType, result);
+    return QueryTaskUtils.getBroadcastQueryDocuments(documentType, result);
   }
 
   /**
@@ -398,7 +398,7 @@ public class DcpRestClient implements DcpClient {
 
     QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(documentType, terms);
     Operation result = postToBroadcastQueryService(spec);
-    Set<String> documentLinks = QueryTaskUtils.getQueryResultDocumentLinks(result);
+    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(result);
 
     if (documentLinks.size() <= 0) {
       return ImmutableList.of();

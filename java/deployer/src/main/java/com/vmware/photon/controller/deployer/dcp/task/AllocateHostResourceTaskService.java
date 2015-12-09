@@ -195,7 +195,7 @@ public class AllocateHostResourceTaskService extends StatefulService {
 
           NodeGroupBroadcastResponse queryResponse = ops.get(queryVms.getId())
               .getBody(NodeGroupBroadcastResponse.class);
-          String vmServiceLink = QueryTaskUtils.getBroadcastQueryResults(queryResponse).iterator().next();
+          String vmServiceLink = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).iterator().next();
           queryContainers.setBody(buildContainerQueryTask(vmServiceLink));
         }))
             // Get all the containers which belong to the particular vm

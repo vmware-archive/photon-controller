@@ -419,7 +419,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
         try {
           NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-          Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryResults(queryResponse);
+          Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
           if (documentLinks.size() > 0) {
             Iterator<String> it = documentLinks.iterator();
             final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
