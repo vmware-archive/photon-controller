@@ -87,7 +87,8 @@ describe "VM lifecycle", life_cycle: true do
     vm.get_metadata.should == {"key" => "value"}
 
     hosts_map = {}
-    hosts = client.mgmt_find_all_hosts
+    deployment = client.find_all_api_deployments.items.first
+    hosts = client.get_deployment_hosts(deployment.id)
     hosts.items.each { |x| hosts_map[x.address] = x }
     if hosts_map.length != 0
       vm.host.should_not be_nil

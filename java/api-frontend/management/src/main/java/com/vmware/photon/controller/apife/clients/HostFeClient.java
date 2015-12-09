@@ -117,10 +117,6 @@ public class HostFeClient {
     return task;
   }
 
-  public ResourceList<Host> listAllHosts() {
-    return new ResourceList<>(hostBackend.listAll());
-  }
-
   public ResourceList<Vm> listAllVms(String id) throws ExternalException {
     return new ResourceList<>(vmBackend.getAllVmsOnHost(id));
   }

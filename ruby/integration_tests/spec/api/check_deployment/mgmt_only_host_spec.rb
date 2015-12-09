@@ -17,8 +17,9 @@ describe 'management only host', check_deployment: true do
 
   it 'should not place a cloud vm on a management only host' do
     begin
-
-      mgmt_hosts = api_client.mgmt_find_all_hosts.items.select { |h| h.usage_tags == ["MGMT"] }
+      # Get deployment
+      deployment = api_client.find_all_api_deployments.items.first
+      mgmt_hosts = api_client.get_deployment_hosts(deployment.id).items.select { |h| h.usage_tags == ["MGMT"] }
 
       expect(mgmt_hosts).to_not be_empty
       host = mgmt_hosts[0]

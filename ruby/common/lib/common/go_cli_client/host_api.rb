@@ -27,11 +27,6 @@ module EsxCloud
         @api_client.find_all_hosts
       end
 
-      # @return [HostList]
-      def mgmt_find_all_hosts
-        @api_client.mgmt_find_all_hosts
-      end
-
       # @param [String] id
       # @return [Host]
       def find_host_by_id(id, property=nil, subId=nil)

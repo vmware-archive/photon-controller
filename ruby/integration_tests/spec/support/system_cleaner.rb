@@ -66,7 +66,8 @@ module EsxCloud
     # @param [Hash] stat
     # @return [Hash] stat
     def clean_hosts(stat = {})
-      client.mgmt_find_all_hosts.items.each do |host|
+      deployment = client.find_all_api_deployments.items.first
+      client.get_deployment_hosts(deployment.id).items.each do |host|
         delete_host host, stat
       end
       stat
