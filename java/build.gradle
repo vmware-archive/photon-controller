@@ -88,7 +88,7 @@ configure([project(":photon-model"), project(":photon-model-tasks")]) {
   apply plugin: 'signing'
   apply plugin: 'maven'
   ext {
-    version '0.1.0'
+    version '0.1.1-SNAPSHOT'
   }
   signing {
     def hasRequiredSigningProps = project.hasProperty('signing.keyId') &&
@@ -113,6 +113,7 @@ configure([project(":photon-model"), project(":photon-model-tasks")]) {
         }
 
         pom.project {
+          name 'Photon Controller'
           groupId 'com.vmware.photon.controller'
           packaging 'jar'
           description 'Photon Controller is an open-source system for managing hardware, containers, ' +
