@@ -37,7 +37,6 @@ import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryServic
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
-import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
@@ -56,6 +55,7 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -489,7 +489,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
 
               if (latch.decrementAndGet() == 0) {
                 if (!errors.isEmpty()) {
-                  failTask(ExceptionUtils.createMultiException(errors));
+                  failTask(errors);
                 } else {
                   stopMigrationUpdateService(currentState);
                 }
@@ -500,7 +500,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
             public void onFailure(Throwable t) {
               errors.add(t);
               if (latch.decrementAndGet() == 0) {
-                failTask(ExceptionUtils.createMultiException(errors));
+                failTask(errors);
               }
             }
           }
@@ -562,6 +562,11 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
   private void failTask(Throwable t) {
     ServiceUtils.logSevere(this, t);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, t));
+  }
+
+  private void failTask(Collection<Throwable> failures) {
+    failures.forEach((throwable) -> ServiceUtils.logSevere(this, throwable));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
   }
 
   @VisibleForTesting

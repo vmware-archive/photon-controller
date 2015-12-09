@@ -24,7 +24,6 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultLong;
 import com.vmware.photon.controller.common.dcp.validation.DefaultString;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.xenon.common.NodeSelectorService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationSequence;
@@ -42,6 +41,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -229,7 +229,7 @@ public class CopyStateTriggerTaskService extends StatefulService {
     OperationSequence.create(copyStateTaskQuery)
         .setCompletion((os, ts) -> {
           if (ts != null && !ts.isEmpty()) {
-            failTrigger(currentState, ExceptionUtils.createMultiException(ts.values()));
+            failTrigger(currentState, ts);
             return;
           }
           NodeGroupBroadcastResponse queryResponse = os.get(copyStateTaskQuery.getId())
@@ -285,8 +285,17 @@ public class CopyStateTriggerTaskService extends StatefulService {
   }
 
   private void failTrigger(State currentState, Throwable throwable) {
+    ServiceUtils.logSevere(this, throwable);
+    failTrigger(currentState);
+  }
+
+  private void failTrigger(State currentState, Map<Long, Throwable> failures) {
+    failures.values().forEach((throwable) -> ServiceUtils.logSevere(this, throwable));
+    failTrigger(currentState);
+  }
+
+  private void failTrigger(State currentState) {
     State newState = new State();
-    ServiceUtils.logSevere(CopyStateTriggerTaskService.this, throwable);
     newState.triggersError = currentState.triggersError + 1;
     sendSelfPatch(newState);
   }

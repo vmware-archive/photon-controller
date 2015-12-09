@@ -35,7 +35,6 @@ import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerReso
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
-import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
@@ -57,6 +56,7 @@ import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -588,7 +588,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
               if (latch.decrementAndGet() == 0) {
                 if (!errors.isEmpty()) {
-                  failTask(ExceptionUtils.createMultiException(errors));
+                  failTask(errors);
                 } else {
                   migrateCloudStore(currentState, zookeeperQuorum);
                 }
@@ -599,7 +599,7 @@ public class DeploymentWorkflowService extends StatefulService {
             public void onFailure(Throwable t) {
               errors.add(t);
               if (latch.decrementAndGet() == 0) {
-                failTask(ExceptionUtils.createMultiException(errors));
+                failTask(errors);
               }
             }
           }
@@ -654,7 +654,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
               if (latch.decrementAndGet() == 0) {
                 if (!errors.isEmpty()) {
-                  failTask(ExceptionUtils.createMultiException(errors));
+                  failTask(errors);
                 } else {
                   updateDeploymentServiceState(remoteServers, currentState);
                 }
@@ -665,7 +665,7 @@ public class DeploymentWorkflowService extends StatefulService {
             public void onFailure(Throwable t) {
               errors.add(t);
               if (latch.decrementAndGet() == 0) {
-                failTask(ExceptionUtils.createMultiException(errors));
+                failTask(errors);
               }
             }
           }
@@ -792,6 +792,11 @@ public class DeploymentWorkflowService extends StatefulService {
   private void failTask(Throwable e) {
     ServiceUtils.logSevere(this, e);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, e));
+  }
+
+  private void failTask(Collection<Throwable> failures) {
+    failures.forEach((throwable) -> ServiceUtils.logSevere(this, throwable));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
   }
 
   /**

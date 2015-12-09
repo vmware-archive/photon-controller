@@ -28,7 +28,6 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
-import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.Host;
@@ -221,7 +220,7 @@ public class ExtractHostInformationTaskService extends StatefulService {
       .setCompletion((ops, ts) -> {
         ts = removeEntityExistsErrors(ops, ts);
         if (ts != null && !ts.isEmpty()) {
-          failTask(ExceptionUtils.createMultiException(ts.values()));
+          failTask(ts);
           return;
         }
         sendStageProgressPatch(TaskState.TaskStage.FINISHED);
@@ -313,6 +312,11 @@ public class ExtractHostInformationTaskService extends StatefulService {
   private void failTask(Throwable t) {
     ServiceUtils.logSevere(this, t);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, t));
+  }
+
+  private void failTask(Map<Long, Throwable> failures) {
+    failures.values().forEach((throwable) -> ServiceUtils.logSevere(this, throwable));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, failures.values().iterator().next()));
   }
 
   @VisibleForTesting

@@ -20,7 +20,6 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.deployer.dcp.util.ExceptionUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
@@ -85,7 +84,7 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
     OperationSequence.create(copyStateTaskQuery, uploadVibTaskQuery)
         .setCompletion((op, t) -> {
           if (t != null && !t.isEmpty()) {
-            ServiceUtils.logSevere(this, ExceptionUtils.createMultiException(t.values()));
+            t.values().forEach((throwable) -> ServiceUtils.logSevere(this, throwable));
             get.fail(t.get(copyStateTaskQuery.getId()));
             return;
           }
