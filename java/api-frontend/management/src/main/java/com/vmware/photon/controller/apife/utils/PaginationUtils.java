@@ -14,8 +14,12 @@
 package com.vmware.photon.controller.apife.utils;
 
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.common.exceptions.external.InvalidPageSizeException;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;
+
+import com.google.common.base.Optional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,5 +77,27 @@ public class PaginationUtils {
     }
 
     return resourceList;
+  }
+
+  /**
+   * Determine the page size to be used.
+   *
+   * 1. If origPageSize is empty, then the one defined in paginationConfig is to be used.
+   * 2. If origPageSize is larger than the maxPageSize defined in paginationConfig, throw exception.
+   *
+   * @param paginationConfig
+   * @param origPageSize
+   * @return
+   */
+  public static Optional<Integer> determinePageSize(PaginationConfig paginationConfig,
+                                                    Optional<Integer> origPageSize) throws InvalidPageSizeException {
+
+    if (!origPageSize.isPresent()) {
+      return Optional.of(paginationConfig.getDefaultPageSize());
+    } else if (origPageSize.get() < 1 || origPageSize.get() > paginationConfig.getMaxPageSize()) {
+      throw new InvalidPageSizeException(origPageSize.get(), 1, paginationConfig.getMaxPageSize());
+    } else {
+      return origPageSize;
+    }
   }
 }

@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.TaskFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
@@ -49,10 +50,12 @@ import javax.ws.rs.core.Response;
 public class TasksResource {
 
   private final TaskFeClient taskFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public TasksResource(TaskFeClient taskFeClient) {
+  public TasksResource(TaskFeClient taskFeClient, PaginationConfig paginationConfig) {
     this.taskFeClient = taskFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @GET
@@ -66,9 +69,18 @@ public class TasksResource {
                        @QueryParam("pageSize") Optional<Integer> pageSize,
                        @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
 
-    ResourceList<Task> resourceList = pageLink.isPresent()
-        ? taskFeClient.getPage(pageLink.get())
-        : taskFeClient.find(entityId, entityKind, state, pageSize);
+    ResourceList<Task> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = taskFeClient.getPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+
+      // Temporarily set the adjustedPageSize back to pageSize.
+      // The reason is that the consumers of api-fe has not implemented the functions
+      // to read page by page.
+      adjustedPageSize = pageSize;
+      resourceList = taskFeClient.find(entityId, entityKind, state, adjustedPageSize);
+    }
 
     return generateResourceListResponse(
         Response.Status.OK,

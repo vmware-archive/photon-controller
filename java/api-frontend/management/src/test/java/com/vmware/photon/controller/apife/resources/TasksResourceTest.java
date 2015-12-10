@@ -13,9 +13,11 @@
 
 package com.vmware.photon.controller.apife.resources;
 
+import com.vmware.photon.controller.api.ApiError;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.TaskFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
 import com.google.common.base.Optional;
@@ -51,17 +53,21 @@ public class TasksResourceTest extends ResourceTest {
   private String link2 = UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build("t2").toString();
   private Task.Entity entity;
   private String state;
+  private PaginationConfig paginationConfig = new PaginationConfig();
 
   @Mock
   private TaskFeClient taskFeClient;
 
   @Override
   protected void setUpResources() throws Exception {
-    addResource(new TasksResource(taskFeClient));
+    addResource(new TasksResource(taskFeClient, paginationConfig));
   }
 
   @BeforeMethod
   public void setUp() throws Throwable {
+    paginationConfig.setDefaultPageSize(10);
+    paginationConfig.setMaxPageSize(100);
+
     entity = new Task.Entity();
     entity.setId("e1");
     entity.setKind("vm");
@@ -139,6 +145,16 @@ public class TasksResourceTest extends ResourceTest {
     }
 
     verifyPageLinks(tasks);
+  }
+
+  @Test
+  public void testInvalidPageSize() {
+    Response response = getTasks(entity.getId(), entity.getKind(), state, Optional.of(200));
+    assertThat(response.getStatus(), is(400));
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), is("InvalidPageSize"));
+    assertThat(errors.getMessage(), is("The page size '200' is not between '1' and '100'"));
   }
 
   @DataProvider(name = "pageSizes")
