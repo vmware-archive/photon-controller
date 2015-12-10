@@ -18,7 +18,7 @@ import com.vmware.photon.controller.model.tasks.ResourceAllocationTaskFactorySer
 import com.vmware.photon.controller.model.tasks.ResourceEnumerationTaskFactoryService;
 import com.vmware.photon.controller.model.tasks.ResourceRemovalTaskFactoryService;
 import com.vmware.photon.controller.model.tasks.SnapshotTaskFactoryService;
-
+import com.vmware.photon.controller.model.tasks.SshCommandTaskFactoryService;
 
 /**
  * Service factories used in Photon Model Task package.
@@ -29,6 +29,7 @@ public class TaskServices {
       ResourceAllocationTaskFactoryService.class,
       ResourceEnumerationTaskFactoryService.class,
       ResourceRemovalTaskFactoryService.class,
-      SnapshotTaskFactoryService.class
+      SnapshotTaskFactoryService.class,
+      SshCommandTaskFactoryService.class
   };
 }

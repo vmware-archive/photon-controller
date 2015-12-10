@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.model.helpers;
 
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
+import com.vmware.photon.controller.model.ExecutorServiceProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
@@ -24,6 +25,9 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.logging.LogManager;
@@ -31,13 +35,14 @@ import java.util.logging.LogManager;
 /**
  * This class implements helper routines used to test service hosts in isolation.
  */
-public class TestHost extends VerificationHost {
+public class TestHost extends VerificationHost implements ExecutorServiceProvider {
 
   private static final int WAIT_ITERATION_SLEEP = 500;
   private static final int WAIT_ITERATION_COUNT = 30000 / WAIT_ITERATION_SLEEP; // 30 seconds.
 
   private ServiceDocument responseBody;
   private Class[] factoryServices;
+  private ExecutorService executorService;
 
   /**
    * Overloaded Constructor.
@@ -57,6 +62,7 @@ public class TestHost extends VerificationHost {
   @Override
   public ServiceHost start() throws Throwable {
     super.start();
+    this.executorService = Executors.newFixedThreadPool(1);
     for (Class service : this.factoryServices) {
       Field f = service.getField(UriUtils.FIELD_NAME_SELF_LINK);
       String path = (String) f.get(null);
@@ -68,6 +74,13 @@ public class TestHost extends VerificationHost {
 
   @Override
   public void tearDown() {
+    if (executorService != null) {
+      try {
+        executorService.shutdown();
+        executorService.awaitTermination(10, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+      }
+    }
     super.tearDown();
     LogManager.getLogManager().reset();
   }
@@ -227,5 +240,10 @@ public class TestHost extends VerificationHost {
 
   public QueryTask querySynchronously(QueryTask queryTask) throws Throwable {
     return postServiceSynchronously(ServiceUriPaths.CORE_QUERY_TASKS, queryTask, QueryTask.class);
+  }
+
+  @Override
+  public ExecutorService getExecutorService() {
+    return executorService;
   }
 }
