@@ -83,6 +83,10 @@ module EsxCloud
       ENV["ESX_IP"]
     end
 
+    def self.get_esx_ip2
+      ENV["ESX_IP2"]
+    end
+
     def self.get_mgmt_port_group
       ENV["ESX_MGMT_PORT_GROUP"]
     end
