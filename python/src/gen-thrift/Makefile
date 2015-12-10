@@ -14,6 +14,7 @@ THRIFT_PY= \
   gen/test/echoer/__init__.py \
   gen/statsd/__init__.py \
   gen/agent/__init__.py \
+  gen/psim/__init__.py \
 
 CHECK_PRUNE='gen'
 EXTRAS=
@@ -62,3 +63,6 @@ gen/test/echoer/__init__.py: thrift/echo.thrift
 
 gen/statsd/__init__.py: $(THRIFT_SRC)
 	$(call compile_thrift,../../../thrift/statsd/statsd.thrift)
+
+gen/psim/__init__.py: $(THRIFT_SRC)
+	$(call compile_thrift,../../../thrift/placement_simulator.thrift)
