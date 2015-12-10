@@ -50,6 +50,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
@@ -345,7 +346,7 @@ public class RegisterAuthClientTaskServiceTest {
 
       DockerProvisioner dockerProvisioner = Mockito.mock(DockerProvisioner.class);
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyInt(), anyMap(), anyMap(),
+      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
           anyString(), anyBoolean(), anyMap(), anyBoolean(), anyString(), anyString(), anyString(), anyString(),
           anyString())).thenReturn("id");
 

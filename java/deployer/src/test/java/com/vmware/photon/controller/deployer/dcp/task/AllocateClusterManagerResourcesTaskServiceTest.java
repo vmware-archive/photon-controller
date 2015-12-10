@@ -609,7 +609,7 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
           ReflectionUtils.buildValidStartState(ContainerTemplateService.State.class);
       containerTemplateState.name = ContainersConfig.ContainerType.ManagementApi.name();
       containerTemplateState.cpuCount = 1;
-      containerTemplateState.memoryMb = 1024;
+      containerTemplateState.memoryMb = 1024L;
       containerTemplateState.diskGb = 1;
       ContainerTemplateService.State containerTemplateSavedState = TestHelper.createContainerTemplateService(machine,
           containerTemplateState);

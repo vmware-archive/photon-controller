@@ -545,7 +545,7 @@ public class CopyStateTaskServiceTest {
             ReflectionUtils.buildValidStartState(ContainerTemplateService.State.class);
         containerTemplateState.name = ContainersConfig.ContainerType.LoadBalancer.name();
         containerTemplateState.cpuCount = 1;
-        containerTemplateState.memoryMb = 1024;
+        containerTemplateState.memoryMb = 1024L;
         containerTemplateState.diskGb = 1;
         ContainerTemplateService.State cts = TestHelper.createContainerTemplateService(cluster, containerTemplateState);
         result.add(cts);

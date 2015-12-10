@@ -503,16 +503,16 @@ public class AllocateHostResourceTaskServiceTest {
       String vmServiceLink = getVmService(hostService.documentSelfLink);
       Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
       assertThat(containerServices.size(), is(9));
-      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).sum(),
-          lessThan((int) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
-      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).max().getAsInt(),
-          lessThan((int) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
+      assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).sum(),
+          lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
+      assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).max().getAsLong(),
+          lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
           lessThanOrEqualTo(ContainerService.State.DOCKER_CPU_SHARES_MAX)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
           greaterThanOrEqualTo(ContainerService.State.DOCKER_CPU_SHARES_MIN)));
       containerServices.stream().forEach(cs -> assertTrue(cs.dynamicParameters.containsKey("memoryMb")));
-      containerServices.stream().forEach(cs -> assertEquals(new Integer(cs.dynamicParameters.get("memoryMb")),
+      containerServices.stream().forEach(cs -> assertEquals(new Long(cs.dynamicParameters.get("memoryMb")),
           cs.memoryMb));
     }
 
@@ -535,16 +535,16 @@ public class AllocateHostResourceTaskServiceTest {
       String vmServiceLink = getVmService(hostService.documentSelfLink);
       Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
       assertThat(containerServices.size(), is(9));
-      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).sum(), lessThan((int) (8192 *
-          DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
-      assertThat(containerServices.stream().mapToInt(cs -> cs.memoryMb).max().getAsInt(), lessThan((int) (8192 *
-          DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
+      assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).sum(),
+          lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
+      assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).max().getAsLong(),
+          lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
           lessThanOrEqualTo(ContainerService.State.DOCKER_CPU_SHARES_MAX)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
           greaterThanOrEqualTo(ContainerService.State.DOCKER_CPU_SHARES_MIN)));
       containerServices.stream().forEach(cs -> assertTrue(cs.dynamicParameters.containsKey("memoryMb")));
-      containerServices.stream().forEach(cs -> assertEquals(new Integer(cs.dynamicParameters.get("memoryMb")),
+      containerServices.stream().forEach(cs -> assertEquals(new Long(cs.dynamicParameters.get("memoryMb")),
           cs.memoryMb));
     }
 

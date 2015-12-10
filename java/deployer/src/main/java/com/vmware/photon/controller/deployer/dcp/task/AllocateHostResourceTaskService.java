@@ -256,14 +256,14 @@ public class AllocateHostResourceTaskService extends StatefulService {
                                                                      HostService.State hostState,
                                                                      Map<String, String> templateMap) {
     List<ContainerTemplateService.State> templateList = templates.collect(Collectors.toList());
-    int totalMemory = templateList.stream().mapToInt(t -> t.memoryMb).sum();
+    long totalMemory = templateList.stream().mapToLong(t -> t.memoryMb).sum();
     int maxCpu = templateList.stream().mapToInt(t -> t.cpuCount).max().getAsInt();
     Map<String, ContainerService.State> containerMap = new HashMap<>();
     float mgmtVmHostRatio = MiscUtils.getManagementVmHostRatio(hostState);
 
     for (ContainerTemplateService.State template : templateList) {
       ContainerService.State state = new ContainerService.State();
-      state.memoryMb = (int) (template.memoryMb * hostState.memoryMb * mgmtVmHostRatio) / totalMemory;
+      state.memoryMb = (long) (template.memoryMb * hostState.memoryMb * mgmtVmHostRatio) / totalMemory;
       state.cpuShares = template.cpuCount * ContainerService.State.DOCKER_CPU_SHARES_MAX / maxCpu;
       // Set memoryMb dynamic parameter which will be used to set the jvm max memory allocation
       if (state.dynamicParameters == null) {
