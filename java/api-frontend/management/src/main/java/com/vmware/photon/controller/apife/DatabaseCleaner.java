@@ -24,10 +24,10 @@ import com.vmware.photon.controller.common.zookeeper.ServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeUtils;
 
-import com.codahale.dropwizard.util.Duration;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import io.dropwizard.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
