@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.config;
 
-import com.codahale.dropwizard.util.Duration;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dropwizard.util.Duration;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.URI;

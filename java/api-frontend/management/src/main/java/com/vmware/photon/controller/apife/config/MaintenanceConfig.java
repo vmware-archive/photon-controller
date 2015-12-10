@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.config;
 
-import com.codahale.dropwizard.util.Duration;
 import com.google.common.annotations.VisibleForTesting;
+import io.dropwizard.util.Duration;
 
 /**
  * Configuration for maintenance such as task expiration.

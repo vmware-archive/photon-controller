@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.config;
 
-import com.codahale.dropwizard.util.Duration;
+import io.dropwizard.util.Duration;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.testng.Assert.assertTrue;
