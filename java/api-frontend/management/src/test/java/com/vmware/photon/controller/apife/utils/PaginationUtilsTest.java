@@ -14,13 +14,17 @@
 package com.vmware.photon.controller.apife.utils;
 
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.common.exceptions.external.InvalidPageSizeException;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;
 
+import com.google.common.base.Optional;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.testng.Assert.fail;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -137,6 +141,49 @@ public class PaginationUtilsTest {
 
       assertThat(resourceList.getNextPageLink().startsWith(route + "?pageLink="), is(true));
       assertThat(resourceList.getPreviousPageLink().startsWith(route + "?pageLink="), is(true));
+    }
+  }
+
+  /**
+   * Tests for determinePageSize method.
+   */
+  public static class TestDeterminePageSize {
+
+    @Test
+    public void testOrigPageSizeEmpty() throws Exception {
+      final int defaultPageSize = 10;
+
+      PaginationConfig paginationConfig = new PaginationConfig();
+      paginationConfig.setDefaultPageSize(defaultPageSize);
+
+      Optional<Integer> pageSize = PaginationUtils.determinePageSize(paginationConfig, Optional.<Integer>absent());
+      assertThat(pageSize.get(), is(defaultPageSize));
+    }
+
+    @Test
+    public void testValidOrigPageSize() throws Exception {
+      PaginationConfig paginationConfig = new PaginationConfig();
+      paginationConfig.setDefaultPageSize(10);
+      paginationConfig.setMaxPageSize(100);
+
+      Optional<Integer> origPageSize = Optional.of(20);
+      Optional<Integer> pageSize = PaginationUtils.determinePageSize(paginationConfig, origPageSize);
+      assertThat(pageSize, is(origPageSize));
+    }
+
+    @Test
+    public void testInvalidOrigPageSize() {
+      PaginationConfig paginationConfig = new PaginationConfig();
+      paginationConfig.setDefaultPageSize(10);
+      paginationConfig.setMaxPageSize(100);
+
+      Optional<Integer> origPageSize = Optional.of(200);
+      try {
+        PaginationUtils.determinePageSize(paginationConfig, origPageSize);
+        fail("Should have failed in page size validation");
+      } catch (InvalidPageSizeException e) {
+        assertThat(e.getMessage(), is("The page size '200' is not between '1' and '100'"));
+      }
     }
   }
 }
