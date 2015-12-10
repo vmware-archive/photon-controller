@@ -27,9 +27,9 @@ import java.util.HashMap;
 import java.util.UUID;
 
 /**
- * Tests for {@link DataTypeConversionUtils}.
+ * Tests for {@link PaginationUtils}.
  */
-public class DataTypeConversionUtilsTest {
+public class PaginationUtilsTest {
 
   @Test(enabled = false)
   private void dummy() {
@@ -46,7 +46,7 @@ public class DataTypeConversionUtilsTest {
 
     @Test
     public void testXenonQueryResultToResourceListEmptyDataSet() {
-      ResourceList<ExampleData> resourceList = DataTypeConversionUtils.xenonQueryResultToResourceList(ExampleData.class,
+      ResourceList<ExampleData> resourceList = PaginationUtils.xenonQueryResultToResourceList(ExampleData.class,
           new ServiceDocumentQueryResult());
 
       assertThat(resourceList.getItems().size(), is(0));
@@ -57,7 +57,7 @@ public class DataTypeConversionUtilsTest {
     @Test
     public void testXenonQueryResultToResourceList() {
       ServiceDocumentQueryResult queryResult = generateQueryResultData();
-      ResourceList<ExampleData> resourceList = DataTypeConversionUtils.xenonQueryResultToResourceList(
+      ResourceList<ExampleData> resourceList = PaginationUtils.xenonQueryResultToResourceList(
           ExampleData.class, queryResult);
 
       assertThat(resourceList.getItems().size(), is(queryResult.documentLinks.size()));
@@ -101,7 +101,7 @@ public class DataTypeConversionUtilsTest {
     @Test
     public void testPageLinksNull() {
       String route = "/tasks";
-      ResourceList<Object> resourceList = DataTypeConversionUtils.formalizePageLinks(
+      ResourceList<Object> resourceList = PaginationUtils.formalizePageLinks(
           new ResourceList<>(Collections.emptyList(), null, null), route);
 
       assertThat(resourceList.getNextPageLink(), nullValue());
@@ -111,7 +111,7 @@ public class DataTypeConversionUtilsTest {
     public void testNextPageLinkWithValue() {
       String route = "/tasks";
       String pageLink = UUID.randomUUID().toString();
-      ResourceList<Object> resourceList = DataTypeConversionUtils.formalizePageLinks(
+      ResourceList<Object> resourceList = PaginationUtils.formalizePageLinks(
           new ResourceList<>(Collections.emptyList(), pageLink, null), route);
 
       assertThat(resourceList.getNextPageLink().startsWith(route + "?pageLink="), is(true));
@@ -121,7 +121,7 @@ public class DataTypeConversionUtilsTest {
     public void testPrevPageLinkWithValue() {
       String route = "/tasks";
       String pageLink = UUID.randomUUID().toString();
-      ResourceList<Object> resourceList = DataTypeConversionUtils.formalizePageLinks(
+      ResourceList<Object> resourceList = PaginationUtils.formalizePageLinks(
           new ResourceList<>(Collections.emptyList(), null, pageLink), route);
 
       assertThat(resourceList.getNextPageLink(), nullValue());
@@ -132,7 +132,7 @@ public class DataTypeConversionUtilsTest {
       String route = "/tasks";
       String pageLink1 = UUID.randomUUID().toString();
       String pageLink2 = UUID.randomUUID().toString();
-      ResourceList<Object> resourceList = DataTypeConversionUtils.formalizePageLinks(
+      ResourceList<Object> resourceList = PaginationUtils.formalizePageLinks(
           new ResourceList<>(Collections.emptyList(), pageLink1, pageLink2), route);
 
       assertThat(resourceList.getNextPageLink().startsWith(route + "?pageLink="), is(true));

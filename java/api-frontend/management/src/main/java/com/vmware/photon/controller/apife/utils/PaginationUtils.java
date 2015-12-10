@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * A collection of tools that can be used to convert data from one type to another.
  */
-public class DataTypeConversionUtils {
+public class PaginationUtils {
   /**
    * Convert the data returned as ServiceDocumentQueryResult from Xenon to
    * ResourceList, which is being used by api-fe.

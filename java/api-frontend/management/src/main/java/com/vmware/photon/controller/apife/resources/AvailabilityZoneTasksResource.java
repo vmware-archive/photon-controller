@@ -19,7 +19,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.clients.TaskFeClient;
 import com.vmware.photon.controller.apife.resources.routes.AvailabilityZonesResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
-import com.vmware.photon.controller.apife.utils.DataTypeConversionUtils;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
 import com.google.common.base.Optional;
@@ -76,7 +76,7 @@ public class AvailabilityZoneTasksResource {
 
     return generateResourceListResponse(
         Response.Status.OK,
-        DataTypeConversionUtils.formalizePageLinks(resourceList, AvailabilityZonesResourceRoutes.API),
+        PaginationUtils.formalizePageLinks(resourceList, AvailabilityZonesResourceRoutes.API),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
