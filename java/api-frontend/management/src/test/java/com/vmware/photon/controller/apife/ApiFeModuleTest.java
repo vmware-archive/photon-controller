@@ -63,6 +63,7 @@ import com.vmware.photon.controller.apife.config.ApiFeConfigurationTest;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ConfigurationUtils;
 import com.vmware.photon.controller.apife.config.ImageConfig;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.lib.ImageStore;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HousekeeperClientConfig;
@@ -129,6 +130,18 @@ public class ApiFeModuleTest {
 
     @Inject
     public TestHousekeeperClientConfigInjection(HousekeeperClientConfig config) {
+      this.config = config;
+    }
+  }
+
+  /**
+   * Helper class used to test PaginationConfig injection.
+   */
+  public static class TestPaginationConfigInjection {
+    public PaginationConfig config;
+
+    @Inject
+    public TestPaginationConfigInjection(PaginationConfig config) {
       this.config = config;
     }
   }
@@ -484,6 +497,35 @@ public class ApiFeModuleTest {
       assertThat(subject.tenantFetcher, instanceOf(TenantSecurityGroupFetcher.class));
       assertThat(subject.vmFetcher, notNullValue());
       assertThat(subject.vmFetcher, instanceOf(VmSecurityGroupFetcher.class));
+    }
+  }
+
+  /**
+   * Tests for PaginationConfig injection.
+   */
+  public class TestPaginationConfig {
+
+    @Test
+    public void testPaginationConfigInjected() throws Throwable {
+      ApiFeModule apiFeModule = new ApiFeModule();
+      apiFeModule.setConfiguration(
+          ConfigurationUtils.parseConfiguration(ApiFeConfigurationTest.class.getResource("/config.yml").getPath())
+      );
+
+      Injector injector = Guice.createInjector(
+          apiFeModule,
+          new ZookeeperModule(),
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              bindScope(RequestScoped.class, Scopes.NO_SCOPE);
+            }
+          }
+      );
+
+      TestPaginationConfigInjection configWrapper = injector.getInstance(TestPaginationConfigInjection.class);
+      assertThat(configWrapper.config.getDefaultPageSize(), is(10));
+      assertThat(configWrapper.config.getMaxPageSize(), is(100));
     }
   }
 }
