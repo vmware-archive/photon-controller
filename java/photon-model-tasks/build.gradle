@@ -6,6 +6,7 @@ dependencies {
   compile "commons-io:commons-io:2.4"
   compile "com.vmware.xenon:xenon-common:${versions.xenon_common}"
   compile 'commons-validator:commons-validator:1.4.0'
+  compile 'com.jcraft:jsch:0.1.53'
   compile(project(':photon-model'))
 
   testCompile("org.apache.curator:curator-test:${versions.curator}") {
