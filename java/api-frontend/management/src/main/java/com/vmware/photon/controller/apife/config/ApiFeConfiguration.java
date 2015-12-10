@@ -70,6 +70,10 @@ public class ApiFeConfiguration extends Configuration {
   @JsonProperty
   private MaintenanceConfig maintenance = new MaintenanceConfig();
 
+  @Valid
+  @JsonProperty("pagination")
+  private PaginationConfig paginationConfig = new PaginationConfig();
+
   public AuthConfig getAuth() {
     return this.auth;
   }
@@ -114,5 +118,9 @@ public class ApiFeConfiguration extends Configuration {
 
   public boolean useDcpBackend() {
     return useDcpBackend;
+  }
+
+  public PaginationConfig getPaginationConfig() {
+    return paginationConfig;
   }
 }
