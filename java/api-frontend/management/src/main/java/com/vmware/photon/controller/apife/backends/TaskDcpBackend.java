@@ -30,7 +30,7 @@ import com.vmware.photon.controller.apife.entities.StepWarningEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.base.InfrastructureEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidQueryParamsException;
-import com.vmware.photon.controller.apife.utils.DataTypeConversionUtils;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -316,7 +316,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
       throw new PageExpiredException(pageLink);
     }
 
-    ResourceList<TaskService.State> taskStates = DataTypeConversionUtils.xenonQueryResultToResourceList(
+    ResourceList<TaskService.State> taskStates = PaginationUtils.xenonQueryResultToResourceList(
         TaskService.State.class, queryResult);
 
     return getTaskEntitiesFromDocuments(taskStates);
@@ -389,7 +389,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(TaskService.State.class, termsBuilder.build(),
         pageSize, true);
 
-    return DataTypeConversionUtils.xenonQueryResultToResourceList(TaskService.State.class, queryResult);
+    return PaginationUtils.xenonQueryResultToResourceList(TaskService.State.class, queryResult);
   }
 
   private ResourceList<TaskService.State> getTaskDocumentsInProject(
@@ -409,7 +409,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(TaskService.State.class, termsBuilder.build(),
         pageSize, true);
 
-    return DataTypeConversionUtils.xenonQueryResultToResourceList(TaskService.State.class, queryResult);
+    return PaginationUtils.xenonQueryResultToResourceList(TaskService.State.class, queryResult);
   }
 
   @Override
