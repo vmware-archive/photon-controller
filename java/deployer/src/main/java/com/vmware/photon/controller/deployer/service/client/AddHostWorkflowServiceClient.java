@@ -25,6 +25,7 @@ import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkf
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatus;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusCode;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
@@ -61,7 +62,9 @@ public class AddHostWorkflowServiceClient {
         ServiceHostUtils.sendRequestAndWait(dcpHost, getHostOperation, REFERRER_PATH)
             .getBody(HostService.State.class);
 
+    logger.info("Adding host " + hostState.hostAddress +  " with usage tags " + hostState.usageTags);
     Operation post = null;
+    ServiceDocument opState = null;
     if (hostState.usageTags.contains(UsageTag.CLOUD.name()) && hostState.usageTags.size() == 1) {
       AddCloudHostWorkflowService.State addCloudHostState = new AddCloudHostWorkflowService.State();
       addCloudHostState.hostServiceLink = hostServiceLink;
@@ -71,6 +74,7 @@ public class AddHostWorkflowServiceClient {
           .setBody(addCloudHostState)
           .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
           .setContextId(LoggingUtils.getRequestId());
+      opState = addCloudHostState;
     } else {
       AddManagementHostWorkflowService.State addMgmtHostState = new AddManagementHostWorkflowService.State();
       addMgmtHostState.hostServiceLink = hostServiceLink;
@@ -80,11 +84,12 @@ public class AddHostWorkflowServiceClient {
           .setBody(addMgmtHostState)
           .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
           .setContextId(LoggingUtils.getRequestId());
+      opState = addMgmtHostState;
     }
     Operation operation = ServiceHostUtils.sendRequestAndWait(dcpHost, post, REFERRER_PATH);
 
     // Return operation id.
-    return operation.getBody(AddCloudHostWorkflowService.State.class).documentSelfLink;
+    return operation.getBody(opState.getClass()).documentSelfLink;
   }
 
   /**
