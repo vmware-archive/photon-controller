@@ -63,6 +63,7 @@ public class ImageSeederServiceTest {
     state.queryPollDelay = 50;
 
     state.image = "image-id";
+    state.sourceImageDatastore = "source-image-datastore-id";
 
     return state;
   }
@@ -285,6 +286,24 @@ public class ImageSeederServiceTest {
       }
     }
 
+    /**
+     * Test start with missing sourceImageDatastore.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testMissingDatastore() throws Throwable {
+      ImageSeederService.State state = buildValidStartupState();
+      state.sourceImageDatastore = null;
+
+      try {
+        host.startServiceSynchronously(service, state);
+        fail("Fail to catch missing sourceImageDatastore");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), containsString("sourceImageDatastore not provided"));
+      }
+    }
+
     @Test(dataProvider = "ExpirationTime")
     public void testExpirationTimeInitialization(long time,
                                                  BigDecimal expectedTime,
@@ -392,6 +411,35 @@ public class ImageSeederServiceTest {
       assertThat(savedState.image, is("image-id"));
     }
 
+
+    /**
+     * Tests that an error is returned for a patch that tries to update the sourceImageDatastore field.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testInvalidPatchUpdateSourceImageDatastoreField() throws Throwable {
+      host.startServiceSynchronously(service, buildValidStartupState());
+
+      ImageSeederService.State patchState = new ImageSeederService.State();
+      patchState.sourceImageDatastore = "new-sourceImageDatastore-id";
+
+      Operation patch = Operation
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
+
+      try {
+        host.sendRequestAndWait(patch);
+        fail("Changing sourceImageDatastore via a patch should fail");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), is("sourceImageDatastore field cannot be updated in a patch"));
+      }
+
+      ImageSeederService.State savedState = host.getServiceState(ImageSeederService.State.class);
+      assertThat(savedState.sourceImageDatastore, is("source-image-datastore-id"));
+    }
+
+
     /**
      * This test verifies that legal stage transitions succeed.
      *
@@ -428,10 +476,6 @@ public class ImageSeederServiceTest {
     @DataProvider(name = "ValidStageUpdates")
     public Object[][] getValidStageUpdatesData() throws Throwable {
       return new Object[][]{
-          {TaskState.TaskStage.STARTED,
-              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-              TaskState.TaskStage.STARTED,
-              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
           {TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
               TaskState.TaskStage.STARTED,
