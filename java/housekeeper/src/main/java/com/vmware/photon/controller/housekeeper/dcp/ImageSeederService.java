@@ -13,7 +13,11 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
+import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -21,12 +25,18 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
 import org.apache.commons.lang3.StringUtils;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Class ImageSeederService implements a service to propagate an image available on a single data store to all
@@ -140,6 +150,7 @@ public class ImageSeederService extends StatefulService {
       case STARTED:
         checkState(current.taskInfo.subStage != null, "subStage cannot be null");
         checkArgument(StringUtils.isNotBlank(current.image), "image not provided");
+        checkArgument(StringUtils.isNotBlank(current.sourceImageDatastore), "sourceImageDatastore not provided");
         switch (current.taskInfo.subStage) {
           case TRIGGER_COPIES:
             break;
@@ -180,6 +191,7 @@ public class ImageSeederService extends StatefulService {
     }
 
     checkArgument(patch.image == null, "image field cannot be updated in a patch");
+    checkArgument(patch.sourceImageDatastore == null, "sourceImageDatastore field cannot be updated in a patch");
   }
 
   /**
@@ -224,18 +236,47 @@ public class ImageSeederService extends StatefulService {
   }
 
   /**
-   * This method queries the list of data stores available in this ESX cloud instance and, on query completion,
-   * creates a set of ImageCopyService instances and transitions the current service instance to the
+   * This method queries the list of image data stores available in this ESX cloud instance and, on query completion,
+   * creates a set of ImageHostToHostCopyService instances and transitions the current service instance to the
    * AWAIT_COMPLETION sub-state.
    *
    * @param current
    */
   protected void handleTriggerCopies(final State current) {
-    // move to next stage
-    if (!current.isSelfProgressionDisabled) {
-      State patch = ImageSeederService.this.buildPatch(
-          TaskState.TaskStage.STARTED, TaskState.SubStage.AWAIT_COMPLETION, null);
-      sendSelfPatch(patch);
+    Set<String> datastoreSet = new HashSet<>();
+    try {
+
+      QueryTask.QuerySpecification querySpecification = buildImageDatastoreQuery(current);
+
+      sendRequest(
+          ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+              .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+              .setBody(QueryTask.create(querySpecification).setDirect(true))
+              .setCompletion(
+                  (operation, throwable) -> {
+                    if (throwable != null) {
+                      failTask(throwable);
+                      return;
+                    }
+
+                    NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
+                    List<DatastoreService.State> documentLinks = QueryTaskUtils
+                        .getBroadcastQueryDocuments(DatastoreService.State.class, queryResponse);
+                    for (DatastoreService.State state : documentLinks) {
+                      datastoreSet.add(state.id);
+                    }
+
+                    if (!this.validateDatastore(current, datastoreSet)) {
+                      return;
+                    }
+
+                    this.triggerHostToHostCopyServices(current, datastoreSet);
+                    // Patch self with the host and data store information.
+                    sendStageProgressPatch(current, TaskState.TaskStage.STARTED, TaskState.SubStage.AWAIT_COMPLETION);
+                  }
+              ));
+    } catch (Exception e) {
+      failTask(e);
     }
   }
 
@@ -251,6 +292,104 @@ public class ImageSeederService extends StatefulService {
           TaskState.TaskStage.FINISHED, null, null);
       sendSelfPatch(patch);
     }
+  }
+
+  /**
+   * Triggers ImageHostToHostCopyService for the image data stores passed as a parameter.
+   *
+   * @param current
+   * @param datastores
+   */
+  protected void triggerHostToHostCopyServices(final State current, Set<String> datastores) {
+    for (String datastore : datastores) {
+      if (!datastore.equals(current.sourceImageDatastore)) {
+        this.triggerHostToHostCopyService(current, datastore);
+      }
+    }
+  }
+
+  /**
+   * Triggers an ImageHostToHostCopyService for the image datastore passed as a parameter.
+   *
+   * @param current
+   * @param datastore
+   */
+  protected void triggerHostToHostCopyService(final State current, String datastore) {
+    // build completion handler
+    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
+      @Override
+      public void handle(Operation acknowledgeOp, Throwable failure) {
+        if (failure != null) {
+          // we could not start an ImageHostToHostCopyService task. Something went horribly wrong. Fail
+          // the current task and stop processing.
+          RuntimeException e = new RuntimeException(
+              String.format("Failed to send host to host copy request %s", failure));
+          failTask(e);
+        }
+      }
+    };
+
+    // build start state
+    ImageHostToHostCopyService.State copyState = new ImageHostToHostCopyService.State();
+    copyState.image = current.image;
+    copyState.sourceDataStore = current.sourceImageDatastore;
+    copyState.destinationDataStore = datastore;
+    copyState.documentExpirationTimeMicros = current.documentExpirationTimeMicros;
+
+    // start service
+    Operation copyOperation = Operation
+        .createPost(UriUtils.buildUri(getHost(), ImageHostToHostCopyServiceFactory.SELF_LINK))
+        .setBody(copyState)
+        .setCompletion(handler);
+    this.sendRequest(copyOperation);
+  }
+
+  /**
+   * Validate image data stores.
+   *
+   * @param current
+   * @param datastoreSet
+   * @return
+   */
+  private boolean validateDatastore(final State current, Set<String> datastoreSet) {
+    if (datastoreSet.size() == 0) {
+      failTask(new Exception("No image datastore found"));
+      return false;
+    }
+
+    if (datastoreSet.size() == 1) {
+      if (datastoreSet.contains(current.sourceImageDatastore)) {
+        failTask(new Exception("No image datastore found"));
+      } else {
+        sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Build a QuerySpecification for querying image data store.
+   *
+   * @param current
+   * @return
+   */
+  private QueryTask.QuerySpecification buildImageDatastoreQuery(final State current) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
+
+    QueryTask.Query imageDatastoreClause = new QueryTask.Query()
+        .setTermPropertyName("isImageDatastore")
+        .setTermMatchValue("true");
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.query.addBooleanClause(imageDatastoreClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    return querySpecification;
   }
 
   /**
@@ -377,5 +516,10 @@ public class ImageSeederService extends StatefulService {
      * Time in milliseconds to delay before issuing query tasks.
      */
     public Integer queryPollDelay;
+
+    /**
+     * Source image data store.
+     */
+    public String sourceImageDatastore;
   }
 }
