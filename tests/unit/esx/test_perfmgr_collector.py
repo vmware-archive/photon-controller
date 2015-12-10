@@ -59,7 +59,13 @@ class TestPerfManagerCollector(unittest.TestCase):
 
         self.coll.get_perf_manager = MagicMock(return_value=self.mock_perf_mgr)
         self.coll.get_host_system = MagicMock(
-            return_value=vim.HostSystem("fake-host"))
+            return_value=vim.HostSystem("ha-host"))
+
+        vim_mock = self.coll.vim_client
+        vim_mock.get_vms_in_cache.return_value = [MagicMock(name="fake-vm-id",
+                                                            project_id="p1",
+                                                            tenant_id="t1")]
+        vim_mock.get_vm_obj_in_cache.return_value = vim.VirtualMachine('9')
 
     def test_initialize_host_counters(self):
         self.coll.initialize_host_counters()
@@ -87,23 +93,51 @@ class TestPerfManagerCollector(unittest.TestCase):
 
         now = datetime.now()
         since = now - timedelta(seconds=20)
-        self.coll.get_perf_manager_stats(since, now)
+        self.mock_perf_mgr.QueryPerf.return_value = [
+            vim.PerformanceManager.EntityMetricCSV(
+                entity=vim.HostSystem('ha-host'),
+                sampleInfoCSV='20,1970-01-01T00:00:10Z',
+                value=[
+                    vim.PerformanceManager.MetricSeriesCSV(
+                        id=vim.PerformanceManager.MetricId(counterId=6566,
+                                                           instance=''),
+                        value='200')]
+            ),
+            vim.PerformanceManager.EntityMetricCSV(
+                entity=vim.VirtualMachine('9'),
+                sampleInfoCSV='20,1970-01-01T00:00:10Z',
+                value=[
+                    vim.PerformanceManager.MetricSeriesCSV(
+                        id=vim.PerformanceManager.MetricId(counterId=6566,
+                                                           instance=''),
+                        value='100')]
+            )
+        ]
+
+        results = self.coll.get_perf_manager_stats(since, now)
+        assert_that(len(results.keys()), is_(2))
+        assert_that(results,
+                    has_entries('vm.t1.p1.A.B', [(10.0, 100.0)],
+                                'A.B', [(10.0, 200.0)]))
         assert_that(self.mock_perf_mgr.QueryPerf.call_count, is_(1))
 
-        query_spec_arg = self.mock_perf_mgr.QueryPerf.call_args[0][0][0]
-        assert_that(query_spec_arg,
-                    instance_of(vim.PerformanceManager.QuerySpec))
-        assert_that(query_spec_arg.intervalId, is_(20))
-        assert_that(query_spec_arg.format, is_('csv'))
-        assert_that(len(query_spec_arg.metricId), is_(2))
-        assert_that(str(query_spec_arg.entity),
-                    is_("'vim.HostSystem:fake-host'"))
-        t_start = datetime.strptime(
-            str(query_spec_arg.startTime), '%Y-%m-%d %H:%M:%S.%f')
-        t_end = datetime.strptime(
-            str(query_spec_arg.endTime), '%Y-%m-%d %H:%M:%S.%f')
-        assert_that(t_end, equal_to(now))
-        assert_that(t_start, equal_to(since))
+        expected_entity_refs = ["'vim.VirtualMachine:9'",
+                                "'vim.HostSystem:ha-host'"]
+        for i in range(len(expected_entity_refs)):
+            ref_str = expected_entity_refs[i]
+            query_spec = self.mock_perf_mgr.QueryPerf.call_args[0][0][i]
+            assert_that(query_spec,
+                        instance_of(vim.PerformanceManager.QuerySpec))
+            assert_that(query_spec.intervalId, is_(20))
+            assert_that(query_spec.format, is_('csv'))
+            assert_that(len(query_spec.metricId), is_(2))
+            assert_that(str(query_spec.entity), is_(ref_str))
+            t_start = datetime.strptime(
+                str(query_spec.startTime), '%Y-%m-%d %H:%M:%S.%f')
+            t_end = datetime.strptime(
+                str(query_spec.endTime), '%Y-%m-%d %H:%M:%S.%f')
+            assert_that(t_end, equal_to(now))
+            assert_that(t_start, equal_to(since))
 
     @parameterized.expand([
         (True,),

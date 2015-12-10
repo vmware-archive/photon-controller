@@ -10,10 +10,10 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
+from calendar import timegm
 from datetime import datetime
 from datetime import timedelta
 import logging
-import time
 
 from pyVmomi import vim
 
@@ -47,6 +47,8 @@ class PerfManagerCollector(Collector):
 
     def __init__(self):
         self._logger = logging.getLogger(__name__)
+        if self._logger.getEffectiveLevel() < logging.INFO:
+            self._logger.setLevel(logging.INFO)
         self._collection_level = 1
         self._all_counters = None
 
@@ -133,11 +135,42 @@ class PerfManagerCollector(Collector):
     def _get_timestamps(self, sample_info_csv):
         # extract timestamps from sampleInfoCSV
         # format is '20,2015-12-03T18:39:20Z,20,2015-12-03T18:39:40Z...'
+        # Note: timegm() returns seconds since epoch without adjusting for
+        # local timezone, which is how we want timestamp interpreted.
         timestamps = sample_info_csv.split(',')[1::2]
         return [
-            time.mktime(datetime.strptime(dt,
-                                          '%Y-%m-%dT%H:%M:%SZ').timetuple())
+            timegm(datetime.strptime(dt,
+                                     '%Y-%m-%dT%H:%M:%SZ').timetuple())
             for dt in timestamps]
+
+    def _build_perf_query_spec(self, entity, start, end):
+        return vim.PerfQuerySpec(
+            entity=entity,
+            intervalId=self._stats_interval_id,
+            format='csv',
+            metricId=self._selected_perf_metric_id_objs,
+            startTime=start,
+            endTime=end)
+
+    def _add_vm_query_specs(self, start_time, end_time):
+        """ Adds queries of stats of all cached VM.
+
+        Additionally returns a map of vm entity moref to metric prefix used to
+        identify the tenant/project associated with said vm.
+        """
+
+        prefix_map = {}
+        spec_list = []
+        for vm in self.vim_client.get_vms_in_cache():
+            vm_obj = self.vim_client.get_vm_obj_in_cache(vm.name)
+            self._logger.debug("Add vm query spec: vm:%s" % vm_obj)
+            if vm.tenant_id is not None and vm.project_id is not None:
+                spec_list.append(
+                    self._build_perf_query_spec(vm_obj, start_time, end_time))
+                prefix_map[str(vm_obj)] = "vm.%s.%s." % (vm.tenant_id,
+                                                         vm.project_id)
+
+        return spec_list, prefix_map
 
     def get_perf_manager_stats(self, start_time, end_time=None):
         """ Returns the host statistics by querying the perf manager on the
@@ -152,28 +185,33 @@ class PerfManagerCollector(Collector):
         if end_time is None:
             end_time = datetime.now()
 
-        query_spec = [
-            vim.PerfQuerySpec(
-                entity=self.get_host_system(),
-                intervalId=self._stats_interval_id,
-                format='csv',
-                metricId=self._selected_perf_metric_id_objs,
-                startTime=start_time,
-                endTime=end_time
-            )]
+        query_specs, vm_stat_prefix_map = self._add_vm_query_specs(
+            start_time, end_time)
+
+        query_specs.append(self._build_perf_query_spec(
+            self.get_host_system(), start_time, end_time))
+
         results = {}
-        stats = self.get_perf_manager().QueryPerf(query_spec)
+        stats = self.get_perf_manager().QueryPerf(query_specs)
         if not stats:
             return results
 
         for stat in stats:
             timestamps = self._get_timestamps(stat.sampleInfoCSV)
             values = stat.value
+            self._logger.debug("Got stat for entity %s" % stat.entity)
+
+            stat_prefix = ""
+            # metric names of vm-specific stats have project/tenant parts
+            if str(stat.entity) != "'vim.HostSystem:ha-host'":
+                stat_prefix = vm_stat_prefix_map[str(stat.entity)]
+
             for value in values:
                 id = value.id.counterId
                 counter_values = [float(i) for i in value.value.split(',')]
-                results[self._counter_to_metric_map[id]] = zip(timestamps,
-                                                               counter_values)
+                metric_name = "%s%s" % (
+                    stat_prefix, self._counter_to_metric_map[id])
+                results[metric_name] = zip(timestamps, counter_values)
         return results
 
     def collect(self, since=None):
