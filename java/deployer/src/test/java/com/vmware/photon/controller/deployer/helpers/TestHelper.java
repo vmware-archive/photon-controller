@@ -171,7 +171,7 @@ public class TestHelper {
     startState.portBindings = new HashMap<>();
     startState.portBindings.put(5432, 5432);
     startState.cpuCount = 1;
-    startState.memoryMb = 2048;
+    startState.memoryMb = 2048L;
     startState.diskGb = 4;
     return startState;
   }

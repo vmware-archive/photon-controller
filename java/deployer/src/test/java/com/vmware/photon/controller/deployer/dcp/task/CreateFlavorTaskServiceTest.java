@@ -803,7 +803,7 @@ public class CreateFlavorTaskServiceTest {
       ContainerTemplateService.State containerTemplateSavedState1 = TestHelper.createContainerTemplateService(machine);
       ContainerTemplateService.State containerTemplateState2 = TestHelper.getContainerTemplateServiceStartState();
       containerTemplateState2.cpuCount = 2;
-      containerTemplateState2.memoryMb = 4096;
+      containerTemplateState2.memoryMb = 4096L;
       containerTemplateState2.diskGb = 8;
       ContainerTemplateService.State containerTemplateSavedState2 = TestHelper.createContainerTemplateService
           (machine, containerTemplateState2);

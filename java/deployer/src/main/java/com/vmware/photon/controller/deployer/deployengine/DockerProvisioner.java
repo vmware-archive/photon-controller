@@ -53,8 +53,12 @@ import java.util.Set;
  * This class implements the docker wrappers for all docker communication.
  */
 public class DockerProvisioner {
+
   private static final Logger logger = LoggerFactory.getLogger(DockerProvisioner.class);
+
   private static final int DOCKER_PORT = 2375;
+
+  private static final long MB_TO_BYTES = 1024 * 1024;
 
   private final String dockerEndpoint;
   private DockerClient dockerClient;
@@ -181,7 +185,7 @@ public class DockerProvisioner {
   public String createContainer(String containerName,
                                 String containerImage,
                                 Integer cpuShares,
-                                Integer memoryMb,
+                                Long memoryMb,
                                 Map<String, String> volumeBindings,
                                 Map<Integer, Integer> portBindings,
                                 String volumesFrom,
@@ -201,7 +205,7 @@ public class DockerProvisioner {
     createContainerCmd = createContainerCmd.withName(containerName);
 
     if (memoryMb != null) {
-      createContainerCmd = createContainerCmd.withMemoryLimit(memoryMb * 1024 * 1024);
+      createContainerCmd = createContainerCmd.withMemoryLimit(memoryMb * MB_TO_BYTES);
     }
 
     if (cpuShares != null) {
@@ -279,7 +283,7 @@ public class DockerProvisioner {
   public String launchContainer(String containerName,
                                 String containerImage,
                                 Integer cpuShares,
-                                Integer memoryMb,
+                                Long memoryMb,
                                 Map<String, String> volumeBindings,
                                 Map<Integer, Integer> portBindings,
                                 String volumesFrom,

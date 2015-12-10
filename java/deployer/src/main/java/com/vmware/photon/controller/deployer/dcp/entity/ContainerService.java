@@ -68,8 +68,8 @@ public class ContainerService extends StatefulService {
      * This value represents the amount of memory which will be set as the max limit to the container.
      */
     @WriteOnce
-    @Range(min = 1, max = Integer.MAX_VALUE)
-    public Integer memoryMb;
+    @Range(min = 4, max = Long.MAX_VALUE)
+    public Long memoryMb;
 
     /**
      * This value represents the cpu share constraint needed by docker for creating the container.

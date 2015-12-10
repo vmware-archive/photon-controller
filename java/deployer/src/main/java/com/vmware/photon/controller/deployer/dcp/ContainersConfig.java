@@ -60,8 +60,8 @@ public class ContainersConfig {
     @Range(min = 1)
     private int cpuCount;
 
-    @Range(min = 1)
-    private int memoryMb;
+    @Range(min = 4)
+    private long memoryMb;
 
     @Range(min = 1)
     private int diskGb;
@@ -112,7 +112,7 @@ public class ContainersConfig {
       this.cpuCount = cpuCount;
     }
 
-    public int getMemoryMb() {
+    public long getMemoryMb() {
       return memoryMb;
     }
 
