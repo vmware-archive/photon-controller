@@ -13,17 +13,25 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
+import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.TransferImageResultCode;
+import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientTransferImageErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
@@ -31,12 +39,15 @@ import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.ServiceStats;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
+import org.mockito.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -50,13 +61,16 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.testng.Assert.fail;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -275,7 +289,7 @@ public class ImageHostToHostCopyServiceTest {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch host not found");
       } catch (BadRequestException e) {
-        assertThat(e.getMessage(), containsString("host not found"));
+        assertThat(e.getMessage(), containsString("host cannot be null"));
       }
     }
 
@@ -324,7 +338,9 @@ public class ImageHostToHostCopyServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = spy(new ImageHostToHostCopyService());
-      host = TestHost.create(mock(HostClient.class), new ZookeeperHostMonitorSuccessMock());
+      doNothing().when(service).sendRequest(Matchers.any());
+
+      host = TestHost.create(mock(HostClient.class), new ZookeeperHostMonitorSuccessMock(), new CloudStoreHelperMock());
     }
 
     @AfterMethod
@@ -604,6 +620,26 @@ public class ImageHostToHostCopyServiceTest {
       ImageHostToHostCopyService.State savedState = host.getServiceState(ImageHostToHostCopyService.State.class);
       assertThat(savedState.destinationDataStore, is("datastore1-inv"));
     }
+
+    @Test
+    public void testValidPatchHosts() throws Throwable {
+      host.startServiceSynchronously(service, buildValidStartupState());
+
+      ImageHostToHostCopyService.State patchState = new ImageHostToHostCopyService.State();
+      patchState.host = "new-host";
+      patchState.destinationHost = new ServerAddress("new-destination-host", 0);
+
+      Operation patch = Operation
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
+
+      host.sendRequestAndWait(patch);
+
+      ImageHostToHostCopyService.State savedState = host.getServiceState(ImageHostToHostCopyService.State.class);
+      assertThat(savedState.host, is("new-host"));
+      assertThat(savedState.destinationHost.getHost(), is("new-destination-host"));
+      assertThat(savedState.destinationHost.getPort(), is(0));
+    }
   }
 
   /**
@@ -624,7 +660,6 @@ public class ImageHostToHostCopyServiceTest {
       // Build input.
       copyTask = new ImageHostToHostCopyService.State();
       copyTask.image = "WindowsRelease9.0";
-      copyTask.host = "host";
       copyTask.sourceDataStore = "datastore0";
       copyTask.destinationDataStore = "datastore1";
     }
@@ -670,7 +705,10 @@ public class ImageHostToHostCopyServiceTest {
       hostClient.setTransferImageResultCode(code);
       doReturn(hostClient).when(hostClientFactory).create();
 
+      cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      createHostService("datastore0");
+      createHostService("datastore1");
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -684,6 +722,7 @@ public class ImageHostToHostCopyServiceTest {
       assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
       assertThat(response.destinationDataStore, is(copyTask.destinationDataStore));
       assertThat(response.host, not(isEmptyOrNullString()));
+      assertThat(response.destinationHost, notNullValue());
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
@@ -697,6 +736,86 @@ public class ImageHostToHostCopyServiceTest {
     }
 
     @Test(dataProvider = "hostCount")
+    public void testFailWithNoHostForSourceDatastore(int hostCount) throws Throwable {
+      doReturn(new HostClientTransferImageErrorMock()).when(hostClientFactory).create();
+
+      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
+          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
+          hostCount,
+          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
+
+      cloudStoreHelper = new CloudStoreHelper();
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      createHostService("datastore1");
+
+      // Call Service.
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
+          copyTask,
+          ImageHostToHostCopyService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
+
+      // Check response.
+      assertThat(response.image, is(copyTask.image));
+      assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
+      assertThat(response.destinationDataStore, is(copyTask.destinationDataStore));
+      assertThat(response.host, nullValue());
+      assertThat(response.destinationHost, nullValue());
+      assertThat(response.taskInfo.failure.message, containsString("No host found for source " +
+          "image datastore datastore0"));
+
+      // Check stats.
+      ServiceStats stats = machine.getOwnerServiceStats(response);
+      assertThat(
+          stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
+          greaterThanOrEqualTo(
+              1.0 + // Create patch
+                  1.0 + // Scheduler start patch
+                  1.0   // FAILED
+          ));
+    }
+
+    @Test(dataProvider = "hostCount")
+    public void testFailWithNoHostForDestinationDatastore(int hostCount) throws Throwable {
+      doReturn(new HostClientTransferImageErrorMock()).when(hostClientFactory).create();
+
+      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
+          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
+          hostCount,
+          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
+
+      cloudStoreHelper = new CloudStoreHelper();
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      createHostService("datastore0");
+
+      // Call Service.
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
+          copyTask,
+          ImageHostToHostCopyService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
+
+      // Check response.
+      assertThat(response.image, is(copyTask.image));
+      assertThat(response.sourceDataStore, is(copyTask.sourceDataStore));
+      assertThat(response.destinationDataStore, is(copyTask.destinationDataStore));
+      assertThat(response.host, nullValue());
+      assertThat(response.destinationHost, nullValue());
+      assertThat(response.taskInfo.failure.message, containsString("No host found for destination " +
+          "image datastore datastore1"));
+
+      // Check stats.
+      ServiceStats stats = machine.getOwnerServiceStats(response);
+      assertThat(
+          stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
+          greaterThanOrEqualTo(
+              1.0 + // Create patch
+                  1.0 + // Scheduler start patch
+                  1.0   // FAILED
+          ));
+    }
+
+    @Test(dataProvider = "hostCount")
     public void testFailWithTransferImageException(int hostCount) throws Throwable {
       doReturn(new HostClientTransferImageErrorMock()).when(hostClientFactory).create();
 
@@ -705,7 +824,10 @@ public class ImageHostToHostCopyServiceTest {
           hostCount,
           ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
 
+      cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      createHostService("datastore0");
+      createHostService("datastore1");
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -739,7 +861,7 @@ public class ImageHostToHostCopyServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "transferImageErrorCode")
-    public void testFailWithCopyImageErrorCode(
+    public void testFailWithTransferImageErrorCode(
         int hostCount, TransferImageResultCode code, String exception)
         throws Throwable {
       HostClientMock hostClient = new HostClientMock();
@@ -751,7 +873,10 @@ public class ImageHostToHostCopyServiceTest {
           hostCount,
           ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
 
+      cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      createHostService("datastore0");
+      createHostService("datastore1");
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -791,6 +916,38 @@ public class ImageHostToHostCopyServiceTest {
               SystemErrorException.class.toString()
           }
       };
+    }
+
+    private HostService.State createHostService(String reportedImageDatastore) throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
+
+      machine.startFactoryServiceSynchronously(
+          HostServiceFactory.class,
+          HostServiceFactory.SELF_LINK);
+
+      HostService.State state = new HostService.State();
+      state.state = HostState.READY;
+      state.hostAddress = "0.0.0.0";
+      state.userName = "test-name";
+      state.password = "test-password";
+      state.usageTags = new HashSet<>();
+      state.usageTags.add(UsageTag.CLOUD.name());
+      state.reportedImageDatastores = new HashSet<>();
+      state.reportedImageDatastores.add(reportedImageDatastore);
+
+      Operation op = cloudStoreHelper
+          .createPost(HostServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a host in cloud store.");
+            }
+          });
+      Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      return result.getBody(HostService.State.class);
     }
   }
 }
