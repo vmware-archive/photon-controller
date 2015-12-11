@@ -32,7 +32,8 @@ describe "project", management: true do
 
         project.name.should == project_name
         task_list = client.get_project_tasks(project.id, "COMPLETED").items
-        task_list.should be_empty
+        task_list.size.should == 1
+        task_list[0].state == "COMPLETED"
 
         ensure
           project.delete unless project.nil?
@@ -61,7 +62,8 @@ describe "project", management: true do
         project.security_groups.should =~ [{"name"=>"tenant\\adminGroup1", "inherited"=>false},
                                            {"name"=>"tenant\\adminGroup2", "inherited"=>false}]
         task_list = client.get_project_tasks(project.id, "COMPLETED").items
-        task_list.should be_empty
+        task_list.size.should == 1
+        task_list[0].state == "COMPLETED"
 
         ensure
           project.delete unless project.nil?
@@ -104,7 +106,8 @@ describe "project", management: true do
                                              {"name"=>"tenant\\adminGroup3", "inherited"=>true},
                                              {"name"=>"tenant\\adminGroup1", "inherited"=>false}]
           task_list = client.get_project_tasks(project.id, "COMPLETED").items
-          task_list.should be_empty
+          task_list.size.should == 1
+          task_list[0].state == "COMPLETED"
 
           ensure
             project.delete unless project.nil?
@@ -186,7 +189,8 @@ describe "project", management: true do
 
         project.name.should == project_name
         task_list = client.get_project_tasks(project.id, "COMPLETED").items
-        task_list.should be_empty
+        task_list.size.should == 1
+        task_list[0].state == "COMPLETED"
 
         security_groups = {items: ["tenant\\adminGroup1", "tenant\\adminGroup2"]}
         client.set_project_security_groups(project.id, security_groups)
@@ -209,7 +213,8 @@ describe "project", management: true do
 
         project.name.should == project_name
         task_list = client.get_project_tasks(project.id, "COMPLETED").items
-        task_list.should be_empty
+        task_list.size.should == 1
+        task_list[0].state == "COMPLETED"
 
         security_groups = {items: ["tenant\\adminGroup1", "tenant\\adminGroup2"]}
         client.set_project_security_groups(project.id, security_groups)

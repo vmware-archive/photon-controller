@@ -83,14 +83,14 @@ public class ProjectTasksResourceTest extends ResourceTest {
     task1.setId(taskId1);
     task2.setId(taskId2);
 
-    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.<String>absent(),
-        Optional.<Integer>absent())).thenReturn(new ResourceList<>(ImmutableList.of(task1, task2), null, null));
-    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.<String>absent(),
-        Optional.of(1))).thenReturn(new ResourceList<>(ImmutableList.of(task1), UUID.randomUUID().toString(), null));
-    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.<String>absent(),
-        Optional.of(2))).thenReturn(new ResourceList<>(ImmutableList.of(task1, task2), null, null));
-    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.<String>absent(),
-        Optional.of(3))).thenReturn(new ResourceList<>(Collections.emptyList(), null, null));
+    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.<Integer>absent())).
+        thenReturn(new ResourceList<>(ImmutableList.of(task1, task2), null, null));
+    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.of(1))).
+        thenReturn(new ResourceList<>(ImmutableList.of(task1), UUID.randomUUID().toString(), null));
+    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.of(2))).
+        thenReturn(new ResourceList<>(ImmutableList.of(task1, task2), null, null));
+    when(client.getProjectTasks(projectId, Optional.<String>absent(), Optional.of(3))).
+        thenReturn(new ResourceList<>(Collections.emptyList(), null, null));
 
     Response response = getTasks(pageSize);
     assertThat(response.getStatus(), is(200));

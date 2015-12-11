@@ -82,9 +82,8 @@ public class ProjectTasksResource {
       // Temporarily change the adjustedPageSize back to pageSize.
       // To allow the user to provide no pageSize so as to pull out the complete results.
       adjustedPageSize = pageSize;
-      resourceList = taskFeClient.getProjectTasks(id, state, kind, adjustedPageSize);
+      resourceList = taskFeClient.getProjectTasks(id, state, adjustedPageSize);
     }
-
     return generateResourceListResponse(
         Response.Status.OK,
         PaginationUtils.formalizePageLinks(resourceList, ProjectResourceRoutes.API),
