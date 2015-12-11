@@ -548,7 +548,7 @@ public class AllocateHostResourceTaskServiceTest {
           cs.memoryMb));
     }
 
-    @Test
+    @Test(enabled = false)
     public void testTaskSuccessWithoutHostConfig() throws Throwable {
       machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
 
