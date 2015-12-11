@@ -144,13 +144,11 @@ else
   ) &
   pids[1]=$!
 
-  (
-      export DRIVER=gocli
-      bundle exec rake esxcloud:gocli
-  ) &
-  pids[2]=$!
-
   for pid in ${pids[*]}; do wait $pid; done;
+
+  # Don't run gocli in parrllel now due to the agent capacity
+  export DRIVER=gocli
+  bundle exec rake esxcloud:gocli
 fi
 
 # verify that no objects were left over at the end of the run
