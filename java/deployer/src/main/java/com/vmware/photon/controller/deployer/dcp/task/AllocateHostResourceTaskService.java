@@ -31,7 +31,6 @@ import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
-import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
@@ -42,16 +41,16 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
+import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * This class implements a DCP micro-service which performs the task of
@@ -149,168 +148,147 @@ public class AllocateHostResourceTaskService extends StatefulService {
     }
   }
 
-  private void getHostService(final State currentState) {
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(currentState.hostServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
+  private void getHostService(State currentState) {
 
-                  try {
-                    HostService.State hostState = completedOp.getBody(HostService.State.class);
-                    if (hostState.cpuCount != null && hostState.memoryMb != null) {
-                      allocateResources(currentState, hostState);
-                    } else {
-                      ServiceUtils.logInfo(this, "Skip host resource allocation as host cpu and memory are not set");
-                      State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-                      TaskUtils.sendSelfPatch(this, patchState);
-                    }
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            ));
-  }
-
-  private void allocateResources(final State currentState, HostService.State hostState) {
-    Operation queryVms = getQueryOperation();
-    Operation queryContainers = getQueryOperation();
-
-    Map<String, String> templateMap = new HashMap<>();
-    List<ContainerService.State> containerServices = new ArrayList<>();
-    queryVms.setBody(buildVmQueryTask(currentState));
-
-    OperationSequence
-        // Get the vm entity for this particular host
-        .create(queryVms.setBody(buildVmQueryTask(currentState)))
-        .setCompletion(((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion((o, e) -> {
+          if (null != e) {
+            failTask(e);
             return;
           }
 
-          NodeGroupBroadcastResponse queryResponse = ops.get(queryVms.getId())
-              .getBody(NodeGroupBroadcastResponse.class);
-          String vmServiceLink = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).iterator().next();
-          queryContainers.setBody(buildContainerQueryTask(vmServiceLink));
-        }))
-            // Get all the containers which belong to the particular vm
-        .next(queryContainers)
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
+          try {
+            HostService.State hostState = o.getBody(HostService.State.class);
+            checkState(hostState.cpuCount != null && hostState.memoryMb != null);
+            queryManagementVm(hostState);
+          } catch (Throwable t) {
+            failTask(t);
           }
-
-          NodeGroupBroadcastResponse queryResponse = ops.get(queryContainers.getId())
-              .getBody(NodeGroupBroadcastResponse.class);
-          containerServices.addAll(QueryTaskUtils.getBroadcastQueryDocuments(
-              ContainerService.State.class, queryResponse));
-          containerServices.stream().forEach(cs -> templateMap.put(cs.containerTemplateServiceLink,
-              cs.documentSelfLink));
-          getContainerTemplates(hostState, templateMap);
         })
         .sendWith(this);
   }
 
-  // For each container, get the respective container template
-  private void getContainerTemplates(HostService.State hostState, Map<String, String> templateMap) {
-    Map<String, ContainerService.State> containerMap = new HashMap<>();
-    OperationJoin
-        .create(templateMap.keySet().stream().map(t -> Operation.createGet(this, t)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
+  private void queryManagementVm(HostService.State hostState) {
 
-          containerMap.putAll(getContainerAllocation(ops.values().stream()
-              .map(op -> op.getBody(ContainerTemplateService.State.class)), hostState, templateMap));
-          patchContainersWithResoure(containerMap);
-        })
-        .sendWith(this);
-  }
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(VmService.State.class)
+            .addFieldClause(VmService.State.FIELD_NAME_HOST_SERVICE_LINK, hostState.documentSelfLink)
+            .build())
+        .build();
 
-  // Patch all the containers with the newly allocated memory and cpu
-  private void patchContainersWithResoure(Map<String, ContainerService.State> containerMap) {
-    OperationJoin
-        .create(containerMap.keySet().stream().map(link -> Operation.createPatch(UriUtils.buildUri(getHost(), link))
-            .setBody(containerMap.get(link))))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
-
-          State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-          TaskUtils.sendSelfPatch(this, patchState);
-        })
-        .sendWith(this);
-  }
-
-  private Map<String, ContainerService.State> getContainerAllocation(Stream<ContainerTemplateService.State> templates,
-                                                                     HostService.State hostState,
-                                                                     Map<String, String> templateMap) {
-    List<ContainerTemplateService.State> templateList = templates.collect(Collectors.toList());
-    long totalMemory = templateList.stream().mapToLong(t -> t.memoryMb).sum();
-    int maxCpu = templateList.stream().mapToInt(t -> t.cpuCount).max().getAsInt();
-    Map<String, ContainerService.State> containerMap = new HashMap<>();
-    float mgmtVmHostRatio = MiscUtils.getManagementVmHostRatio(hostState);
-
-    for (ContainerTemplateService.State template : templateList) {
-      ContainerService.State state = new ContainerService.State();
-      state.memoryMb = (long) (template.memoryMb * hostState.memoryMb * mgmtVmHostRatio) / totalMemory;
-      state.cpuShares = template.cpuCount * ContainerService.State.DOCKER_CPU_SHARES_MAX / maxCpu;
-      // Set memoryMb dynamic parameter which will be used to set the jvm max memory allocation
-      if (state.dynamicParameters == null) {
-        state.dynamicParameters = new HashMap<>();
-      }
-      state.dynamicParameters.put("memoryMb", String.valueOf(state.memoryMb));
-      containerMap.put(templateMap.get(template.documentSelfLink), state);
-    }
-    return containerMap;
-  }
-
-  private Operation getQueryOperation() {
-    return Operation
+    Operation
         .createPost(UriUtils.buildBroadcastRequestUri(
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR));
+            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+        .setBody(queryTask)
+        .setCompletion((o, e) -> {
+          if (e != null) {
+            failTask(e);
+            return;
+          }
+
+          try {
+            NodeGroupBroadcastResponse rsp = o.getBody(NodeGroupBroadcastResponse.class);
+            Set<String> vmServiceLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(rsp);
+            checkState(vmServiceLinks.size() == 1);
+            queryManagementContainers(hostState, vmServiceLinks.iterator().next());
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
   }
 
-  private QueryTask buildVmQueryTask(final State currentState) {
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(VmService.State.class));
+  private void queryManagementContainers(HostService.State hostState, String vmServiceLink) {
 
-    QueryTask.Query vmServiceLinkClause = new QueryTask.Query()
-        .setTermPropertyName(VmService.State.FIELD_NAME_HOST_SERVICE_LINK)
-        .setTermMatchValue(currentState.hostServiceLink);
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerService.State.class)
+            .addFieldClause(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK, vmServiceLink)
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
+        .build();
 
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(vmServiceLinkClause);
-    return QueryTask.create(querySpecification).setDirect(true);
+    Operation
+        .createPost(UriUtils.buildBroadcastRequestUri(
+            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+        .setBody(queryTask)
+        .setCompletion((o, e) -> {
+          if (e != null) {
+            failTask(e);
+            return;
+          }
+
+          try {
+            List<ContainerService.State> containerStates =
+                QueryTaskUtils.getBroadcastQueryDocuments(ContainerService.State.class, o);
+            getContainerTemplates(hostState, containerStates);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
   }
 
-  private QueryTask buildContainerQueryTask(String vmServiceLink) {
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ContainerService.State.class));
+  private void getContainerTemplates(HostService.State hostState, List<ContainerService.State> containerStates) {
 
-    QueryTask.Query vmServiceLinkClause = new QueryTask.Query()
-        .setTermPropertyName(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK)
-        .setTermMatchValue(vmServiceLink);
+    OperationJoin
+        .create(containerStates.stream()
+            .map((state) -> Operation.createGet(this, state.containerTemplateServiceLink)))
+        .setCompletion((ops, exs) -> {
+          if (null != exs && !exs.isEmpty()) {
+            failTask(exs.values());
+            return;
+          }
 
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(vmServiceLinkClause);
-    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-    return QueryTask.create(querySpecification).setDirect(true);
+          try {
+            Map<String, ContainerTemplateService.State> templateMap = ops.values().stream()
+                .map((op) -> op.getBody(ContainerTemplateService.State.class))
+                .collect(Collectors.toMap(
+                    (state) -> state.documentSelfLink,
+                    (state) -> state));
+
+            allocateResources(hostState, containerStates, templateMap);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void allocateResources(HostService.State hostState,
+                                 List<ContainerService.State> containerStates,
+                                 Map<String, ContainerTemplateService.State> templateMap) {
+
+    long totalMemory = templateMap.values().stream().mapToLong((t) -> t.memoryMb).sum();
+    int maxCpuCount = templateMap.values().stream().mapToInt((t) -> t.cpuCount).max().getAsInt();
+    float hostRatio = MiscUtils.getManagementVmHostRatio(hostState);
+
+    OperationJoin
+        .create(containerStates.stream().map((containerState) -> {
+          ContainerTemplateService.State templateState = templateMap.get(containerState.containerTemplateServiceLink);
+          ContainerService.State patchState = new ContainerService.State();
+          patchState.memoryMb = (long) (templateState.memoryMb * hostState.memoryMb * hostRatio) / totalMemory;
+          patchState.cpuShares = templateState.cpuCount * ContainerService.State.DOCKER_CPU_SHARES_MAX
+              / maxCpuCount;
+          patchState.dynamicParameters = new HashMap<>();
+          if (null != containerState.dynamicParameters) {
+            patchState.dynamicParameters.putAll(containerState.dynamicParameters);
+          }
+          patchState.dynamicParameters.put("memoryMb", String.valueOf(patchState.memoryMb));
+          return Operation.createPatch(this, containerState.documentSelfLink).setBody(patchState);
+        }))
+        .setCompletion((ops, exs) -> {
+          if (null != exs && !exs.isEmpty()) {
+            failTask(exs.values());
+          } else {
+            TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
+          }
+        })
+        .sendWith(this);
   }
 
   /**
@@ -394,8 +372,8 @@ public class AllocateHostResourceTaskService extends StatefulService {
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, e));
   }
 
-  private void failTask(Map<Long, Throwable> exs) {
-    exs.values().forEach(e -> ServiceUtils.logSevere(this, e));
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, exs.values().iterator().next()));
+  private void failTask(Collection<Throwable> exs) {
+    ServiceUtils.logSevere(this, exs);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, exs.iterator().next()));
   }
 }
