@@ -11,10 +11,6 @@ auth:
   auth_server_port: 443
   tenant: esxcloud
 
-maintenance:
-  taskExpirationThreshold: 3 minutes
-  taskExpirationScanInterval: 3 minutes
-
 pagination:
   default_page_size: 10
   max_page_size: 100

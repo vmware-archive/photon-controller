@@ -67,10 +67,6 @@ public class ApiFeConfiguration extends Configuration {
   private StatusConfig statusConfig = new StatusConfig();
 
   @Valid
-  @JsonProperty
-  private MaintenanceConfig maintenance = new MaintenanceConfig();
-
-  @Valid
   @JsonProperty("pagination")
   private PaginationConfig paginationConfig = new PaginationConfig();
 
@@ -106,10 +102,6 @@ public class ApiFeConfiguration extends Configuration {
 
   public ImageConfig getImage() {
     return image;
-  }
-
-  public MaintenanceConfig getMaintenanceConfig() {
-    return maintenance;
   }
 
   public StatusConfig getStatusConfig() {

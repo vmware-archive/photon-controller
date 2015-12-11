@@ -4,7 +4,5 @@
   "LOG_DIRECTORY": "/var/log/esxcloud",
   "ZOOKEEPER_QUORUM": "127.0.0.1:2181",
   "ENABLE_AUTH": false,
-  "USE_ESX_STORE": true,
-  "TASK_EXPIRATION_THRESHOLD" : "5 hours",
-  "TASK_EXPIRATION_SCAN_INTERVAL" : "3 hours"
+  "USE_ESX_STORE": true
 }
