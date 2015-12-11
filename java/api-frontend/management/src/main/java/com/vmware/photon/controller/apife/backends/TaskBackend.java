@@ -44,9 +44,6 @@ public interface TaskBackend {
   ResourceList<Task> filter(Optional<String> entityId, Optional<String> entityKind, Optional<String> state,
                             Optional<Integer> pageSize) throws ExternalException;
 
-  ResourceList<Task> filterInProject(String projectId, Optional<String> state, Optional<String> kind,
-                                     Optional<Integer> pageSize);
-
   ResourceList<Task> getTasksPage(String pageLink) throws PageExpiredException;
 
   TaskEntity createQueuedTask(BaseEntity entity, Operation operation);

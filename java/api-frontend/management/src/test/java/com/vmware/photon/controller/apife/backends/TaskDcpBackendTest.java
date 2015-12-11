@@ -598,44 +598,6 @@ public class TaskDcpBackendTest {
       taskBackend.filter(Optional.<String>absent(), Optional.of("foo"), Optional.<String>absent(),
           Optional.<Integer>absent());
     }
-
-    @Test
-    public void testFilterInProject() throws Throwable {
-      List<Task> tasks = taskBackend.filter(Optional.<String>absent(), Optional.<String>absent(),
-          Optional.<String>absent(), Optional.<Integer>absent()).getItems();
-
-      int initialTaskCount = tasks.size();
-
-      String projectId = UUID.randomUUID().toString();
-
-      int createdTaskCount = 3;
-      for (int i = 0; i < createdTaskCount; i++) {
-        VmEntity vmEntity = new VmEntity();
-        vmEntity.setId(UUID.randomUUID().toString());
-        vmEntity.setProjectId(projectId);
-        taskBackend.createQueuedTask(vmEntity, Operation.CREATE_VM);
-      }
-
-      tasks = taskBackend.filterInProject(projectId,
-          Optional.<String>absent(), Optional.<String>absent(), Optional.<Integer>absent()).getItems();
-
-      assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
-
-      tasks = taskBackend.filterInProject(projectId,
-          Optional.of("QUEUED"), Optional.<String>absent(), Optional.<Integer>absent()).getItems();
-
-      assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
-
-      tasks = taskBackend.filterInProject(projectId,
-          Optional.<String>absent(), Optional.of("vm"), Optional.<Integer>absent()).getItems();
-
-      assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
-
-      tasks = taskBackend.filterInProject(projectId,
-          Optional.of("QUEUED"), Optional.of("vm"), Optional.<Integer>absent()).getItems();
-
-      assertThat(tasks.size(), is(initialTaskCount + createdTaskCount));
-    }
   }
 
   /**

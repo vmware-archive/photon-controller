@@ -32,6 +32,7 @@ import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
+import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
 import com.vmware.photon.controller.apife.entities.TenantEntity;
 
@@ -103,10 +104,10 @@ public class TaskFeClient {
     return taskBackend.filter(Optional.of(tenantId), Optional.of(TenantEntity.KIND), state, pageSize);
   }
 
-  public ResourceList<Task> getProjectTasks(String projectId, Optional<String> state, Optional<String> kind,
-                                            Optional<Integer> pagesize) throws ExternalException {
+  public ResourceList<Task> getProjectTasks(String projectId, Optional<String> state, Optional<Integer> pagesize)
+      throws ExternalException {
     projectBackend.findById(projectId);
-    return taskBackend.filterInProject(projectId, state, kind, pagesize);
+    return taskBackend.filter(Optional.of(projectId), Optional.of(ProjectEntity.KIND), state, pagesize);
   }
 
   public ResourceList<Task> getResourceTicketTasks(String resourceTicketId, Optional<String> state,
