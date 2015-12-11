@@ -72,7 +72,7 @@ public class ProjectTasksResource {
 
     ResourceList<Task> resourceList = pageLink.isPresent()
         ? taskFeClient.getPage(pageLink.get())
-        : taskFeClient.getProjectTasks(id, state, kind, pageSize);
+        : taskFeClient.getProjectTasks(id, state, pageSize);
 
     return generateResourceListResponse(
         Response.Status.OK,
