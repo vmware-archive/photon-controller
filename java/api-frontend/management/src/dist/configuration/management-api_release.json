@@ -1,4 +1,5 @@
 {
+  "serviceName": "ManagementApi",
   "cpuCount": 2,
   "memoryMb": 1024,
   "diskGb": 1,
@@ -12,8 +13,6 @@
     "/var/log": "/var/log"
   },
   "dynamicParameters": {
-    "MANAGEMENT-API_BIND_ADDRESS": "0.0.0.0",
-    "MANAGEMENT-API_PORT": 9000,
     "LOG_DIRECTORY": "/var/log/esxcloud",
     "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
     "USE_ESX_STORE": true,

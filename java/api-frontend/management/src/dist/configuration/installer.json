@@ -1,12 +1,7 @@
 {
-  "MANAGEMENT-API_BIND_ADDRESS": "0.0.0.0",
-  "MANAGEMENT-API_PORT": 9000,
-  "MANAGEMENT-API_REGISTRATION_ADDRESS": "127.0.0.1",
+  "VM_IP": "127.0.0.1",
   "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
   "LOG_DIRECTORY": "/var/log/esxcloud",
-  "DB_USER" : "esxcloud",
-  "DB_PASSWORD" : "esxcloud",
-  "DB_NAME" : "esxclouddb",
   "ZOOKEEPER_QUORUM": "127.0.0.1:2181",
   "ENABLE_AUTH": false,
   "USE_ESX_STORE": true,

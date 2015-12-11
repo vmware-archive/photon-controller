@@ -1,11 +1,9 @@
 {
-  "DEPLOYER_BIND_ADDRESS": "0.0.0.0",
   "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
   "DEPLOYER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/deployer",
-  "DEPLOYER_REGISTRATION_ADDRESS": "127.0.0.1",
+  "VM_IP": "127.0.0.1",
   "LOG_DIRECTORY": "/var/log/esxcloud",
   "APIFE_PORT": 9000,
-  "DEPLOYER_PORT": 18000,
   "TENANT_NAME": "mgmt-tenant",
   "PROJECT_NAME": "mgmt-project",
   "RESOURCE_TICKET_NAME": "mgmt-res-ticket",
