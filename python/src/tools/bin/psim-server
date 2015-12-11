@@ -1,0 +1,10 @@
+#!/bin/bash -x
+
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 port-to-listen-to"
+  exit 1
+fi
+
+cd $(dirname $0)/../../..
+make develop
+./develop/bin/python src/psim/psim/placement_simulator.py $1

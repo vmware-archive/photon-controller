@@ -22,7 +22,8 @@ dependencies {
                '../../thrift/root_scheduler.thrift',
                '../../thrift/flavors.thrift',
                '../../thrift/tracing.thrift',
-               '../../thrift/status.thrift')
+               '../../thrift/status.thrift',
+               '../../thrift/placement_simulator.thrift')
 
   testCompile(project(path: ':cloud-store', configuration: 'tests'))
   testCompile "org.apache.commons:commons-math3:${versions.commons_math3}"
