@@ -75,7 +75,6 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.config.ApiFeConfiguration;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ImageConfig;
-import com.vmware.photon.controller.apife.config.MaintenanceConfig;
 import com.vmware.photon.controller.apife.config.RootSchedulerConfig;
 import com.vmware.photon.controller.apife.config.StatusConfig;
 import com.vmware.photon.controller.apife.lib.ImageStore;
@@ -214,12 +213,6 @@ public class ApiFeModule extends AbstractModule {
     }
 
     return new LocalImageStore(config.getLocalStore(), config.getDatastore());
-  }
-
-  @Provides
-  @Singleton
-  public MaintenanceConfig getMaintenanceConfig() {
-    return this.configuration.getMaintenanceConfig();
   }
 
   @Provides

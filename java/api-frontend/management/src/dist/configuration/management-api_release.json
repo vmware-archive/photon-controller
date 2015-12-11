@@ -15,8 +15,6 @@
   "dynamicParameters": {
     "LOG_DIRECTORY": "/var/log/esxcloud",
     "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
-    "USE_ESX_STORE": true,
-    "TASK_EXPIRATION_THRESHOLD" : "5 hours",
-    "TASK_EXPIRATION_SCAN_INTERVAL" : "3 hours"
+    "USE_ESX_STORE": true
   }
 }
