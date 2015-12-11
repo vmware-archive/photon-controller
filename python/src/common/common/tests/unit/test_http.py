@@ -57,9 +57,9 @@ class TestServiceAPI(unittest.TestCase):
         self.http_client = mock.MagicMock()
         resp = mock.MagicMock()
         resp.status = httplib.OK
-        self.http_client.patch.return_value = resp
-        self.http_client.put.return_value = resp
-        self.http_client.post.return_value = resp
+        self.http_client.patch.return_value = resp, ""
+        self.http_client.put.return_value = resp, ""
+        self.http_client.post.return_value = resp, ""
 
     def test_helpers(self):
         url = "service1"
@@ -106,7 +106,7 @@ class TestDatastoreService(TestServiceAPI):
         resp = mock.MagicMock()
         resp.status = httplib.CONFLICT
         resp.reason = "document already exists"
-        self.http_client.post.return_value = resp
+        self.http_client.post.return_value = resp, ""
         self.assertRaises(ClientError, datastore_service.create, ds_id, fields)
 
     def test_update(self):
