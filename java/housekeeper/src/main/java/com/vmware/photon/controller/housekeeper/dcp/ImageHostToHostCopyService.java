@@ -13,22 +13,29 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
+import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.TransferImageResponse;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.apache.thrift.async.AsyncMethodCallback;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -37,6 +44,11 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Class implementing service to copy an image from a source image data store to a target image data store using
@@ -146,9 +158,16 @@ public class ImageHostToHostCopyService extends StatefulService {
 
     checkState(current.taskInfo.stage.ordinal() < TaskState.TaskStage.FINISHED.ordinal(),
         "Can not patch anymore when in final stage %s", current.taskInfo.stage);
-    if (patch.taskInfo != null && patch.taskInfo.stage != null) {
+
+    if (patch.taskInfo != null) {
+      checkState(patch.taskInfo.stage != null, "Invalid stage update. 'stage' can not be null in patch");
       checkState(patch.taskInfo.stage.ordinal() >= current.taskInfo.stage.ordinal(),
-          "Can not revert to %s from %s", patch.taskInfo.stage, current.taskInfo.stage);
+          "Invalid stage update. Can not revert to %s from %s", patch.taskInfo.stage, current.taskInfo.stage);
+
+      if (patch.taskInfo.subStage != null && current.taskInfo.subStage != null) {
+        checkState(patch.taskInfo.subStage.ordinal() >= current.taskInfo.subStage.ordinal(),
+            "Invalid stage update. 'subStage' cannot move back.");
+      }
     }
 
     checkArgument(patch.image == null, "Image cannot be changed.");
@@ -171,7 +190,6 @@ public class ImageHostToHostCopyService extends StatefulService {
 
     checkState(current.documentExpirationTimeMicros > 0, "documentExpirationTimeMicros needs to be greater than 0");
 
-
     switch (current.taskInfo.stage) {
       case STARTED:
         checkState(current.taskInfo.subStage != null, "subStage cannot be null");
@@ -179,8 +197,8 @@ public class ImageHostToHostCopyService extends StatefulService {
           case RETRIEVE_HOSTS:
             break;
           case TRANSFER_IMAGE:
-            checkArgument(current.host != null, "host not found");
-            checkArgument(current.destinationDataStore != null, "destination host not found");
+            checkArgument(current.host != null, "host cannot be null");
+            checkArgument(current.destinationDataStore != null, "destination host cannot be null");
             break;
           default:
             checkState(false, "unsupported sub-state: " + current.taskInfo.subStage.toString());
@@ -206,8 +224,12 @@ public class ImageHostToHostCopyService extends StatefulService {
       currentState.taskInfo = patchState.taskInfo;
     }
 
-    if (patchState.destinationDataStore != null) {
-      currentState.destinationDataStore = patchState.destinationDataStore;
+    if (patchState.host != null) {
+      currentState.host = patchState.host;
+    }
+
+    if (patchState.destinationHost != null) {
+      currentState.destinationHost = patchState.destinationHost;
     }
   }
 
@@ -359,11 +381,125 @@ public class ImageHostToHostCopyService extends StatefulService {
    * @param current
    */
   private void getHostsFromDataStores(final State current) {
-    if (!current.isSelfProgressionDisabled) {
-      ImageHostToHostCopyService.State patch = buildPatch(com.vmware.xenon.common.TaskState.TaskStage.STARTED,
-          TaskState.SubStage.TRANSFER_IMAGE, null);
-      this.sendSelfPatch(patch);
+    Operation sourceHostOp = this.buildHostQuery(current, current.sourceDataStore);
+    Operation destinationHostOp = this.buildHostQuery(current, current.destinationDataStore);
+
+    OperationJoin.JoinedCompletionHandler handler = (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+      if (failures != null && !failures.isEmpty()) {
+        failTask(failures.values().iterator().next());
+        return;
+      }
+
+      try {
+        String host = getHostFromResponse(ops.get(sourceHostOp.getId()));
+        if (host == null) {
+          failTask(new Exception("No host found for source image " +
+              "datastore " + current.sourceDataStore));
+          return;
+        }
+        current.host = host;
+
+        ServerAddress destinationHost = getHostServerAddressFromResponse(ops.get(destinationHostOp.getId()));
+        if (destinationHost == null) {
+          failTask(new Exception("No host found for destination image " +
+              "datastore " + current.destinationDataStore));
+          return;
+        }
+        current.destinationHost = destinationHost;
+
+        // Patch self with the host and data store information.
+        if (!current.isSelfProgressionDisabled) {
+          ImageHostToHostCopyService.State patch = buildPatch(com.vmware.xenon.common.TaskState.TaskStage.STARTED,
+              TaskState.SubStage.TRANSFER_IMAGE, null);
+          patch.host = current.host;
+          patch.destinationHost = current.destinationHost;
+          this.sendSelfPatch(patch);
+        }
+
+      } catch (Throwable e) {
+        failTask(e);
+      }
+    };
+
+    OperationJoin
+        .create(sourceHostOp, destinationHostOp)
+        .setCompletion(handler)
+        .sendWith(this);
+  }
+
+  private String getHostFromResponse(Operation operation) {
+    Set<String> hostSet = new HashSet<>();
+
+    NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
+    List<HostService.State> documentLinks = QueryTaskUtils
+        .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
+    for (HostService.State state : documentLinks) {
+      hostSet.add(state.hostAddress);
     }
+
+    if (hostSet.size() == 0) {
+      return null;
+    }
+
+    return ServiceUtils.selectRandomItem(hostSet);
+  }
+
+  private ServerAddress getHostServerAddressFromResponse(Operation operation) {
+    Set<ServerAddress> hostSet = new HashSet<>();
+
+    NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
+    List<HostService.State> documentLinks = QueryTaskUtils
+        .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
+    for (HostService.State state : documentLinks) {
+      hostSet.add(new ServerAddress(state.hostAddress, state.agentPort));
+    }
+
+    if (hostSet.size() == 0) {
+      return null;
+    }
+
+    return ServiceUtils.selectRandomItem(hostSet);
+  }
+
+  /**
+   * Build a query for querying host with access to the image datastore.
+   *
+   * @param current
+   * @return
+   */
+  private Operation buildHostQuery(final State current, String datastoreId) {
+    String reportedImageDatastoreFieldName = QueryTask.QuerySpecification.buildCollectionItemName(
+        HostService.State.FIELD_NAME_REPORTED_IMAGE_DATASTORES);
+
+    QueryTask.QuerySpecification querySpecification = buildHostQuerySpec(current, reportedImageDatastoreFieldName,
+        datastoreId);
+
+    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .setBody(QueryTask.create(querySpecification).setDirect(true));
+  }
+
+  /**
+   * Build a QuerySpecification for querying host with access to image data store.
+   *
+   * @param current
+   * @return
+   */
+  private QueryTask.QuerySpecification buildHostQuerySpec(final State current, String fieldName, String matchValue) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(HostService.State.class));
+
+    QueryTask.Query fieldNameClause = new QueryTask.Query()
+        .setTermPropertyName(fieldName)
+        .setTermMatchValue(matchValue);
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.query.addBooleanClause(fieldNameClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    return querySpecification;
   }
 
   /**
