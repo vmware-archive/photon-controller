@@ -68,7 +68,7 @@ class HostService(ServiceAPI):
         """
         path = self.get_path(host_id)
         req = {"data": fields}
-        resp = self.http_client.patch(path, req)
+        resp, _ = self.http_client.patch(path, req)
         self.check_resp(resp)
 
 
@@ -96,7 +96,7 @@ class DatastoreService(ServiceAPI):
         documentSelfLink = self.get_path(ds_id)
         fields["documentSelfLink"] = documentSelfLink
         req = {"data": fields}
-        resp = self.http_client.post(self.service_path, req)
+        resp, _ = self.http_client.post(self.service_path, req)
         self.check_resp(resp)
 
     def update(self, ds_id, fields):
@@ -110,7 +110,7 @@ class DatastoreService(ServiceAPI):
         documentSelfLink = self.get_path(ds_id)
         fields["documentSelfLink"] = documentSelfLink
         req = {"data": fields}
-        resp = self.http_client.put(documentSelfLink, req)
+        resp, _ = self.http_client.put(documentSelfLink, req)
         self.check_resp(resp)
 
 
@@ -120,6 +120,7 @@ class HttpClient(object):
     """
     UserAgent = "agent-python-client"
     DEFAULT_CONTENT_TYPE = "application/json"
+    GET_OP = "GET"
     POST_OP = "POST"
     PUT_OP = "PUT"
     PATCH_OP = "PATCH"
@@ -139,11 +140,10 @@ class HttpClient(object):
 
         self.conn.request(method, url, body, headers)
         resp = self.conn.getresponse()
-        # For now we don't care about the returned body, but we need
-        # to read it anyways, because we can't use self.conn.request
-        # again if there is an unread message
-        resp.read()
-        return resp
+        return resp, resp.read()
+
+    def get(self, url, req_prop=None):
+        return self._make_call(self.GET_OP, url, req_prop)
 
     def post(self, url, req_prop=None):
         return self._make_call(self.POST_OP, url, req_prop)
