@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.TaskFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ImageResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
@@ -51,10 +52,12 @@ import javax.ws.rs.core.Response;
 public class ImageTasksResource {
 
   private final TaskFeClient taskFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public ImageTasksResource(TaskFeClient taskFeClient) {
+  public ImageTasksResource(TaskFeClient taskFeClient, PaginationConfig paginationConfig) {
     this.taskFeClient = taskFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @GET
@@ -70,9 +73,17 @@ public class ImageTasksResource {
                       @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
 
-    ResourceList<Task> resourceList = pageLink.isPresent()
-        ? taskFeClient.getPage(pageLink.get())
-        : taskFeClient.getImageTasks(id, state, pageSize);
+    ResourceList<Task> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = taskFeClient.getPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+
+      // Temporarily change the adjustedPageSize back to pageSize.
+      // To allow the user to provide no pageSize so as to pull out the complete results.
+      adjustedPageSize = pageSize;
+      resourceList = taskFeClient.getImageTasks(id, state, adjustedPageSize);
+    }
 
     return generateResourceListResponse(
         Response.Status.OK,

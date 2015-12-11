@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.TaskFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ResourceTicketResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
@@ -51,10 +52,12 @@ import javax.ws.rs.core.Response;
 public class ResourceTicketTasksResource {
 
   private final TaskFeClient taskFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public ResourceTicketTasksResource(TaskFeClient taskFeClient) {
+  public ResourceTicketTasksResource(TaskFeClient taskFeClient, PaginationConfig paginationConfig) {
     this.taskFeClient = taskFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @GET
@@ -69,9 +72,17 @@ public class ResourceTicketTasksResource {
                       @QueryParam("pageSize") Optional<Integer> pageSize,
                       @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
 
-    ResourceList<Task> resourceList = pageLink.isPresent()
-        ? taskFeClient.getPage(pageLink.get())
-        : taskFeClient.getResourceTicketTasks(id, state, pageSize);
+    ResourceList<Task> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = taskFeClient.getPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+
+      // Temporarily change the adjustedPageSize back to pageSize.
+      // To allow the user to provide no pageSize so as to pull out the complete results.
+      adjustedPageSize = pageSize;
+      resourceList = taskFeClient.getResourceTicketTasks(id, state, adjustedPageSize);
+    }
 
     return generateResourceListResponse(
         Response.Status.OK,
