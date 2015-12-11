@@ -72,9 +72,6 @@ describe "disk", management: true do
     validate_disk_tasks(client.get_disk_tasks(disk.id))
     validate_disk_tasks(client.get_disk_tasks(disk.id, "COMPLETED"))
 
-    task_list = client.get_project_tasks(@project.id, "COMPLETED", "persistent-disk").items
-    expect(task_list).to_not be_empty
-
     disk.delete
   end
 

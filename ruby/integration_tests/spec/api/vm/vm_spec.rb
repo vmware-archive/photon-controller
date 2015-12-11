@@ -32,11 +32,6 @@ describe "vm", management: true, image: true do
     validate_vm_tasks(client.get_vm_tasks(vm.id))
     validate_vm_tasks(client.get_vm_tasks(vm.id, "COMPLETED"))
 
-    validate_vm_tasks(client.get_project_tasks(@project.id))
-    validate_vm_tasks(client.get_project_tasks(@project.id, "COMPLETED"))
-    validate_vm_tasks(client.get_project_tasks(@project.id, nil, "vm"))
-    validate_vm_tasks(client.get_project_tasks(@project.id, "COMPLETED", "vm"))
-
     vm.delete
   end
 

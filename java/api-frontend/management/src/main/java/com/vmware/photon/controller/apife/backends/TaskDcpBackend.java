@@ -112,13 +112,6 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   @Override
-  public ResourceList<Task> filterInProject(String projectId, Optional<String> state, Optional<String> entityKind,
-                                    Optional<Integer> pageSize) {
-    ResourceList<TaskEntity> taskEntities = getProjectTasks(projectId, state, entityKind, pageSize);
-    return toApiRepresentation(taskEntities);
-  }
-
-  @Override
   public ResourceList<Task> getTasksPage(String pageLink) throws PageExpiredException {
     ResourceList<TaskEntity> taskEntities = getEntityTasksPage(pageLink);
     return toApiRepresentation(taskEntities);
@@ -339,14 +332,6 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     }
   }
 
-  private ResourceList<TaskEntity> getProjectTasks(
-      String projectId, Optional<String> state, Optional<String> entityKind, Optional<Integer> pageSize) {
-
-    ResourceList<TaskService.State> tasksDocuments = getTaskDocumentsInProject(projectId, state, entityKind, pageSize);
-
-    return getTaskEntitiesFromDocuments(tasksDocuments);
-  }
-
   private ResourceList<TaskEntity> getTaskEntitiesFromDocuments(ResourceList<TaskService.State> tasksDocuments) {
 
     ResourceList<TaskEntity> taskEntityList = new ResourceList<>();
@@ -377,26 +362,6 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     if (entityId.isPresent()) {
       termsBuilder.put("entityId", entityId.get());
     }
-
-    if (entityKind.isPresent()) {
-      termsBuilder.put("entityKind", entityKind.get().toLowerCase());
-    }
-
-    if (state.isPresent()) {
-      termsBuilder.put("state", state.get().toUpperCase());
-    }
-
-    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(TaskService.State.class, termsBuilder.build(),
-        pageSize, true);
-
-    return PaginationUtils.xenonQueryResultToResourceList(TaskService.State.class, queryResult);
-  }
-
-  private ResourceList<TaskService.State> getTaskDocumentsInProject(
-      String projectId, Optional<String> state, Optional<String> entityKind, Optional<Integer> pageSize) {
-    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
-
-    termsBuilder.put("projectId", projectId);
 
     if (entityKind.isPresent()) {
       termsBuilder.put("entityKind", entityKind.get().toLowerCase());
