@@ -80,12 +80,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   public static final String ENV_LOADBALANCER_PORT = "APIFE_PORT";
 
   public static final String ENV_ZOOKEEPER_QUORUM_URL = "ZOOKEEPER_QUORUM";
-  public static final String ENV_DEPLOYER_REGISTRATION_ADDRESS = "DEPLOYER_REGISTRATION_ADDRESS";
-  public static final String ENV_API_REGISTRATION_ADDRESS = "MANAGEMENT-API_REGISTRATION_ADDRESS";
-  public static final String ENV_CHAIRMAN_REGISTRATION_ADDRESS = "CHAIRMAN_REGISTRATION_ADDRESS";
-  public static final String ENV_ROOT_SCHEDULER_REGISTRATION_ADDRESS = "ROOT-SCHEDULER_REGISTRATION_ADDRESS";
-  public static final String ENV_HOUSEKEEPER_REGISTRATION_ADDRESS = "HOUSEKEEPER_REGISTRATION_ADDRESS";
-  public static final String ENV_CLOUD_STORE_REGISTRATION_ADDRESS = "CLOUD-STORE_REGISTRATION_ADDRESS";
   public static final String ENV_ESX_HOST = "ESX_HOST";
   public static final String ENV_DATASTORE = "DATASTORE";
   public static final String ENV_ENABLE_SYSLOG = "ENABLE_SYSLOG";
@@ -348,23 +342,37 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         String.valueOf(containersConfig.getContainerSpecs().get(containerType.name()).getCpuCount()));
     dynamicParameters.put("diskGb",
         String.valueOf(containersConfig.getContainerSpecs().get(containerType.name()).getDiskGb()));
+    dynamicParameters.put("VM_IP", vmIpAddress);
     containerState.dynamicParameters.putAll(dynamicParameters);
 
+    containerState.dynamicParameters.put(ENV_SHARED_SECRET, sharedSecret);
+    containerState.dynamicParameters.put(ENV_DATASTORE, deploymentState.imageDataStoreNames.iterator().next());
+    containerState.dynamicParameters.put(ENV_ENABLE_AUTH, deploymentState.oAuthEnabled.toString());
+
+    if (deploymentState.oAuthEnabled) {
+      containerState.dynamicParameters.put(ENV_SWAGGER_LOGIN_URL, deploymentState.oAuthResourceLoginEndpoint);
+      containerState.dynamicParameters.put(ENV_SWAGGER_LOGOUT_URL, deploymentState.oAuthLogoutEndpoint);
+      containerState.dynamicParameters.put(ENV_AUTH_SERVER_TENANT, deploymentState.oAuthTenantName);
+      containerState.dynamicParameters.put(ENV_AUTH_SERVER_PORT,
+          String.valueOf(ServicePortConstants.LIGHTWAVE_PORT));
+    }
+    containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADDRESS, vmIpAddress);
+    containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
+    containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
+    containerState.dynamicParameters.put(ENV_LIGHTWAVE_PASSWORD, deploymentState.oAuthPassword);
+    containerState.dynamicParameters.put(ENV_LIGHTWAVE_DOMAIN, deploymentState.oAuthTenantName);
+
     switch (containerType) {
+      case Chairman:
+      case RootScheduler:
+      case Housekeeper:
+      case CloudStore:
+      case Zookeeper:
+        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
+            deploymentState, Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
+        break;
+
       case ManagementApi:
-        containerState.dynamicParameters.put(ENV_API_REGISTRATION_ADDRESS, vmIpAddress);
-        containerState.dynamicParameters.put(ENV_SHARED_SECRET, sharedSecret);
-        containerState.dynamicParameters.put(ENV_DATASTORE, deploymentState.imageDataStoreNames.iterator().next());
-        containerState.dynamicParameters.put(ENV_ENABLE_AUTH, deploymentState.oAuthEnabled.toString());
-
-        if (deploymentState.oAuthEnabled) {
-          containerState.dynamicParameters.put(ENV_SWAGGER_LOGIN_URL, deploymentState.oAuthResourceLoginEndpoint);
-          containerState.dynamicParameters.put(ENV_SWAGGER_LOGOUT_URL, deploymentState.oAuthLogoutEndpoint);
-          containerState.dynamicParameters.put(ENV_AUTH_SERVER_TENANT, deploymentState.oAuthTenantName);
-          containerState.dynamicParameters.put(ENV_AUTH_SERVER_PORT,
-              String.valueOf(ServicePortConstants.LIGHTWAVE_PORT));
-        }
-
         HostUtils.getCloudStoreHelper(this)
             .createGet(vmState.hostServiceLink)
             .setCompletion((op, ex) -> {
@@ -389,44 +397,12 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
         break;
 
-      case Chairman:
-        containerState.dynamicParameters.put(ENV_CHAIRMAN_REGISTRATION_ADDRESS, vmIpAddress);
-        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-            deploymentState, Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
-        break;
-
-      case RootScheduler:
-        containerState.dynamicParameters.put(ENV_ROOT_SCHEDULER_REGISTRATION_ADDRESS, vmIpAddress);
-        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-            deploymentState, Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
-        break;
-
       case Deployer:
-        containerState.dynamicParameters.put(ENV_DEPLOYER_REGISTRATION_ADDRESS, vmIpAddress);
-        containerState.dynamicParameters.put(ENV_SHARED_SECRET, sharedSecret);
         List<ContainersConfig.ContainerType> containerTypes = currentState.isNewDeployment ?
             Arrays.asList(ContainersConfig.ContainerType.Zookeeper, ContainersConfig.ContainerType.LoadBalancer) :
             Collections.singletonList(ContainersConfig.ContainerType.Zookeeper);
         scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
             deploymentState, containerTypes);
-        break;
-
-      case Housekeeper:
-        containerState.dynamicParameters.put(ENV_HOUSEKEEPER_REGISTRATION_ADDRESS, vmIpAddress);
-        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-            deploymentState, Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
-        break;
-
-      case CloudStore:
-        containerState.dynamicParameters.put(ENV_CLOUD_STORE_REGISTRATION_ADDRESS, vmIpAddress);
-        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-            deploymentState, Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
-        break;
-
-      case Zookeeper:
-        // Load list of zookeeper IPs
-        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-            deploymentState, Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
         break;
 
       case LoadBalancer:
@@ -435,16 +411,10 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         break;
 
       case Lightwave:
-        containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADDRESS, vmIpAddress);
-        containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
-        containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
-        containerState.dynamicParameters.put(ENV_LIGHTWAVE_PASSWORD, deploymentState.oAuthPassword);
-        containerState.dynamicParameters.put(ENV_LIGHTWAVE_DOMAIN, deploymentState.oAuthTenantName);
 
         DeploymentService.State patchState = new DeploymentService.State();
         patchState.oAuthServerAddress = vmIpAddress;
         patchState.oAuthServerPort = ServicePortConstants.LIGHTWAVE_PORT;
-
         HostUtils.getCloudStoreHelper(this)
             .createPatch(deploymentState.documentSelfLink)
             .setBody(patchState)
@@ -674,11 +644,11 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       ContainersConfig.ContainerType containerTypeForIpList) {
 
     ContainersConfig.ContainerType containerType = ContainersConfig.ContainerType.valueOf(containerTemplateState.name);
+    String zookeeperUrl = generateReplicaList(ipList, ZOOKEEPER_PORT);
 
     switch (containerType) {
       case ManagementApi:
         if (containerTypeForIpList == ContainersConfig.ContainerType.Zookeeper) {
-          String zookeeperUrl = generateReplicaList(ipList, ZOOKEEPER_PORT);
           containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
         } else if (containerTypeForIpList == ContainersConfig.ContainerType.Lightwave) {
           if (0 != ipList.size()) {
@@ -688,12 +658,10 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         break;
 
       case Chairman:
-        String zookeeperUrl = generateReplicaList(ipList, ZOOKEEPER_PORT);
         containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
         break;
 
       case RootScheduler:
-        zookeeperUrl = generateReplicaList(ipList, ZOOKEEPER_PORT);
         containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
         break;
 
@@ -701,18 +669,15 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         if (containerTypeForIpList == ContainersConfig.ContainerType.LoadBalancer) {
           containerState.dynamicParameters.put(ENV_LOADBALANCER_IP, ipList.get(0));
         } else if (containerTypeForIpList == ContainersConfig.ContainerType.Zookeeper) {
-          zookeeperUrl = generateReplicaList(ipList, ZOOKEEPER_PORT);
           containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
         }
         break;
 
       case Housekeeper:
-        zookeeperUrl = generateReplicaList(ipList, ZOOKEEPER_PORT);
         containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
         break;
 
       case CloudStore:
-        zookeeperUrl = generateReplicaList(ipList, ZOOKEEPER_PORT);
         containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
         break;
 

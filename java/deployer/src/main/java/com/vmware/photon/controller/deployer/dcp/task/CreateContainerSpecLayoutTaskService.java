@@ -41,6 +41,7 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
 
 import javax.annotation.Nullable;
@@ -68,10 +69,11 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
    * Map with incompatible container types matrix.
    */
   @VisibleForTesting
-  public static final Map<String, List<String>> INCOMPATIBLE_CONTAINER_TYPES = new HashMap<String, List<String>>() {{
-    put("LoadBalancer", new ArrayList(Arrays.asList("Lightwave")));
-    put("Lightwave", new ArrayList(Arrays.asList("LoadBalancer")));
-  }};
+  public static final Map<String, List<String>> INCOMPATIBLE_CONTAINER_TYPES
+    = ImmutableMap.<String, List<String>>builder()
+      .put("LoadBalancer", Arrays.asList("Lightwave"))
+      .put("Lightwave", Arrays.asList("LoadBalancer"))
+      .build();
 
   /**
    * This class defines the document state associated with a single

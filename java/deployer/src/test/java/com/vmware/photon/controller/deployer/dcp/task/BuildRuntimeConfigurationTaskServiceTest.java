@@ -578,23 +578,18 @@ public class BuildRuntimeConfigurationTaskServiceTest {
     public Object[][] getMandatoryEnvironmentVariables() {
       List<String> chairmanList = new ArrayList<String>();
       chairmanList.add(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM_URL);
-      chairmanList.add(BuildRuntimeConfigurationTaskService.ENV_CHAIRMAN_REGISTRATION_ADDRESS);
 
       List<String> rootSchedulerList = new ArrayList<String>();
       rootSchedulerList.add(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM_URL);
-      rootSchedulerList.add(BuildRuntimeConfigurationTaskService.ENV_ROOT_SCHEDULER_REGISTRATION_ADDRESS);
 
       List<String> housekeeperList = new ArrayList<String>();
       housekeeperList.add(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM_URL);
-      housekeeperList.add(BuildRuntimeConfigurationTaskService.ENV_HOUSEKEEPER_REGISTRATION_ADDRESS);
 
       List<String> cloudStoreList = new ArrayList<String>();
       cloudStoreList.add(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM_URL);
-      cloudStoreList.add(BuildRuntimeConfigurationTaskService.ENV_CLOUD_STORE_REGISTRATION_ADDRESS);
 
       List<String> managementApiList = new ArrayList<String>();
       managementApiList.add(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM_URL);
-      managementApiList.add(BuildRuntimeConfigurationTaskService.ENV_API_REGISTRATION_ADDRESS);
       managementApiList.add(BuildRuntimeConfigurationTaskService.ENV_ESX_HOST);
       managementApiList.add(BuildRuntimeConfigurationTaskService.ENV_DATASTORE);
       managementApiList.add(BuildRuntimeConfigurationTaskService.ENV_ENABLE_AUTH);
@@ -602,7 +597,6 @@ public class BuildRuntimeConfigurationTaskServiceTest {
 
       List<String> deployerList = new ArrayList<String>();
       deployerList.add(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM_URL);
-      deployerList.add(BuildRuntimeConfigurationTaskService.ENV_DEPLOYER_REGISTRATION_ADDRESS);
       deployerList.add(BuildRuntimeConfigurationTaskService.ENV_LOADBALANCER_IP);
       deployerList.add(BuildRuntimeConfigurationTaskService.ENV_LOADBALANCER_PORT);
       deployerList.add(BuildRuntimeConfigurationTaskService.ENV_SHARED_SECRET);
