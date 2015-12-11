@@ -175,6 +175,7 @@ public class ComputeService extends StatefulService {
       chsWithDesc.adapterManagementReference = currentState.adapterManagementReference;
       chsWithDesc.customProperties = currentState.customProperties;
       chsWithDesc.networkLinks = currentState.networkLinks;
+      chsWithDesc.tenantLinks = currentState.tenantLinks;
 
       chsWithDesc.description = desc;
       chsWithDesc.descriptionLink = desc.documentSelfLink;
