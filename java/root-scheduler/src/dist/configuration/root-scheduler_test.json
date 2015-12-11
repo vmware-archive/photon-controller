@@ -1,5 +1,7 @@
 {
-  "VM_IP": "localhost",
+  "ROOT-SCHEDULER_BIND_ADDRESS": "0.0.0.0",
+  "ROOT-SCHEDULER_REGISTRATION_ADDRESS": "localhost",
+  "ROOT-SCHEDULER_PORT": 13010,
   "ZOOKEEPER_QUORUM": "localhost:2181",
   "LOG_DIRECTORY": "/vagrant/log",
   "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler",

@@ -1,5 +1,4 @@
 {
-  "serviceName": "Housekeeper",
   "cpuCount": 2,
   "memoryMb": 2048,
   "diskGb": 8,
@@ -14,8 +13,10 @@
     "/var/log": "/var/log"
   },
   "dynamicParameters": {
+    "HOUSEKEEPER_BIND_ADDRESS": "0.0.0.0",
     "HOUSEKEEPER_DCP_STORAGE_PATH": "/etc/esxcloud/housekeeper/sandbox_16000",
     "LOG_DIRECTORY": "/var/log/esxcloud",
+    "HOUSEKEEPER_PORT": 16000,
     "HOUSEKEEPER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/housekeeper"
   }
 }

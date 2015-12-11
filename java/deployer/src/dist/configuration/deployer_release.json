@@ -1,5 +1,4 @@
 {
-  "serviceName": "Deployer",
   "cpuCount": 2,
   "memoryMb": 2048,
   "diskGb": 8,
@@ -17,8 +16,10 @@
     "/usr/lib/esxcloud/deployer/scripts":"/usr/lib/esxcloud/deployer/scripts"
   },
   "dynamicParameters": {
+    "DEPLOYER_BIND_ADDRESS": "0.0.0.0",
     "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
     "LOG_DIRECTORY": "/var/log/esxcloud",
+    "DEPLOYER_PORT": 18000,
     "TENANT_NAME": "mgmt-tenant",
     "PROJECT_NAME": "mgmt-project",
     "RESOURCE_TICKET_NAME": "mgmt-res-ticket",

@@ -17,30 +17,11 @@ import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
-import com.vmware.xenon.common.Utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
-import com.google.common.collect.ImmutableMap;
-import org.apache.commons.io.FileUtils;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import static org.testng.Assert.fail;
 
 /**
  * Implements tests for {@link ContainersConfig}.
@@ -50,74 +31,30 @@ public class ContainersConfigTest {
   private ContainersConfig containersConfig;
   private DeployerConfig deployerConfig;
 
-  private static Map<String, Object> defaultDynamicParamters = ImmutableMap.<String, Object>builder()
-      .put("VM_IP", "99.99.99.99")
-      .put("ZOOKEEPER_QUORUM", "zk1:999")
-      .put("ENABLE_SYSLOG", false)
-      .build();
-
   @Test
-  public void constructsContainersConfig() throws Exception {
+  public void testContainersConfig() throws Exception {
     deployerConfig = ConfigBuilder.build(DeployerConfig.class,
         DcpConfigTest.class.getResource("/config.yml").getPath());
     TestHelper.setContainersConfig(deployerConfig);
     containersConfig = deployerConfig.getContainersConfig();
     assertThat(containersConfig.getContainerSpecs().size(), is(ContainersConfig.ContainerType.values().length));
-  }
 
-  @Test(expectedExceptions = BadConfigException.class)
-  public void throwsOnMissingContainersConfig() throws Exception {
-    containersConfig = ConfigBuilder.build(DeployerConfig.class,
-        DcpConfigTest.class.getResource("/dcpConfig_invalid.yml").getPath()).getContainersConfig();
+    ContainersConfig.Spec spec = containersConfig.getContainerSpecs().get(ContainersConfig.ContainerType
+        .Deployer.name());
+    assertThat(spec.getContainerImage(), is("esxcloud/deployer"));
+    assertThat(spec.getPortBindings().size(), is(2));
+    assertThat(spec.getPortBindings().get(new Integer(18001)), is(18001));
+    assertThat(spec.getVolumeBindings().size(), is(4));
+    assertThat(spec.getDynamicParameters().size(), is(11));
   }
 
   @Test
-  public void buildsValidConfgiuration() throws Exception {
-    String path = DcpConfigTest.class.getResource("/configurations").getPath();
-    List<File> leafDirectories = findAllLeafDirectories(new File(path));
-    for (File dir : leafDirectories) {
-      File configYml = findFile(dir, "yml");
-      if (configYml != null) {
-        File releaseJson = findFile(dir, "release.json");
-        Map<String, Object> dynamicParamters = new HashMap<>(defaultDynamicParamters);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> d = Utils.fromJson(FileUtils.readFileToString(releaseJson), Map.class);
-        dynamicParamters.putAll(d);
-        MustacheFactory mustacheFactory = new DefaultMustacheFactory();
-        Mustache mustache = mustacheFactory
-            .compile(new InputStreamReader(new FileInputStream(configYml)), configYml.getName());
-        StringWriter stringWriter = new StringWriter();
-        mustache.execute(stringWriter, dynamicParamters).flush();
-        stringWriter.flush();
-
-        // validating that the created yml file can be read
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        mapper.readValue(stringWriter.toString(), Object.class);
-      }
+  public void testMissingContainersConfig() {
+    try {
+      containersConfig = ConfigBuilder.build(DeployerConfig.class,
+          DcpConfigTest.class.getResource("/dcpConfig_invalid.yml").getPath()).getContainersConfig();
+      fail();
+    } catch (BadConfigException e) {
     }
-  }
-
-  private File findFile(File dir, String suffix) {
-    File[] listFiles = dir.listFiles(f -> f.getName().endsWith(suffix));
-    if (listFiles == null || listFiles.length == 0) {
-      return null;
-    }
-    return listFiles[0];
-  }
-
-  private List<File> findAllLeafDirectories(File path) {
-    if (path.isFile()) {
-      return Collections.emptyList();
-    }
-
-    if (path.listFiles(f -> f.isDirectory()).length == 0) {
-      return Arrays.asList(path);
-    }
-
-    List<File> leafDirectories = new ArrayList<>();
-    for (File dir : path.listFiles(f -> f.isDirectory())) {
-      leafDirectories.addAll(findAllLeafDirectories(dir));
-    }
-    return leafDirectories;
   }
 }

@@ -1,9 +1,8 @@
 {
-  "VM_IP": "localhost",
-  "CLOUD-STORE_BIND_ADDRESS": "0.0.0.0",
-  "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
-  "LOG_DIRECTORY": "/vagrant/log",
-  "CLOUD-STORE_PORT": 19000,
-  "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
-  "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=29000,suspend=n"
+    "CLOUD-STORE_BIND_ADDRESS": "0.0.0.0",
+    "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
+    "LOG_DIRECTORY": "/vagrant/log",
+    "CLOUD-STORE_PORT": 19000,
+    "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
+    "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=29000,suspend=n"
 }

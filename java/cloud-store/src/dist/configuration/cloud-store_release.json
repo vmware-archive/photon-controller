@@ -1,5 +1,4 @@
 {
-  "serviceName": "CloudStore",
   "cpuCount": 4,
   "memoryMb": 4096,
   "diskGb": 8,
@@ -14,8 +13,10 @@
     "/var/log": "/var/log"
   },
   "dynamicParameters": {
+    "CLOUD-STORE_BIND_ADDRESS": "0.0.0.0",
     "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
     "LOG_DIRECTORY": "/var/log/esxcloud",
+    "CLOUD-STORE_PORT": 19000,
     "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store"
   }
 }

@@ -1,6 +1,6 @@
-bind: "0.0.0.0"
-registrationAddress: "{{{VM_IP}}}"
-port: 19000
+bind: "{{{CLOUD-STORE_BIND_ADDRESS}}}"
+registrationAddress: "{{{CLOUD-STORE_REGISTRATION_ADDRESS}}}"
+port: {{{CLOUD-STORE_PORT}}}
 storagePath: "{{{CLOUD-STORE_DCP_STORAGE_PATH}}}"
 zookeeper:
   quorum: "{{{ZOOKEEPER_QUORUM}}}"
@@ -11,9 +11,7 @@ logging:
     archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/cloud-store-%d.log.gz
     logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
   syslog:
-    enabled: {{{ENABLE_SYSLOG}}}
-    {{#ENABLE_SYSLOG}}
+    enabled: "{{{ENABLE_SYSLOG}}}"
     host: "{{{SYSLOG_ENDPOINT}}}"
-    logFormat: "%-5p [%d{ISO8601}][%property{instance}]%X{request}%X{task} %c: %m\n%ex"
+    logFormat: "%-5p [%d{ISO8601}]%X{request}%X{task} %c: %m\n%ex"
     facility: LOCAL0
-    {{/ENABLE_SYSLOG}}

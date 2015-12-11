@@ -1,5 +1,4 @@
 {
-  "serviceName": "RootScheduler",
   "cpuCount": 1,
   "memoryMb": 1024,
   "diskGb": 1,
@@ -13,6 +12,8 @@
     "/var/log": "/var/log"
   },
   "dynamicParameters": {
+    "ROOT-SCHEDULER_BIND_ADDRESS": "0.0.0.0",
+    "ROOT-SCHEDULER_PORT": 13010,
     "LOG_DIRECTORY": "/var/log/esxcloud",
     "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler"
   }

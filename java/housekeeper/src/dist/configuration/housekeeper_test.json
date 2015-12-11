@@ -1,7 +1,8 @@
 {
-  "VM_IP": "localhost",
+  "HOUSEKEEPER_BIND_ADDRESS": "0.0.0.0",
   "HOUSEKEEPER_DCP_STORAGE_PATH": "/etc/esxcloud/housekeeper/sandbox_16000",
   "LOG_DIRECTORY": "/vagrant/log",
+  "HOUSEKEEPER_PORT": 16000,
   "HOUSEKEEPER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/housekeeper",
   "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=26000,suspend=n"
 }

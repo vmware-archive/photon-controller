@@ -1,5 +1,4 @@
 {
-  "serviceName": "Lightwave",
   "cpuCount": 1,
   "memoryMb": 1024,
   "diskGb": 8,

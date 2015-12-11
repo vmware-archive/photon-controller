@@ -1,8 +1,9 @@
 {
-  "VM_IP": "localhost",
+  "DEPLOYER_BIND_ADDRESS": "0.0.0.0",
   "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
   "LOG_DIRECTORY": "/vagrant/log",
   "APIFE_PORT": 9000,
+  "DEPLOYER_PORT": 18000,
   "TENANT_NAME": "mgmt-tenant",
   "PROJECT_NAME": "mgmt-project",
   "RESOURCE_TICKET_NAME": "mgmt-res-ticket",

@@ -1,7 +1,9 @@
 {
+    "CLOUD-STORE_BIND_ADDRESS": "0.0.0.0",
     "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
     "LOG_DIRECTORY": "/var/log/esxcloud",
+    "CLOUD-STORE_PORT": 19000,
     "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
-    "VM_IP": "127.0.0.1",
+    "CLOUD-STORE_REGISTRATION_ADDRESS": "127.0.0.1",
     "ZOOKEEPER_QUORUM": "127.0.0.1:2181"
 }
