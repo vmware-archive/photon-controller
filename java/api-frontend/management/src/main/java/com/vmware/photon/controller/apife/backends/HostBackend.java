@@ -46,6 +46,8 @@ public interface HostBackend {
 
   void tombstone(HostEntity hostEntity);
 
+  TaskEntity setAvailabilityZone(String hostId, String availabilityZoneId) throws ExternalException;
+
   TaskEntity resume(String hostId) throws ExternalException;
 
   TaskEntity suspend(String hostId) throws ExternalException;

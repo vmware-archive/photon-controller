@@ -62,6 +62,7 @@ public enum Operation {
 
   CREATE_AVAILABILITYZONE("CreateAvailabilityZone"),
   DELETE_AVAILABILITYZONE("DeleteAvailabilityZone"),
+  SET_AVAILABILITYZONE("SetAvailabilityZone"),
 
   CREATE_DATASTORE("CreateDatastore"),
   DELETE_DATASTORE("DeleteDatastore"),

@@ -117,6 +117,12 @@ public class HostFeClient {
     return task;
   }
 
+  public Task setAvailabilityZone(String hostId, String availabilityZoneId) throws ExternalException {
+    TaskEntity taskEntity = hostBackend.setAvailabilityZone(hostId, availabilityZoneId);
+    Task task = taskBackend.getApiRepresentation(taskEntity);
+    return task;
+  }
+
   public ResourceList<Vm> listAllVms(String id) throws ExternalException {
     return new ResourceList<>(vmBackend.getAllVmsOnHost(id));
   }

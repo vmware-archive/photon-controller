@@ -22,6 +22,7 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.apife.TestModule;
@@ -30,6 +31,7 @@ import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.HostAvailabilityZoneAlreadySetException;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAvailabilityZoneStateException;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
@@ -43,6 +45,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -588,6 +591,106 @@ public class HostDcpBackendTest {
         fail("should have failed with HostNotFoundException");
       } catch (HostNotFoundException e) {
         assertThat(e.getMessage(), is("Host #" + hostId + " not found"));
+      }
+    }
+  }
+
+  /**
+   * Tests for updating Hosts.
+   */
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class SetHostAvailabilityZoneTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private HostBackend hostBackend;
+
+    @Inject
+    private DeploymentBackend deploymentBackend;
+
+    @Inject
+    private AvailabilityZoneBackend availabilityZoneBackend;
+
+    private HostCreateSpec hostCreateSpec;
+    private AvailabilityZoneCreateSpec availabilityZoneCreateSpec;
+
+    private String hostId;
+    private String deploymentId;
+    private String availabilityZoneId;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+
+      hostCreateSpec = new HostCreateSpec();
+      hostCreateSpec.setUsername("user");
+      hostCreateSpec.setPassword("password");
+      hostCreateSpec.setAddress("0.0.0.0");
+      hostCreateSpec.setMetadata(new HashMap<String, String>() {{
+        put("k1", "v1");
+      }});
+      List<UsageTag> usageTags = new ArrayList<>();
+      usageTags.add(UsageTag.CLOUD);
+      hostCreateSpec.setUsageTags(usageTags);
+
+      DeploymentCreateSpec deploymentCreateSpec = getDeploymentCreateSpec();
+      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
+      deploymentId = task.getEntityId();
+
+      TaskEntity taskEntity = hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
+      hostId = taskEntity.getEntityId();
+
+      availabilityZoneCreateSpec = new AvailabilityZoneCreateSpec();
+      availabilityZoneCreateSpec.setName("availability-zone");
+      taskEntity = availabilityZoneBackend.createAvailabilityZone(availabilityZoneCreateSpec);
+      availabilityZoneId = taskEntity.getEntityId();
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testSetAvailabilityZone() throws Throwable {
+      HostEntity hostEntity = hostBackend.findById(hostId);
+      assertThat(hostEntity.getAvailabilityZone(), is(nullValue()));
+
+      hostBackend.setAvailabilityZone(hostId, availabilityZoneId);
+
+      Host host = hostBackend.toApiRepresentation(hostId);
+      assertThat(host, notNullValue());
+      assertThat(host.getAvailabilityZone(), is(availabilityZoneId));
+    }
+
+    @Test
+    public void testSetAvailabilityZoneWhenAvailabilityZoneAlreadySet() throws Throwable {
+      HostEntity hostEntity = hostBackend.findById(hostId);
+      assertThat(hostEntity.getAvailabilityZone(), is(nullValue()));
+
+      hostBackend.setAvailabilityZone(hostId, availabilityZoneId);
+
+      Host host = hostBackend.toApiRepresentation(hostId);
+      assertThat(host, notNullValue());
+      assertThat(host.getAvailabilityZone(), is(availabilityZoneId));
+
+      try {
+        hostBackend.setAvailabilityZone(hostId, availabilityZoneId);
+        fail("should have failed with HostAvailabilityZoneAlreadySetException");
+      } catch (HostAvailabilityZoneAlreadySetException e) {
+        assertThat(e.getErrorCode(), is (ErrorCode.HOST_AVAILABILITYZONE_ALREADY_SET.getCode()));
+        assertThat(e.getMessage(),
+                   is("Host " + hostId + " is already part of Availability Zone " + availabilityZoneId));
       }
     }
   }
