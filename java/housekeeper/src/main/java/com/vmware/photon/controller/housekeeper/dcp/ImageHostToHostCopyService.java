@@ -171,8 +171,8 @@ public class ImageHostToHostCopyService extends StatefulService {
     }
 
     checkArgument(patch.image == null, "Image cannot be changed.");
-    checkArgument(patch.sourceDataStore == null, "Source datastore cannot be changed.");
-    checkArgument(patch.destinationDataStore == null, "Destination datastore cannot be changed.");
+    checkArgument(patch.sourceDatastore == null, "Source datastore cannot be changed.");
+    checkArgument(patch.destinationDatastore == null, "Destination datastore cannot be changed.");
   }
 
   /**
@@ -185,8 +185,8 @@ public class ImageHostToHostCopyService extends StatefulService {
     checkNotNull(current.taskInfo.stage);
 
     checkNotNull(current.image, "image not provided");
-    checkNotNull(current.sourceDataStore, "source datastore not provided");
-    checkNotNull(current.destinationDataStore, "destination datastore not provided");
+    checkNotNull(current.sourceDatastore, "source datastore not provided");
+    checkNotNull(current.destinationDatastore, "destination datastore not provided");
 
     checkState(current.documentExpirationTimeMicros > 0, "documentExpirationTimeMicros needs to be greater than 0");
 
@@ -198,7 +198,7 @@ public class ImageHostToHostCopyService extends StatefulService {
             break;
           case TRANSFER_IMAGE:
             checkArgument(current.host != null, "host cannot be null");
-            checkArgument(current.destinationDataStore != null, "destination host cannot be null");
+            checkArgument(current.destinationDatastore != null, "destination host cannot be null");
             break;
           default:
             checkState(false, "unsupported sub-state: " + current.taskInfo.subStage.toString());
@@ -258,7 +258,7 @@ public class ImageHostToHostCopyService extends StatefulService {
    * @param current
    */
   private void copyImageHostToHost(final State current) {
-    if (current.sourceDataStore.equals(current.destinationDataStore)) {
+    if (current.sourceDatastore.equals(current.destinationDatastore)) {
       ServiceUtils.logInfo(this, "Skip copying image to source itself");
       sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
       return;
@@ -296,7 +296,7 @@ public class ImageHostToHostCopyService extends StatefulService {
     };
 
     try {
-      getHostClient(current).transferImage(current.image, current.sourceDataStore, current.destinationDataStore,
+      getHostClient(current).transferImage(current.image, current.sourceDatastore, current.destinationDatastore,
           current.destinationHost, callback);
 
     } catch (RpcException | IOException e) {
@@ -381,8 +381,8 @@ public class ImageHostToHostCopyService extends StatefulService {
    * @param current
    */
   private void getHostsFromDataStores(final State current) {
-    Operation sourceHostOp = this.buildHostQuery(current, current.sourceDataStore);
-    Operation destinationHostOp = this.buildHostQuery(current, current.destinationDataStore);
+    Operation sourceHostOp = this.buildHostQuery(current, current.sourceDatastore);
+    Operation destinationHostOp = this.buildHostQuery(current, current.destinationDatastore);
 
     OperationJoin.JoinedCompletionHandler handler = (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
       if (failures != null && !failures.isEmpty()) {
@@ -394,7 +394,7 @@ public class ImageHostToHostCopyService extends StatefulService {
         String host = getHostFromResponse(ops.get(sourceHostOp.getId()));
         if (host == null) {
           failTask(new Exception("No host found for source image " +
-              "datastore " + current.sourceDataStore));
+              "datastore " + current.sourceDatastore));
           return;
         }
         current.host = host;
@@ -402,7 +402,7 @@ public class ImageHostToHostCopyService extends StatefulService {
         ServerAddress destinationHost = getHostServerAddressFromResponse(ops.get(destinationHostOp.getId()));
         if (destinationHost == null) {
           failTask(new Exception("No host found for destination image " +
-              "datastore " + current.destinationDataStore));
+              "datastore " + current.destinationDatastore));
           return;
         }
         current.destinationHost = destinationHost;
@@ -538,12 +538,12 @@ public class ImageHostToHostCopyService extends StatefulService {
     /**
      * The store where the image is currently available.
      */
-    public String sourceDataStore;
+    public String sourceDatastore;
 
     /**
      * The store where the image will be copied to.
      */
-    public String destinationDataStore;
+    public String destinationDatastore;
 
     /**
      * The host connecting to the source image datastore.
