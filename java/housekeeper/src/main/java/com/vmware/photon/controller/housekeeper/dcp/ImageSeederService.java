@@ -15,7 +15,6 @@ package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
-import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
@@ -42,8 +41,8 @@ import java.util.Set;
 
 /**
  * Class ImageSeederService implements a service to propagate an image available on a single data store to all
- * data stores. The copy is performed by create ImageCopyService, TaskSchedulerService will move those to STARTED
- * stage, and wait for the copy to finish. Client will poll until task state is FINISH or FAIL. CANCELLED is not
+ * data stores. The copy is performed by create ImageHostToHostCopyService, TaskSchedulerService will move those to
+ * STARTED stage, and wait for the copy to finish. Client will poll until task state is FINISH or FAIL. CANCELLED is not
  * supported.
  */
 public class ImageSeederService extends StatefulService {
@@ -69,19 +68,7 @@ public class ImageSeederService extends StatefulService {
 
     try {
       // Initialize the task state.
-      State s = start.getBody(State.class);
-
-      if (s.taskInfo == null || s.taskInfo.stage == TaskState.TaskStage.CREATED) {
-        s.taskInfo = new TaskState();
-        s.taskInfo.stage = TaskState.TaskStage.STARTED;
-        s.taskInfo.subStage = TaskState.SubStage.TRIGGER_COPIES;
-      }
-
-      if (s.documentExpirationTimeMicros <= 0) {
-        s.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
-      }
-
-      InitializationUtils.initialize(s);
+      State s = this.initializeTaskState(start);
       validateState(s);
       start.setBody(s).complete();
 
@@ -299,7 +286,7 @@ public class ImageSeederService extends StatefulService {
    * @param current
    * @param datastores
    */
-  protected void triggerHostToHostCopyServices(final State current, Set<String> datastores) {
+  protected void triggerHostToHostCopyServices(final State current, final Set<String> datastores) {
     for (String datastore : datastores) {
       if (!datastore.equals(current.sourceImageDatastore)) {
         this.triggerHostToHostCopyService(current, datastore);
@@ -313,7 +300,7 @@ public class ImageSeederService extends StatefulService {
    * @param current
    * @param datastore
    */
-  protected void triggerHostToHostCopyService(final State current, String datastore) {
+  protected void triggerHostToHostCopyService(final State current, final String datastore) {
     // build completion handler
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {
       @Override
@@ -328,19 +315,74 @@ public class ImageSeederService extends StatefulService {
       }
     };
 
-    // build start state
-    ImageHostToHostCopyService.State copyState = new ImageHostToHostCopyService.State();
-    copyState.image = current.image;
-    copyState.sourceDataStore = current.sourceImageDatastore;
-    copyState.destinationDataStore = datastore;
-    copyState.documentExpirationTimeMicros = current.documentExpirationTimeMicros;
+    // build copy service start state
+    ImageHostToHostCopyService.State imageHostToHostCopyServiceStartState =
+            this.buildImageHostToHostCopyServiceStartState(current, datastore);
 
     // start service
-    Operation copyOperation = Operation
+    this.startImageHostToHostCopyService(imageHostToHostCopyServiceStartState, handler);
+  }
+
+  /**
+   * Builds ImageHostToHostCopy service start state.
+   *
+   * @param current
+   * @param datastore
+   * @return
+   */
+  private ImageHostToHostCopyService.State buildImageHostToHostCopyServiceStartState(
+    final State current,
+    final String datastore){
+      ImageHostToHostCopyService.State startState = new ImageHostToHostCopyService.State();
+      startState.image = current.image;
+      startState.sourceDatastore = current.sourceImageDatastore;
+      startState.destinationDatastore = datastore;
+      startState.documentExpirationTimeMicros = current.documentExpirationTimeMicros;
+
+      return startState;
+  }
+
+  /**
+   * Starts ImageHostToHostCopy service.
+   *
+   * @param startState
+   * @param handler
+   * @return
+   */
+  private void startImageHostToHostCopyService(
+    final ImageHostToHostCopyService.State startState,
+    final Operation.CompletionHandler handler){
+      Operation copyOperation = Operation
         .createPost(UriUtils.buildUri(getHost(), ImageHostToHostCopyServiceFactory.SELF_LINK))
-        .setBody(copyState)
+        .setBody(startState)
         .setCompletion(handler);
-    this.sendRequest(copyOperation);
+      this.sendRequest(copyOperation);
+  }
+
+  /**
+   * Initialize task state.
+   *
+   * @param start
+   * @return
+   */
+  private State initializeTaskState(final Operation start) {
+    State s = start.getBody(State.class);
+
+    if (s.taskInfo == null || s.taskInfo.stage == TaskState.TaskStage.CREATED) {
+      s.taskInfo = new TaskState();
+      s.taskInfo.stage = TaskState.TaskStage.STARTED;
+      s.taskInfo.subStage = TaskState.SubStage.TRIGGER_COPIES;
+    }
+
+    if (s.documentExpirationTimeMicros <= 0) {
+      s.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
+    if (s.queryPollDelay == null) {
+      s.queryPollDelay = DEFAULT_QUERY_POLL_DELAY;
+    }
+
+    return s;
   }
 
   /**

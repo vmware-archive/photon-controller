@@ -71,6 +71,7 @@ public class HousekeeperDcpServiceHost
       ImageReplicatorServiceFactory.class,
       ImageCopyServiceFactory.class,
       ImageHostToHostCopyServiceFactory.class,
+      ImageSeederServiceFactory.class,
 
       ImageRemoverServiceFactory.class,
       ImageCleanerTriggerServiceFactory.class,
