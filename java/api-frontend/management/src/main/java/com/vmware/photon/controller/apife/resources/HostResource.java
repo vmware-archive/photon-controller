@@ -143,4 +143,21 @@ public class HostResource {
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
+
+  @POST
+  @Path(HostResourceRoutes.HOST_SET_AVAILABILITY_ZONE_PATH)
+  @ApiOperation(value = "Set Host Availability Zone", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 201, message = "Setting Host availability zone, progress communicated via the task")
+  })
+  public Response setHostAvailabilityZone(@Context Request request,
+                      @PathParam("id") String id,
+                      @PathParam("availabilityZoneId") String availabilityZoneId) throws ExternalException {
+    Task task = hostFeClient.setAvailabilityZone(id, availabilityZoneId);
+    return generateCustomResponse(
+        Response.Status.CREATED,
+        task,
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
+  }
 }
