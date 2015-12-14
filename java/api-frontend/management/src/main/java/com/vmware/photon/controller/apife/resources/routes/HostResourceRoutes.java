@@ -31,4 +31,6 @@ public class HostResourceRoutes {
   public static final String HOST_EXIT_MAINTENANCE_ACTION = "/exit_maintenance";
 
   public static final String HOST_RESUME_ACTION = "/resume";
+
+  public static final String HOST_SET_AVAILABILITY_ZONE_ACTION = "/set_availability_zone";
 }
