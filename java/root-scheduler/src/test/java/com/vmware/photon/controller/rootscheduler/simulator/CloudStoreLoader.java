@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.rootscheduler.simulator;
 
+import com.google.common.io.Files;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
@@ -30,6 +31,8 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -136,5 +139,26 @@ public class CloudStoreLoader {
       assertThat(result.getStatusCode(), is(200));
       logger.debug("Created a datastore document: {}", Utils.toJson(datastore));
     }
+  }
+
+  public static Process startPythonServer(int port, File logDir) throws Exception {
+    ProcessBuilder pb = new ProcessBuilder("make", "develop");
+    logger.info(System.getProperty("user.dir"));
+    File cwd = new File(System.getProperty("user.dir"));
+    while (!cwd.getName().equals("photon-controller")) {
+      cwd = cwd.getParentFile();
+    }
+    pb.directory(new File(cwd, "python"));
+    Process process = pb.start();
+    process.waitFor();
+
+    String python = Paths.get(cwd.getAbsolutePath(), "python", "develop", "bin", "python").toString();
+    String simulator = Paths.get(cwd.getAbsolutePath(), "python", "src", "psim", "psim", "placement_simulator.py").toString();
+    pb = new ProcessBuilder(python, simulator, Integer.toString(port));
+    logger.info("{} {} {}", python, simulator, Integer.toString(port));
+    pb.directory(new File(cwd, "python"));
+    pb.redirectOutput(new File(logDir, "stdout.log"));
+    pb.redirectError(new File(logDir, "stderr.log"));
+    return pb.start();
   }
 }
