@@ -789,8 +789,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
   private Pair<Integer, List<ZookeeperServer>> generateZookeeperQuorumList(List<String> zookeeperReplicas,
       String myIp, DeploymentService.State deploymentState) {
-    int myId = 1;
-
     //'server.1=zookeeper1:2888:3888', 'server.2=zookeeper2:2888:3888',
     List<ZookeeperServer> quorumConfig = new ArrayList<>();
     Map<Integer, String> finalMap = deploymentState.zookeeperIdToIpMap;
@@ -798,25 +796,39 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       finalMap = new HashMap<>();
     }
 
-    boolean matchFound = false;
     for (int i = 0; i < zookeeperReplicas.size(); i++) {
       String replicaIp = zookeeperReplicas.get(i).trim();
-      int idx = i + 1;
-      if (replicaIp.equals(myIp)) {
-        if (deploymentState.zookeeperIdToIpMap == null || deploymentState.zookeeperIdToIpMap.isEmpty()) {
-          myId = idx;
-        } else {
-          if (!deploymentState.zookeeperIdToIpMap.containsKey(idx)) {
-            myId = idx;
-          }
-        }
-        matchFound = true;
+
+      if (finalMap.containsValue(replicaIp)) {
+        // This replica is already in the map
+        continue;
       }
+
+      int idx = i + 1;
 
       if (!finalMap.containsKey(idx)) {
         finalMap.put(idx, replicaIp);
+        ServiceUtils.logInfo(this, "Putting " + replicaIp + " in the map with this id " + idx);
+      } else {
+        // This id is occupied by someone else, let's find an empty spot
+        int j = 1;
+        while (finalMap.containsKey(j)) {
+          j++;
+        }
+        finalMap.put(j, replicaIp);
+        ServiceUtils.logInfo(this, "Found spot " + replicaIp + " in the map with this id " + j);
       }
-      quorumConfig.add(new ZookeeperServer(String.format("server.%s=%s:2888:3888", idx, replicaIp)));
+    }
+
+    boolean matchFound = false;
+    int myId = 1;
+    for (Map.Entry<Integer, String> zkPair : finalMap.entrySet()) {
+      if (zkPair.getValue().equals(myIp)) {
+        matchFound = true;
+        myId = zkPair.getKey();
+      }
+      quorumConfig.add(new ZookeeperServer(String.format("server.%s=%s:2888:3888",
+          zkPair.getKey(), zkPair.getValue())));
     }
 
     if (!matchFound) {

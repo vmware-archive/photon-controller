@@ -14,8 +14,10 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -743,7 +745,12 @@ public class BuildRuntimeConfigurationTaskServiceTest {
         int cloudCount) throws Throwable {
 
       for (int i = 0; i < mgmtCount; i++) {
-        TestHelper.createHostService(cloudStoreMachine, Collections.singleton(UsageTag.MGMT.name()));
+        HostService.State hostStartState = TestHelper.getHostServiceStartState(Collections.singleton(UsageTag.MGMT
+            .name()), HostState.READY);
+        hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP,
+              "0.0.0." + i);
+
+        TestHelper.createHostService(cloudStoreMachine, hostStartState);
       }
 
       for (int i = 0; i < cloudCount; i++) {

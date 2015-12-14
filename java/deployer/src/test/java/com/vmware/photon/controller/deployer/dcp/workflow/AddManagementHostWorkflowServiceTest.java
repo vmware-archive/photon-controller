@@ -848,7 +848,7 @@ public class AddManagementHostWorkflowServiceTest {
       createTestEnvironment(1);
 
       startState.deploymentServiceLink = createDeploymentServiceLink(localStore, isAuthEnabled);
-      HostService.State initialHost = createHostService(Collections.singleton(UsageTag.MGMT.name()), localStore);
+      HostService.State initialHost = createHostService(Collections.singleton(UsageTag.MGMT.name()), localStore, null);
 
       DeploymentWorkflowService.State deploymentState = DeploymentWorkflowServiceTest.buildValidStartState(null, null);
       deploymentState.deploymentServiceLink = startState.deploymentServiceLink;
@@ -870,11 +870,12 @@ public class AddManagementHostWorkflowServiceTest {
       assertThat(deploymentServiceRemoteOriginal.zookeeperIdToIpMap.size() == 1, is(true));
       for (int i = 1; i <= hostCount; i++) {
         if (isOnlyMgmtHost) {
-          HostService.State mgmtHost = createHostService(Collections.singleton(UsageTag.MGMT.name()), remoteStore);
+          HostService.State mgmtHost = createHostService(Collections.singleton(UsageTag.MGMT.name()), remoteStore,
+              "0.0.0." + i);
           startState.hostServiceLink = mgmtHost.documentSelfLink;
         } else {
           HostService.State mgmtHost = createHostService(new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag
-              .MGMT.name())), remoteStore);
+              .MGMT.name())), remoteStore, "0.0.0." + i);
           startState.hostServiceLink = mgmtHost.documentSelfLink;
         }
 
@@ -898,13 +899,13 @@ public class AddManagementHostWorkflowServiceTest {
       verifyContainerServiceStates(startState.hostServiceLink);
     }
 
-    private HostService.State createHostService(Set<String> usageTags, MultiHostEnvironment<?> machine) throws
-        Throwable {
+    private HostService.State createHostService(Set<String> usageTags, MultiHostEnvironment<?> machine, String
+        bindAddress) throws Throwable {
       HostService.State hostStartState = TestHelper.getHostServiceStartState(usageTags, HostState.CREATING);
       if (usageTags.contains(UsageTag.MGMT.name())) {
         DeployerDcpServiceHost remoteHost = remoteDeployer.getHosts()[0];
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP,
-            remoteHost.getState().bindAddress);
+            bindAddress != null ? bindAddress : remoteHost.getState().bindAddress);
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_DEPLOYER_DCP_PORT,
             Integer.toString(remoteHost.getPort()));
       }

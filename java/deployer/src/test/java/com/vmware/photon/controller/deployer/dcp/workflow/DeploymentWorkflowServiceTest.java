@@ -684,12 +684,12 @@ public class DeploymentWorkflowServiceTest {
       doReturn(Collections.singleton(
           new InetSocketAddress("127.0.0.1", remoteDeployer.getHosts()[0].getState().httpPort - 1)))
           .when(zkBuilder)
-          .getServers(Matchers.startsWith("0.0.0.0:2181,"), eq("deployer"));
+          .getServers(Matchers.startsWith("0.0.0"), eq("deployer"));
       doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1", localStore.getHosts()[0].getState().httpPort)))
           .when(zkBuilder).getServers(eq(quorum), eq("cloudstore"));
       doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1", remoteStore.getHosts()[0].getState().httpPort)))
           .when(zkBuilder)
-          .getServers(Matchers.startsWith("0.0.0.0:2181,"), eq("cloudstore"));
+          .getServers(Matchers.startsWith("0.0.0"), eq("cloudstore"));
     }
 
     @AfterMethod
@@ -754,15 +754,16 @@ public class DeploymentWorkflowServiceTest {
       createTestEnvironment(1);
 
       for (int i = 0; i < mgmtHostCount; i++) {
-        createHostService(Collections.singleton(UsageTag.MGMT.name()));
+        createHostService(Collections.singleton(UsageTag.MGMT.name()), "0.0.0." + i);
       }
 
       for (int i = 0; i < mixedHostCount; i++) {
-        createHostService(new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
+        createHostService(new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())), "0.0.0." +
+            (mgmtHostCount + i));
       }
 
       for (int i = 0; i < cloudHostCount; i++) {
-        createHostService(Collections.singleton(UsageTag.CLOUD.name()));
+        createHostService(Collections.singleton(UsageTag.CLOUD.name()), null);
       }
 
       startState.deploymentServiceLink = createDeploymentServiceLink(localStore, isAuthEnabled);
@@ -776,7 +777,7 @@ public class DeploymentWorkflowServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
 
-      verifyDeploymentServiceState();
+      verifyDeploymentServiceState(mgmtHostCount + mixedHostCount);
       verifyVmServiceStates(mgmtHostCount + mixedHostCount);
       verifyContainerTemplateServiceStates(isAuthEnabled);
       verifyContainerServiceStates();
@@ -785,15 +786,14 @@ public class DeploymentWorkflowServiceTest {
       verifyProjectServiceState();
       verifyImageServiceState();
       verifyFlavorServiceStates();
-
     }
 
-    private void createHostService(Set<String> usageTags) throws Throwable {
+    private void createHostService(Set<String> usageTags, String bindAddress) throws Throwable {
       HostService.State hostStartState = TestHelper.getHostServiceStartState(usageTags, HostState.CREATING);
       if (usageTags.contains(UsageTag.MGMT.name())) {
         DeployerDcpServiceHost remoteHost = remoteDeployer.getHosts()[0];
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP,
-            remoteHost.getState().bindAddress);
+            bindAddress != null ? bindAddress : remoteHost.getState().bindAddress);
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_DEPLOYER_DCP_PORT,
             Integer.toString(remoteHost.getPort()));
       }
@@ -906,7 +906,7 @@ public class DeploymentWorkflowServiceTest {
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
     }
 
-    private void verifyDeploymentServiceState() throws Throwable {
+    private void verifyDeploymentServiceState(int mgmtHostCnt) throws Throwable {
       verifySingletonServiceState(
           DeploymentService.State.class,
           (state) -> {
@@ -915,7 +915,7 @@ public class DeploymentWorkflowServiceTest {
             assertThat(state.imageDataStoreUsedForVMs, is(true));
             assertThat(state.ntpEndpoint, is("NTP_ENDPOINT"));
             if (state.oAuthEnabled) {
-              assertThat(state.oAuthServerAddress, is("0.0.0.0"));
+              assertThat(state.oAuthServerAddress.startsWith("0.0.0"), is(true));
               assertThat(state.oAuthServerPort, is(443));
             } else {
               assertThat(state.oAuthServerAddress, is("OAUTH_ENDPOINT"));
@@ -923,6 +923,8 @@ public class DeploymentWorkflowServiceTest {
             }
             assertThat(state.syslogEndpoint, is("SYSLOG_ENDPOINT"));
             assertThat(state.chairmanServerList, is(notNullValue()));
+
+            assertThat(state.zookeeperIdToIpMap.size() == mgmtHostCnt, is(true));
             return true;
           }, remoteStore);
     }
