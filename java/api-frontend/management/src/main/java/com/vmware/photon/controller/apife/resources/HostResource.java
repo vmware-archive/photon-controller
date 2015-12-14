@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.HostSetAvailabilityZoneOperation;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.HostFeClient;
@@ -26,6 +27,7 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
+import io.dropwizard.validation.Validated;
 import org.glassfish.jersey.server.ContainerRequest;
 
 import javax.ws.rs.Consumes;
@@ -139,6 +141,24 @@ public class HostResource {
     Task task = hostFeClient.resumeHost(id);
     return generateCustomResponse(
         Response.Status.OK,
+        task,
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
+  }
+
+  @POST
+  @Path(HostResourceRoutes.HOST_SET_AVAILABILITY_ZONE_ACTION)
+  @ApiOperation(value = "Set Host Availability Zone", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 201, message = "Setting Host availability zone, progress communicated via the task")
+  })
+  public Response setHostAvailabilityZone(@Context Request request,
+                      @PathParam("id") String id,
+                      @Validated HostSetAvailabilityZoneOperation hostSetAvailabilityZoneOperation)
+      throws ExternalException {
+    Task task = hostFeClient.setAvailabilityZone(id, hostSetAvailabilityZoneOperation);
+    return generateCustomResponse(
+        Response.Status.CREATED,
         task,
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);

@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
+import com.vmware.photon.controller.api.HostSetAvailabilityZoneOperation;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.ResourceList;
@@ -31,6 +32,7 @@ import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.HostAvailabilityZoneAlreadySetException;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAvailabilityZoneStateException;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
@@ -149,6 +151,25 @@ public class HostDcpBackend implements HostBackend {
   }
 
   @Override
+  public TaskEntity setAvailabilityZone(String id, HostSetAvailabilityZoneOperation hostSetAvailabilityZoneOperation)
+      throws ExternalException {
+    HostService.State state = findStateById(id);
+
+    if (state.availabilityZone != null && !state.availabilityZone.isEmpty()) {
+      throw new HostAvailabilityZoneAlreadySetException(id, state.availabilityZone);
+    }
+
+    checkAvailabilityZoneIsReady(hostSetAvailabilityZoneOperation.getAvailabilityZoneId());
+
+    HostService.State hostState = new HostService.State();
+    hostState.availabilityZone = hostSetAvailabilityZoneOperation.getAvailabilityZoneId();
+    updateHostDocument(id, hostState);
+
+    TaskEntity task = taskBackend.createCompletedTask(toHostEntity(state), Operation.SET_AVAILABILITYZONE);
+    return task;
+  }
+
+  @Override
   public TaskEntity suspend(String hostId) throws ExternalException {
     HostEntity hostEntity = findById(hostId);
     EntityStateValidator.validateOperationState(hostEntity, hostEntity.getState(),
@@ -161,8 +182,7 @@ public class HostDcpBackend implements HostBackend {
     return taskEntity;
   }
 
-  @Override
-  public HostEntity findById(String id) throws HostNotFoundException {
+  private HostService.State findStateById(String id) throws HostNotFoundException {
     com.vmware.xenon.common.Operation result;
 
     try {
@@ -171,7 +191,12 @@ public class HostDcpBackend implements HostBackend {
       throw new HostNotFoundException(id);
     }
 
-    return toHostEntity(result.getBody(HostService.State.class));
+    return result.getBody(HostService.State.class);
+  }
+
+  @Override
+  public HostEntity findById(String id) throws HostNotFoundException {
+    return toHostEntity(findStateById(id));
   }
 
   @Override

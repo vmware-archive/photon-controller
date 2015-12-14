@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
+import com.vmware.photon.controller.api.HostSetAvailabilityZoneOperation;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
@@ -50,6 +51,9 @@ public interface HostBackend {
   void updateState(HostEntity entity, HostState state) throws HostNotFoundException;
 
   void tombstone(HostEntity hostEntity);
+
+  TaskEntity setAvailabilityZone(String hostId, HostSetAvailabilityZoneOperation hostSetAvailabilityZoneOperation)
+      throws ExternalException;
 
   TaskEntity resume(String hostId) throws ExternalException;
 
