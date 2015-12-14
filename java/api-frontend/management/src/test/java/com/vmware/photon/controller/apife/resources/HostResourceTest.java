@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.Datastore;
 import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.HostSetAvailabilityZoneOperation;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -24,7 +25,6 @@ import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
 import com.google.common.collect.ImmutableSet;
-
 import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +35,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
@@ -52,10 +54,16 @@ public class HostResourceTest extends ResourceTest {
 
   private String taskId = "task1";
   private String hostId = "host1";
+  private String availabilityZoneId = "zone1";
   private String taskRoutePath =
       UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build(taskId).toString();
   private String hostRoutePath =
       UriBuilder.fromPath(HostResourceRoutes.HOST_PATH).build(hostId).toString();
+private String hostSetAvailabilityZoneRoute =
+    UriBuilder.fromPath(HostResourceRoutes.HOST_PATH)
+        .path(HostResourceRoutes.HOST_SET_AVAILABILITY_ZONE_ACTION)
+        .build(hostId, availabilityZoneId)
+        .toString();
 
   @Mock
   private HostFeClient hostFeClient;
@@ -145,5 +153,28 @@ public class HostResourceTest extends ResourceTest {
         .request("application/json")
         .delete();
     assertThat(clientResponse.getStatus(), is(404));
+  }
+
+
+  @Test
+  public void testSetHostAvailabilityZone() throws Throwable {
+    HostSetAvailabilityZoneOperation op = new HostSetAvailabilityZoneOperation();
+    op.setAvailabilityZoneId(availabilityZoneId);
+
+    Task task = new Task();
+    task.setId(taskId);
+    doReturn(task).when(hostFeClient).setAvailabilityZone(eq(hostId), eq(op));
+
+    Response response = client()
+        .target(hostSetAvailabilityZoneRoute)
+        .request()
+        .post(Entity.entity(op, MediaType.APPLICATION_JSON_TYPE));
+
+    assertThat(response.getStatus(), is(Response.Status.CREATED.getStatusCode()));
+
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
   }
 }

@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.clients;
 
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
+import com.vmware.photon.controller.api.HostSetAvailabilityZoneOperation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
@@ -114,6 +115,13 @@ public class HostFeClient {
     Task task = taskBackend.getApiRepresentation(taskEntity);
     TaskCommand command = commandFactory.create(taskEntity);
     executor.submit(command);
+    return task;
+  }
+
+  public Task setAvailabilityZone(String hostId, HostSetAvailabilityZoneOperation hostSetAvailabilityZoneOperation)
+      throws ExternalException {
+    TaskEntity taskEntity = hostBackend.setAvailabilityZone(hostId, hostSetAvailabilityZoneOperation);
+    Task task = taskBackend.getApiRepresentation(taskEntity);
     return task;
   }
 
