@@ -456,7 +456,7 @@ public class ImageReplicatorService extends StatefulService {
   }
 
   /**
-   * Triggers a query to retrieve the "child" ImageDeleteService instances in FINISHED state.
+   * Triggers a query to retrieve the "child" ImageCopyService instances in FINISHED state.
    *
    * @param current
    */
