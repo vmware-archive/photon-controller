@@ -222,14 +222,14 @@ g2)') do |g|
         opts_parser = OptionParser.new do |opts|
           opts.on("-k", "--type TYPE",
                   "Cluster type. Accepted values are KUBERNETES, MESOS, or SWARM") { |v| type = v }
-          opts.on("-i", "--imageId IMAGE_ID", "ID of the cluster image.") { |v| image_id = v }
+          opts.on("-i", "--image-id IMAGE_ID", "ID of the cluster image.") { |v| image_id = v }
         end
         id = shift_keyword_arg(args)
         parse_options(args, opts_parser)
 
         usage_error("Please provide deployment id") if id.blank?
-        usage_error("Please provide cluster type") if type.blank?
-        usage_error("Please provide image ID") if image_id.blank?
+        usage_error("Please provide cluster type using --type flag") if type.blank?
+        usage_error("Please provide image ID using --image-id flag") if image_id.blank?
         usage_error("Unsupported cluster type #{type}") unless %w(KUBERNETES MESOS SWARM).include? type
 
         if confirmed?
@@ -240,7 +240,7 @@ g2)') do |g|
 
           config = EsxCloud::Deployment.enable_cluster_type(id, spec)
 
-          puts green("''#{type}' cluster is configured for deployment '#{id}'")
+          puts green("'#{type}' cluster is configured for deployment '#{id}'")
         else
           puts yellow("OK, canceled")
         end
@@ -259,7 +259,7 @@ g2)') do |g|
         parse_options(args, opts_parser)
 
         usage_error("Please provide deployment id") if id.blank?
-        usage_error("Please provide cluster type") if type.blank?
+        usage_error("Please provide cluster type using --type flag") if type.blank?
         usage_error("Unsupported cluster type #{type}") unless %w(KUBERNETES MESOS SWARM).include? type
 
         if confirmed?
@@ -270,7 +270,7 @@ g2)') do |g|
 
           EsxCloud::Deployment.disable_cluster_type(id, spec)
 
-          puts green("''#{type}' cluster configuration is deleted for deployment '#{id}'")
+          puts green("'#{type}' cluster configuration is deleted for deployment '#{id}'")
         else
           puts yellow("OK, canceled")
         end

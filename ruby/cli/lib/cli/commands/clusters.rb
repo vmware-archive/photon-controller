@@ -19,12 +19,12 @@ module EsxCloud::Cli
       desc "Create a new cluster"
       def create(args = [])
         tenant, project_name, name, type = nil, nil, nil, nil
-        vm_flavor, disk_flavor, network_id, slave_count = nil, nil, nil, nil, nil
+        vm_flavor, disk_flavor, network_id, slave_count, batch_size = nil, nil, nil, nil, nil
         dns, gateway, netmask = nil, nil, nil
         master_ip, container_network = nil, nil
         zookeeper1, zookeeper2, zookeeper3 = nil, nil, nil
         etcd1, etcd2, etcd3 = nil, nil, nil
-        batch_size = nil, wait_for_ready = false
+        wait_for_ready = false
 
         opts_parser = OptionParser.new do |opts|
           opts.on("-t", "--tenant TENANT", "Tenant name") { |v| tenant = find_tenant_by_name(v) }
@@ -55,14 +55,15 @@ module EsxCloud::Cli
                   "Etcd server 2. Required for Kubernetes and Swarm cluster.") { |v| etcd2 = v }
           opts.on("--etcd3 ETCD_IP3",
                   "Etcd server 3. Required for Kubernetes and Swarm cluster.") { |v| etcd3 = v }
-          opts.on("--batchSize",
-                  "Size for batch expanding slave nodes.") { |v| batch_size = v }
+          opts.on("--batch-size BATCH_SIZE",
+                  "Size of the batch used during slave expansion process.") { |v| batch_size = v }
           opts.on("--wait-for-ready", "Waits for the cluster to become ready.") { |v| wait_for_ready = true }
         end
 
         parse_options(args, opts_parser)
 
         default_slave_count = 1
+        default_batch_size = 0
         default_container_network = "10.2.0.0/16"
 
         # If tenant has been provided via command line we need to make sure
@@ -156,6 +157,8 @@ module EsxCloud::Cli
         else
           usage_error("Unsupported cluster type: #{type}", opts_parser)
         end
+
+        batch_size = default_batch_size if batch_size.nil?
 
         puts
         puts "Tenant: #{tenant.name}, project: #{project.name}"
