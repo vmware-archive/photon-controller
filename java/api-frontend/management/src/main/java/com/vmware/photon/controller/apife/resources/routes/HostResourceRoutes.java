@@ -26,6 +26,9 @@ public class HostResourceRoutes {
 
   public static final String HOST_TASKS_PATH = "/hosts/{id}/tasks";
 
+  public static final String HOST_SET_AVAILABILITY_ZONE_PATH =
+      "/hosts/{id}/set_availability_zone/{availabilityZoneId}";
+
   public static final String HOST_SUSPEND_ACTION = "/suspend";
   public static final String HOST_ENTER_MAINTENANCE_ACTION = "/enter_maintenance";
   public static final String HOST_EXIT_MAINTENANCE_ACTION = "/exit_maintenance";
