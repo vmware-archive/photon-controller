@@ -59,6 +59,7 @@ import com.vmware.photon.controller.deployer.dcp.task.DeleteVmTaskFactoryService
 import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ExtractHostInformationTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.GetHostConfigTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.GrantCertificateTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskFactoryService;
@@ -172,6 +173,7 @@ public class DeployerDcpServiceHost
       DeleteVmTaskFactoryService.class,
       DeployAgentTaskFactoryService.class,
       GetHostConfigTaskFactoryService.class,
+      GrantCertificateTaskFactoryService.class,
       MigrationStatusUpdateTriggerFactoryService.class,
       ProvisionAgentTaskFactoryService.class,
       RegisterAuthClientTaskFactoryService.class,
@@ -197,6 +199,7 @@ public class DeployerDcpServiceHost
       DeploymentWorkflowFactoryService.class,
       DeprovisionHostWorkflowFactoryService.class,
       FinalizeDeploymentMigrationWorkflowFactoryService.class,
+      GrantCertificateTaskFactoryService.class,
       InitializeDeploymentMigrationWorkflowFactoryService.class,
       ProvisionHostWorkflowFactoryService.class,
       RemoveDeploymentWorkflowFactoryService.class,
