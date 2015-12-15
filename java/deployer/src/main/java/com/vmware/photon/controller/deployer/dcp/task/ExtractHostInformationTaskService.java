@@ -204,16 +204,23 @@ public class ExtractHostInformationTaskService extends StatefulService {
     Collection<Datastore> imageDatastores = getOrElse(hostConfig.getDatastores(), new ArrayList<Datastore>()).stream()
         .filter(datastore -> imageDatastoreIds.contains(datastore.getId()))
         .collect(Collectors.toSet());
-    Collection<Datastore> regularDatastores = getOrElse(hostConfig.getDatastores(), new ArrayList<Datastore>()).stream()
+    Collection<Datastore> nonImageDatastores = getOrElse(hostConfig.getDatastores(),
+        new ArrayList<Datastore>()).stream()
         .filter(datastore -> !imageDatastoreIds.contains(datastore.getId()))
         .collect(Collectors.toSet());
 
+    // Image datastores can also be used as VM datastores, so we cannot set the reportedDatastores
+    // field to nonImageDatastores.
+    Collection<Datastore> vmDatastores = getOrElse(hostConfig.getDatastores(), new ArrayList<Datastore>()).stream()
+        .collect(Collectors.toSet());
+
     Collection<DatastoreService.State> imageDatastoreStates = generateDatastoreStates(imageDatastores, true);
-    Collection<DatastoreService.State> regularDatastoreStates = generateDatastoreStates(regularDatastores, false);
+    Collection<DatastoreService.State> nonImageDatastoreStates = generateDatastoreStates(nonImageDatastores, false);
+    Collection<DatastoreService.State> vmDatastoreStates = generateDatastoreStates(vmDatastores, false);
 
     Collection<Operation> operations = generateDatastorePosts(imageDatastoreStates);
-    operations.addAll(generateDatastorePosts(regularDatastoreStates));
-    operations.add(generateHostupdatePatch(hostConfig, hostServiceLink, imageDatastoreStates, regularDatastoreStates));
+    operations.addAll(generateDatastorePosts(nonImageDatastoreStates));
+    operations.add(generateHostupdatePatch(hostConfig, hostServiceLink, imageDatastoreStates, vmDatastoreStates));
 
     OperationJoin.create(operations)
       .setCompletion((ops, ts) -> {
@@ -263,7 +270,8 @@ public class ExtractHostInformationTaskService extends StatefulService {
               },
             v -> {
               return DatastoreServiceFactory.SELF_LINK + "/" + v.id;
-              }));
+              },
+            (a, b) -> a));  // Ignore duplicates
 
     if (hostConfig.isSetMemory_mb()) {
       host.memoryMb = hostConfig.getMemory_mb();
