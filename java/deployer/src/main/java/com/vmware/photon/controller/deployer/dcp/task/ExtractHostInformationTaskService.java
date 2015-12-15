@@ -205,7 +205,6 @@ public class ExtractHostInformationTaskService extends StatefulService {
         .filter(datastore -> imageDatastoreIds.contains(datastore.getId()))
         .collect(Collectors.toSet());
     Collection<Datastore> regularDatastores = getOrElse(hostConfig.getDatastores(), new ArrayList<Datastore>()).stream()
-        .filter(datastore -> !imageDatastoreIds.contains(datastore.getId()))
         .collect(Collectors.toSet());
 
     Collection<DatastoreService.State> imageDatastoreStates = generateDatastoreStates(imageDatastores, true);
