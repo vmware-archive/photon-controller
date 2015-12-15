@@ -83,6 +83,7 @@ public class CloudStoreDcpHostTest {
   private Injector injector;
   private CloudStoreDcpHost host;
   private String[] serviceSelfLinks = new String[]{
+      com.vmware.photon.controller.common.dcp.ServiceUriPaths.FS_INDEX_SERVICE,
       FlavorServiceFactory.SELF_LINK,
       ImageServiceFactory.SELF_LINK,
       ImageReplicationServiceFactory.SELF_LINK,

@@ -48,6 +48,7 @@ import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -131,6 +132,7 @@ public class CloudStoreDcpHost
     startDefaultCoreServicesSynchronously();
 
     // Start all the factories
+    ServiceHostUtils.startService(this, RootNamespaceService.class, ServiceUriPaths.FS_INDEX_SERVICE);
     ServiceHostUtils.startServices(this, FACTORY_SERVICES);
 
     // Start all special services
@@ -142,9 +144,12 @@ public class CloudStoreDcpHost
 
   @Override
   public boolean isReady() {
-        // entities
+
     return
-        checkServiceAvailable(FlavorServiceFactory.SELF_LINK)
+        checkServiceAvailable(ServiceUriPaths.FS_INDEX_SERVICE)
+
+        // entities
+        && checkServiceAvailable(FlavorServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageReplicationServiceFactory.SELF_LINK)
         && checkServiceAvailable(HostServiceFactory.SELF_LINK)

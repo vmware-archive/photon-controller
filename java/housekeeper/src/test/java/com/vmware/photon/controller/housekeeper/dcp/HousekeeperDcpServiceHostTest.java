@@ -61,6 +61,7 @@ public class HousekeeperDcpServiceHostTest {
   private HousekeeperDcpServiceHost host;
 
   private String[] serviceSelfLinks = new String[]{
+      com.vmware.photon.controller.common.dcp.ServiceUriPaths.FS_INDEX_SERVICE,
       ImageReplicatorServiceFactory.SELF_LINK,
       ImageCopyServiceFactory.SELF_LINK,
       ImageHostToHostCopyServiceFactory.SELF_LINK,

@@ -75,6 +75,7 @@ public class DeployerDcpServiceHostTest {
         DeployerDcpServiceHost.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
         DeployerDcpServiceHost.FACTORY_SERVICES);
     serviceSelfLinks.add(DeployerDcpServiceHost.PROVISION_HOST_SCHEDULER_SERVICE);
+    serviceSelfLinks.add(com.vmware.photon.controller.common.dcp.ServiceUriPaths.FS_INDEX_SERVICE);
 
     final CountDownLatch latch = new CountDownLatch(serviceSelfLinks.size());
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {
