@@ -260,17 +260,25 @@ public class ServiceHostUtils {
    */
   public static void startService(ServiceHost host, Class service)
       throws InstantiationException, IllegalAccessException {
+    startService(host, service, null);
+  }
+
+  /**
+   * Starts a service specified by the class type on the host.
+   *
+   * @param host
+   * @param service
+   * @param path
+   * @throws InstantiationException
+   * @throws IllegalAccessException
+   */
+  public static void startService(ServiceHost host, Class service, String path)
+      throws InstantiationException, IllegalAccessException {
     checkArgument(host != null, "host cannot be null");
     checkArgument(service != null, "service cannot be null");
 
     Service instance = (Service) service.newInstance();
-
-    final URI serviceUri = UriUtils.buildUri(host, service);
-    if (serviceUri == null) {
-      throw new InvalidParameterException(
-          String.format("No SELF_LINK field in class %s", service.getCanonicalName()));
-    }
-
+    URI serviceUri = buildServiceUri(host, service, path);
     Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
       @Override
       public void handle(Operation operation, Throwable throwable) {
@@ -612,5 +620,32 @@ public class ServiceHostUtils {
           timeout,
           timeUnit));
     }
+  }
+
+  /**
+   * Constructs a URI to start service under.
+   *
+   * @param host
+   * @param service
+   * @param path
+   * @return
+   */
+  private static URI buildServiceUri(ServiceHost host, Class service, String path) {
+    URI serviceUri;
+
+    String error;
+    if (path != null) {
+      serviceUri = UriUtils.buildUri(host, path);
+      error = String.format("Invalid path for starting service [%s]", path);
+    } else {
+      serviceUri = UriUtils.buildUri(host, service);
+      error = String.format("No SELF_LINK field in class %s", service.getCanonicalName());
+    }
+
+    if (serviceUri == null) {
+      throw new InvalidParameterException(error);
+    }
+
+    return serviceUri;
   }
 }

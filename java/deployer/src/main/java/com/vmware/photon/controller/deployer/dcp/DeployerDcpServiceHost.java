@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceStateBuilder;
@@ -102,6 +103,7 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactor
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ObjectArrays;
@@ -343,6 +345,7 @@ public class DeployerDcpServiceHost
     startDefaultCoreServicesSynchronously();
 
     // Start all the factories
+    ServiceHostUtils.startService(this, RootNamespaceService.class, ServiceUriPaths.FS_INDEX_SERVICE);
     ServiceHostUtils.startServices(this, getFactoryServices());
     this.addPrivilegedService(CopyStateTaskService.class);
 
@@ -505,7 +508,9 @@ public class DeployerDcpServiceHost
     }
 
     try {
-      return ServiceHostUtils.areServicesReady(this, FACTORY_SERVICE_FIELD_NAME_SELF_LINK, FACTORY_SERVICES);
+      return
+          checkServiceAvailable(ServiceUriPaths.FS_INDEX_SERVICE)
+          && ServiceHostUtils.areServicesReady(this, FACTORY_SERVICE_FIELD_NAME_SELF_LINK, FACTORY_SERVICES);
     } catch (Throwable t) {
       logger.debug("IsReady failed: {}", t);
       return false;

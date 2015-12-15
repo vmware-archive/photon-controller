@@ -619,12 +619,27 @@ public class ServiceHostUtilsTest {
      * Tests that services starts successfully.
      */
     @Test
-    public void testSuccess() throws Throwable {
+    public void testSuccessWithoutPath() throws Throwable {
       ServiceHostUtils.startService(host, ExampleFactoryService.class);
       ServiceHostUtils.waitForServiceAvailability(host, 1000, ExampleFactoryService.SELF_LINK);
 
       assertTrue(
           host.checkServiceAvailable(ExampleFactoryService.SELF_LINK),
+          "ExampleFactoryService is not available!");
+    }
+
+    /**
+     * Tests that services starts successfully.
+     */
+    @Test
+    public void testSuccessWithPath() throws Throwable {
+      String path = "/test-path";
+
+      ServiceHostUtils.startService(host, ExampleFactoryService.class, path);
+      ServiceHostUtils.waitForServiceAvailability(host, 1000, path);
+
+      assertTrue(
+          host.checkServiceAvailable(path),
           "ExampleFactoryService is not available!");
     }
   }
