@@ -42,7 +42,7 @@ public class ServiceConfigurator {
     ObjectMapper mapper = new ObjectMapper();
     List<ContainersConfig.Spec> containers = new ArrayList<ContainersConfig.Spec>();
     for (ContainersConfig.ContainerType containerType : ContainersConfig.ContainerType.values()) {
-      File configFile = new File(configDir + ServiceFileConstants.CONTAINER_CONFIG_ROOT_DIRS.get(containerType) +
+      File configFile = new File(configDir, ServiceFileConstants.CONTAINER_CONFIG_ROOT_DIRS.get(containerType) +
           ServiceFileConstants.CONTAINER_CONFIG_FILES.get(containerType));
       ContainersConfig.Spec containerConfigSpec = null;
       try {
