@@ -497,6 +497,13 @@ public class DeployerDcpServiceHost
    */
   @Override
   public boolean isReady() {
+    // schedulers
+    for (String selfLink : TASK_SCHEDULERS.keySet()) {
+      if (!checkServiceAvailable(selfLink)) {
+        return false;
+      }
+    }
+
     try {
       return ServiceHostUtils.areServicesReady(this, FACTORY_SERVICE_FIELD_NAME_SELF_LINK, FACTORY_SERVICES);
     } catch (Throwable t) {
