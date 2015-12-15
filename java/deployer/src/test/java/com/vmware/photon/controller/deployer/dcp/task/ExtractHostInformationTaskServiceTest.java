@@ -458,7 +458,7 @@ public class ExtractHostInformationTaskServiceTest {
       assertThat(datastoreService.id, is(datastore.getId()));
 
       HostService.State host = cloudStoreMachine.getServiceState(startState.hostServiceLink, HostService.State.class);
-      assertThat(host.reportedDatastores.size(), is(1));
+      assertThat(host.reportedDatastores.size(), is(2));
       assertThat(host.reportedDatastores.iterator().next(), is(datastoreService.name));
       assertThat(host.reportedImageDatastores.size(), is(1));
       assertThat(host.reportedImageDatastores.iterator().next(), is(imageDatastoreService.name));
