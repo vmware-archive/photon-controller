@@ -76,11 +76,19 @@ $SSH_PATH/scp $ISO_DIR/* root@$ESX_IP:$ISO_DATASTORE_DIR/
 
 ESX_PWD_ESCAPE=$(echo $ESX_PWD | sed 's/\$/$$/g')
 # Save return code from the test run and copy the agent log.
-make -s test VERBOSE_REPORT=1 XUNIT=1 INTEGRATION=1 \
-  ESX_PWD=$ESX_PWD_ESCAPE REMOTE_SERVER=$ESX_IP DATASTORES=$ESX_DATASTORE \
-  REMOTE_ISO="[$ESX_DATASTORE] $ISO_NAME" CHAIRMAN=$CHAIRMAN_IP:13000 \
-  DISABLE_HYPERVISOR_LOGGING=1 \
-  || make_return_code=$?
+if [ -n "$SANITY" ]; then
+  make -s test -C src/agent VERBOSE_REPORT=1 XUNIT=1 INTEGRATION=1 \
+    REMOTE_SERVER=$ESX_IP DATASTORES=$ESX_DATASTORE \
+    REMOTE_ISO="[$ESX_DATASTORE] $ISO_NAME" \
+    DISABLE_HYPERVISOR_LOGGING=1 SANITY=1 \
+    || make_return_code=$?
+else
+  make -s test VERBOSE_REPORT=1 XUNIT=1 INTEGRATION=1 \
+    ESX_PWD=$ESX_PWD_ESCAPE REMOTE_SERVER=$ESX_IP DATASTORES=$ESX_DATASTORE \
+    REMOTE_ISO="[$ESX_DATASTORE] $ISO_NAME" CHAIRMAN=$CHAIRMAN_IP:13000 \
+    DISABLE_HYPERVISOR_LOGGING=1 \
+    || make_return_code=$?
+fi
 
 $SSH_PATH/scp root@$ESX_IP:/var/log/photon-controller-agent.log . || true
 
