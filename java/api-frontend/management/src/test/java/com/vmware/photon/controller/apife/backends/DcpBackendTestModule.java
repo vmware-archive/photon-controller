@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.backends;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
+import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
 import com.google.inject.AbstractModule;
@@ -55,7 +56,7 @@ public class DcpBackendTestModule extends AbstractModule {
   @Singleton
   BasicServiceHost getBasicServiceHost() throws Throwable {
     BasicServiceHost host = BasicServiceHost.create();
-    host.startFactoryServicesSynchronously(CloudStoreDcpHost.FACTORY_SERVICES);
+    ServiceHostUtils.startServices(host, CloudStoreDcpHost.FACTORY_SERVICES);
     return host;
   }
 
