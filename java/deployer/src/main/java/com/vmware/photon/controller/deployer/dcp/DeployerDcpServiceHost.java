@@ -141,6 +141,12 @@ public class DeployerDcpServiceHost
 
   public static final String FACTORY_SERVICE_FIELD_NAME_SELF_LINK = "SELF_LINK";
 
+  public static final Class[] FACTORY_SERVICES_TO_MIGRATE = {
+      ContainerFactoryService.class,
+      ContainerTemplateFactoryService.class,
+      VmFactoryService.class,
+  };
+
   public static final Class[] FACTORY_SERVICES = {
       // Entity Services
       ContainerFactoryService.class,

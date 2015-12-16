@@ -558,8 +558,7 @@ public class DeploymentWorkflowService extends StatefulService {
         = zookeeperClient.getServers(zookeeperQuorum, DeployerModule.DEPLOYER_SERVICE_NAME);
 
     Set<Class<?>> servicesToMigrate
-        = new HashSet<Class<?>>((Arrays.<Class<?>>asList(DeployerDcpServiceHost.FACTORY_SERVICES)));
-    servicesToMigrate.removeAll(HostUtils.getDeployerContext(this).getMigrationExcludedServices());
+        = new HashSet<Class<?>>((Arrays.<Class<?>>asList(DeployerDcpServiceHost.FACTORY_SERVICES_TO_MIGRATE)));
 
     final AtomicInteger latch = new AtomicInteger(servicesToMigrate.size());
     final List<Throwable> errors = new BlockingArrayQueue<>();
