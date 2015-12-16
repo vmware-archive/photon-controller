@@ -29,7 +29,8 @@ module EsxCloud
          begin
            EsxCloud::Config.init
            EsxCloud::Config.client = ApiClientHelper.management
-           esx_hosts += EsxCloud::Host.find_all.items.map { |h| h.address }
+           deployment = EsxCloud::Config.client.find_all_api_deployments.items.first
+           esx_hosts += EsxCloud::Config.client.get_deployment_hosts(deployment.id).items.map { |h| h.address }
          rescue Exception => e
            puts "download_esx_logs: fail to list hosts\n" + e.to_s
          end
