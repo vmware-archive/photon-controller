@@ -108,7 +108,7 @@ public class AddManagementHostWorkflowServiceTest {
   private AddManagementHostWorkflowService addManagementHostWorkflowService;
   private TestHost testHost;
 
-  /**
+/**
    * This method creates a new State object which is sufficient to create a new
    * AddManagementHostTaskService instance.
    */
