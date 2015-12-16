@@ -135,6 +135,12 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
     }
   }
 
+  public <T extends ServiceDocument> Operation sendDeleteAndWait(String serviceUri) throws Throwable {
+    Operation op = Operation.createDelete(UriUtils.buildUri(hosts[0], serviceUri, null))
+        .setBody(new ServiceDocument());
+    return sendRequestAndWait(op, hosts[0]);
+  }
+
   /**
    * Issue a POST with the given parameters.
    *

@@ -62,6 +62,7 @@ import com.vmware.photon.controller.deployer.dcp.task.ExtractHostInformationTask
 import com.vmware.photon.controller.deployer.dcp.task.GetHostConfigTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.SetDatastoreTagsTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskFactoryService;
@@ -176,6 +177,7 @@ public class DeployerDcpServiceHost
       GetHostConfigTaskFactoryService.class,
       MigrationStatusUpdateTriggerFactoryService.class,
       ProvisionAgentTaskFactoryService.class,
+      ProvisionHostTaskFactoryService.class,
       RegisterAuthClientTaskFactoryService.class,
       SetDatastoreTagsTaskFactoryService.class,
       ExtractHostInformationTaskFactoryService.class,
