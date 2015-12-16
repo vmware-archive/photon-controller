@@ -68,6 +68,7 @@ public class RootSchedulerModule extends AbstractModule {
     bindConstant().annotatedWith(Config.Bind.class).to(config.getBind());
     bindConstant().annotatedWith(Config.RegistrationAddress.class).to(config.getRegistrationAddress());
     bindConstant().annotatedWith(Config.Port.class).to(config.getPort());
+    bindConstant().annotatedWith(Config.StoragePath.class).to(config.getStoragePath());
     bind(BuildInfo.class).toInstance(BuildInfo.get(RootSchedulerModule.class));
     bind(HealthCheckConfig.class).toInstance(config.getHealthCheck());
     bind(Config.class).toInstance(config);
@@ -122,8 +123,8 @@ public class RootSchedulerModule extends AbstractModule {
   @Singleton
   @RootSchedulerServerSet
   public ServerSet getRootSchedulerServerSet(ZookeeperServerSetFactory serverSetFactory) {
-        return serverSetFactory.createServiceServerSet("root-scheduler", true);
-    }
+    return serverSetFactory.createServiceServerSet("root-scheduler", true);
+  }
 
   @Provides
   @Singleton
