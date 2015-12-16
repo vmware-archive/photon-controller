@@ -13,7 +13,6 @@ import tempfile
 import time
 
 import common
-from gen.scheduler import Scheduler
 from host.hypervisor.image_scanner import DatastoreImageScanner
 from host.hypervisor.image_sweeper import DatastoreImageSweeper
 from host.hypervisor.system import DatastoreInfo
@@ -26,7 +25,6 @@ from hamcrest import *  # noqa
 from matchers import *  # noqa
 from mock import MagicMock
 from mock import call
-from mock import patch
 
 from concurrent.futures import ThreadPoolExecutor
 from nose_parameterized import parameterized
@@ -57,7 +55,6 @@ from gen.host.ttypes import EnterMaintenanceRequest
 from gen.host.ttypes import EnterMaintenanceResultCode
 from gen.host.ttypes import ExitMaintenanceRequest
 from gen.host.ttypes import ExitMaintenanceResultCode
-from gen.host.ttypes import GetConfigRequest
 from gen.host.ttypes import GetDeletedImagesRequest
 from gen.host.ttypes import GetHostModeRequest
 from gen.host.ttypes import GetHostModeResultCode
@@ -97,10 +94,6 @@ from gen.resource.ttypes import ResourcePlacement
 from gen.resource.ttypes import ResourcePlacementList
 from gen.resource.ttypes import State
 from gen.resource.ttypes import Vm
-from gen.roles.ttypes import Roles
-from gen.roles.ttypes import SchedulerRole
-from gen.scheduler.ttypes import ConfigureRequest
-from gen.scheduler.ttypes import ConfigureResultCode
 from gen.scheduler.ttypes import PlaceRequest
 from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
@@ -185,30 +178,6 @@ class HostHandlerTestCase(unittest.TestCase):
 
         return resource
 
-    def test_configuration_observer(self):
-        requests = []
-
-        def observer(request):
-            requests.append(request)
-
-        request = ConfigureRequest(
-            "fake-scheduler", Roles())
-
-        hv = Hypervisor(self._config)
-        handler = HostHandler(hv)
-        assert_that(requests, is_(empty()))
-
-        handler.configure(request)
-        assert_that(requests, is_(empty()))
-
-        handler.add_configuration_observer(observer)
-        handler.configure(request)
-        assert_that(requests[0].scheduler, equal_to(request.scheduler))
-
-        handler.remove_configuration_observer(observer)
-        handler.configure(request)
-        assert_that(requests[0].scheduler, equal_to(request.scheduler))
-
     def test_get_resources(self):
         hv = Hypervisor(self._config)
         handler = HostHandler(hv)
@@ -218,47 +187,6 @@ class HostHandlerTestCase(unittest.TestCase):
 
         assert_that(response.result,
                     equal_to(GetResourcesResultCode.OK))
-
-    @patch("threading.Lock")
-    def test_configure(self, thread_lock):
-        configure_lock = thread_lock()
-
-        agent_id = stable_uuid("agent_id")
-        image_ds = "ds1"
-        self._config.agent_id = agent_id
-        self._config.datastores = [image_ds]
-        self._config.image_datastores = [{"name": image_ds,
-                                          "used_for_vms": True}]
-        self._config.management_only = True
-        self._config.reboot_required = False
-        self._config.host_id = stable_uuid("host_id")
-        common.services.register(ServiceName.AGENT_CONFIG, self._config)
-        hv = Hypervisor(self._config)
-        handler = HostHandler(hv)
-
-        config_response = handler.get_host_config(GetConfigRequest())
-        host_config = config_response.hostConfig
-        assert_that(host_config.agent_id, equal_to(self._config.host_id))
-        assert_that(len(host_config.datastores), equal_to(1))
-        assert_that(host_config.datastores[0].id,
-                    equal_to(stable_uuid(image_ds)))
-        assert_that(host_config.image_datastore_id,
-                    equal_to(stable_uuid(image_ds)))
-        assert_that(host_config.image_datastore_ids,
-                    contains_inanyorder(stable_uuid(image_ds)))
-
-        leaf_scheduler = SchedulerRole(stable_uuid("leaf scheduler"))
-        leaf_scheduler.parent_id = stable_uuid("parent scheduler")
-        leaf_scheduler.hosts = [agent_id]
-
-        configure_request = ConfigureRequest(stable_uuid("leaf scheduler"),
-                                             Roles([leaf_scheduler]))
-
-        common.services.register(Scheduler.Iface, MagicMock())
-        response = handler.configure(configure_request)
-        assert_that(response.result, equal_to(ConfigureResultCode.OK))
-        assert_that(configure_lock.acquire.called, is_(True))
-        assert_that(configure_lock.release.called, is_(True))
 
     def test_place(self):
         handler = HostHandler(MagicMock())
