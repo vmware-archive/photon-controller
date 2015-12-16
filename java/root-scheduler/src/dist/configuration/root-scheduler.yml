@@ -5,6 +5,7 @@ refreshIntervalSec: 30
 bind: "0.0.0.0"
 registrationAddress: "{{{VM_IP}}}"
 port: 13010
+storagePath: "{{{ROOT-SCHEDULER_DCP_STORAGE_PATH}}}"
 zookeeper:
   quorum: "{{{ZOOKEEPER_QUORUM}}}"
 logging:
