@@ -57,6 +57,7 @@ public class RootSchedulerModule extends AbstractModule {
     bindConstant().annotatedWith(Config.Bind.class).to(config.getBind());
     bindConstant().annotatedWith(Config.RegistrationAddress.class).to(config.getRegistrationAddress());
     bindConstant().annotatedWith(Config.Port.class).to(config.getPort());
+    bindConstant().annotatedWith(Config.StoragePath.class).to(config.getStoragePath());
     bind(BuildInfo.class).toInstance(BuildInfo.get(RootSchedulerModule.class));
     bind(Config.class).toInstance(config);
     config.initRootPlaceParams();
@@ -83,6 +84,7 @@ public class RootSchedulerModule extends AbstractModule {
     } else {
       bind(ConstraintChecker.class).to(InMemoryConstraintChecker.class);
     }
+
   }
 
   @Provides

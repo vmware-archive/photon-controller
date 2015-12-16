@@ -59,6 +59,10 @@ public class Config {
   @NotEmpty
   private String registrationAddress;
 
+  @NotNull
+  @NotEmpty
+  private String storagePath;
+
   // Leave the next two in here until we bump the puppet pointer
   @Min(1000)
   @JsonProperty("place_timeout_ms")
@@ -113,6 +117,10 @@ public class Config {
     return registrationAddress;
   }
 
+  public String getStoragePath() {
+    return storagePath;
+  }
+
   public LoggingConfiguration getLogging() {
     return logging;
   }
@@ -149,7 +157,16 @@ public class Config {
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
-  public @interface RegistrationAddress{
+  public @interface RegistrationAddress {
+  }
+
+  /**
+   * DCP storage path.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface StoragePath {
   }
 
   public void initRootPlaceParams() {

@@ -29,11 +29,8 @@ import com.google.inject.TypeLiteral;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.UnknownHostException;
 
 /**
  * Root scheduler entry point.
@@ -42,12 +39,12 @@ public class Main {
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-  public static void main(String[] args) throws UnknownHostException, TTransportException {
+  public static void main(String[] args) throws Throwable {
     LoggingFactory.bootstrap();
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("Root scheduler")
         .defaultHelp(true)
-        .description("ESX Cloud Root Scheduler");
+        .description("Photon Controller RootScheduler");
     parser.addArgument("file").help("configuration file");
 
     Namespace namespace = parser.parseArgsOrFail(args);
@@ -60,25 +57,25 @@ public class Main {
         new RootSchedulerModule(config),
         new ZookeeperModule(config.getZookeeper()),
         new ThriftModule(),
-        new ThriftServiceModule<>(new TypeLiteral<Scheduler.AsyncClient>() {
-        }),
-        new ThriftServiceModule<>(new TypeLiteral<Chairman.AsyncClient>() {
-        }),
-        new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
-        }));
+        new ThriftServiceModule<>(new TypeLiteral<Scheduler.AsyncClient>() {}),
+        new ThriftServiceModule<>(new TypeLiteral<Chairman.AsyncClient>() {}),
+        new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {}));
 
     final RootSchedulerServer server = injector.getInstance(RootSchedulerServer.class);
+    final SchedulerDcpHost host = injector.getInstance(SchedulerDcpHost.class);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
         logger.info("Shutting down");
         server.stop();
+        host.stop();
         logger.info("Done");
         LoggingFactory.detachAndStop();
       }
     });
 
+    host.start();
     server.serve();
   }
 
@@ -92,5 +89,4 @@ public class Main {
     }
     return config;
   }
-
 }
