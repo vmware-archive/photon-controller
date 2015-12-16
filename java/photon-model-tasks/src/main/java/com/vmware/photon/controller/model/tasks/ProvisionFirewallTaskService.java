@@ -13,9 +13,8 @@
 
 package com.vmware.photon.controller.model.tasks;
 
-import com.vmware.photon.controller.model.adapterapi.NetworkInstanceRequest;
-import com.vmware.photon.controller.model.adapterapi.NetworkInstanceRequest.InstanceRequestType;
-
+import com.vmware.photon.controller.model.adapterapi.FirewallInstanceRequest;
+import com.vmware.photon.controller.model.adapterapi.FirewallInstanceRequest.InstanceRequestType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
@@ -26,41 +25,37 @@ import com.vmware.xenon.common.Utils;
 import java.net.URI;
 import java.util.List;
 
+
 /**
- * Provision network task service.
+ * Provision firewall task service.
  */
-public class ProvisionNetworkTaskService extends StatefulService {
+public class ProvisionFirewallTaskService extends StatefulService {
 
   /**
-   * SubStage.
+   * Substages of the tasks.
    */
   public enum SubStage {
     CREATED,
-    PROVISIONING_NETWORK,
+    PROVISIONING_FIREWALL,
     FINISHED,
     FAILED
   }
 
   /**
-   * Represent state of a provision task.
+   * Represents state of a firewall task.
    */
-  public static class ProvisionNetworkTaskState extends ServiceDocument {
-
-    /**
-     * The type of an instance request. Required
-     */
+  public static class ProvisionFirewallTaskState extends ServiceDocument {
     public InstanceRequestType requestType;
 
     /**
-     *  RegionID -- this is needed for AWS auth -- currently
-     *  RegionID only exists in the ComputeDescription.
-     *
-     *  Including here, so that the provisioning of the network can
-     *  be completely isolated from provisioning compute
-     *
-     *  Long term I'd recommend that all items required for authentication
-     *  be encapsulated in the authentication service
-     *
+     * RegionID -- this is needed for AWS auth -- currently
+     * RegionID only exists in the ComputeDescription.
+     * <p>
+     * Including here, so that the provisioning of the network can
+     * be completely isolated from provisioning compute
+     * <p>
+     * Long term I'd recommend that all items required for authentication
+     * be encapsulated in the authentication service
      */
     public String regionID;
 
@@ -70,19 +65,19 @@ public class ProvisionNetworkTaskService extends StatefulService {
     public String authCredentialsLink;
 
     /**
-     * The pool which this resource is a part of. Required
+     * The pool which this resource is a part of.
      */
     public String resourcePoolLink;
 
     /**
-     * The description of the network instance being realized. Required
+     * The description of the firewall instance being realized.
      */
-    public String networkDescriptionLink;
+    public String firewallDescriptionLink;
 
     /**
-     * The network adapter to use to create the network. Required
+     * The adapter to use to create the firewall.
      */
-    public URI networkServiceReference;
+    public URI firewallServiceReference;
 
     /**
      * Tracks the task state. Set by run-time.
@@ -118,23 +113,19 @@ public class ProvisionNetworkTaskService extends StatefulService {
         throw new IllegalArgumentException("resourcePoolLink required");
       }
 
-      if (this.networkDescriptionLink == null || this.networkDescriptionLink.isEmpty()) {
-        throw new IllegalArgumentException("networkDescriptionLink required");
+      if (this.firewallDescriptionLink == null || this.firewallDescriptionLink.isEmpty()) {
+        throw new IllegalArgumentException("firewallDescriptionLink required");
       }
 
-      if (this.networkServiceReference == null) {
-        throw new IllegalArgumentException("networkServiceReference required");
-      }
-
-      if (this.regionID == null) {
-        throw new IllegalArgumentException("region id required");
+      if (this.firewallServiceReference == null) {
+        throw new IllegalArgumentException("firewallServiceReference required");
       }
 
     }
   }
 
-  public ProvisionNetworkTaskService() {
-    super(ProvisionNetworkTaskState.class);
+  public ProvisionFirewallTaskService() {
+    super(ProvisionFirewallTaskState.class);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
@@ -147,7 +138,7 @@ public class ProvisionNetworkTaskService extends StatefulService {
       return;
     }
 
-    ProvisionNetworkTaskState state = start.getBody(ProvisionNetworkTaskState.class);
+    ProvisionFirewallTaskState state = start.getBody(ProvisionFirewallTaskState.class);
     try {
       state.validate();
     } catch (Exception e) {
@@ -169,8 +160,8 @@ public class ProvisionNetworkTaskService extends StatefulService {
       return;
     }
 
-    ProvisionNetworkTaskState currState = getState(patch);
-    ProvisionNetworkTaskState patchState = patch.getBody(ProvisionNetworkTaskState.class);
+    ProvisionFirewallTaskState currState = getState(patch);
+    ProvisionFirewallTaskState patchState = patch.getBody(ProvisionFirewallTaskState.class);
 
     if (TaskState.isFailed(patchState.taskInfo)) {
       currState.taskInfo = patchState.taskInfo;
@@ -182,10 +173,11 @@ public class ProvisionNetworkTaskService extends StatefulService {
 
         handleSubStages(currState);
         logInfo("%s %s on %s started",
-            "Network",
+            "Firewall",
             currState.requestType.toString(),
-            currState.networkDescriptionLink);
+            currState.firewallDescriptionLink);
         break;
+
       case STARTED:
         currState.taskInfo.stage = TaskState.TaskStage.STARTED;
         break;
@@ -210,7 +202,7 @@ public class ProvisionNetworkTaskService extends StatefulService {
     patch.complete();
   }
 
-  private SubStage nextStage(ProvisionNetworkTaskState state) {
+  private SubStage nextStage(ProvisionFirewallTaskState state) {
     return state.requestType == InstanceRequestType.CREATE ? nextSubStageOnCreate(state.taskSubStage)
         :
         nextSubstageOnDelete(state.taskSubStage);
@@ -223,17 +215,17 @@ public class ProvisionNetworkTaskService extends StatefulService {
   // deletes follow the inverse order;
   private SubStage nextSubstageOnDelete(SubStage currStage) {
     if (currStage == SubStage.CREATED) {
-      return SubStage.PROVISIONING_NETWORK;
-    } else if (currStage == SubStage.PROVISIONING_NETWORK) {
+      return SubStage.PROVISIONING_FIREWALL;
+    } else if (currStage == SubStage.PROVISIONING_FIREWALL) {
       return SubStage.FINISHED;
     } else {
       return SubStage.values()[currStage.ordinal() + 1];
     }
   }
 
-  private void handleSubStages(ProvisionNetworkTaskState currState) {
+  private void handleSubStages(ProvisionFirewallTaskState currState) {
     switch (currState.taskSubStage) {
-      case PROVISIONING_NETWORK:
+      case PROVISIONING_FIREWALL:
         patchAdapter(currState);
         break;
       case FINISHED:
@@ -246,22 +238,22 @@ public class ProvisionNetworkTaskService extends StatefulService {
     }
   }
 
-  private NetworkInstanceRequest toReq(ProvisionNetworkTaskState state) {
-    NetworkInstanceRequest req = new NetworkInstanceRequest();
+  private FirewallInstanceRequest toReq(ProvisionFirewallTaskState state) {
+    FirewallInstanceRequest req = new FirewallInstanceRequest();
     req.requestType = state.requestType;
     req.authCredentialsLink = state.authCredentialsLink;
     req.resourcePoolLink = state.resourcePoolLink;
-    req.networkReference = UriUtils.buildUri(this.getHost(), state.networkDescriptionLink);
+    req.firewallReference = UriUtils.buildUri(this.getHost(), state.firewallDescriptionLink);
     req.provisioningTaskReference = this.getUri();
     req.isMockRequest = state.isMockRequest;
 
     return req;
   }
 
-  private void patchAdapter(ProvisionNetworkTaskState state) {
-    NetworkInstanceRequest req = toReq(state);
+  private void patchAdapter(ProvisionFirewallTaskState state) {
+    FirewallInstanceRequest req = toReq(state);
 
-    sendRequest(Operation.createPatch(state.networkServiceReference)
+    sendRequest(Operation.createPatch(state.firewallServiceReference)
         .setBody(req)
         .setCompletion((o, e) -> {
           if (e != null) {
@@ -271,7 +263,7 @@ public class ProvisionNetworkTaskService extends StatefulService {
   }
 
   private void sendSelfPatch(TaskState.TaskStage stage, Throwable e) {
-    ProvisionNetworkTaskState body = new ProvisionNetworkTaskState();
+    ProvisionFirewallTaskState body = new ProvisionFirewallTaskState();
     body.taskInfo = new TaskState();
     if (e == null) {
       body.taskInfo.stage = stage;
@@ -284,7 +276,7 @@ public class ProvisionNetworkTaskService extends StatefulService {
     sendSelfPatch(body);
   }
 
-  private void sendSelfPatch(ProvisionNetworkTaskState body) {
+  private void sendSelfPatch(ProvisionFirewallTaskState body) {
     Operation patch = Operation
         .createPatch(getUri())
         .setBody(body)
