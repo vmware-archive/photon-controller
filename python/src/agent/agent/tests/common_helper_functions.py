@@ -235,9 +235,6 @@ class RuntimeUtils(object):
             conf = yaml.load(f)
             conf['bind'] = host
             conf['port'] = port
-            conf['ignoreCloudStoreErrors'] = True
-            conf['hierarchy']['maxMidTierSchedulers'] = leaf_fanout
-            conf['hierarchy']['enableScan'] = True
             conf['zookeeper']['quorum'] = "localhost:%i" % zk_port
             conf['zookeeper']['hostMonitorBackend'] = "zookeeper"
             self._configure_logging(conf, self.CHAIRMAN)
