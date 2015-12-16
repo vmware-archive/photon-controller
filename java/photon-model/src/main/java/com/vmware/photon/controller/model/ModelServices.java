@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 VMware, Inc. All Rights Reserved.
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -16,6 +16,8 @@ package com.vmware.photon.controller.model;
 import com.vmware.photon.controller.model.resources.ComputeDescriptionFactoryService;
 import com.vmware.photon.controller.model.resources.ComputeFactoryService;
 import com.vmware.photon.controller.model.resources.DiskFactoryService;
+import com.vmware.photon.controller.model.resources.FirewallFactoryService;
+import com.vmware.photon.controller.model.resources.NetworkFactoryService;
 import com.vmware.photon.controller.model.resources.NetworkInterfaceFactoryService;
 import com.vmware.photon.controller.model.resources.ResourceDescriptionFactoryService;
 import com.vmware.photon.controller.model.resources.ResourcePoolFactoryService;
@@ -29,6 +31,8 @@ public class ModelServices {
       ComputeFactoryService.class,
       ComputeDescriptionFactoryService.class,
       DiskFactoryService.class,
+      FirewallFactoryService.class,
+      NetworkFactoryService.class,
       NetworkInterfaceFactoryService.class,
       ResourceDescriptionFactoryService.class,
       ResourcePoolFactoryService.class,

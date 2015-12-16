@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 VMware, Inc. All Rights Reserved.
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.model;
 
 import com.vmware.photon.controller.model.tasks.ProvisionComputeTaskFactoryService;
+import com.vmware.photon.controller.model.tasks.ProvisionFirewallTaskFactoryService;
 import com.vmware.photon.controller.model.tasks.ProvisionNetworkTaskFactoryService;
 import com.vmware.photon.controller.model.tasks.ResourceAllocationTaskFactoryService;
 import com.vmware.photon.controller.model.tasks.ResourceEnumerationTaskFactoryService;
@@ -27,6 +28,7 @@ import com.vmware.photon.controller.model.tasks.SshCommandTaskFactoryService;
 public class TaskServices {
   public static final Class[] FACTORIES = {
       ProvisionComputeTaskFactoryService.class,
+      ProvisionFirewallTaskFactoryService.class,
       ProvisionNetworkTaskFactoryService.class,
       ResourceAllocationTaskFactoryService.class,
       ResourceEnumerationTaskFactoryService.class,
