@@ -17,9 +17,15 @@ package com.vmware.photon.controller.deployer.dcp.util;
  * This class implements simple control flags for DCP task services.
  */
 public class ControlFlags {
-  public static final Integer CONTROL_FLAG_OPERATION_PROCESSING_DISABLED = 0x1;
 
-  public static final boolean isOperationProcessingDisabled(int value) {
-    return (0 != (value & ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
+  public static final int CONTROL_FLAG_OPERATION_PROCESSING_DISABLED = 0x1;
+  public static final int CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION = 0x2;
+
+  public static boolean isOperationProcessingDisabled(int value) {
+    return (0 != (value & CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
+  }
+
+  public static boolean disableOperationProcessingOnStageTransition(int value) {
+    return (0 != (value & CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION));
   }
 }

@@ -39,7 +39,7 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskService;
-import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
@@ -919,7 +919,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       mockApiClient(true);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(hostClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), DeployAgentTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
 
       // Create a host on source

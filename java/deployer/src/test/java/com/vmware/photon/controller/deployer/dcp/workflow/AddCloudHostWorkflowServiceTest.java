@@ -25,7 +25,7 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
-import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -461,7 +461,7 @@ public class AddCloudHostWorkflowServiceTest {
     public void testSuccess() throws Throwable {
       MockHelper.mockHostClient(hostClientFactory, true);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerContext, DeployAgentTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.SCRIPT_NAME, true);
       createTestEnvironment();
 
       startState.hostServiceLink =

@@ -18,19 +18,18 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
 /**
- * This class implements a DCP micro-service which provides a factory for
- * {@link ExtractHostInformationTaskService} instances.
+ * This class implements a DCP service which provides a factory for {@link ProvisionHostTaskService} instances.
  */
-public class ExtractHostInformationTaskFactoryService extends FactoryService {
+public class ProvisionHostTaskFactoryService extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/updateHostDatastores";
+  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/tasks/provision-host";
 
-  public ExtractHostInformationTaskFactoryService() {
-    super(ExtractHostInformationTaskService.State.class);
+  public ProvisionHostTaskFactoryService() {
+    super(ProvisionHostTaskService.State.class);
   }
 
   @Override
-  public Service createServiceInstance() {
-    return new ExtractHostInformationTaskService();
+  public Service createServiceInstance() throws Throwable {
+    return new ProvisionHostTaskService();
   }
 }

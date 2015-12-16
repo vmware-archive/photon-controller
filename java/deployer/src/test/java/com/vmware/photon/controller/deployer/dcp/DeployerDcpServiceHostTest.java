@@ -74,7 +74,7 @@ public class DeployerDcpServiceHostTest {
     serviceSelfLinks = ServiceHostUtils.getServiceSelfLinks(
         DeployerDcpServiceHost.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
         DeployerDcpServiceHost.FACTORY_SERVICES);
-    serviceSelfLinks.add(DeployerDcpServiceHost.PROVISION_HOST_SCHEDULER_SERVICE);
+    serviceSelfLinks.add(DeployerDcpServiceHost.UPLOAD_VIB_SCHEDULER_SERVICE);
 
     final CountDownLatch latch = new CountDownLatch(serviceSelfLinks.size());
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {

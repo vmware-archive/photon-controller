@@ -13,23 +13,20 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
+import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
-import com.vmware.photon.controller.common.dcp.validation.DefaultUuid;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
@@ -39,48 +36,30 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
-import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.HttpsURLConnection;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This class implements a DCP micro-service which performs the task of
- * uploading an VIB image to the image datastore.
+ * This class implements a DCP micro-service which performs the task of uploading one or more VIB images to a host.
  */
 public class UploadVibTaskService extends StatefulService {
 
+  private HostService.State hostState;
+
   /**
-   * This class defines the document state associated with a single
-   * {@link UploadVibTaskService}
-   * instance.
+   * This value defines the document state associated with a {@link UploadVibTaskService} task.
    */
   public static class State extends ServiceDocument {
 
     /**
-     * This value represents the document link of the {@link DeploymentService} in whose context the task operation is
-     * being performed.
-     */
-    @NotNull
-    @Immutable
-    public String deploymentServiceLink;
-
-    /**
-     * This value represents the document link to the {@link HostService} instance representing the ESX host on which
-     * the agent should be provisioned.
-     */
-    @NotNull
-    @Immutable
-    public String hostServiceLink;
-
-    /**
      * This value represents the state of the current task.
      */
-    @DefaultTaskState(TaskState.TaskStage.STARTED)
+    @DefaultTaskState(value = TaskState.TaskStage.CREATED)
     public TaskState taskState;
 
     /**
@@ -91,18 +70,23 @@ public class UploadVibTaskService extends StatefulService {
     public Integer controlFlags;
 
     /**
-     * This value represents the unique ID of the VIB upload operation.
+     * This value represents the document link of the DeploymentService in whose context the task is being performed.
      */
-    @DefaultUuid
+    @NotNull
     @Immutable
-    public String uniqueId;
+    public String deploymentServiceLink;
 
     /**
-     * This value represents the path on the host to which the VIB file was
-     * uploaded. It is used subsequently when installing the agent.
+     * This value represents the document link of the {@link HostService} on which to upload the VIB.
      */
-    @WriteOnce
-    public String vibPath;
+    @NotNull
+    @Immutable
+    public String hostServiceLink;
+
+    /**
+     * This value represents the set of VIBs which have been uploaded.
+     */
+    public Map<String, String> vibPaths;
   }
 
   public UploadVibTaskService() {
@@ -112,248 +96,181 @@ public class UploadVibTaskService extends StatefulService {
     super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
-  /**
-   * This method is called when a start operation is performed on the current
-   * service instance.
-   *
-   * @param start Supplies a patch operation to be handled.
-   */
   @Override
-  public void handleStart(Operation start) {
-    ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
-    State startState = start.getBody(State.class);
+  public void handleStart(Operation operation) {
+    ServiceUtils.logTrace(this, "Handling start operation");
+    State startState = operation.getBody(State.class);
     InitializationUtils.initialize(startState);
     validateState(startState);
 
-    if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
-      startState.taskState.stage = TaskState.TaskStage.STARTED;
-    }
+    //
+    // Do not automatically transition to STARTED state. The task scheduler service will transition tasks to the
+    // STARTED state as executor slots become available.
+    //
 
-    start.setBody(startState).complete();
+    operation.setBody(startState).complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-      } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        sendStageProgressPatch(startState.taskState.stage);
+      } else if (startState.taskState.stage == TaskState.TaskStage.STARTED) {
+        TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage, null));
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method is called when a patch operation is performed on the current
-   * service instance.
-   *
-   * @param patch Supplies a patch operation to be handled.
-   */
   @Override
-  public void handlePatch(Operation patch) {
-    ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
-    State startState = getState(patch);
-    State patchState = patch.getBody(State.class);
-    validatePatchState(startState, patchState);
-    State currentState = applyPatch(startState, patchState);
+  public void handlePatch(Operation operation) {
+    ServiceUtils.logTrace(this, "Handling patch operation");
+    State currentState = this.getState(operation);
+    State patchState = operation.getBody(State.class);
+    validatePatchState(currentState, patchState);
+    PatchUtils.patchState(currentState, patchState);
     validateState(currentState);
-    patch.complete();
+    operation.complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
-        ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
-      } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        retrieveDocuments(currentState);
+        ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
+      } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
+        processStartedStage(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method validates a state object for internal consistency.
-   *
-   * @param currentState Supplies the current state of the service instance.
-   */
-  protected void validateState(State currentState) {
+  private void validateState(State currentState) {
     ValidationUtils.validateState(currentState);
     ValidationUtils.validateTaskStage(currentState.taskState);
   }
 
-  /**
-   * This method builds a state object which can be used to submit a stage
-   * progress self-patch.
-   *
-   * @param stage Supplies the state to which the service instance should be
-   *              transitioned.
-   * @param e     Supplies an optional Throwable object representing the failure
-   *              encountered by the service instance.
-   * @return A State object which can be used to submit a stage progress self-
-   * patch.
-   */
-  @VisibleForTesting
-  protected State buildPatch(TaskState.TaskStage stage, @Nullable Throwable e) {
-    State state = new State();
-    state.taskState = new TaskState();
-    state.taskState.stage = stage;
+  private void validatePatchState(State currentState, State patchState) {
+    ValidationUtils.validatePatch(currentState, patchState);
+    ValidationUtils.validateTaskStage(patchState.taskState);
+    ValidationUtils.validateTaskStageProgression(currentState.taskState, patchState.taskState);
+  }
 
-    if (null != e) {
-      state.taskState.failure = Utils.toServiceErrorResponse(e);
+  private void processStartedStage(State currentState) {
+    if (this.hostState != null) {
+      processUploadVib(currentState, this.hostState);
+      return;
     }
 
-    return state;
-  }
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
 
-  /**
-   * This method validates a patch object against a valid document state
-   * object.
-   *
-   * @param startState Supplies the state of the current service instance.
-   * @param patchState Supplies the state object specified in the patch
-   *                   operation.
-   */
-  protected void validatePatchState(State startState, State patchState) {
-    ValidationUtils.validatePatch(startState, patchState);
-    ValidationUtils.validateTaskStage(patchState.taskState);
-    ValidationUtils.validateTaskStageProgression(startState.taskState, patchState.taskState);
-  }
-
-  private void retrieveDocuments(final State currentState) {
-
-    Operation deploymentOp = HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymentServiceLink);
-    Operation hostOp = HostUtils.getCloudStoreHelper(this).createGet(currentState.hostServiceLink);
-
-    OperationJoin
-        .create(deploymentOp, hostOp)
-        .setCompletion(
-            (ops, failures) -> {
-              if (null != failures && failures.size() > 0) {
-                failTask(failures);
-                return;
-              }
-
-              try {
-                processUploadVib(currentState,
-                    ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
-                    ops.get(hostOp.getId()).getBody(HostService.State.class));
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }
-        )
+          try {
+            this.hostState = op.getBody(HostService.State.class);
+            processUploadVib(currentState, this.hostState);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
         .sendWith(this);
   }
 
-  private void processUploadVib(State currentState,
-                                DeploymentService.State deploymentState,
-                                HostService.State hostState) throws Throwable {
-
+  private void processUploadVib(State currentState, HostService.State hostState) {
     File sourceDirectory = new File(HostUtils.getDeployerContext(this).getVibDirectory());
-    ServiceUtils.logInfo(this, "Uploading VIB files from %s", sourceDirectory.getAbsolutePath());
-    if (!sourceDirectory.exists() || !sourceDirectory.isDirectory()) {
-      throw new IllegalStateException("VIB directory " + sourceDirectory.getAbsolutePath() + " must exist");
+    if (!sourceDirectory.exists()) {
+      throw new IllegalStateException("VIB directory " + sourceDirectory.getAbsolutePath() + " does not exist");
+    } else if (!sourceDirectory.isDirectory()) {
+      throw new IllegalStateException("VIB directory " + sourceDirectory.getAbsolutePath() + " is not a directory");
     }
 
-    File[] sourceFiles = sourceDirectory.listFiles(file -> file.getName().endsWith(".vib"));
+    File[] sourceFiles = sourceDirectory.listFiles((file) -> file.getName().toUpperCase().endsWith(".VIB"));
     if (sourceFiles.length == 0) {
       throw new IllegalStateException("No VIB files were found in " + sourceDirectory.getAbsolutePath());
     }
 
-    checkState(sourceFiles.length == 1);
-
-    ConcurrentHashMap<File, Throwable> errors = new ConcurrentHashMap<>();
-    AtomicInteger pending = new AtomicInteger(sourceFiles.length);
     for (File sourceFile : sourceFiles) {
-      HttpFileServiceClient httpFileServiceClient = HostUtils.getHttpFileServiceClientFactory(this).create(
-          hostState.hostAddress, hostState.userName, hostState.password);
 
-      String dsPath = "/tmp/photon-controller-vibs/" + ServiceUtils.getIDFromDocumentSelfLink(currentState
-          .deploymentServiceLink) +
-          "/" + sourceFile.getName();
+      //
+      // If this file has already been uploaded, then skip to the next file.
+      //
 
-      ListenableFutureTask<Integer> task = ListenableFutureTask.create(httpFileServiceClient.uploadFile(
-          sourceFile.getAbsolutePath(), dsPath, false));
+      if (currentState.vibPaths != null &&
+          currentState.vibPaths.containsKey(sourceFile.getName())) {
+        continue;
+      }
 
+      HttpFileServiceClient httpFileServiceClient = HostUtils.getHttpFileServiceClientFactory(this)
+          .create(hostState.hostAddress, hostState.userName, hostState.password);
+      String uploadPath = "/tmp/photon-controller-vibs/" +
+          ServiceUtils.getIDFromDocumentSelfLink(currentState.deploymentServiceLink) + "/" + sourceFile.getName();
+      ListenableFutureTask<Integer> task = ListenableFutureTask.create(
+          httpFileServiceClient.uploadFile(sourceFile.getAbsolutePath(), uploadPath, false));
       HostUtils.getListeningExecutorService(this).submit(task);
       Futures.addCallback(task, new FutureCallback<Integer>() {
         @Override
         public void onSuccess(@Nullable Integer result) {
-          if (0 == pending.decrementAndGet()) {
-            handleCompletion(errors, dsPath);
+          try {
+            if (result != HttpsURLConnection.HTTP_OK && result != HttpsURLConnection.HTTP_CREATED) {
+              throw new IllegalStateException("Unexpected HTTP result " + result + " when uploading " +
+                  sourceFile.getAbsolutePath());
+            }
+
+            Map<String, String> vibPaths = new HashMap<>(sourceFiles.length);
+            if (currentState.vibPaths != null) {
+              vibPaths.putAll(currentState.vibPaths);
+            }
+
+            vibPaths.put(sourceFile.getName(), uploadPath);
+
+            State patchState = buildPatch(currentState.taskState.stage, null);
+            patchState.vibPaths = vibPaths;
+            TaskUtils.sendSelfPatch(UploadVibTaskService.this, patchState);
+          } catch (Throwable t) {
+            failTask(t);
           }
         }
 
         @Override
-        public void onFailure(Throwable t) {
-          errors.put(sourceFile, t);
-          if (0 == pending.decrementAndGet()) {
-            handleCompletion(errors, dsPath);
-          }
+        public void onFailure(Throwable throwable) {
+          failTask(throwable);
         }
       });
-    }
-  }
 
-  private void handleCompletion(ConcurrentHashMap<File, Throwable> errors, String vibPath) {
-    if (!errors.isEmpty()) {
-      errors.values().stream().forEach(t -> ServiceUtils.logSevere(this, t));
-      failTask(errors.values().iterator().next());
-    } else {
-      State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-      patchState.vibPath = vibPath;
-      TaskUtils.sendSelfPatch(this, patchState);
-    }
-  }
-
-  /**
-   * This method sends a patch operation to the current service instance to
-   * transition to a new state.
-   *
-   * @param stage Supplies the state to which the service instance should be
-   *              transitioned.
-   */
-  private void sendStageProgressPatch(TaskState.TaskStage stage) {
-    ServiceUtils.logInfo(this, "Sending self-patch to stage %s", stage);
-    TaskUtils.sendSelfPatch(this, buildPatch(stage, null));
-  }
-
-  /**
-   * This method applies a patch to a state object.
-   *
-   * @param startState Supplies the initial state of the current service
-   *                   instance.
-   * @param patchState Supplies the patch state associated with a patch
-   *                   operation.
-   * @return The updated state of the current service instance.
-   */
-  private State applyPatch(State startState, State patchState) {
-    if (patchState.taskState != null) {
-      if (patchState.taskState.stage != startState.taskState.stage) {
-        ServiceUtils.logInfo(this, "Moving to stage %s", patchState.taskState.stage);
-      }
-
-      startState.taskState = patchState.taskState;
-
-      if (null != patchState.vibPath) {
-        startState.vibPath = patchState.vibPath;
-      }
+      return;
     }
 
-    return startState;
+    sendStageProgressPatch(TaskState.TaskStage.FINISHED);
   }
 
-  /**
-   * This method sends a patch operation to the current service instance to
-   * transition to the FAILED state in response to the specified exception.
-   *
-   * @param e Supplies the failure encountered by the service instance.
-   */
-  private void failTask(Throwable e) {
-    ServiceUtils.logSevere(this, e);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, e));
+  private void sendStageProgressPatch(TaskState.TaskStage taskStage) {
+    ServiceUtils.logTrace(this, "Sending self-patch to stage %s", taskStage);
+    TaskUtils.sendSelfPatch(this, buildPatch(taskStage, null));
   }
 
-  private void failTask(Map<Long, Throwable> failures) {
-    failures.values().forEach(failure -> ServiceUtils.logSevere(this, failure));
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, failures.values().iterator().next()));
+  private void failTask(Throwable failure) {
+    ServiceUtils.logSevere(this, failure);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, failure));
+  }
+
+  //
+  // N.B. This routine is required for services which are started by the task scheduler service.
+  //
+  public static State buildStartPatch() {
+    return buildPatch(TaskState.TaskStage.STARTED, null);
+  }
+
+  @VisibleForTesting
+  protected static State buildPatch(TaskState.TaskStage taskStage, @Nullable Throwable failure) {
+    State patchState = new State();
+    patchState.taskState = new TaskState();
+    patchState.taskState.stage = taskStage;
+
+    if (failure != null) {
+      patchState.taskState.failure = Utils.toServiceErrorResponse(failure);
+    }
+
+    return patchState;
   }
 }

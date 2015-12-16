@@ -53,7 +53,7 @@ import java.util.HashMap;
 public class CreateManagementPlaneLayoutWorkflowService extends StatefulService {
 
   /**
-   * This class defines the state of a {@link ProvisionHostWorkflowService} task.
+   * This class defines the state of a {@link CreateManagementPlaneLayoutWorkflowService} task.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
 
