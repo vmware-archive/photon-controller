@@ -105,7 +105,7 @@ public class HousekeeperDcpServiceHost
     arguments.port = port + 1;
     arguments.bindAddress = bindAddress;
     arguments.sandbox = Paths.get(storagePath);
-    logger.info("Initializing DcpServer on port: {} path: {}", arguments.port, storagePath);
+    logger.info("Initializing HousekeeperDcpServiceHost on port: {} path: {}", arguments.port, storagePath);
     this.initialize(arguments);
   }
 
@@ -179,36 +179,33 @@ public class HousekeeperDcpServiceHost
   }
 
   private void startImageCleanerTriggerService() {
-    registerForServiceAvailability(new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        ImageCleanerTriggerService.State state = new ImageCleanerTriggerService.State();
-        state.documentSelfLink = TRIGGER_CLEANER_SERVICE_SUFFIX;
+    registerForServiceAvailability(
+        (Operation operation, Throwable throwable) -> {
+          ImageCleanerTriggerService.State state = new ImageCleanerTriggerService.State();
+          state.documentSelfLink = TRIGGER_CLEANER_SERVICE_SUFFIX;
 
-        URI uri = UriUtils.buildUri(HousekeeperDcpServiceHost.this, ImageCleanerTriggerServiceFactory.SELF_LINK, null);
-        Operation post = Operation.createPost(uri).setBody(state);
-        post.setReferer(UriUtils.buildUri(HousekeeperDcpServiceHost.this, HOUSEKEEPER_URI));
-        sendRequest(post);
-      }
-    }, ImageCleanerTriggerServiceFactory.SELF_LINK);
+          URI uri = UriUtils.buildUri(HousekeeperDcpServiceHost.this,
+              ImageCleanerTriggerServiceFactory.SELF_LINK, null);
+          Operation post = Operation.createPost(uri).setBody(state);
+          post.setReferer(UriUtils.buildUri(HousekeeperDcpServiceHost.this, HOUSEKEEPER_URI));
+          sendRequest(post);
+        }, ImageCleanerTriggerServiceFactory.SELF_LINK);
   }
 
   private void startTaskSchedulerServices() {
-    registerForServiceAvailability(new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        for (String link : TASK_SCHEDULERS.keySet()) {
-          try {
-            startTaskSchedulerService(link, TASK_SCHEDULERS.get(link));
-          } catch (Exception ex) {
-            // This method gets executed on a background thread so since we cannot make return the
-            // error to the caller, we swallow the exception here to allow the other the other schedulers
-            // to start
-            logger.warn("Could not register {}", link, ex);
+    registerForServiceAvailability(
+        (Operation operation, Throwable throwable) -> {
+          for (String link : TASK_SCHEDULERS.keySet()) {
+            try {
+              startTaskSchedulerService(link, TASK_SCHEDULERS.get(link));
+            } catch (Exception ex) {
+              // This method gets executed on a background thread so since we cannot make return the
+              // error to the caller, we swallow the exception here to allow the other the other schedulers
+              // to start
+              logger.warn("Could not register {}", link, ex);
+            }
           }
-        }
-      }
-    }, TaskSchedulerServiceFactory.SELF_LINK);
+        }, TaskSchedulerServiceFactory.SELF_LINK);
   }
 
   private void startTaskSchedulerService(final String selfLink, TaskSchedulerServiceStateBuilder builder)
