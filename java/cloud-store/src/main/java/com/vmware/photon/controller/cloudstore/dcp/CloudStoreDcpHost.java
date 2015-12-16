@@ -109,7 +109,10 @@ public class CloudStoreDcpHost
       EntityLockCleanerFactoryService.class,
       TaskTriggerFactoryService.class,
       TombstoneCleanerFactoryService.class,
-      AvailabilityZoneCleanerFactoryService.class
+      AvailabilityZoneCleanerFactoryService.class,
+
+      // Discovery
+      RootNamespaceService.class,
   };
 
   private BuildInfo buildInfo;
@@ -138,7 +141,6 @@ public class CloudStoreDcpHost
     startDefaultCoreServicesSynchronously();
 
     // Start all the factories
-    ServiceHostUtils.startService(this, RootNamespaceService.class, ServiceUriPaths.FS_INDEX_SERVICE);
     ServiceHostUtils.startServices(this, FACTORY_SERVICES);
 
     // Start all special services
@@ -152,7 +154,7 @@ public class CloudStoreDcpHost
   public boolean isReady() {
 
     return
-        checkServiceAvailable(ServiceUriPaths.FS_INDEX_SERVICE)
+        checkServiceAvailable(RootNamespaceService.SELF_LINK)
 
         // entities
         && checkServiceAvailable(FlavorServiceFactory.SELF_LINK)

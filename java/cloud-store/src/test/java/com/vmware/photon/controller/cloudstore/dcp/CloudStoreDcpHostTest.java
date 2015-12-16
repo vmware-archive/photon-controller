@@ -49,6 +49,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerFactoryService;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
+import com.vmware.xenon.services.common.RootNamespaceService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.inject.Injector;
@@ -86,7 +87,6 @@ public class CloudStoreDcpHostTest {
   private Injector injector;
   private CloudStoreDcpHost host;
   private String[] serviceSelfLinks = new String[]{
-      com.vmware.photon.controller.common.dcp.ServiceUriPaths.FS_INDEX_SERVICE,
       FlavorServiceFactory.SELF_LINK,
       ImageServiceFactory.SELF_LINK,
       ImageReplicationServiceFactory.SELF_LINK,
@@ -119,7 +119,10 @@ public class CloudStoreDcpHostTest {
       // tasks
       EntityLockCleanerFactoryService.SELF_LINK,
       TombstoneCleanerFactoryService.SELF_LINK,
-      AvailabilityZoneCleanerFactoryService.SELF_LINK
+      AvailabilityZoneCleanerFactoryService.SELF_LINK,
+
+      // discovery
+      RootNamespaceService.SELF_LINK,
   };
 
   /**

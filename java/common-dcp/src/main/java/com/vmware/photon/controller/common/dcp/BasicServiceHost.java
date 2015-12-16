@@ -27,7 +27,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -169,19 +168,6 @@ public class BasicServiceHost
           Utils.toString(e));
       throw new IllegalArgumentException(e);
     }
-  }
-
-  public void startFactoryServicesSynchronously(Class[] factoryServices) throws Throwable {
-    checkNotNull(factoryServices);
-    for (Class service : factoryServices) {
-      Service instance = (Service) service.newInstance();
-      startFactoryServiceSynchronously(instance);
-    }
-  }
-
-  public Operation startFactoryServiceSynchronously(Service service) throws Throwable {
-    String path = buildPath(service.getClass());
-    return startFactoryServiceSynchronously(service, path);
   }
 
   public Operation startFactoryServiceSynchronously(Service service, String path) throws Throwable {

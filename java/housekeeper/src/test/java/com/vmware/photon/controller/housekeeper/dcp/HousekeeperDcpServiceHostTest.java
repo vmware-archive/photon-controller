@@ -24,6 +24,7 @@ import com.vmware.photon.controller.housekeeper.ConfigTest;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
+import com.vmware.xenon.services.common.RootNamespaceService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.inject.Injector;
@@ -61,7 +62,7 @@ public class HousekeeperDcpServiceHostTest {
   private HousekeeperDcpServiceHost host;
 
   private String[] serviceSelfLinks = new String[]{
-      com.vmware.photon.controller.common.dcp.ServiceUriPaths.FS_INDEX_SERVICE,
+      RootNamespaceService.SELF_LINK,
       ImageReplicatorServiceFactory.SELF_LINK,
       ImageCopyServiceFactory.SELF_LINK,
       ImageHostToHostCopyServiceFactory.SELF_LINK,

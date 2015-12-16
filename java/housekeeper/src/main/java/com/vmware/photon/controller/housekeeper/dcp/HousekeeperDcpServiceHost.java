@@ -20,7 +20,6 @@ import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
-import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceStateBuilder;
@@ -80,7 +79,9 @@ public class HousekeeperDcpServiceHost
       ImageDeleteServiceFactory.class,
 
       ImageServiceFactory.class,
-      TaskSchedulerServiceFactory.class
+      TaskSchedulerServiceFactory.class,
+
+      RootNamespaceService.class,
   };
 
   private static final Logger logger = LoggerFactory.getLogger(HousekeeperDcpServiceHost.class);
@@ -127,7 +128,6 @@ public class HousekeeperDcpServiceHost
     startDefaultCoreServicesSynchronously();
 
     // Start all the factories
-    ServiceHostUtils.startService(this, RootNamespaceService.class, ServiceUriPaths.FS_INDEX_SERVICE);
     ServiceHostUtils.startServices(this, FACTORY_SERVICES);
 
     // Kick start the special services
@@ -156,7 +156,7 @@ public class HousekeeperDcpServiceHost
       }
     }
 
-    return checkServiceAvailable(ServiceUriPaths.FS_INDEX_SERVICE)
+    return checkServiceAvailable(RootNamespaceService.SELF_LINK)
         && checkServiceAvailable(ImageReplicatorServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageCopyServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageHostToHostCopyServiceFactory.SELF_LINK)
