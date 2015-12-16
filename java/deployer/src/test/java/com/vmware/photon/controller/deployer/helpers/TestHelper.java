@@ -221,6 +221,7 @@ public class TestHelper {
     startState.syslogEndpoint = "SYSLOG_ENDPOINT";
     startState.oAuthEnabled = authEnabled;
     startState.oAuthServerAddress = "OAUTH_ENDPOINT";
+    startState.chairmanServerList = Collections.singleton("127.0.0.1:13000");
     if (startState.oAuthEnabled) {
       startState.oAuthServerPort = 433;
     } else {

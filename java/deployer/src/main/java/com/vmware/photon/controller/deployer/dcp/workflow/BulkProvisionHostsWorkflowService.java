@@ -24,6 +24,8 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
@@ -43,7 +45,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -76,7 +77,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
   public static class State extends ServiceDocument {
 
     /**
-     * This value represents the document link of the {@link DeploymentService} in whose context the task operation is
+     * This value represents the document link of the deployment in whose context the task operation is
      * being performed.
      */
     @NotNull
@@ -84,7 +85,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     public String deploymentServiceLink;
 
     /**
-     * This value represents the list of chairman servers used by the {@link ProvisionHostWorkflowService}.
+     * This value represents the list of chairman servers used by the current task.
      */
     @NotNull
     @Immutable
@@ -310,37 +311,35 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
                       checkState(documentLinks.size() > 0);
                     }
 
-                    Iterator<String> it = documentLinks.iterator();
                     final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
-                    FutureCallback<ProvisionHostWorkflowService.State> provisionHostFutureCallback =
-                        new FutureCallback<ProvisionHostWorkflowService.State>() {
-                          @Override
-                          public void onSuccess(@Nullable ProvisionHostWorkflowService.State result) {
-                            switch (result.taskState.stage) {
-                              case FINISHED:
-                                if (0 == pendingChildren.decrementAndGet()) {
-                                  sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-                                }
-                                break;
-                              case FAILED:
-                                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                                patchState.taskState.failure = result.taskState.failure;
-                                TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this, patchState);
-                                break;
-                              case CANCELLED:
-                                sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
-                                break;
+
+                    for (String documentLink : documentLinks) {
+                      processUploadVibSubStage(currentState, documentLink,
+                          new FutureCallback<ProvisionHostTaskService.State>() {
+                            @Override
+                            public void onSuccess(@Nullable ProvisionHostTaskService.State state) {
+                              switch (state.taskState.stage) {
+                                case FINISHED:
+                                  if (pendingChildren.decrementAndGet() == 0) {
+                                    sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+                                  }
+                                  break;
+                                case FAILED:
+                                  State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                                  patchState.taskState.failure = state.taskState.failure;
+                                  TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this, patchState);
+                                  break;
+                                case CANCELLED:
+                                  sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
+                                  break;
+                              }
                             }
-                          }
 
-                          @Override
-                          public void onFailure(Throwable t) {
-                            failTask(t);
-                          }
-                        };
-
-                    while (it.hasNext()) {
-                      processUploadVibSubStage(currentState, it.next(), provisionHostFutureCallback);
+                            @Override
+                            public void onFailure(Throwable throwable) {
+                              failTask(throwable);
+                            }
+                          });
                     }
                   } catch (Throwable t) {
                     failTask(t);
@@ -350,7 +349,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
   }
 
   private void processUploadVibSubStage(State currentState, String hostServiceLink,
-                                        FutureCallback<ProvisionHostWorkflowService.State> provisionHostFutureCallback)
+                                        FutureCallback<ProvisionHostTaskService.State> provisionHostFutureCallback)
   {
     final Service service = this;
 
@@ -359,7 +358,8 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       public void onSuccess(@Nullable UploadVibTaskService.State result) {
         switch (result.taskState.stage) {
           case FINISHED: {
-            provisionHost(currentState, hostServiceLink, result.vibPath, provisionHostFutureCallback);
+            provisionHost(currentState, hostServiceLink, result.vibPaths.values().iterator().next(),
+                provisionHostFutureCallback);
             break;
           }
           case FAILED: {
@@ -401,20 +401,22 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     return startState;
   }
 
-  private void provisionHost(State currentState, String hostServiceLink, String vibPath,
-                             FutureCallback<ProvisionHostWorkflowService.State> provisionHostFutureCallback) {
-    ProvisionHostWorkflowService.State provisionStartState = new ProvisionHostWorkflowService.State();
-    provisionStartState.vibPath = vibPath;
-    provisionStartState.deploymentServiceLink = currentState.deploymentServiceLink;
-    provisionStartState.chairmanServerList = currentState.chairmanServerList;
-    provisionStartState.taskPollDelay = currentState.taskPollDelay;
-    provisionStartState.hostServiceLink = hostServiceLink;
+  private void provisionHost(State currentState,
+                             String hostServiceLink,
+                             String vibPath,
+                             FutureCallback<ProvisionHostTaskService.State> provisionHostFutureCallback) {
+
+    ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
+    startState.deploymentServiceLink = currentState.deploymentServiceLink;
+    startState.hostServiceLink = hostServiceLink;
+    startState.vibPath = vibPath;
+
     TaskUtils.startTaskAsync(
         this,
-        ProvisionHostWorkflowFactoryService.SELF_LINK,
-        provisionStartState,
-        (provisionState) -> TaskUtils.finalTaskStages.contains(provisionState.taskState.stage),
-        ProvisionHostWorkflowService.State.class,
+        ProvisionHostTaskFactoryService.SELF_LINK,
+        startState,
+        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+        ProvisionHostTaskService.State.class,
         currentState.taskPollDelay,
         provisionHostFutureCallback);
   }

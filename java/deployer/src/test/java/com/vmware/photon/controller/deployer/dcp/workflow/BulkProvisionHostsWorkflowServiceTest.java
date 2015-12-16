@@ -23,7 +23,7 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.mock.HostClientMock;
-import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
@@ -557,7 +557,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
         Integer cloudHostCout,
         Integer mixedHostCount) throws Throwable {
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), DeployAgentTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
       createTestEnvironment(hostCount);
       createHostEntities(mgmtHostCount, cloudHostCout, mixedHostCount);
       startState.querySpecification = null;
@@ -579,7 +579,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
     @Test(enabled = false)
     public void testEndToEndFailNoMgmtHost() throws Throwable {
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), DeployAgentTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
       MockHelper.mockProvisionAgent(hostClientFactory, true);
       createTestEnvironment(1);
       createHostEntities(0, 2, 0);

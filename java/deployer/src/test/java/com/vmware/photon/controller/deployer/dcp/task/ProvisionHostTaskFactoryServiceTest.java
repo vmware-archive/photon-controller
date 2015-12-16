@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.deployer.dcp.workflow;
+package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.xenon.common.Service;
 
@@ -19,36 +19,32 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.Matchers.is;
 
 import java.util.EnumSet;
 
 /**
- * This class implements tests for the {@link ProvisionHostWorkflowFactoryService} class.
+ * This class implements tests for the {@link ProvisionHostTaskFactoryService} class.
  */
-public class ProvisionHostWorkflowFactoryServiceTest {
+public class ProvisionHostTaskFactoryServiceTest {
 
-  private ProvisionHostWorkflowFactoryService provisionHostWorkflowFactoryService;
+  private ProvisionHostTaskFactoryService provisionHostTaskFactoryService;
 
   @BeforeClass
   public void setUpClass() {
-    provisionHostWorkflowFactoryService = new ProvisionHostWorkflowFactoryService();
+    provisionHostTaskFactoryService = new ProvisionHostTaskFactoryService();
   }
 
   @Test
-  public void testCapabilityInitialization() {
-
-    EnumSet<Service.ServiceOption> expected = EnumSet.of(
+  public void testServiceOptions() {
+    assertThat(provisionHostTaskFactoryService.getOptions(), is(EnumSet.of(
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
         Service.ServiceOption.FACTORY,
-        Service.ServiceOption.REPLICATION);
-
-    assertThat(provisionHostWorkflowFactoryService.getOptions(), is(expected));
+        Service.ServiceOption.REPLICATION)));
   }
 
   @Test
   public void testCreateServiceInstance() throws Throwable {
-    Service service = provisionHostWorkflowFactoryService.createServiceInstance();
-    assertThat(service, instanceOf(ProvisionHostWorkflowService.class));
+    assertThat(provisionHostTaskFactoryService.createServiceInstance(), instanceOf(ProvisionHostTaskService.class));
   }
 }

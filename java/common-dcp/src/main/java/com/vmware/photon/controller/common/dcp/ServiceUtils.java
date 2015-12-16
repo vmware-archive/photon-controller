@@ -81,6 +81,14 @@ public class ServiceUtils {
     }
   }
 
+  public static void logTrace(Service service, String fmt, Object... args) {
+    LoggerFactory.getLogger(service.getClass()).trace(getFmtMsg(service, fmt, args));
+  }
+
+  public static void logTrace(Service service, Throwable e) {
+    LoggerFactory.getLogger(service.getClass()).trace(getFmtMsg(service, "%s", Utils.toString(e)));
+  }
+
   public static void logWarning(Service service, String fmt, Object... args) {
     LoggerFactory.getLogger(service.getClass()).warn(getFmtMsg(service, fmt, args));
   }

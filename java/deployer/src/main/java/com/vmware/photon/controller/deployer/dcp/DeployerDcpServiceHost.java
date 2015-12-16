@@ -54,17 +54,15 @@ import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecTaskFactorySer
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteContainerTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.DeleteVibTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteVmTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.DeployAgentTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.ExtractHostInformationTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.GetHostConfigTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.SetDatastoreTagsTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.WaitForDockerTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.WaitForServiceTaskFactoryService;
@@ -82,8 +80,6 @@ import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowFact
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.FinalizeDeploymentMigrationWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.InitializeDeploymentMigrationWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.dcp.workflow.ProvisionHostWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.dcp.workflow.ProvisionHostWorkflowService;
 import com.vmware.photon.controller.deployer.dcp.workflow.RemoveDeploymentWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactoryProvider;
@@ -175,15 +171,12 @@ public class DeployerDcpServiceHost
       CreateVmTaskFactoryService.class,
       DeleteAgentTaskFactoryService.class,
       DeleteContainerTaskFactoryService.class,
-      DeleteVibTaskFactoryService.class,
       DeleteVmTaskFactoryService.class,
-      DeployAgentTaskFactoryService.class,
-      GetHostConfigTaskFactoryService.class,
       MigrationStatusUpdateTriggerFactoryService.class,
       ProvisionAgentTaskFactoryService.class,
+      ProvisionHostTaskFactoryService.class,
       RegisterAuthClientTaskFactoryService.class,
       SetDatastoreTagsTaskFactoryService.class,
-      ExtractHostInformationTaskFactoryService.class,
       UploadImageTaskFactoryService.class,
       UploadVibTaskFactoryService.class,
       WaitForDockerTaskFactoryService.class,
@@ -205,7 +198,6 @@ public class DeployerDcpServiceHost
       DeprovisionHostWorkflowFactoryService.class,
       FinalizeDeploymentMigrationWorkflowFactoryService.class,
       InitializeDeploymentMigrationWorkflowFactoryService.class,
-      ProvisionHostWorkflowFactoryService.class,
       RemoveDeploymentWorkflowFactoryService.class,
 
       // Discovery
@@ -214,13 +206,13 @@ public class DeployerDcpServiceHost
 
   private static final int DEFAULT_TASK_LIMIT = 8;
 
-  protected static final String PROVISION_HOST_SCHEDULER_SERVICE =
-      TaskSchedulerServiceFactory.SELF_LINK + "/workflow/provision-host";
+  protected static final String UPLOAD_VIB_SCHEDULER_SERVICE =
+      TaskSchedulerServiceFactory.SELF_LINK + "/vib-uploads";
 
   private static final Map<String, TaskSchedulerServiceStateBuilder> TASK_SCHEDULERS =
       ImmutableMap.<String, TaskSchedulerServiceStateBuilder>builder()
-          .put(PROVISION_HOST_SCHEDULER_SERVICE,
-              new TaskSchedulerServiceStateBuilder(ProvisionHostWorkflowService.class, DEFAULT_TASK_LIMIT))
+          .put(UPLOAD_VIB_SCHEDULER_SERVICE,
+              new TaskSchedulerServiceStateBuilder(UploadVibTaskService.class, DEFAULT_TASK_LIMIT))
           .build();
 
   private static final String DEPLOYER_URI = "deployer";
