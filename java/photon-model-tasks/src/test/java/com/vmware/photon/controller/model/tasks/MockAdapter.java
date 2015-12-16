@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 VMware, Inc. All Rights Reserved.
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -17,6 +17,7 @@ import com.vmware.photon.controller.model.UriPaths;
 import com.vmware.photon.controller.model.adapterapi.ComputeBootRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeEnumerateResourceRequest;
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
+import com.vmware.photon.controller.model.adapterapi.FirewallInstanceRequest;
 import com.vmware.photon.controller.model.adapterapi.NetworkInstanceRequest;
 import com.vmware.photon.controller.model.adapterapi.SnapshotRequest;
 import com.vmware.xenon.common.Operation;
@@ -38,7 +39,9 @@ public class MockAdapter {
       MockSnapshotSuccessAdapter.class,
       MockSnapshotFailureAdapter.class,
       MockNetworkInstanceSuccessAdapter.class,
-      MockNetworkInstanceFailureAdapter.class
+      MockNetworkInstanceFailureAdapter.class,
+      MockFirewallInstanceSuccessAdapter.class,
+      MockFirewallInstanceFailureAdapter.class
   };
 
   /**
@@ -328,6 +331,66 @@ public class MockAdapter {
           sendRequest(Operation
               .createPatch(request.provisioningTaskReference)
               .setBody(provisionNetworkTaskState));
+          break;
+        default:
+          super.handleRequest(op);
+      }
+    }
+  }
+
+  /**
+   * Mock firewall instance adapter that always succeeds.
+   */
+  public static class MockFirewallInstanceSuccessAdapter extends StatelessService {
+    public static final String SELF_LINK = UriPaths.PROVISIONING +
+        "/mock_firewall_service_success_adapter";
+
+    @Override
+    public void handleRequest(Operation op) {
+      if (!op.hasBody()) {
+        op.fail(new IllegalArgumentException("body is required"));
+        return;
+      }
+      switch (op.getAction()) {
+        case PATCH:
+          FirewallInstanceRequest request = op.getBody(FirewallInstanceRequest.class);
+          ProvisionFirewallTaskService.ProvisionFirewallTaskState provisionFirewallTaskState =
+              new ProvisionFirewallTaskService.ProvisionFirewallTaskState();
+          provisionFirewallTaskState.taskInfo = new TaskState();
+          provisionFirewallTaskState.taskInfo.stage = TaskState.TaskStage.FINISHED;
+          sendRequest(Operation
+              .createPatch(request.provisioningTaskReference)
+              .setBody(provisionFirewallTaskState));
+          break;
+        default:
+          super.handleRequest(op);
+      }
+    }
+  }
+
+  /**
+   * Mock firewall instance adapter that always fails.
+   */
+  public static class MockFirewallInstanceFailureAdapter extends StatelessService {
+    public static final String SELF_LINK = UriPaths.PROVISIONING +
+        "/mock_firewall_service_failure_adapter";
+
+    @Override
+    public void handleRequest(Operation op) {
+      if (!op.hasBody()) {
+        op.fail(new IllegalArgumentException("body is required"));
+        return;
+      }
+      switch (op.getAction()) {
+        case PATCH:
+          FirewallInstanceRequest request = op.getBody(FirewallInstanceRequest.class);
+          ProvisionFirewallTaskService.ProvisionFirewallTaskState provisionFirewallTaskState =
+              new ProvisionFirewallTaskService.ProvisionFirewallTaskState();
+          provisionFirewallTaskState.taskInfo = new TaskState();
+          provisionFirewallTaskState.taskInfo.stage = TaskState.TaskStage.FAILED;
+          sendRequest(Operation
+              .createPatch(request.provisioningTaskReference)
+              .setBody(provisionFirewallTaskState));
           break;
         default:
           super.handleRequest(op);
