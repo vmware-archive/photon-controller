@@ -16,6 +16,7 @@ package com.vmware.photon.controller.deployer.dcp;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.common.dcp.UpgradeUtils;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
+import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.annotations.VisibleForTesting;
@@ -111,6 +112,7 @@ public class DeployerContext {
 
   private Collection<Class<?>> migrationExecludedServices = ImmutableSet.<Class<?>>builder()
       .add(DatastoreServiceFactory.class)
+      .add(RootNamespaceService.class)
       .build();
 
   @VisibleForTesting

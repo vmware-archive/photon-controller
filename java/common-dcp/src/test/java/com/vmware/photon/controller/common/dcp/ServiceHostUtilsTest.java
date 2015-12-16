@@ -710,7 +710,7 @@ public class ServiceHostUtilsTest {
     @Test
     public void testDeleteAllDocuments() throws Throwable {
 
-      host.startFactoryServiceSynchronously(new ExampleFactoryService());
+      ServiceHostUtils.startService(host, ExampleFactoryService.class);
 
       ExampleService.ExampleServiceState exampleServiceState1 = new ExampleService.ExampleServiceState();
       exampleServiceState1.name = UUID.randomUUID().toString();
