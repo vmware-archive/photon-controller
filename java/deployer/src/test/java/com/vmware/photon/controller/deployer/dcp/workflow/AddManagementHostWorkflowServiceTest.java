@@ -980,7 +980,7 @@ public class AddManagementHostWorkflowServiceTest {
 
       AddManagementHostWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
-              AddCloudHostWorkflowFactoryService.SELF_LINK,
+              AddManagementHostWorkflowFactoryService.SELF_LINK,
               startState,
               AddManagementHostWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
