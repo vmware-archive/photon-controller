@@ -31,8 +31,8 @@ import java.util.Set;
 /**
  * Datastore API representation.
  */
-@ApiModel(value = "The datastore model of ESX Cloud defines " +
-    "datastores of ESX Cloud data-centers.")
+@ApiModel(value = "The datastore model of Photon Controller defines " +
+    "datastores of Photon Controller data-centers.")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Datastore extends Base {
   public static final String KIND = "datastore";

@@ -47,7 +47,7 @@ import java.util.List;
 
 /**
  * This class implements a DCP micro-service which performs the task of
- * creating a resource ticket in an ESX Cloud instance.
+ * creating a resource ticket in a Photon Controller instance.
  */
 public class CreateResourceTicketTaskService extends StatefulService {
 

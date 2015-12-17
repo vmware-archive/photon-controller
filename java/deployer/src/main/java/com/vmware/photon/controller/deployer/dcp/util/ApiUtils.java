@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * This class implements helper routines for calls to the ESX Cloud REST API.
+ * This class implements helper routines for calls to the Photon Controller REST API.
  */
 public class ApiUtils {
 

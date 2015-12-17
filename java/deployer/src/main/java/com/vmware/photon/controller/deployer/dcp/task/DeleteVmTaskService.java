@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
 
 /**
  * This class implements a DCP micro-service which performs the task of
- * deploying an ESX Cloud agent instance.
+ * deploying a Photon Controller agent instance.
  */
 public class DeleteVmTaskService extends StatefulService {
 
