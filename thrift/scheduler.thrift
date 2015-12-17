@@ -15,7 +15,6 @@ namespace java com.vmware.photon.controller.scheduler.gen
 namespace py gen.scheduler
 
 include 'resource.thrift'
-include 'roles.thrift'
 include 'server_address.thrift'
 include 'tracing.thrift'
 
@@ -168,29 +167,4 @@ service Scheduler {
   // requests.
   PlaceResponse host_place(1: PlaceRequest request)
   FindResponse host_find(1: FindRequest request)
-}
-
-// Configure host and root scheduler
-enum ConfigureResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-  NOT_LEADER = 2
-}
-
-struct ConfigureResponse {
-  1: required ConfigureResultCode result
-  2: optional string error
-}
-
-struct ConfigureRequest {
-  // Parent Scheduler (Leaf)
-  1: required string scheduler
-
-  // Assigned role configuration
-  2: required roles.Roles roles
-
-  // Host Id
-  3: optional string host_id
-
-  99: optional tracing.TracingInfo tracing_info
 }
