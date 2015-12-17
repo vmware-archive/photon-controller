@@ -15,7 +15,6 @@ package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.HostInfo;
 import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.SchedulerInfo;
 import com.vmware.photon.controller.api.VmInfo;
 import com.vmware.photon.controller.apife.resources.routes.TopologyResourceRoutes;
 import com.vmware.photon.controller.common.clients.ChairmanClient;
@@ -29,12 +28,8 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.host.gen.GetResourcesRequest;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.resource.gen.Resource;
-import com.vmware.photon.controller.roles.gen.SchedulerEntry;
-import com.vmware.photon.controller.roles.gen.SchedulerRole;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -87,19 +82,11 @@ public class TopologyResource {
   }
 
   @GET
-  @ApiOperation(value = "Get topology of hosts, schedulers and vms",
+  @ApiOperation(value = "Get topology of hosts and vms",
       response = HostInfo.class, responseContainer = ResourceList.CLASS_NAME)
-  @ApiResponses(value = {@ApiResponse(code = 200, message = "Get topology from schedulers")})
+  @ApiResponses(value = {@ApiResponse(code = 200, message = "Get topology from hosts")})
   public Response get() throws RpcException, InterruptedException, TException, IOException {
-    List<SchedulerEntry> schedulers = chairmanClient.getSchedulers().getSchedulers();
-
     List<String> agents = new ArrayList<>();
-    ListMultimap<String, SchedulerRole> schedulerMap = ArrayListMultimap.create();
-    for (SchedulerEntry entry : schedulers) {
-      agents.addAll(entry.getRole().getHosts());
-      schedulerMap.put(entry.getAgent(), entry.getRole());
-    }
-
     ConcurrentHashMap<String, List<Resource>> resources = new ConcurrentHashMap<>();
     CountDownLatch done = new CountDownLatch(agents.size());
     for (String agent : agents) {
@@ -122,21 +109,8 @@ public class TopologyResource {
         respondedVms.add(vmInfo);
       }
 
-      List<SchedulerInfo> respondedSchedulers = new ArrayList<>();
-
-      for (SchedulerRole schedulerRole : schedulerMap.get(agentId)) {
-        SchedulerInfo schedulerInfo = new SchedulerInfo();
-        schedulerInfo.setId(schedulerRole.getId());
-        schedulerInfo.setHosts(schedulerRole.getHosts());
-        schedulerInfo.setSchedulers(schedulerRole.getSchedulers());
-        schedulerInfo.setParent(schedulerRole.getParent_id());
-
-        respondedSchedulers.add(schedulerInfo);
-      }
-
       HostInfo hostInfo = new HostInfo();
       hostInfo.setId(agentId);
-      hostInfo.setSchedulers(respondedSchedulers);
       hostInfo.setVms(respondedVms);
 
       result.add(hostInfo);
