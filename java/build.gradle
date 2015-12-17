@@ -16,7 +16,7 @@ ext {
       mockito     : '1.10.17',
       commons_lang3: '3.1',
       commons_math3: '3.5',
-      xenon_common: '0.3.1',
+      xenon_common: '0.3.2',
   ]
 }
 
