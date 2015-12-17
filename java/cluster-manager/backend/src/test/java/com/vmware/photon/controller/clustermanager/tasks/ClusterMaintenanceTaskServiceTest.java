@@ -35,6 +35,8 @@ import com.vmware.photon.controller.clustermanager.helpers.TestHost;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
+import com.vmware.photon.controller.clustermanager.templates.KubernetesSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
@@ -376,8 +378,8 @@ public class ClusterMaintenanceTaskServiceTest {
       scriptLogDirectory.mkdirs();
 
       Path slaveUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), "kubernetes-dhcp-slave-user-data.template");
-      Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), "meta-data.template");
+          Paths.get(scriptDirectory.getAbsolutePath(), KubernetesSlaveNodeTemplate.SLAVE_USER_DATA_TEMPLATE);
+      Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), NodeTemplateUtils.META_DATA_TEMPLATE);
 
       Files.createFile(slaveUserDataTemplate);
       Files.createFile(metaDataTemplate);

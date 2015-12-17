@@ -36,7 +36,10 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
 import com.vmware.photon.controller.clustermanager.statuschecks.SwarmStatusChecker;
+import com.vmware.photon.controller.clustermanager.templates.EtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
+import com.vmware.photon.controller.clustermanager.templates.SwarmMasterNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.SwarmSlaveNodeTemplate;
 import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
@@ -575,12 +578,12 @@ public class SwarmClusterCreateTaskServiceTest {
       scriptLogDirectory.mkdirs();
 
       Path etcdUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), "swarm-etcd-user-data.template");
+          Paths.get(scriptDirectory.getAbsolutePath(), EtcdNodeTemplate.ETCD_USER_DATA_TEMPLATE);
       Path masterUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), "swarm-master-user-data.template");
+          Paths.get(scriptDirectory.getAbsolutePath(), SwarmMasterNodeTemplate.MASTER_USER_DATA_TEMPLATE);
       Path slaveUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), "swarm-slave-user-data.template");
-      Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), "meta-data.template");
+          Paths.get(scriptDirectory.getAbsolutePath(), SwarmSlaveNodeTemplate.SLAVE_USER_DATA_TEMPLATE);
+      Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), NodeTemplateUtils.META_DATA_TEMPLATE);
 
       Files.createFile(etcdUserDataTemplate);
       Files.createFile(masterUserDataTemplate);

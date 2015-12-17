@@ -85,6 +85,9 @@ elif [ "$1" = 'deployer' ]; then
   cd $install_path
   $JAVA_HOME/bin/jar xf $install_path/lib/deployer*.jar scripts
   chmod +x scripts/*
+  cd $install_path/scripts
+  $JAVA_HOME/bin/jar xf $install_path/lib/cm-backend*.jar scripts
+  mv scripts clusters
 
   # Cleanup and create script log directory
   rm -rf $script_log_directory
