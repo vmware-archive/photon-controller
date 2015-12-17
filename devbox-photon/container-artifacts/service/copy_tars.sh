@@ -61,7 +61,7 @@ elif [ "$1" = 'deployer' ]; then
   cp /archive/deployer*.tar $package_dir/
   archive="$package_dir/deployer*.tar"
   install_path='/usr/lib/esxcloud/deployer'
-  script_directory="$install_path/scripts"
+  script_directory="$install_path/scripts/clusters"
   script_log_directory='/vagrant/log/script_logs'
   vib_directory='/var/esxcloud/packages'
   clean_sandbox='true'
@@ -85,6 +85,7 @@ elif [ "$1" = 'deployer' ]; then
   cd $install_path
   $JAVA_HOME/bin/jar xf $install_path/lib/deployer*.jar scripts
   chmod +x scripts/*
+  $JAVA_HOME/bin/jar xf $install_path/lib/cm-backend*.jar scripts/clusters
 
   # Cleanup and create script log directory
   rm -rf $script_log_directory

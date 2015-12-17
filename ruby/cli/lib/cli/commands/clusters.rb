@@ -46,15 +46,15 @@ module EsxCloud::Cli
           opts.on("--zookeeper1 ZOOKEEPER_IP1",
                   "Zookeeper server 1. Required for Mesos cluster.") { |v| zookeeper1 = v }
           opts.on("--zookeeper2 ZOOKEEPER_IP2",
-                  "Zookeeper server 2. Required for Mesos cluster.") { |v| zookeeper2 = v }
+                  "Zookeeper server 2. Optional for Mesos cluster.") { |v| zookeeper2 = v }
           opts.on("--zookeeper3 ZOOKEEPER_IP3",
-                  "Zookeeper server 3. Required for Mesos cluster.") { |v| zookeeper3 = v }
+                  "Zookeeper server 3. Optional for Mesos cluster.") { |v| zookeeper3 = v }
           opts.on("--etcd1 ETCD_IP1",
                   "Etcd server 1. Required for Kubernetes and Swarm cluster.") { |v| etcd1 = v }
           opts.on("--etcd2 ETCD_IP2",
-                  "Etcd server 2. Required for Kubernetes and Swarm cluster.") { |v| etcd2 = v }
+                  "Etcd server 2. Optional for Kubernetes and Swarm cluster.") { |v| etcd2 = v }
           opts.on("--etcd3 ETCD_IP3",
-                  "Etcd server 3. Required for Kubernetes and Swarm cluster.") { |v| etcd3 = v }
+                  "Etcd server 3. Optional for Kubernetes and Swarm cluster.") { |v| etcd3 = v }
           opts.on("--batch-size BATCH_SIZE",
                   "Size of the batch used during slave expansion process.") { |v| batch_size = v }
           opts.on("--wait-for-ready", "Waits for the cluster to become ready.") { |v| wait_for_ready = true }

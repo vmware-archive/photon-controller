@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public class KubernetesMasterNodeTemplate implements NodeTemplate {
 
-  public static final String MASTER_USER_DATA_TEMPLATE = "kubernetes-dhcp-master-user-data.template";
+  public static final String MASTER_USER_DATA_TEMPLATE = "kubernetes-master-user-data.template";
   public static final String ETCD_IPS_PROPERTY = "etcdIps";
   public static final String DNS_PROPERTY = "dns";
   public static final String GATEWAY_PROPERTY = "gateway";
