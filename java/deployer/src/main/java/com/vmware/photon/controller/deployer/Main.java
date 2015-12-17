@@ -53,7 +53,7 @@ public class Main {
 
       ArgumentParser parser = ArgumentParsers.newArgumentParser("Deployer")
           .defaultHelp(true)
-          .description("ESX Cloud Deployer");
+          .description("Photon Controller Deployer");
       parser.addArgument("file").help("configuration file");
 
       logger.info("Parsing command-line arguments");

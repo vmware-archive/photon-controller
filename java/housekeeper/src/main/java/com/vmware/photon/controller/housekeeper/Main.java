@@ -43,7 +43,7 @@ public class Main {
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("Housekeeper")
         .defaultHelp(true)
-        .description("ESX Cloud Housekeeper");
+        .description("Photon Controller Housekeeper");
     parser.addArgument("file").help("configuration file");
 
     Namespace namespace = parser.parseArgsOrFail(args);

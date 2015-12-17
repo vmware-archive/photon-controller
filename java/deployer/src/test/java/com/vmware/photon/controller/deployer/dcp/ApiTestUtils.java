@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This class implements helper routines for testing ESX Cloud REST API calls.
+ * This class implements helper routines for testing Photon Controller REST API calls.
  */
 public class ApiTestUtils {
 

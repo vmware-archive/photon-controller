@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 
 /**
  * This class implements a DCP micro-service which performs the task of
- * creating a tenant in an ESX Cloud instance.
+ * creating a tenant in a Photon Controller instance.
  */
 public class CreateTenantTaskService extends StatefulService {
 

@@ -47,7 +47,7 @@ public class Main {
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("Chairman")
         .defaultHelp(true)
-        .description("ESX Cloud Chairman Service");
+        .description("Photon Controller Chairman Service");
     parser.addArgument("file").help("configuration file");
 
     Namespace namespace = parser.parseArgsOrFail(args);

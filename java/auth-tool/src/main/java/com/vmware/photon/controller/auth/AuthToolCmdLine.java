@@ -107,13 +107,13 @@ public class AuthToolCmdLine {
     Subparser accessTokenParser = subparsers.addParser("get-access-token")
         .aliases("gat")
         .setDefault(COMMAND_ATTR_NAME, Command.GET_ACCESS_TOKEN)
-        .help("Retrieves ESX Cloud authorization access token");
+        .help("Retrieves Photon Controller authorization access token");
     setupAccessTokenParser(accessTokenParser);
 
     Subparser refreshTokenParser = subparsers.addParser("get-refresh-token")
         .aliases("grt")
         .setDefault(COMMAND_ATTR_NAME, Command.GET_REFRESH_TOKEN)
-        .help("Retrieves ESX Cloud authorization refresh token");
+        .help("Retrieves Photon Controller authorization refresh token");
     setupRefreshTokenParser(refreshTokenParser);
 
     Subparser registerClientParser = subparsers.addParser("register-client")
