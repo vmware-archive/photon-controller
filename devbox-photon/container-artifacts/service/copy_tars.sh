@@ -81,10 +81,13 @@ elif [ "$1" = 'deployer' ]; then
   tar xf $archive --strip=1 -C $install_path
 
   # Create a script directory and extract jar into it
-  mkdir -p $script_directory
+  mkdir -p $script_directory/clusters
   cd $install_path
   $JAVA_HOME/bin/jar xf $install_path/lib/deployer*.jar scripts
   chmod +x scripts/*
+  cd $install_path/scripts
+  $JAVA_HOME/bin/jar xf $install_path/lib/cm-backend*.jar scripts
+  mv scripts clusters
 
   # Cleanup and create script log directory
   rm -rf $script_log_directory

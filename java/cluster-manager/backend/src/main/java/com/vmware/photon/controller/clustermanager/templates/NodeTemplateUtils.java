@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public class NodeTemplateUtils {
 
-  private static final String META_DATA_TEMPLATE = "meta-data.template";
+  public static final String META_DATA_TEMPLATE = "meta-data.template";
   public static final String NODE_INDEX_PROPERTY = "nodeIndex";
   public static final String HOST_ID_PROPERTY = "hostId";
 
