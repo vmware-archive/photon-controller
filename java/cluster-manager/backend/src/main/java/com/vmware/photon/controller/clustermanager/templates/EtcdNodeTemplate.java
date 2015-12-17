@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public class EtcdNodeTemplate implements NodeTemplate {
 
-  public static final String ETCD_USER_DATA_TEMPLATE = "swarm-etcd-user-data.template";
+  public static final String ETCD_USER_DATA_TEMPLATE = "etcd-user-data.template";
   public static final String DNS_PROPERTY = "dns";
   public static final String GATEWAY_PROPERTY = "gateway";
   public static final String NETMASK_PROPERTY = "netmask";
