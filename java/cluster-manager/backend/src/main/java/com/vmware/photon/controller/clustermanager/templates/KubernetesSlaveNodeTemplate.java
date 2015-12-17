@@ -28,7 +28,7 @@ import java.util.Map;
  */
 public class KubernetesSlaveNodeTemplate implements NodeTemplate {
 
-  public static final String SLAVE_USER_DATA_TEMPLATE = "kubernetes-dhcp-slave-user-data.template";
+  public static final String SLAVE_USER_DATA_TEMPLATE = "kubernetes-slave-user-data.template";
   public static final String ETCD_IPS_PROPERTY = "etcdIps";
   public static final String CONTAINER_NETWORK_PROPERTY = "containerNetwork";
   public static final String MASTER_IP_PROPERTY = "masterIp";

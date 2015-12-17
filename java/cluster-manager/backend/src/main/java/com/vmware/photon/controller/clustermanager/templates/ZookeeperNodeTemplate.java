@@ -28,7 +28,7 @@ import java.util.Map;
  */
 public class ZookeeperNodeTemplate implements NodeTemplate {
 
-  public static final String ZOOKEEPER_USER_DATA_TEMPLATE = "mesos-zookeeper-user-data.template";
+  public static final String ZOOKEEPER_USER_DATA_TEMPLATE = "zookeeper-user-data.template";
   public static final String DNS_PROPERTY = "dns";
   public static final String GATEWAY_PROPERTY = "gateway";
   public static final String NETMASK_PROPERTY = "netmask";

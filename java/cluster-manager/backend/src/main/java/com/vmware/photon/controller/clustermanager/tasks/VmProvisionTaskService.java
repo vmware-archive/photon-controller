@@ -238,6 +238,7 @@ public class VmProvisionTaskService extends StatefulService {
     String metaDataConfigFilename = createFile(currentState.metaData, metaDataConfigFile);
 
     List<String> command = new ArrayList<>();
+    command.add("/bin/bash");
     command.add("./" + SCRIPT_NAME);
     command.add(isoFile.getAbsolutePath());
     command.add(userDataConfigFilename);

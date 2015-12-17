@@ -36,7 +36,11 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.MesosCluster
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.MesosStatusChecker;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
+import com.vmware.photon.controller.clustermanager.templates.MarathonNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.MesosMasterNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.MesosSlaveNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
+import com.vmware.photon.controller.clustermanager.templates.ZookeeperNodeTemplate;
 import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
@@ -610,14 +614,14 @@ public class MesosClusterCreateTaskServiceTest {
       scriptLogDirectory.mkdirs();
 
       Path zookeeperUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), "mesos-zookeeper-user-data.template");
+          Paths.get(scriptDirectory.getAbsolutePath(), ZookeeperNodeTemplate.ZOOKEEPER_USER_DATA_TEMPLATE);
       Path masterUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), "mesos-master-user-data.template");
+          Paths.get(scriptDirectory.getAbsolutePath(), MesosMasterNodeTemplate.MASTER_USER_DATA_TEMPLATE);
       Path marathonUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), "mesos-marathon-user-data.template");
+          Paths.get(scriptDirectory.getAbsolutePath(), MarathonNodeTemplate.MARATHON_USER_DATA_TEMPLATE);
       Path slaveUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), "mesos-slave-user-data.template");
-      Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), "meta-data.template");
+          Paths.get(scriptDirectory.getAbsolutePath(), MesosSlaveNodeTemplate.SLAVE_USER_DATA_TEMPLATE);
+      Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), NodeTemplateUtils.META_DATA_TEMPLATE);
 
       Files.createFile(zookeeperUserDataTemplate);
       Files.createFile(masterUserDataTemplate);
