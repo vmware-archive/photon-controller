@@ -62,6 +62,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 
+import java.nio.file.Paths;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -76,6 +77,7 @@ public class DeployerModule extends AbstractModule {
 
   public static final String DEPLOYER_SERVICE_NAME = "deployer";
   public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
+  public static final String CLUSTER_SCRIPTS_DIRECTORY = "clusters";
   /**
    * The blocking queue associated with the thread pool executor service
    * controls the rejection policy for new work items: a bounded queue, such as
@@ -289,7 +291,7 @@ public class DeployerModule extends AbstractModule {
         apiFeServerSet,
         sharedSecret,
         cloudStoreServerSet,
-        deployerContext.getScriptDirectory());
+        Paths.get(deployerContext.getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString());
   }
 
   @Provides
