@@ -22,7 +22,6 @@ import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.Disk;
 import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
-import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
 import com.vmware.photon.controller.scheduler.gen.ConfigureRequest;
@@ -118,11 +117,6 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
       request.getTracing_info().setRequest_id(UUID.randomUUID().toString());
     }
     LoggingUtils.setRequestId(request.getTracing_info().getRequest_id());
-  }
-
-  @Override
-  public synchronized GetSchedulersResponse get_schedulers() {
-    throw new UnsupportedOperationException();
   }
 
   @Override

@@ -18,7 +18,6 @@ from mock import *  # noqa
 from thrift.protocol import TProtocol
 from gen.flavors.ttypes import *  # noqa
 from gen.host.ttypes import *  # noqa
-from gen.roles.ttypes import *  # noqa
 from gen.resource.ttypes import *  # noqa
 from gen.scheduler.ttypes import *  # noqa
 

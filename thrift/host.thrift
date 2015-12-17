@@ -16,7 +16,6 @@ namespace py gen.host
 
 include 'agent.thrift'
 include 'resource.thrift'
-include 'roles.thrift'
 include 'scheduler.thrift'
 include 'server_address.thrift'
 include 'tracing.thrift'
@@ -76,7 +75,6 @@ struct HostConfig {
   4: required server_address.ServerAddress address
   5: optional list<resource.Network> networks
   6: optional binary hypervisor
-  7: optional roles.Roles roles
   // A uuid that corrosponds to only one datastore
   // in the datastores list
   8: optional string image_datastore_id
