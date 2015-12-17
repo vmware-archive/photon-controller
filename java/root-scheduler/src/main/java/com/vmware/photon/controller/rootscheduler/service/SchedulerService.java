@@ -22,12 +22,7 @@ import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.Disk;
 import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
-import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
-import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
-import com.vmware.photon.controller.scheduler.gen.ConfigureRequest;
-import com.vmware.photon.controller.scheduler.gen.ConfigureResponse;
-import com.vmware.photon.controller.scheduler.gen.ConfigureResultCode;
 import com.vmware.photon.controller.scheduler.gen.FindRequest;
 import com.vmware.photon.controller.scheduler.gen.FindResponse;
 import com.vmware.photon.controller.scheduler.gen.FindResultCode;
@@ -121,19 +116,8 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
   }
 
   @Override
-  public synchronized GetSchedulersResponse get_schedulers() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public synchronized Status get_status(GetStatusRequest request) throws TException{
     return new Status(StatusType.READY);
-  }
-
-  @Override
-  @RequestId
-  public synchronized ConfigureResponse configure(ConfigureRequest request) throws TException {
-    return new ConfigureResponse(ConfigureResultCode.OK);
   }
 
   /**
