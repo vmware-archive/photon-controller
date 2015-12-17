@@ -12,8 +12,6 @@
 
 import abc
 
-from gen.resource.ttypes import ResourceConstraint
-
 
 class InvalidScheduler(Exception):
     pass
@@ -45,47 +43,3 @@ class BaseScheduler(object):
     def cleanup(self):
         """ Cleanup as part of a scheduler demotion """
         pass
-
-    def _coalesce_resources(self, children):
-        """Coalesce resources by resource type.
-
-        Build the coalesced ResourceConstraint with same type.
-        i.e With multiple input ResourceConstraints, we'll aggregate
-        all the values with same resource type.
-
-        :param children: list of ChildInfo
-        """
-        for child_info in children:
-            # No constraints, skip child
-            if not child_info.constraints:
-                continue
-
-            constraints = {}
-            for constraint in child_info.constraints:
-                if constraint.type not in constraints:
-                    constraints[constraint.type] = set()
-                constraints[constraint.type].update(set(constraint.values))
-
-            child_info.constraints = []
-
-            for constraint_type, values in constraints.iteritems():
-                child_info.constraints.append(
-                    ResourceConstraint(constraint_type, list(values)))
-
-    def _collect_constraints(self, resource):
-        """ Get resource constraints from placement request's resource
-
-        :param resource: resource.Resource, the resource to be placed
-        :return: set of ResourceConstraint
-        """
-        thrift_constraints = set()
-        if resource:
-            if resource.vm and resource.vm.resource_constraints:
-                thrift_constraints = thrift_constraints.union(
-                    resource.vm.resource_constraints)
-            if resource.disks:
-                for disk in resource.disks:
-                    if disk.resource_constraints:
-                        thrift_constraints = thrift_constraints.union(
-                            disk.resource_constraints)
-        return list(thrift_constraints)
