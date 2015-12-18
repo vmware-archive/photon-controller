@@ -533,6 +533,11 @@ Vagrant.configure("2") do |config|
     -e HAPROXY_IP="#{network_ip}" --entrypoint /bin/bash devbox/haproxy /etc/haproxy/run.sh
   EOS
 
+  #
+  # Create images directory
+  #
+  config.vm.provision "shell" , inline: "mkdir -p /var/photon/images"
+
   # ================ ESXCLOUD SERVICES ================
 
   #
@@ -602,6 +607,7 @@ Vagrant.configure("2") do |config|
         -v /vagrant/log/#{service}/script_logs:/vagrant/log/script_logs \
         -v #{ESXCLOUD_DIR}:#{ESXCLOUD_DIR} #{datastore_mapped_dir_setting} \
         -v /esxcloud/java/distributions/configurations/configuration-#{service_name}:/etc/esxcloud \
+        -v /var/photon/images:/var/photon/images \
         --entrypoint /bin/bash #{image_name} /etc/esxcloud/run.sh
     EOS
   end
