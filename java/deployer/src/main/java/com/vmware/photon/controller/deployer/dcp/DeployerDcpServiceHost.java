@@ -30,6 +30,8 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.ListeningExecutorServiceProvider;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactoryProvider;
+import com.vmware.photon.controller.deployer.dcp.cache.CachedDeploymentFactoryService;
+import com.vmware.photon.controller.deployer.dcp.cache.CachedHostFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
@@ -202,6 +204,10 @@ public class DeployerDcpServiceHost
 
       // Discovery
       RootNamespaceService.class,
+
+      // Caching
+      CachedDeploymentFactoryService.class,
+      CachedHostFactoryService.class,
   };
 
   private static final int DEFAULT_TASK_LIMIT = 8;
