@@ -49,8 +49,6 @@ import java.util.Map;
  */
 public class UploadVibTaskService extends StatefulService {
 
-  private HostService.State hostState;
-
   /**
    * This value defines the document state associated with a {@link UploadVibTaskService} task.
    */
@@ -154,10 +152,6 @@ public class UploadVibTaskService extends StatefulService {
   }
 
   private void processStartedStage(State currentState) {
-    if (this.hostState != null) {
-      processUploadVib(currentState, this.hostState);
-      return;
-    }
 
     HostUtils.getCloudStoreHelper(this)
         .createGet(currentState.hostServiceLink)
@@ -168,8 +162,7 @@ public class UploadVibTaskService extends StatefulService {
           }
 
           try {
-            this.hostState = op.getBody(HostService.State.class);
-            processUploadVib(currentState, this.hostState);
+            processUploadVib(currentState, op.getBody(HostService.State.class));
           } catch (Throwable t) {
             failTask(t);
           }
