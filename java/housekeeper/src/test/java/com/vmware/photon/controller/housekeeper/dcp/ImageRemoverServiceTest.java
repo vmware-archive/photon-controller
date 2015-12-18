@@ -38,6 +38,7 @@ import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.ServiceStats;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.QueryTask;
 
@@ -838,16 +839,25 @@ public class ImageRemoverServiceTest {
       ImageRemoverService.State startState = buildValidStartupState(
           ImageRemoverService.TaskState.TaskStage.STARTED, ImageRemoverService.TaskState.SubStage.AWAIT_COMPLETION);
 
+      // seed the host with ImageDeleteService instances in appropriate states
       for (int i = 0; failedOrCanceledDeletes != null && i < failedOrCanceledDeletes; i++) {
         if (i % 2 == 0) {
-          buildImageDeleteService(ImageRemoverService.TaskState.TaskStage.FAILED);
+          buildImageDeleteService(ImageRemoverService.TaskState.TaskStage.FAILED, TestHost.SERVICE_URI);
         } else {
-          buildImageDeleteService(ImageRemoverService.TaskState.TaskStage.CANCELLED);
+          buildImageDeleteService(ImageRemoverService.TaskState.TaskStage.CANCELLED, TestHost.SERVICE_URI);
         }
       }
 
       for (int i = 0; finishedDeletes != null && i < finishedDeletes; i++) {
-        buildImageDeleteService(ImageRemoverService.TaskState.TaskStage.FINISHED);
+        buildImageDeleteService(ImageRemoverService.TaskState.TaskStage.FINISHED, TestHost.SERVICE_URI);
+      }
+
+      // create a few instances of ImageDeleteService with different "parent"
+      for (int i = 0; i < 5; i++) {
+        buildImageDeleteService(ImageRemoverService.TaskState.TaskStage.STARTED, "/some-other-parent");
+        buildImageDeleteService(ImageRemoverService.TaskState.TaskStage.FINISHED, "/some-other-parent");
+        buildImageDeleteService(ImageRemoverService.TaskState.TaskStage.FAILED, "/some-other-parent");
+        buildImageDeleteService(ImageRemoverService.TaskState.TaskStage.CANCELLED, "/some-other-parent");
       }
 
       startState.isSelfProgressionDisabled = false;
@@ -897,9 +907,10 @@ public class ImageRemoverServiceTest {
      * @param stage Completion stage for ImageDeleteService instances.
      * @throws Throwable
      */
-    private void buildImageDeleteService(ImageRemoverService.TaskState.TaskStage stage) throws Throwable {
+    private void buildImageDeleteService(ImageRemoverService.TaskState.TaskStage stage, String parentLink) throws
+        Throwable {
       ImageDeleteService.State task = new ImageDeleteService.State();
-      task.parentLink = TestHost.SERVICE_URI;
+      task.parentLink = parentLink;
       task.image = "image1";
       task.dataStore = "data-store-id";
       task.isSelfProgressionDisabled = true;
