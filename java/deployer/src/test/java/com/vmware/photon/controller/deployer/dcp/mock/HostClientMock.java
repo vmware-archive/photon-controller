@@ -37,6 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -132,6 +133,7 @@ public class HostClientMock extends HostClient {
       List<String> networks,
       String hostAddress,
       int hostPort,
+      Map<String, String> environment,
       List<String> chairmanServerList,
       double memoryOvercommit,
       String loggingEndpoint,

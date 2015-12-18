@@ -121,6 +121,9 @@ struct ProvisionRequest {
   // Address update will result in agent restart.
   5: optional server_address.ServerAddress address
 
+  // Optional key, value environment variables intepreted by the agent.
+  6: optional map<string, string> environment
+
   // List of chairman services.
   7: optional list<server_address.ServerAddress> chairman_server
 

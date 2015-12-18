@@ -201,6 +201,12 @@ class AgentConfig(object):
             reboot |= self._check_and_set_attr(
                 self.IMAGE_DATASTORES, image_datastores)
 
+        if (provision_req.environment):
+            self._logger.info(provision_req.environment)
+            for k in provision_req.environment:
+                reboot |= self._check_and_set_attr(
+                    k, provision_req.environment[k])
+
         if provision_req.management_only:
             reboot |= self._check_and_set_attr(
                 self.MANAGEMENT_ONLY,

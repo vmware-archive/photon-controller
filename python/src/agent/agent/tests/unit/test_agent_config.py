@@ -157,6 +157,8 @@ class TestUnitAgent(unittest.TestCase):
         req.chairman_server = [ServerAddress("h1", 13000),
                                ServerAddress("h2", 13000)]
         req.address = addr
+        req.environment = {}
+        req.environment["hypervisor"] = "fake"
         req.host_id = "host1"
         self.agent.update_config(req)
 
@@ -165,6 +167,7 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.host_port, equal_to(2345))
         assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
         assert_that(self.agent.networks, equal_to(["Public"]))
+        assert_that(self.agent.options.hypervisor, equal_to("fake"))
         assert_that(self.agent.chairman_list,
                     equal_to([ServerAddress("h1", 13000),
                               ServerAddress("h2", 13000)]))
@@ -204,6 +207,8 @@ class TestUnitAgent(unittest.TestCase):
         req.chairman_server = [ServerAddress("h1", 13000),
                                ServerAddress("h2", 13000)]
         req.address = addr
+        req.environment = {}
+        req.environment["hypervisor"] = "fake"
 
         # Verify an exception is raised.
         self.assertRaises(InvalidConfig, self.agent.update_config, req)
@@ -231,6 +236,8 @@ class TestUnitAgent(unittest.TestCase):
         req.networks = ["Public"]
         addr = ServerAddress(host="localhost", port=2345)
         req.address = addr
+        req.environment = {}
+        req.environment["hypervisor"] = "fake"
         self.agent.update_config(req)
         # Verify that the bootstrap is still false as zk config is not
         # specified.
@@ -243,6 +250,8 @@ class TestUnitAgent(unittest.TestCase):
         req.networks = ["Public"]
         addr = ServerAddress(host="localhost", port=2345)
         req.address = addr
+        req.environment = {}
+        req.environment["hypervisor"] = "fake"
         self.agent.update_config(req)
         self.assertTrue(self.agent.reboot_required)
 

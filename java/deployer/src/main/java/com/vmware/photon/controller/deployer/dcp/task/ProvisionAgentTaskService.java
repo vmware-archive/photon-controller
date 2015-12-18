@@ -311,6 +311,7 @@ public class ProvisionAgentTaskService extends StatefulService {
           networks,
           hostState.hostAddress,
           hostState.agentPort,
+          null, // environment map is not implemented
           new ArrayList<>(currentState.chairmanServerList),
           0, // memory overcommit is not implemented
           deploymentState.syslogEndpoint,
