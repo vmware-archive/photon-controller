@@ -162,11 +162,11 @@ if [ -n "$DISABLE_HOUSEKEEPER" ]; then
   bundle exec rake housekeeper
 fi
 
-if [ "$DEPLOYER_INTEGRATION_TEST" ]; then
-  bundle exec rake deployer
-fi
-
 if [ -z "$DISABLE_CLUSTER_INTEGRATION" ]; then
   env
   bundle exec parallel_rspec -o '--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow' -- spec/api/cluster/*_spec.rb
+fi
+
+if [ -z "$DISABLE_DEPLOYER" ]; then
+  bundle exec rake deployer
 fi
