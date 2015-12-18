@@ -57,6 +57,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class ProvisionAgentTaskService extends StatefulService {
 
+  private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
+  private static final String DEFAULT_AGENT_LOG_LEVEL = "debug";
+  private static final String DEFAULT_AVAILABILITY_ZONE = "1";
+
   private DeploymentService.State deploymentState;
   private HostService.State hostState;
 
@@ -283,10 +287,6 @@ public class ProvisionAgentTaskService extends StatefulService {
   //
   // PROVISION_AGENT sub-stage routines
   //
-
-  private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
-  private static final String DEFAULT_AGENT_LOG_LEVEL = "debug";
-  private static final String DEFAULT_AVAILABILITY_ZONE = "1";
 
   private void processProvisionAgentSubStage(State currentState,
                                              DeploymentService.State deploymentState,
