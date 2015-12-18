@@ -34,8 +34,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.HttpHeaders;
 
-import java.net.URISyntaxException;
-
 /**
  * Custom RequestFilter used for Authentication and Authorization.
  * Reads Auth 2.0 access token from the request header.
@@ -185,7 +183,7 @@ public class AuthFilter implements ContainerRequestFilter {
         if (this.tokenHandler == null) {
           try {
             this.tokenHandler = new AuthOIDCClient(authServerAddress, authServerPort, tenant).getTokenHandler();
-          } catch (AuthException | URISyntaxException ex) {
+          } catch (AuthException ex) {
             throw new ExternalException(
                 ErrorCode.AUTH_INITIALIZATION_FAILURE, "AuthTokenHandler initialization failed", null, ex);
           }
