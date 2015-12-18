@@ -254,6 +254,7 @@ public class DockerProvisioner {
       //
       createContainerCmd = createContainerCmd.withEntrypoint(DeployerDefaults.LIGHTWAVE_ENTRYPOINT);
     } else {
+      createContainerCmd = createContainerCmd.withEntrypoint(DeployerDefaults.DEFAULT_ENTRYPOINT);
       if (command != null) {
         createContainerCmd = createContainerCmd.withCmd(command);
       }
