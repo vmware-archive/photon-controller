@@ -162,7 +162,7 @@ if [ -n "$DISABLE_HOUSEKEEPER" ]; then
   bundle exec rake housekeeper
 fi
 
-if [ "$DEPLOYER_INTEGRATION_TEST" ]; then
+if [ -n "$DISABLE_DEPLOYER" ]; then
   bundle exec rake deployer
 fi
 

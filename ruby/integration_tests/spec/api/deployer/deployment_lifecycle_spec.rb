@@ -54,19 +54,27 @@ describe "deployment lifecycle", order: :defined, deployer: true do
         true)
   end
 
+  after(:all) do
+    system_cleaner = EsxCloud::SystemCleaner.new(api_client)
+    system_cleaner.clean_system
+  end
+
   it 'should deploy esxcloud successfully' do
     deployment = EsxCloud::Deployment.create(deployment_spec)
     host = EsxCloud::Host.create(deployment.id, host_spec)
+    api_client.deploy_deployment(deployment.id)
 
     # Verify that deployment succeeded
     task_list = api_client.find_tasks(deployment.id, "deployment", "COMPLETED")
     tasks = task_list.items
-    expect(tasks.size).to eq(1)
-    task = tasks.first
+    expect(tasks.size).to eq(2)
+
+    perform_deployment_task = tasks.select {|task| task.operation == "PERFORM_DEPLOYMENT" }
+    expect(perform_deployment_task).not_to be_nil
 
     # Verify deployment has no errors and warnings
-    expect(task.errors).to be_empty
-    expect(task.warnings).to be_empty
+    expect(perform_deployment_task.errors).to be_empty
+    expect(perform_deployment_task.warnings).to be_empty
 
     load_balancer_ip = nil
 
@@ -79,18 +87,18 @@ describe "deployment lifecycle", order: :defined, deployer: true do
       end
     end
 
-   # expect(load_balancer_ip).not_to be_nil
+    expect(load_balancer_ip).not_to be_nil
 
-    # # Verify the system status of all the deployed components
-    # lb_client = ApiClientHelper.management(address: load_balancer_ip)
-    # system_status = lb_client.get_status
-    # expect(system_status.status).to eq("READY")
-    # expect(system_status.components.size).to eq(5)
-    #
-    # system_status.components.each do |component|
-    #   expect(component.name).not_to be_nil
-    #   expect(component.status).to eq("READY")
-    # end
+    # Verify the system status of all the deployed components
+    lb_client = ApiClientHelper.management(address: load_balancer_ip)
+    system_status = lb_client.get_status
+    expect(system_status.status).to eq("READY")
+    expect(system_status.components.size).to eq(5)
+
+    system_status.components.each do |component|
+      expect(component.name).not_to be_nil
+      expect(component.status).to eq("READY")
+    end
 
     # Add management host
     EsxCloud::Host.delete host.id
@@ -105,35 +113,6 @@ describe "deployment lifecycle", order: :defined, deployer: true do
     task = tasks.first
     expect(task.errors).to be_empty
     expect(task.warnings).to be_empty
-  end
-
-  it 'should delete deployment successfully' do
-    # Delete deployment
-    deployments = EsxCloud::Deployment.find_all.items
-    deployment = deployments[0]
-    EsxCloud::Deployment.delete deployment.id
-
-    # Verify that delete deployment succeeded
-    task_list = api_client.find_tasks(deployment.id, "deployment", "COMPLETED")
-    tasks = task_list.items
-    delete_tasks = tasks.select {|task| task.operation == "DELETE_DEPLOYMENT" }
-    expect(delete_tasks.size).to eq(1)
-    task = delete_tasks.first
-
-    # Verify that delete deployment has no errors and warnings
-    expect(task.errors).to be_empty
-    expect(task.warnings).to be_empty
-
-    # Delete hosts
-    hosts = EsxCloud::Host.find_all.items
-    host = hosts[0]
-    EsxCloud::Host.delete host.id
-
-    # Verify that delete deployment has cleaned up everything
-    system_cleaner = EsxCloud::SystemCleaner.new(api_client)
-    stat = system_cleaner.clean_system
-
-    fail EsxCloud::Error, "Expect no garbage to be cleaned but found some: #{stat.inspect}" unless stat.empty?
   end
 
   private
