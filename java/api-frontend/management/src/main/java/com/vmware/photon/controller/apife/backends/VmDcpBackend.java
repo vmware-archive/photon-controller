@@ -454,7 +454,7 @@ public class VmDcpBackend implements VmBackend {
 
     TaskEntity task = taskBackend.createTaskWithSteps(vm, operation, false, stepEntities);
     for (BaseEntity entity : entityList) {
-      task.getLockableEntityIds().add(entity.getId());
+      task.getToBeLockedEntityIds().add(entity.getId());
     }
 
     logger.info("created Task: {}", task);
@@ -802,7 +802,7 @@ public class VmDcpBackend implements VmBackend {
     step.setOperation(Operation.CREATE_VM);
 
     TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.CREATE_VM, false, stepEntities);
-    task.getLockableEntityIds().add(vm.getId());
+    task.getToBeLockedEntityIds().add(vm.getId());
     return task;
   }
 
@@ -958,7 +958,7 @@ public class VmDcpBackend implements VmBackend {
     step.setOperation(Operation.DELETE_VM);
 
     TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.DELETE_VM, false, stepEntities);
-    task.getLockableEntityIds().add(vm.getId());
+    task.getToBeLockedEntityIds().add(vm.getId());
     return task;
   }
 
@@ -973,7 +973,7 @@ public class VmDcpBackend implements VmBackend {
     step.setOperation(op);
 
     TaskEntity task = taskBackend.createTaskWithSteps(vm, op, false, stepEntities);
-    task.getLockableEntityIds().add(vm.getId());
+    task.getToBeLockedEntityIds().add(vm.getId());
     return task;
   }
 
@@ -998,8 +998,8 @@ public class VmDcpBackend implements VmBackend {
 
     TaskEntity task = taskBackend.createTaskWithSteps(vmEntity, Operation.ATTACH_ISO, false, stepEntities);
 
-    task.getLockableEntityIds().add(isoEntity.getId());
-    task.getLockableEntityIds().add(vmEntity.getId());
+    task.getToBeLockedEntityIds().add(isoEntity.getId());
+    task.getToBeLockedEntityIds().add(vmEntity.getId());
 
     return task;
   }
@@ -1014,7 +1014,7 @@ public class VmDcpBackend implements VmBackend {
     step.setOperation(Operation.DETACH_ISO);
 
     TaskEntity task = taskBackend.createTaskWithSteps(vmEntity, Operation.DETACH_ISO, false, stepEntities);
-    task.getLockableEntityIds().add(vmEntity.getId());
+    task.getToBeLockedEntityIds().add(vmEntity.getId());
 
     logger.info("created Task: {}", task);
     return task;
@@ -1034,7 +1034,7 @@ public class VmDcpBackend implements VmBackend {
     step.setOperation(Operation.CREATE_VM_IMAGE);
 
     TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.CREATE_VM_IMAGE, false, stepEntities);
-    task.getLockableEntityIds().add(vm.getId());
+    task.getToBeLockedEntityIds().add(vm.getId());
 
     BackendHelpers.createReplicateImageStep(taskBackend, image, task);
     return task;

@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
+import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.DcpBackendTestHelper;
 import com.vmware.photon.controller.apife.backends.DcpBackendTestModule;
@@ -58,6 +59,7 @@ import com.vmware.photon.controller.scheduler.gen.FindResponse;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.mockito.InOrder;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -68,14 +70,16 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.doThrow;
+import static org.powermock.api.mockito.PowerMockito.spy;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
-import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -229,6 +233,102 @@ public class TaskCommandTest {
   @AfterMethod
   public void tearDown() throws Throwable {
     commonHostDocumentsCleanup();
+  }
+
+  /**
+   * Tests for entity lock management.
+   */
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
+  public static class TaskLockTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private EntityLockBackend entityLockBackend;
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    private TaskCommand command1;
+    private TaskCommand command2;
+
+    @BeforeMethod
+    public void setUp() throws Exception {
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+
+      TaskBackend taskBackend = mock(TaskBackend.class);
+      TaskEntity task1 = new TaskEntity();
+      task1.setId(UUID.randomUUID().toString());
+      String lockId = UUID.randomUUID().toString();
+      task1.getToBeLockedEntityIds().add(lockId);
+
+      TaskEntity task2 = new TaskEntity();
+      task2.setId(UUID.randomUUID().toString());
+      task2.getToBeLockedEntityIds().add(lockId);
+
+      command1 = spy(new TaskCommand(mock(RootSchedulerClient.class),
+          mock(HostClient.class),
+          mock(HousekeeperClient.class),
+          mock(DeployerClient.class),
+          entityLockBackend,
+          task1));
+      command1.setTaskBackend(taskBackend);
+
+      command2 = spy(new TaskCommand(mock(RootSchedulerClient.class),
+          mock(HostClient.class),
+          mock(HousekeeperClient.class),
+          mock(DeployerClient.class),
+          entityLockBackend,
+          task2));
+      command2.setTaskBackend(taskBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @Test
+    public void testThrowConcurrentExceptionWhenLockAlreadyExists() throws Exception {
+      command1.markAsStarted();
+      try {
+        command2.markAsStarted();
+        Assert.fail("ConcurrentTaskException was expected");
+      } catch (ConcurrentTaskException e) {
+        // do nothing
+      }
+    }
+
+    @Test
+    public void testLockAcquisitionByTaskWhenItAlreadyOwnsTheExistingLock() throws Exception {
+      command1.markAsStarted();
+      command1.markAsStarted();
+    }
+
+    @Test
+    public void testTaskOnlyCleansUpLocksThatItOwns() throws Exception {
+      command1.markAsStarted();
+      command2.run();
+      try {
+        command2.markAsStarted();
+        Assert.fail("ConcurrentTaskException was expected");
+      } catch (ConcurrentTaskException e) {
+        //do nothing
+      }
+    }
+
+    @Test
+    public void testCleansUpOfLocksWhenTaskFails() throws Exception {
+      doThrow(new ApiFeException()).when(command1).execute();
+      command1.run();
+      command2.run();
+    }
   }
 
   @Test

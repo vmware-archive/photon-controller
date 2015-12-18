@@ -577,8 +577,8 @@ public class VmDcpBackendTest {
           is(projectId));
       assertThat(createdVmTaskEntity.getSteps().get(1).getOperation(),
           is(com.vmware.photon.controller.api.Operation.CREATE_VM));
-      assertThat(createdVmTaskEntity.getLockableEntityIds().size(), is(1));
-      assertThat(createdVmTaskEntity.getLockableEntityIds().get(0), is(vmId));
+      assertThat(createdVmTaskEntity.getToBeLockedEntityIds().size(), is(1));
+      assertThat(createdVmTaskEntity.getToBeLockedEntityIds().get(0), is(vmId));
 
       VmEntity vm = vmDcpBackend.findById(vmId);
       assertThat(vm, is(notNullValue()));
@@ -690,8 +690,8 @@ public class VmDcpBackendTest {
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
       assertThat(task.getSteps().size(), is(1));
       assertThat(task.getSteps().get(0).getOperation(), is(com.vmware.photon.controller.api.Operation.DELETE_VM));
-      assertThat(task.getLockableEntityIds().size(), is(1));
-      assertThat(task.getLockableEntityIds().get(0), is(vmId));
+      assertThat(task.getToBeLockedEntityIds().size(), is(1));
+      assertThat(task.getToBeLockedEntityIds().get(0), is(vmId));
     }
 
     @Test
@@ -777,9 +777,9 @@ public class VmDcpBackendTest {
       IsoEntity iso = (IsoEntity) task.getSteps().get(0).getTransientResourceEntities().get(1);
       assertThat(iso.getName(), is(isoName));
 
-      assertThat(task.getLockableEntityIds().size(), is(2));
-      assertThat(task.getLockableEntityIds().get(0), is(iso.getId()));
-      assertThat(task.getLockableEntityIds().get(1), is(vmId));
+      assertThat(task.getToBeLockedEntityIds().size(), is(2));
+      assertThat(task.getToBeLockedEntityIds().get(0), is(iso.getId()));
+      assertThat(task.getToBeLockedEntityIds().get(1), is(vmId));
     }
 
     @Test

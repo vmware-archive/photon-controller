@@ -139,8 +139,8 @@ public class ImageDcpBackendTest {
     assertThat(imageEntity.getState(), is(ImageState.CREATING));
     assertThat(imageEntity.getReplicationType(), is(replicationType));
 
-    assertThat(task.getLockableEntityIds().size(), is(1));
-    assertThat(task.getLockableEntityIds().get(0), is(task.getEntityId()));
+    assertThat(task.getToBeLockedEntityIds().size(), is(1));
+    assertThat(task.getToBeLockedEntityIds().get(0), is(task.getEntityId()));
 
     return imageEntity;
   }
