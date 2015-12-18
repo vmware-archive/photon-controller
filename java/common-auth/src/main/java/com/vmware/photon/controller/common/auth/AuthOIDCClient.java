@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.common.auth;
 
-import com.vmware.identity.openidconnect.client.AdminServerException;
-import com.vmware.identity.openidconnect.client.AuthenticationFrameworkHelper;
 import com.vmware.identity.openidconnect.client.ClientConfig;
 import com.vmware.identity.openidconnect.client.ClientID;
 import com.vmware.identity.openidconnect.client.ClientRegistrationHelper;
@@ -25,9 +23,23 @@ import com.vmware.identity.openidconnect.client.OIDCClientException;
 import com.vmware.identity.openidconnect.client.OIDCServerException;
 import com.vmware.identity.openidconnect.client.ProviderMetadata;
 import com.vmware.identity.openidconnect.client.SSLConnectionException;
+import com.vmware.identity.rest.afd.client.AfdClient;
+import com.vmware.identity.rest.core.client.exceptions.ClientException;
+import com.vmware.identity.rest.core.data.CertificateDTO;
 
-import java.net.URISyntaxException;
+import org.apache.http.HttpException;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.TrustStrategy;
+
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
+import java.util.List;
 
 /**
  * General OIDC client metadata.
@@ -37,26 +49,22 @@ public class AuthOIDCClient {
   private int domainControllerPort;
   private String tenant;
   private AuthCertificateStore certificateStore;
-  private AuthenticationFrameworkHelper authenticationFrameworkHelper;
   private ProviderMetadata providerMetadata;
   private RSAPublicKey providerPublicKey;
 
   /**
    * Constructor.
    */
-  public AuthOIDCClient(String domainControllerFQDN, int domainControllerPort, String tenant) throws URISyntaxException,
-      AuthException {
+  public AuthOIDCClient(String domainControllerFQDN, int domainControllerPort, String tenant)
+      throws AuthException {
     try {
       this.domainControllerFQDN = domainControllerFQDN;
       this.domainControllerPort = domainControllerPort;
       this.tenant = tenant;
       this.certificateStore = new AuthCertificateStore();
 
-      authenticationFrameworkHelper = new AuthenticationFrameworkHelper(
-          domainControllerFQDN,
-          domainControllerPort);
-
-      authenticationFrameworkHelper.populateSSLCertificates(certificateStore.getKeyStore());
+      AfdClient afdClient = setSSLTrustPolicy(domainControllerFQDN, domainControllerPort);
+      populateSSLCertificates(afdClient);
 
       MetadataHelper metadataHelper = new MetadataHelper.Builder(domainControllerFQDN)
           .domainControllerPort(this.domainControllerPort)
@@ -65,8 +73,7 @@ public class AuthOIDCClient {
       this.providerMetadata = metadataHelper.getProviderMetadata();
       this.providerPublicKey = metadataHelper.getProviderRSAPublicKey(providerMetadata);
 
-    } catch (AuthException | SSLConnectionException | OIDCClientException | AdminServerException | OIDCServerException
-    e) {
+    } catch (AuthException | SSLConnectionException | OIDCClientException | OIDCServerException e) {
       throw new AuthException("Failed to build client metadata.", e);
     }
   }
@@ -91,6 +98,42 @@ public class AuthOIDCClient {
         getTokenHandler(),
         user,
         password);
+  }
+
+  private AfdClient setSSLTrustPolicy(String domainControllerFQDN, int domainControllerPort)
+      throws AuthException {
+    try {
+      return
+          new AfdClient(domainControllerFQDN,
+              domainControllerPort,
+              NoopHostnameVerifier.INSTANCE,
+              new SSLContextBuilder()
+                  .loadTrustMaterial(null, new TrustStrategy() {
+                    @Override
+                    public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                      return true;
+                    }
+                  }).build());
+
+    } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+      throw new AuthException("Failed to set SSL policy", e);
+    }
+  }
+
+
+  private void populateSSLCertificates(AfdClient afdClient)
+      throws AuthException {
+    try {
+      List<CertificateDTO> certs = afdClient.vecs().getSSLCertificates();
+      int index = 1;
+      for (CertificateDTO cert : certs) {
+        certificateStore.getKeyStore()
+            .setCertificateEntry(String.format("VecsSSLCert%d", index), cert.getX509Certificate());
+        index++;
+      }
+    } catch (KeyStoreException | ClientException | HttpException | IOException e) {
+      throw new AuthException("Failed to populate SSL Certificates", e);
+    }
   }
 
   /**
