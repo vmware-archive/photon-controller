@@ -34,13 +34,18 @@ cd $DEVBOX
 
 vagrant destroy -f
 rm -rf $DEVBOX/log/*
-vagrant up
 
-# seed the database
-(
-  cd $TESTS
-  bundle exec rake cloudstore:seed
-)
+if [ "$DEPLOYER_TEST" ]
+then
+  ./prepare-devbox-deployment.sh
+else
+  vagrant up
+  # seed the database
+  (
+    cd $TESTS
+    bundle exec rake cloudstore:seed
+  )
+fi
 
 # Setup auth-token tool
 if [ -n "$ENABLE_AUTH" ]
@@ -52,11 +57,13 @@ fi
 # Register real agent to devbox
 if [ -n "$REAL_AGENT" ]; then
   echo vagrant ssh -c "sudo WORKSPACE=/esxcloud DEVBOX_PHOTON=1 /esxcloud/python/misc/register_agent $ESX_IP $PUBLIC_NETWORK_IP:13000 $ESX_DATASTORE" -- -T
-  (
-    cd $TESTS
-    bundle exec rake api:seed:host
-  )
-fi
 
+  if [ -z "$DEPLOYER_TEST" ]; then
+    (
+      cd $TESTS
+      bundle exec rake api:seed:host
+    )
+  fi
+fi
 # sleep 30 seconds to wait for root-scheduler to get live child
 sleep 30

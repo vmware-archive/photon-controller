@@ -18,7 +18,6 @@ if [ ! -d $MANAGEMENT_VM_DIR ]
 then
   mkdir $MANAGEMENT_VM_DIR
 else
-  remove_if_exists "/Users/jdobrev/$EXPORTED_OVA_FILE"
   remove_if_exists "$MANAGEMENT_VM_DIR/$EXPORTED_OVA_FILE"
   remove_if_exists "$MANAGEMENT_VM_DIR/$OUTPUT_OVF_FILE"
   remove_if_exists "$MANAGEMENT_VM_DIR/$OUTPUT_VMDK_FILE"
@@ -51,15 +50,23 @@ vagrant up
 vagrant ssh -c "docker tag devbox/zookeeper esxcloud/zookeeper"
 vagrant ssh -c "docker tag devbox/haproxy esxcloud/haproxy"
 vagrant ssh -c "docker tag devbox/deployer esxcloud/deployer"
-vagrant ssh -c "docker tag devbox/cloud-store esxcloud/cloud-store"
-vagrant ssh -c "docker tag devbox/management-api esxcloud/management-api"
-vagrant ssh -c "docker tag devbox/root-scheduler esxcloud/root-scheduler"
+vagrant ssh -c "docker tag devbox/cloud_store esxcloud/cloud-store"
+vagrant ssh -c "docker tag devbox/management_api esxcloud/management-api"
+vagrant ssh -c "docker tag devbox/root_scheduler esxcloud/root-scheduler"
 vagrant ssh -c "docker tag devbox/chairman esxcloud/chairman"
 vagrant ssh -c "docker tag devbox/housekeeper esxcloud/housekeeper"
 
-vagrant suspend
+#
+# Copy the config files and scripts
+#
+vagrant ssh -c "sudo docker cp devbox_deployer_container:/etc/esxcloud-deployer/ /etc/"
+vagrant ssh -c "sudo mkdir -p /usr/lib/esxcloud/deployer/"
+vagrant ssh -c "sudo docker cp devbox_deployer_container:/usr/lib/esxcloud/deployer/scripts/ /usr/lib/esxcloud/deployer/"
+vagrant ssh -c "sudo chmod +x /usr/lib/esxcloud/deployer/scripts/"
 
-photon_vm=$(VBoxManage list vms | grep devbox-photon_photon | sed 's/"\(.*\)".*/\1/')
+photon_vm=$(VBoxManage list runningvms | grep devbox-photon_photon | sed 's/"\(.*\)".*/\1/')
+
+vagrant suspend
 
 VBoxManage export ${photon_vm} -o ../$EXPORTED_OVA_FILE
 
@@ -113,6 +120,10 @@ fi
 sed -i.bak "s/$OLD_OVF_SHA/$NEW_OVF_SHA/" $OUTPUT_MF_FILE
 
 tar cvf $OUTPUT_OVA_FILE $OUTPUT_OVF_FILE $OUTPUT_VMDK_FILE $OUTPUT_MF_FILE
+rm *.ova
+rm *.ovf
+rm *.mf
+rm *.bak
 cd ..
 
 vagrant resume
