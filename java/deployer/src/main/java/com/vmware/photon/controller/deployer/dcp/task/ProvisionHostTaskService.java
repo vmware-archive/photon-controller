@@ -72,10 +72,6 @@ public class ProvisionHostTaskService extends StatefulService {
 
   public static final String SCRIPT_NAME = "esx-install-agent2";
 
-  private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
-  private static final String DEFAULT_AGENT_LOG_LEVEL = "debug";
-  private static final String DEFAULT_AVAILABILITY_ZONE = "1";
-
   private DeploymentService.State deploymentState;
   private HostService.State hostState;
 
@@ -420,25 +416,25 @@ public class ProvisionHostTaskService extends StatefulService {
               sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_AGENT);
             }
           } catch (Throwable t) {
-            retryGetAgentStatusOrFail(currentState, t);
+            retryGetAgentStatusOrFail(currentState, hostState, t);
           }
         }
 
         @Override
         public void onError(Exception e) {
-          retryGetAgentStatusOrFail(currentState, e);
+          retryGetAgentStatusOrFail(currentState, hostState, e);
         }
       });
     } catch (Throwable t) {
-      retryGetAgentStatusOrFail(currentState, t);
+      retryGetAgentStatusOrFail(currentState, hostState, t);
     }
   }
 
-  private void retryGetAgentStatusOrFail(State currentState, Throwable t) {
+  private void retryGetAgentStatusOrFail(State currentState, HostService.State hostState, Throwable t) {
     if (currentState.pollCount + 1 >= currentState.maximumPollCount) {
       ServiceUtils.logSevere(this, t);
       State patchState = buildPatch(TaskState.TaskStage.FAILED, null, new IllegalStateException(
-          "The agent on host " + this.hostState.hostAddress + " failed to become ready after installation after " +
+          "The agent on host " + hostState.hostAddress + " failed to become ready after installation after " +
               Integer.toString(currentState.maximumPollCount) + " retries"));
       patchState.pollCount = currentState.pollCount + 1;
       TaskUtils.sendSelfPatch(this, patchState);
@@ -560,7 +556,6 @@ public class ProvisionHostTaskService extends StatefulService {
     HostService.State patchState = new HostService.State();
     patchState.reportedDatastores = reportedDataStores;
     patchState.reportedImageDatastores = reportedImageDataStores;
-    // patchState.reportedNetworks = reportedNetworks;
     patchState.datastoreServiceLinks = datastoreServiceLinks;
 
     if (hostConfig.isSetCpu_count()) {
