@@ -20,8 +20,10 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
@@ -32,6 +34,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -358,159 +361,65 @@ public class ImageRemoverService extends StatefulService {
       return;
     }
 
-    // determine if we have already received answers from queries that check for completion
-    // of ImageDeleteService instances
-    boolean isFirstCheck = current.finishedDeletes == null
-        && current.failedOrCanceledDeletes == null;
-
-    if (isFirstCheck || patch.finishedDeletes != null) {
-      // issue the query to get the count of finished ImageDeleteService instances,
-      // because we either have not yet run the query yet or we have just processed the patch
-      // from the previous query
-      getHost().schedule(new Runnable() {
-        @Override
-        public void run() {
-          checkFailedOrCancelledCount(current);
-        }
-      }, current.queryPollDelay, TimeUnit.MILLISECONDS);
-    }
-
-    if (patch.failedOrCanceledDeletes != null) {
-      // issue the query to get the count of failed or cancelled ImageDeleteService instances,
-      // because we either have not run the query yet or we have just processed the patch
-      // from the previous query
-      getHost().schedule(new Runnable() {
-        @Override
-        public void run() {
-          checkFinishedCount(current);
-        }
-      }, current.queryPollDelay, TimeUnit.MILLISECONDS);
-    }
+    getHost().schedule(() -> {
+      this.checkStatus(current);
+    }, current.queryPollDelay, TimeUnit.MILLISECONDS);
   }
 
   /**
-   * Triggers a query to retrieve the "child" ImageDeleteService instances in FINISHED state.
-   *
+   * Issues the queries to
    * @param current
    */
-  private void checkFinishedCount(final State current) {
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation completedOp, Throwable failure) {
-        if (failure != null) {
-          // The query failed to execute. This most likely means that the
-          // host is in a bad state and if we re-issue the query it is likely
-          // to fail again. Terminate and fail the task early and delegate any
-          // retry logic to the caller.
-          failTask(failure);
-          return;
-        }
+  private void checkStatus(final State current) {
+    Operation finished = this.buildChildQueryOperation(TaskState.TaskStage.FINISHED);
+    Operation failedOrCanceled = this.buildChildQueryOperation(
+        TaskState.TaskStage.FAILED, TaskState.TaskStage.CANCELLED);
 
-        QueryTask rsp = completedOp.getBody(QueryTask.class);
+    OperationJoin.JoinedCompletionHandler handler = (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+      if (failures != null && !failures.isEmpty()) {
+        failTask(failures.values().iterator().next());
+        return;
+      }
+
+      try {
+        QueryTask finishedRsp = ops.get(finished.getId()).getBody(QueryTask.class);
+        QueryTask failedOrCanceledRsp = ops.get(failedOrCanceled.getId()).getBody(QueryTask.class);
 
         State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
-        s.finishedDeletes = rsp.results.documentLinks.size();
+        s.finishedDeletes = finishedRsp.results.documentLinks.size();
+        s.failedOrCanceledDeletes = failedOrCanceledRsp.results.documentLinks.size();
+
         sendSelfPatch(s);
+      } catch(Throwable e) {
+        failTask(e);
       }
     };
 
-    QueryTask.QuerySpecification spec =
-        QueryTaskUtils.buildChildServiceTaskStatusQuerySpec(
-            this.getSelfLink(), ImageDeleteService.State.class, TaskState.TaskStage.FINISHED);
-
-    this.sendQuery(spec, handler);
+    OperationJoin
+        .create(finished, failedOrCanceled)
+        .setCompletion(handler)
+        .sendWith(this);
   }
 
   /**
-   * Triggers a query to retrieve the "child" ImageDeleteService instances in FAILED or CANCELLED state.
+   * Creates a query operation for ImageDeleteServices in the specified states.
    *
-   * @param current
+   * @param stages
+   * @return
    */
-  private void checkFailedOrCancelledCount(final State current) {
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation completedOp, Throwable failure) {
-        if (failure != null) {
-          // The query failed to execute. This most likely means that the
-          // host is in a bad state and if we re-issue the query it is likely
-          // to fail again. Terminate and fail the task early and delegate any
-          // retry logic to the caller.
-          failTask(failure);
-          return;
-        }
-
-        QueryTask rsp = completedOp.getBody(QueryTask.class);
-
-        State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
-        s.failedOrCanceledDeletes = rsp.results.documentLinks.size();
-        sendSelfPatch(s);
-      }
-    };
-
+  private Operation buildChildQueryOperation(TaskState.TaskStage... stages) {
     QueryTask.QuerySpecification spec =
         QueryTaskUtils.buildChildServiceTaskStatusQuerySpec(
             this.getSelfLink(),
             ImageDeleteService.State.class,
-            TaskState.TaskStage.FAILED,
-            TaskState.TaskStage.CANCELLED);
-
-    this.sendQuery(spec, handler);
-  }
-
-  /**
-   * This method sends a DCP query.
-   *
-   * @param spec
-   * @param handler
-   */
-  private void sendQuery(final QueryTask.QuerySpecification spec, final Operation.CompletionHandler handler) {
-    QueryTask task = QueryTask.create(spec)
-        .setDirect(true);
-
-    Operation queryPost = Operation
-        .createPost(UriUtils.buildUri(getHost(), LuceneQueryTaskFactoryService.SELF_LINK))
-        .setBody(task)
-        .setCompletion(handler);
-
-    sendRequest(queryPost);
-  }
-
-  /**
-   * Triggers a query task with the spec passed as parameters and calls the StateUpdater param on success.
-   *
-   * @param current
-   * @param spec
-   * @param updater
-   */
-  private void sendQuery(final State current, QueryTask.QuerySpecification spec, final StateUpdater updater) {
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation completedOp, Throwable failure) {
-        if (failure != null) {
-          // The query failed to execute. This most likely means that the
-          // host is in a bad state and if we re-issue the query it is likely
-          // to fail again. Terminate and fail the task early and delegate any
-          // retry logic to the caller.
-          failTask(failure);
-          return;
-        }
-
-        QueryTask rsp = completedOp.getBody(QueryTask.class);
-
-        State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
-        updater.update(s, rsp);
-        sendSelfPatch(s);
-      }
-    };
+            stages);
 
     QueryTask task = QueryTask.create(spec)
         .setDirect(true);
 
-    Operation queryPost = Operation
+    return Operation
         .createPost(UriUtils.buildUri(getHost(), LuceneQueryTaskFactoryService.SELF_LINK))
-        .setBody(task)
-        .setCompletion(handler);
-    sendRequest(queryPost);
+        .setBody(task);
   }
 
   /**
@@ -573,13 +482,6 @@ public class ImageRemoverService extends StatefulService {
     }
 
     return s;
-  }
-
-  /**
-   * Interface for state updater objects.
-   */
-  interface StateUpdater {
-    void update(State state, Object value);
   }
 
   /**
