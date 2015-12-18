@@ -34,7 +34,7 @@ cd $DEVBOX
 
 vagrant destroy -f
 rm -rf $DEVBOX/log/*
-vagrant up
+./prepare-devbox-deployment.sh
 
 # seed the database
 (

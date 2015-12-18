@@ -116,6 +116,10 @@ fi
 
 bundle exec rake zookeeper
 
+if [ -z "$DISABLE_DEPLOYER" ]; then
+  bundle exec rake deployer
+fi
+
 # API tests
 bundle exec rake esxcloud:authorization
 
@@ -160,10 +164,6 @@ bundle exec rake esxcloud:life_cycle
 # run the housekeeper integration test
 if [ -n "$DISABLE_HOUSEKEEPER" ]; then
   bundle exec rake housekeeper
-fi
-
-if [ "$DEPLOYER_INTEGRATION_TEST" ]; then
-  bundle exec rake deployer
 fi
 
 if [ -z "$DISABLE_CLUSTER_INTEGRATION" ]; then
