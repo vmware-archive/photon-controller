@@ -34,13 +34,18 @@ cd $DEVBOX
 
 vagrant destroy -f
 rm -rf $DEVBOX/log/*
-vagrant up
 
-# seed the database
-(
-  cd $TESTS
-  bundle exec rake cloudstore:seed
-)
+if [ "$DEPLOYER_TEST" ]
+then
+  ./prepare-devbox-deployment.sh
+else
+  vagrant up
+  # seed the database
+  (
+    cd $TESTS
+    bundle exec rake cloudstore:seed
+  )
+fi
 
 # Setup auth-token tool
 if [ -n "$ENABLE_AUTH" ]
