@@ -59,6 +59,7 @@ public class EntityLockDcpBackend implements EntityLockBackend {
 
     try {
       dcpClient.post(EntityLockServiceFactory.SELF_LINK, state);
+      task.getLockedEntityIds().add(entityId);
       logger.info("Entity Lock with entityId : {} and taskId: {} has been set", state.entityId, state.taskId);
     } catch (DcpRuntimeException e) {
       //re-throw any exception other than a conflict which indicated the lock already exists
@@ -87,7 +88,7 @@ public class EntityLockDcpBackend implements EntityLockBackend {
         throw new ConcurrentTaskException();
       }
 
-      logger.info("Ignoring lock conflict for entityId : {} because task id : {} already owns the it",
+      logger.info("Ignoring lock conflict for entityId : {} because task id : {} already owns it",
           entityId, task.getId());
     }
   }
@@ -95,18 +96,18 @@ public class EntityLockDcpBackend implements EntityLockBackend {
   @Override
   public void clearTaskLocks(TaskEntity task) {
     checkNotNull(task, "TaskEntity cannot be null.");
-    List<String> failedToDeleteLockableEntityIds = new ArrayList<>();
-    for (String lockableEntityId : task.getLockableEntityIds()) {
-      String lockUrl = EntityLockServiceFactory.SELF_LINK + "/" + lockableEntityId;
+    List<String> failedToDeleteLockedEntityIds = new ArrayList<>();
+    for (String lockedEntityId : task.getLockedEntityIds()) {
+      String lockUrl = EntityLockServiceFactory.SELF_LINK + "/" + lockedEntityId;
       try {
         dcpClient.delete(lockUrl, new EntityLockService.State());
         logger.info("Entity Lock with taskId : {} and url : {} has been cleared", task.getId(), lockUrl);
       } catch (Throwable swallowedException) {
-        failedToDeleteLockableEntityIds.add(lockableEntityId);
+        failedToDeleteLockedEntityIds.add(lockedEntityId);
         logger.error("Failed to delete entity lock with url: " + lockUrl, swallowedException);
       }
     }
-    task.setLockableEntityIds(failedToDeleteLockableEntityIds);
+    task.setLockedEntityIds(failedToDeleteLockedEntityIds);
   }
 
   private EntityLockService.State getByEntityId(String entityId) throws DocumentNotFoundException {

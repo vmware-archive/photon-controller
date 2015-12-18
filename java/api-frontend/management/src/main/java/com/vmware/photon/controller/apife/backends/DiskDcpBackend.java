@@ -224,7 +224,7 @@ public class DiskDcpBackend implements DiskBackend {
 
     TaskEntity task = taskBackend.createTaskWithSteps(diskEntity, Operation.CREATE_DISK, false, stepEntities);
 
-    task.getLockableEntityIds().add(diskEntity.getId());
+    task.getToBeLockedEntityIds().add(diskEntity.getId());
     return task;
   }
 
@@ -384,7 +384,7 @@ public class DiskDcpBackend implements DiskBackend {
     step.setOperation(Operation.DELETE_DISK);
 
     TaskEntity task = taskBackend.createTaskWithSteps(disk, Operation.DELETE_DISK, false, stepEntities);
-    task.getLockableEntityIds().add(disk.getId());
+    task.getToBeLockedEntityIds().add(disk.getId());
     return task;
   }
 

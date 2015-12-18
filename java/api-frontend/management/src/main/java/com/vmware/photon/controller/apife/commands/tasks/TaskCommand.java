@@ -106,8 +106,8 @@ public class TaskCommand extends BaseCommand {
   @Override
   protected void markAsStarted() throws TaskNotFoundException, ConcurrentTaskException {
     taskBackend.markTaskAsStarted(task);
-    for (String lockableEntityId : task.getLockableEntityIds()) {
-      entityLockBackend.setTaskLock(lockableEntityId, task);
+    for (String toBeLockedEntityId : task.getToBeLockedEntityIds()) {
+      entityLockBackend.setTaskLock(toBeLockedEntityId, task);
     }
   }
 
