@@ -72,9 +72,6 @@ public class ProvisionHostTaskService extends StatefulService {
 
   public static final String SCRIPT_NAME = "esx-install-agent2";
 
-  private DeploymentService.State deploymentState;
-  private HostService.State hostState;
-
   /**
    * This class defines the state of a {@link ProvisionHostTaskService} task.
    */
@@ -285,49 +282,18 @@ public class ProvisionHostTaskService extends StatefulService {
   }
 
   private void processStartedStage(State currentState) {
-    if (this.deploymentState != null && this.hostState != null) {
-      processStartedStage(currentState, this.deploymentState, this.hostState);
-      return;
-    }
-
-    CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
-    Operation deploymentGetOperation = cloudStoreHelper.createGet(currentState.deploymentServiceLink);
-    Operation hostGetOperation = cloudStoreHelper.createGet(currentState.hostServiceLink);
-
-    OperationJoin
-        .create(hostGetOperation, deploymentGetOperation)
-        .setCompletion((ops, exs) -> {
-          if (exs != null && !exs.isEmpty()) {
-            failTask(exs.values());
-            return;
-          }
-
-          try {
-            this.deploymentState = ops.get(deploymentGetOperation.getId()).getBody(DeploymentService.State.class);
-            this.hostState = ops.get(hostGetOperation.getId()).getBody(HostService.State.class);
-            processStartedStage(currentState, this.deploymentState, this.hostState);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void processStartedStage(State currentState,
-                                   DeploymentService.State deploymentState,
-                                   HostService.State hostState) {
     switch (currentState.taskState.subStage) {
       case INSTALL_AGENT:
-        processInstallAgentStage(currentState, deploymentState, hostState);
+        processInstallAgentSubStage(currentState);
         break;
       case WAIT_FOR_AGENT:
-        processWaitForAgentStage(currentState, hostState);
+        processWaitForAgentSubStage(currentState);
         break;
       case PROVISION_AGENT:
-        processProvisionAgentStage(currentState, deploymentState);
+        processProvisionAgentSubStage(currentState);
         break;
       case GET_HOST_CONFIG:
-        processGetHostConfigStage(currentState, hostState);
+        processGetHostConfigSubStage(currentState);
         break;
     }
   }
@@ -336,9 +302,35 @@ public class ProvisionHostTaskService extends StatefulService {
   // INSTALL_AGENT sub-stage routines
   //
 
-  private void processInstallAgentStage(State currentState,
-                                        DeploymentService.State deploymentState,
-                                        HostService.State hostState) {
+  private void processInstallAgentSubStage(State currentState) {
+
+    CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
+    Operation deploymentOp = cloudStoreHelper.createGet(currentState.deploymentServiceLink);
+    Operation hostOp = cloudStoreHelper.createGet(currentState.hostServiceLink);
+
+    OperationJoin
+        .create(hostOp, deploymentOp)
+        .setCompletion((ops, exs) -> {
+          if (exs != null && !exs.isEmpty()) {
+            failTask(exs.values());
+            return;
+          }
+
+          try {
+            processInstallAgentSubStage(currentState,
+                ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
+                ops.get(hostOp.getId()).getBody(HostService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+
+  }
+
+  private void processInstallAgentSubStage(State currentState,
+                                           DeploymentService.State deploymentState,
+                                           HostService.State hostState) {
 
     List<String> command = new ArrayList<>();
     command.add("./" + SCRIPT_NAME);
@@ -400,7 +392,26 @@ public class ProvisionHostTaskService extends StatefulService {
   // WAIT_FOR_AGENT sub-stage routines
   //
 
-  private void processWaitForAgentStage(State currentState, HostService.State hostState) {
+  private void processWaitForAgentSubStage(State currentState) {
+
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            processWaitForAgentSubStage(currentState, op.getBody(HostService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void processWaitForAgentSubStage(State currentState, HostService.State hostState) {
     try {
       HostClient hostClient = HostUtils.getHostClient(this);
       hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
@@ -451,7 +462,26 @@ public class ProvisionHostTaskService extends StatefulService {
   // PROVISION_AGENT sub-stage routines
   //
 
-  private void processProvisionAgentStage(State currentState, DeploymentService.State deploymentState) {
+  private void processProvisionAgentSubStage(State currentState) {
+
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            processProvisionAgentSubStage(currentState, op.getBody(DeploymentService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void processProvisionAgentSubStage(State currentState, DeploymentService.State deploymentState) {
 
     ProvisionAgentTaskService.State startState = new ProvisionAgentTaskService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
@@ -497,7 +527,26 @@ public class ProvisionHostTaskService extends StatefulService {
   // GET_HOST_CONFIG sub-stage routines
   //
 
-  private void processGetHostConfigStage(State currentState, HostService.State hostState) {
+  private void processGetHostConfigSubStage(State currentState) {
+
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            processGetHostConfigSubStage(currentState, op.getBody(HostService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void processGetHostConfigSubStage(State currentState, HostService.State hostState) {
     try {
       HostClient hostClient = HostUtils.getHostClient(this);
       hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
