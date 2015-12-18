@@ -30,6 +30,8 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.cache.CachedDeploymentFactoryService;
+import com.vmware.photon.controller.deployer.dcp.cache.CachedHostFactoryService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
@@ -71,13 +73,6 @@ import java.util.concurrent.TimeUnit;
 public class ProvisionHostTaskService extends StatefulService {
 
   public static final String SCRIPT_NAME = "esx-install-agent2";
-
-  private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
-  private static final String DEFAULT_AGENT_LOG_LEVEL = "debug";
-  private static final String DEFAULT_AVAILABILITY_ZONE = "1";
-
-  private DeploymentService.State deploymentState;
-  private HostService.State hostState;
 
   /**
    * This class defines the state of a {@link ProvisionHostTaskService} task.
@@ -125,6 +120,19 @@ public class ProvisionHostTaskService extends StatefulService {
     public Integer taskPollDelay;
 
     /**
+     * This value represents the document link of the {@link DeploymentService} object which
+     * represents the deployment in whose context the task is being performed.
+     */
+    @NotNull
+    @Immutable
+    public String deploymentServiceLink;
+
+    /**
+     * This value represents the cached copy of the {@link DeploymentService} document on the local host.
+     */
+    public String cachedDeploymentServiceLink;
+
+    /**
      * This value represents the document link of the {@link HostService} object which represents
      * the host to be provisioned.
      */
@@ -133,12 +141,9 @@ public class ProvisionHostTaskService extends StatefulService {
     public String hostServiceLink;
 
     /**
-     * This value represents the document link of the {@link DeploymentService} object which
-     * represents the deployment in whose context the task is being performed.
+     * This value represents the cached copy of the {@link HostService} document on the local host.
      */
-    @NotNull
-    @Immutable
-    public String deploymentServiceLink;
+    public String cachedHostServiceLink;
 
     /**
      * This value represents the absolute path to the uploaded VIB image on the host.
@@ -237,6 +242,8 @@ public class ProvisionHostTaskService extends StatefulService {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
         processStartedStage(currentState);
+      } else {
+        deleteCachedDocuments(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
@@ -289,29 +296,114 @@ public class ProvisionHostTaskService extends StatefulService {
   }
 
   private void processStartedStage(State currentState) {
-    if (this.deploymentState != null && this.hostState != null) {
-      processStartedStage(currentState, this.deploymentState, this.hostState);
+
+    if (currentState.cachedDeploymentServiceLink == null
+        || currentState.cachedHostServiceLink == null) {
+      getCloudStoreDocuments(currentState);
       return;
     }
 
-    CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
-    Operation deploymentGetOperation = cloudStoreHelper.createGet(currentState.deploymentServiceLink);
-    Operation hostGetOperation = cloudStoreHelper.createGet(currentState.hostServiceLink);
+    Operation deploymentOp = Operation
+        .createGet(this, currentState.cachedDeploymentServiceLink)
+        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING);
+
+    Operation hostOp = Operation
+        .createGet(this, currentState.cachedHostServiceLink)
+        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING);
 
     OperationJoin
-        .create(hostGetOperation, deploymentGetOperation)
+        .create(deploymentOp, hostOp)
+        .setCompletion((ops, exs) -> {
+          if (exs != null && exs.isEmpty()) {
+            getCloudStoreDocuments(currentState);
+            return;
+          }
+
+          try {
+            processStartedStage(currentState,
+                ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
+                ops.get(hostOp.getId()).getBody(HostService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void getCloudStoreDocuments(State currentState) {
+
+    CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
+    Operation deploymentOp = cloudStoreHelper.createGet(currentState.deploymentServiceLink);
+    Operation hostOp = cloudStoreHelper.createGet(currentState.hostServiceLink);
+
+    OperationJoin
+        .create(deploymentOp, hostOp)
+        .setCompletion((ops, exs) -> {
+          if (exs != null && !exs.isEmpty()) {
+            failTask(exs.values());
+          } else {
+            cacheCloudStoreDocuments(currentState,
+                ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
+                ops.get(hostOp.getId()).getBody(HostService.State.class));
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void cacheCloudStoreDocuments(State currentState,
+                                        DeploymentService.State deploymentState,
+                                        HostService.State hostState) {
+
+    deploymentState.documentSelfLink = ServiceUtils.getIDFromDocumentSelfLink(currentState.documentSelfLink);
+
+    Operation deploymentOp = Operation
+        .createPost(this, CachedDeploymentFactoryService.SELF_LINK)
+        .setBody(deploymentState);
+
+    hostState.documentSelfLink = ServiceUtils.getIDFromDocumentSelfLink(currentState.documentSelfLink);
+
+    Operation hostOp = Operation
+        .createPost(this, CachedHostFactoryService.SELF_LINK)
+        .setBody(hostState);
+
+    OperationJoin
+        .create(deploymentOp, hostOp)
         .setCompletion((ops, exs) -> {
           if (exs != null && !exs.isEmpty()) {
             failTask(exs.values());
             return;
           }
 
-          try {
-            this.deploymentState = ops.get(deploymentGetOperation.getId()).getBody(DeploymentService.State.class);
-            this.hostState = ops.get(hostGetOperation.getId()).getBody(HostService.State.class);
-            processStartedStage(currentState, this.deploymentState, this.hostState);
-          } catch (Throwable t) {
-            failTask(t);
+          State patchState = buildPatch(currentState.taskState.stage, currentState.taskState.subStage, null);
+          patchState.cachedDeploymentServiceLink = ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class)
+              .documentSelfLink;
+          patchState.cachedHostServiceLink = ops.get(hostOp.getId()).getBody(HostService.State.class).documentSelfLink;
+          TaskUtils.sendSelfPatch(this, patchState);
+        })
+        .sendWith(this);
+  }
+
+  private void deleteCachedDocuments(State currentState) {
+
+    if (currentState.cachedDeploymentServiceLink == null
+        && currentState.cachedHostServiceLink == null) {
+      ServiceUtils.logTrace(this, "No cached documents to delete");
+      return;
+    }
+
+    Operation deploymentOp = Operation
+        .createDelete(this, currentState.cachedDeploymentServiceLink)
+        .setBody(new ServiceDocument());
+
+    Operation hostOp = Operation
+        .createDelete(this, currentState.cachedHostServiceLink)
+        .setBody(new ServiceDocument());
+
+    OperationJoin
+        .create(deploymentOp, hostOp)
+        .setCompletion((ops, exs) -> {
+          if (exs != null && !exs.isEmpty()) {
+            ServiceUtils.logWarning(this, "Failed to delete cached documents");
           }
         })
         .sendWith(this);
@@ -420,25 +512,25 @@ public class ProvisionHostTaskService extends StatefulService {
               sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_AGENT);
             }
           } catch (Throwable t) {
-            retryGetAgentStatusOrFail(currentState, t);
+            retryGetAgentStatusOrFail(currentState, hostState, t);
           }
         }
 
         @Override
         public void onError(Exception e) {
-          retryGetAgentStatusOrFail(currentState, e);
+          retryGetAgentStatusOrFail(currentState, hostState, e);
         }
       });
     } catch (Throwable t) {
-      retryGetAgentStatusOrFail(currentState, t);
+      retryGetAgentStatusOrFail(currentState, hostState, t);
     }
   }
 
-  private void retryGetAgentStatusOrFail(State currentState, Throwable t) {
+  private void retryGetAgentStatusOrFail(State currentState, HostService.State hostState, Throwable t) {
     if (currentState.pollCount + 1 >= currentState.maximumPollCount) {
       ServiceUtils.logSevere(this, t);
       State patchState = buildPatch(TaskState.TaskStage.FAILED, null, new IllegalStateException(
-          "The agent on host " + this.hostState.hostAddress + " failed to become ready after installation after " +
+          "The agent on host " + hostState.hostAddress + " failed to become ready after installation after " +
               Integer.toString(currentState.maximumPollCount) + " retries"));
       patchState.pollCount = currentState.pollCount + 1;
       TaskUtils.sendSelfPatch(this, patchState);
