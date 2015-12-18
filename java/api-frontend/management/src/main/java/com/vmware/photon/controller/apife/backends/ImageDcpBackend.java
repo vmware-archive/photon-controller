@@ -346,7 +346,7 @@ public class ImageDcpBackend implements ImageBackend {
 
     TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.CREATE_IMAGE, false, stepEntities);
 
-    task.getLockableEntityIds().add(image.getId());
+    task.getToBeLockedEntityIds().add(image.getId());
 
     return task;
   }
@@ -390,7 +390,7 @@ public class ImageDcpBackend implements ImageBackend {
     step.setOperation(Operation.DELETE_IMAGE_REPLICAS);
 
     TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.DELETE_IMAGE, false, stepEntities);
-    task.getLockableEntityIds().add(image.getId());
+    task.getToBeLockedEntityIds().add(image.getId());
 
     return task;
   }
