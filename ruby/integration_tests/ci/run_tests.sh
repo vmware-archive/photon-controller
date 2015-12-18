@@ -116,57 +116,59 @@ fi
 
 bundle exec rake zookeeper
 
-# API tests
-bundle exec rake esxcloud:authorization
-
-# run tests using API & CLI drivers in subshells
-if [ -n "$NO_PARALLEL" ]
+if [ "$DEPLOYER_TEST" ]
 then
-  export DRIVER=api
-  bundle exec rake esxcloud:api
-
-  export DRIVER=cli
-  bundle exec rake esxcloud:cli
-
-  export DRIVER=gocli
-  bundle exec rake esxcloud:gocli
-else
-  pids=[]
-  (
-      export DRIVER=api
-      bundle exec rake esxcloud:api
-  ) &
-  pids[0]=$!
-
-  (
-      export DRIVER=cli
-      bundle exec rake esxcloud:cli
-  ) &
-  pids[1]=$!
-
-  for pid in ${pids[*]}; do wait $pid; done;
-
-  # Don't run gocli in parrllel now due to the agent capacity
-  export DRIVER=gocli
-  bundle exec rake esxcloud:gocli
-fi
-
-# verify that no objects were left over at the end of the run
-export DRIVER=api
-bundle exec rake esxcloud:deployment
-bundle exec rake esxcloud:validate
-bundle exec rake esxcloud:life_cycle
-
-# run the housekeeper integration test
-if [ -n "$DISABLE_HOUSEKEEPER" ]; then
-  bundle exec rake housekeeper
-fi
-
-if [ "$DEPLOYER_INTEGRATION_TEST" ]; then
   bundle exec rake deployer
-fi
+  bundle exec rake clean_vms_on_real_host
+else
+  # API tests
+  bundle exec rake esxcloud:authorization
 
-if [ -z "$DISABLE_CLUSTER_INTEGRATION" ]; then
-  env
-  bundle exec parallel_rspec -o '--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow' -- spec/api/cluster/*_spec.rb
+  # run tests using API & CLI drivers in subshells
+  if [ -n "$NO_PARALLEL" ]
+  then
+    export DRIVER=api
+    bundle exec rake esxcloud:api
+
+    export DRIVER=cli
+    bundle exec rake esxcloud:cli
+
+    export DRIVER=gocli
+    bundle exec rake esxcloud:gocli
+  else
+    pids=[]
+    (
+        export DRIVER=api
+        bundle exec rake esxcloud:api
+    ) &
+    pids[0]=$!
+
+    (
+        export DRIVER=cli
+        bundle exec rake esxcloud:cli
+    ) &
+    pids[1]=$!
+
+    for pid in ${pids[*]}; do wait $pid; done;
+
+    # Don't run gocli in parrllel now due to the agent capacity
+    export DRIVER=gocli
+    bundle exec rake esxcloud:gocli
+  fi
+
+  # verify that no objects were left over at the end of the run
+  export DRIVER=api
+  bundle exec rake esxcloud:deployment
+  bundle exec rake esxcloud:validate
+  bundle exec rake esxcloud:life_cycle
+
+  # run the housekeeper integration test
+  if [ -n "$DISABLE_HOUSEKEEPER" ]; then
+    bundle exec rake housekeeper
+  fi
+
+  if [ -z "$DISABLE_CLUSTER_INTEGRATION" ]; then
+    env
+    bundle exec parallel_rspec -o '--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow' -- spec/api/cluster/*_spec.rb
+  fi
 fi
