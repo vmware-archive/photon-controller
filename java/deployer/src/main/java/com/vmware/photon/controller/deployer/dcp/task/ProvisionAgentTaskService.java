@@ -243,17 +243,28 @@ public class ProvisionAgentTaskService extends StatefulService {
   }
 
   private void processStartedStage(State currentState) {
-    if (this.deploymentState != null && this.hostState != null) {
-      processStartedStage(currentState, this.deploymentState, this.hostState);
-      return;
+    switch (currentState.taskState.subStage) {
+      case PROVISION_AGENT:
+        processProvisionAgentSubStage(currentState);
+        break;
+      case WAIT_FOR_AGENT:
+        processWaitForAgentSubStage(currentState);
+        break;
     }
+  }
+
+  //
+  // PROVISION_AGENT sub-stage methods
+  //
+
+  private void processProvisionAgentSubStage(State currentState) {
 
     CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
-    Operation deploymentGetOperation = cloudStoreHelper.createGet(currentState.deploymentServiceLink);
-    Operation hostGetOperation = cloudStoreHelper.createGet(currentState.hostServiceLink);
+    Operation deploymentOp = cloudStoreHelper.createGet(currentState.deploymentServiceLink);
+    Operation hostOp = cloudStoreHelper.createGet(currentState.hostServiceLink);
 
     OperationJoin
-        .create(deploymentGetOperation, hostGetOperation)
+        .create(deploymentOp, hostOp)
         .setCompletion((ops, exs) -> {
           if (exs != null && !exs.isEmpty()) {
             failTask(exs.values());
@@ -261,32 +272,15 @@ public class ProvisionAgentTaskService extends StatefulService {
           }
 
           try {
-            this.deploymentState = ops.get(deploymentGetOperation.getId()).getBody(DeploymentService.State.class);
-            this.hostState = ops.get(hostGetOperation.getId()).getBody(HostService.State.class);
-            processStartedStage(currentState, this.deploymentState, this.hostState);
+            processProvisionAgentSubStage(currentState,
+                ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
+                ops.get(hostOp.getId()).getBody(HostService.State.class));
           } catch (Throwable t) {
             failTask(t);
           }
         })
         .sendWith(this);
   }
-
-  private void processStartedStage(State currentState,
-                                   DeploymentService.State deploymentState,
-                                   HostService.State hostState) {
-    switch (currentState.taskState.subStage) {
-      case PROVISION_AGENT:
-        processProvisionAgentSubStage(currentState, deploymentState, hostState);
-        break;
-      case WAIT_FOR_AGENT:
-        processWaitForAgentStage(currentState, hostState);
-        break;
-    }
-  }
-
-  //
-  // PROVISION_AGENT sub-stage routines
-  //
 
   private void processProvisionAgentSubStage(State currentState,
                                              DeploymentService.State deploymentState,
@@ -364,7 +358,26 @@ public class ProvisionAgentTaskService extends StatefulService {
   // WAIT_FOR_AGENT sub-stage routines
   //
 
-  private void processWaitForAgentStage(State currentState, HostService.State hostState) {
+  private void processWaitForAgentSubStage(State currentState) {
+
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            processWaitForAgentSubStage(currentState, op.getBody(HostService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void processWaitForAgentSubStage(State currentState, HostService.State hostState) {
     try {
       HostClient hostClient = HostUtils.getHostClient(this);
       hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
