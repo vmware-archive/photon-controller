@@ -222,7 +222,7 @@ public class HostDcpBackend implements HostBackend {
     TaskEntity taskEntity = taskBackend.createQueuedTask(hostEntity, operation);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, hostEntity, operation);
 
-    taskEntity.getLockableEntityIds().add(hostEntity.getId());
+    taskEntity.getToBeLockedEntityIds().add(hostEntity.getId());
     return taskEntity;
   }
 
@@ -326,7 +326,7 @@ public class HostDcpBackend implements HostBackend {
     }
 
     taskBackend.getStepBackend().createQueuedStep(task, hostEntity, Operation.DELETE_HOST);
-    task.getLockableEntityIds().add(hostEntity.getId());
+    task.getToBeLockedEntityIds().add(hostEntity.getId());
     return task;
   }
 }

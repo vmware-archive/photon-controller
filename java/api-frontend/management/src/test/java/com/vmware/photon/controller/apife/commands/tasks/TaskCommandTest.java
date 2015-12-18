@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
+import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.DcpBackendTestHelper;
 import com.vmware.photon.controller.apife.backends.DcpBackendTestModule;
@@ -58,6 +59,7 @@ import com.vmware.photon.controller.scheduler.gen.FindResponse;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.junit.AfterClass;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -68,14 +70,18 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.doThrow;
+import static org.powermock.api.mockito.PowerMockito.spy;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
-import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -229,6 +235,117 @@ public class TaskCommandTest {
   @AfterMethod
   public void tearDown() throws Throwable {
     commonHostDocumentsCleanup();
+  }
+
+  /**
+   * Tests for entity lock management.
+   */
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
+  public static class TaskLockTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private EntityLockBackend entityLockBackend;
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    private TaskCommand command1;
+    private TaskCommand command2;
+
+    @BeforeMethod
+    public void setUp() throws Exception {
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+
+      TaskBackend taskBackend = mock(TaskBackend.class);
+      TaskEntity task1 = new TaskEntity();
+      task1.setId(UUID.randomUUID().toString());
+      String lockId = UUID.randomUUID().toString();
+      task1.getToBeLockedEntityIds().add(lockId);
+
+      TaskEntity task2 = new TaskEntity();
+      task2.setId(UUID.randomUUID().toString());
+      task2.getToBeLockedEntityIds().add(lockId);
+
+      command1 = spy(new TaskCommand(mock(RootSchedulerClient.class),
+          mock(HostClient.class),
+          mock(HousekeeperClient.class),
+          mock(DeployerClient.class),
+          entityLockBackend,
+          task1));
+      command1.setTaskBackend(taskBackend);
+
+      command2 = spy(new TaskCommand(mock(RootSchedulerClient.class),
+          mock(HostClient.class),
+          mock(HousekeeperClient.class),
+          mock(DeployerClient.class),
+          entityLockBackend,
+          task2));
+      command2.setTaskBackend(taskBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @Test
+    public void testThrowConcurrentExceptionWhenLockAlreadyExists() throws Exception {
+      // start a command but not complete it, hence keeping a lock active
+      command1.markAsStarted();
+      command2.run();
+
+      // verify that execution of command2 resulted in a ConcurrentTaskException
+      ArgumentCaptor<Throwable> exceptionArgument = ArgumentCaptor.forClass(Throwable.class);
+      verify(command2, times(1)).markAsFailed(exceptionArgument.capture());
+      assertTrue("Exception thrown should have been of type ConcurrentTaskException",
+          exceptionArgument.getValue() instanceof ConcurrentTaskException);
+    }
+
+    @Test
+    public void testLockAcquisitionByTaskWhenItAlreadyOwnsTheExistingLock() throws Exception {
+      // start a command but not complete it, hence keeping a lock active
+      command1.markAsStarted();
+      // execution of the same command again should go through despite a lock already existing for the same task
+      command1.run();
+    }
+
+    @Test
+    public void testTaskOnlyCleansUpLocksThatItOwns() throws Exception {
+      //start a command but not complete it, hence keeping a lock active
+      command1.markAsStarted();
+      command2.run();
+
+      // verify that execution of command2 resulted in a ConcurrentTaskException
+      ArgumentCaptor<Throwable> exceptionArgument = ArgumentCaptor.forClass(Throwable.class);
+      verify(command2, times(1)).markAsFailed(exceptionArgument.capture());
+      assertTrue("Exception thrown should have been of type ConcurrentTaskException",
+          exceptionArgument.getValue() instanceof ConcurrentTaskException);
+
+      command2.run();
+      // verify that execution of command2 resulted in a ConcurrentTaskException
+      // because the previous failed attempt did not result in releasing of lock held be command1
+      verify(command2, times(2)).markAsFailed(exceptionArgument.capture());
+      assertTrue("Exception thrown should have been of type ConcurrentTaskException",
+          exceptionArgument.getValue() instanceof ConcurrentTaskException);
+    }
+
+    @Test
+    public void testCleansUpOfLocksWhenTaskFails() throws Exception {
+      //command1 one should fail in execution and then clean up locks before finishing
+      doThrow(new ApiFeException()).when(command1).execute();
+      command1.run();
+
+      //command2 should be able to acquire locks and run if command1 had successfully released the locks on its failure
+      command2.run();
+    }
   }
 
   @Test

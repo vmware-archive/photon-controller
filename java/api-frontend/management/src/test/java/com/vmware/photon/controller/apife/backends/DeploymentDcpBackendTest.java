@@ -273,8 +273,8 @@ public class DeploymentDcpBackendTest {
 
       assertThat(taskEntity, is(notNullValue()));
       assertThat(taskEntity.getId(), is(notNullValue()));
-      assertThat(taskEntity.getLockableEntityIds().size(), is(1));
-      assertThat(taskEntity.getLockableEntityIds().get(0), is(taskEntity.getEntityId()));
+      assertThat(taskEntity.getToBeLockedEntityIds().size(), is(1));
+      assertThat(taskEntity.getToBeLockedEntityIds().get(0), is(taskEntity.getEntityId()));
 
       // verify the task is created correctly
       taskEntity = taskBackend.findById(taskEntity.getId());
@@ -858,8 +858,8 @@ public class DeploymentDcpBackendTest {
       TaskEntity taskEntity = deploymentBackend.prepareDestroy(entity.getId());
       assertThat(taskEntity, is(notNullValue()));
       assertThat(taskEntity.getId(), is(notNullValue()));
-      assertThat(taskEntity.getLockableEntityIds().size(), is(1));
-      assertThat(taskEntity.getLockableEntityIds().get(0), is(taskEntity.getEntityId()));
+      assertThat(taskEntity.getToBeLockedEntityIds().size(), is(1));
+      assertThat(taskEntity.getToBeLockedEntityIds().get(0), is(taskEntity.getEntityId()));
 
       // verify the task is created correctly
       taskEntity = taskBackend.findById(taskEntity.getId());
@@ -988,8 +988,8 @@ public class DeploymentDcpBackendTest {
           .getId());
       assertThat(taskEntity, is(notNullValue()));
       assertThat(taskEntity.getId(), is(notNullValue()));
-      assertThat(taskEntity.getLockableEntityIds().size(), is(1));
-      assertThat(taskEntity.getLockableEntityIds().get(0), is(taskEntity.getEntityId()));
+      assertThat(taskEntity.getToBeLockedEntityIds().size(), is(1));
+      assertThat(taskEntity.getToBeLockedEntityIds().get(0), is(taskEntity.getEntityId()));
 
       // verify the task is created correctly
       taskEntity = taskBackend.findById(taskEntity.getId());
@@ -1011,8 +1011,8 @@ public class DeploymentDcpBackendTest {
           .getId());
       assertThat(taskEntity, is(notNullValue()));
       assertThat(taskEntity.getId(), is(notNullValue()));
-      assertThat(taskEntity.getLockableEntityIds().size(), is(1));
-      assertThat(taskEntity.getLockableEntityIds().get(0), is(taskEntity.getEntityId()));
+      assertThat(taskEntity.getToBeLockedEntityIds().size(), is(1));
+      assertThat(taskEntity.getToBeLockedEntityIds().get(0), is(taskEntity.getEntityId()));
 
       // verify the task is created correctly
       taskEntity = taskBackend.findById(taskEntity.getId());
