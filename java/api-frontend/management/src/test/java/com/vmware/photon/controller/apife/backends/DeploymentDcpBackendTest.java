@@ -286,13 +286,11 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getSteps().size(), is(9));
       Assert.assertEquals(taskEntity.getSteps().get(0).getOperation(), Operation.PREPARE_DEPLOYMENT);
       Assert.assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.SCHEDULE_DEPLOYMENT);
-      Assert.assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.BUILD_DEPLOYMENT_PLAN);
-      Assert.assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.BUILD_RUNTIME_CONFIGURATION);
-      Assert.assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.PROVISION_CONTROL_PLANE_HOSTS);
-      Assert.assertEquals(taskEntity.getSteps().get(5).getOperation(), Operation.PROVISION_CONTROL_PLANE_VMS);
-      Assert.assertEquals(taskEntity.getSteps().get(6).getOperation(), Operation.PROVISION_CLOUD_HOSTS);
-      Assert.assertEquals(taskEntity.getSteps().get(7).getOperation(), Operation.PROVISION_CLUSTER_MANAGER);
-      Assert.assertEquals(taskEntity.getSteps().get(8).getOperation(), Operation.MIGRATE_DEPLOYMENT_DATA);
+      Assert.assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.PROVISION_CONTROL_PLANE_HOSTS);
+      Assert.assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.PROVISION_CONTROL_PLANE_VMS);
+      Assert.assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.PROVISION_CLOUD_HOSTS);
+      Assert.assertEquals(taskEntity.getSteps().get(5).getOperation(), Operation.PROVISION_CLUSTER_MANAGER);
+      Assert.assertEquals(taskEntity.getSteps().get(6).getOperation(), Operation.MIGRATE_DEPLOYMENT_DATA);
     }
 
     @DataProvider(name = "DeploySuccess")
