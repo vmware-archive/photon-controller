@@ -93,8 +93,6 @@ public enum Operation {
   FINALIZE_MIGRATE_DEPLOYMENT("FinalizeMigrateDeployment"),
   SCHEDULE_FINALIZE_MIGRATE_DEPLOYMENT("ScheduleFinalizeMigrateDeployment"),
   PERFORM_FINALIZE_MIGRATE_DEPLOYMENT("PerformFinalizeMigrateDeployment"),
-  BUILD_DEPLOYMENT_PLAN("BuildDeploymentPlan"),
-  BUILD_RUNTIME_CONFIGURATION("BuildRuntimeConfiguration"),
   PROVISION_CONTROL_PLANE_HOSTS("ProvisionControlPlaneHosts"),
   PROVISION_CONTROL_PLANE_VMS("ProvisionControlPlaneVms"),
   PROVISION_CLOUD_HOSTS("ProvisionCloudHosts"),

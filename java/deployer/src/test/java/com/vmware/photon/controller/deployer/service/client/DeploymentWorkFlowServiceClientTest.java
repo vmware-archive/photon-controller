@@ -173,7 +173,7 @@ public class DeploymentWorkFlowServiceClientTest {
     public Object[][] getRunningStage() {
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
@@ -272,7 +272,7 @@ public class DeploymentWorkFlowServiceClientTest {
         startState.taskSubStates = new ArrayList<>();
         for (DeploymentWorkflowService.TaskState.SubStage s : DeploymentWorkflowService.TaskState.SubStage.values()) {
           switch (s) {
-            case ADD_HOSTS:
+            case PROVISION_MANAGEMENT_HOSTS:
             case CREATE_MANAGEMENT_PLANE:
             case PROVISION_CLOUD_HOSTS:
             case ALLOCATE_CM_RESOURCES:
@@ -314,7 +314,7 @@ public class DeploymentWorkFlowServiceClientTest {
         DeployStageStatus status = new DeployStageStatus();
         status.setName(s.name());
         switch (s) {
-          case ADD_HOSTS:
+          case PROVISION_MANAGEMENT_HOSTS:
             status.setCode(DeployStatusCode.IN_PROGRESS);
             break;
           default:
@@ -330,7 +330,7 @@ public class DeploymentWorkFlowServiceClientTest {
         DeployStageStatus status = new DeployStageStatus();
         status.setName(s.name());
         switch (s) {
-          case ADD_HOSTS:
+          case PROVISION_MANAGEMENT_HOSTS:
             status.setCode(DeployStatusCode.FINISHED);
             break;
           case CREATE_MANAGEMENT_PLANE:
@@ -349,7 +349,7 @@ public class DeploymentWorkFlowServiceClientTest {
         DeployStageStatus status = new DeployStageStatus();
         status.setName(s.name());
         switch (s) {
-          case ADD_HOSTS:
+          case PROVISION_MANAGEMENT_HOSTS:
           case CREATE_MANAGEMENT_PLANE:
             status.setCode(DeployStatusCode.FINISHED);
             break;
@@ -369,7 +369,7 @@ public class DeploymentWorkFlowServiceClientTest {
         DeployStageStatus status = new DeployStageStatus();
         status.setName(s.name());
         switch (s) {
-          case ADD_HOSTS:
+          case PROVISION_MANAGEMENT_HOSTS:
           case CREATE_MANAGEMENT_PLANE:
           case PROVISION_CLOUD_HOSTS:
             status.setCode(DeployStatusCode.FINISHED);
@@ -390,7 +390,7 @@ public class DeploymentWorkFlowServiceClientTest {
         DeployStageStatus status = new DeployStageStatus();
         status.setName(s.name());
         switch (s) {
-          case ADD_HOSTS:
+          case PROVISION_MANAGEMENT_HOSTS:
           case CREATE_MANAGEMENT_PLANE:
           case PROVISION_CLOUD_HOSTS:
           case ALLOCATE_CM_RESOURCES:
@@ -412,7 +412,7 @@ public class DeploymentWorkFlowServiceClientTest {
         DeployStageStatus status = new DeployStageStatus();
         status.setName(s.name());
         switch (s) {
-          case ADD_HOSTS:
+          case PROVISION_MANAGEMENT_HOSTS:
           case CREATE_MANAGEMENT_PLANE:
           case PROVISION_CLOUD_HOSTS:
           case ALLOCATE_CM_RESOURCES:
@@ -432,7 +432,7 @@ public class DeploymentWorkFlowServiceClientTest {
         DeployStageStatus status = new DeployStageStatus();
         status.setName(s.name());
         switch (s) {
-          case ADD_HOSTS:
+          case PROVISION_MANAGEMENT_HOSTS:
           case CREATE_MANAGEMENT_PLANE:
           case PROVISION_CLOUD_HOSTS:
           case ALLOCATE_CM_RESOURCES:
@@ -450,7 +450,7 @@ public class DeploymentWorkFlowServiceClientTest {
       }
 
       return new Object[][]{
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
               addHostStages},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
               createMgmtPlaneStages},
