@@ -58,10 +58,6 @@ public class DeploymentStatusStepCmd extends StepCommand {
   private static final Map<Operation, ImmutableList<String>> OPERATION_TO_STAGES_MAP = new HashMap<>();
   static {
     OPERATION_TO_STAGES_MAP.put(
-        Operation.BUILD_DEPLOYMENT_PLAN, ImmutableList.<String>of("CREATE_MANAGEMENT_PLANE_LAYOUT"));
-    OPERATION_TO_STAGES_MAP.put(
-      Operation.BUILD_RUNTIME_CONFIGURATION, ImmutableList.<String>of("BUILD_RUNTIME_CONFIGURATION"));
-    OPERATION_TO_STAGES_MAP.put(
       Operation.PROVISION_CONTROL_PLANE_HOSTS, ImmutableList.<String>of("PROVISION_MANAGEMENT_HOSTS"));
     OPERATION_TO_STAGES_MAP.put(
       Operation.PROVISION_CONTROL_PLANE_VMS, ImmutableList.<String>of("CREATE_MANAGEMENT_PLANE"));

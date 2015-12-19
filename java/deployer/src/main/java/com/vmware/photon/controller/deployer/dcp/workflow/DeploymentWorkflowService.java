@@ -84,7 +84,7 @@ public class DeploymentWorkflowService extends StatefulService {
      * This enum represents the possible sub-states for this task.
      */
     public enum SubStage {
-      ADD_HOSTS,
+      PROVISION_MANAGEMENT_HOSTS,
       CREATE_MANAGEMENT_PLANE,
       PROVISION_CLOUD_HOSTS,
       ALLOCATE_CM_RESOURCES,
@@ -177,7 +177,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.ADD_HOSTS;
+      startState.taskState.subStage = TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS;
       startState.taskSubStates.set(0, TaskState.TaskStage.STARTED);
     }
 
@@ -233,7 +233,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
     if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
       switch (currentState.taskState.subStage) {
-        case ADD_HOSTS:
+        case PROVISION_MANAGEMENT_HOSTS:
         case CREATE_MANAGEMENT_PLANE:
         case PROVISION_CLOUD_HOSTS:
         case ALLOCATE_CM_RESOURCES:
@@ -343,7 +343,7 @@ public class DeploymentWorkflowService extends StatefulService {
    */
   private void processStartedState(final State currentState) throws Throwable {
     switch (currentState.taskState.subStage) {
-      case ADD_HOSTS:
+      case PROVISION_MANAGEMENT_HOSTS:
         addHosts(currentState);
         break;
       case CREATE_MANAGEMENT_PLANE:

@@ -176,8 +176,6 @@ public class StepCommandFactory {
         return new DeploymentFinalizeMigrationStepCmd(taskCommand, stepBackend, stepEntity, deploymentBackend);
       case PERFORM_FINALIZE_MIGRATE_DEPLOYMENT:
         return new DeploymentFinalizeMigrationStatusStepCmd(taskCommand, stepBackend, stepEntity);
-      case BUILD_DEPLOYMENT_PLAN:
-      case BUILD_RUNTIME_CONFIGURATION:
       case PROVISION_CONTROL_PLANE_HOSTS:
       case PROVISION_CONTROL_PLANE_VMS:
       case PROVISION_CLOUD_HOSTS:
