@@ -218,7 +218,7 @@ public class DeploymentWorkflowServiceTest {
       return new Object[][]{
           {null, null},
           {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
@@ -237,7 +237,7 @@ public class DeploymentWorkflowServiceTest {
 
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
       assertThat(serviceState.taskState.subStage,
-          is(DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS));
+          is(DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS));
     }
 
     @DataProvider(name = "AutoProgressedStartStages")
@@ -245,7 +245,7 @@ public class DeploymentWorkflowServiceTest {
       return new Object[][]{
           {null, null},
           {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS},
       };
     }
 
@@ -288,7 +288,7 @@ public class DeploymentWorkflowServiceTest {
     @Test(dataProvider = "InvalidTaskSubStates", expectedExceptions = DcpRuntimeException.class)
     public void testFailureInvalidSubStateList(List<TaskState.TaskStage> taskSubStates) throws Throwable {
       DeploymentWorkflowService.State startState = buildValidStartState(TaskState.TaskStage.STARTED,
-          DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS);
+          DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS);
       startState.taskSubStates = taskSubStates;
       startService(startState);
     }
@@ -372,7 +372,7 @@ public class DeploymentWorkflowServiceTest {
     public Object[][] getValidStageTransitions() {
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS},
 
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.FINISHED, null},
@@ -381,12 +381,12 @@ public class DeploymentWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.CANCELLED, null},
 
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS,
               TaskState.TaskStage.STARTED,
               DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS,
               TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
@@ -448,7 +448,7 @@ public class DeploymentWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.CREATED, null},
 
-          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
               TaskState.TaskStage.CREATED, null},
@@ -460,7 +460,7 @@ public class DeploymentWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
 
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
@@ -469,14 +469,14 @@ public class DeploymentWorkflowServiceTest {
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
 
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
 
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
 
@@ -484,7 +484,7 @@ public class DeploymentWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
-              DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+              DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
           {TaskState.TaskStage.FINISHED, null,
@@ -503,7 +503,7 @@ public class DeploymentWorkflowServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
           {TaskState.TaskStage.FAILED, null,
@@ -522,7 +522,7 @@ public class DeploymentWorkflowServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS},
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
           {TaskState.TaskStage.CANCELLED, null,
@@ -549,7 +549,7 @@ public class DeploymentWorkflowServiceTest {
       DeploymentWorkflowService.State patchState =
           DeploymentWorkflowService.buildPatch(
               TaskState.TaskStage.STARTED,
-              DeploymentWorkflowService.TaskState.SubStage.ADD_HOSTS,
+              DeploymentWorkflowService.TaskState.SubStage.ADD_MANAGEMENT_HOSTS,
               null);
 
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);

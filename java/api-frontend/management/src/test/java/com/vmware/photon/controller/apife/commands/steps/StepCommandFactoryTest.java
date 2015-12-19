@@ -144,8 +144,6 @@ public class StepCommandFactoryTest {
         {Operation.PERFORM_INITIALIZE_MIGRATE_DEPLOYMENT, DeploymentInitializeMigrationStatusStepCmd.class},
         {Operation.SCHEDULE_FINALIZE_MIGRATE_DEPLOYMENT, DeploymentFinalizeMigrationStepCmd.class},
         {Operation.PERFORM_FINALIZE_MIGRATE_DEPLOYMENT, DeploymentFinalizeMigrationStatusStepCmd.class},
-        {Operation.BUILD_DEPLOYMENT_PLAN, DeploymentStatusStepCmd.class},
-        {Operation.BUILD_RUNTIME_CONFIGURATION, DeploymentStatusStepCmd.class},
         {Operation.PROVISION_CONTROL_PLANE_HOSTS, DeploymentStatusStepCmd.class},
         {Operation.PROVISION_CONTROL_PLANE_VMS, DeploymentStatusStepCmd.class},
         {Operation.PROVISION_CLOUD_HOSTS, DeploymentStatusStepCmd.class},
