@@ -268,6 +268,7 @@ public class ResourceRemovalTaskService extends StatefulService {
     subTaskInitState.parentTaskLink = getSelfLink();
     subTaskInitState.completionsRemaining = resourceCount;
     subTaskInitState.errorThreshold = currentState.errorThreshold;
+    subTaskInitState.tenantLinks = currentState.tenantLinks;
     Operation startPost = Operation
         .createPost(this, UUID.randomUUID().toString())
         .setBody(subTaskInitState)
