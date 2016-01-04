@@ -450,7 +450,7 @@ public class CreateIsoTaskService extends StatefulService {
         CONFIG_FILENAME + "-user-data-" + currentState.vmId + ".yml");
     final File metaDataConfigFile = new File(deployerContext.getScriptDirectory(),
         CONFIG_FILENAME + "-meta-data-" + currentState.vmId + ".yml");
-    File scriptLogFile = new File(deployerContext.getScriptDirectory(),
+    File scriptLogFile = new File(deployerContext.getScriptLogDirectory(),
         SCRIPT_NAME + "-" + currentState.vmId + ".log");
 
     String userDataConfigFilename = createFile(currentState.userDataTemplate, userDataConfigFile);
