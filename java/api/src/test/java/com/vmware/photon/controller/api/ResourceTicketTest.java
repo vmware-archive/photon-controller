@@ -14,10 +14,15 @@
 package com.vmware.photon.controller.api;
 
 import com.vmware.photon.controller.api.base.VisibleModel;
+import com.vmware.photon.controller.api.helpers.JsonHelpers;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.hamcrest.MatcherAssert;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.isA;
+import static org.hamcrest.Matchers.is;
+import static uk.co.datumedge.hamcrest.json.SameJSONAs.sameJSONAs;
 
 /**
  * Tests {@link ResourceTicketCreateSpec}.
@@ -27,5 +32,32 @@ public class ResourceTicketTest {
   @Test
   public void testIsAVisibleModel() throws Exception {
     MatcherAssert.assertThat(new ResourceTicket(), isA(VisibleModel.class));
+  }
+
+  /**
+   * Tests resource ticket serialization.
+   */
+  public class ResourceTicketSerializationTest {
+
+    @Test
+    public void ticketSerialization() throws Exception {
+      ResourceTicket ticket = new ResourceTicket();
+      ticket.setId("rt1");
+      ticket.setSelfLink("http://localhost:9080/v1/resource-tickets/rt1");
+      ticket.setName("rt1name");
+      ticket.setTenantId("t1");
+      ticket.setLimits(ImmutableList.of(
+          new QuotaLineItem("a", 1.0, QuotaUnit.COUNT), new QuotaLineItem("b", 2.0, QuotaUnit.MB)));
+      ticket.setUsage(ImmutableList.of(
+          new QuotaLineItem("a", 0.5, QuotaUnit.COUNT), new QuotaLineItem("b", 1.0, QuotaUnit.MB)));
+      ticket.setTags(ImmutableSet.of("foo", "bar"));
+
+      MatcherAssert.assertThat(JsonHelpers.asJson(ticket),
+          sameJSONAs(JsonHelpers.jsonFixture("fixtures/resource-ticket.json")).allowingAnyArrayOrdering());
+      MatcherAssert.assertThat(
+          JsonHelpers.fromJson(JsonHelpers.jsonFixture("fixtures/resource-ticket.json"), ResourceTicket.class),
+          is(ticket));
+    }
+
   }
 }

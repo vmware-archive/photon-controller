@@ -11,15 +11,10 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.apife.serialization;
+package com.vmware.photon.controller.api;
 
-import com.vmware.photon.controller.api.LocalitySpec;
-import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.builders.AttachedDiskCreateSpecBuilder;
-
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.asJson;
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.fromJson;
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.jsonFixture;
+import com.vmware.photon.controller.api.helpers.JsonHelpers;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -35,7 +30,7 @@ import java.util.List;
 /**
  * Tests {@link VmCreateSpec}.
  */
-public class VmCreateSpecSerializationTest {
+public class VmCreateSpecTest {
 
   private VmCreateSpec vmCreateSpec;
 
@@ -62,10 +57,10 @@ public class VmCreateSpecSerializationTest {
 
   @Test
   public void testSerialization() throws Exception {
-    String json = jsonFixture("fixtures/vmcreate.json");
+    String json = JsonHelpers.jsonFixture("fixtures/vmcreate.json");
 
-    assertThat(fromJson(json, VmCreateSpec.class), is(vmCreateSpec));
-    assertThat(asJson(vmCreateSpec), sameJSONAs(json).allowingAnyArrayOrdering());
+    assertThat(JsonHelpers.fromJson(json, VmCreateSpec.class), is(vmCreateSpec));
+    assertThat(JsonHelpers.asJson(vmCreateSpec), sameJSONAs(json).allowingAnyArrayOrdering());
   }
 
 }

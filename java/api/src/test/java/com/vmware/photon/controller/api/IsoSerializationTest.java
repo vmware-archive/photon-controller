@@ -11,13 +11,9 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.apife.serialization;
+package com.vmware.photon.controller.api;
 
-import com.vmware.photon.controller.api.Iso;
-
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.asJson;
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.fromJson;
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.jsonFixture;
+import com.vmware.photon.controller.api.helpers.JsonHelpers;
 
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,7 +34,7 @@ public class IsoSerializationTest {
     iso.setName("isoName");
     iso.setSize(100L);
 
-    assertThat(asJson(iso), sameJSONAs(jsonFixture(isoFixtureFile)).allowingAnyArrayOrdering());
-    assertThat(fromJson(jsonFixture(isoFixtureFile), Iso.class), is(iso));
+    assertThat(JsonHelpers.asJson(iso), sameJSONAs(JsonHelpers.jsonFixture(isoFixtureFile)).allowingAnyArrayOrdering());
+    assertThat(JsonHelpers.fromJson(JsonHelpers.jsonFixture(isoFixtureFile), Iso.class), is(iso));
   }
 }

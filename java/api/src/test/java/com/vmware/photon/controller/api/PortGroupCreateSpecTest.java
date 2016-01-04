@@ -11,14 +11,9 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.apife.serialization;
+package com.vmware.photon.controller.api;
 
-import com.vmware.photon.controller.api.PortGroupCreateSpec;
-import com.vmware.photon.controller.api.UsageTag;
-
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.asJson;
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.fromJson;
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.jsonFixture;
+import com.vmware.photon.controller.api.helpers.JsonHelpers;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -31,7 +26,7 @@ import java.util.Arrays;
 /**
  * Test {@link PortGroupCreateSpec}.
  */
-public class PortGroupCreateSpecSerializationTest {
+public class PortGroupCreateSpecTest {
   private PortGroupCreateSpec portGroupCreateSpec;
 
   @BeforeMethod
@@ -46,9 +41,9 @@ public class PortGroupCreateSpecSerializationTest {
 
   @Test
   public void testSerialization() throws Exception {
-    String json = jsonFixture("fixtures/portgroupcreate.json");
+    String json = JsonHelpers.jsonFixture("fixtures/portgroupcreate.json");
 
-    assertThat(fromJson(json, PortGroupCreateSpec.class), is(portGroupCreateSpec));
-    assertThat(asJson(portGroupCreateSpec), sameJSONAs(json).allowingAnyArrayOrdering());
+    assertThat(JsonHelpers.fromJson(json, PortGroupCreateSpec.class), is(portGroupCreateSpec));
+    assertThat(JsonHelpers.asJson(portGroupCreateSpec), sameJSONAs(json).allowingAnyArrayOrdering());
   }
 }

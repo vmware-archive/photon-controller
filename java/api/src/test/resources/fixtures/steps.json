@@ -3,7 +3,7 @@
     "state": "ERROR",
     "errors": [
         {
-            "code": "VmNotFound",
+            "code": "ErrorCode",
             "message": "Some message",
             "data": {
                 "foo": "bar"
@@ -12,7 +12,7 @@
     ],
     "warnings": [
         {
-            "code": "NameTaken",
+            "code": "ErrorCode",
             "message": "Some message",
             "data": {
                 "foo": "bar"
