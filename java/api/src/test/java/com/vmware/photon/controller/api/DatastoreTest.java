@@ -14,9 +14,11 @@
 package com.vmware.photon.controller.api;
 
 import com.vmware.photon.controller.api.base.Base;
+import com.vmware.photon.controller.api.helpers.JsonHelpers;
 
 import com.google.common.collect.ImmutableSet;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -24,6 +26,7 @@ import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static uk.co.datumedge.hamcrest.json.SameJSONAs.sameJSONAs;
 
 /**
  * Tests {@link Datastore}.
@@ -74,4 +77,27 @@ public class DatastoreTest {
     assertThat(store1.hashCode(), equalTo(store2.hashCode()));
   }
 
+  /**
+   * Tests datastore serialization.
+   */
+  public class SerializationTest {
+
+    private static final String fixtureFile = "fixtures/datastore.json";
+
+    @Test
+    public void testDatastoreSerialization() throws Exception {
+      // start with an API representation object and make sure that
+      // it serializes correctly to JSON, and that
+      // the JSON correctly de-serializes the JSON into an object
+      Datastore datastore = new Datastore();
+      datastore.setTags(ImmutableSet.of("tag1"));
+      datastore.setId("id");
+      datastore.setSelfLink("self link");
+
+      assertThat(JsonHelpers.asJson(datastore),
+          sameJSONAs(JsonHelpers.jsonFixture(fixtureFile)).allowingAnyArrayOrdering());
+      assertThat(JsonHelpers.fromJson(JsonHelpers.jsonFixture(fixtureFile), Datastore.class),
+          Matchers.is(datastore));
+    }
+  }
 }

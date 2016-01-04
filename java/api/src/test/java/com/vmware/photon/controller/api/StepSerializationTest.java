@@ -11,19 +11,12 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.apife.serialization;
+package com.vmware.photon.controller.api;
 
-import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.Step;
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.apife.entities.TaskEntity;
-
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.asJson;
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.fromJson;
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.jsonFixture;
+import com.vmware.photon.controller.api.helpers.JsonHelpers;
 
 import com.google.common.collect.ImmutableMap;
+import org.hamcrest.MatcherAssert;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -46,24 +39,24 @@ public class StepSerializationTest {
     step.setQueuedTime(new Date(10));
     step.setStartedTime(new Date(11));
     step.setEndTime(new Date(12));
-    step.addError(new ApiError(ErrorCode.VM_NOT_FOUND.getCode(), "Some message", ImmutableMap.of("foo", "bar")));
-    step.addWarning(new ApiError(ErrorCode.NAME_TAKEN.getCode(), "Some message", ImmutableMap.of("foo", "bar")));
+    step.addError(new ApiError("ErrorCode", "Some message", ImmutableMap.of("foo", "bar")));
+    step.addWarning(new ApiError("ErrorCode", "Some message", ImmutableMap.of("foo", "bar")));
     step.setOperation(Operation.DELETE_VM.getOperation());
-    step.setState(TaskEntity.State.ERROR.toString());
+    step.setState("ERROR");
     step.setOptions(ImmutableMap.of("key", "value"));
 
-    assertThat(asJson(step), is(sameJSONAs(jsonFixture("fixtures/steps.json"))));
+    MatcherAssert.assertThat(JsonHelpers.asJson(step), is(sameJSONAs(JsonHelpers.jsonFixture("fixtures/steps.json"))));
   }
 
   @Test
   public void deserialize() throws IOException {
-    Step parsedStep = fromJson(jsonFixture("fixtures/steps.json"), Step.class);
+    Step parsedStep = JsonHelpers.fromJson(JsonHelpers.jsonFixture("fixtures/steps.json"), Step.class);
     assertThat(parsedStep.getSequence(), equalTo(1));
     assertThat(parsedStep.getQueuedTime(), equalTo(new Date(10)));
     assertThat(parsedStep.getStartedTime(), equalTo(new Date(11)));
     assertThat(parsedStep.getEndTime(), equalTo(new Date(12)));
     assertThat(parsedStep.getState(), equalTo("ERROR"));
     assertThat(parsedStep.getOptions(), equalTo((Map<String, String>) ImmutableMap.of("key", "value")));
-    assertThat(parsedStep.getWarnings().get(0).getCode(), equalTo(ErrorCode.NAME_TAKEN.getCode()));
+    assertThat(parsedStep.getWarnings().get(0).getCode(), equalTo("ErrorCode"));
   }
 }

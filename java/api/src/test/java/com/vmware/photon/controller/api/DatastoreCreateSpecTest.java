@@ -11,13 +11,9 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.apife.serialization;
+package com.vmware.photon.controller.api;
 
-import com.vmware.photon.controller.api.DatastoreCreateSpec;
-
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.asJson;
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.fromJson;
-import static com.vmware.photon.controller.apife.helpers.JsonHelpers.jsonFixture;
+import com.vmware.photon.controller.api.helpers.JsonHelpers;
 
 import com.google.common.collect.ImmutableSet;
 import org.testng.annotations.Test;
@@ -44,8 +40,10 @@ public class DatastoreCreateSpecTest {
     datastoreCreateSpec.setName("/vmfs/test");
     datastoreCreateSpec.setTags(ImmutableSet.of("tag1"));
 
-    assertThat(asJson(datastoreCreateSpec), sameJSONAs(jsonFixture(FIXTURE_FILE)).allowingAnyArrayOrdering());
-    assertThat(fromJson(jsonFixture(FIXTURE_FILE), DatastoreCreateSpec.class), is(datastoreCreateSpec));
+    assertThat(JsonHelpers.asJson(datastoreCreateSpec),
+        sameJSONAs(JsonHelpers.jsonFixture(FIXTURE_FILE)).allowingAnyArrayOrdering());
+    assertThat(JsonHelpers.fromJson(JsonHelpers.jsonFixture(FIXTURE_FILE), DatastoreCreateSpec.class),
+        is(datastoreCreateSpec));
   }
 
   @Test

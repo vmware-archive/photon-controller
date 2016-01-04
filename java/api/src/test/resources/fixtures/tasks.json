@@ -12,7 +12,7 @@
             "state": "ERROR",
             "errors": [
                 {
-                    "code": "VmNotFound",
+                    "code": "ErrorCode",
                     "message": "Some message",
                     "data": {
                         "foo": "bar"

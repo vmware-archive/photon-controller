@@ -13,9 +13,13 @@
 
 package com.vmware.photon.controller.api;
 
+import com.vmware.photon.controller.api.helpers.JsonHelpers;
+
+import org.hamcrest.MatcherAssert;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static uk.co.datumedge.hamcrest.json.SameJSONAs.sameJSONAs;
 
 /**
  * Tests {@link NetworkConnection}.
@@ -61,5 +65,28 @@ public class NetworkConnectionTest {
       NetworkConnection networkConnection = createNetworkConnection();
       assertThat(networkConnection.toString(), is(expectedString));
     }
+  }
+
+  /**
+   * Tests JSON serialization.
+   */
+  public class SerializationTest {
+
+    private static final String JSON_FILE = "fixtures/network-connection.json";
+
+    @Test
+    public void testSerialization() throws Exception {
+      NetworkConnection networkConnection = new NetworkConnection("00:50:56:02:00:30");
+      networkConnection.setNetwork("public");
+      networkConnection.setIpAddress("10.146.30.120");
+      networkConnection.setIsConnected(NetworkConnection.Connected.True);
+      networkConnection.setNetmask("255.255.255.128");
+
+      String json = JsonHelpers.jsonFixture(JSON_FILE);
+
+      MatcherAssert.assertThat(JsonHelpers.fromJson(json, NetworkConnection.class), is(networkConnection));
+      MatcherAssert.assertThat(JsonHelpers.asJson(networkConnection), sameJSONAs(json).allowingAnyArrayOrdering());
+    }
+
   }
 }

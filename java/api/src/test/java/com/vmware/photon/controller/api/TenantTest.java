@@ -13,11 +13,18 @@
 
 package com.vmware.photon.controller.api;
 
+import com.vmware.photon.controller.api.base.BaseCompact;
 import com.vmware.photon.controller.api.base.VisibleModel;
+import com.vmware.photon.controller.api.helpers.JsonHelpers;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.hamcrest.MatcherAssert;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.isA;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static uk.co.datumedge.hamcrest.json.SameJSONAs.sameJSONAs;
 
 /**
  * Tests {@link Tenant}.
@@ -27,5 +34,27 @@ public class TenantTest {
   @Test
   public void testIsAVisibleModel() throws Exception {
     MatcherAssert.assertThat(new Tenant(), isA(VisibleModel.class));
+  }
+
+  /**
+   * Tests tenant serialization.
+   */
+  public class TenantSerializationTest {
+
+    @Test
+    public void tenantSerialization() throws Exception {
+      Tenant tenant = new Tenant();
+      tenant.setId("t1");
+      tenant.setSelfLink("http://localhost:9080/v1/tenants/t1");
+      tenant.setName("t1name");
+      tenant.setResourceTickets(ImmutableList.of(BaseCompact.create("rt1", "rt1name"),
+          BaseCompact.create("rt2", "rt2name")));
+
+      tenant.setTags(ImmutableSet.of("foo", "bar"));
+
+      assertThat(JsonHelpers.asJson(tenant),
+          sameJSONAs(JsonHelpers.jsonFixture("fixtures/tenant.json")).allowingAnyArrayOrdering());
+      assertThat(JsonHelpers.fromJson(JsonHelpers.jsonFixture("fixtures/tenant.json"), Tenant.class), is(tenant));
+    }
   }
 }

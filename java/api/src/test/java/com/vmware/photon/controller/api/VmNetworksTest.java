@@ -13,10 +13,13 @@
 
 package com.vmware.photon.controller.api;
 
+import com.vmware.photon.controller.api.helpers.JsonHelpers;
+
 import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static uk.co.datumedge.hamcrest.json.SameJSONAs.sameJSONAs;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -70,5 +73,36 @@ public class VmNetworksTest {
       }
     }
     return result;
+  }
+
+  /**
+   * Tests {@link VmNetworks}.
+   */
+  public class VmNetworksSerializationTest {
+
+    private static final String JSON_FILE = "fixtures/vm-networks.json";
+
+    @Test
+    public void testSerialization() throws Exception {
+      VmNetworks vmNetworks = new VmNetworks();
+      NetworkConnection networkConnection1 = new NetworkConnection("00:50:56:02:00:30");
+      networkConnection1.setNetwork("public");
+      networkConnection1.setIpAddress("10.146.30.120");
+      networkConnection1.setIsConnected(NetworkConnection.Connected.False);
+      networkConnection1.setNetmask("255.255.255.128");
+      vmNetworks.addNetworkConnection(networkConnection1);
+
+      NetworkConnection networkConnection2 = new NetworkConnection("00:50:56:02:00:32");
+      networkConnection2.setNetwork("private");
+      networkConnection2.setIpAddress("10.146.30.122");
+      networkConnection2.setIsConnected(NetworkConnection.Connected.True);
+      networkConnection2.setNetmask("255.255.255.128");
+      vmNetworks.addNetworkConnection(networkConnection2);
+
+      String json = JsonHelpers.jsonFixture(JSON_FILE);
+
+      assertThat(JsonHelpers.fromJson(json, VmNetworks.class), is(vmNetworks));
+      assertThat(JsonHelpers.asJson(vmNetworks), sameJSONAs(json).allowingAnyArrayOrdering());
+    }
   }
 }
