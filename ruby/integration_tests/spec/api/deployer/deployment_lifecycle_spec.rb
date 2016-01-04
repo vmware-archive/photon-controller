@@ -79,18 +79,18 @@ describe "deployment lifecycle", order: :defined, deployer: true do
       end
     end
 
-   # expect(load_balancer_ip).not_to be_nil
+    expect(load_balancer_ip).not_to be_nil
 
-    # # Verify the system status of all the deployed components
-    # lb_client = ApiClientHelper.management(address: load_balancer_ip)
-    # system_status = lb_client.get_status
-    # expect(system_status.status).to eq("READY")
-    # expect(system_status.components.size).to eq(5)
-    #
-    # system_status.components.each do |component|
-    #   expect(component.name).not_to be_nil
-    #   expect(component.status).to eq("READY")
-    # end
+    # Verify the system status of all the deployed components
+    lb_client = ApiClientHelper.management(address: load_balancer_ip)
+    system_status = lb_client.get_status
+    expect(system_status.status).to eq("READY")
+    expect(system_status.components.size).to eq(5)
+
+    system_status.components.each do |component|
+      expect(component.name).not_to be_nil
+      expect(component.status).to eq("READY")
+    end
 
     # Add management host
     EsxCloud::Host.delete host.id
