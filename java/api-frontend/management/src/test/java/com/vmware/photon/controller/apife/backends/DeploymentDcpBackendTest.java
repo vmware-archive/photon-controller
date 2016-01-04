@@ -283,7 +283,7 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
 
       // verify that task steps are created successfully
-      assertThat(taskEntity.getSteps().size(), is(9));
+      assertThat(taskEntity.getSteps().size(), is(7));
       Assert.assertEquals(taskEntity.getSteps().get(0).getOperation(), Operation.PREPARE_DEPLOYMENT);
       Assert.assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.SCHEDULE_DEPLOYMENT);
       Assert.assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.PROVISION_CONTROL_PLANE_HOSTS);
