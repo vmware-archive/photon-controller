@@ -28,13 +28,11 @@ import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.TransferImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientTransferImageErrorMock;
-import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
@@ -340,7 +338,7 @@ public class ImageHostToHostCopyServiceTest {
       service = spy(new ImageHostToHostCopyService());
       doNothing().when(service).sendRequest(Matchers.any());
 
-      host = TestHost.create(mock(HostClient.class), new ZookeeperHostMonitorSuccessMock(), new CloudStoreHelperMock());
+      host = TestHost.create(mock(HostClient.class), null, new CloudStoreHelperMock());
     }
 
     @AfterMethod
@@ -651,7 +649,6 @@ public class ImageHostToHostCopyServiceTest {
     private HostClientFactory hostClientFactory;
     private CloudStoreHelper cloudStoreHelper;
     private ImageHostToHostCopyService.State copyTask;
-    private ZookeeperHostMonitor zookeeperHostMonitor;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -697,16 +694,11 @@ public class ImageHostToHostCopyServiceTest {
     public void testSuccess(int hostCount, TransferImageResultCode code) throws Throwable {
       HostClientMock hostClient = new HostClientMock();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-          hostCount,
-          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
       hostClient.setTransferImageResultCode(code);
       doReturn(hostClient).when(hostClientFactory).create();
 
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       createHostService("datastore0");
       createHostService("datastore1");
 
@@ -739,13 +731,8 @@ public class ImageHostToHostCopyServiceTest {
     public void testFailWithNoHostForSourceDatastore(int hostCount) throws Throwable {
       doReturn(new HostClientTransferImageErrorMock()).when(hostClientFactory).create();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-          hostCount,
-          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       createHostService("datastore1");
 
       // Call Service.
@@ -779,13 +766,8 @@ public class ImageHostToHostCopyServiceTest {
     public void testFailWithNoHostForDestinationDatastore(int hostCount) throws Throwable {
       doReturn(new HostClientTransferImageErrorMock()).when(hostClientFactory).create();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-          hostCount,
-          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       createHostService("datastore0");
 
       // Call Service.
@@ -819,13 +801,8 @@ public class ImageHostToHostCopyServiceTest {
     public void testFailWithTransferImageException(int hostCount) throws Throwable {
       doReturn(new HostClientTransferImageErrorMock()).when(hostClientFactory).create();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-          hostCount,
-          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       createHostService("datastore0");
       createHostService("datastore1");
 
@@ -868,13 +845,8 @@ public class ImageHostToHostCopyServiceTest {
       hostClient.setTransferImageResultCode(code);
       doReturn(hostClient).when(hostClientFactory).create();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-          hostCount,
-          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       createHostService("datastore0");
       createHostService("datastore1");
 
