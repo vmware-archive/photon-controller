@@ -50,6 +50,16 @@ public class CloudStoreHelper {
     this.localHostUri = OperationUtils.getLocalHostUri();
   }
 
+  @VisibleForTesting
+  protected ServerSet getCloudStoreServerSet() {
+    return this.cloudStoreServerSet;
+  }
+
+  @VisibleForTesting
+  protected URI getLocalHostUri() {
+    return this.localHostUri;
+  }
+
   public URI getCloudStoreURI(String path) {
     try {
       return ServiceUtils.createUriFromServerSet(cloudStoreServerSet, path);
