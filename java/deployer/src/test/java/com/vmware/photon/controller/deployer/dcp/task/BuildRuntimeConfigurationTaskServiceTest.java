@@ -617,43 +617,43 @@ public class BuildRuntimeConfigurationTaskServiceTest {
       lightwaveList.add(BuildRuntimeConfigurationTaskService.ENV_LIGHTWAVE_DOMAIN);
 
       return new Object[][]{
-          {
-              ContainersConfig.ContainerType.Chairman,
-              chairmanList
-          },
-          {
-              ContainersConfig.ContainerType.RootScheduler,
-              rootSchedulerList
-          },
-          {
-              ContainersConfig.ContainerType.Housekeeper,
-              housekeeperList
-          },
-          {
-              ContainersConfig.ContainerType.CloudStore,
-              cloudStoreList
-          },
-          {
-              ContainersConfig.ContainerType.ManagementApi,
-              managementApiList
-          },
+//          {
+//              ContainersConfig.ContainerType.Chairman,
+//              chairmanList
+//          },
+//          {
+//              ContainersConfig.ContainerType.RootScheduler,
+//              rootSchedulerList
+//          },
+//          {
+//              ContainersConfig.ContainerType.Housekeeper,
+//              housekeeperList
+//          },
+//          {
+//              ContainersConfig.ContainerType.CloudStore,
+//              cloudStoreList
+//          },
+//          {
+//              ContainersConfig.ContainerType.ManagementApi,
+//              managementApiList
+//          },
           {
               ContainersConfig.ContainerType.Zookeeper,
               zookeeperList
 
           },
-          {
-              ContainersConfig.ContainerType.Deployer,
-              deployerList
-          },
-          {
-              ContainersConfig.ContainerType.LoadBalancer,
-              loadBalancerList
-          },
-          {
-              ContainersConfig.ContainerType.Lightwave,
-              lightwaveList
-          },
+//          {
+//              ContainersConfig.ContainerType.Deployer,
+//              deployerList
+//          },
+//          {
+//              ContainersConfig.ContainerType.LoadBalancer,
+//              loadBalancerList
+//          },
+//          {
+//              ContainersConfig.ContainerType.Lightwave,
+//              lightwaveList
+//          },
       };
     }
 
