@@ -503,5 +503,32 @@ public class HttpFileServiceClientTest {
 
       assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testHttpResponseException() throws Throwable {
+      HttpsURLConnection httpConnection = mock(HttpsURLConnection.class);
+      doThrow(new RuntimeException("Runtime exception")).when(httpConnection).getResponseCode();
+      httpFileServiceClient.setHttpConnection(httpConnection);
+
+      ListenableFutureTask<Integer> task = ListenableFutureTask.create(
+          httpFileServiceClient.getDirectoryListingOfDatastores());
+      executorService.submit(task);
+      CountDownLatch countDownLatch = new CountDownLatch(1);
+      Futures.addCallback(task, new FutureCallback<Integer>() {
+        @Override
+        public void onSuccess(Integer result) {
+          logger.error("Task succeeded unexpectedly: " + Integer.toString(result));
+        }
+
+        @Override
+        public void onFailure(Throwable throwable) {
+          assertTrue(throwable instanceof RuntimeException);
+          assertThat(throwable.getMessage(), containsString("Runtime exception"));
+          countDownLatch.countDown();
+        }
+      });
+
+      assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
+    }
   }
 }
