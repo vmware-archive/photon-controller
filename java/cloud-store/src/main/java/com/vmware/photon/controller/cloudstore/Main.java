@@ -44,8 +44,6 @@ public class Main {
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
   private static final long retryIntervalMsec = TimeUnit.SECONDS.toMillis(30);
 
-  private static final Object lock = new Object();
-
   public static void main(String[] args) throws Throwable {
     LoggingFactory.bootstrap();
 
@@ -79,13 +77,12 @@ public class Main {
     });
 
     cloudStoreDcpHost.start();
+
     // initialize CloudStoreServerSet instance
     ServerSet cloudStoreServerSet = injector.getInstance(Key.get(ServerSet.class, CloudStoreServerSet.class));
+    logger.info("CloudStoreServerSet {}", cloudStoreServerSet.getServers());
+
     registerWithZookeeper(serviceNodeFactory, cloudStoreConfig.getRegistrationAddress(), cloudStoreConfig.getPort());
-    synchronized (lock) {
-      logger.info("CloudStoreServerSet {}", cloudStoreServerSet.getServers());
-      lock.wait();
-    }
   }
 
   private static CloudStoreConfig getConfig(Namespace namespace) {
