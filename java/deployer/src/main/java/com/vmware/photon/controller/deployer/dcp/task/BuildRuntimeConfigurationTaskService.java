@@ -50,6 +50,8 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.gson.Gson;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -425,7 +427,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
               }
 
               try {
-                patchContainerWithDynamicParametersAndPatchDeployment(currentState, containerState, deploymentState);
+                patchContainerWithDynamicParameters(currentState, containerState);
               } catch (Throwable t) {
                 failTask(t);
               }
@@ -436,7 +438,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
       default:
         ServiceUtils.logInfo(this, "No runtime environment needs to be generated for: ", containerType);
-        patchContainerWithDynamicParametersAndPatchDeployment(currentState, containerState, deploymentState);
+        patchContainerWithDynamicParameters(currentState, containerState);
         break;
     }
   }
@@ -461,19 +463,34 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     final AtomicInteger pendingRequests = new AtomicInteger(containerTypeList.size());
     final Map<ContainersConfig.ContainerType, List<String>> response = new ConcurrentHashMap<>();
 
-    FutureCallback<Pair<ContainersConfig.ContainerType, List<String>>> futureCallback =
+    FutureCallback<Triple<ContainersConfig.ContainerType, List<String>, DeploymentService.State>> futureCallback =
+        new FutureCallback<Triple<ContainersConfig.ContainerType, List<String>, DeploymentService.State>>() {
+      @Override
+      public void onSuccess(@Nullable Triple<ContainersConfig.ContainerType, List<String>, DeploymentService.State>
+                                result) {
+        response.put(result.getLeft(), result.getMiddle());
+
+        if (0 == pendingRequests.decrementAndGet()) {
+          for (Map.Entry<ContainersConfig.ContainerType, List<String>> entry : response.entrySet()) {
+            buildRuntimeEnvironmentVars(vmIpAddress, containerState, result.getRight(), containerTemplateState,
+                entry.getValue(), entry.getKey());
+          }
+          patchContainerWithDynamicParameters(currentState, containerState);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        failTask(t);
+      }
+    };
+
+    FutureCallback<Pair<ContainersConfig.ContainerType, List<String>>> setZookeeperMapCallback =
         new FutureCallback<Pair<ContainersConfig.ContainerType, List<String>>>() {
           @Override
           public void onSuccess(@Nullable Pair<ContainersConfig.ContainerType, List<String>> result) {
-            response.put(result.getFirst(), result.getSecond());
-
-            if (0 == pendingRequests.decrementAndGet()) {
-              for (Map.Entry<ContainersConfig.ContainerType, List<String>> entry : response.entrySet()) {
-                buildRuntimeEnvironmentVars(vmIpAddress, containerState, deploymentState, containerTemplateState,
-                    entry.getValue(), entry.getKey());
-              }
-              patchContainerWithDynamicParametersAndPatchDeployment(currentState, containerState, deploymentState);
-            }
+            // We have the IPs, now create the zookeeper map
+            addZookeeperToDeploymentServiceMap(deploymentState, result, futureCallback);
           }
 
           @Override
@@ -483,7 +500,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         };
 
     for (ContainersConfig.ContainerType containerType : containerTypeList) {
-      scheduleQueryContainerTemplateService(containerType, futureCallback);
+      scheduleQueryContainerTemplateService(containerType, setZookeeperMapCallback);
     }
   }
 
@@ -690,8 +707,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         // Ensure that different instances of BuildRuntimeConfigurationTaskService will independently see replicas
         // in same order
         Collections.sort(ipList);
-
-        getOrCreateZookeeperQuorumList(containerState, deploymentState, ipList, vmIpAddress);
+        generateZookeeperQuorumList(containerState, deploymentState, ipList, vmIpAddress);
         break;
       case Lightwave:
         break;
@@ -700,9 +716,36 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     }
   }
 
-  private void getOrCreateZookeeperQuorumList(ContainerService.State containerState,
-                                              DeploymentService.State deploymentState,
-                                              List<String> ipList, String vmIpAddress) {
+  private void addZookeeperToDeploymentServiceMap(DeploymentService.State deploymentState,
+                                                  Pair<ContainersConfig.ContainerType, List<String>> ipListPair,
+                                                  final FutureCallback<Triple<ContainersConfig.ContainerType,
+                                                      List<String>, DeploymentService.State>> callback) {
+    DeploymentService.HostListChangeRequest hostListChangeRequest = new DeploymentService.HostListChangeRequest();
+    hostListChangeRequest.kind = DeploymentService.HostListChangeRequest.Kind.UPDATE_ZOOKEEPER_INFO;
+    hostListChangeRequest.zookeeperIpsToAdd = ipListPair.getSecond();
+
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createPatch(deploymentState.documentSelfLink)
+            .setBody(hostListChangeRequest)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (failure != null) {
+                    ServiceUtils.logSevere(BuildRuntimeConfigurationTaskService.this, failure);
+                    failTask(failure);
+                    return;
+                  }
+
+                  DeploymentService.State newDeploymentState = completedOp.getBody(DeploymentService.State.class);
+                  callback.onSuccess(new ImmutableTriple<>
+                      (ipListPair.getFirst(), ipListPair.getSecond(), newDeploymentState));
+                }
+            ));
+  }
+
+  private void generateZookeeperQuorumList(ContainerService.State containerState,
+                                           DeploymentService.State deploymentState,
+                                           List<String> ipList, String vmIpAddress) {
 
     String myId = null;
     String zookeeperServers = null;
@@ -720,8 +763,8 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
    * the executor service for the DCP host. On successful completion, the
    * service is transitioned to the FINISHED state.
    */
-  private void patchContainerWithDynamicParametersAndPatchDeployment(final State currentState, final ContainerService
-      .State containerState, DeploymentService.State deploymentService) {
+  private void patchContainerWithDynamicParameters(final State currentState,
+                                                   final ContainerService.State containerState) {
     final Service service = this;
 
     Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
@@ -732,25 +775,8 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           return;
         }
 
-        DeploymentService.State patchState = new DeploymentService.State();
-        patchState.zookeeperIdToIpMap = deploymentService.zookeeperIdToIpMap;
-
-        sendRequest(
-            HostUtils.getCloudStoreHelper(BuildRuntimeConfigurationTaskService.this)
-                .createPatch(deploymentService.documentSelfLink)
-                .setBody(patchState)
-                .setCompletion(
-                    (completedOp, failure) -> {
-                      if (failure != null) {
-                        ServiceUtils.logSevere(BuildRuntimeConfigurationTaskService.this, failure);
-                        failTask(failure);
-                        return;
-                      }
-
-                      State selfPatchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-                      TaskUtils.sendSelfPatch(service, selfPatchState);
-                    }
-                ));
+        State selfPatchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+        TaskUtils.sendSelfPatch(service, selfPatchState);
       }
     };
 
@@ -789,40 +815,12 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
   private Pair<Integer, List<ZookeeperServer>> generateZookeeperQuorumList(List<String> zookeeperReplicas,
       String myIp, DeploymentService.State deploymentState) {
+
     //'server.1=zookeeper1:2888:3888', 'server.2=zookeeper2:2888:3888',
     List<ZookeeperServer> quorumConfig = new ArrayList<>();
-    Map<Integer, String> finalMap = deploymentState.zookeeperIdToIpMap;
-    if (finalMap == null) {
-      finalMap = new HashMap<>();
-    }
-
-    for (int i = 0; i < zookeeperReplicas.size(); i++) {
-      String replicaIp = zookeeperReplicas.get(i).trim();
-
-      if (finalMap.containsValue(replicaIp)) {
-        // This replica is already in the map
-        continue;
-      }
-
-      int idx = i + 1;
-
-      if (!finalMap.containsKey(idx)) {
-        finalMap.put(idx, replicaIp);
-        ServiceUtils.logInfo(this, "Putting " + replicaIp + " in the map with this id " + idx);
-      } else {
-        // This id is occupied by someone else, let's find an empty spot
-        int j = 1;
-        while (finalMap.containsKey(j)) {
-          j++;
-        }
-        finalMap.put(j, replicaIp);
-        ServiceUtils.logInfo(this, "Found spot " + replicaIp + " in the map with this id " + j);
-      }
-    }
-
     boolean matchFound = false;
     int myId = 1;
-    for (Map.Entry<Integer, String> zkPair : finalMap.entrySet()) {
+    for (Map.Entry<Integer, String> zkPair : deploymentState.zookeeperIdToIpMap.entrySet()) {
       if (zkPair.getValue().equals(myIp)) {
         matchFound = true;
         myId = zkPair.getKey();
@@ -837,7 +835,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     }
 
     ServiceUtils.logInfo(this, "Generated Zookeeper(%s) Quorum: %s", myId, quorumConfig.toString());
-    deploymentState.zookeeperIdToIpMap = finalMap;
 
     return new Pair<Integer, List<ZookeeperServer>>(myId, quorumConfig);
   }

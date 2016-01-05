@@ -28,6 +28,8 @@ import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -57,7 +59,7 @@ public class DeploymentService extends StatefulService {
         Action.PATCH,
         new RequestRouter.RequestBodyMatcher<HostListChangeRequest>(
             HostListChangeRequest.class, "kind",
-            HostListChangeRequest.PatchType.UPDATE_ZOOKEEPER_INFO),
+            HostListChangeRequest.Kind.UPDATE_ZOOKEEPER_INFO),
         this::handlePatchUpdateHostListInfo, "UpdateHostListInfo");
 
     OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
@@ -107,8 +109,7 @@ public class DeploymentService extends StatefulService {
       State currentState = getState(patchOperation);
       HostListChangeRequest patchState = patchOperation.getBody(HostListChangeRequest.class);
 
-      // Implement this with the next change
-
+      currentState = updateHostListInfo(currentState, patchState);
       validateState(currentState);
 
       setState(patchOperation, currentState);
@@ -120,6 +121,48 @@ public class DeploymentService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       patchOperation.fail(t);
     }
+  }
+
+  private State updateHostListInfo(State currentState, HostListChangeRequest patchState) {
+    if (patchState.zookeeperIpToRemove != null) {
+      ServiceUtils.logInfo(this, "Removing " + patchState.zookeeperIpToRemove + " from DeploymentService map");
+      if (currentState.zookeeperIdToIpMap != null) {
+        // Use iterator since it is safer to modify this map
+        Iterator<Map.Entry<Integer, String>> it = currentState.zookeeperIdToIpMap.entrySet().iterator();
+        while (it.hasNext()) {
+          Map.Entry<Integer, String> zkNode = it.next();
+          if (zkNode.getValue().equals(patchState.zookeeperIpToRemove)) {
+            currentState.zookeeperIdToIpMap.remove(zkNode.getKey());
+            ServiceUtils.logInfo(this, "Removed " + zkNode.getKey() + " - " + zkNode.getValue());
+            break;
+          }
+        }
+      }
+    }
+
+    if (patchState.zookeeperIpsToAdd != null) {
+      ServiceUtils.logInfo(this, "Adding " + patchState.zookeeperIpsToAdd.size() + " ips to DeploymentService map");
+      if (currentState.zookeeperIdToIpMap == null) {
+        currentState.zookeeperIdToIpMap = new HashMap<>();
+      }
+
+      for (String zookeeperIpToAdd : patchState.zookeeperIpsToAdd) {
+        // Do we know about this zookeeper?
+        if (currentState.zookeeperIdToIpMap.containsValue(zookeeperIpToAdd)) {
+          ServiceUtils.logInfo(this, "zookeeperIdToMap already contains " + zookeeperIpToAdd);
+        } else {
+          int idx = 1;
+          // Let's find an empty spot
+          while (currentState.zookeeperIdToIpMap.containsKey(idx)) {
+            idx++;
+          }
+          currentState.zookeeperIdToIpMap.put(idx, zookeeperIpToAdd);
+          ServiceUtils.logInfo(this, "Found spot " + zookeeperIpToAdd + " in the map with this id " + idx);
+        }
+      }
+    }
+
+    return currentState;
   }
 
   @Override
@@ -146,17 +189,16 @@ public class DeploymentService extends StatefulService {
    * The request to change host list related fields.
    */
   public static class HostListChangeRequest {
-    public PatchType patchtype = PatchType.NONE;
+    public Kind kind;
 
-    public String zookeeperIpToAdd;
+    public List<String> zookeeperIpsToAdd;
 
     public String zookeeperIpToRemove;
 
     /**
      * Defines the purpose of the patch.
      */
-    public enum PatchType {
-      NONE,
+    public enum Kind {
       UPDATE_ZOOKEEPER_INFO,
     }
   }

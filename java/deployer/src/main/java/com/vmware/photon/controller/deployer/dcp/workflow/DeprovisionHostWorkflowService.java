@@ -384,19 +384,19 @@ public class DeprovisionHostWorkflowService extends StatefulService {
   private void updateZookeeperMapAndHostService(State currentState, boolean ignoreError) {
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.hostServiceLink)
-        .setCompletion(
-            (completedOp, failure) -> {
-              if (null != failure) {
-                handleZookeeperStepFailure(failure, "Error while getting host " + currentState.hostServiceLink,
-                    ignoreError);
-                return;
-              }
+            .createGet(currentState.hostServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    handleZookeeperStepFailure(failure, "Error while getting host " + currentState.hostServiceLink,
+                        ignoreError);
+                    return;
+                  }
 
-              HostService.State hostService = completedOp.getBody(HostService.State.class);
-              updateZookeeperMapAndHostService(currentState, hostService.hostAddress, ignoreError);
-            }
-        )
+                  HostService.State hostService = completedOp.getBody(HostService.State.class);
+                  updateZookeeperMapAndHostService(currentState, hostService.hostAddress, ignoreError);
+                }
+            )
     );
   }
 
@@ -464,17 +464,18 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                       return;
                     }
 
-                    DeploymentService.State updatedDeployment = new DeploymentService.State();
+                    DeploymentService.HostListChangeRequest hostListChangeRequest =
+                        new DeploymentService.HostListChangeRequest();
+                    hostListChangeRequest.kind = DeploymentService.HostListChangeRequest.Kind.UPDATE_ZOOKEEPER_INFO;
+                    hostListChangeRequest.zookeeperIpToRemove = hostAddress;
 
-                    deploymentService.zookeeperIdToIpMap.remove(zkIndex);
-                    updatedDeployment.zookeeperIdToIpMap = deploymentService.zookeeperIdToIpMap;
                     FutureCallback callback = new FutureCallback() {
                       @Override
                       public void onSuccess(@Nullable Object result) {
                         sendRequest(
                             HostUtils.getCloudStoreHelper(DeprovisionHostWorkflowService.this)
                                 .createPatch(deploymentService.documentSelfLink)
-                                .setBody(updatedDeployment)
+                                .setBody(hostListChangeRequest)
                                 .setCompletion(
                                     (operation, throwable) -> {
                                       if (null != throwable) {
