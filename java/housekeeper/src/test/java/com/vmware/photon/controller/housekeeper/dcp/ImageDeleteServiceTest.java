@@ -44,7 +44,6 @@ import com.vmware.xenon.common.ServiceStats;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
-import com.google.inject.Injector;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +71,6 @@ import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 /**
  * Tests {@link ImageDeleteService}.
@@ -80,9 +78,7 @@ import java.util.function.Predicate;
 public class ImageDeleteServiceTest {
 
   private static final Logger logger = LoggerFactory.getLogger(ImageDeleteServiceTest.class);
-  private static final String configFilePath = "/config.yml";
 
-  private Injector injector;
   private TestHost host;
   private ImageDeleteService service;
 
@@ -670,13 +666,7 @@ public class ImageDeleteServiceTest {
           ImageDeleteServiceFactory.SELF_LINK,
           deleteTask,
           ImageDeleteService.State.class,
-          new Predicate<ImageDeleteService.State>() {
-            @Override
-            public boolean test(ImageDeleteService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FINISHED;
-            }
-          }
-      );
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
       //Check Image Service replicatedDatastore counts
       createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
@@ -749,12 +739,7 @@ public class ImageDeleteServiceTest {
           ImageDeleteServiceFactory.SELF_LINK,
           deleteTask,
           ImageDeleteService.State.class,
-          new Predicate<ImageDeleteService.State>() {
-            @Override
-            public boolean test(ImageDeleteService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FINISHED;
-            }
-          }
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED
       );
 
       //Check Image Service replicatedDatastore counts
@@ -824,12 +809,9 @@ public class ImageDeleteServiceTest {
           ImageDeleteServiceFactory.SELF_LINK,
           deleteTask,
           ImageDeleteService.State.class,
-          new Predicate<ImageDeleteService.State>() {
-            @Override
-            public boolean test(ImageDeleteService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FINISHED;
-            }
-          }
+          (state) ->
+              state.taskInfo.stage == TaskState.TaskStage.FINISHED
+
       );
 
       // Check response.
@@ -875,12 +857,7 @@ public class ImageDeleteServiceTest {
           ImageDeleteServiceFactory.SELF_LINK,
           deleteTask,
           ImageDeleteService.State.class,
-          new Predicate<ImageDeleteService.State>() {
-            @Override
-            public boolean test(ImageDeleteService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FAILED;
-            }
-          }
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED
       );
 
       // Check response.
@@ -923,12 +900,7 @@ public class ImageDeleteServiceTest {
           ImageDeleteServiceFactory.SELF_LINK,
           deleteTask,
           ImageDeleteService.State.class,
-          new Predicate<ImageDeleteService.State>() {
-            @Override
-            public boolean test(ImageDeleteService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FAILED;
-            }
-          }
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED
       );
 
       // Check response.
@@ -988,13 +960,7 @@ public class ImageDeleteServiceTest {
           ImageDeleteServiceFactory.SELF_LINK,
           deleteTask,
           ImageDeleteService.State.class,
-          new Predicate<ImageDeleteService.State>() {
-            @Override
-            public boolean test(ImageDeleteService.State state) {
-              return state.taskInfo.stage == TaskState.TaskStage.FAILED;
-            }
-          }
-      );
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
 
       // Check response.
       assertThat(response.image, is(deleteTask.image));
