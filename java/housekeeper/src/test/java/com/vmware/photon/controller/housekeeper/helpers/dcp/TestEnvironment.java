@@ -20,8 +20,10 @@ import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceSta
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;
+import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
 import com.vmware.xenon.common.ServiceHost;
 
+import com.google.inject.Injector;
 import org.apache.commons.io.FileUtils;
 import static org.testng.Assert.assertTrue;
 
@@ -34,6 +36,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class TestEnvironment extends MultiHostEnvironment<HousekeeperDcpServiceHost> {
 
+  private static final String configFilePath = "/config.yml";
+
+  private Injector injector = TestHelper.createInjector(configFilePath);
+
   public TestEnvironment(CloudStoreHelper cloudStoreHelper, HostClientFactory hostClientFactory,
                          ZookeeperHostMonitor zookeeperHostMonitor, int hostCount) throws Throwable {
     assertTrue(hostCount > 0);
@@ -43,6 +49,9 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperDcpServiceH
       String sandbox = generateStorageSandboxPath();
       FileUtils.forceMkdir(new File(sandbox));
 
+      if (zookeeperHostMonitor == null) {
+        zookeeperHostMonitor = injector.getInstance(ZookeeperHostMonitor.class);
+      }
       hosts[i] = new HousekeeperDcpServiceHost(cloudStoreHelper, BIND_ADDRESS, -1,
           sandbox, hostClientFactory, zookeeperHostMonitor);
     }
