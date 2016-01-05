@@ -11,13 +11,12 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.deployer;
+package com.vmware.photon.controller.deployer.dcp;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 /**
- * This class defines an interface for providers of
- * {@link ListeningExecutorService} objects.
+ * This class defines an interface for providers of {@link ListeningExecutorService} objects.
  */
 public interface ListeningExecutorServiceProvider {
   ListeningExecutorService getListeningExecutorService();
