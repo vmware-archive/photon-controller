@@ -18,13 +18,15 @@ import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;
-import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
+import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
+import org.glassfish.jersey.server.ContainerRequest;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -57,9 +59,11 @@ public class ClusterVmsResource {
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of VMs in the cluster")})
   public Response get(@Context Request request, @PathParam("id") String clusterId)
       throws ExternalException {
-    Response response = generateCustomResponse(
+    Response response = generateResourceListResponse(
         Response.Status.OK,
-        clusterFeClient.findVms(clusterId));
+        clusterFeClient.findVms(clusterId),
+        (ContainerRequest) request,
+        VmResourceRoutes.VM_PATH);
     return response;
   }
 }

@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
 
 import org.mockito.Mock;
 import org.testng.annotations.Test;
@@ -24,9 +25,11 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +56,7 @@ public class ClusterVmsResourceTest extends ResourceTest {
     ArrayList<Vm> vms = new ArrayList<>();
     for (int i = 0; i < 5; i++) {
       Vm vm = new Vm();
+      vm.setId("vm" + i);
       vms.add(vm);
     }
 
@@ -61,7 +65,15 @@ public class ClusterVmsResourceTest extends ResourceTest {
     Response response = client().target(clusterVmsRoute).request().get();
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
-    List<Vm> result = response.readEntity(ResourceList.class).getItems();
+    List<Vm> result = response.readEntity(new GenericType<ResourceList<Vm>>(){}).getItems();
     assertThat(result.size(), is(vms.size()));
+
+    for (int i = 0; i < result.size(); i++) {
+      assertThat(new URI(result.get(i).getSelfLink()).isAbsolute(), is(true));
+      assertThat(result.get(i), is(vms.get(i)));
+
+      String vmRoutePath = UriBuilder.fromPath(VmResourceRoutes.VM_PATH).build(vms.get(i).getId()).toString();
+      assertThat(result.get(i).getSelfLink().endsWith(vmRoutePath), is(true));
+    }
   }
 }
