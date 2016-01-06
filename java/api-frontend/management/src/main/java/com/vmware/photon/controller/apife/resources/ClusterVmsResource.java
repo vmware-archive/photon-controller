@@ -17,10 +17,13 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -33,6 +36,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
@@ -48,20 +52,37 @@ import javax.ws.rs.core.Response;
 public class ClusterVmsResource {
 
   private final ClusterFeClient clusterFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public ClusterVmsResource(ClusterFeClient clusterFeClient) {
+  public ClusterVmsResource(ClusterFeClient clusterFeClient, PaginationConfig paginationConfig) {
     this.clusterFeClient = clusterFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @GET
   @ApiOperation(value = "Find VMs in a cluster", response = Vm.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of VMs in the cluster")})
-  public Response get(@Context Request request, @PathParam("id") String clusterId)
-      throws ExternalException {
+  public Response get(@Context Request request,
+                      @PathParam("id") String clusterId,
+                      @QueryParam("pageSize") Optional<Integer> pageSize,
+                      @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
+
+    ResourceList<Vm> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = clusterFeClient.getVmsPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+
+      // Temporarily set the adjustedPageSize back to pageSize as the cli side has not implemented
+      // the function to read page by page. We should allow empty pageSize at this time.
+      adjustedPageSize = pageSize;
+      resourceList = clusterFeClient.findVms(clusterId, adjustedPageSize);
+    }
+
     Response response = generateResourceListResponse(
         Response.Status.OK,
-        clusterFeClient.findVms(clusterId),
+        PaginationUtils.formalizePageLinks(resourceList, ClusterResourceRoutes.API),
         (ContainerRequest) request,
         VmResourceRoutes.VM_PATH);
     return response;
