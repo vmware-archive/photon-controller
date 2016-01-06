@@ -25,6 +25,7 @@ import com.vmware.xenon.services.common.QueryTask;
 import org.apache.commons.io.FileUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,15 +48,15 @@ import java.util.function.Predicate;
  * Tests {@link BasicServiceHost}.
  */
 public class BasicServiceHostTest {
-  public static final String SERVICE_URI = ServiceUriPaths.SERVICES_ROOT + "/BasicServiceHostTest";
-  public static final int WAIT_ITERATION_SLEEP = 10;
-  public static final int WAIT_ITERATION_COUNT = 10;
+
   public static final String BIND_ADDRESS = "0.0.0.0";
   public static final Integer BIND_PORT = 46001;
+  public static final String SERVICE_URI = ServiceUriPaths.SERVICES_ROOT + "/BasicServiceHostTest";
   public static final String STORAGE_PATH = "/tmp/dcp/BasicServiceHostTest/" + UUID.randomUUID().toString() + "/";
-  private static final File storageDir = new File(STORAGE_PATH);
+  public static final int WAIT_ITERATION_SLEEP = 10;
+  public static final int WAIT_ITERATION_COUNT = 10;
 
-  private BasicServiceHost host;
+  private static final File storageDir = new File(STORAGE_PATH);
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -68,27 +69,34 @@ public class BasicServiceHostTest {
    * Tests for the host lifecycle operations - construction, initialization, start and destruction.
    */
   public class HostLifecycleTests {
-    @BeforeMethod
+
+    private BasicServiceHost host;
+
+    @BeforeClass
     public void setUp() throws Throwable {
       FileUtils.deleteDirectory(storageDir);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (host != null) {
+        host.destroy();
+        host = null;
+      }
+
+      FileUtils.deleteDirectory(storageDir);
+    }
+
+    @Test
+    public void testInitializeWithStorageDirExisting() throws Throwable {
+
       host = new BasicServiceHost(BIND_ADDRESS,
           BIND_PORT,
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
           WAIT_ITERATION_COUNT);
-    }
 
-    @AfterMethod
-    public void tearDown() throws Throwable {
-      if (host != null) { //some tests try to re-assign to this member and may fail
-        host.destroy();
-      }
-      FileUtils.deleteDirectory(storageDir);
-    }
-
-    @Test
-    public void testInitializeWithStorageDirExisting() throws Throwable {
       // make sure folder exists prior to initialization of host
       storageDir.mkdirs();
       host.initialize();
@@ -97,6 +105,14 @@ public class BasicServiceHostTest {
 
     @Test
     public void testInitializeWithStorageDirNotExisting() throws Throwable {
+
+      host = new BasicServiceHost(BIND_ADDRESS,
+          BIND_PORT,
+          STORAGE_PATH,
+          SERVICE_URI,
+          WAIT_ITERATION_SLEEP,
+          WAIT_ITERATION_COUNT);
+
       // make sure folder does not exist prior to initialization of host
       FileUtils.deleteDirectory(storageDir);
       host.initialize();
@@ -105,6 +121,14 @@ public class BasicServiceHostTest {
 
     @Test
     public void testParamsPassedToConstructor() throws Throwable {
+
+      host = new BasicServiceHost(BIND_ADDRESS,
+          BIND_PORT,
+          STORAGE_PATH,
+          SERVICE_URI,
+          WAIT_ITERATION_SLEEP,
+          WAIT_ITERATION_COUNT);
+
       host.initialize();
       assertThat(host.getPort(), is(BIND_PORT));
       Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(BIND_PORT));
@@ -116,6 +140,7 @@ public class BasicServiceHostTest {
 
     @Test
     public void testParamsPassedToCreate() throws Throwable {
+
       host = BasicServiceHost.create(BIND_ADDRESS,
           BIND_PORT,
           STORAGE_PATH,
@@ -162,6 +187,13 @@ public class BasicServiceHostTest {
     public void startWithCoreServices() throws Throwable {
       //check if a few of the core services are available in the host
 
+      host = new BasicServiceHost(BIND_ADDRESS,
+          BIND_PORT,
+          STORAGE_PATH,
+          SERVICE_URI,
+          WAIT_ITERATION_SLEEP,
+          WAIT_ITERATION_COUNT);
+
       host.initialize();
       host.startWithCoreServices();
       assertThat(host.isStarted(), is(true));
@@ -189,6 +221,14 @@ public class BasicServiceHostTest {
 
     @Test
     public void testDestroy() throws Throwable {
+
+      host = new BasicServiceHost(BIND_ADDRESS,
+          BIND_PORT,
+          STORAGE_PATH,
+          SERVICE_URI,
+          WAIT_ITERATION_SLEEP,
+          WAIT_ITERATION_COUNT);
+
       host.initialize();
       File storageDir = new File(host.getStorageSandbox());
       assertThat(storageDir.exists(), is(true));
@@ -217,24 +257,35 @@ public class BasicServiceHostTest {
    * Tests for the service start operation.
    */
   public class ServiceStartTests {
+
+    private BasicServiceHost host;
+
+    @BeforeClass
+    public void setUpClass() throws Throwable {
+      FileUtils.deleteDirectory(storageDir);
+    }
+
     @BeforeMethod
     public void setUp() throws Throwable {
-      FileUtils.deleteDirectory(storageDir);
+
       host = new BasicServiceHost(BIND_ADDRESS,
           BIND_PORT,
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
           WAIT_ITERATION_COUNT);
+
       host.initialize();
       host.startWithCoreServices();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      if (host != null) { //some tests try to re-assign to this member and may fail
+      if (host != null) {
         host.destroy();
+        host = null;
       }
+
       FileUtils.deleteDirectory(storageDir);
     }
 
@@ -263,24 +314,35 @@ public class BasicServiceHostTest {
    * Tests for the service status check operations.
    */
   public class ServiceStateTests {
-    @BeforeMethod
-    public void setUp() throws Throwable {
+
+    private BasicServiceHost host;
+
+    @BeforeClass
+    public void setUpClass() throws Throwable {
       FileUtils.deleteDirectory(storageDir);
+    }
+
+    @BeforeMethod
+    public void setUpTest() throws Throwable {
+
       host = new BasicServiceHost(BIND_ADDRESS,
           BIND_PORT,
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
           WAIT_ITERATION_COUNT);
+
       host.initialize();
       host.startWithCoreServices();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      if (host != null) { //some tests try to re-assign to this member and may fail
+      if (host != null) {
         host.destroy();
+        host = null;
       }
+
       FileUtils.deleteDirectory(storageDir);
     }
 
