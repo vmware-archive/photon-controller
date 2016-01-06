@@ -313,7 +313,7 @@ public class CreateFlavorTaskService extends StatefulService {
 
           try {
             int finalCpuCount = 0;
-            int finalMemoryMb = 0;
+            long finalMemoryMb = 0;
             int finalDiskGb = 0;
 
             for (Operation getOperation : ops.values()) {
@@ -324,20 +324,17 @@ public class CreateFlavorTaskService extends StatefulService {
               finalDiskGb += containerTemplateState.diskGb;
             }
 
-            // The ratio of the resource which can be consumed by the management vm to the total host resource
-            float mgmtVmHostRatio = MiscUtils.getManagementVmHostRatio(hostState);
-
             // If host memory and cpu count is set, consume them entirely for the management vm.
             if (hostState.memoryMb != null) {
-              finalMemoryMb = (int) (hostState.memoryMb * mgmtVmHostRatio);
-              ServiceUtils.logInfo(this, "Using memory override value of %d MB (%f * %d)", finalMemoryMb,
-                  mgmtVmHostRatio, hostState.memoryMb);
+              finalMemoryMb = MiscUtils.getAdjustedManagementHostMemory(hostState);
+              ServiceUtils.logInfo(this, "Using memory override value of %d MB (total host memory %d)", finalMemoryMb,
+                  hostState.memoryMb);
             }
 
             if (hostState.cpuCount != null) {
-              finalCpuCount = (int) (hostState.cpuCount * mgmtVmHostRatio);
-              ServiceUtils.logInfo(this, "Using CPU count override value of %d (%f * %d)", finalCpuCount,
-                  mgmtVmHostRatio, hostState.cpuCount);
+              finalCpuCount = MiscUtils.getAdjustedManagementHostCpu(hostState);
+              ServiceUtils.logInfo(this, "Using CPU count override value of %d (total host cpus %d)", finalCpuCount,
+                  hostState.cpuCount);
             }
 
             createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryMb, finalDiskGb);
@@ -350,7 +347,7 @@ public class CreateFlavorTaskService extends StatefulService {
   }
 
   private void createFlavorInApife(final State currentState, final VmService.State vmState, final int finalCpuCount,
-                                   final int finalMemoryMb, final int finalDiskGb) throws IOException {
+                                   final long finalMemoryMb, final int finalDiskGb) throws IOException {
 
     FlavorCreateSpec vmFlavorCreateSpec = composeVmFlavorCreateSpec(vmState, finalCpuCount, finalMemoryMb);
     FlavorCreateSpec diskFlavorCreateSpec = composeDiskFlavorCreateSpec(vmState, finalDiskGb);
@@ -427,7 +424,7 @@ public class CreateFlavorTaskService extends StatefulService {
   }
 
   private FlavorCreateSpec composeVmFlavorCreateSpec(final VmService.State vmState, int finalCpuCount,
-                                                     int finalMemoryMb) {
+                                                     long finalMemoryMb) {
     FlavorCreateSpec spec = new FlavorCreateSpec();
     spec.setName(String.format("mgmt-vm-%s", vmState.name));
     spec.setKind("vm");
