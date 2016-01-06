@@ -1004,7 +1004,7 @@ public class ProvisionHostTaskServiceTest {
           HostService.State.class);
 
       assertThat(hostState.reportedDatastores, containsInAnyOrder(datastoreList.stream()
-          .map((datastore) -> datastore.getId()).filter((id) -> !imageDatastoreIds.contains(id)).toArray()));
+          .map((datastore) -> datastore.getId()).toArray()));
       assertThat(hostState.reportedImageDatastores, containsInAnyOrder(datastoreList.stream()
           .map((datastore) -> datastore.getId()).filter((id) -> imageDatastoreIds.contains(id)).toArray()));
 
@@ -1187,7 +1187,7 @@ public class ProvisionHostTaskServiceTest {
           HostService.State.class);
 
       assertThat(hostState.reportedDatastores, containsInAnyOrder(datastoreList.stream()
-          .map((datastore) -> datastore.getId()).filter((id) -> !imageDatastoreIds.contains(id)).toArray()));
+          .map((datastore) -> datastore.getId()).toArray()));
       assertThat(hostState.reportedImageDatastores, containsInAnyOrder(datastoreList.stream()
           .map((datastore) -> datastore.getId()).filter((id) -> imageDatastoreIds.contains(id)).toArray()));
 

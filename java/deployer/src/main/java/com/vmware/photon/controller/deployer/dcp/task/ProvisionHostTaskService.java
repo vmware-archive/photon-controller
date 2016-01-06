@@ -39,6 +39,8 @@ import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.resource.gen.Datastore;
+import com.vmware.photon.controller.resource.gen.Network;
+import com.vmware.photon.controller.resource.gen.NetworkType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
@@ -573,11 +575,27 @@ public class ProvisionHostTaskService extends StatefulService {
   }
 
   private void processHostConfig(State currentState, HostConfig hostConfig) {
-    Set<String> reportedDataStores = new HashSet<>();
-    Set<String> reportedImageDataStores = new HashSet<>();
-    Map<String, String> datastoreServiceLinks = new HashMap<>();
-    Set<DatastoreService.State> dataStoreStartStates = new HashSet<>();
-    if (hostConfig.isSetDatastores() && hostConfig.getDatastores() != null) {
+    Set<String> reportedDataStores = null;
+    Set<String> reportedImageDataStores = null;
+    Set<String> reportedNetworks = null;
+    Map<String, String> datastoreServiceLinks = null;
+    Set<DatastoreService.State> datastoreStartStates = null;
+
+    if (hostConfig.isSetDatastores()
+        && hostConfig.getDatastores() != null
+        && !hostConfig.getDatastores().isEmpty()) {
+
+      reportedDataStores = new HashSet<>();
+      for (Datastore datastore : hostConfig.getDatastores()) {
+        reportedDataStores.add(datastore.getId());
+      }
+
+      datastoreServiceLinks = new HashMap<>();
+      for (Datastore datastore : hostConfig.getDatastores()) {
+        datastoreServiceLinks.put(datastore.getName(), DatastoreServiceFactory.SELF_LINK + "/" + datastore.getId());
+      }
+
+      datastoreStartStates = new HashSet<>();
       for (Datastore datastore : hostConfig.getDatastores()) {
         DatastoreService.State datastoreStartState = new DatastoreService.State();
         datastoreStartState.id = datastore.getId();
@@ -590,21 +608,32 @@ public class ProvisionHostTaskService extends StatefulService {
             && hostConfig.getImage_datastore_ids() != null
             && hostConfig.getImage_datastore_ids().contains(datastore.getId())) {
           datastoreStartState.isImageDatastore = true;
-          reportedImageDataStores.add(datastore.getId());
-        } else {
-          datastoreStartState.isImageDatastore = false;
-          reportedDataStores.add(datastore.getId());
         }
 
-        datastoreServiceLinks.put(datastore.getName(),
-            DatastoreServiceFactory.SELF_LINK + "/" + datastore.getId());
-        dataStoreStartStates.add(datastoreStartState);
+        datastoreStartStates.add(datastoreStartState);
+      }
+    }
+
+    if (hostConfig.isSetNetworks() && hostConfig.getNetworks() != null) {
+      reportedNetworks = new HashSet<>();
+      for (Network network : hostConfig.getNetworks()) {
+        if (network.getTypes() != null && network.getTypes().contains(NetworkType.VM)) {
+          reportedNetworks.add(network.getId());
+        }
+      }
+    }
+
+    if (hostConfig.isSetImage_datastore_ids() && hostConfig.getImage_datastore_ids() != null) {
+      reportedImageDataStores = new HashSet<>();
+      for (String datastoreId : hostConfig.getImage_datastore_ids()) {
+        reportedImageDataStores.add(datastoreId);
       }
     }
 
     HostService.State patchState = new HostService.State();
     patchState.reportedDatastores = reportedDataStores;
     patchState.reportedImageDatastores = reportedImageDataStores;
+    patchState.reportedNetworks = reportedNetworks;
     patchState.datastoreServiceLinks = datastoreServiceLinks;
 
     if (hostConfig.isSetCpu_count()) {
@@ -615,14 +644,16 @@ public class ProvisionHostTaskService extends StatefulService {
       patchState.memoryMb = hostConfig.getMemory_mb();
     }
 
-    if (dataStoreStartStates.isEmpty()) {
+    if (datastoreStartStates == null) {
       patchHost(currentState, patchState);
       return;
     }
 
     OperationJoin
-        .create(dataStoreStartStates.stream().map((datastoreState) -> HostUtils.getCloudStoreHelper(this)
-            .createPost(DatastoreServiceFactory.SELF_LINK).setBody(datastoreState)))
+        .create(datastoreStartStates.stream()
+            .map((datastoreState) -> HostUtils.getCloudStoreHelper(this)
+                .createPost(DatastoreServiceFactory.SELF_LINK)
+                .setBody(datastoreState)))
         .setCompletion((ops, exs) -> {
           for (Map.Entry<Long, Operation> entry : ops.entrySet()) {
             if (entry.getValue().getStatusCode() == Operation.STATUS_CODE_CONFLICT) {
