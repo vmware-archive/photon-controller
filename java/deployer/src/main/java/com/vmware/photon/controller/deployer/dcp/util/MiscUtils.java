@@ -66,7 +66,7 @@ public class MiscUtils {
     return builder.toString();
   }
 
-  public static String getSelfLink(Class factoryClass) {
+  public static String getSelfLink(Class<?> factoryClass) {
     try {
       String result = ServiceHostUtils.getServiceSelfLink("SELF_LINK", factoryClass);
 
@@ -277,9 +277,24 @@ public class MiscUtils {
         .sendWith(service);
   }
 
-  public static float getManagementVmHostRatio(HostService.State hostState) {
+  private static float getManagementVmHostRatio(HostService.State hostState) {
     return hostState.usageTags.contains(UsageTag.CLOUD.name()) ?
         DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO :
         DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO;
+  }
+
+  public static int getAdjustedManagementHostCpu(HostService.State hostState) {
+    float managementVmHostRatio = getManagementVmHostRatio(hostState);
+    return (int) (hostState.cpuCount * managementVmHostRatio);
+  }
+
+  public static long getAdjustedManagementHostMemory(HostService.State hostState) {
+    float managementVmHostRatio = getManagementVmHostRatio(hostState);
+    long afterRationMemeory = (long) (hostState.memoryMb * managementVmHostRatio);
+    return floorToNearestNumberDivisibleByFour(afterRationMemeory);
+  }
+
+  public static long floorToNearestNumberDivisibleByFour(long number) {
+    return number & ~(0x3);
   }
 }
