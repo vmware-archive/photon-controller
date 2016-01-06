@@ -324,20 +324,17 @@ public class CreateFlavorTaskService extends StatefulService {
               finalDiskGb += containerTemplateState.diskGb;
             }
 
-            // The ratio of the resource which can be consumed by the management vm to the total host resource
-            float mgmtVmHostRatio = MiscUtils.getManagementVmHostRatio(hostState);
-
             // If host memory and cpu count is set, consume them entirely for the management vm.
             if (hostState.memoryMb != null) {
-              finalMemoryMb = (int) (hostState.memoryMb * mgmtVmHostRatio);
-              ServiceUtils.logInfo(this, "Using memory override value of %d MB (%f * %d)", finalMemoryMb,
-                  mgmtVmHostRatio, hostState.memoryMb);
+              finalMemoryMb = MiscUtils.getAdjustedManagementHostMemory(hostState);
+              ServiceUtils.logInfo(this, "Using memory override value of %d MB (total host memory %d)", finalMemoryMb,
+                  hostState.memoryMb);
             }
 
             if (hostState.cpuCount != null) {
-              finalCpuCount = (int) (hostState.cpuCount * mgmtVmHostRatio);
-              ServiceUtils.logInfo(this, "Using CPU count override value of %d (%f * %d)", finalCpuCount,
-                  mgmtVmHostRatio, hostState.cpuCount);
+              finalCpuCount = MiscUtils.getAdjustedManagementHostCpu(hostState);
+              ServiceUtils.logInfo(this, "Using CPU count override value of %d (total host cpus %d)", finalCpuCount,
+                  hostState.cpuCount);
             }
 
             createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryMb, finalDiskGb);

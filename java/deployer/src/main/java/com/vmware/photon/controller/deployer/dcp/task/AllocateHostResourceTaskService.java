@@ -265,11 +265,10 @@ public class AllocateHostResourceTaskService extends StatefulService {
 
     long totalMemory = templateMap.values().stream().mapToLong((t) -> t.memoryMb).sum();
     int maxCpuCount = templateMap.values().stream().mapToInt((t) -> t.cpuCount).max().getAsInt();
-    float hostRatio = MiscUtils.getManagementVmHostRatio(hostState);
 
     OperationJoin
         .create(containerStates.stream().map((containerState) -> createContainerPatch(hostState, containerState,
-            templateMap.get(containerState.containerTemplateServiceLink), totalMemory, maxCpuCount, hostRatio)))
+            templateMap.get(containerState.containerTemplateServiceLink), totalMemory, maxCpuCount)))
         .setCompletion((ops, exs) -> {
           if (exs != null && !exs.isEmpty()) {
             failTask(exs.values());
@@ -284,11 +283,10 @@ public class AllocateHostResourceTaskService extends StatefulService {
                                          ContainerService.State containerState,
                                          ContainerTemplateService.State templateState,
                                          long totalMemory,
-                                         int maxCpuCount,
-                                         float hostRatio) {
+                                         int maxCpuCount) {
 
     ContainerService.State patchState = new ContainerService.State();
-    patchState.memoryMb = (long) (templateState.memoryMb * hostState.memoryMb * hostRatio) / totalMemory;
+    patchState.memoryMb = templateState.memoryMb * MiscUtils.getAdjustedManagementHostMemory(hostState) / totalMemory;
     patchState.cpuShares = templateState.cpuCount * ContainerService.State.DOCKER_CPU_SHARES_MAX / maxCpuCount;
     patchState.dynamicParameters = new HashMap<>();
     if (null != containerState.dynamicParameters) {
