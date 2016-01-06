@@ -27,6 +27,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
@@ -89,7 +90,12 @@ public class ClusterFeClient {
     return task;
   }
 
-  public ResourceList<Vm> findVms(String clustertId) throws ExternalException {
+  public ResourceList<Vm> findVms(String clustertId, Optional<Integer> pageSize) throws ExternalException {
     return new ResourceList<>(clusterBackend.findVms(clustertId));
+  }
+
+  public ResourceList<Vm> getVmsPage(String pageLink) {
+    // todo: Should call backend to retrieve the vms page
+    return new ResourceList<>();
   }
 }
