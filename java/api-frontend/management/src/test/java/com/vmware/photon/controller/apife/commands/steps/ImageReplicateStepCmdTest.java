@@ -26,6 +26,7 @@ import com.vmware.photon.controller.apife.lib.Image;
 import com.vmware.photon.controller.apife.lib.ImageStore;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.housekeeper.gen.ReplicationType;
 import com.vmware.transfer.streamVmdk.VmdkFormatException;
 
 import org.mockito.InOrder;
@@ -69,6 +70,8 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
   private ImageEntity imageEntity;
   private ImageReplicateStepCmd command;
   private String imageId = "image-1";
+  private ReplicationType replicationType = ReplicationType.EAGER;
+
 
   @BeforeMethod
   public void beforeMethod() throws InternalException, IOException, VmdkFormatException, NameTakenException {
@@ -88,7 +91,7 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
     when(imageStore.isReplicationNeeded()).thenReturn(true);
     when(imageStore.getDatastore()).thenReturn("datastore1");
     when(taskCommand.getHousekeeperClient()).thenReturn(housekeeperClient);
-    doNothing().when(housekeeperClient).replicateImage("datastore1", imageId);
+    doNothing().when(housekeeperClient).replicateImage("datastore1", imageId, replicationType);
     doNothing().when(imageBackend).updateState(imageEntity, ImageState.READY);
 
     command.execute();
@@ -96,7 +99,7 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
     InOrder inOrder = inOrder(imageStore, imageBackend, housekeeperClient);
     inOrder.verify(imageStore).isReplicationNeeded();
     inOrder.verify(imageStore, times(2)).getDatastore();
-    inOrder.verify(housekeeperClient).replicateImage("datastore1", imageId);
+    inOrder.verify(housekeeperClient).replicateImage("datastore1", imageId, replicationType);
     inOrder.verify(imageBackend).updateState(imageEntity, ImageState.READY);
     verifyNoMoreInteractions(imageStore, imageBackend, housekeeperClient);
   }
@@ -118,7 +121,7 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
     when(imageStore.isReplicationNeeded()).thenReturn(true);
     when(imageStore.getDatastore()).thenReturn("datastore1");
     when(taskCommand.getHousekeeperClient()).thenReturn(housekeeperClient);
-    doThrow(new RpcException()).when(housekeeperClient).replicateImage("datastore1", imageId);
+    doThrow(new RpcException()).when(housekeeperClient).replicateImage("datastore1", imageId, replicationType);
     doNothing().when(imageBackend).updateState(imageEntity, ImageState.ERROR);
 
     try {
@@ -130,7 +133,7 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
     InOrder inOrder = inOrder(imageStore, housekeeperClient, imageBackend);
     inOrder.verify(imageStore).isReplicationNeeded();
     inOrder.verify(imageStore, times(2)).getDatastore();
-    inOrder.verify(housekeeperClient).replicateImage("datastore1", imageId);
+    inOrder.verify(housekeeperClient).replicateImage("datastore1", imageId, replicationType);
     inOrder.verify(imageBackend).updateState(imageEntity, ImageState.ERROR);
     verifyNoMoreInteractions(imageStore, imageBackend);
   }
