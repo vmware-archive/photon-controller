@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.ImageCreateSpec;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Tag;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
@@ -41,7 +42,7 @@ public interface VmBackend {
 
   List<Vm> filterByProject(String projectId) throws ExternalException;
 
-  List<Vm> filterByTag(String projectId, Tag tag) throws ExternalException;
+  ResourceList<Vm> filterByTag(String projectId, Tag tag, Optional<Integer> pageSize) throws ExternalException;
 
   List<Vm> filterByFlavor(String flavorId) throws ExternalException;
 

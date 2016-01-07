@@ -29,6 +29,7 @@ import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Tag;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.Vm;
@@ -411,10 +412,28 @@ public class VmDcpBackendTest {
 
     @Test
     public void testFilterByTag() throws Throwable {
-      List<Vm> foundVms = vmDcpBackend.filterByTag(vm.projectId, new Tag(vm.tags.iterator().next()));
+      List<Vm> foundVms = vmDcpBackend.filterByTag(vm.projectId, new Tag(vm.tags.iterator().next()),
+          Optional.<Integer>absent()).getItems();
       assertThat(foundVms, is(notNullValue()));
       assertThat(foundVms.size(), is(1));
       assertThat(foundVms.get(0).getName(), is(vm.name));
+    }
+
+    @Test
+    public void testFilterByTagNoMatch() throws Throwable {
+      List<Vm> foundVms = vmDcpBackend.filterByTag(vm.projectId, new Tag("tag1"),
+          Optional.<Integer>absent()).getItems();
+      assertThat(foundVms, is(notNullValue()));
+      assertThat(foundVms.size(), is(0));
+    }
+
+    @Test
+    public void testFilterByTagPagination() throws Throwable {
+      ResourceList<Vm> foundVms = vmDcpBackend.filterByTag(vm.projectId, new Tag(vm.tags.iterator().next()),
+          Optional.of(1));
+      assertThat(foundVms.getItems(), is(notNullValue()));
+      assertThat(foundVms.getItems().size(), is(1));
+      assertThat(foundVms.getItems().get(0).getName(), is(vm.name));
     }
 
     @Test
