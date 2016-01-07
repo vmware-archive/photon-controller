@@ -159,7 +159,6 @@ public class ClusterBackend {
     initiateStep.createOrUpdateTransientResource(KubernetesClusterCreateStepCmd.CREATE_SPEC_RESOURCE_KEY, spec);
 
     // Dummy steps that are mapped to KubernetesClusterCreateTask's subStages
-    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_KUBERNETES_CLUSTER_ALLOCATE_RESOURCES);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_KUBERNETES_CLUSTER_SETUP_ETCD);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_KUBERNETES_CLUSTER_SETUP_MASTER);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_KUBERNETES_CLUSTER_SETUP_SLAVES);
