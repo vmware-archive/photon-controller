@@ -155,7 +155,6 @@ public class StepCommandFactoryTest {
 
         // Cluster
         {Operation.CREATE_KUBERNETES_CLUSTER_INITIATE, KubernetesClusterCreateStepCmd.class},
-        {Operation.CREATE_KUBERNETES_CLUSTER_ALLOCATE_RESOURCES, ClusterTaskStatusStepCmd.class},
         {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_ETCD, ClusterTaskStatusStepCmd.class},
         {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_MASTER, ClusterTaskStatusStepCmd.class},
         {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_SLAVES, ClusterTaskStatusStepCmd.class},

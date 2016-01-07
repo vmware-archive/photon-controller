@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.tasks;
 
+import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.NetworkConnection;
 import com.vmware.photon.controller.api.Task;
@@ -22,9 +23,8 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ImagesApi;
 import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.clients.EtcdClient;
 import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
 import com.vmware.photon.controller.clustermanager.helpers.ReflectionUtils;
@@ -41,19 +41,14 @@ import com.vmware.photon.controller.clustermanager.templates.KubernetesMasterNod
 import com.vmware.photon.controller.clustermanager.templates.KubernetesSlaveNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
-import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
-import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
-import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -66,7 +61,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -83,12 +77,13 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 /**
@@ -113,16 +108,6 @@ public class KubernetesClusterCreateTaskServiceTest {
     state.taskState.stage = stage;
     state.taskState.subStage = subStage;
     state.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-    state.masterIp = "10.0.0.1";
-    state.netmask = "255.255.255.128";
-    state.etcdIps = new ArrayList<>();
-    state.etcdIps.add("10.0.0.1");
-    state.etcdIps.add("10.0.0.2");
-    state.etcdIps.add("10.0.0.3");
-
-    // Because the reflection builder does not build positive default values for these fields, we need to
-    // manually set them to some positive values.
-    state.slaveCount = 2;
 
     return state;
   }
@@ -212,8 +197,6 @@ public class KubernetesClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CREATED,
               null},
           {TaskState.TaskStage.STARTED,
-              KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
-          {TaskState.TaskStage.STARTED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.STARTED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
@@ -238,8 +221,6 @@ public class KubernetesClusterCreateTaskServiceTest {
 
       return new Object[][]{
           {TaskState.TaskStage.CREATED,
-              KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
-          {TaskState.TaskStage.CREATED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.CREATED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
@@ -249,8 +230,6 @@ public class KubernetesClusterCreateTaskServiceTest {
           {TaskState.TaskStage.STARTED, null},
 
           {TaskState.TaskStage.FINISHED,
-              KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
-          {TaskState.TaskStage.FINISHED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.FINISHED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
@@ -258,16 +237,12 @@ public class KubernetesClusterCreateTaskServiceTest {
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
 
           {TaskState.TaskStage.FAILED,
-              KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
-          {TaskState.TaskStage.FAILED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.FAILED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.FAILED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
 
-          {TaskState.TaskStage.CANCELLED,
-              KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
           {TaskState.TaskStage.CANCELLED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.CANCELLED,
@@ -351,17 +326,10 @@ public class KubernetesClusterCreateTaskServiceTest {
 
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES,
+          {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES,
+          {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD,
@@ -414,25 +382,16 @@ public class KubernetesClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.CREATED, null},
 
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES,
-              TaskState.TaskStage.CREATED, null},
-
           {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD,
-              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
 
           {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER,
-              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
           {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
 
           {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
-              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
           {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
@@ -440,8 +399,6 @@ public class KubernetesClusterCreateTaskServiceTest {
 
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.FINISHED, null,
@@ -458,8 +415,6 @@ public class KubernetesClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
-          {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
@@ -474,8 +429,6 @@ public class KubernetesClusterCreateTaskServiceTest {
 
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.CANCELLED, null,
@@ -498,7 +451,7 @@ public class KubernetesClusterCreateTaskServiceTest {
       assertThat(startOperation.getStatusCode(), is(200));
 
       KubernetesClusterCreateTask patchState = buildValidPatchState(TaskState.TaskStage.STARTED,
-          KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES);
+          KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD);
 
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
@@ -616,15 +569,10 @@ public class KubernetesClusterCreateTaskServiceTest {
       taskReturnedByGetVmNetwork.setEntity(entity);
 
       kubernetesNodeIps = new HashSet<>();
-      kubernetesNodeIps.add("10.0.0.1");
+      kubernetesNodeIps.add("100.0.0.1");
 
       startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
       startState.controlFlags = 0;
-      startState.slaveCount = 3;
-      startState.etcdIps = new ArrayList<>();
-      startState.etcdIps.add("10.0.0.1");
-      startState.etcdIps.add("10.0.0.2");
-      startState.etcdIps.add("10.0.0.3");
     }
 
     @AfterMethod
@@ -655,7 +603,7 @@ public class KubernetesClusterCreateTaskServiceTest {
     @Test
     public void testEndToEndSuccess() throws Throwable {
 
-      mockAllocateResources(true);
+      mockClusterEntity();
       mockVmProvisioningTaskService(true);
       mockKubernetesClient();
 
@@ -667,55 +615,12 @@ public class KubernetesClusterCreateTaskServiceTest {
       );
 
       TestHelper.assertTaskStateFinished(savedState.taskState);
-
-      // Verify that a ClusterDocument document has been created
-      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-      querySpecification.query = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(ClusterService.State.class));
-      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-      NodeGroupBroadcastResponse queryResponse = cloudStoreMachine.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
-
-      assertThat(documentLinks.size(), is(1));
-      ClusterService.State clusterState = cloudStoreMachine.getServiceState(documentLinks.iterator().next(),
-          ClusterService.State.class);
-
-      assertThat(clusterState.documentSelfLink, containsString(savedState.clusterId));
-      assertThat(clusterState.clusterName, is(startState.clusterName));
-      assertThat(clusterState.projectId, is(startState.projectId));
-      assertThat(clusterState.extendedProperties.get(
-              ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK),
-          is(startState.containerNetwork));
-      assertThat(clusterState.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS),
-          is(NodeTemplateUtils.serializeAddressList(startState.etcdIps)));
-      assertThat(clusterState.slaveCount, is(startState.slaveCount));
-    }
-
-    @Test
-    public void testEndToEndFailureAllocateResourceFails() throws Throwable {
-
-      mockAllocateResources(false);
-      mockVmProvisioningTaskService(true);
-      mockKubernetesClient();
-
-      KubernetesClusterCreateTask savedState = machine.callServiceAndWaitForState(
-          KubernetesClusterCreateTaskFactoryService.SELF_LINK,
-          startState,
-          KubernetesClusterCreateTask.class,
-          state -> TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal()
-      );
-
-      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(savedState.taskState.failure.message,
-          Matchers.containsString("Cannot find cluster configuration for KUBERNETES"));
     }
 
     @Test
     public void testEndToEndFailureProvisionVmFails() throws Throwable {
 
-      mockAllocateResources(true);
+      mockClusterEntity();
       mockVmProvisioningTaskService(false);
       mockKubernetesClient();
 
@@ -756,7 +661,7 @@ public class KubernetesClusterCreateTaskServiceTest {
           .hostCount(1)
           .build();
 
-      mockAllocateResources(true);
+      mockClusterEntity();
       mockVmProvisioningTaskService(true);
 
       KubernetesClusterCreateTask savedState = machine.callServiceAndWaitForState(
@@ -770,20 +675,41 @@ public class KubernetesClusterCreateTaskServiceTest {
       assertThat(savedState.taskState.failure.message, Matchers.containsString("wait cluster vm failed"));
     }
 
-    private void mockAllocateResources(boolean isSuccess) throws Throwable {
+    private void mockClusterEntity() throws Throwable {
 
-      if (isSuccess) {
-        ClusterConfigurationService.State clusterConfiguration = new ClusterConfigurationService.State();
-        clusterConfiguration.clusterType = ClusterType.KUBERNETES;
-        clusterConfiguration.imageId = "imageId";
-        clusterConfiguration.documentSelfLink = ClusterType.KUBERNETES.toString().toLowerCase();
+      ClusterService.State cluster = new ClusterService.State();
+      cluster.clusterState = ClusterState.CREATING;
+      cluster.clusterName = "kubernetesCluster";
+      cluster.clusterType = ClusterType.KUBERNETES;
+      cluster.imageId = "imageId";
+      cluster.projectId = "porjectId";
+      cluster.diskFlavorName = "diskFlavorName";
+      cluster.masterVmFlavorName = "masterVmFlavorName";
+      cluster.otherVmFlavorName = "otherVmFlavorName";
+      cluster.vmNetworkId = "vmNetworkId";
+      cluster.slaveCount = 3;
+      cluster.extendedProperties = new HashMap<>();
+      cluster.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "1.1.1.1");
+      cluster.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "2.2.2.2");
+      cluster.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "3.3.3.3");
+      cluster.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "4.4.4.4");
+      cluster.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, "10.0.0.1,10.0.0.2,10.0.0.3,");
+      cluster.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "100.0.0.1");
+      cluster.documentSelfLink = UUID.randomUUID().toString();
 
-        cloudStoreMachine.callServiceAndWaitForState(
-            ClusterConfigurationServiceFactory.SELF_LINK,
-            clusterConfiguration,
-            ClusterConfigurationService.State.class,
-            state -> true);
-      }
+      cloudStoreMachine.callServiceAndWaitForState(
+          ClusterServiceFactory.SELF_LINK,
+          cluster,
+          ClusterService.State.class,
+          state -> true);
+
+      startState.clusterId = cluster.documentSelfLink;
     }
 
     private void mockVmProvisioningTaskService(boolean isSuccess) throws Throwable {
@@ -817,7 +743,7 @@ public class KubernetesClusterCreateTaskServiceTest {
 
       NetworkConnection networkConnection = new NetworkConnection();
       networkConnection.setNetwork("VM VLAN");
-      networkConnection.setIpAddress("10.0.0.1");
+      networkConnection.setIpAddress("100.0.0.1");
 
       VmNetworks vmNetworks = new VmNetworks();
       vmNetworks.setNetworkConnections(Collections.singleton(networkConnection));

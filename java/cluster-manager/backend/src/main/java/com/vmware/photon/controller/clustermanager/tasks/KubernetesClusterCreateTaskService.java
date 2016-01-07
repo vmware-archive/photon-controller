@@ -13,9 +13,6 @@
 package com.vmware.photon.controller.clustermanager.tasks;
 
 import com.vmware.photon.controller.api.ClusterState;
-import com.vmware.photon.controller.api.ClusterType;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.rolloutplans.BasicNodeRollout;
@@ -35,28 +32,20 @@ import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
-import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
-import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
-
-import java.util.HashMap;
-import java.util.Set;
 
 /**
  * This class implements a DCP service representing a task to create a Kubernetes cluster.
@@ -81,7 +70,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
 
     if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.ALLOCATE_RESOURCES;
+      startState.taskState.subStage = TaskState.SubStage.SETUP_ETCD;
     }
     start.setBody(startState).complete();
 
@@ -90,7 +79,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
         TaskUtils.sendSelfPatch(this,
-            buildPatch(startState.taskState.stage, TaskState.SubStage.ALLOCATE_RESOURCES));
+            buildPatch(startState.taskState.stage, TaskState.SubStage.SETUP_ETCD));
       }
     } catch (Throwable t) {
       failTask(t);
@@ -120,10 +109,6 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
 
   private void processStateMachine(KubernetesClusterCreateTask currentState) {
     switch (currentState.taskState.subStage) {
-      case ALLOCATE_RESOURCES:
-        queryClusterConfiguration(currentState);
-        break;
-
       case SETUP_ETCD:
         setupEtcds(currentState);
         break;
@@ -142,162 +127,56 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
   }
 
   /**
-   * This method queries for the document link of the cluster configuration for the Kubernetes Cluster.
-   *
-   * @param currentState
-   */
-  private void queryClusterConfiguration(final KubernetesClusterCreateTask currentState) {
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ClusterConfigurationService.State.class));
-
-    QueryTask.Query idClause = new QueryTask.Query()
-        .setTermPropertyName(ClusterConfigurationService.State.FIELD_NAME_SELF_LINK)
-        .setTermMatchValue(
-            ClusterConfigurationServiceFactory.SELF_LINK + "/" + ClusterType.KUBERNETES.toString().toLowerCase());
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(idClause);
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-            .setBody(queryTask)
-            .setCompletion(
-                (Operation operation, Throwable throwable) -> {
-                  if (null != throwable) {
-                    failTask(throwable);
-                    return;
-                  }
-
-                  NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-                  Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
-                  if (documentLinks.isEmpty()) {
-                    failTask(new IllegalStateException(String.format(
-                        "Cannot find cluster configuration for %s",
-                        ClusterType.KUBERNETES.toString())));
-                    return;
-                  }
-
-                  retrieveClusterConfiguration(currentState, documentLinks.iterator().next());
-                }
-            ));
-  }
-
-  /**
-   * This method retrieves the cluster configuration entity for the Kubernetes Cluster.
-   *
-   * @param currentState
-   * @param clusterConfigurationLink
-   */
-  private void retrieveClusterConfiguration(final KubernetesClusterCreateTask currentState,
-                                            String clusterConfigurationLink) {
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(clusterConfigurationLink)
-            .setCompletion(
-                (Operation operation, Throwable throwable) -> {
-                  if (null != throwable) {
-                    failTask(throwable);
-                    return;
-                  }
-
-                  ClusterConfigurationService.State clusterConfiguration = operation.getBody(
-                      ClusterConfigurationService.State.class);
-                  createClusterService(currentState, clusterConfiguration.imageId);
-                }
-            ));
-  }
-
-  /**
-   * This method creates a Kubernetes Cluster Service instance. On successful creation, the method moves the sub-stage
-   * to SETUP_MASTER.
-   *
-   * @param currentState
-   * @param imageId
-   */
-  private void createClusterService(final KubernetesClusterCreateTask currentState,
-                                    final String imageId) {
-
-    ClusterService.State cluster = new ClusterService.State();
-    cluster.clusterState = ClusterState.CREATING;
-    cluster.clusterName = currentState.clusterName;
-    cluster.clusterType = ClusterType.KUBERNETES;
-    cluster.imageId = imageId;
-    cluster.projectId = currentState.projectId;
-    cluster.diskFlavorName = currentState.diskFlavorName;
-    cluster.masterVmFlavorName = currentState.masterVmFlavorName;
-    cluster.otherVmFlavorName = currentState.otherVmFlavorName;
-    cluster.vmNetworkId = currentState.vmNetworkId;
-    cluster.slaveCount = currentState.slaveCount;
-    cluster.extendedProperties = new HashMap<>();
-    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS,
-        currentState.dns);
-    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY,
-        currentState.gateway);
-    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK,
-        currentState.netmask);
-    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK,
-        currentState.containerNetwork);
-    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS,
-        NodeTemplateUtils.serializeAddressList(currentState.etcdIps));
-    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP,
-        currentState.masterIp);
-    cluster.documentSelfLink = currentState.clusterId;
-
-    sendRequest(HostUtils.getCloudStoreHelper(this)
-        .createPost(ClusterServiceFactory.SELF_LINK)
-        .setBody(cluster)
-        .setCompletion((operation, throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
-
-          KubernetesClusterCreateTask patchState = buildPatch(
-              TaskState.TaskStage.STARTED,
-              TaskState.SubStage.SETUP_ETCD);
-          patchState.imageId = imageId;
-          TaskUtils.sendSelfPatch(this, patchState);
-        }));
-  }
-
-  /**
    * This method roll-outs Etcd nodes. On successful
    * rollout, the methods moves the task sub-stage to SETUP_MASTER.
    *
    * @param currentState
    */
   private void setupEtcds(KubernetesClusterCreateTask currentState) {
-    NodeRolloutInput rolloutInput = new NodeRolloutInput();
-    rolloutInput.projectId = currentState.projectId;
-    rolloutInput.imageId = currentState.imageId;
-    rolloutInput.vmFlavorName = currentState.otherVmFlavorName;
-    rolloutInput.diskFlavorName = currentState.diskFlavorName;
-    rolloutInput.vmNetworkId = currentState.vmNetworkId;
-    rolloutInput.clusterId = currentState.clusterId;
-    rolloutInput.nodeCount = currentState.etcdIps.size();
-    rolloutInput.nodeType = NodeType.KubernetesEtcd;
-    rolloutInput.nodeProperties = EtcdNodeTemplate.createProperties(
-        currentState.dns, currentState.gateway, currentState.netmask, currentState.etcdIps);
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
+        .setReferer(getUri())
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-    NodeRollout rollout = new BasicNodeRollout();
-    rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
-      @Override
-      public void onSuccess(@Nullable NodeRolloutResult result) {
-        TaskUtils.sendSelfPatch(
-            KubernetesClusterCreateTaskService.this,
-            buildPatch(KubernetesClusterCreateTask.TaskState.TaskStage.STARTED,
-                KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER));
-      }
+          ClusterService.State cluster = operation.getBody(ClusterService.State.class);
 
-      @Override
-      public void onFailure(Throwable t) {
-        failTaskAndPatchDocument(currentState, NodeType.SwarmEtcd, t);
-      }
-    });
+          NodeRolloutInput rolloutInput = new NodeRolloutInput();
+          rolloutInput.projectId = cluster.projectId;
+          rolloutInput.imageId = cluster.imageId;
+          rolloutInput.vmFlavorName = cluster.otherVmFlavorName;
+          rolloutInput.diskFlavorName = cluster.diskFlavorName;
+          rolloutInput.vmNetworkId = cluster.vmNetworkId;
+          rolloutInput.clusterId = currentState.clusterId;
+          rolloutInput.nodeCount = NodeTemplateUtils.deserializeAddressList(
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS)).size();
+          rolloutInput.nodeType = NodeType.KubernetesEtcd;
+          rolloutInput.nodeProperties = EtcdNodeTemplate.createProperties(
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS),
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY),
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK),
+              NodeTemplateUtils.deserializeAddressList(
+                  cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS)));
+
+          NodeRollout rollout = new BasicNodeRollout();
+          rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
+            @Override
+            public void onSuccess(@Nullable NodeRolloutResult result) {
+              TaskUtils.sendSelfPatch(
+                  KubernetesClusterCreateTaskService.this,
+                  buildPatch(KubernetesClusterCreateTask.TaskState.TaskStage.STARTED,
+                      KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER));
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              failTaskAndPatchDocument(currentState, NodeType.SwarmEtcd, t);
+            }
+          });
+        }));
   }
 
   /**
@@ -307,37 +186,50 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
    * @param currentState
    */
   private void setupMaster(final KubernetesClusterCreateTask currentState) {
-    NodeRolloutInput rolloutInput = new NodeRolloutInput();
-    rolloutInput.clusterId = currentState.clusterId;
-    rolloutInput.projectId = currentState.projectId;
-    rolloutInput.imageId = currentState.imageId;
-    rolloutInput.diskFlavorName = currentState.diskFlavorName;
-    rolloutInput.vmFlavorName = currentState.masterVmFlavorName;
-    rolloutInput.vmNetworkId = currentState.vmNetworkId;
-    rolloutInput.nodeCount = ClusterManagerConstants.Kubernetes.MASTER_COUNT;
-    rolloutInput.nodeType = NodeType.KubernetesMaster;
-    rolloutInput.nodeProperties = KubernetesMasterNodeTemplate.createProperties(
-        currentState.etcdIps,
-        currentState.dns,
-        currentState.gateway,
-        currentState.netmask,
-        currentState.masterIp,
-        currentState.containerNetwork);
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
+        .setReferer(getUri())
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-    NodeRollout rollout = new BasicNodeRollout();
-    rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
-      @Override
-      public void onSuccess(@Nullable NodeRolloutResult result) {
-        TaskUtils.sendSelfPatch(
-            KubernetesClusterCreateTaskService.this,
-            buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.SETUP_SLAVES));
-      }
+          ClusterService.State cluster = operation.getBody(ClusterService.State.class);
 
-      @Override
-      public void onFailure(Throwable t) {
-        failTaskAndPatchDocument(currentState, NodeType.KubernetesMaster, t);
-      }
-    });
+          NodeRolloutInput rolloutInput = new NodeRolloutInput();
+          rolloutInput.clusterId = currentState.clusterId;
+          rolloutInput.projectId = cluster.projectId;
+          rolloutInput.imageId = cluster.imageId;
+          rolloutInput.diskFlavorName = cluster.diskFlavorName;
+          rolloutInput.vmFlavorName = cluster.masterVmFlavorName;
+          rolloutInput.vmNetworkId = cluster.vmNetworkId;
+          rolloutInput.nodeCount = ClusterManagerConstants.Kubernetes.MASTER_COUNT;
+          rolloutInput.nodeType = NodeType.KubernetesMaster;
+          rolloutInput.nodeProperties = KubernetesMasterNodeTemplate.createProperties(
+              NodeTemplateUtils.deserializeAddressList(
+                  cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS)),
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS),
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY),
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK),
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP),
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK));
+
+          NodeRollout rollout = new BasicNodeRollout();
+          rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
+            @Override
+            public void onSuccess(@Nullable NodeRolloutResult result) {
+              TaskUtils.sendSelfPatch(
+                  KubernetesClusterCreateTaskService.this,
+                  buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.SETUP_SLAVES));
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              failTaskAndPatchDocument(currentState, NodeType.KubernetesMaster, t);
+            }
+          });
+        }));
   }
 
   /**
@@ -347,31 +239,47 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
    * @param currentState
    */
   private void setupInitialSlaves(final KubernetesClusterCreateTask currentState) {
-    NodeRolloutInput rolloutInput = new NodeRolloutInput();
-    rolloutInput.clusterId = currentState.clusterId;
-    rolloutInput.projectId = currentState.projectId;
-    rolloutInput.imageId = currentState.imageId;
-    rolloutInput.diskFlavorName = currentState.diskFlavorName;
-    rolloutInput.vmFlavorName = currentState.otherVmFlavorName;
-    rolloutInput.vmNetworkId = currentState.vmNetworkId;
-    rolloutInput.nodeCount = MINIMUM_INITIAL_SLAVE_COUNT;
-    rolloutInput.nodeType = NodeType.KubernetesSlave;
-    rolloutInput.serverAddress = currentState.masterIp;
-    rolloutInput.nodeProperties = KubernetesSlaveNodeTemplate.createProperties(
-        currentState.etcdIps, currentState.containerNetwork, currentState.masterIp);
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
+        .setReferer(getUri())
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-    NodeRollout rollout = new SlavesNodeRollout();
-    rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
-      @Override
-      public void onSuccess(@Nullable NodeRolloutResult result) {
-        setupRemainingSlaves(currentState);
-      }
+          ClusterService.State cluster = operation.getBody(ClusterService.State.class);
 
-      @Override
-      public void onFailure(Throwable t) {
-        failTaskAndPatchDocument(currentState, NodeType.KubernetesSlave, t);
-      }
-    });
+          NodeRolloutInput rolloutInput = new NodeRolloutInput();
+          rolloutInput.clusterId = currentState.clusterId;
+          rolloutInput.projectId = cluster.projectId;
+          rolloutInput.imageId = cluster.imageId;
+          rolloutInput.diskFlavorName = cluster.diskFlavorName;
+          rolloutInput.vmFlavorName = cluster.otherVmFlavorName;
+          rolloutInput.vmNetworkId = cluster.vmNetworkId;
+          rolloutInput.nodeCount = MINIMUM_INITIAL_SLAVE_COUNT;
+          rolloutInput.nodeType = NodeType.KubernetesSlave;
+          rolloutInput.serverAddress =
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
+          rolloutInput.nodeProperties = KubernetesSlaveNodeTemplate.createProperties(
+              NodeTemplateUtils.deserializeAddressList(
+                  cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS)),
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK),
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP));
+
+          NodeRollout rollout = new SlavesNodeRollout();
+          rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
+            @Override
+            public void onSuccess(@Nullable NodeRolloutResult result) {
+              setupRemainingSlaves(currentState);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              failTaskAndPatchDocument(currentState, NodeType.KubernetesSlave, t);
+            }
+          });
+        }));
   }
 
   private void setupRemainingSlaves(final KubernetesClusterCreateTask currentState) {
@@ -423,7 +331,6 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
       checkState(startState.taskState.subStage != null, "Sub-stage cannot be null in STARTED stage.");
 
       switch (startState.taskState.subStage) {
-        case ALLOCATE_RESOURCES:
         case SETUP_ETCD:
         case SETUP_MASTER:
         case SETUP_SLAVES:
