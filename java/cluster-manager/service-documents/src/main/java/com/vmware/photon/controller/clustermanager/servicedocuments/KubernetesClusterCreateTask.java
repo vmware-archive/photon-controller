@@ -14,17 +14,10 @@
 package com.vmware.photon.controller.clustermanager.servicedocuments;
 
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
-import com.vmware.photon.controller.common.dcp.validation.DefaultString;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.DefaultUuid;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
-import com.vmware.photon.controller.common.dcp.validation.NotEmpty;
-import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.common.dcp.validation.Positive;
-import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
-
-import java.util.List;
 
 /**
  * This class defines the document state associated with a single
@@ -46,108 +39,11 @@ public class KubernetesClusterCreateTask extends ServiceDocument {
   public Integer controlFlags;
 
   /**
-   * The name of the cluster being created.
-   */
-  @NotNull
-  @Immutable
-  public String clusterName;
-
-  /**
-   * DNS of the cluster.
-   */
-  @NotNull
-  @Immutable
-  public String dns;
-
-  /**
-   * Gateway of the cluster.
-   */
-  @NotNull
-  @Immutable
-  public String gateway;
-
-  /**
-   * Netmask of the cluster.
-   */
-  @NotNull
-  @Immutable
-  public String netmask;
-
-  /**
-   * IP Addresses of Etcd nodes.
-   */
-  @NotEmpty
-  @Immutable
-  public List<String> etcdIps;
-
-  /**
-   * IP Address of the master VM.
-   */
-  @NotNull
-  @Immutable
-  public String masterIp;
-
-  /**
-   * The network used for the containers in the cluster.
-   */
-  @NotNull
-  @Immutable
-  public String containerNetwork;
-
-  /**
-   * Name of the Vm Flavor used for master vms in this cluster.
-   */
-  @DefaultString(value = ClusterManagerConstants.MASTER_VM_FLAVOR)
-  @Immutable
-  public String masterVmFlavorName;
-
-  /**
-   * Name of the Vm Flavor used for other vms in this cluster.
-   */
-  @DefaultString(value = ClusterManagerConstants.OTHER_VM_FLAVOR)
-  @Immutable
-  public String otherVmFlavorName;
-
-  /**
-   * Name of the Disk Flavor used for the vms created in the cluster.
-   */
-  @DefaultString(value = ClusterManagerConstants.VM_DISK_FLAVOR)
-  @Immutable
-  public String diskFlavorName;
-
-  /**
-   * Id of the network used for the vms created in the cluster.
-   */
-  @Immutable
-  public String vmNetworkId;
-
-  /**
-   * Number of slave Nodes in this cluster.
-   */
-  @NotNull
-  @Immutable
-  @Positive
-  public Integer slaveCount;
-
-  /**
-   * Project Identifier used to create this cluster.
-   */
-  @NotNull
-  @Immutable
-  public String projectId;
-
-  /**
    * Identifier that will be used to create the Kubernetes cluster.
    */
   @DefaultUuid
   @Immutable
   public String clusterId;
-
-  /**
-   * Stores the id for the Kubernetes image, which is used during VM creation.
-   */
-  @WriteOnce
-  public String imageId;
 
   /**
    * The threshold for each expansion batch.
@@ -169,7 +65,6 @@ public class KubernetesClusterCreateTask extends ServiceDocument {
      * The sub-states for this this.
      */
     public enum SubStage {
-      ALLOCATE_RESOURCES,
       SETUP_ETCD,
       SETUP_MASTER,
       SETUP_SLAVES

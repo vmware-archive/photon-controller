@@ -93,7 +93,7 @@ public class KubernetesClusterCreateStepCmdTest extends PowerMockTestCase {
     serviceDocument = new KubernetesClusterCreateTask();
     serviceDocument.taskState = new KubernetesClusterCreateTask.TaskState();
     serviceDocument.taskState.stage = TaskState.TaskStage.STARTED;
-    serviceDocument.taskState.subStage = KubernetesClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES;
+    serviceDocument.taskState.subStage = KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD;
     remoteTaskLink = "http://clustermanager" + ServiceUriPaths.KUBERNETES_CLUSTER_CREATE_TASK_SERVICE
         + "/00000000-0000-0000-0000-000000000001";
     serviceDocument.documentSelfLink = remoteTaskLink;

@@ -190,7 +190,6 @@ public class StepCommandFactory {
         return new DeploymentPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);
       case CREATE_KUBERNETES_CLUSTER_INITIATE:
         return new KubernetesClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
-      case CREATE_KUBERNETES_CLUSTER_ALLOCATE_RESOURCES:
       case CREATE_KUBERNETES_CLUSTER_SETUP_ETCD:
       case CREATE_KUBERNETES_CLUSTER_SETUP_MASTER:
       case CREATE_KUBERNETES_CLUSTER_SETUP_SLAVES:
