@@ -14,8 +14,14 @@
 namespace java com.vmware.photon.controller.chairman.gen
 namespace py gen.chairman
 
+// Host registration: allows hosts to register themselves with chairman.
+// Host can provide its current roles as a hint: chairman will try to minimize
+// host reconfigurations by letting hosts keep their roles as long as it keeps
+// the system in a good state.
+
 include 'host.thrift'
 include 'resource.thrift'
+include 'roles.thrift'
 include 'status.thrift'
 
 struct RegisterHostRequest {
@@ -113,6 +119,7 @@ struct UnregisterHostResponse {
 }
 
 service Chairman {
+  roles.GetSchedulersResponse get_schedulers(1:roles.GetSchedulersRequest request)
   status.Status get_status(1:status.GetStatusRequest request)
   RegisterHostResponse register_host(1:RegisterHostRequest request)
   ReportMissingResponse report_missing(1:ReportMissingRequest request)

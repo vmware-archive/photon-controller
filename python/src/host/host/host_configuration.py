@@ -10,18 +10,11 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
-"""
-Constant variables.
-"""
 
-ROOT_SCHEDULER_ID = "ROOT"
-
-ROOT_SCHEDULER_SERVICE = "/services/root-scheduler"
-
-CHAIRMAN_SERVICE = "/services/chairman"
-
-MISSING_PREFIX = "/missing"
-
-HOSTS_PREFIX = "/hosts"
-
-ROLES_PREFIX = "/roles"
+class HostConfiguration():
+    def __init__(self, availability_zone=None, scheduler=None,
+                 roles=None, host_id=None):
+        self.availability_zone = availability_zone
+        self.scheduler = scheduler
+        self.roles = roles
+        self.host_id = host_id
