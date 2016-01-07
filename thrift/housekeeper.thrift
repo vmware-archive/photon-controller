@@ -16,6 +16,7 @@ namespace py gen.housekeeper
 
 include 'tracing.thrift'
 include 'status.thrift'
+include 'resource.thrift'
 
 /**
  * Image replication
@@ -35,6 +36,7 @@ struct ReplicateImageResult {
 struct ReplicateImageRequest {
   1: required string datastore
   2: required string image
+  3: required resource.ImageReplication replicationType
   99: optional tracing.TracingInfo tracing_info
 }
 

@@ -29,6 +29,7 @@ import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatus;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusCode;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusResponse;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.photon.controller.status.gen.Status;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -88,11 +89,11 @@ public class HousekeeperClient implements StatusProvider {
    * @throws RpcException
    * @throws InterruptedException
    */
-  public void replicateImage(String datastore, String image)
+  public void replicateImage(String datastore, String image, ImageReplication replicationType)
       throws RpcException, InterruptedException {
     ReplicateImageStatusCode statusCode;
     try {
-      ReplicateImageResponse triggerResponse = triggerReplication(datastore, image);
+      ReplicateImageResponse triggerResponse = triggerReplication(datastore, image, replicationType);
       statusCode = waitForImageReplication(triggerResponse.getOperation_id());
     } catch (TException e) {
       throw new RpcException(e);
@@ -172,19 +173,22 @@ public class HousekeeperClient implements StatusProvider {
    *
    * @param datastore
    * @param image
+   * @param replicationType
    * @return
    * @throws InterruptedException
    * @throws RpcException
    * @throws TException
    */
   @VisibleForTesting
-  protected ReplicateImageResponse triggerReplication(String datastore, String image) throws InterruptedException,
+  protected ReplicateImageResponse triggerReplication(String datastore, String image,
+                                                      ImageReplication replicationType) throws InterruptedException,
       RpcException, TException {
     Housekeeper.AsyncClient client = proxy.get();
     SyncHandler<ReplicateImageResponse, Housekeeper.AsyncClient.replicate_image_call> handler = new
         SyncHandler<>();
     client.setTimeout(HOUSEKEEPER_CALL_TIMEOUT_MS);
-    client.replicate_image(new ReplicateImageRequest(datastore, image), handler);
+    ReplicateImageRequest replicationRequest = new ReplicateImageRequest(datastore, image, replicationType);
+    client.replicate_image(replicationRequest, handler);
     handler.await();
 
     ReplicateImageResponse triggerResponse = handler.getResponse();

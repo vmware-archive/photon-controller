@@ -22,6 +22,7 @@ import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.lib.ImageStore;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,10 +56,24 @@ public class ImageReplicateStepCmd extends StepCommand {
 
     ImageEntity imageEntity = entityList.get(0);
 
+    ImageReplication replicationType;
+
+    switch (imageEntity.getReplicationType()) {
+      case ON_DEMAND:
+        replicationType = ImageReplication.ON_DEMAND;
+        break;
+      case EAGER:
+        replicationType = ImageReplication.EAGER;
+        break;
+      default:
+        throw new IllegalArgumentException("ImageReplicationType unknown: " + imageEntity.getReplicationType());
+    }
+
     if (imageStore.isReplicationNeeded()) {
       logger.info("Start replicating image {} in datastore {}", imageEntity.getId(), imageStore.getDatastore());
       try {
-        taskCommand.getHousekeeperClient().replicateImage(imageStore.getDatastore(), imageEntity.getId());
+        taskCommand.getHousekeeperClient().replicateImage(imageStore.getDatastore(), imageEntity.getId(),
+            replicationType);
       } catch (RpcException | InterruptedException e) {
         imageBackend.updateState(imageEntity, ImageState.ERROR);
         throw new ApiFeException(e);
