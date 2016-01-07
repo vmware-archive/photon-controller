@@ -16,9 +16,13 @@ package com.vmware.photon.controller.apife.backends.clients;
 import com.vmware.photon.controller.api.Cluster;
 import com.vmware.photon.controller.api.ClusterCreateSpec;
 import com.vmware.photon.controller.api.ClusterResizeOperation;
+import com.vmware.photon.controller.api.ClusterState;
+import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterDeleteTask;
@@ -41,8 +45,10 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Cluster Manager Client Facade that exposes cluster manager functionality via high-level methods,
@@ -73,96 +79,14 @@ public class ClusterManagerClient {
 
   public KubernetesClusterCreateTask createKubernetesCluster(String projectId, ClusterCreateSpec spec)
       throws SpecInvalidException {
-    // Translate API ClusterCreateSpec to cluster manager KubernetesClusterCreateTask
+    ClusterConfigurationService.State clusterConfiguration = getClusterConfiguration(ClusterType.KUBERNETES);
+    String clusterId = createKubernetesClusterEntity(ClusterType.KUBERNETES,  projectId, spec, clusterConfiguration);
     KubernetesClusterCreateTask createTask = new KubernetesClusterCreateTask();
-    createTask.clusterName = spec.getName();
-    createTask.slaveCount = spec.getSlaveCount();
-    createTask.diskFlavorName = spec.getDiskFlavor();
-    createTask.projectId = projectId;
-    createTask.masterVmFlavorName = spec.getVmFlavor();
-    createTask.otherVmFlavorName = spec.getVmFlavor();
-    createTask.vmNetworkId = spec.getVmNetworkId();
+    createTask.clusterId = clusterId;
     createTask.slaveBatchExpansionSize =
         spec.getSlaveBatchExpansionSize() == 0 ? null : spec.getSlaveBatchExpansionSize();
 
-    if (spec.getExtendedProperties() != null) {
-      createTask.containerNetwork = spec.getExtendedProperties()
-          .get(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK);
-      createTask.dns = spec.getExtendedProperties()
-          .get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS);
-      createTask.gateway = spec.getExtendedProperties()
-          .get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY);
-      createTask.netmask = spec.getExtendedProperties()
-          .get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK);
-      createTask.etcdIps = new ArrayList<>();
-      addIpAddressToList(createTask.etcdIps, spec.getExtendedProperties(),
-          EXTENDED_PROPERTY_ETCD_IP1);
-      addIpAddressToList(createTask.etcdIps, spec.getExtendedProperties(),
-          EXTENDED_PROPERTY_ETCD_IP2);
-      addIpAddressToList(createTask.etcdIps, spec.getExtendedProperties(),
-          EXTENDED_PROPERTY_ETCD_IP3);
-      createTask.masterIp = spec.getExtendedProperties()
-          .get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
-    }
-    if (createTask.dns == null) {
-      throw new SpecInvalidException("Missing extended property: dns");
-    } else if (!InetAddressValidator.getInstance().isValidInet4Address(createTask.dns)) {
-      throw new SpecInvalidException("Invalid extended property: dns: " + createTask.dns);
-    }
-
-    if (createTask.gateway == null) {
-      throw new SpecInvalidException("Missing extended property: gateway");
-    } else if (!InetAddressValidator.getInstance().isValidInet4Address(createTask.gateway)) {
-      throw new SpecInvalidException("Invalid extended property: gateway: " + createTask.gateway);
-    }
-
-    if (createTask.netmask == null) {
-      throw new SpecInvalidException("Missing extended property: netmask");
-    } else if (!InetAddressValidator.getInstance().isValidInet4Address(createTask.netmask)) {
-      throw new SpecInvalidException("Invalid extended property: netmask: " + createTask.netmask);
-    }
-
-    if (createTask.etcdIps.size() == 0) {
-      throw new SpecInvalidException("Missing extended property: etcd ips");
-    }
-
-    if (createTask.masterIp == null) {
-      throw new SpecInvalidException("Missing extended property: master_ip");
-    } else if (!InetAddressValidator.getInstance().isValidInet4Address(createTask.masterIp)) {
-      throw new SpecInvalidException("Invalid extended property: master ip: " + createTask.masterIp);
-    }
-
-    if (createTask.containerNetwork == null) {
-      throw new SpecInvalidException("Missing extended property: "
-          + ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK);
-    } else {
-      String[] segments = createTask.containerNetwork.split("/");
-      SpecInvalidException error = new SpecInvalidException("Invalid extended property: "
-          + ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK + ": "
-          + createTask.containerNetwork);
-
-      // Check that container network is of CIDR format.
-      if (segments.length != 2) {
-        throw error;
-      }
-
-      // Check the first segment of the container network is a valid address.
-      if (!InetAddressValidator.getInstance().isValidInet4Address(segments[0])) {
-        throw error;
-      }
-
-      // Check the second segment of the container network is a valid netmask.
-      try {
-        int cidr = Integer.parseInt(segments[1]);
-        if (cidr < 0 || cidr > 32) {
-          throw error;
-        }
-      } catch (NumberFormatException e) {
-        throw error;
-      }
-    }
-
-    // Post createSpec to KubernetesClusterCreateTaskService
+    // Post createTask to KubernetesClusterCreateTaskService
     Operation operation = dcpClient.post(
         ServiceUriPaths.KUBERNETES_CLUSTER_CREATE_TASK_SERVICE, createTask);
     return operation.getBody(KubernetesClusterCreateTask.class);
@@ -357,6 +281,163 @@ public class ClusterManagerClient {
     }
 
     return convertedClusters;
+  }
+
+  private ClusterConfigurationService.State getClusterConfiguration(ClusterType clusterType)
+      throws SpecInvalidException {
+    List<ClusterConfigurationService.State> configurations = apiFeDcpClient.queryDocuments(
+        ClusterConfigurationService.State.class,
+        ImmutableMap.of("documentSelfLink",
+            ClusterConfigurationServiceFactory.SELF_LINK + "/" + clusterType.toString().toLowerCase()));
+
+    if (configurations.isEmpty()) {
+      throw new SpecInvalidException("No cluster configuration exists for " + clusterType.toString() + " cluster");
+    }
+
+    return configurations.iterator().next();
+  }
+
+  private ClusterService.State assembleCommonClusterEntity(ClusterType clusterType,
+                                                           String projectId,
+                                                           ClusterCreateSpec spec,
+                                                           ClusterConfigurationService.State clusterConfiguration) {
+    ClusterService.State cluster = new ClusterService.State();
+    cluster.clusterState = ClusterState.CREATING;
+    cluster.clusterName = spec.getName();
+    cluster.clusterType = clusterType;
+    cluster.imageId = clusterConfiguration.imageId;
+    cluster.projectId = projectId;
+    cluster.diskFlavorName =
+        spec.getDiskFlavor() == null || spec.getDiskFlavor().isEmpty() ?
+            ClusterManagerConstants.VM_DISK_FLAVOR : spec.getDiskFlavor();
+    cluster.masterVmFlavorName =
+        spec.getVmFlavor() == null || spec.getVmFlavor().isEmpty() ?
+            ClusterManagerConstants.MASTER_VM_FLAVOR : spec.getVmFlavor();
+    cluster.otherVmFlavorName =
+        spec.getVmFlavor() == null || spec.getVmFlavor().isEmpty() ?
+            ClusterManagerConstants.OTHER_VM_FLAVOR : spec.getVmFlavor();
+    cluster.vmNetworkId = spec.getVmNetworkId();
+    cluster.slaveCount = spec.getSlaveCount();
+    cluster.extendedProperties = new HashMap<>();
+    cluster.documentSelfLink = UUID.randomUUID().toString();
+
+    return cluster;
+  }
+
+  private String createKubernetesClusterEntity(ClusterType clusterType,
+                                               String projectId,
+                                               ClusterCreateSpec spec,
+                                               ClusterConfigurationService.State clusterConfiguration)
+    throws SpecInvalidException {
+
+    String containerNetwork =
+        spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK);
+    String dns = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS);
+    String gateway = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY);
+    String netmask = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK);
+    List<String> etcdIps = new ArrayList<>();
+    etcdIps.add(spec.getExtendedProperties().get(EXTENDED_PROPERTY_ETCD_IP1));
+    etcdIps.add(spec.getExtendedProperties().get(EXTENDED_PROPERTY_ETCD_IP2));
+    etcdIps.add(spec.getExtendedProperties().get(EXTENDED_PROPERTY_ETCD_IP3));
+    String masterIp = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
+
+    // Verify the cluster entity
+    if (dns == null) {
+      throw new SpecInvalidException("Missing extended property: dns");
+    } else if (!InetAddressValidator.getInstance().isValidInet4Address(dns)) {
+      throw new SpecInvalidException("Invalid extended property: dns: " + dns);
+    }
+
+    if (gateway == null) {
+      throw new SpecInvalidException("Missing extended property: gateway");
+    } else if (!InetAddressValidator.getInstance().isValidInet4Address(gateway)) {
+      throw new SpecInvalidException("Invalid extended property: gateway: " + gateway);
+    }
+
+    if (netmask == null) {
+      throw new SpecInvalidException("Missing extended property: netmask");
+    } else if (!InetAddressValidator.getInstance().isValidInet4Address(netmask)) {
+      throw new SpecInvalidException("Invalid extended property: netmask: " + netmask);
+    }
+
+    if (etcdIps.size() == 0) {
+      throw new SpecInvalidException("Missing extended property: etcd ips");
+    }
+
+    for (String etcdIp : etcdIps) {
+      if (etcdIp != null && !InetAddressValidator.getInstance().isValidInet4Address(etcdIp)) {
+        throw new SpecInvalidException("Invalid extended property: etcd ip: " + etcdIp);
+      }
+    }
+
+    if (masterIp == null) {
+      throw new SpecInvalidException("Missing extended property: master ip");
+    } else if (!InetAddressValidator.getInstance().isValidInet4Address(masterIp)) {
+      throw new SpecInvalidException("Invalid extended property: master ip: " + masterIp);
+    }
+
+    if (containerNetwork == null) {
+      throw new SpecInvalidException("Missing extended property: "
+          + ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK);
+    } else {
+      String[] segments = containerNetwork.split("/");
+      SpecInvalidException error = new SpecInvalidException("Invalid extended property: "
+          + ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK + ": "
+          + containerNetwork);
+
+      // Check that container network is of CIDR format.
+      if (segments.length != 2) {
+        throw error;
+      }
+
+      // Check the first segment of the container network is a valid address.
+      if (!InetAddressValidator.getInstance().isValidInet4Address(segments[0])) {
+        throw error;
+      }
+
+      // Check the second segment of the container network is a valid netmask.
+      try {
+        int cidr = Integer.parseInt(segments[1]);
+        if (cidr < 0 || cidr > 32) {
+          throw error;
+        }
+      } catch (NumberFormatException e) {
+        throw error;
+      }
+    }
+
+    // Assemble the cluster entity
+    ClusterService.State cluster = assembleCommonClusterEntity(clusterType, projectId, spec, clusterConfiguration);
+    cluster.extendedProperties = new HashMap<>();
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, containerNetwork);
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, dns);
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, gateway);
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, netmask);
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, serializeIpAddresses(etcdIps));
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, masterIp);
+
+    // Create the cluster entity
+    apiFeDcpClient.post(
+        ClusterServiceFactory.SELF_LINK,
+        cluster);
+
+    return cluster.documentSelfLink;
+  }
+
+  private String serializeIpAddresses(List<String> ipAddresses) {
+    StringBuilder sb = new StringBuilder();
+    for (String ipAddress : ipAddresses) {
+      if (ipAddress == null) {
+        continue;
+      }
+
+      if (sb.length() != 0) {
+        sb.append(",");
+      }
+      sb.append(ipAddress);
+    }
+
+    return sb.toString();
   }
 
   private void addIpAddressToList(List<String> list, Map<String, String> extendedProperties, String propName)
