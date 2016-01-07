@@ -19,21 +19,32 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
- * Host info for introspection API.
+ * Scheduler info for introspection API.
  */
 // TODO(vspivak): remove demo ware
 // https://www.pivotaltracker.com/s/projects/715511/stories/55520834
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class HostInfo {
+public class SchedulerInfo {
 
   @JsonProperty
   private String id;
 
   @JsonProperty
-  private List<SchedulerInfo> schedulers;
+  private String parent;
 
   @JsonProperty
-  private List<VmInfo> vms;
+  private List<String> schedulers;
+
+  @JsonProperty
+  private List<String> hosts;
+
+  public List<String> getHosts() {
+    return hosts;
+  }
+
+  public void setHosts(List<String> hosts) {
+    this.hosts = hosts;
+  }
 
   public String getId() {
     return id;
@@ -43,19 +54,19 @@ public class HostInfo {
     this.id = id;
   }
 
-  public List<SchedulerInfo> getSchedulers() {
+  public String getParent() {
+    return parent;
+  }
+
+  public void setParent(String parent) {
+    this.parent = parent;
+  }
+
+  public List<String> getSchedulers() {
     return schedulers;
   }
 
-  public void setSchedulers(List<SchedulerInfo> schedulers) {
+  public void setSchedulers(List<String> schedulers) {
     this.schedulers = schedulers;
-  }
-
-  public List<VmInfo> getVms() {
-    return vms;
-  }
-
-  public void setVms(List<VmInfo> vms) {
-    this.vms = vms;
   }
 }
