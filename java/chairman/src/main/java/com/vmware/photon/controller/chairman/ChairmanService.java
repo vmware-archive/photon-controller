@@ -37,6 +37,8 @@ import com.vmware.photon.controller.common.zookeeper.DataDictionary;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.photon.controller.resource.gen.NetworkType;
+import com.vmware.photon.controller.roles.gen.GetSchedulersRequest;
+import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.status.gen.GetStatusRequest;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
@@ -79,6 +81,11 @@ public class ChairmanService implements Chairman.Iface {
     this.dcpRestClient = dcpRestClient;
     this.buildInfo = buildInfo;
     this.config = config;
+  }
+
+  @Override
+  public GetSchedulersResponse get_schedulers(GetSchedulersRequest request) throws TException {
+    return new GetSchedulersResponse();
   }
 
   @Override

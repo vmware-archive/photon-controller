@@ -16,6 +16,7 @@ dependencies {
 
   thrift files('../../thrift/host.thrift',
                '../../thrift/chairman.thrift',
+               '../../thrift/roles.thrift',
                '../../thrift/resource.thrift',
                '../../thrift/scheduler.thrift',
                '../../thrift/root_scheduler.thrift',

@@ -16,6 +16,7 @@ namespace py gen.host
 
 include 'agent.thrift'
 include 'resource.thrift'
+include 'roles.thrift'
 include 'scheduler.thrift'
 include 'server_address.thrift'
 include 'tracing.thrift'
@@ -75,6 +76,7 @@ struct HostConfig {
   4: required server_address.ServerAddress address
   5: optional list<resource.Network> networks
   6: optional binary hypervisor
+  7: optional roles.Roles roles
   // A uuid that corrosponds to only one datastore
   // in the datastores list
   8: optional string image_datastore_id
@@ -1075,6 +1077,7 @@ struct GetNetworksResponse {
 service Host {
   // Get the status of the agent.
   AgentStatusResponse get_agent_status()
+  scheduler.ConfigureResponse configure(1: scheduler.ConfigureRequest request)
   GetConfigResponse get_host_config(1: GetConfigRequest request)
 
   GetDatastoresResponse get_datastores(1: GetDatastoresRequest request)

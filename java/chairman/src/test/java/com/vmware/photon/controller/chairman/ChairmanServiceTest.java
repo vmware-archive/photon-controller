@@ -74,6 +74,9 @@ public class ChairmanServiceTest extends PowerMockTestCase {
   private DataDictionary configDict;
 
   @Mock
+  private DataDictionary rolesDict;
+
+  @Mock
   private DcpRestClient dcpRestClient;
 
   @Mock
