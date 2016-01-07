@@ -560,7 +560,7 @@ class AgentConfig(object):
                     "Failed to parse server %s, Invalid delemiter" % server)
                 pass
             except AttributeError:
-                self._logger.warning("Failed to parse chairman server %" %
+                self._logger.warning("Failed to parse chairman server %s" %
                                      server)
                 pass
 
