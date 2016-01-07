@@ -72,6 +72,10 @@ import com.google.inject.util.Providers;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
+import org.apache.http.ssl.SSLContexts;
+
+import javax.net.ssl.SSLContext;
 
 import java.nio.file.Paths;
 import java.util.concurrent.BlockingQueue;
@@ -249,9 +253,19 @@ public class DeployerModule extends AbstractModule {
   @Provides
   @Singleton
   CloseableHttpAsyncClient getHttpClient() {
-    CloseableHttpAsyncClient httpAsyncClient = HttpAsyncClientBuilder.create().build();
-    httpAsyncClient.start();
-    return httpAsyncClient;
+    try {
+      SSLContext sslcontext = SSLContexts.custom()
+          .loadTrustMaterial((chain, authtype) -> true)
+          .build();
+      CloseableHttpAsyncClient httpAsyncClient = HttpAsyncClientBuilder.create()
+          .setHostnameVerifier(SSLIOSessionStrategy.ALLOW_ALL_HOSTNAME_VERIFIER)
+          .setSSLContext(sslcontext)
+          .build();
+      httpAsyncClient.start();
+      return httpAsyncClient;
+    } catch (Throwable e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Provides
