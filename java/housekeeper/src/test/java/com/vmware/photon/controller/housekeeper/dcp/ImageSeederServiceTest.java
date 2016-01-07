@@ -30,6 +30,7 @@ import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
+import com.vmware.photon.controller.host.gen.TransferImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.*;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
@@ -664,13 +665,23 @@ public class ImageSeederServiceTest {
     public Object[][] getHostCount() {
       return new Object[][]{
               {1},
-              {TestEnvironment.DEFAULT_MULTI_HOST_COUNT}
+              {TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
       };
     }
 
-    @Test(dataProvider = "hostCount")
-    public void testNewImageSeederSuccess(int hostCount) throws Throwable {
-      doReturn(new HostClientMock()).when(hostClientFactory).create();
+    @DataProvider(name = "transferImageSuccessCode")
+    public Object[][] getTransferImageSuccessCode() {
+      return new Object[][]{
+              {1, TransferImageResultCode.OK},
+              {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK},
+      };
+    }
+
+    @Test(dataProvider = "transferImageSuccessCode")
+    public void testNewImageSeederSuccess(int hostCount, TransferImageResultCode code) throws Throwable {
+      HostClientMock hostClient = new HostClientMock();
+      hostClient.setTransferImageResultCode(code);
+      doReturn(hostClient).when(hostClientFactory).create();
 
       zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
               ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
@@ -679,9 +690,11 @@ public class ImageSeederServiceTest {
 
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
-      createHostService(zookeeperHostMonitor.getAllDatastores());
+      createHostService(zookeeperHostMonitor.getImageDatastores());
       createDatastoreService(zookeeperHostMonitor.getImageDatastores());
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+      Datastore oneDatastore = zookeeperHostMonitor.getImageDatastores().iterator().next();
+      newImageSeeder.sourceImageDatastore = oneDatastore.getId();
 
       //Call Service.
       ImageSeederService.State response = machine.callServiceAndWaitForState(
@@ -728,6 +741,7 @@ public class ImageSeederServiceTest {
       createHostService(datastores);
       createDatastoreService(datastores);
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+      newImageSeeder.sourceImageDatastore = oneDatastore.getId();
       //Call Service.
       ImageSeederService.State response = machine.callServiceAndWaitForState(ImageSeederServiceFactory
                       .SELF_LINK, newImageSeeder,
