@@ -20,11 +20,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
-import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.common.*;
 import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
@@ -34,10 +30,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Class ImageSeederService implements a service to propagate an image available on a single data store to all
@@ -258,7 +252,11 @@ public class ImageSeederService extends StatefulService {
 
                     this.triggerHostToHostCopyServices(current, datastoreSet);
                     // Patch self with the host and data store information.
-                    sendStageProgressPatch(current, TaskState.TaskStage.STARTED, TaskState.SubStage.AWAIT_COMPLETION);
+                    State newState = new State();
+                    newState.taskInfo.stage = com.vmware.xenon.common.TaskState.TaskStage.STARTED;
+                    newState.taskInfo.subStage = TaskState.SubStage.AWAIT_COMPLETION;
+                    newState.triggeredCopies = datastoreSet.size();
+                    this.sendSelfPatch(newState);
                   }
               ));
     } catch (Exception e) {
@@ -272,12 +270,29 @@ public class ImageSeederService extends StatefulService {
    * @param current
    */
   protected void processAwaitCompletion(final State current) {
-    // move to next stage
-    if (!current.isSelfProgressionDisabled) {
-      State patch = ImageSeederService.this.buildPatch(
-          TaskState.TaskStage.FINISHED, null, null);
-      sendSelfPatch(patch);
-    }
+      if (current.finishedCopies != null
+              && current.triggeredCopies.equals(current.finishedCopies)) {
+        // all copies have completed successfully
+        this.sendSelfPatch(buildPatch(TaskState.TaskStage.FINISHED, null, null));
+        return;
+      }
+
+      if (current.finishedCopies != null
+              && current.failedOrCancelledCopies != null
+              && current.triggeredCopies.equals(current.finishedCopies + current.failedOrCancelledCopies)) {
+        // all copies have completed, but some of them have failed
+        RuntimeException e = new RuntimeException(
+                String.format("Image seeding failed: %s image seeding succeeded, %s image seeding failed or cancelled",
+                        current.finishedCopies,
+                        current.failedOrCancelledCopies)
+        );
+        this.failTask(e);
+        return;
+      }
+
+      getHost().schedule(() -> {
+        this.checkStatus(current);
+      }, current.queryPollDelay, TimeUnit.MILLISECONDS);
   }
 
   /**
@@ -321,6 +336,63 @@ public class ImageSeederService extends StatefulService {
 
     // start service
     this.startImageHostToHostCopyService(imageHostToHostCopyServiceStartState, handler);
+  }
+
+  /**
+   * Issues the queries to determine the status of the "child" ImageHostToHostService instances.
+   *
+   * @param current
+   */
+  private void checkStatus(final State current) {
+    Operation finished = this.buildChildQueryOperation(TaskState.TaskStage.FINISHED);
+    Operation failedOrCanceled = this.buildChildQueryOperation(
+            TaskState.TaskStage.FAILED, TaskState.TaskStage.CANCELLED);
+
+    OperationJoin.JoinedCompletionHandler handler = (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+      if (failures != null && !failures.isEmpty()) {
+        failTask(failures.values().iterator().next());
+        return;
+      }
+
+      try {
+        QueryTask finishedRsp = ops.get(finished.getId()).getBody(QueryTask.class);
+        QueryTask failedOrCanceledRsp = ops.get(failedOrCanceled.getId()).getBody(QueryTask.class);
+
+        State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
+        s.finishedCopies = finishedRsp.results.documentLinks.size();
+        s.failedOrCancelledCopies = failedOrCanceledRsp.results.documentLinks.size();
+
+        sendSelfPatch(s);
+      } catch (Throwable e) {
+        failTask(e);
+      }
+    };
+
+    OperationJoin
+            .create(finished, failedOrCanceled)
+            .setCompletion(handler)
+            .sendWith(this);
+  }
+
+  /**
+   * Creates a query operation for ImageDeleteServices in the specified states.
+   *
+   * @param stages
+   * @return
+   */
+  private Operation buildChildQueryOperation(TaskState.TaskStage... stages) {
+    QueryTask.QuerySpecification spec =
+            QueryTaskUtils.buildChildServiceTaskStatusQuerySpec(
+                    this.getSelfLink(),
+                    ImageHostToHostCopyService.State.class,
+                    stages);
+
+    QueryTask task = QueryTask.create(spec)
+            .setDirect(true);
+
+    return Operation
+            .createPost(UriUtils.buildUri(getHost(), LuceneQueryTaskFactoryService.SELF_LINK))
+            .setBody(task);
   }
 
   /**
@@ -399,7 +471,7 @@ public class ImageSeederService extends StatefulService {
     }
 
     if (datastoreSet.size() == 1) {
-      if (datastoreSet.contains(current.sourceImageDatastore)) {
+      if (!datastoreSet.contains(current.sourceImageDatastore)) {
         failTask(new Exception("No image datastore found"));
       } else {
         sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
@@ -563,5 +635,20 @@ public class ImageSeederService extends StatefulService {
      * Source image data store.
      */
     public String sourceImageDatastore;
+
+    /**
+     * Triggered copies.
+     */
+    public Integer triggeredCopies;
+
+    /**
+     * Finished copies.
+     */
+    public Integer finishedCopies;
+
+    /**
+     * Failed or canceled copies.
+     */
+    public Integer failedOrCancelledCopies;
   }
 }
