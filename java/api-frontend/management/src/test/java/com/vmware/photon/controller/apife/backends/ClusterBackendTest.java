@@ -24,6 +24,7 @@ import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.builders.AttachedDiskCreateSpecBuilder;
@@ -45,10 +46,12 @@ import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.AfterClass;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -59,12 +62,14 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Tests {@link ClusterBackend}.
@@ -586,38 +591,45 @@ public class ClusterBackendTest {
     }
 
     @Test
-    public void testFindVms() throws Throwable {
+    public void testFindVmsNoPagination() throws Throwable {
       when(clusterManagerClient.getCluster(any(String.class))).thenReturn(buildCluster());
 
       String[] vmIds = createMockCluster(clusterId, 5);
       createMockCluster(UUID.randomUUID().toString(), 3);
-      List<Vm> vms = clusterBackend.findVms(clusterId);
+      List<Vm> vms = clusterBackend.findVms(clusterId, Optional.<Integer>absent()).getItems();
       assertEquals(vms.size(), vmIds.length);
-      for (String vmId : vmIds) {
-        boolean found = false;
-        for (Vm vm : vms) {
-          if (vm.getId().equals(vmId)) {
-            vms.remove(vm);
-            found = true;
-            break;
-          }
-        }
-        assertTrue(found);
-      }
+      assertTrue(CollectionUtils.isEqualCollection(Arrays.asList(vmIds),
+          vms.stream().map(vm -> vm.getId()).collect(Collectors.toList())));
+    }
+
+    @Test
+    public void testFindVmsWithPagination() throws Throwable {
+      when(clusterManagerClient.getCluster(any(String.class))).thenReturn(buildCluster());
+
+      String[] vmIds = createMockCluster(clusterId, 5);
+      createMockCluster(UUID.randomUUID().toString(), 3);
+
+      final int pageSize = 2;
+      ResourceList<Vm> page = clusterBackend.findVms(clusterId, Optional.of(pageSize));
+
+      assertEquals(page.getItems().size(), pageSize);
+      assertNotNull(page.getNextPageLink());
+      assertTrue(Arrays.asList(vmIds).containsAll(page.getItems().stream().map(vm -> vm.getId()).collect(Collectors
+          .toList())));
     }
 
     @Test
     public void testFindVmsNoMatch() throws Throwable {
       when(clusterManagerClient.getCluster(any(String.class))).thenReturn(buildCluster());
-      List<Vm> vms = clusterBackend.findVms(clusterId);
-      assertEquals(vms.size(), 0);
+      ResourceList<Vm> vms = clusterBackend.findVms(clusterId, Optional.<Integer>absent());
+      assertEquals(vms.getItems().size(), 0);
     }
 
     @Test(expectedExceptions = ClusterNotFoundException.class)
     public void testClusterNotFound() throws Throwable {
       String clusterId = UUID.randomUUID().toString();
       when(clusterManagerClient.getCluster(clusterId)).thenThrow(new ClusterNotFoundException(clusterId));
-      clusterBackend.findVms(clusterId);
+      clusterBackend.findVms(clusterId, Optional.<Integer>absent());
     }
 
     private String createVm(String clusterId) throws Exception {

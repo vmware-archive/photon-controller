@@ -26,6 +26,7 @@ import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Tag;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
@@ -63,10 +64,12 @@ import com.vmware.photon.controller.apife.exceptions.external.MoreThanOneIsoAtta
 import com.vmware.photon.controller.apife.exceptions.external.PersistentDiskAttachedException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.apife.lib.QuotaCost;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -88,6 +91,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * VmDcpBackend is performing VM operations such as create, delete, add tag etc.
@@ -150,7 +154,8 @@ public class VmDcpBackend implements VmBackend {
           Optional.<String>absent(),
           Optional.<String>absent(),
           Optional.<String>absent(),
-          Optional.<String>absent());
+          Optional.<String>absent(),
+          Optional.<Integer>absent()).getItems();
     } else {
       vms = filterVmEntities(
           Optional.of(projectId),
@@ -159,7 +164,8 @@ public class VmDcpBackend implements VmBackend {
           Optional.<String>absent(),
           Optional.<String>absent(),
           Optional.<String>absent(),
-          Optional.<String>absent());
+          Optional.<String>absent(),
+          Optional.<Integer>absent()).getItems();
     }
 
     List<Vm> result = new ArrayList<>();
@@ -179,43 +185,38 @@ public class VmDcpBackend implements VmBackend {
   }
 
   @Override
-  public List<Vm> filterByTag(String projectId, Tag tag) throws ExternalException {
+  public ResourceList<Vm> filterByTag(String projectId, Tag tag, Optional<Integer> pageSize) throws ExternalException {
     projectBackend.findById(projectId);
-    List<VmEntity> vms = filterVmEntities(
+    ResourceList<VmEntity> vmEntities = filterVmEntities(
         Optional.of(projectId),
         Optional.of(tag.getValue()),
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
-        Optional.<String>absent());
+        Optional.<String>absent(),
+        pageSize);
 
-    List<Vm> result = new ArrayList<>();
 
-    if (vms != null) {
-      for (VmEntity vm : vms) {
-        result.add(toApiRepresentation(vm));
-      }
-    }
-
-    return result;
+    return toApiRepresentation(vmEntities);
   }
 
   @Override
   public List<Vm> filterByFlavor(String flavorId) throws ExternalException {
-    List<VmEntity> vms = filterVmEntities(
+    ResourceList<VmEntity> vms = filterVmEntities(
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.of(flavorId),
         Optional.<String>absent(),
-        Optional.<String>absent());
+        Optional.<String>absent(),
+        Optional.<Integer>absent());
 
     List<Vm> result = new ArrayList<>();
 
     if (vms != null) {
-      for (VmEntity vm : vms) {
+      for (VmEntity vm : vms.getItems()) {
         result.add(toApiRepresentation(vm));
       }
     }
@@ -225,21 +226,19 @@ public class VmDcpBackend implements VmBackend {
 
   @Override
   public List<Vm> filterByImage(String imageId) throws ExternalException {
-    List<VmEntity> vms = filterVmEntities(
+    ResourceList<VmEntity> vms = filterVmEntities(
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.of(imageId),
-        Optional.<String>absent());
+        Optional.<String>absent(),
+        Optional.<Integer>absent());
 
     List<Vm> result = new ArrayList<>();
-
-    if (vms != null) {
-      for (VmEntity vm : vms) {
-        result.add(toApiRepresentation(vm));
-      }
+    for (VmEntity vm : vms.getItems()) {
+      result.add(toApiRepresentation(vm));
     }
 
     return result;
@@ -247,21 +246,19 @@ public class VmDcpBackend implements VmBackend {
 
   @Override
   public List<Vm> filterByNetwork(String networkId) throws ExternalException {
-    List<VmEntity> vms = filterVmEntities(
+    ResourceList<VmEntity> vms = filterVmEntities(
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
-        Optional.of(networkId));
+        Optional.of(networkId),
+        Optional.<Integer>absent());
 
     List<Vm> result = new ArrayList<>();
-
-    if (vms != null) {
-      for (VmEntity vm : vms) {
-        result.add(toApiRepresentation(vm));
-      }
+    for (VmEntity vmEntity : vms.getItems()) {
+      result.add(toApiRepresentation(vmEntity));
     }
 
     return result;
@@ -549,20 +546,21 @@ public class VmDcpBackend implements VmBackend {
   public List<Vm> getAllVmsOnHost(String hostId) throws ExternalException {
     HostEntity hostEntity = hostBackend.findById(hostId);
 
-    List<VmEntity> vmEntities = filterVmEntities(
+    ResourceList<VmEntity> vmEntities = filterVmEntities(
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.of(hostEntity.getAddress()),
         Optional.<String>absent(),
         Optional.<String>absent(),
-        Optional.<String>absent());
+        Optional.<String>absent(),
+        Optional.<Integer>absent());
 
     List<Vm> result = new ArrayList<>();
-
-    for (VmEntity vmEntity : vmEntities) {
+    for (VmEntity vmEntity : vmEntities.getItems()) {
       result.add(toApiRepresentation(vmEntity));
     }
+
     return result;
   }
 
@@ -883,23 +881,41 @@ public class VmDcpBackend implements VmBackend {
     return vm;
   }
 
-  private List<VmEntity> filterVmEntities(
-      Optional<String> projectId, Optional<String> tag, Optional<String> name, Optional<String> host,
-      Optional<String> flavorId, Optional<String> imageId, Optional<String> networkId) {
+  private ResourceList<Vm> toApiRepresentation(ResourceList<VmEntity> vmEntities) throws ExternalException {
+    ResourceList<Vm> result = new ResourceList<>();
 
-    List<VmEntity> vmEntityList = new ArrayList<>();
-    List<VmService.State> vms = filterVmDocuments(projectId, tag, name, host, flavorId, imageId, networkId);
-    if (vms != null) {
-      for (VmService.State vm : vms) {
-        vmEntityList.add(toVmEntity(vm));
-      }
+    List<Vm> vms = new ArrayList<>();
+    for (VmEntity vmEntity : vmEntities.getItems()) {
+      vms.add(toApiRepresentation(vmEntity));
     }
+
+    result.setItems(vms);
+    result.setNextPageLink(vmEntities.getNextPageLink());
+    result.setPreviousPageLink(vmEntities.getPreviousPageLink());
+
+    return result;
+  }
+
+  private ResourceList<VmEntity> filterVmEntities(
+      Optional<String> projectId, Optional<String> tag, Optional<String> name, Optional<String> host,
+      Optional<String> flavorId, Optional<String> imageId, Optional<String> networkId, Optional<Integer> pageSize) {
+
+    ResourceList<VmEntity> vmEntityList = new ResourceList<>();
+    ResourceList<VmService.State> vms = filterVmDocuments(projectId, tag, name, host, flavorId,
+        imageId, networkId, pageSize);
+    vmEntityList.setItems(vms.getItems().stream()
+        .map(vm -> toVmEntity(vm))
+        .collect(Collectors.toList())
+    );
+    vmEntityList.setNextPageLink(vms.getNextPageLink());
+    vmEntityList.setPreviousPageLink(vms.getPreviousPageLink());
+
     return vmEntityList;
   }
 
-  private List<VmService.State> filterVmDocuments(
+  private ResourceList<VmService.State> filterVmDocuments(
       Optional<String> projectId, Optional<String> tag, Optional<String> name, Optional<String> host,
-      Optional<String> flavorId, Optional<String> imageId, Optional<String> networkId) {
+      Optional<String> flavorId, Optional<String> imageId, Optional<String> networkId, Optional<Integer> pageSize) {
 
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
 
@@ -935,7 +951,9 @@ public class VmDcpBackend implements VmBackend {
       termsBuilder.put(key, networkId.get());
     }
 
-    return dcpClient.queryDocuments(VmService.State.class, termsBuilder.build());
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(VmService.State.class, termsBuilder.build(),
+        pageSize, true);
+    return PaginationUtils.xenonQueryResultToResourceList(VmService.State.class, queryResult);
   }
 
   private TaskEntity deleteTask(VmEntity vm) throws ExternalException {
