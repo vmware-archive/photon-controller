@@ -32,9 +32,16 @@ struct ReplicateImageResult {
   2: optional string error
 }
 
+# Enumeration of Image replication type.
+enum ReplicationType {
+  ON_DEMAND = 0
+  EAGER = 1
+}
+
 struct ReplicateImageRequest {
   1: required string datastore
   2: required string image
+  3: required ReplicationType replicationType
   99: optional tracing.TracingInfo tracing_info
 }
 

@@ -25,6 +25,7 @@ import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResultCode;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatus;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusCode;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusResponse;
+import com.vmware.photon.controller.housekeeper.gen.ReplicationType;
 
 import org.apache.thrift.TException;
 import org.hamcrest.MatcherAssert;
@@ -34,6 +35,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -52,6 +54,7 @@ public class HousekeeperClientTest {
   private static final String DATASTORE = "datastore";
   private static final String IMAGE = "image";
   private static final String OPERATION_ID = "opid";
+  private static final ReplicationType REPLICATION_TYPE = ReplicationType.ON_DEMAND;
 
   private HousekeeperClient client;
 
@@ -69,7 +72,7 @@ public class HousekeeperClientTest {
     ReplicateImageResponse triggerResponse = new ReplicateImageResponse(new ReplicateImageResult
         (ReplicateImageResultCode.OK));
     triggerResponse.setOperation_id(OPERATION_ID);
-    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString());
+    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
 
     // Replication status.
     ReplicateImageStatusResponse statusResponse = new ReplicateImageStatusResponse(new ReplicateImageResult
@@ -78,8 +81,8 @@ public class HousekeeperClientTest {
     doReturn(statusResponse).when(client).getReplicationStatusNoCheck(OPERATION_ID);
 
     //Replicate.
-    client.replicateImage(DATASTORE, IMAGE);
-    verify(client).triggerReplication(DATASTORE, IMAGE);
+    client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
+    verify(client).triggerReplication(DATASTORE, IMAGE, REPLICATION_TYPE);
     verify(client).getReplicationStatus(anyString());
   }
 
@@ -91,7 +94,7 @@ public class HousekeeperClientTest {
     ReplicateImageResponse triggerResponse = new ReplicateImageResponse(new ReplicateImageResult
         (ReplicateImageResultCode.OK));
     triggerResponse.setOperation_id(OPERATION_ID);
-    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString());
+    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
 
     // Replication status.
     ReplicateImageStatusResponse statusResponse = new ReplicateImageStatusResponse(new ReplicateImageResult
@@ -100,7 +103,7 @@ public class HousekeeperClientTest {
     doReturn(statusResponse).when(client).getReplicationStatusNoCheck(OPERATION_ID);
 
     //Replicate.
-    client.replicateImage(DATASTORE, IMAGE);
+    client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
     fail("should fail because replication times out");
   }
 
@@ -109,10 +112,10 @@ public class HousekeeperClientTest {
     // Trigger replication.
     ReplicateImageResult systemResult = new ReplicateImageResult(ReplicateImageResultCode.SYSTEM_ERROR);
     systemResult.setError("some error");
-    doThrow(new SystemErrorException("")).when(client).triggerReplication(anyString(), anyString());
+    doThrow(new SystemErrorException("")).when(client).triggerReplication(anyString(), anyString(), any());
 
     //Replicate.
-    client.replicateImage(DATASTORE, IMAGE);
+    client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
     fail("should fail with system error while triggering replication");
   }
 
@@ -122,7 +125,7 @@ public class HousekeeperClientTest {
     ReplicateImageResponse triggerResponse = new ReplicateImageResponse(new ReplicateImageResult
         (ReplicateImageResultCode.OK));
     triggerResponse.setOperation_id(OPERATION_ID);
-    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString());
+    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
 
     // Replication status.
     ReplicateImageResult systemResult = new ReplicateImageResult(ReplicateImageResultCode.SYSTEM_ERROR);
@@ -131,7 +134,7 @@ public class HousekeeperClientTest {
     doReturn(statusResponse).when(client).getReplicationStatusNoCheck(OPERATION_ID);
 
     // Replicate.
-    client.replicateImage(DATASTORE, IMAGE);
+    client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
     fail("should fail with system error while getting replication status");
   }
 
@@ -141,7 +144,7 @@ public class HousekeeperClientTest {
     ReplicateImageResponse triggerResponse = new ReplicateImageResponse(new ReplicateImageResult
         (ReplicateImageResultCode.OK));
     triggerResponse.setOperation_id(OPERATION_ID);
-    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString());
+    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
 
     // Replication status.
     ReplicateImageResult result = new ReplicateImageResult(ReplicateImageResultCode.SERVICE_NOT_FOUND);
@@ -152,7 +155,7 @@ public class HousekeeperClientTest {
     HousekeeperClient.maxServiceUnavailableOccurence = 1;
 
     // Replicate.
-    client.replicateImage(DATASTORE, IMAGE);
+    client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
     fail("should fail with service unavailable while getting replication status");
   }
 
@@ -162,7 +165,7 @@ public class HousekeeperClientTest {
     ReplicateImageResponse triggerResponse = new ReplicateImageResponse(new ReplicateImageResult
         (ReplicateImageResultCode.OK));
     triggerResponse.setOperation_id(OPERATION_ID);
-    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString());
+    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
 
     // Replication status.
     ReplicateImageStatusResponse statusResponse = new ReplicateImageStatusResponse(new ReplicateImageResult
@@ -172,7 +175,7 @@ public class HousekeeperClientTest {
     doReturn(statusResponse).when(client).getReplicationStatusNoCheck(OPERATION_ID);
 
     //Replicate.
-    client.replicateImage(DATASTORE, IMAGE);
+    client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
     fail("should throw because of replication failure");
   }
 
@@ -182,7 +185,7 @@ public class HousekeeperClientTest {
     ReplicateImageResponse triggerResponse = new ReplicateImageResponse(new ReplicateImageResult
         (ReplicateImageResultCode.OK));
     triggerResponse.setOperation_id(OPERATION_ID);
-    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString());
+    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
 
     // Replication status.
     ReplicateImageStatusResponse statusResponse = new ReplicateImageStatusResponse(new ReplicateImageResult
@@ -192,7 +195,7 @@ public class HousekeeperClientTest {
     doReturn(statusResponse).when(client).getReplicationStatusNoCheck(OPERATION_ID);
 
     //Replicate.
-    client.replicateImage(DATASTORE, IMAGE);
+    client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
     fail("should throw because replication was cancelled");
   }
 
