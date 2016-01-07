@@ -30,6 +30,9 @@ public class HostInfo {
   private String id;
 
   @JsonProperty
+  private List<SchedulerInfo> schedulers;
+
+  @JsonProperty
   private List<VmInfo> vms;
 
   public String getId() {
@@ -38,6 +41,14 @@ public class HostInfo {
 
   public void setId(String id) {
     this.id = id;
+  }
+
+  public List<SchedulerInfo> getSchedulers() {
+    return schedulers;
+  }
+
+  public void setSchedulers(List<SchedulerInfo> schedulers) {
+    this.schedulers = schedulers;
   }
 
   public List<VmInfo> getVms() {

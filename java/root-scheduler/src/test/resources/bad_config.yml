@@ -12,6 +12,9 @@ zookeeper:
   quorum: localhost:2181
   retries:
     max_retries: 3
+healthcheck:
+  period_ms: 1000
+  timeout_ms: 5000
 logging:
   level: INFO
   console:

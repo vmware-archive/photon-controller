@@ -18,6 +18,7 @@ from mock import *  # noqa
 from thrift.protocol import TProtocol
 from gen.flavors.ttypes import *  # noqa
 from gen.host.ttypes import *  # noqa
+from gen.roles.ttypes import *  # noqa
 from gen.resource.ttypes import *  # noqa
 from gen.scheduler.ttypes import *  # noqa
 
@@ -52,4 +53,20 @@ class TestValidation(unittest.TestCase):
         item = QuotaLineItem("test", "test", 1)
         msg.resources[0].vm.flavor = Flavor(name="flavor", cost=[item])
 
+        deep_validate(msg)
+
+    def test_configure_request(self):
+        msg = ConfigureRequest()
+        self.assert_invalid(msg)
+        msg.scheduler = "string"
+        msg.availability_zone = "string"
+        self.assert_invalid(msg)
+
+        msg.roles = Roles()
+        deep_validate(msg)
+
+        sr = SchedulerRole()
+        msg.roles.schedulers = [sr]
+        self.assert_invalid(msg)
+        sr.id = "string"
         deep_validate(msg)
