@@ -52,6 +52,8 @@ public interface VmBackend {
 
   String findDatastoreByVmId(String id) throws VmNotFoundException;
 
+  ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException;
+
   Vm toApiRepresentation(String id) throws ExternalException;
 
   void tombstone(VmEntity vm) throws ExternalException;

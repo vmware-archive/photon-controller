@@ -94,8 +94,7 @@ public class ClusterFeClient {
     return clusterBackend.findVms(clustertId, pageSize);
   }
 
-  public ResourceList<Vm> getVmsPage(String pageLink) {
-    // todo: Should call backend to retrieve the vms page
-    return new ResourceList<>();
+  public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
+    return clusterBackend.getVmsPage(pageLink);
   }
 }

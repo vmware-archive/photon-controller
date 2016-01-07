@@ -144,6 +144,10 @@ public class ClusterBackend {
     return vmBackend.filterByTag(cluster.getProjectId(), clusterIdTag, pageSize);
   }
 
+  public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
+    return vmBackend.getVmsPage(pageLink);
+  }
+
   private void checkClusterId(String clusterId) throws ClusterNotFoundException {
     Cluster cluster = clusterManagerClient.getCluster(clusterId);
     checkNotNull(cluster);

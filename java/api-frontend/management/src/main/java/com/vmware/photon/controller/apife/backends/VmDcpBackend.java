@@ -37,6 +37,7 @@ import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
@@ -264,6 +265,30 @@ public class VmDcpBackend implements VmBackend {
     return result;
   }
 
+  @Override
+  public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    ResourceList<VmService.State> vmStates = PaginationUtils.xenonQueryResultToResourceList(VmService.State.class,
+        queryResult);
+
+    List<Vm> vms = new ArrayList<>();
+    for (VmService.State vmState : vmStates.getItems()) {
+      vms.add(toApiRepresentation(toVmEntity(vmState)));
+    }
+
+    ResourceList<Vm> result = new ResourceList<>();
+    result.setItems(vms);
+    result.setNextPageLink(vmStates.getNextPageLink());
+    result.setPreviousPageLink(vmStates.getPreviousPageLink());
+
+    return result;
+  }
 
   @Override
   public String findDatastoreByVmId(String id) throws VmNotFoundException {
