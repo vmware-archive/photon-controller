@@ -112,6 +112,7 @@ public class ResourceRemovalTaskService extends StatefulService {
       q.documentExpirationTimeMicros = state.documentExpirationTimeMicros;
       q.querySpec = state.resourceQuerySpec;
       q.documentSelfLink = UUID.randomUUID().toString();
+      q.tenantLinks = state.tenantLinks;
       // create the query to find resources
       sendRequest(Operation.createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
           .setBody(q)
@@ -268,6 +269,7 @@ public class ResourceRemovalTaskService extends StatefulService {
     subTaskInitState.parentTaskLink = getSelfLink();
     subTaskInitState.completionsRemaining = resourceCount;
     subTaskInitState.errorThreshold = currentState.errorThreshold;
+    subTaskInitState.tenantLinks = currentState.tenantLinks;
     Operation startPost = Operation
         .createPost(this, UUID.randomUUID().toString())
         .setBody(subTaskInitState)
