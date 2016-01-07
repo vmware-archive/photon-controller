@@ -51,7 +51,7 @@ public class BasicServiceHostTest {
   public static final int WAIT_ITERATION_SLEEP = 10;
   public static final int WAIT_ITERATION_COUNT = 10;
   public static final String BIND_ADDRESS = "0.0.0.0";
-  public static final Integer BIND_PORT = 16001;
+  public static final Integer BIND_PORT = 46001;
   public static final String STORAGE_PATH = "/tmp/dcp/BasicServiceHostTest/" + UUID.randomUUID().toString() + "/";
   private static final File storageDir = new File(STORAGE_PATH);
 
