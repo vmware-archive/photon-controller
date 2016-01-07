@@ -62,7 +62,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -609,13 +608,20 @@ public class ClusterBackendTest {
       String[] vmIds = createMockCluster(clusterId, 5);
       createMockCluster(UUID.randomUUID().toString(), 3);
 
+      List<Vm> vms = new ArrayList<>();
+
       final int pageSize = 2;
       ResourceList<Vm> page = clusterBackend.findVms(clusterId, Optional.of(pageSize));
+      vms.addAll(page.getItems());
 
-      assertEquals(page.getItems().size(), pageSize);
-      assertNotNull(page.getNextPageLink());
-      assertTrue(Arrays.asList(vmIds).containsAll(page.getItems().stream().map(vm -> vm.getId()).collect(Collectors
-          .toList())));
+      while (page.getNextPageLink() != null) {
+        page = clusterBackend.getVmsPage(page.getNextPageLink());
+        vms.addAll(page.getItems());
+      }
+
+      assertEquals(vms.size(), vmIds.length);
+      assertTrue(CollectionUtils.isEqualCollection(Arrays.asList(vmIds),
+          vms.stream().map(vm -> vm.getId()).collect(Collectors.toList())));
     }
 
     @Test
