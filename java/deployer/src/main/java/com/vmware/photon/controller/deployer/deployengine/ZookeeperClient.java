@@ -96,8 +96,8 @@ public class ZookeeperClient {
       logger.info("Adding server: " + serverStr);
       joiningServers.add(serverStr);
       LinkedList<Integer> results = new LinkedList<Integer>();
-//      zkClient.getZookeeperClient().getZooKeeper().reconfig(joiningServers, null,
-//          null, -1, dataCallback, results);
+      zkClient.getZookeeperClient().getZooKeeper().reconfig(joiningServers, null,
+          null, -1, dataCallback, results);
 
     } catch (Exception e) {
       logger.error("Rethrowing error ", e);
@@ -114,8 +114,8 @@ public class ZookeeperClient {
       leavingServers.add(myId.toString());
       logger.info("Removing server: " + myId.toString());
       LinkedList<Integer> results = new LinkedList<Integer>();
-//      zkClient.getZookeeperClient().getZooKeeper().reconfig(null, leavingServers,
-//          null, -1, dataCallback, results);
+      zkClient.getZookeeperClient().getZooKeeper().reconfig(null, leavingServers,
+          null, -1, dataCallback, results);
 
     } catch (Exception e) {
       logger.error("Rethrowing error ", e);
