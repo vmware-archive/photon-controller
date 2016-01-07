@@ -91,7 +91,7 @@ public class ClusterFeClient {
   }
 
   public ResourceList<Vm> findVms(String clustertId, Optional<Integer> pageSize) throws ExternalException {
-    return new ResourceList<>(clusterBackend.findVms(clustertId));
+    return clusterBackend.findVms(clustertId, pageSize);
   }
 
   public ResourceList<Vm> getVmsPage(String pageLink) {

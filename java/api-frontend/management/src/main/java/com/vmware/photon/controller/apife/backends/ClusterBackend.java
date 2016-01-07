@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.Cluster;
 import com.vmware.photon.controller.api.ClusterCreateSpec;
 import com.vmware.photon.controller.api.ClusterResizeOperation;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Tag;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -33,6 +34,7 @@ import com.vmware.photon.controller.apife.exceptions.external.ClusterNotFoundExc
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
@@ -133,13 +135,13 @@ public class ClusterBackend {
     return taskEntity;
   }
 
-  public List<Vm> findVms(String clusterId) throws ExternalException {
+  public ResourceList<Vm> findVms(String clusterId, Optional<Integer> pageSize) throws ExternalException {
     // Get projectId for cluster
     Cluster cluster = clusterManagerClient.getCluster(clusterId);
 
     // Find VMs by tag
     Tag clusterIdTag = new Tag(ClusterUtil.createClusterTag(clusterId));
-    return vmBackend.filterByTag(cluster.getProjectId(), clusterIdTag);
+    return vmBackend.filterByTag(cluster.getProjectId(), clusterIdTag, pageSize);
   }
 
   private void checkClusterId(String clusterId) throws ClusterNotFoundException {
