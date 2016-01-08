@@ -79,7 +79,6 @@ public class HousekeeperDcpServiceHost
       ImageDatastoreSweeperServiceFactory.class,
       ImageDeleteServiceFactory.class,
 
-      ImageServiceFactory.class,
       TaskSchedulerServiceFactory.class,
 
       RootNamespaceService.class,
@@ -167,8 +166,6 @@ public class HousekeeperDcpServiceHost
         && checkServiceAvailable(ImageCleanerServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageDatastoreSweeperServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageDeleteServiceFactory.SELF_LINK)
-
-        && checkServiceAvailable(ImageServiceFactory.SELF_LINK)
 
         && checkServiceAvailable(getTriggerCleanerServiceUri())
         && checkServiceAvailable(TaskSchedulerServiceFactory.SELF_LINK);
