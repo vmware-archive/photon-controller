@@ -23,7 +23,7 @@ import com.vmware.photon.controller.clustermanager.helpers.ReflectionUtils;
 import com.vmware.photon.controller.clustermanager.helpers.TestEnvironment;
 import com.vmware.photon.controller.clustermanager.helpers.TestHelper;
 import com.vmware.photon.controller.clustermanager.helpers.TestHost;
-import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
+import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;

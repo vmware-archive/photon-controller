@@ -27,7 +27,7 @@ import com.vmware.photon.controller.clustermanager.helpers.TestEnvironment;
 import com.vmware.photon.controller.clustermanager.helpers.TestHelper;
 import com.vmware.photon.controller.clustermanager.helpers.TestHost;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterDeleteTask;
-import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
+import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;

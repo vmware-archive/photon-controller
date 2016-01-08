@@ -27,8 +27,8 @@ import com.vmware.photon.controller.clustermanager.templates.MesosSlaveNodeTempl
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.templates.SwarmSlaveNodeTemplate;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
-import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
+import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;

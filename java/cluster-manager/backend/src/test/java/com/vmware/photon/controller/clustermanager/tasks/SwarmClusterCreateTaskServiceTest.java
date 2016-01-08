@@ -40,7 +40,7 @@ import com.vmware.photon.controller.clustermanager.templates.EtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.templates.SwarmMasterNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.SwarmSlaveNodeTemplate;
-import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
+import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;

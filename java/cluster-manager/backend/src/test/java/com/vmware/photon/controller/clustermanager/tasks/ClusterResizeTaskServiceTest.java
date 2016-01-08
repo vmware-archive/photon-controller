@@ -39,7 +39,7 @@ import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelpe
 import com.vmware.photon.controller.clustermanager.templates.KubernetesSlaveNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
-import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
+import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
