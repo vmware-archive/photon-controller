@@ -25,6 +25,14 @@ zookeeper:
   retries:
     max_retries: 3
 
+hierarchy:
+  maxTopTierSchedulers: 1024
+  maxMidTierSchedulers: 32
+  initialScanDelayMs: 10000
+  scanPeriodMs: 5000
+  hostConfigPoolSize: 10
+  enableScan: true
+
 logging:
   console:
     enabled: true

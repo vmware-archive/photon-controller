@@ -57,6 +57,20 @@ public class Config {
   @NotNull
   private ZookeeperConfig zookeeper = new ZookeeperConfig();
 
+  @Valid
+  @NotNull
+  private HierarchyConfig hierarchy = new HierarchyConfig();
+
+  /**
+   * Set this flag to ignore any errors that come from cloudstore during register_host /
+   * report_missing / report_resurrected. This is set to false by default so that chairman
+   * returns an error to the agent if a cloudstore operation fails for any reason so that
+   * the agent knows it needs to retry the request. Set this flag to true if agents are
+   * being deployed without going through the deployer and cloudstore service documents
+   * are expected to be absent.
+   */
+  private boolean ignoreCloudStoreErrors = false;
+
   public Config() {
     try {
       bind = InetAddress.getLocalHost().getHostAddress();
@@ -84,6 +98,14 @@ public class Config {
 
   public ZookeeperConfig getZookeeper() {
     return zookeeper;
+  }
+
+  public HierarchyConfig getHierarchy() {
+    return hierarchy;
+  }
+
+  public boolean getIgnoreCloudStoreErrors() {
+    return ignoreCloudStoreErrors;
   }
 
   /**

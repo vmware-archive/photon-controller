@@ -13,8 +13,9 @@
 
 package com.vmware.photon.controller.deployer;
 
-import com.vmware.photon.controller.chairman.ChairmanService;
 import com.vmware.photon.controller.chairman.gen.Chairman;
+import com.vmware.photon.controller.chairman.hierarchy.HierarchyManager;
+import com.vmware.photon.controller.chairman.service.ChairmanService;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ThriftEventHandler;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
@@ -64,6 +65,7 @@ public class DeployerServer {
   private final String registrationAddress;
   private final int port;
   private final CloseableHttpAsyncClient httpClient;
+  private final HierarchyManager hierarchyManager;
 
   private TServer server;
   private ServiceNode serviceNode;
@@ -79,7 +81,8 @@ public class DeployerServer {
                         @DeployerConfig.Bind String bind,
                         @DeployerConfig.RegistrationAddress String registrationAddress,
                         @DeployerConfig.Port int port,
-                        CloseableHttpAsyncClient httpClient) {
+                        CloseableHttpAsyncClient httpClient,
+                        HierarchyManager hierarchyManager) {
     this.serviceNodeFactory = serviceNodeFactory;
     this.transportFactory = transportFactory;
     this.protocolFactory = protocolFactory;
@@ -91,6 +94,7 @@ public class DeployerServer {
     this.registrationAddress = registrationAddress;
     this.port = port;
     this.httpClient = httpClient;
+    this.hierarchyManager = hierarchyManager;
   }
 
   public void serve() throws UnknownHostException, TTransportException {
@@ -127,7 +131,7 @@ public class DeployerServer {
 
     // Set up leader election for hierarchy manager
     serviceNode = serviceNodeFactory.createLeader("tree-builder", registrationSocketAddress);
-    ServiceNodeUtils.joinService(serviceNode, retryIntervalMsec);
+    ServiceNodeUtils.joinService(serviceNode, retryIntervalMsec, hierarchyManager);
 
     logger.info("Starting deployer ({})", buildInfo);
     logger.info("Listening on: {}", bindSocketAddress);
