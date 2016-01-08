@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.common.dcp.UpgradeUtils;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.vmware.xenon.services.common.RootNamespaceService;
@@ -113,6 +114,7 @@ public class DeployerContext {
   private Collection<Class<?>> migrationExecludedServices = ImmutableSet.<Class<?>>builder()
       .add(DatastoreServiceFactory.class)
       .add(RootNamespaceService.class)
+      .add(EntityLockServiceFactory.class)
       .build();
 
   @VisibleForTesting
