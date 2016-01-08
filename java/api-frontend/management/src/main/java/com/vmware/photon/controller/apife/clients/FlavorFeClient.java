@@ -63,6 +63,6 @@ public class FlavorFeClient {
   }
 
   public ResourceList<Flavor> list(Optional<String> name, Optional<String> kind) throws ExternalException {
-    return new ResourceList<>(flavorBackend.filter(name, kind));
+    return flavorBackend.filter(name, kind, Optional.<Integer>absent());
   }
 }
