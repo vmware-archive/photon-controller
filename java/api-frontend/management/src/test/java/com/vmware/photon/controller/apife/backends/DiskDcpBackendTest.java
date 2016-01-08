@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.DiskCreateSpec;
 import com.vmware.photon.controller.api.DiskState;
 import com.vmware.photon.controller.api.EphemeralDisk;
+import com.vmware.photon.controller.api.Flavor;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.LocalitySpec;
 import com.vmware.photon.controller.api.Operation;
@@ -214,12 +215,14 @@ public class DiskDcpBackendTest {
 
       PersistentDiskEntity persistentDiskEntity = (PersistentDiskEntity) diskDcpBackend.find(PersistentDisk.KIND,
           taskEntity.getEntityId());
+      Flavor flavor = flavorBackend.filter(Optional.of(spec.getFlavor()),
+              Optional.of(PersistentDisk.KIND), Optional.absent()).getItems().get(0);
+
       assertThat(persistentDiskEntity.getName(), is(spec.getName()));
       assertThat(persistentDiskEntity.getCapacityGb(), is(spec.getCapacityGb()));
       assertThat(persistentDiskEntity.getProjectId(), is(projectId));
       assertThat(persistentDiskEntity.getState(), is(DiskState.CREATING));
-      assertThat(persistentDiskEntity.getFlavorId(), is(flavorBackend.filter(Optional.of(spec.getFlavor()),
-          Optional.of(PersistentDisk.KIND)).get(0).getId()));
+      assertThat(persistentDiskEntity.getFlavorId(), is(flavor.getId()));
       assertThat(persistentDiskEntity.getCost().size(), is(2));
       for (TagEntity tag : persistentDiskEntity.getTags()) {
         assertThat(tag.getValue(), is("tag1"));
@@ -239,13 +242,14 @@ public class DiskDcpBackendTest {
       createSpec.setFlavor("test-flavor-ephemeral-disk");
 
       BaseDiskEntity diskEntity = diskDcpBackend.create(projectId, createSpec);
+      Flavor flavor = flavorBackend.filter(Optional.of(createSpec.getFlavor()),
+              Optional.of(EphemeralDisk.KIND), Optional.absent()).getItems().get(0);
 
       assertThat(diskEntity.getName(), is(createSpec.getName()));
       assertThat(diskEntity.getCapacityGb(), is(createSpec.getCapacityGb()));
       assertThat(diskEntity.getProjectId(), is(projectId));
       assertThat(diskEntity.getState(), is(DiskState.CREATING));
-      assertThat(diskEntity.getFlavorId(), is(flavorBackend.filter(Optional.of(createSpec.getFlavor()),
-          Optional.of(EphemeralDisk.KIND)).get(0).getId()));
+      assertThat(diskEntity.getFlavorId(), is(flavor.getId()));
     }
 
     @Test
