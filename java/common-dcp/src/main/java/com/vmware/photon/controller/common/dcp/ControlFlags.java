@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.deployer.dcp.util;
+package com.vmware.photon.controller.common.dcp;
 
 /**
  * This class implements simple control flags for DCP task services.

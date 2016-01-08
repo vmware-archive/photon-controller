@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -34,7 +35,6 @@ import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerReso
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
-import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;

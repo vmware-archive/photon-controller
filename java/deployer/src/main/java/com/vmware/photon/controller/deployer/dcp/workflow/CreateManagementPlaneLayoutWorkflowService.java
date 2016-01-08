@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
+import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
@@ -28,7 +29,6 @@ import com.vmware.photon.controller.deployer.dcp.task.CreateContainerSpecLayoutT
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerSpecLayoutTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskService;
-import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
