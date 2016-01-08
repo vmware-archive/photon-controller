@@ -21,6 +21,7 @@ import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
@@ -51,7 +52,8 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.testng.Assert.fail;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -274,12 +276,15 @@ public class FlavorDcpBackendTest {
       taskEntity = flavorBackend.createFlavor(spec2);
       String flavorId2 = taskEntity.getEntityId();
 
-      List<FlavorEntity> flavors = flavorBackend.getAll();
-      assertThat(flavors.size(), is(2));
-      assertThat(flavors.get(0).getId(), anyOf(is(flavorId1), is(flavorId2)));
-      assertThat(flavors.get(0).getName(), anyOf(is(spec.getName()), is(spec2.getName())));
-      assertThat(flavors.get(1).getId(), anyOf(is(flavorId1), is(flavorId2)));
-      assertThat(flavors.get(1).getName(), anyOf(is(spec.getName()), is(spec2.getName())));
+      ResourceList<FlavorEntity> flavors = flavorBackend.getAll();
+      assertThat(flavors.getItems().size(), is(2));
+
+      FlavorEntity firstItem = flavors.getItems().get(0);
+      FlavorEntity secondItem = flavors.getItems().get(1);
+      assertThat(firstItem.getId(), anyOf(is(flavorId1), is(flavorId2)));
+      assertThat(firstItem.getName(), anyOf(is(spec.getName()), is(spec2.getName())));
+      assertThat(secondItem.getId(), anyOf(is(flavorId1), is(flavorId2)));
+      assertThat(secondItem.getName(), anyOf(is(spec.getName()), is(spec2.getName())));
     }
 
     @Test
@@ -296,25 +301,57 @@ public class FlavorDcpBackendTest {
       Optional<String> name = Optional.of(spec.getName());
       Optional<String> kind = Optional.of(spec.getKind());
       Optional<String> nullValue = Optional.fromNullable(null);
-      List<Flavor> flavors = flavorBackend.filter(name, kind);
-      assertThat(flavors.size(), is(1));
-      assertThat(flavors.get(0).getId(), is(flavorId1));
-      assertThat(flavors.get(0).getName(), is(spec.getName()));
+      ResourceList<Flavor> flavors = flavorBackend.filter(name, kind, Optional.absent());
+      assertThat(flavors.getItems().size(), is(1));
 
-      flavors = flavorBackend.filter(name, nullValue);
-      assertThat(flavors.size(), is(1));
-      assertThat(flavors.get(0).getId(), is(flavorId1));
-      assertThat(flavors.get(0).getName(), is(spec.getName()));
+      Flavor firstItem = flavors.getItems().get(0);
+      assertThat(firstItem.getId(), is(flavorId1));
+      assertThat(firstItem.getName(), is(spec.getName()));
 
-      flavors = flavorBackend.filter(nullValue, kind);
-      assertThat(flavors.size(), is(2));
-      assertThat(flavors.get(0).getId(), anyOf(is(flavorId1), is(flavorId2)));
-      assertThat(flavors.get(0).getName(), anyOf(is(spec.getName()), is(spec2.getName())));
-      assertThat(flavors.get(1).getId(), anyOf(is(flavorId1), is(flavorId2)));
-      assertThat(flavors.get(1).getName(), anyOf(is(spec.getName()), is(spec2.getName())));
-      assertThat(flavors.get(0).getId(), is(not(flavors.get(1).getId())));
-      assertThat(flavors.get(0).getName(), is(not(flavors.get(1).getName())));
+      flavors = flavorBackend.filter(name, nullValue, Optional.absent());
+      assertThat(flavors.getItems().size(), is(1));
+
+      firstItem = flavors.getItems().get(0);
+      assertThat(firstItem.getId(), is(flavorId1));
+      assertThat(firstItem.getName(), is(spec.getName()));
+
+      flavors = flavorBackend.filter(nullValue, kind, Optional.absent());
+      assertThat(flavors.getItems().size(), is(2));
+
+      firstItem = flavors.getItems().get(0);
+      Flavor secondItem = flavors.getItems().get(1);
+      assertThat(firstItem.getId(), anyOf(is(flavorId1), is(flavorId2)));
+      assertThat(firstItem.getName(), anyOf(is(spec.getName()), is(spec2.getName())));
+      assertThat(secondItem.getId(), anyOf(is(flavorId1), is(flavorId2)));
+      assertThat(secondItem.getName(), anyOf(is(spec.getName()), is(spec2.getName())));
+      assertThat(firstItem.getId(), is(not(secondItem.getId())));
+      assertThat(firstItem.getName(), is(not(secondItem.getName())));
     }
+
+    @Test
+    public void testFilterWithPagination() throws Throwable {
+      ResourceList<Flavor> flavors = flavorBackend.filter(Optional.<String>absent(), Optional.<String>absent(),
+              Optional.<Integer>absent());
+      assertThat(flavors.getItems().size(), is(0));
+
+      final int documentCount = 5;
+      final int pageSize = 2;
+      for (int i = 0; i < documentCount; i++) {
+        flavorBackend.createFlavor(createTestFlavorSpec());
+      }
+
+      Set<Flavor> flavorSet = new HashSet<>();
+      flavors = flavorBackend.filter(Optional.<String>absent(), Optional.<String>absent(), Optional.of(pageSize));
+      flavorSet.addAll(flavors.getItems());
+
+      while (flavors.getNextPageLink() != null) {
+        flavors = flavorBackend.getFlavorsPage(flavors.getNextPageLink());
+        flavorSet.addAll(flavors.getItems());
+      }
+
+      assertThat(flavorSet.size(), is(documentCount));
+    }
+
   }
 
   /**
