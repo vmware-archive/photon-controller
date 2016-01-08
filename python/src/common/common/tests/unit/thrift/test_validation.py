@@ -54,3 +54,19 @@ class TestValidation(unittest.TestCase):
         msg.resources[0].vm.flavor = Flavor(name="flavor", cost=[item])
 
         deep_validate(msg)
+
+    def test_configure_request(self):
+        msg = ConfigureRequest()
+        self.assert_invalid(msg)
+        msg.scheduler = "string"
+        msg.availability_zone = "string"
+        self.assert_invalid(msg)
+
+        msg.roles = Roles()
+        deep_validate(msg)
+
+        sr = SchedulerRole()
+        msg.roles.schedulers = [sr]
+        self.assert_invalid(msg)
+        sr.id = "string"
+        deep_validate(msg)
