@@ -111,11 +111,7 @@ public class ImageDcpBackendTest {
                                                 ImageReplicationType replicationType)
       throws ExternalException {
     TaskEntity task = imageBackend.prepareImageUpload(inputStream, imageFileName, replicationType);
-    if (replicationType == ImageReplicationType.EAGER) {
-      assertThat(task.getSteps().size(), is(2));
-    } else {
-      assertThat(task.getSteps().size(), is(1));
-    }
+    assertThat(task.getSteps().size(), is(2));
 
     StepEntity step = task.getSteps().get(0);
     assertThat(step.getTransientResourceEntities().size(), is(1));
@@ -126,13 +122,11 @@ public class ImageDcpBackendTest {
     assertThat(image.getReplicationType(), is(replicationType));
     assertThat((InputStream) step.getTransientResource(ImageUploadStepCmd.INPUT_STREAM), is(inputStream));
 
-    if (replicationType == ImageReplicationType.EAGER) {
-      step = task.getSteps().get(1);
-      assertThat(step.getTransientResourceEntities().size(), is(1));
-      assertThat(step.getOperation(), is(Operation.REPLICATE_IMAGE));
-      assertThat((ImageEntity) step.getTransientResourceEntities().get(0), is(image));
-      assertThat(step.getTransientResource(ImageUploadStepCmd.INPUT_STREAM), nullValue());
-    }
+    step = task.getSteps().get(1);
+    assertThat(step.getTransientResourceEntities().size(), is(1));
+    assertThat(step.getOperation(), is(Operation.REPLICATE_IMAGE));
+    assertThat((ImageEntity) step.getTransientResourceEntities().get(0), is(image));
+    assertThat(step.getTransientResource(ImageUploadStepCmd.INPUT_STREAM), nullValue());
 
     ImageEntity imageEntity = imageBackend.findById(task.getEntityId());
     assertThat(imageEntity.getName(), is(imageName));

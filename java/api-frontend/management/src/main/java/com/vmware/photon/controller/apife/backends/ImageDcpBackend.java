@@ -331,18 +331,10 @@ public class ImageDcpBackend implements ImageBackend {
     step.addResources(entityList);
     step.setOperation(Operation.UPLOAD_IMAGE);
 
-    switch (image.getReplicationType()) {
-      case EAGER:
-        step = new StepEntity();
-        stepEntities.add(step);
-        step.addResources(entityList);
-        step.setOperation(Operation.REPLICATE_IMAGE);
-        break;
-      case ON_DEMAND:
-        break;
-      default:
-        throw new ExternalException("Image Replication Type not supported " + image.getReplicationType());
-    }
+    step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.REPLICATE_IMAGE);
 
     TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.CREATE_IMAGE, false, stepEntities);
 

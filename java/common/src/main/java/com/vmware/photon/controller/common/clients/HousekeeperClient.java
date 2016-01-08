@@ -94,7 +94,11 @@ public class HousekeeperClient implements StatusProvider {
     ReplicateImageStatusCode statusCode;
     try {
       ReplicateImageResponse triggerResponse = triggerReplication(datastore, image, replicationType);
-      statusCode = waitForImageReplication(triggerResponse.getOperation_id());
+      if (triggerResponse.getOperation_id() == null) {
+        statusCode = ReplicateImageStatusCode.FINISHED;
+      } else {
+        statusCode = waitForImageReplication(triggerResponse.getOperation_id());
+      }
     } catch (TException e) {
       throw new RpcException(e);
     }

@@ -170,9 +170,6 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
     verify(imageBackend).updateSettings(eq(imageEntity), any(Map.class));
     verify(imageBackend).updateSize(imageEntity, imageSize);
     verify(imageBackend).updateImageDatastore(eq(imageEntity.getId()), anyString());
-    if (replicationType == ImageReplicationType.ON_DEMAND) {
-      verify(imageBackend).updateState(imageEntity, ImageState.READY);
-    }
     verifyNoMoreInteractions(imageStore, imageBackend);
   }
 
@@ -207,9 +204,6 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
     verify(imageBackend, times(2)).updateSize(imageEntity, imageSize);
     verify(imageBackend, times(2)).updateImageDatastore(eq(imageEntity.getId()), anyString());
 
-    if (replicationType == ImageReplicationType.ON_DEMAND) {
-      verify(imageBackend, times(2)).updateState(imageEntity, ImageState.READY);
-    }
     verifyNoMoreInteractions(imageStore, imageBackend);
   }
 
