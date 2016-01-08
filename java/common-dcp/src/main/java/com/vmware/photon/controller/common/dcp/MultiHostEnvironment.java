@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.ServiceStats;
 import com.vmware.xenon.common.UriUtils;
@@ -156,6 +157,24 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
     Operation op = Operation.createPost(UriUtils.buildUri(hosts[0], serviceUri, null))
         .setBody(parameters);
     return sendRequestAndWait(op, hosts[0]);
+  }
+
+  /**
+   * Issue a POST with the given parameters and waits for replication.
+   *
+   * @param serviceUri
+   * @param parameters
+   * @param <T>
+   * @return
+   * @throws Throwable
+   */
+  public <T extends ServiceDocument> Operation sendPostAndWaitForReplication(
+      String serviceUri, T parameters)
+      throws Throwable {
+    Operation op = sendPostAndWait(serviceUri, parameters);
+    String serviceLink = op.getBody(ServiceDocument.class).documentSelfLink;
+    waitForReplication(serviceUri, serviceLink);
+    return op;
   }
 
   /**
@@ -369,6 +388,29 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
                                   },
         getEnvironmentCleanup()
     );
+  }
+
+  private void waitForReplication(String serviceUri, String serviceLink) throws Throwable {
+    for (ServiceHost host : getHosts()) {
+      ServiceHostUtils.waitForServiceState(
+          ServiceDocumentQueryResult.class,
+          serviceUri,
+          new Predicate<ServiceDocumentQueryResult>() {
+            @Override
+            public boolean test(ServiceDocumentQueryResult serviceDocumentQueryResult) {
+              for (String documentLink : serviceDocumentQueryResult.documentLinks) {
+                if (documentLink.equals(serviceLink)) {
+                  return true;
+                }
+              }
+              return false;
+            }
+          },
+          host,
+          WAIT_ITERATION_SLEEP,
+          WAIT_ITERATION_COUNT,
+          null);
+    }
   }
 
   /**
