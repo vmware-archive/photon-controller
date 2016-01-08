@@ -27,6 +27,7 @@ import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatus;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusCode;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusResponse;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
@@ -68,6 +69,12 @@ public class ImageReplicator {
    */
   public ReplicateImageResponse replicateImage(ReplicateImageRequest request) {
     try {
+      if (request.getReplicationType() == ImageReplication.ON_DEMAND) {
+        ReplicateImageResponse response =
+            new ReplicateImageResponse(new ReplicateImageResult(ReplicateImageResultCode.OK));
+        return new ReplicateImageResponse(response);
+      }
+
       String operationId = triggerReplication(request);
       ReplicateImageResponse response = new ReplicateImageResponse(
           new ReplicateImageResult(ReplicateImageResultCode.OK));
