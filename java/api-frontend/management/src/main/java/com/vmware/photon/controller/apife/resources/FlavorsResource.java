@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.FlavorFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.FlavorsResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
@@ -26,6 +27,7 @@ import static com.vmware.photon.controller.api.common.Responses.generateResource
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
@@ -55,10 +57,12 @@ import javax.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class FlavorsResource {
   private final FlavorFeClient flavorFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public FlavorsResource(FlavorFeClient flavorFeClient) {
+  public FlavorsResource(FlavorFeClient flavorFeClient, PaginationConfig paginationConfig) {
     this.flavorFeClient = flavorFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @POST
@@ -80,10 +84,26 @@ public class FlavorsResource {
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of flavors")})
   public Response list(@Context Request request,
                        @QueryParam("name") Optional<String> name,
-                       @QueryParam("kind") Optional<String> kind) throws ExternalException {
+                       @QueryParam("kind") Optional<String> kind,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
+
+    ResourceList<Flavor> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = flavorFeClient.getPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+
+      // Temporarily set the adjustedPageSize back to pageSize.
+      // The reason is that the consumers of api-fe has not implemented the functions
+      // to read page by page.
+      adjustedPageSize = pageSize;
+      resourceList = flavorFeClient.find(name, kind, adjustedPageSize);
+    }
+
     return generateResourceListResponse(
         Response.Status.OK,
-        flavorFeClient.list(name, kind),
+        PaginationUtils.formalizePageLinks(resourceList, FlavorsResourceRoutes.API),
         (ContainerRequest) request,
         FlavorsResourceRoutes.FLAVOR_PATH);
   }

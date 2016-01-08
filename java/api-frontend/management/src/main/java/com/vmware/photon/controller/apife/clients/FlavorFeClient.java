@@ -50,6 +50,16 @@ public class FlavorFeClient {
     return flavorBackend.getApiRepresentation(id);
   }
 
+  public ResourceList<Flavor> find(Optional<String> name, Optional<String> kind,
+                                 Optional<Integer> pageSize)
+          throws ExternalException {
+    return flavorBackend.filter(name, kind, pageSize);
+  }
+
+  public ResourceList<Flavor> getPage(String pageLink) throws ExternalException {
+    return flavorBackend.getTasksPage(pageLink);
+  }
+
   public Task create(FlavorCreateSpec flavor) throws ExternalException {
     TaskEntity taskEntity = flavorBackend.createFlavor(flavor);
     Task task = taskBackend.getApiRepresentation(taskEntity);
@@ -63,6 +73,6 @@ public class FlavorFeClient {
   }
 
   public ResourceList<Flavor> list(Optional<String> name, Optional<String> kind) throws ExternalException {
-    return new ResourceList<>(flavorBackend.filter(name, kind));
+    return flavorBackend.filter(name, kind, Optional.<Integer>absent());
   }
 }
