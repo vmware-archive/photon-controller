@@ -26,6 +26,7 @@ import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusResponse;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 
 import com.google.inject.Injector;
@@ -117,6 +118,15 @@ public class ImageReplicatorTest {
       replicator.replicateImage(requestStart);
 
       assertThat("Operation RequestId is not 'null'", contextId[0], nullValue());
+    }
+
+    @Test
+    public void testOperationWithOnDemandReplicationType() throws Throwable {
+      ReplicateImageRequest request = new ReplicateImageRequest();
+      request.setReplicationType(ImageReplication.ON_DEMAND);
+      ReplicateImageResponse response = replicator.replicateImage(request);
+
+      assertThat(response.getResult().getCode(), Matchers.is(ReplicateImageResultCode.SERVICE_NOT_FOUND));
     }
 
     @Test
