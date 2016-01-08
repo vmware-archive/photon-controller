@@ -44,6 +44,20 @@ public class ConfigTest {
     assertThat(root.getFastPlaceResponseRatio(), is(0.5));
     assertThat(root.getFastPlaceResponseMinCount(), is(2));
 
+    SchedulerConfig leaf = config.getLeaf();
+    assertThat(leaf.getPlaceTimeoutMs(), is(8000L));
+    assertThat(leaf.getFindTimeoutMs(), is(10000L));
+    assertThat(leaf.getFanoutRatio(), is(0.25));
+    assertThat(leaf.getMinFanoutCount(), is(3));
+    assertThat(leaf.getMaxFanoutCount(), is(6));
+    assertThat(leaf.getFastPlaceResponseTimeoutRatio(), is(0.35));
+    assertThat(leaf.getFastPlaceResponseRatio(), is(0.6));
+    assertThat(leaf.getFastPlaceResponseMinCount(), is(3));
+
+    HealthCheckConfig healthCheckConfig = config.getHealthCheck();
+    assertNotNull(healthCheckConfig);
+    assertThat(healthCheckConfig.getPeriodMs(), is(1000));
+    assertThat(healthCheckConfig.getTimeoutMs(), is(5000));
     ZookeeperConfig zkConfig = config.getZookeeper();
     assertNotNull(zkConfig);
     assertThat(zkConfig.getQuorum(), is("localhost:2181"));
