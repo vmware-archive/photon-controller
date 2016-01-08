@@ -400,7 +400,7 @@ public class AvailabilityZoneCleanerServiceTest {
           availabilityZone.state = AvailabilityZoneState.PENDING_DELETE;
         }
         Operation availabilityZoneOperation =
-            env.sendPostAndWait(AvailabilityZoneServiceFactory.SELF_LINK, availabilityZone);
+            env.sendPostAndWaitForReplication(AvailabilityZoneServiceFactory.SELF_LINK, availabilityZone);
         AvailabilityZoneService.State createdAvailabilityZone =
             availabilityZoneOperation.getBody(AvailabilityZoneService.State.class);
         testSelfLinks.add(createdAvailabilityZone.documentSelfLink);
