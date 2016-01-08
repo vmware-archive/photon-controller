@@ -75,9 +75,6 @@ public class ImageUploadStepCmd extends StepCommand {
       ImageLoader.Result result = getImageLoader().loadImage(imageEntity, inputStream);
       imageBackend.updateSettings(imageEntity, result.imageSettings);
       imageBackend.updateSize(imageEntity, result.imageSize);
-      if (imageEntity.getReplicationType() == ImageReplicationType.ON_DEMAND) {
-        imageBackend.updateState(imageEntity, ImageState.READY);
-      }
       imageBackend.updateImageDatastore(imageEntity.getId(), config.getDatastore());
     } catch (VmdkFormatException e) {
       imageBackend.updateState(imageEntity, ImageState.ERROR);
