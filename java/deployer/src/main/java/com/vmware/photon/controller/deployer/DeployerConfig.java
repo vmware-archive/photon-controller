@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer;
 
+import com.vmware.photon.controller.chairman.HierarchyConfig;
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -75,6 +76,10 @@ public class DeployerConfig {
   @NotNull
   private ZookeeperConfig zookeeper;
 
+  @Valid
+  @NotNull
+  private HierarchyConfig hierarchy;
+
   private ContainersConfig containersConfig;
 
   private static final List<String> FILE_ENDINGS = ImmutableList.of("", "-disk1.vmdk", ".vmdk", ".ova");
@@ -119,6 +124,10 @@ public class DeployerConfig {
 
   public ZookeeperConfig getZookeeper() {
     return checkNotNull(zookeeper);
+  }
+
+  public HierarchyConfig getHierarchy() {
+    return checkNotNull(hierarchy);
   }
 
   public ContainersConfig getContainersConfig() {
