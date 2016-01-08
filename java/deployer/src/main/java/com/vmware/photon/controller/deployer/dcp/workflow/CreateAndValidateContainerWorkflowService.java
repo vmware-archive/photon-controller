@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
+import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -30,7 +31,6 @@ import com.vmware.photon.controller.deployer.dcp.task.CreateContainerTaskFactory
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.WaitForServiceTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.WaitForServiceTaskService;
-import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
