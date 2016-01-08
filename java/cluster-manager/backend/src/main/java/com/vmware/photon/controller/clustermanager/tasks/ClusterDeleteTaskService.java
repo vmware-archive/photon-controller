@@ -24,9 +24,9 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterDelet
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterDeleteTask.TaskState;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
-import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
 import com.vmware.photon.controller.clustermanager.utils.ExceptionUtils;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
+import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;

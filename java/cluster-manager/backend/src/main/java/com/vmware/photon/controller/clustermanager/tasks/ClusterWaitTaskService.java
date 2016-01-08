@@ -18,7 +18,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.SlavesStatusChecker;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusChecker;
-import com.vmware.photon.controller.clustermanager.utils.ControlFlags;
+import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
