@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -35,6 +36,7 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidAvailabilit
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -339,18 +341,18 @@ public class HostDcpBackendTest {
       hostCreateSpec.setUsageTags(usageTags);
       hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
 
-      List<Host> hosts = hostBackend.listAll();
+      ResourceList<Host> hosts = hostBackend.listAll(Optional.of(10));
       assertThat(hosts, notNullValue());
-      assertThat(hosts.size(), is(2));
+      assertThat(hosts.getItems().size(), is(2));
 
-      hosts = hostBackend.filterByUsage(UsageTag.CLOUD);
-      assertThat(hosts.size(), is(2));
+      hosts = hostBackend.filterByUsage(UsageTag.CLOUD, Optional.of(10));
+      assertThat(hosts.getItems().size(), is(2));
 
-      hosts = hostBackend.filterByUsage(UsageTag.IMAGE);
-      assertThat(hosts.size(), is(1));
+      hosts = hostBackend.filterByUsage(UsageTag.IMAGE, Optional.of(10));
+      assertThat(hosts.getItems().size(), is(1));
 
-      hosts = hostBackend.filterByUsage(UsageTag.MGMT);
-      assertThat(hosts.size(), is(0));
+      hosts = hostBackend.filterByUsage(UsageTag.MGMT, Optional.of(10));
+      assertThat(hosts.getItems().size(), is(0));
     }
   }
 

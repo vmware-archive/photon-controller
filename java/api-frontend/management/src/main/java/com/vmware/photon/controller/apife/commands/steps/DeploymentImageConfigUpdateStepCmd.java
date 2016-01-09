@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
@@ -31,6 +32,7 @@ import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFound
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,13 +115,13 @@ public class DeploymentImageConfigUpdateStepCmd extends StepCommand {
   }
 
   private void updateHost() throws ApiFeException {
-    List<Host> hostList = hostBackend.filterByUsage(UsageTag.MGMT);
-    if (hostList.size() == 0) {
+    ResourceList<Host> hostList = hostBackend.filterByUsage(UsageTag.MGMT, Optional.of(100));
+    if (hostList.getItems().size() == 0) {
       throw new DeploymentFailedException(this.entity.getId(), "No management hosts found.");
     }
 
     // try to find the host marked for
-    for (Host host : hostList) {
+    for (Host host : hostList.getItems()) {
       if (host.getMetadata().containsKey(USE_FOR_IMAGE_UPLOAD_KEY)) {
         logger.info("using host {} to upload images", host);
         this.config.setEndpoint(formatEndpoint(host));
@@ -128,8 +130,8 @@ public class DeploymentImageConfigUpdateStepCmd extends StepCommand {
     }
 
     // pick the first host since none was explicitly specified
-    logger.info("using host {} to upload images", hostList.get(0));
-    this.config.setEndpoint(formatEndpoint(hostList.get(0)));
+    logger.info("using host {} to upload images", hostList.getItems().get(0));
+    this.config.setEndpoint(formatEndpoint(hostList.getItems().get(0)));
   }
 
   private String formatEndpoint(Host host) {

@@ -16,13 +16,16 @@ package com.vmware.photon.controller.apife.backends;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
 import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
 
-import java.util.List;
+import com.google.common.base.Optional;
+
 
 /**
  * The Host Backend Interface.
@@ -34,13 +37,15 @@ public interface HostBackend {
 
   TaskEntity prepareHostDelete(String id) throws ExternalException;
 
-  List<Host> listAll();
+  ResourceList<Host> listAll(Optional<Integer> pageSize);
 
   HostEntity findById(String id) throws HostNotFoundException;
 
-  List<Host> filterByUsage(UsageTag usageTag);
+  ResourceList<Host> filterByUsage(UsageTag usageTag, Optional<Integer> pageSize);
 
   Host toApiRepresentation(String id) throws HostNotFoundException;
+
+  ResourceList<Host> getHostsPage(String pageLink) throws PageExpiredException;
 
   void updateState(HostEntity entity, HostState state) throws HostNotFoundException;
 
