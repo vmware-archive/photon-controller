@@ -25,7 +25,6 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotEmpty;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Range;
-import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
@@ -252,14 +251,12 @@ public class HostService extends StatefulService {
     /**
      * This value represents the total physical memory of the host.
      */
-    @WriteOnce
     @Range(min = 1, max = Integer.MAX_VALUE)
     public Integer memoryMb;
 
     /**
      * This value represents the total number of cpu cores of the host.
      */
-    @WriteOnce
     @Range(min = 1, max = Integer.MAX_VALUE)
     public Integer cpuCount;
 
