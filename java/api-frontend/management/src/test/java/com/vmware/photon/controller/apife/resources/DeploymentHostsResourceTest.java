@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.resources;
 
+import com.vmware.photon.controller.api.ApiError;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
@@ -21,15 +22,20 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.clients.HostFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import org.hamcrest.Matchers;
 import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -39,6 +45,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -47,9 +54,11 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Tests {@link DeploymentHostsResource}.
@@ -60,21 +69,67 @@ public class DeploymentHostsResourceTest extends ResourceTest {
   private static final Logger logger = LoggerFactory.getLogger(DeploymentHostsResourceTest.class);
 
   private static final String deploymentId = "deployment_id";
+  Host host1 = new Host();
+  Host host2 = new Host();
   private String taskId = "task1";
-
   private String taskRoutePath =
       UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build(taskId).toString();
   private String hostsRoute =
       UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_HOSTS_PATH).build(deploymentId).toString();
-
   @Mock
   private DeploymentFeClient deploymentFeClient;
   @Mock
   private HostFeClient hostFeClient;
+  private PaginationConfig paginationConfig = new PaginationConfig();
 
   @Override
   protected void setUpResources() {
-    addResource(new DeploymentHostsResource(deploymentFeClient, hostFeClient));
+    paginationConfig.setDefaultPageSize(10);
+    paginationConfig.setMaxPageSize(100);
+    addResource(new DeploymentHostsResource(deploymentFeClient, hostFeClient, paginationConfig));
+  }
+
+  @BeforeMethod
+  public void setup() {
+    host1.setId("h1");
+    host2.setId("h2");
+  }
+
+  @Test
+  public void testGetHostsPage() throws Throwable {
+    ResourceList<Host> expectedHostsPage = new ResourceList<>(ImmutableList.of(host1, host2),
+        UUID.randomUUID().toString(),
+        UUID.randomUUID().toString());
+    doReturn(expectedHostsPage).when(deploymentFeClient).getHostsPage(anyString());
+    Response response = getDeploymentHosts(UUID.randomUUID().toString());
+    assertThat(response.getStatus(), is(200));
+
+    ResourceList<Host> hosts = response.readEntity(
+        new GenericType<ResourceList<Host>>() {
+        }
+    );
+    assertThat(hosts.getItems().size(), is(expectedHostsPage.getItems().size()));
+
+    for (int i = 0; i < hosts.getItems().size(); i++) {
+      assertThat(new URI(hosts.getItems().get(i).getSelfLink()).isAbsolute(), is(true));
+      assertThat(hosts.getItems().get(i), is(expectedHostsPage.getItems().get(i)));
+
+      String hostsRoutePath = UriBuilder.fromPath(HostResourceRoutes.HOST_PATH).build(hosts.getItems().get(i).getId())
+          .toString();
+      assertThat(hosts.getItems().get(i).getSelfLink().endsWith(hostsRoutePath), is(true));
+    }
+
+    verifyPageLinks(hosts);
+  }
+
+  @Test
+  public void testInvalidPageSize() {
+    Response response = getDeploymentHosts(Optional.of(200));
+    assertThat(response.getStatus(), is(400));
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), Matchers.is("InvalidPageSize"));
+    assertThat(errors.getMessage(), Matchers.is("The page size '200' is not between '1' and '100'"));
   }
 
   @Test
@@ -139,7 +194,7 @@ public class DeploymentHostsResourceTest extends ResourceTest {
 
     List<Host> hostList = ImmutableList.of(host1, host2);
     ResourceList<Host> resourceList = new ResourceList<>(hostList);
-    doReturn(resourceList).when(deploymentFeClient).listHosts(deploymentId);
+    doReturn(resourceList).when(deploymentFeClient).listHosts(deploymentId, Optional.of(10));
 
     Response clientResponse = client()
         .target(hostsRoute)
@@ -165,7 +220,8 @@ public class DeploymentHostsResourceTest extends ResourceTest {
 
   @Test
   public void testFailedOnDeploymentNotFound() throws Throwable {
-    doThrow(new DeploymentNotFoundException(deploymentId)).when(deploymentFeClient).listHosts(deploymentId);
+    doThrow(new DeploymentNotFoundException(deploymentId)).when(deploymentFeClient).listHosts(deploymentId,
+        Optional.of(10));
 
     Response clientResponse = client()
         .target(hostsRoute)
@@ -173,5 +229,55 @@ public class DeploymentHostsResourceTest extends ResourceTest {
         .get();
 
     assertThat(clientResponse.getStatus(), is(404));
+  }
+
+  private Response getDeploymentHosts(String pageLink) {
+    String uri = hostsRoute + "?pageLink=" + pageLink;
+
+    WebTarget resource = client().target(uri);
+    return resource.request().get();
+  }
+
+  private Response getDeploymentHosts(Optional<Integer> pageSize) {
+    String uri = hostsRoute;
+    if (pageSize.isPresent()) {
+      uri += "?pageSize=" + pageSize.get();
+    }
+
+    WebTarget resource = client().target(uri);
+    return resource.request().get();
+  }
+
+  private void verifyPageLinks(ResourceList<Host> resourceList) {
+    String expectedPrefix = HostResourceRoutes.API + "?pageLink=";
+
+    if (resourceList.getNextPageLink() != null) {
+      assertThat(resourceList.getNextPageLink().startsWith(expectedPrefix), Matchers.is(true));
+    }
+    if (resourceList.getPreviousPageLink() != null) {
+      assertThat(resourceList.getPreviousPageLink().startsWith(expectedPrefix), Matchers.is(true));
+    }
+  }
+
+  @DataProvider(name = "pageSizes")
+  private Object[][] getPageSize() {
+    return new Object[][]{
+        {
+            Optional.absent(),
+            ImmutableList.of(host1, host2)
+        },
+        {
+            Optional.of(1),
+            ImmutableList.of(host1)
+        },
+        {
+            Optional.of(2),
+            ImmutableList.of(host1, host2)
+        },
+        {
+            Optional.of(3),
+            Collections.emptyList()
+        }
+    };
   }
 }

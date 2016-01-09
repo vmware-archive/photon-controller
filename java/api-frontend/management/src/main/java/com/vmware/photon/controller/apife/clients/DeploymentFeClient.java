@@ -25,6 +25,7 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.HostBackend;
@@ -194,9 +195,14 @@ public class DeploymentFeClient {
     return new ResourceList<>(vmBackend.filterByProject(projectList.get(0).getId()));
   }
 
-  public ResourceList<Host> listHosts(String id) throws ExternalException {
+  public ResourceList<Host> listHosts(String id, Optional<Integer> pageSize) throws ExternalException {
     deploymentBackend.findById(id);
-    return new ResourceList<>(hostBackend.listAll());
+    return hostBackend.listAll(pageSize);
+  }
+
+
+  public ResourceList<Host> getHostsPage(String pageLink) throws PageExpiredException{
+    return hostBackend.getHostsPage(pageLink);
   }
 
   public ClusterConfiguration configureCluster(String id, ClusterConfigurationSpec spec) throws ExternalException {

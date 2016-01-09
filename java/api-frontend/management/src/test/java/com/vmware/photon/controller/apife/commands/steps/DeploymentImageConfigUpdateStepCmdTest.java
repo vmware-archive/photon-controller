@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.HostBackend;
@@ -25,6 +26,7 @@ import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentFailedException;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.testng.Assert;
@@ -38,6 +40,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.util.ArrayList;
 import java.util.Collections;
 
 /**
@@ -118,7 +121,9 @@ public class DeploymentImageConfigUpdateStepCmdTest {
 
       Host host = new Host();
       host.setAddress("10.146.1.12");
-      doReturn(ImmutableList.of(host)).when(hostBackend).filterByUsage(UsageTag.MGMT);
+      ResourceList<Host> list = new ResourceList<>();
+      list.setItems(ImmutableList.of(host));
+      doReturn(list).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.of(10));
 
       command.execute();
       verify(imageConfig, times(3)).setDatastore(any(String.class));
@@ -144,7 +149,9 @@ public class DeploymentImageConfigUpdateStepCmdTest {
 
       Host host = new Host();
       host.setAddress("10.146.1.12");
-      doReturn(ImmutableList.of(host)).when(hostBackend).filterByUsage(UsageTag.MGMT);
+      ResourceList<Host> list = new ResourceList<>();
+      list.setItems(ImmutableList.of(host));
+      doReturn(list).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.of(10));
 
       command.execute();
       verify(imageConfig, times(1)).setDatastore(any(String.class));
@@ -162,7 +169,9 @@ public class DeploymentImageConfigUpdateStepCmdTest {
       Host host2 = new Host();
       host2.setAddress("10.146.1.15");
       host2.setMetadata(ImmutableMap.of(DeploymentImageConfigUpdateStepCmd.USE_FOR_IMAGE_UPLOAD_KEY, "true"));
-      doReturn(ImmutableList.of(host1, host2)).when(hostBackend).filterByUsage(UsageTag.MGMT);
+      ResourceList<Host> list = new ResourceList<>();
+      list.setItems(ImmutableList.of(host1, host2));
+      doReturn(list).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.of(10));
 
       command.execute();
       verify(imageConfig, times(1)).setDatastore(any(String.class));
@@ -175,7 +184,9 @@ public class DeploymentImageConfigUpdateStepCmdTest {
         expectedExceptionsMessageRegExp = ".*No management hosts found.$")
     public void testEndpointNotSetAndNoMgmtHosts() throws Throwable {
       imageConfig.setEndpoint(null);
-
+      ResourceList<Host> list = new ResourceList<>();
+      list.setItems(new ArrayList<Host>());
+      doReturn(list).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.of(10));
       command.execute();
       verify(imageConfig, times(1)).setDatastore(any(String.class));
       verify(imageConfig, times(3)).setEndpoint(any(String.class));

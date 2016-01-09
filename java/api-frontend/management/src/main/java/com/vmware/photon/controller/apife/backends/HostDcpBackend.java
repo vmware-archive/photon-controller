@@ -20,8 +20,10 @@ import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
@@ -32,10 +34,12 @@ import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFound
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAvailabilityZoneStateException;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -44,7 +48,6 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -113,13 +116,13 @@ public class HostDcpBackend implements HostBackend {
   }
 
   @Override
-  public List<Host> listAll() {
-    return toApiRepresentations(findDocuments(Optional.<UsageTag>absent()));
+  public ResourceList<Host> listAll(Optional<Integer> pageSize) {
+    return findDocuments(Optional.<UsageTag>absent(), pageSize);
   }
 
   @Override
-  public List<Host> filterByUsage(UsageTag usageTag) {
-    return toApiRepresentations(findDocuments(Optional.of(usageTag)));
+  public ResourceList<Host> filterByUsage(UsageTag usageTag, Optional<Integer> pageSize) {
+    return findDocuments(Optional.of(usageTag), pageSize);
   }
 
   @Override
@@ -272,16 +275,6 @@ public class HostDcpBackend implements HostBackend {
     return hostEntity;
   }
 
-  private List<Host> toApiRepresentations(List<HostService.State> stateList) {
-    List<Host> hostList = new ArrayList<>();
-
-    for (HostService.State state : stateList) {
-      hostList.add(toApiRepresentation(toHostEntity(state)));
-    }
-
-    return hostList;
-  }
-
   private Host toApiRepresentation(HostEntity hostEntity) {
     Host host = new Host();
 
@@ -298,13 +291,46 @@ public class HostDcpBackend implements HostBackend {
     return host;
   }
 
-  private List<HostService.State> findDocuments(Optional<UsageTag> usageTag) {
+  private Host toApiRepresentation(HostService.State hostState) {
+    Host host = new Host();
+    String id = ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink);
+    host.setState(hostState.state);
+    host.setId(id);
+    host.setAddress(hostState.hostAddress);
+    host.setUsername(hostState.userName);
+    host.setPassword(hostState.password);
+    host.setAvailabilityZone(hostState.availabilityZone);
+    host.setEsxVersion(hostState.esxVersion);
+    host.setUsageTags(UsageTagHelper.deserialize(UsageTagHelper.serialize(hostState.usageTags)));
+    host.setMetadata(hostState.metadata);
+
+    return host;
+  }
+
+  @Override
+  public ResourceList<Host> getHostsPage(String pageLink) throws PageExpiredException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(
+        HostService.State.class, queryResult, state -> toApiRepresentation(state));
+  }
+
+  private ResourceList<Host> findDocuments(Optional<UsageTag> usageTag, Optional<Integer> pageSize) {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     if (usageTag.isPresent()) {
       termsBuilder.put(HostService.State.USAGE_TAGS_KEY, usageTag.get().name());
     }
 
-    return dcpClient.queryDocuments(HostService.State.class, termsBuilder.build());
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(
+        HostService.State.class, termsBuilder.build(), pageSize, true);
+
+    return PaginationUtils.xenonQueryResultToResourceList(HostService.State.class, queryResult,
+        state -> toApiRepresentation(state));
   }
 
   private void updateHostDocument(String hostId, HostService.State state) throws HostNotFoundException {

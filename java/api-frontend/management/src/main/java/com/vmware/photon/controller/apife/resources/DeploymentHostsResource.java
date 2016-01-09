@@ -20,12 +20,15 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.clients.HostFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -40,6 +43,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
@@ -56,21 +60,36 @@ public class DeploymentHostsResource {
 
   private final DeploymentFeClient client;
   private final HostFeClient hostFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public DeploymentHostsResource(DeploymentFeClient client, HostFeClient hostFeClient) {
+  public DeploymentHostsResource(
+      DeploymentFeClient client, HostFeClient hostFeClient, PaginationConfig paginationConfig) {
     this.client = client;
     this.hostFeClient = hostFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @GET
   @ApiOperation(value = "Find all hosts associated with the Deployment", response = Host.class,
       responseContainer = ResourceList.CLASS_NAME)
-  public Response get(@Context Request request, @PathParam("id") String id)
+  public Response get(@Context Request request,
+                      @PathParam("id") String id,
+                      @QueryParam("pageSize") Optional<Integer> pageSize,
+                      @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
+
+    ResourceList<Host> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = client.getHostsPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = client.listHosts(id, adjustedPageSize);
+    }
+
     return generateResourceListResponse(
         Response.Status.OK,
-        client.listHosts(id),
+        PaginationUtils.formalizePageLinks(resourceList, HostResourceRoutes.API),
         (ContainerRequest) request,
         HostResourceRoutes.HOST_PATH);
   }
