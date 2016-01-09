@@ -1,0 +1,213 @@
+#!/usr/bin/env python
+# Copyright (c) 2015 VMware, Inc. All Rights Reserved.
+
+import argparse
+import logging
+import sys
+from argparse import RawTextHelpFormatter
+
+import kazoo.client
+import common.log
+
+from common.constants import CHAIRMAN_SERVICE
+from common.constants import ROOT_SCHEDULER_SERVICE
+from common.tree_introspection import get_service_leader
+from common.tree_introspection import get_hosts_from_zk
+from common.tree_introspection import get_missing_hosts_from_zk
+from common.tree_introspection import get_hierarchy_from_zk
+from common.tree_introspection import get_root_scheduler
+from common.tree_introspection import get_hierarchy_from_chairman
+
+
+list_tree = "TREE"
+list_hosts = "HOSTS"
+list_leaders = "LEADERS"
+tree_source_zk = "ZK"
+tree_source_chairman = "chairman"
+tree_source_root = "root-sch"
+
+help_string = """
+NAME
+        edb - Photon Controller Debugger
+
+SYNOPSIS
+        edb [--help] [--list type] [--src source]
+
+DESCRIPTION
+        The purpose of edb is to expose/retrive information from different
+        photon components that can help debug the system. For example, the
+        scheduling hierarchy. Using edb, you can list the scheduling tree and
+        the status of each node (i.e offline/online). edb can also retrive
+        information about services like the address/port of a leader node.
+
+OPTIONS
+        --zookeeper=address:port
+        -z address:port     sets the zookeeper endpoint.
+
+        --list=type
+        -l type     Type of information to list, the type should be one of
+                    the following: %s, %s or %s. If type=%s ,
+                    then --source flag should be set as well.
+
+        --source=SOURCE
+        -s SOURCE   The source of --list, should be one of these values:
+                    %s, %s or %s.
+
+EXAMPLES
+        Printing the hierarchy tree from zk:
+        edb --list %s --src %s
+""" % (list_tree, list_hosts, list_leaders, list_tree, tree_source_zk,
+       tree_source_chairman, tree_source_root, list_tree, tree_source_zk)
+
+parser = argparse.ArgumentParser(description=help_string,
+                                 formatter_class=RawTextHelpFormatter)
+parser.add_argument("-z", "--zookeeper", default="localhost:2181",
+                    action="store", type=str, dest="zookeeper")
+parser.add_argument("-l", "--list", default=None, action="store",
+                    type=str, dest="list", choices=[list_tree, list_hosts,
+                                                    list_leaders])
+parser.add_argument("-s", "--src", default=None, action="store",
+                    type=str, dest="source", choices=[tree_source_zk,
+                                                      tree_source_chairman,
+                                                      tree_source_root])
+options = parser.parse_args()
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(logging.Formatter(common.log.PLAIN_LOG_FORMAT))
+
+logger = logging.getLogger()
+logger.setLevel(logging.WARN)
+logger.addHandler(stream_handler)
+
+logging.getLogger("common.zookeeper").setLevel(logging.DEBUG)
+
+
+def list_all_service_leaders(zk_client):
+    chairman_address = get_service_leader(zk_client, CHAIRMAN_SERVICE)
+    root_sch_address = get_service_leader(zk_client, ROOT_SCHEDULER_SERVICE)
+    if not chairman_address:
+        _str = "Couldn't find a chairman leader"
+    else:
+        _str = "chairman leader at %s:%s" % (chairman_address[0],
+                                             chairman_address[1])
+    _str += "\n"
+    if not root_sch_address:
+        _str += "Couldn't find a root-sch leader"
+    else:
+        _str += "root-sch leader at %s:%s" % (root_sch_address[0],
+                                              root_sch_address[1])
+    return _str
+
+
+def list_all_hosts(zk_client):
+    hosts = get_hosts_from_zk(zk_client)
+    hosts_dict = dict((_h.id, _h) for _h in hosts)
+    # All host ids
+    all_host_ids = set([_h.id for _h in hosts])
+    # All ids reported as missing
+    all_missing_ids = set(get_missing_hosts_from_zk(zk_client))
+
+    # Unknow missing ids
+    unknown_missing = all_missing_ids - all_host_ids
+
+    # Known missing ids
+    known_missing = all_missing_ids - unknown_missing
+
+    # Known non-missing ids
+    known_hosts = all_host_ids - known_missing
+
+    _str = "Non-missing hosts:"
+    _str += "\n"
+    for host in known_hosts:
+        hosts_dict[host].update_status()
+        _str += "   " + hosts_dict[host].to_string()
+        _str += "\n"
+
+    # Updating the host's status is useful because there can be hosts that
+    # are missing, but not reported. Exposing status information can help
+    # detecting such hosts
+    _str += "Missing hosts:"
+    _str += "\n"
+    for host in known_missing:
+        hosts_dict[host].update_status()
+        _str += "   " + hosts_dict[host].to_string()
+        _str += "\n"
+
+    if unknown_missing:
+        _str += "Unknow host ids that were reported missing:"
+        _str += "\n"
+        for _id in unknown_missing:
+            _str += "   " + _id
+            _str += "\n"
+    return _str
+
+
+def list_hierarchy(zk_client, src):
+    tree_root = None
+    if src == tree_source_zk:
+        tree_root = get_hierarchy_from_zk(zk_client)
+    elif src == tree_source_root:
+        root_sch_address = get_service_leader(zk_client,
+                                              ROOT_SCHEDULER_SERVICE)
+        if root_sch_address:
+            tree_root = get_root_scheduler(root_sch_address[0],
+                                           root_sch_address[1])
+    elif src == tree_source_chairman:
+        chairman_address = get_service_leader(zk_client,
+                                              CHAIRMAN_SERVICE)
+        root_sch_address = get_service_leader(zk_client,
+                                              ROOT_SCHEDULER_SERVICE)
+        if not root_sch_address:
+            root_sch_address = (None, None)
+        if chairman_address:
+            tree_root = get_hierarchy_from_chairman(chairman_address[0],
+                                                    chairman_address[1],
+                                                    root_sch_address[0],
+                                                    root_sch_address[1])
+    if not tree_root:
+        return "No hierarchy was found!"
+    tree_root.update_status()
+    return tree_root.to_string()
+
+
+def indent(_str, times=1):
+    ind = "    " * times
+    return ind + _str.replace("\n", "\n"+ind)
+
+
+def error(_str):
+    print "ERROR: " + _str
+    sys.exit(1)
+
+
+try:
+    if not len(sys.argv) > 1:
+        print "Not enough arguments, try running ./edb --help "
+        sys.exit(1)
+
+    zk = kazoo.client.KazooClient(hosts=options.zookeeper, read_only=True)
+    zk.start()
+
+    if options.list:
+        _list = options.list
+        if _list == list_leaders:
+            _str = list_all_service_leaders(zk)
+            print "Service Leaders:"
+            print indent(_str)
+
+        elif _list == list_hosts:
+            _str = list_all_hosts(zk)
+            print "Host List:"
+            print indent(_str)
+
+        elif _list == list_tree:
+            if options.source not in [tree_source_zk, tree_source_chairman,
+                                      tree_source_root]:
+                error("source isn't set correctly!")
+            _str = list_hierarchy(zk, options.source)
+            print "Hierarchy:"
+            print indent(_str)
+
+except Exception as e:
+    logger.exception(e)
+    sys.exit(1)

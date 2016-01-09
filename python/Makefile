@@ -42,7 +42,10 @@ test-src/%: src/%
 	@echo "$(HEADER)Test $<$(NORMAL)"
 	@$(MAKE) -C $< test
 
-# we need to compile chairman to run integration tests.
+# we need to compile chairman and root scheduler to run integration tests.
+ifdef SCHEDULER_INTEGRATION
+    COMPILE_JAVA = 1
+endif
 ifdef INTEGRATION
     COMPILE_JAVA = 1
 endif
@@ -56,6 +59,8 @@ endif
 compile-java: check-zookeeper-path
 ifdef COMPILE_JAVA
 	cd ../java/chairman && ../gradlew clean installDist
+	cd ../java/cloud-store && ../gradlew clean installDist
+	cd ../java/root-scheduler && ../gradlew clean installDist
 endif
 
 TEST_TARGETS := $(patsubst %,test-%,$(PACKAGES))
