@@ -273,7 +273,6 @@ class RuntimeUtils(object):
         """Start root scheduler with a given config"""
         with open(get_default_config(self.ROOT_SCHEDULER)) as f:
             root_config = yaml.load(f)
-            root_config['mode'] = 'hierarchical'
 
         if configs is None:
             configs = {}
