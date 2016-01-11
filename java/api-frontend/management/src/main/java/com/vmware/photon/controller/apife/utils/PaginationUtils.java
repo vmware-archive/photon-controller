@@ -73,9 +73,8 @@ public class PaginationUtils {
    * @return
    */
   public static <T, S> ResourceList<T> xenonQueryResultToResourceList(Class<S> documentType,
-                                                                   ServiceDocumentQueryResult queryResult,
-                                                                   Function<S, T> convert) {
-
+                                                                      ServiceDocumentQueryResult queryResult,
+                                                                      Function<S, T> convert) {
     // The documents links stored in documentLinks are sorted while documents are not, and
     // the following loop iterates on the documentLinks to preserve this order.
     List<T> documents = new ArrayList<>();
