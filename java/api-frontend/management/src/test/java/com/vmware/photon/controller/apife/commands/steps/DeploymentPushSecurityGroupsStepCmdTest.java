@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.apife.backends.StepBackend;
@@ -65,10 +66,10 @@ public class DeploymentPushSecurityGroupsStepCmdTest {
     tenant.setId("id");
     tenant.setSecurityGroups(ImmutableList.of(new SecurityGroup("adminGroup3", false),
         new SecurityGroup("adminGroup4", false)));
-    List<Tenant> tenants = ImmutableList.of(tenant);
+    ResourceList<Tenant> tenants = new ResourceList<>(ImmutableList.of(tenant));
 
     doReturn(deploymentEntities).when(stepEntity).getTransientResourceEntities(null);
-    doReturn(tenants).when(tenantBackend).filter(Optional.<String>absent());
+    doReturn(tenants).when(tenantBackend).filter(Optional.<String>absent(), Optional.<Integer>absent());
 
     DeploymentPushSecurityGroupsStepCmd cmd =
         new DeploymentPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);
@@ -88,10 +89,10 @@ public class DeploymentPushSecurityGroupsStepCmdTest {
     tenant.setId("id");
     tenant.setSecurityGroups(ImmutableList.of(new SecurityGroup("adminGroup2", false),
         new SecurityGroup("adminGroup3", false)));
-    List<Tenant> tenants = ImmutableList.of(tenant);
+    ResourceList<Tenant> tenants = new ResourceList<>(ImmutableList.of(tenant));
 
     doReturn(deploymentEntities).when(stepEntity).getTransientResourceEntities(null);
-    doReturn(tenants).when(tenantBackend).filter(Optional.<String>absent());
+    doReturn(tenants).when(tenantBackend).filter(Optional.<String>absent(), Optional.<Integer>absent());
 
     DeploymentPushSecurityGroupsStepCmd cmd =
         new DeploymentPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);
@@ -115,7 +116,8 @@ public class DeploymentPushSecurityGroupsStepCmdTest {
     List<DeploymentEntity> deploymentEntities = ImmutableList.of(new DeploymentEntity());
     doReturn(deploymentEntities).when(stepEntity).getTransientResourceEntities(null);
 
-    doReturn(new ArrayList<Tenant>()).when(tenantBackend).filter(Optional.<String>absent());
+    doReturn(new ResourceList<Tenant>(new ArrayList<>())).when(tenantBackend).filter(Optional.<String>absent(),
+        Optional.<Integer>absent());
 
     DeploymentPushSecurityGroupsStepCmd cmd =
         new DeploymentPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);

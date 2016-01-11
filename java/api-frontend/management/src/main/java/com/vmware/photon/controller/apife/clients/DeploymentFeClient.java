@@ -179,14 +179,14 @@ public class DeploymentFeClient {
 
   public ResourceList<Vm> listVms(String id) throws ExternalException {
     deploymentBackend.findById(id);
-    List<Tenant> tenantList = tenantBackend.filter(Optional.of(Constants.TENANT_NAME));
-    if (1 != tenantList.size()) {
+    ResourceList<Tenant> tenantList = tenantBackend.filter(Optional.of(Constants.TENANT_NAME), Optional.absent());
+    if (tenantList.getItems() == null || 1 != tenantList.getItems().size()) {
       logger.info("Did not find the expected management tenants {}", tenantList);
       return new ResourceList<>(new ArrayList<Vm>());
     }
 
     List<Project> projectList = projectBackend.filter(
-        tenantList.get(0).getId(), Optional.of(Constants.PROJECT_NAME));
+        tenantList.getItems().get(0).getId(), Optional.of(Constants.PROJECT_NAME));
     if (1 != projectList.size()) {
       logger.info("Did not find the expected management projects {}", projectList);
       return new ResourceList<>(new ArrayList<Vm>());
