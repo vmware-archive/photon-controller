@@ -138,6 +138,13 @@ public class HostDcpBackend implements HostBackend {
   }
 
   @Override
+  public void updateAvailabilityZone(HostEntity entity) throws HostNotFoundException {
+    HostService.State hostState = new HostService.State();
+    hostState.availabilityZone = entity.getAvailabilityZone();
+    updateHostDocument(entity.getId(), hostState);
+  }
+
+  @Override
   public void tombstone(HostEntity hostEntity) {
     tombstoneBackend.create(hostEntity.getKind(), hostEntity.getId());
 
@@ -156,12 +163,10 @@ public class HostDcpBackend implements HostBackend {
 
     checkAvailabilityZoneIsReady(availabilityZoneId);
 
-    HostService.State hostState = new HostService.State();
-    hostState.availabilityZone = availabilityZoneId;
-    updateHostDocument(id, hostState);
-
-    TaskEntity task = taskBackend.createCompletedTask(toHostEntity(state), Operation.SET_AVAILABILITYZONE);
-    return task;
+    state.availabilityZone = availabilityZoneId;
+    TaskEntity taskEntity = createQueuedTaskEntity(toHostEntity(state), Operation.SET_AVAILABILITYZONE);
+    logger.info("created Task: {}", taskEntity);
+    return taskEntity;
   }
 
   @Override

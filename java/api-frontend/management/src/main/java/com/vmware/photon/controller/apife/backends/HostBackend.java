@@ -44,6 +44,8 @@ public interface HostBackend {
 
   void updateState(HostEntity entity, HostState state) throws HostNotFoundException;
 
+  void updateAvailabilityZone(HostEntity entity) throws HostNotFoundException;
+
   void tombstone(HostEntity hostEntity);
 
   TaskEntity setAvailabilityZone(String hostId, String availabilityZoneId) throws ExternalException;

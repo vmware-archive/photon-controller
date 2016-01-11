@@ -163,6 +163,8 @@ public class StepCommandFactory {
         return new HostEnterMaintenanceModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend, vmBackend);
       case EXIT_MAINTENANCE_MODE:
         return new HostExitMaintenanceModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
+      case SET_AVAILABILITYZONE:
+        return new HostSetAvailabilityZoneStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case PREPARE_DEPLOYMENT:
         return new DeploymentImageConfigUpdateStepCmd(
             taskCommand, stepBackend, stepEntity, deploymentBackend, hostBackend, imageConfig);

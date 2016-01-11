@@ -120,6 +120,10 @@ public class HostFeClient {
   public Task setAvailabilityZone(String hostId, String availabilityZoneId) throws ExternalException {
     TaskEntity taskEntity = hostBackend.setAvailabilityZone(hostId, availabilityZoneId);
     Task task = taskBackend.getApiRepresentation(taskEntity);
+
+    TaskCommand command = commandFactory.create(taskEntity);
+    executor.submit(command);
+
     return task;
   }
 

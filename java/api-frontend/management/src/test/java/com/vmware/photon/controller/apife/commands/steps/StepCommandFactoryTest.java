@@ -136,6 +136,7 @@ public class StepCommandFactoryTest {
         {Operation.RESUME_HOST, HostResumeStepCmd.class},
         {Operation.ENTER_MAINTENANCE_MODE, HostEnterMaintenanceModeStepCmd.class},
         {Operation.EXIT_MAINTENANCE_MODE, HostExitMaintenanceModeStepCmd.class},
+        {Operation.SET_AVAILABILITYZONE, HostSetAvailabilityZoneStepCmd.class},
 
         // Deployment
         {Operation.PREPARE_DEPLOYMENT, DeploymentImageConfigUpdateStepCmd.class},
