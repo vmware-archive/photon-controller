@@ -674,7 +674,15 @@ public class HostDcpBackendTest {
       HostEntity hostEntity = hostBackend.findById(hostId);
       assertThat(hostEntity.getAvailabilityZone(), is(nullValue()));
 
-      hostBackend.setAvailabilityZone(hostId, hostSetAvailabilityZoneOperation);
+      TaskEntity taskEntity = hostBackend.setAvailabilityZone(hostId, hostSetAvailabilityZoneOperation);
+      String hostId = taskEntity.getEntityId();
+      assertThat(hostId, notNullValue());
+      assertThat(taskEntity.getEntityId(), is(hostId));
+      assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
+      assertThat(taskEntity.getOperation(), is(Operation.SET_AVAILABILITYZONE));
+
+      hostEntity.setAvailabilityZone(availabilityZoneId);
+      hostBackend.updateAvailabilityZone(hostEntity);
 
       Host host = hostBackend.toApiRepresentation(hostId);
       assertThat(host, notNullValue());
@@ -687,6 +695,9 @@ public class HostDcpBackendTest {
       assertThat(hostEntity.getAvailabilityZone(), is(nullValue()));
 
       hostBackend.setAvailabilityZone(hostId, hostSetAvailabilityZoneOperation);
+
+      hostEntity.setAvailabilityZone(availabilityZoneId);
+      hostBackend.updateAvailabilityZone(hostEntity);
 
       Host host = hostBackend.toApiRepresentation(hostId);
       assertThat(host, notNullValue());
