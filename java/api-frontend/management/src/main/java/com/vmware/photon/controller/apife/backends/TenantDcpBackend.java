@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.ResourceTicket;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.Tenant;
@@ -22,6 +23,7 @@ import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.base.BaseCompact;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
 import com.vmware.photon.controller.apife.entities.SecurityGroupEntity;
@@ -32,6 +34,7 @@ import com.vmware.photon.controller.apife.exceptions.external.ContainerNotEmptyE
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.apife.exceptions.external.SecurityGroupsAlreadyInheritedException;
 import com.vmware.photon.controller.apife.exceptions.external.TenantNotFoundException;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
@@ -39,6 +42,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -81,14 +85,31 @@ public class TenantDcpBackend implements TenantBackend {
   }
 
   @Override
-  public List<Tenant> filter(Optional<String> name) {
-    List<TenantService.State> stateList = filterTenant(name);
-    return toTenantList(stateList);
+  public ResourceList<Tenant> filter(Optional<String> name, Optional<Integer> pageSize) {
+    return filterTenant(name, pageSize);
+  }
+
+  @Override
+  public ResourceList<Tenant> getPage(String pageLink) throws PageExpiredException {
+    ServiceDocumentQueryResult queryResult;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(
+        TenantService.State.class, queryResult, this::toApiRepresentation);
   }
 
   @Override
   public List<TenantEntity> getAllTenantEntities() {
-    List<TenantService.State> stateList = filterTenant(Optional.<String>absent());
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+
+    List<TenantService.State> stateList = dcpClient.queryDocuments(
+        TenantService.State.class,
+        termsBuilder.build());
+
     return toTenantEntityList(stateList);
   }
 
@@ -139,9 +160,9 @@ public class TenantDcpBackend implements TenantBackend {
         SecurityGroupUtils.mergeSelfSecurityGroups(currSecurityGroups, securityGroups);
 
     tenantEntity.setSecurityGroups(result.getLeft()
-            .stream()
-            .map(g -> new SecurityGroupEntity(g.getName(), g.isInherited()))
-            .collect(Collectors.toList())
+        .stream()
+        .map(g -> new SecurityGroupEntity(g.getName(), g.isInherited()))
+        .collect(Collectors.toList())
     );
 
     TaskEntity taskEntity = taskBackend.createQueuedTask(tenantEntity, Operation.SET_TENANT_SECURITY_GROUPS);
@@ -253,12 +274,18 @@ public class TenantDcpBackend implements TenantBackend {
     tombstoneBackend.create(tenantEntity.getKind(), tenantEntity.getId());
   }
 
-  private List<TenantService.State> filterTenant(Optional<String> name) {
+  private ResourceList<Tenant> filterTenant(Optional<String> name, Optional<Integer> pageSize) {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     if (name.isPresent()) {
       termsBuilder.put("name", name.get());
     }
-    return dcpClient.queryDocuments(TenantService.State.class, termsBuilder.build());
+
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(
+        TenantService.State.class,
+        termsBuilder.build(), pageSize, true);
+
+    return PaginationUtils.xenonQueryResultToResourceList(
+        TenantService.State.class, queryResult, this::toApiRepresentation);
   }
 
   private List<ProjectService.State> filterProjectByTenant(String tenantId) {
@@ -283,8 +310,38 @@ public class TenantDcpBackend implements TenantBackend {
   }
 
   private Tenant toApiRepresentation(TenantService.State state) {
-    TenantEntity tenantEntity = toTenantEntity(state);
-    return toApiRepresentation(tenantEntity);
+    Tenant tenant = new Tenant();
+    String id = ServiceUtils.getIDFromDocumentSelfLink(state.documentSelfLink);
+    tenant.setId(id);
+    tenant.setName(state.name);
+
+    List<BaseCompact> tickets = new ArrayList<>();
+    Set<String> tags = new HashSet<>();
+
+    for (ResourceTicketService.State ticket : filterResourceTicketByTenant(id)) {
+      String ticketId = ServiceUtils.getIDFromDocumentSelfLink(ticket.documentSelfLink);
+      tickets.add(BaseCompact.create(ticketId, ticket.name));
+    }
+
+    if (state.tagIds != null) {
+      for (String tag : state.tagIds) {
+        tags.add(tag);
+      }
+    }
+
+    tenant.setResourceTickets(tickets);
+    tenant.setTags(tags);
+
+    if (null != state.securityGroups) {
+      List<SecurityGroup> securityGroups = new ArrayList<>();
+      for (SecurityGroup group : state.securityGroups) {
+        securityGroups.add(new SecurityGroup(group.getName(), group.isInherited()));
+      }
+
+      tenant.setSecurityGroups(securityGroups);
+    }
+
+    return tenant;
   }
 
   private Tenant toApiRepresentation(TenantEntity tenantEntity) {
