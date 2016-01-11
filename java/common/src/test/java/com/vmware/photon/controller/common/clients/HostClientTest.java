@@ -3826,6 +3826,129 @@ public class HostClientTest {
   }
 
   /**
+   * This class implements tests for the provision method.
+   */
+  public class ProvisionForAvailabilityZoneTest {
+
+    private String hostAddress = "hostAddress";
+    private int hostPort = 8000;
+    private String availabilityZone = "zone1";
+
+    @BeforeMethod
+    private void setUp() {
+      HostClientTest.this.setUp();
+    }
+
+    @AfterMethod
+    private void tearDown() {
+      hostClient = null;
+    }
+
+    private Answer getAnswer(final Host.AsyncClient.provision_call provisionCall) {
+      return new Answer() {
+        @Override
+        public Object answer(InvocationOnMock invocation) throws Throwable {
+          Object[] args = invocation.getArguments();
+          AsyncMethodCallback<Host.AsyncClient.provision_call> handler = (AsyncMethodCallback) args[1];
+          handler.onComplete(provisionCall);
+          return null;
+        }
+      };
+    }
+
+    public void testSuccess() throws Exception {
+      ProvisionResponse provisionResponse = new ProvisionResponse();
+      provisionResponse.setResult(ProvisionResultCode.OK);
+      final Host.AsyncClient.provision_call provisionCall = mock(Host.AsyncClient.provision_call.class);
+      doReturn(provisionResponse).when(provisionCall).getResult();
+      ArgumentCaptor<ProvisionRequest> request = ArgumentCaptor.forClass(ProvisionRequest.class);
+      doAnswer(getAnswer(provisionCall))
+          .when(clientProxy).provision(any(ProvisionRequest.class), any(AsyncMethodCallback.class));
+
+      hostClient.setClientProxy(clientProxy);
+
+      assertThat(hostClient.provision(hostAddress, hostPort, availabilityZone),
+          is(provisionResponse));
+      verify(clientProxy).provision(request.capture(), any(AsyncMethodCallback.class));
+    }
+
+    @Test
+    public void testFailureNullHostIp() throws Exception {
+      try {
+        hostClient.provision(hostAddress, hostPort, availabilityZone);
+        fail("Synchronous provision call should throw with null async clientProxy");
+      } catch (IllegalArgumentException e) {
+        assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
+      }
+    }
+
+    @Test
+    public void testFailureTExceptionOnCall() throws Exception {
+      doThrow(new TException("Thrift exception"))
+          .when(clientProxy).provision(any(ProvisionRequest.class), any(AsyncMethodCallback.class));
+
+      hostClient.setClientProxy(clientProxy);
+
+      try {
+        hostClient.provision(hostAddress, hostPort, availabilityZone);
+        fail("Synchronous provision call should convert TException on call to RpcException");
+      } catch (RpcException e) {
+        assertThat(e.getMessage(), is("Thrift exception"));
+      }
+    }
+
+    @Test
+    public void testFailureTExceptionOnGetResult() throws Exception {
+      final Host.AsyncClient.provision_call provisionCall = mock(Host.AsyncClient.provision_call.class);
+      doThrow(new TException("Thrift exception")).when(provisionCall).getResult();
+      doAnswer(getAnswer(provisionCall))
+          .when(clientProxy).provision(any(ProvisionRequest.class), any(AsyncMethodCallback.class));
+
+      hostClient.setClientProxy(clientProxy);
+
+      try {
+        hostClient.provision(hostAddress, hostPort, availabilityZone);
+        fail("Synchronous provision call should convert TException on call to RpcException");
+      } catch (RpcException e) {
+        assertThat(e.getMessage(), is("Thrift exception"));
+      }
+    }
+
+    @Test(dataProvider = "ProvisionFailureResultCodes")
+    public void testFailureResult(ProvisionResultCode resultCode,
+                                  Class<RuntimeException> exceptionClass) throws Exception {
+      ProvisionResponse provisionResponse = new ProvisionResponse();
+      provisionResponse.setResult(resultCode);
+      provisionResponse.setError(resultCode.toString());
+
+      final Host.AsyncClient.provision_call provisionCall = mock(Host.AsyncClient.provision_call.class);
+      doReturn(provisionResponse).when(provisionCall).getResult();
+      doAnswer(getAnswer(provisionCall))
+          .when(clientProxy).provision(any(ProvisionRequest.class), any(AsyncMethodCallback.class));
+
+      hostClient.setClientProxy(clientProxy);
+
+      try {
+        hostClient.provision(hostAddress, hostPort, availabilityZone);
+        fail("Synchronous provision call should throw on failure result: " + resultCode.toString());
+      } catch (Exception e) {
+        assertTrue(e.getClass() == exceptionClass);
+        assertThat(e.getMessage(), is(resultCode.toString()));
+      }
+    }
+
+    @DataProvider(name = "ProvisionFailureResultCodes")
+    public Object[][] getProvisionFailureResultCodes() {
+      return new Object[][]{
+          {ProvisionResultCode.INVALID_CONFIG, InvalidAgentConfigurationException.class},
+          {ProvisionResultCode.INVALID_STATE, InvalidAgentStateException.class},
+          {ProvisionResultCode.SYSTEM_ERROR, SystemErrorException.class},
+      };
+    }
+  }
+
+
+  /**
    * This class implements tests for the reserve method.
    */
   public class ReserveTest {
