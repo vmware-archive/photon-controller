@@ -13,11 +13,13 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.SecurityGroupsAlreadyInheritedException;
@@ -65,16 +67,54 @@ public class DeploymentPushSecurityGroupsStepCmdTest {
     tenant.setId("id");
     tenant.setSecurityGroups(ImmutableList.of(new SecurityGroup("adminGroup3", false),
         new SecurityGroup("adminGroup4", false)));
-    List<Tenant> tenants = ImmutableList.of(tenant);
+    ResourceList<Tenant> tenants = new ResourceList<>(ImmutableList.of(tenant));
 
     doReturn(deploymentEntities).when(stepEntity).getTransientResourceEntities(null);
-    doReturn(tenants).when(tenantBackend).filter(Optional.<String>absent());
+    doReturn(tenants).when(tenantBackend).filter(Optional.<String>absent(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
 
     DeploymentPushSecurityGroupsStepCmd cmd =
         new DeploymentPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);
     cmd.execute();
 
     verify(tenantBackend, times(1)).setSecurityGroups(eq("id"), anyObject());
+    verify(stepEntity, times(0)).addWarning(isA(SecurityGroupsAlreadyInheritedException.class));
+  }
+
+  @Test
+  public void testExecuteSuccessWithPaginatedTenants() throws Exception {
+    DeploymentEntity deploymentEntity = new DeploymentEntity();
+    deploymentEntity.setOauthSecurityGroups(ImmutableList.of("adminGroup1", "adminGroup2"));
+    List<DeploymentEntity> deploymentEntities = ImmutableList.of(deploymentEntity);
+    int totalTenants= PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE + 5;
+    List<Tenant> tenantList = new ArrayList<>();
+    for (int i = 0; i < totalTenants; i++) {
+      Tenant tenant = new Tenant();
+      tenant.setId("id" + i);
+      tenant.setSecurityGroups(ImmutableList.of(new SecurityGroup("adminGroup3", false),
+          new SecurityGroup("adminGroup4", false)));
+      tenantList.add(tenant);
+    }
+
+    ResourceList<Tenant> tenantsPage1 = new ResourceList<>(tenantList.subList(0,
+        PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+
+    tenantsPage1.setNextPageLink("nextLink");
+
+    ResourceList<Tenant> tenantsPage2 = new ResourceList<>(tenantList.subList(
+        PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE, totalTenants));
+
+    doReturn(deploymentEntities).when(stepEntity).getTransientResourceEntities(null);
+    doReturn(tenantsPage1).when(tenantBackend).filter(Optional.<String>absent(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+
+    doReturn(tenantsPage2).when(tenantBackend).getPage("nextLink");
+
+    DeploymentPushSecurityGroupsStepCmd cmd =
+        new DeploymentPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);
+    cmd.execute();
+
+    verify(tenantBackend, times(totalTenants)).setSecurityGroups(anyString(), anyObject());
     verify(stepEntity, times(0)).addWarning(isA(SecurityGroupsAlreadyInheritedException.class));
   }
 
@@ -88,10 +128,11 @@ public class DeploymentPushSecurityGroupsStepCmdTest {
     tenant.setId("id");
     tenant.setSecurityGroups(ImmutableList.of(new SecurityGroup("adminGroup2", false),
         new SecurityGroup("adminGroup3", false)));
-    List<Tenant> tenants = ImmutableList.of(tenant);
+    ResourceList<Tenant> tenants = new ResourceList<>(ImmutableList.of(tenant));
 
     doReturn(deploymentEntities).when(stepEntity).getTransientResourceEntities(null);
-    doReturn(tenants).when(tenantBackend).filter(Optional.<String>absent());
+    doReturn(tenants).when(tenantBackend).filter(Optional.<String>absent(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
 
     DeploymentPushSecurityGroupsStepCmd cmd =
         new DeploymentPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);
@@ -115,7 +156,8 @@ public class DeploymentPushSecurityGroupsStepCmdTest {
     List<DeploymentEntity> deploymentEntities = ImmutableList.of(new DeploymentEntity());
     doReturn(deploymentEntities).when(stepEntity).getTransientResourceEntities(null);
 
-    doReturn(new ArrayList<Tenant>()).when(tenantBackend).filter(Optional.<String>absent());
+    doReturn(new ResourceList<Tenant>(new ArrayList<>())).when(tenantBackend).filter(Optional.<String>absent(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
 
     DeploymentPushSecurityGroupsStepCmd cmd =
         new DeploymentPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);

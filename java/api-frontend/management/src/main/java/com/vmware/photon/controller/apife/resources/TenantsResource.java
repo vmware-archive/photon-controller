@@ -19,8 +19,10 @@ import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.TenantFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
@@ -55,10 +57,12 @@ import javax.ws.rs.core.Response;
 public class TenantsResource {
 
   private final TenantFeClient tenantFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public TenantsResource(TenantFeClient tenantFeClient) {
+  public TenantsResource(TenantFeClient tenantFeClient, PaginationConfig paginationConfig) {
     this.tenantFeClient = tenantFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @POST
@@ -82,10 +86,21 @@ public class TenantsResource {
       response = Tenant.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of tenants")})
   public Response find(@Context Request request,
-                       @QueryParam("name") Optional<String> name) {
+                       @QueryParam("name") Optional<String> name,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink)
+      throws ExternalException {
+    ResourceList<Tenant> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = tenantFeClient.getPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = tenantFeClient.find(name, adjustedPageSize);
+    }
+
     return generateResourceListResponse(
         Response.Status.OK,
-        tenantFeClient.find(name),
+        PaginationUtils.formalizePageLinks(resourceList, TenantResourceRoutes.API),
         (ContainerRequest) request,
         TenantResourceRoutes.TENANT_PATH);
   }

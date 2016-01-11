@@ -14,12 +14,14 @@
 package com.vmware.photon.controller.apife.resources;
 
 
+import com.vmware.photon.controller.api.ApiError;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.TenantFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
 
@@ -31,6 +33,8 @@ import org.mockito.Mock;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import javax.ws.rs.client.Entity;
@@ -43,6 +47,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Tests {@link TenantResource}.
@@ -58,13 +63,60 @@ public class TenantsResourceTest extends ResourceTest {
   private TenantFeClient tenantFeClient;
 
   private TenantCreateSpec spec;
+  private PaginationConfig paginationConfig = new PaginationConfig();
 
   @Override
   public void setUpResources() throws Exception {
     spec = new TenantCreateSpec();
     spec.setName("spec");
+    paginationConfig.setDefaultPageSize(10);
+    paginationConfig.setMaxPageSize(100);
+    addResource(new TenantsResource(tenantFeClient, paginationConfig));
+  }
 
-    addResource(new TenantsResource(tenantFeClient));
+  @Test
+  public void testGetHostsPage() throws Throwable {
+    Tenant t1 = new Tenant();
+    t1.setId("t1");
+    t1.setName("t1");
+
+    Tenant t2 = new Tenant();
+    t2.setId("t2");
+    t2.setName("t2");
+    ResourceList<Tenant> expectedHostsPage = new ResourceList<>(ImmutableList.of(t1, t2),
+        UUID.randomUUID().toString(),
+        UUID.randomUUID().toString());
+    doReturn(expectedHostsPage).when(tenantFeClient).getPage(anyString());
+    Response response = getPage(Optional.of(UUID.randomUUID().toString()));
+    assertThat(response.getStatus(), is(200));
+
+    ResourceList<Tenant> hosts = response.readEntity(
+        new GenericType<ResourceList<Tenant>>() {
+        }
+    );
+    assertThat(hosts.getItems().size(), is(expectedHostsPage.getItems().size()));
+
+    for (int i = 0; i < hosts.getItems().size(); i++) {
+      assertThat(new URI(hosts.getItems().get(i).getSelfLink()).isAbsolute(), is(true));
+      assertThat(hosts.getItems().get(i), is(expectedHostsPage.getItems().get(i)));
+
+      String hostsRoutePath = UriBuilder.fromPath(TenantResourceRoutes.TENANT_PATH).build(hosts.getItems().get(i).getId
+          ())
+          .toString();
+      assertThat(hosts.getItems().get(i).getSelfLink().endsWith(hostsRoutePath), is(true));
+    }
+
+    verifyPageLinks(hosts);
+  }
+
+  @Test
+  public void testInvalidPageSize() {
+    Response response = getTenants(Optional.of(UUID.randomUUID().toString()), Optional.of(200));
+    assertThat(response.getStatus(), is(400));
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), Matchers.is("InvalidPageSize"));
+    assertThat(errors.getMessage(), Matchers.is("The page size '200' is not between '1' and '100'"));
   }
 
   @Test
@@ -119,8 +171,10 @@ public class TenantsResourceTest extends ResourceTest {
     t2.setId("t2");
     t2.setName("t2");
 
-    when(tenantFeClient.find(Optional.<String>absent())).thenReturn(new ResourceList<>(ImmutableList.of(t1, t2)));
-    Response response = getTenants(Optional.<String>absent());
+    when(tenantFeClient.find(Optional.<String>absent(), Optional.of(2))).thenReturn(
+        new ResourceList<>(ImmutableList.of(t1, t2)));
+
+    Response response = getTenants(Optional.<String>absent(), Optional.of(2));
     assertThat(response.getStatus(), is(200));
 
     List<Tenant> tenants = response.readEntity(
@@ -147,8 +201,8 @@ public class TenantsResourceTest extends ResourceTest {
     t1.setId("t1");
     t1.setName("t1");
 
-    when(tenantFeClient.find(Optional.of("t1"))).thenReturn(new ResourceList<>(ImmutableList.of(t1)));
-    Response response = getTenants(Optional.of("t1"));
+    when(tenantFeClient.find(Optional.of("t1"), Optional.of(1))).thenReturn(new ResourceList<>(ImmutableList.of(t1)));
+    Response response = getTenants(Optional.of("t1"), Optional.of(1));
     assertThat(response.getStatus(), is(200));
 
     List<Tenant> tenants = response.readEntity(
@@ -169,12 +223,36 @@ public class TenantsResourceTest extends ResourceTest {
         .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
   }
 
-  private Response getTenants(Optional<String> name) {
+  private Response getTenants(Optional<String> name, Optional<Integer> pageSize) {
     WebTarget resource = client().target(TenantResourceRoutes.API);
     if (name.isPresent()) {
       resource = resource.queryParam("name", name.get());
     }
 
+    if (pageSize.isPresent()) {
+      resource = resource.queryParam("pageSize", pageSize.get());
+    }
+
     return resource.request().get();
+  }
+
+  private Response getPage(Optional<String> pageLink) {
+    WebTarget resource = client().target(TenantResourceRoutes.API);
+    if (pageLink.isPresent()) {
+      resource = resource.queryParam("pageLink", pageLink.get());
+    }
+
+    return resource.request().get();
+  }
+
+  private void verifyPageLinks(ResourceList<Tenant> resourceList) {
+    String expectedPrefix = TenantResourceRoutes.API + "?pageLink=";
+
+    if (resourceList.getNextPageLink() != null) {
+      assertThat(resourceList.getNextPageLink().startsWith(expectedPrefix), Matchers.is(true));
+    }
+    if (resourceList.getPreviousPageLink() != null) {
+      assertThat(resourceList.getPreviousPageLink().startsWith(expectedPrefix), Matchers.is(true));
+    }
   }
 }

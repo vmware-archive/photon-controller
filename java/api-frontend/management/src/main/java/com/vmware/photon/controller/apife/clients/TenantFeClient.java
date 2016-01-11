@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
@@ -57,10 +58,13 @@ public class TenantFeClient {
     return tenantBackend.getApiRepresentation(id);
   }
 
-  public ResourceList<Tenant> find(Optional<String> name) {
-    return new ResourceList<>(tenantBackend.filter(name));
+  public ResourceList<Tenant> find(Optional<String> name, Optional<Integer> pageSize) {
+    return tenantBackend.filter(name, pageSize);
   }
 
+  public ResourceList<Tenant> getPage(String pageLink) throws PageExpiredException {
+    return tenantBackend.getPage(pageLink);
+  }
   public Task create(TenantCreateSpec spec) throws ExternalException {
     TaskEntity taskEntity = tenantBackend.createTenant(spec);
     Task task = taskBackend.getApiRepresentation(taskEntity);
