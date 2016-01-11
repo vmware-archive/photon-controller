@@ -40,6 +40,13 @@ image:
   datastore: {{{DATASTORE}}}
 {{/USE_ESX_STORE}}
 
+{{#ENABLE_INSTALLER_STATUS_FILTER}}
+status:
+  components:
+    - deployer
+    - cloudStore
+{{/ENABLE_INSTALLER_STATUS_FILTER}}
+
 auth:
   enable_auth: {{{ENABLE_AUTH}}}
 {{#ENABLE_AUTH}}
