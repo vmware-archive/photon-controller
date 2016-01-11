@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.TenantCreateSpec;
@@ -267,12 +268,12 @@ public class TenantDcpBackendTest {
       spec.setName("t2");
       tenantBackend.createTenant(spec);
 
-      List<Tenant> tenantList = tenantBackend.filter(Optional.of("t1"));
-      assertThat(tenantList.size(), is(1));
-      assertThat(tenantList.get(0).getName(), is("t1"));
+      ResourceList<Tenant> tenantList = tenantBackend.filter(Optional.of("t1"), Optional.of(1));
+      assertThat(tenantList.getItems().size(), is(1));
+      assertThat(tenantList.getItems().get(0).getName(), is("t1"));
 
-      tenantList = tenantBackend.filter(Optional.<String>absent());
-      assertThat(tenantList.size(), is(2));
+      tenantList = tenantBackend.filter(Optional.<String>absent(), Optional.of(2));
+      assertThat(tenantList.getItems().size(), is(2));
 
       List<TenantEntity> tenantEntityList = tenantBackend.getAllTenantEntities();
       assertThat(tenantEntityList.size(), is(2));

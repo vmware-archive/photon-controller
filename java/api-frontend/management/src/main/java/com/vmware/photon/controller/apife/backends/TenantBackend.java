@@ -13,10 +13,12 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.TenantEntity;
 import com.vmware.photon.controller.apife.exceptions.external.TenantNotFoundException;
@@ -30,7 +32,7 @@ import java.util.List;
  */
 public interface TenantBackend {
 
-  List<Tenant> filter(Optional<String> name);
+  ResourceList<Tenant> filter(Optional<String> name, Optional<Integer> pageSize);
 
   List<TenantEntity> getAllTenantEntities();
 
@@ -45,4 +47,6 @@ public interface TenantBackend {
   TaskEntity prepareSetSecurityGroups(String tenantId, List<String> securityGroups) throws ExternalException;
 
   void setSecurityGroups(String id, List<SecurityGroup> securityGroups) throws ExternalException;
+
+  ResourceList<Tenant> getPage(String pageLink) throws PageExpiredException;
 }

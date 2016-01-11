@@ -31,11 +31,13 @@ import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.common.Constants;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import org.mockito.Matchers;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -200,8 +202,8 @@ public class DeploymentFeClientTest {
       tenant = new Tenant();
       tenant.setId("mgmt-tenant-id");
       tenant.setName(Constants.TENANT_NAME);
-      doReturn(ImmutableList.of(tenant)).when(tenantBackend).filter(
-          Optional.of(Constants.TENANT_NAME));
+      doReturn(new ResourceList<>(ImmutableList.of(tenant))).when(tenantBackend).filter(
+          Optional.of(Constants.TENANT_NAME), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
 
       project = new Project();
       project.setId("mgmt-project-id");
@@ -235,8 +237,9 @@ public class DeploymentFeClientTest {
      * @throws Throwable
      */
     @Test(dataProvider = "NotFoundTenantData")
-    public void testNotFoundTenant(String message, List<Tenant> tenantList) throws Throwable {
-      doReturn(tenantList).when(tenantBackend).filter(Optional.of(Constants.TENANT_NAME));
+    public void testNotFoundTenant(String message, ResourceList<Tenant> tenantList) throws Throwable {
+      doReturn(tenantList).when(tenantBackend).filter(Matchers.<Optional<String>>any(),
+          Matchers.<Optional<Integer>>any());
       ResourceList list = feClient.listVms(deploymentId);
       assertThat(list.getItems().size(), is(0));
     }
@@ -244,8 +247,8 @@ public class DeploymentFeClientTest {
     @DataProvider(name = "NotFoundTenantData")
     Object[][] getNotFoundTenantData() {
       return new Object[][]{
-          {"No tenants", ImmutableList.of()},
-          {"Multiple tenants", ImmutableList.of(new Tenant(), new Tenant())}
+          {"No tenants", new ResourceList<Tenant>(ImmutableList.of())},
+          {"Multiple tenants", new ResourceList<Tenant>(ImmutableList.of(new Tenant(), new Tenant()))}
       };
     }
 

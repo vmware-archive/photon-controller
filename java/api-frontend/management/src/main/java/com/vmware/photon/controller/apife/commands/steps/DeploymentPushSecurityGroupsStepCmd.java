@@ -13,12 +13,14 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.SecurityGroupsAlreadyInheritedException;
@@ -57,25 +59,38 @@ public class DeploymentPushSecurityGroupsStepCmd extends StepCommand {
 
     logger.info("Propagating the security groups of deployment {}", deploymentEntity.getId());
 
-    List<Tenant> tenants = tenantBackend.filter(Optional.<String>absent());
+    ResourceList<Tenant> tenants = tenantBackend.filter(Optional.absent(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+    ResourceList<Tenant> currentPage;
+
     List<String> deploymentSecurityGroups = deploymentEntity.getOauthSecurityGroups();
 
-    for (Tenant tenant : tenants) {
-      logger.info("Updating the security groups of tenant {} using the ones from deployment {}",
-          tenant.getId(), deploymentEntity.getId());
+    do {
+      for (Tenant tenant : tenants.getItems()) {
+        logger.info("Updating the security groups of tenant {} using the ones from deployment {}",
+            tenant.getId(), deploymentEntity.getId());
 
-      List<SecurityGroup> currSecurityGroups = tenant.getSecurityGroups();
-      Pair<List<SecurityGroup>, List<String>> result =
-          SecurityGroupUtils.mergeParentSecurityGroups(currSecurityGroups, deploymentSecurityGroups);
+        List<SecurityGroup> currSecurityGroups = tenant.getSecurityGroups();
+        Pair<List<SecurityGroup>, List<String>> result =
+            SecurityGroupUtils.mergeParentSecurityGroups(currSecurityGroups, deploymentSecurityGroups);
 
-      tenantBackend.setSecurityGroups(tenant.getId(), result.getLeft());
+        tenantBackend.setSecurityGroups(tenant.getId(), result.getLeft());
 
-      // Needs to change the securityGroupsAlreadyInhertiedException
-      // Currently it does not identify which entity these SGs are for.
-      if (result.getRight() != null && !result.getRight().isEmpty()) {
-        step.addWarning(new SecurityGroupsAlreadyInheritedException(result.getRight()));
+        // Needs to change the securityGroupsAlreadyInhertiedException
+        // Currently it does not identify which entity these SGs are for.
+        if (result.getRight() != null && !result.getRight().isEmpty()) {
+          step.addWarning(new SecurityGroupsAlreadyInheritedException(result.getRight()));
+        }
       }
-    }
+
+      currentPage = tenants;
+
+      if (tenants.getNextPageLink() != null && !tenants.getNextPageLink().isEmpty()) {
+        tenants = tenantBackend.getPage(tenants.getNextPageLink());
+      }
+
+    } while (currentPage.getNextPageLink() != null && !currentPage.getNextPageLink().isEmpty());
+
   }
 
   @Override
