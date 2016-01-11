@@ -18,7 +18,14 @@ module EsxCloud
       # @param [Hash] payload
       # @return [Tenant]
       def create_flavor(payload)
-        @api_client.create_flavor(payload)
+        cmd = "flavor create -n '#{payload[:name]}' -k '#{payload[:kind]}' "
+        costs = payload[:cost].map { |cost|
+          "#{cost[:key]} #{cost[:value]} #{cost[:unit]}"
+        }.join(", ")
+        cmd += "-c '#{costs}'"
+
+        run_cli(cmd)
+        find_flavors_by_name_kind(payload[:name], payload[:kind]).items[0]
       end
 
       # @param [String] id
@@ -43,7 +50,7 @@ module EsxCloud
       # @param [String] kind
       # @return [FlavorList]
       def delete_flavor_by_name_kind(name, kind)
-        @api_client.delete_flavor_by_name_kind(name, kind)
+        run_cli("flavor delete -n '#{name}' -k '#{kind}'")
       end
 
       # @param [String] id
