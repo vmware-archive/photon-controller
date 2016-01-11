@@ -92,6 +92,8 @@ def string_to_bool(string_val):
 def os_datastore_path(datastore, folder):
     return os.path.join("/vmfs/volumes", datastore, folder)
 
+def datastore_dir_path(datastore, foler):
+    return "[%s] %s" % (datastore, foler)
 
 def datastore_path(datastore, folder):
     return "[] %s" % os_datastore_path(datastore, folder)

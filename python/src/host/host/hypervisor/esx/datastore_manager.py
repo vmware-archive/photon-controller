@@ -21,7 +21,7 @@ from gen.resource.constants import SHARED_VMFS_TAG
 from gen.resource.constants import NFS_TAG
 from gen.resource.ttypes import HostServiceTicket, Datastore, DatastoreType
 from host.hypervisor.datastore_manager import DatastoreManager
-from host.hypervisor.esx.disk_manager import datastore_mkdirs
+from host.hypervisor.esx.disk_manager import datastore_mkdirs_vmomi
 from host.hypervisor.hypervisor import UpdateListener
 
 
@@ -60,7 +60,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         self._datastore_id_to_name_map = {}
         for ds in self._datastores:
             try:
-                datastore_mkdirs(self._hypervisor.vim_client, ds.name)
+                datastore_mkdirs_vmomi(self._hypervisor.vim_client, ds.name)
                 self._datastore_id_to_name_map[ds.id] = ds.name
             except:
                 self.logger.exception("Failed to initialize %s" % ds)

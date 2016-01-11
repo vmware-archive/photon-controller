@@ -29,6 +29,7 @@ from host.hypervisor.esx.folder import TMP_IMAGE_FOLDER_NAME
 from host.hypervisor.esx.folder import VM_FOLDER_NAME
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from host.hypervisor.esx.vm_config import os_datastore_path
+from host.hypervisor.esx.vm_config import datastore_dir_path
 from host.hypervisor.esx.vm_config import os_vmdk_path
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import vmdk_path
@@ -67,6 +68,18 @@ def datastore_mkdirs(vim_client, datastore):
                 pass
             else:
                 raise
+
+def datastore_mkdirs_vmomi(vim_client, datastore):
+    for path in [DISK_FOLDER_NAME, VM_FOLDER_NAME, IMAGE_FOLDER_NAME,
+                 TMP_IMAGE_FOLDER_NAME]:
+        ds_dir_path = datastore_dir_path(datastore, path)
+        try:
+            fileMgr = vim_client.file_manager
+            fileMgr.MakeDirectory(ds_dir_path)
+        except vim.fault.FileAlreadyExists:
+            pass
+        except Exception:
+            raise
 
 
 class EsxDiskManager(DiskManager):
