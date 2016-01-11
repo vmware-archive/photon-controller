@@ -75,6 +75,7 @@ public enum ErrorCode {
   HOST_HAS_VMS("HostHasVms", Response.Status.BAD_REQUEST),
   HOST_DATASTORE_NOT_FOUND("HostDatastoreNotFound", Response.Status.NOT_FOUND),
   HOST_AVAILABILITYZONE_ALREADY_SET("HostAvailabilityZoneAlreadySet", Response.Status.BAD_REQUEST),
+  HOST_AVAILABILITYZONE_SET_FAILED("HostSetAvailabilityZoneFailed", Response.Status.INTERNAL_SERVER_ERROR),
   DEPLOYMENT_FLAVOR_NOT_FOUND("DeploymentFlavorNotFound", Response.Status.NOT_FOUND),
   DEPLOYMENT_NOT_FOUND("DeploymentNotFound", Response.Status.NOT_FOUND),
   UPDATE_NOT_SUPPORTED("UpdateNotSupported", Response.Status.BAD_REQUEST),
