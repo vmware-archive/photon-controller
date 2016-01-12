@@ -117,9 +117,9 @@ def GetTaskStatus(task, version, pc):
     update = pc.WaitForUpdates(version)
     state = task.info.state
 
-    if (state == 'running' and task.info.name is not None
-            and task.info.name.info.name != "Destroy"
-            and task.info.name.info.name != "Relocate"):
+    if (state == 'running' and task.info.name is not None and
+            task.info.name.info.name != "Destroy" and
+            task.info.name.info.name != "Relocate"):
         CheckForQuestionPending(task)
 
     return update.version, state

@@ -102,9 +102,9 @@ class CheckResultsCmd(Command):
                 place_failures.append(request)
 
         successes = [request for (request, response) in results
-                     if response.result == PlaceResultCode.OK
-                     and request not in reserve_failures
-                     and request not in create_failures]
+                     if response.result == PlaceResultCode.OK and
+                     request not in reserve_failures and
+                     request not in create_failures]
         if self.expected:
             assert_that(len(successes),
                         is_(self.expected['success']))

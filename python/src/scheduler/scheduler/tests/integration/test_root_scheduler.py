@@ -287,14 +287,19 @@ class TestRootScheduler(BaseKazooTestCase):
         root_sch_client_leader = self.root_sch_client
         get_status_req = GetStatusRequest()
 
-        check_status = lambda to_status: (lambda rc: rc.type != to_status)
-        check_stats = lambda to_stats: (lambda rc: rc.type == StatusType.READY
-                                        and rc.stats.values()[0] != to_stats)
-        # Returns False unless the status is ready with a given number of
-        # active children.
-        check_children = lambda stats: (lambda rc: (
-            rc.type != StatusType.READY or
-            int(rc.stats[self.STATS_ACTIVE_SCHEDULERS]) != stats))
+        def check_status(to_status):
+            return lambda rc: \
+                rc.type != to_status
+
+        def check_stats(to_stats):
+            return lambda rc: \
+                rc.type == StatusType.READY and \
+                rc.stats.values()[0] != to_stats
+
+        def check_children(stats):
+            return lambda rc: \
+                rc.type != StatusType.READY or \
+                int(rc.stats[self.STATS_ACTIVE_SCHEDULERS]) != stats
 
         # wait for status change helper function
         def wait_for_status(root_sch_client, check_lambda, timer=10):

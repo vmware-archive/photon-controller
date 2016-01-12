@@ -142,18 +142,21 @@ class PhysicalLayoutYmlParser(object):
 
         chairmain_server_list = self._parse_chairman_list()
 
-        to_str_lambda = \
-            lambda l_var: l_var if type(l_var) is str else str(l_var)
+        def to_str(l_var):
+            if type(l_var) is str:
+                return l_var
+            else:
+                return str(l_var)
 
         for host in hosts:
             try:
-                host_id = to_str_lambda(host['id'])
+                host_id = to_str(host['id'])
 
                 datastores = \
-                    [to_str_lambda(host["data_stores"][datastore])
+                    [to_str(host["data_stores"][datastore])
                         for datastore in host["data_stores"]]
 
-                availability_zone = to_str_lambda(host["availability_zone"])
+                availability_zone = to_str(host["availability_zone"])
 
                 port = port_set.pop() \
                     if self._discrete_port \

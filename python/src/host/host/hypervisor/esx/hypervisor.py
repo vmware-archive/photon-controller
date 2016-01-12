@@ -39,9 +39,8 @@ class EsxHypervisor(object):
         # If VimClient's housekeeping thread failed to update its own cache,
         # call errback to commit suicide. Watchdog will bring up the agent
         # again.
-        errback = lambda: suicide()
         self.vim_client = VimClient(wait_timeout=agent_config.wait_timeout,
-                                    errback=errback)
+                                    errback=lambda: suicide())
         atexit.register(lambda client: client.disconnect(), self.vim_client)
 
         self._uuid = self.vim_client.host_uuid

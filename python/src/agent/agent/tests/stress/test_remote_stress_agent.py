@@ -54,7 +54,7 @@ class TestRemoteStressAgent(unittest.TestCase):
                                       delay=False)
         logger.addHandler(handler)
 
-        logging.info("PY_STRESS_START:%d" % int(time.time()*1000))
+        logging.info("PY_STRESS_START:%d" % int(time.time() * 1000))
 
         if "host" in config["agent_remote_stress_test"]:
             self.hosts = [config["agent_remote_stress_test"]["host"]]
@@ -73,7 +73,7 @@ class TestRemoteStressAgent(unittest.TestCase):
 
     def tearDown(self):
         self.clear()
-        logging.info("PY_STRESS_END:%d" % int(time.time()*1000))
+        logging.info("PY_STRESS_END:%d" % int(time.time() * 1000))
 
     def clear(self):
         """Remove all the VMs and disks"""

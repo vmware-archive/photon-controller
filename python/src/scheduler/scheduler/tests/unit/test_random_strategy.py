@@ -34,32 +34,32 @@ class RandomStrategyTestCase(unittest.TestCase):
         self.request = PlaceRequest()
 
     def _get_constraints(self, child):
-        child_constraints_dict = {}
+        child_constraints = {}
 
         if child == self.child_1:
-            child_constraints_dict[ResourceConstraintType.DATASTORE] = \
+            child_constraints[ResourceConstraintType.DATASTORE] = \
                 ['datastore1']
         elif child == self.child_2:
-            child_constraints_dict[ResourceConstraintType.DATASTORE] = \
+            child_constraints[ResourceConstraintType.DATASTORE] = \
                 ['datastore1', 'datastore2']
         elif child == self.child_4:
-            child_constraints_dict[ResourceConstraintType.HOST] = \
+            child_constraints[ResourceConstraintType.HOST] = \
                 ['host1', 'host2', 'host3']
         elif child == self.child_5:
-            child_constraints_dict[ResourceConstraintType.HOST] = \
+            child_constraints[ResourceConstraintType.HOST] = \
                 ['host4']
         elif child == self.child_6:
-            child_constraints_dict[ResourceConstraintType.AVAILABILITY_ZONE] = \
+            child_constraints[ResourceConstraintType.AVAILABILITY_ZONE] = \
                 ['zone1']
-            child_constraints_dict[ResourceConstraintType.DATASTORE] = \
+            child_constraints[ResourceConstraintType.DATASTORE] = \
                 ['datastore1']
         elif child == self.child_7:
-            child_constraints_dict[ResourceConstraintType.AVAILABILITY_ZONE] = \
+            child_constraints[ResourceConstraintType.AVAILABILITY_ZONE] = \
                 ['zone2']
-            child_constraints_dict[ResourceConstraintType.DATASTORE] = \
+            child_constraints[ResourceConstraintType.DATASTORE] = \
                 ['datastore1']
 
-        return child_constraints_dict
+        return child_constraints
 
     def test_resource_constraints_one_constraints(self):
         strategy = RandomSubsetStrategy(0.5, 2)
