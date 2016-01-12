@@ -68,12 +68,5 @@ describe "migrate finalize", upgrade: true do
         expect(destination_set.superset?(source_set)).to eq true
       end
     end
-
-    it "should remove old mgmt vms from new deployment" do
-      source_management_vms = source_api_client.get_deployment_vms(source_deployment.id)
-      source_management_vms.each do |vm|
-        client.delete_vm(vm.id)
-      end
-    end
   end
 end
