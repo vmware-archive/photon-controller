@@ -42,6 +42,7 @@ import com.vmware.xenon.common.ServiceStats;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
+import org.hamcrest.CoreMatchers;
 import org.mockito.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,6 +92,7 @@ public class ImageHostToHostCopyServiceTest {
     state.image = "image1";
     state.sourceDatastore = "source-datastore";
     state.destinationDatastore = "datastore1-inv";
+    state.parentLink = "parentLink";
 
     return state;
   }
@@ -186,6 +188,17 @@ public class ImageHostToHostCopyServiceTest {
       assertThat(savedState.taskInfo, notNullValue());
       assertThat(savedState.taskInfo.stage, is(TaskState.TaskStage.CREATED));
       assertThat(savedState.taskInfo.subStage, nullValue());
+    }
+
+    @Test
+    public void testStartStateWithEmptyParentLink() throws Throwable {
+      ImageHostToHostCopyService.State state = buildValidStartupState(TaskState.TaskStage.CREATED, null);
+      state.parentLink = null;
+      try {
+        host.startServiceSynchronously(service, state);
+      } catch (DcpRuntimeException e) {
+        assertThat(e.getMessage(), CoreMatchers.containsString("parentLink not provided"));
+      }
     }
 
     @DataProvider(name = "targetStages")
@@ -636,6 +649,28 @@ public class ImageHostToHostCopyServiceTest {
       assertThat(savedState.destinationHost.getHost(), is("new-destination-host"));
       assertThat(savedState.destinationHost.getPort(), is(0));
     }
+
+    @Test
+    public void testInvalidPatchParentLink() throws Throwable {
+      host.startServiceSynchronously(service, buildValidStartupState());
+
+      ImageHostToHostCopyService.State patchState = new ImageHostToHostCopyService.State();
+      patchState.parentLink = "parentLink2";
+
+      Operation patch = Operation
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
+
+      try {
+        host.sendRequestAndWait(patch);
+        fail("Exception expected.");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), is("parentLink cannot be changed."));
+      }
+
+      ImageHostToHostCopyService.State savedState = host.getServiceState(ImageHostToHostCopyService.State.class);
+      assertThat(savedState.parentLink, is("parentLink"));
+    }
   }
 
   /**
@@ -657,6 +692,7 @@ public class ImageHostToHostCopyServiceTest {
       copyTask.image = "WindowsRelease9.0";
       copyTask.sourceDatastore = "datastore0";
       copyTask.destinationDatastore = "datastore1";
+      copyTask.parentLink = "parentLink";
     }
 
     @AfterMethod

@@ -170,6 +170,7 @@ public class ImageHostToHostCopyService extends StatefulService {
       }
     }
 
+    checkArgument(patch.parentLink == null, "parentLink cannot be changed.");
     checkArgument(patch.image == null, "Image cannot be changed.");
     checkArgument(patch.sourceDatastore == null, "Source datastore cannot be changed.");
     checkArgument(patch.destinationDatastore == null, "Destination datastore cannot be changed.");
@@ -187,6 +188,7 @@ public class ImageHostToHostCopyService extends StatefulService {
     checkNotNull(current.image, "image not provided");
     checkNotNull(current.sourceDatastore, "source datastore not provided");
     checkNotNull(current.destinationDatastore, "destination datastore not provided");
+    checkNotNull(current.parentLink, "parentLink not provided");
 
     checkState(current.documentExpirationTimeMicros > 0, "documentExpirationTimeMicros needs to be greater than 0");
 
@@ -218,7 +220,8 @@ public class ImageHostToHostCopyService extends StatefulService {
   protected void applyPatch(State currentState, State patchState) {
     if (patchState.taskInfo != null) {
       if (patchState.taskInfo.stage != currentState.taskInfo.stage) {
-        ServiceUtils.logInfo(this, "moving to stage %s", patchState.taskInfo.stage);
+        ServiceUtils.logInfo(this, "moving to stage %s, parentLink %s", patchState.taskInfo.stage,
+            currentState.parentLink);
       }
 
       currentState.taskInfo = patchState.taskInfo;
@@ -554,6 +557,11 @@ public class ImageHostToHostCopyService extends StatefulService {
      * The host connecting to the destination image datastore.
      */
     public ServerAddress destinationHost;
+
+    /**
+     * URI of the sender of the copy, if not null notify of copy end.
+     */
+    public String parentLink;
 
     /**
      * When isSelfProgressionDisabled is true, the service does not automatically update its stages.

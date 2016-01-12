@@ -202,6 +202,18 @@ public class ImageSeederService extends StatefulService {
       }
 
       currentState.taskInfo = patchState.taskInfo;
+
+      if (patchState.triggeredCopies != null) {
+        currentState.triggeredCopies = patchState.triggeredCopies;
+      }
+
+      if (patchState.finishedCopies != null) {
+        currentState.finishedCopies = patchState.finishedCopies;
+      }
+
+      if (patchState.failedOrCancelledCopies != null) {
+        currentState.failedOrCancelledCopies = patchState.failedOrCancelledCopies;
+      }
     }
   }
 
@@ -263,10 +275,11 @@ public class ImageSeederService extends StatefulService {
 
                     // Patch self with the new subStage and the count of triggered ImageHostToHostCopyService instances
                     // to copy images.
-                    State newState = new State();
+                    ImageSeederService.State newState = new ImageSeederService.State();
+                    newState.taskInfo = new TaskState();
                     newState.taskInfo.stage = com.vmware.xenon.common.TaskState.TaskStage.STARTED;
                     newState.taskInfo.subStage = TaskState.SubStage.AWAIT_COMPLETION;
-                    newState.triggeredCopies = datastoreSet.size();
+                    newState.triggeredCopies = datastoreSet.size() - 1;
                     this.sendSelfPatch(newState);
                   }
               ));
@@ -281,29 +294,32 @@ public class ImageSeederService extends StatefulService {
    * @param current
    */
   protected void processAwaitCompletion(final State current) {
-      if (current.finishedCopies != null
-              && current.triggeredCopies.equals(current.finishedCopies)) {
-        // all copies have completed successfully
-        this.sendSelfPatch(buildPatch(TaskState.TaskStage.FINISHED, null, null));
-        return;
-      }
+    ServiceUtils.logInfo(this, "Checking status:  finishedCopies is %s, failedOrCancelledCopies is %s," +
+        "triggeredCopies is %s", current.finishedCopies, current.failedOrCancelledCopies, current.triggeredCopies);
 
-      if (current.finishedCopies != null
-              && current.failedOrCancelledCopies != null
-              && current.triggeredCopies.equals(current.finishedCopies + current.failedOrCancelledCopies)) {
-        // all copies have completed, but some of them have failed
-        RuntimeException e = new RuntimeException(
-                String.format("Image seeding failed: %s image seeding succeeded, %s image seeding failed or cancelled",
-                        current.finishedCopies,
-                        current.failedOrCancelledCopies)
-        );
-        this.failTask(e);
-        return;
-      }
+    if (current.finishedCopies != null
+        && current.triggeredCopies.equals(current.finishedCopies)) {
+      // all copies have completed successfully
+      this.sendSelfPatch(buildPatch(TaskState.TaskStage.FINISHED, null, null));
+      return;
+    }
 
-      getHost().schedule(() -> {
-        this.checkStatus(current);
-      }, current.queryPollDelay, TimeUnit.MILLISECONDS);
+    if (current.finishedCopies != null
+        && current.failedOrCancelledCopies != null
+        && current.triggeredCopies.equals(current.finishedCopies + current.failedOrCancelledCopies)) {
+      // all copies have completed, but some of them have failed
+      RuntimeException e = new RuntimeException(
+          String.format("Image seeding failed: %s image seeding succeeded, %s image seeding failed or cancelled",
+              current.finishedCopies,
+              current.failedOrCancelledCopies)
+      );
+      this.failTask(e);
+      return;
+    }
+
+    getHost().schedule(() -> {
+      this.checkStatus(current);
+    }, current.queryPollDelay, TimeUnit.MILLISECONDS);
   }
 
   /**
@@ -343,7 +359,7 @@ public class ImageSeederService extends StatefulService {
 
     // build copy service start state
     ImageHostToHostCopyService.State imageHostToHostCopyServiceStartState =
-            this.buildImageHostToHostCopyServiceStartState(current, datastore);
+        this.buildImageHostToHostCopyServiceStartState(current, datastore);
 
     // start service
     this.startImageHostToHostCopyService(imageHostToHostCopyServiceStartState, handler);
@@ -357,7 +373,7 @@ public class ImageSeederService extends StatefulService {
   private void checkStatus(final State current) {
     Operation finished = this.buildChildQueryOperation(TaskState.TaskStage.FINISHED);
     Operation failedOrCanceled = this.buildChildQueryOperation(
-            TaskState.TaskStage.FAILED, TaskState.TaskStage.CANCELLED);
+        TaskState.TaskStage.FAILED, TaskState.TaskStage.CANCELLED);
 
     OperationJoin.JoinedCompletionHandler handler = (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
       if (failures != null && !failures.isEmpty()) {
@@ -380,9 +396,9 @@ public class ImageSeederService extends StatefulService {
     };
 
     OperationJoin
-            .create(finished, failedOrCanceled)
-            .setCompletion(handler)
-            .sendWith(this);
+        .create(finished, failedOrCanceled)
+        .setCompletion(handler)
+        .sendWith(this);
   }
 
   /**
@@ -393,17 +409,17 @@ public class ImageSeederService extends StatefulService {
    */
   private Operation buildChildQueryOperation(TaskState.TaskStage... stages) {
     QueryTask.QuerySpecification spec =
-            QueryTaskUtils.buildChildServiceTaskStatusQuerySpec(
-                    this.getSelfLink(),
-                    ImageHostToHostCopyService.State.class,
-                    stages);
+        QueryTaskUtils.buildChildServiceTaskStatusQuerySpec(
+            this.getSelfLink(),
+            ImageHostToHostCopyService.State.class,
+            stages);
 
     QueryTask task = QueryTask.create(spec)
-            .setDirect(true);
+        .setDirect(true);
 
     return Operation
-            .createPost(UriUtils.buildUri(getHost(), LuceneQueryTaskFactoryService.SELF_LINK))
-            .setBody(task);
+        .createPost(UriUtils.buildUri(getHost(), LuceneQueryTaskFactoryService.SELF_LINK))
+        .setBody(task);
   }
 
   /**
@@ -414,15 +430,17 @@ public class ImageSeederService extends StatefulService {
    * @return
    */
   private ImageHostToHostCopyService.State buildImageHostToHostCopyServiceStartState(
-    final State current,
-    final String datastore){
-      ImageHostToHostCopyService.State startState = new ImageHostToHostCopyService.State();
-      startState.image = current.image;
-      startState.sourceDatastore = current.sourceImageDatastore;
-      startState.destinationDatastore = datastore;
-      startState.documentExpirationTimeMicros = current.documentExpirationTimeMicros;
+      final State current,
+      final String datastore) {
+    ImageHostToHostCopyService.State startState = new ImageHostToHostCopyService.State();
+    startState.image = current.image;
+    startState.sourceDatastore = current.sourceImageDatastore;
+    startState.destinationDatastore = datastore;
+    startState.parentLink = this.getSelfLink();
 
-      return startState;
+    startState.documentExpirationTimeMicros = current.documentExpirationTimeMicros;
+
+    return startState;
   }
 
   /**
@@ -432,14 +450,13 @@ public class ImageSeederService extends StatefulService {
    * @param handler
    * @return
    */
-  private void startImageHostToHostCopyService(
-    final ImageHostToHostCopyService.State startState,
-    final Operation.CompletionHandler handler){
-      Operation copyOperation = Operation
+  private void startImageHostToHostCopyService(final ImageHostToHostCopyService.State startState,
+                                               final Operation.CompletionHandler handler) {
+    Operation copyOperation = Operation
         .createPost(UriUtils.buildUri(getHost(), ImageHostToHostCopyServiceFactory.SELF_LINK))
         .setBody(startState)
         .setCompletion(handler);
-      this.sendRequest(copyOperation);
+    this.sendRequest(copyOperation);
   }
 
   /**

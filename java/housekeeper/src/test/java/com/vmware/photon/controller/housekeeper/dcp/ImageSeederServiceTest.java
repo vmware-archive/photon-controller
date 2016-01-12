@@ -17,7 +17,10 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.*;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -31,11 +34,16 @@ import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.TransferImageResultCode;
-import com.vmware.photon.controller.housekeeper.dcp.mock.*;
+import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
+import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.photon.controller.resource.gen.Datastore;
-import com.vmware.xenon.common.*;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.Assert;
@@ -89,8 +97,8 @@ public class ImageSeederServiceTest {
   }
 
   private ImageSeederService.State buildValidStartupState(
-          TaskState.TaskStage stage,
-          ImageSeederService.TaskState.SubStage subStage) {
+      TaskState.TaskStage stage,
+      ImageSeederService.TaskState.SubStage subStage) {
     ImageSeederService.State state = buildValidStartupState();
     state.taskInfo = new ImageSeederService.TaskState();
     state.taskInfo.stage = stage;
@@ -119,10 +127,10 @@ public class ImageSeederServiceTest {
     @Test
     public void testServiceOptions() {
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
-              Service.ServiceOption.PERSISTENCE,
-              Service.ServiceOption.REPLICATION,
-              Service.ServiceOption.OWNER_SELECTION,
-              Service.ServiceOption.INSTRUMENTATION);
+          Service.ServiceOption.PERSISTENCE,
+          Service.ServiceOption.REPLICATION,
+          Service.ServiceOption.OWNER_SELECTION,
+          Service.ServiceOption.INSTRUMENTATION);
       assertThat(service.getOptions(), is(expected));
     }
   }
@@ -166,8 +174,8 @@ public class ImageSeederServiceTest {
       assertThat(savedState.taskInfo.subStage, is(ImageSeederService.TaskState.SubStage.TRIGGER_COPIES));
       assertThat(savedState.queryPollDelay, is(10000));
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
-              is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
-                      new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
+          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+              new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
     }
 
     /**
@@ -179,7 +187,7 @@ public class ImageSeederServiceTest {
     @Test
     public void testCreatedStartStage() throws Throwable {
       ImageSeederService.State startState =
-              buildValidStartupState(TaskState.TaskStage.CREATED);
+          buildValidStartupState(TaskState.TaskStage.CREATED);
       host.startServiceSynchronously(service, startState);
 
       ImageSeederService.State savedState = host.getServiceState(ImageSeederService.State.class);
@@ -187,8 +195,8 @@ public class ImageSeederServiceTest {
       assertThat(savedState.taskInfo.stage, is(TaskState.TaskStage.STARTED));
       assertThat(savedState.taskInfo.subStage, is(ImageSeederService.TaskState.SubStage.TRIGGER_COPIES));
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
-              is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
-                      new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
+          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+              new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
     }
 
     /**
@@ -201,33 +209,33 @@ public class ImageSeederServiceTest {
      */
     @Test(dataProvider = "StartStateIsNotChanged")
     public void testStartStateIsNotChanged(
-            TaskState.TaskStage stage,
-            ImageSeederService.TaskState.SubStage subStage) throws Throwable {
+        TaskState.TaskStage stage,
+        ImageSeederService.TaskState.SubStage subStage) throws Throwable {
       ImageSeederService.State startState = buildValidStartupState(stage, subStage);
 
       Operation startOp = host.startServiceSynchronously(service, startState);
       assertThat(startOp.getStatusCode(), is(200));
 
       ImageSeederService.State savedState =
-              host.getServiceState(ImageSeederService.State.class);
+          host.getServiceState(ImageSeederService.State.class);
 
       assertThat(savedState.taskInfo, notNullValue());
       assertThat(savedState.taskInfo.stage, is(stage));
       assertThat(savedState.taskInfo.subStage, is(subStage));
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
-              is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
-                      new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
+          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+              new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
     }
 
     @DataProvider(name = "StartStateIsNotChanged")
     public Object[][] getStartStateIsNotChangedData() {
       return new Object[][]{
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
-              {TaskState.TaskStage.FINISHED, null},
-              {TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
+          {TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FAILED, null},
       };
     }
 
@@ -267,7 +275,7 @@ public class ImageSeederServiceTest {
     @DataProvider(name = "InvalidQueryPollDelay")
     public Object[][] getInvalidQueryPollDelay() {
       return new Object[][]{
-              {-10}, {0}
+          {-10}, {0}
       };
     }
 
@@ -343,21 +351,21 @@ public class ImageSeederServiceTest {
       long expTime = ServiceUtils.computeExpirationTime(TimeUnit.HOURS.toMillis(1));
 
       return new Object[][]{
-              {
-                      -10L,
-                      new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
-                      new BigDecimal(TimeUnit.MINUTES.toMicros(10))
-              },
-              {
-                      0L,
-                      new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
-                      new BigDecimal(TimeUnit.MINUTES.toMicros(10))
-              },
-              {
-                      expTime,
-                      new BigDecimal(expTime),
-                      new BigDecimal(0)
-              }
+          {
+              -10L,
+              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+              new BigDecimal(TimeUnit.MINUTES.toMicros(10))
+          },
+          {
+              0L,
+              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+              new BigDecimal(TimeUnit.MINUTES.toMicros(10))
+          },
+          {
+              expTime,
+              new BigDecimal(expTime),
+              new BigDecimal(0)
+          }
       };
     }
   }
@@ -392,15 +400,15 @@ public class ImageSeederServiceTest {
       host.startServiceSynchronously(service, buildValidStartupState());
 
       Operation op = spy(Operation
-              .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-              .setBody("invalid body"));
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody("invalid body"));
 
       try {
         host.sendRequestAndWait(op);
         fail("handlePatch did not throw exception on invalid patch");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(),
-                startsWith("Unparseable JSON body: java.lang.IllegalStateException: Expected BEGIN_OBJECT"));
+            startsWith("Unparseable JSON body: java.lang.IllegalStateException: Expected BEGIN_OBJECT"));
       }
     }
 
@@ -417,8 +425,8 @@ public class ImageSeederServiceTest {
       patchState.image = "new-image-id";
 
       Operation patch = Operation
-              .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-              .setBody(patchState);
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
 
       try {
         host.sendRequestAndWait(patch);
@@ -445,8 +453,8 @@ public class ImageSeederServiceTest {
       patchState.sourceImageDatastore = "new-sourceImageDatastore-id";
 
       Operation patch = Operation
-              .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-              .setBody(patchState);
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
 
       try {
         host.sendRequestAndWait(patch);
@@ -466,10 +474,10 @@ public class ImageSeederServiceTest {
      */
     @Test(dataProvider = "ValidStageUpdates")
     public void testValidStageUpdates(
-            final TaskState.TaskStage startStage,
-            final ImageSeederService.TaskState.SubStage startSubStage,
-            final TaskState.TaskStage targetStage,
-            final ImageSeederService.TaskState.SubStage targetSubStage
+        final TaskState.TaskStage startStage,
+        final ImageSeederService.TaskState.SubStage startSubStage,
+        final TaskState.TaskStage targetStage,
+        final ImageSeederService.TaskState.SubStage targetSubStage
     ) throws Throwable {
       ImageSeederService.State startState = buildValidStartupState(startStage, startSubStage);
       host.startServiceSynchronously(service, startState);
@@ -480,8 +488,8 @@ public class ImageSeederServiceTest {
       patchState.taskInfo.subStage = targetSubStage;
 
       Operation patchOp = Operation
-              .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-              .setBody(patchState);
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
 
       Operation resultOp = host.sendRequestAndWait(patchOp);
       assertThat(resultOp.getStatusCode(), is(200));
@@ -495,32 +503,32 @@ public class ImageSeederServiceTest {
     @DataProvider(name = "ValidStageUpdates")
     public Object[][] getValidStageUpdatesData() throws Throwable {
       return new Object[][]{
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-                      TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-                      TaskState.TaskStage.FINISHED, null},
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-                      TaskState.TaskStage.FAILED, null},
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-                      TaskState.TaskStage.CANCELLED, null},
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-                      TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-                      TaskState.TaskStage.FINISHED, null},
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-                      TaskState.TaskStage.FAILED, null},
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-                      TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
+              TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
+              TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
+              TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
+              TaskState.TaskStage.CANCELLED, null},
       };
     }
 
@@ -535,11 +543,11 @@ public class ImageSeederServiceTest {
      */
     @Test(dataProvider = "IllegalStageUpdate")
     public void testIllegalStageUpdate(
-            final TaskState.TaskStage startStage,
-            final ImageSeederService.TaskState.SubStage startSubStage,
-            final TaskState.TaskStage targetStage,
-            final ImageSeederService.TaskState.SubStage targetSubStage)
-            throws Throwable {
+        final TaskState.TaskStage startStage,
+        final ImageSeederService.TaskState.SubStage startSubStage,
+        final TaskState.TaskStage targetStage,
+        final ImageSeederService.TaskState.SubStage targetSubStage)
+        throws Throwable {
       ImageSeederService.State startState = buildValidStartupState(startStage, startSubStage);
       host.startServiceSynchronously(service, startState);
 
@@ -549,13 +557,13 @@ public class ImageSeederServiceTest {
       patchState.taskInfo.subStage = targetSubStage;
 
       Operation patchOp = Operation
-              .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-              .setBody(patchState);
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
 
       try {
         host.sendRequestAndWait(patchOp);
         fail("Transition from " + startStage + ":" + startSubStage +
-                " to " + targetStage + ":" + targetSubStage + " " + "did not fail.");
+            " to " + targetStage + ":" + targetSubStage + " " + "did not fail.");
       } catch (DcpRuntimeException e) {
         assertThat(e.getMessage(), startsWith("Invalid stage update."));
       }
@@ -564,69 +572,69 @@ public class ImageSeederServiceTest {
     @DataProvider(name = "IllegalStageUpdate")
     public Object[][] getIllegalStageUpdateData() throws Throwable {
       return new Object[][]{
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-                      TaskState.TaskStage.FINISHED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-                      null,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
+              TaskState.TaskStage.FINISHED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
+              null,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
 
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-                      TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-                      TaskState.TaskStage.FINISHED,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
-              {TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-                      null,
-                      ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
+              TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
+              TaskState.TaskStage.FINISHED,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
+          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
+              null,
+              ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
 
-              {TaskState.TaskStage.FINISHED, null,
-                      TaskState.TaskStage.CREATED, null},
-              {TaskState.TaskStage.FINISHED, null,
-                      TaskState.TaskStage.STARTED, null},
-              {TaskState.TaskStage.FINISHED, null,
-                      TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-              {TaskState.TaskStage.FINISHED, null,
-                      TaskState.TaskStage.FINISHED, null},
-              {TaskState.TaskStage.FINISHED, null,
-                      TaskState.TaskStage.FINISHED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-              {TaskState.TaskStage.FINISHED, null,
-                      TaskState.TaskStage.FAILED, null},
-              {TaskState.TaskStage.FINISHED, null,
-                      TaskState.TaskStage.FAILED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-              {TaskState.TaskStage.FINISHED, null,
-                      TaskState.TaskStage.CANCELLED, null},
-              {TaskState.TaskStage.FINISHED, null, null, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.FINISHED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.FAILED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.FINISHED, null, null, null},
 
-              {TaskState.TaskStage.FAILED, null,
-                      TaskState.TaskStage.CREATED, null},
-              {TaskState.TaskStage.FAILED, null,
-                      TaskState.TaskStage.STARTED, null},
-              {TaskState.TaskStage.FAILED, null,
-                      TaskState.TaskStage.STARTED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-              {TaskState.TaskStage.FAILED, null,
-                      TaskState.TaskStage.FINISHED, null},
-              {TaskState.TaskStage.FAILED, null,
-                      TaskState.TaskStage.FINISHED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-              {TaskState.TaskStage.FAILED, null,
-                      TaskState.TaskStage.FAILED, null},
-              {TaskState.TaskStage.FAILED, null,
-                      TaskState.TaskStage.FAILED,
-                      ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-              {TaskState.TaskStage.FAILED, null,
-                      TaskState.TaskStage.CANCELLED, null},
-              {TaskState.TaskStage.FAILED, null, null, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.FINISHED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.FAILED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.FAILED, null, null, null},
       };
     }
   }
@@ -638,13 +646,12 @@ public class ImageSeederServiceTest {
     private TestEnvironment machine;
     private HostClientFactory hostClientFactory;
     private CloudStoreHelper cloudStoreHelper;
-    private ZookeeperHostMonitor zookeeperHostMonitor;
 
     private ImageSeederService.State newImageSeeder;
 
     @BeforeMethod
     public void setup() throws Throwable {
-      host = TestHost.create(mock(HostClient.class), mock(ZookeeperHostMonitor.class));
+      host = TestHost.create(mock(HostClient.class), null);
       service = spy(new ImageSeederService());
       hostClientFactory = mock(HostClientFactory.class);
       cloudStoreHelper = new CloudStoreHelper();
@@ -664,16 +671,16 @@ public class ImageSeederServiceTest {
     @DataProvider(name = "hostCount")
     public Object[][] getHostCount() {
       return new Object[][]{
-              {1},
-              {TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+          {1},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
       };
     }
 
     @DataProvider(name = "transferImageSuccessCode")
     public Object[][] getTransferImageSuccessCode() {
       return new Object[][]{
-              {1, TransferImageResultCode.OK},
-              {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK},
+          {1, TransferImageResultCode.OK},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK},
       };
     }
 
@@ -683,43 +690,40 @@ public class ImageSeederServiceTest {
       hostClient.setTransferImageResultCode(code);
       doReturn(hostClient).when(hostClientFactory).create();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-              ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-              hostCount,
-              ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
-      createHostService(zookeeperHostMonitor.getImageDatastores());
-      createDatastoreService(zookeeperHostMonitor.getImageDatastores());
+
+      Set<Datastore> imageDatastores = buildImageDatastoreSet(3);
+      createHostService(imageDatastores);
+      createDatastoreService(imageDatastores);
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-      Datastore oneDatastore = zookeeperHostMonitor.getImageDatastores().iterator().next();
+      Datastore oneDatastore = imageDatastores.iterator().next();
       newImageSeeder.sourceImageDatastore = oneDatastore.getId();
 
       //Call Service.
       ImageSeederService.State response = machine.callServiceAndWaitForState(
-              ImageSeederServiceFactory.SELF_LINK,
-              newImageSeeder,
-              ImageSeederService.State.class,
-              (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
+          ImageSeederServiceFactory.SELF_LINK,
+          newImageSeeder,
+          ImageSeederService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
       int numberOfImageDatastores = ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT;
 
       // check that services were created
       QueryTask query = QueryTask.create(
-              QueryTaskUtils.buildChildServiceQuerySpec(
-                      response.documentSelfLink,
-                      ImageHostToHostCopyService.State.class)
+          QueryTaskUtils.buildChildServiceQuerySpec(
+              response.documentSelfLink,
+              ImageHostToHostCopyService.State.class)
       )
-              .setDirect(true);
+          .setDirect(true);
 
       QueryTask queryResponse = host.waitForQuery(query,
-              new Predicate<QueryTask>() {
-                @Override
-                public boolean test(QueryTask queryTask) {
-                  return queryTask.results.documentLinks.size() == numberOfImageDatastores - 1;
-                }
-              }
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == numberOfImageDatastores - 1;
+            }
+          }
       );
       assertThat(queryResponse.results.documentLinks.size(), is(numberOfImageDatastores - 1));
     }
@@ -728,93 +732,72 @@ public class ImageSeederServiceTest {
     public void testNewImageSeederOneDatastore(int hostCount) throws Throwable {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-              ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-              hostCount,
-              ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
-      Datastore oneDatastore = zookeeperHostMonitor.getImageDatastores().iterator().next();
-      HashSet<Datastore> datastores = new HashSet<Datastore>();
-      datastores.add(oneDatastore);
-      createHostService(datastores);
-      createDatastoreService(datastores);
+      Set<Datastore> imageDatastores = buildImageDatastoreSet(1);
+      createHostService(imageDatastores);
+      createDatastoreService(imageDatastores);
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-      newImageSeeder.sourceImageDatastore = oneDatastore.getId();
+      newImageSeeder.sourceImageDatastore = imageDatastores.iterator().next().getId();
       //Call Service.
       ImageSeederService.State response = machine.callServiceAndWaitForState(ImageSeederServiceFactory
-                      .SELF_LINK, newImageSeeder,
-              ImageSeederService.State.class,
-              (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
+              .SELF_LINK, newImageSeeder,
+          ImageSeederService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
     }
 
     @Test(dataProvider = "hostCount")
     public void testNewImageSeederGetImageDatastoresFail(int hostCount) throws Throwable {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
-
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-              ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-              hostCount,
-              ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
 
       //Call Service.
-      ImageSeederService.State response = machine.callServiceAndWaitForState(
-              ImageSeederServiceFactory.SELF_LINK,
-              newImageSeeder,
-              ImageSeederService.State.class,
-              (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
+      machine.callServiceAndWaitForState(
+          ImageSeederServiceFactory.SELF_LINK,
+          newImageSeeder,
+          ImageSeederService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
     }
 
     @Test(dataProvider = "hostCount")
     public void testNewImageSeederNoDatastore(int hostCount) throws Throwable {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-              ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-              hostCount,
-              ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
-      createHostService();
-      createDatastoreService();
+
+      Set<Datastore> imageDatastores = buildImageDatastoreSet(0);
+      createHostService(imageDatastores);
+      createDatastoreService(imageDatastores);
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       //Call Service.
-      ImageSeederService.State response = machine.callServiceAndWaitForState(ImageSeederServiceFactory
-                      .SELF_LINK, newImageSeeder,
-              ImageSeederService.State.class,
-              (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
+      machine.callServiceAndWaitForState(ImageSeederServiceFactory
+              .SELF_LINK, newImageSeeder,
+          ImageSeederService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
     }
 
     @Test(dataProvider = "hostCount")
     public void testNewImageSeederGetHostsForDatastoresFail(int hostCount) throws Throwable {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-              ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-              hostCount,
-              ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
 
       //Call Service.
-      ImageSeederService.State response = machine.callServiceAndWaitForState(
-              ImageSeederServiceFactory.SELF_LINK, newImageSeeder,
-              ImageSeederService.State.class,
-              (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
+      machine.callServiceAndWaitForState(
+          ImageSeederServiceFactory.SELF_LINK, newImageSeeder,
+          ImageSeederService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
     }
 
     private ImageService.State createNewImageEntity() throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
-              new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       cloudStoreHelper.setServerSet(serverSet);
 
       machine.startFactoryServiceSynchronously(ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
@@ -825,35 +808,24 @@ public class ImageSeederServiceTest {
       state.state = ImageState.READY;
 
       Operation op = cloudStoreHelper
-              .createPost(ImageServiceFactory.SELF_LINK)
-              .setBody(state)
-              .setCompletion((operation, throwable) -> {
-                if (null != throwable) {
-                  Assert.fail("Failed to create a reference image.");
-                }
-              });
+          .createPost(ImageServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a reference image.");
+            }
+          });
       Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
       return result.getBody(ImageService.State.class);
     }
 
-    private void createHostService(Set<Datastore> sourceDatastores) throws Throwable {
-      ServiceHost host = this.createHostService();
-      this.createHostServiceDatastores(sourceDatastores, host);
-    }
-
-    private ServiceHost createHostService() throws Throwable {
+    private void createHostService(Set<Datastore> imageDatastores) throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       machine.startFactoryServiceSynchronously(
-              HostServiceFactory.class,
-              HostServiceFactory.SELF_LINK);
+          HostServiceFactory.class,
+          HostServiceFactory.SELF_LINK);
 
-      return host;
-    }
-
-    private void createHostServiceDatastores(
-            Set<Datastore> targetDatastores,
-            ServiceHost host) throws Throwable {
-      for (Datastore datastore : targetDatastores) {
+      for (Datastore datastore : imageDatastores) {
         HostService.State state = new HostService.State();
         state.state = HostState.READY;
         state.hostAddress = "0.0.0.0";
@@ -862,39 +834,29 @@ public class ImageSeederServiceTest {
         state.usageTags = new HashSet<>();
         state.usageTags.add(UsageTag.CLOUD.name());
         state.reportedDatastores = new HashSet<>();
-        state.reportedDatastores.add(datastore.getId());
+        state.reportedDatastores.add("datastore-id-0");
         state.reportedImageDatastores = new HashSet<>();
-        state.reportedImageDatastores.add("image-datastore-id-0");
+        state.reportedImageDatastores.add(datastore.getId());
 
         Operation op = cloudStoreHelper
-                .createPost(HostServiceFactory.SELF_LINK)
-                .setBody(state)
-                .setCompletion((operation, throwable) -> {
-                  if (null != throwable) {
-                    Assert.fail("Failed to create a host in cloud store.");
-                  }
-                });
+            .createPost(HostServiceFactory.SELF_LINK)
+            .setBody(state)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                Assert.fail("Failed to create a host in cloud store.");
+              }
+            });
         ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
       }
     }
 
-    private void createDatastoreService(Set<Datastore> sourceDatastores) throws Throwable {
-      ServiceHost host = this.createDatastoreService();
-      this.createDatastoreServiceDatastores(sourceDatastores, host);
-    }
-
-    private ServiceHost createDatastoreService() throws Throwable {
+    private void createDatastoreService(Set<Datastore> imageDatastores) throws Throwable {
       ServiceHost host = machine.getHosts()[0];
-
       machine.startFactoryServiceSynchronously(
-              DatastoreServiceFactory.class,
-              DatastoreServiceFactory.SELF_LINK);
+          DatastoreServiceFactory.class,
+          DatastoreServiceFactory.SELF_LINK);
 
-      return host;
-    }
-
-    private void createDatastoreServiceDatastores(Set<Datastore> sourceDatastores, ServiceHost host) throws Throwable {
-      for (Datastore datastore : sourceDatastores) {
+      for (Datastore datastore : imageDatastores) {
         DatastoreService.State state = new DatastoreService.State();
         state.id = datastore.getId();
         state.name = datastore.getName();
@@ -903,15 +865,31 @@ public class ImageSeederServiceTest {
         state.documentSelfLink = "/" + datastore.getId();
 
         Operation op = cloudStoreHelper
-                .createPost(DatastoreServiceFactory.SELF_LINK)
-                .setBody(state)
-                .setCompletion((operation, throwable) -> {
-                  if (null != throwable) {
-                    Assert.fail("Failed to create a datastore document in cloud store.");
-                  }
-                });
+            .createPost(DatastoreServiceFactory.SELF_LINK)
+            .setBody(state)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                Assert.fail("Failed to create a datastore document in cloud store.");
+              }
+            });
         ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
       }
+    }
+
+    private Set<Datastore> buildImageDatastoreSet(int count) {
+      Set<Datastore> imageDatastoreSet = new HashSet<>();
+      if (count == 0) {
+        return imageDatastoreSet;
+      }
+
+      int i = 0;
+      while (i++ < count) {
+        Datastore datastore = new Datastore();
+        datastore.setId("image-datastore-id-" + i);
+        datastore.setName("image-datastore-name-" + i);
+        imageDatastoreSet.add(datastore);
+      }
+      return imageDatastoreSet;
     }
   }
 }
