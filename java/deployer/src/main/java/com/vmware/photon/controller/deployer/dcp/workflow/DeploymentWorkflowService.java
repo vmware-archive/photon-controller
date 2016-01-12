@@ -395,7 +395,6 @@ public class DeploymentWorkflowService extends StatefulService {
     AddManagementHostWorkflowService.State startState =
         new AddManagementHostWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.managementVmImageFile = currentState.managementVmImageFile;
     startState.isNewDeployment = true;
 
     TaskUtils.startTaskAsync(
