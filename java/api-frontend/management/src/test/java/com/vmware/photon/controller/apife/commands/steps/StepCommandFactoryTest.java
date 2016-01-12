@@ -160,7 +160,6 @@ public class StepCommandFactoryTest {
         {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_SLAVES, ClusterTaskStatusStepCmd.class},
 
         {Operation.CREATE_MESOS_CLUSTER_INITIATE, MesosClusterCreateStepCmd.class},
-        {Operation.CREATE_MESOS_CLUSTER_ALLOCATE_RESOURCES, ClusterTaskStatusStepCmd.class},
         {Operation.CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS, ClusterTaskStatusStepCmd.class},
         {Operation.CREATE_MESOS_CLUSTER_SETUP_MASTERS, ClusterTaskStatusStepCmd.class},
         {Operation.CREATE_MESOS_CLUSTER_SETUP_MARATHON, ClusterTaskStatusStepCmd.class},

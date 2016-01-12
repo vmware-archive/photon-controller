@@ -175,6 +175,23 @@ public class ClusterManagerClientTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
+      Operation operation = new Operation();
+      KubernetesClusterCreateTask task = new KubernetesClusterCreateTask();
+      operation.setBody(task);
+
+      when(clusterManagerDcpRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
+          .thenReturn(operation);
+
+      when(apiFeDcpRestClient.post(any(String.class), any(ClusterService.State.class)))
+          .thenReturn(null);
+
+      List<ClusterConfigurationService.State> clusterConfigurations = new ArrayList<>();
+      ClusterConfigurationService.State clusterConfiguration = new ClusterConfigurationService.State();
+      clusterConfiguration.imageId = "imageId";
+      clusterConfigurations.add(clusterConfiguration);
+      when(apiFeDcpRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
+          .thenReturn(clusterConfigurations);
+
       clusterManagerClient = new ClusterManagerClient(clusterManagerDcpRestClient, apiFeDcpRestClient);
     }
 
@@ -186,46 +203,30 @@ public class ClusterManagerClientTest {
       createSpec.setDiskFlavor("diskFlavor1");
       createSpec.setVmNetworkId("vmNetworkId1");
       createSpec.setSlaveCount(50);
+      Map<String, String> extendedProperty = new HashMap<>();
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "10.1.0.1");
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "10.1.0.2");
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "255.255.255.128");
       if (hasZookeeper) {
-        Map<String, String> extendedProperty = new HashMap<>();
-        extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "10.1.0.1");
-        extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "10.1.0.2");
-        extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "255.255.255.128");
         extendedProperty.put(ClusterManagerClient.EXTENDED_PROPERTY_ZOOKEEPER_IP1, "10.1.0.3");
         extendedProperty.put(ClusterManagerClient.EXTENDED_PROPERTY_ZOOKEEPER_IP2, "10.1.0.4");
         extendedProperty.put(ClusterManagerClient.EXTENDED_PROPERTY_ZOOKEEPER_IP3, "10.1.0.5");
-        createSpec.setExtendedProperties(extendedProperty);
       }
+      createSpec.setExtendedProperties(extendedProperty);
       return createSpec;
     }
 
     @Test
     public void testCreateMesosCluster() throws SpecInvalidException {
       ClusterCreateSpec spec = buildCreateSpec(true);
-
-      Operation operation = new Operation();
-      MesosClusterCreateTask task = new MesosClusterCreateTask();
-      task.clusterName = spec.getName();
-      operation.setBody(task);
-
-      when(clusterManagerDcpRestClient.post(any(String.class), any(MesosClusterCreateTask.class)))
-          .thenReturn(operation);
       MesosClusterCreateTask createTask = clusterManagerClient.createMesosCluster("projectId", spec);
 
-      assertEquals(createTask.clusterName, spec.getName());
+      assertEquals(createTask.clusterId, notNull());
     }
 
     @Test
     public void testCreateMesosClusterMissingExtendedProperty() {
       ClusterCreateSpec spec = buildCreateSpec(false);
-
-      Operation operation = new Operation();
-      MesosClusterCreateTask task = new MesosClusterCreateTask();
-      task.clusterName = spec.getName();
-      operation.setBody(task);
-
-      when(clusterManagerDcpRestClient.post(any(String.class), any(MesosClusterCreateTask.class)))
-          .thenReturn(operation);
       try {
         clusterManagerClient.createMesosCluster("projectId", spec);
         Assert.fail("expect exception");
@@ -237,14 +238,6 @@ public class ClusterManagerClientTest {
     public void testCreateMesosClusterInvalidExtendedProperty(String propertyName, String propertyValue) {
       ClusterCreateSpec spec = buildCreateSpec(true);
       spec.getExtendedProperties().replace(propertyName, propertyValue);
-
-      Operation operation = new Operation();
-      MesosClusterCreateTask task = new MesosClusterCreateTask();
-      task.clusterName = spec.getName();
-      operation.setBody(task);
-
-      when(clusterManagerDcpRestClient.post(any(String.class), any(MesosClusterCreateTask.class)))
-          .thenReturn(operation);
       try {
         clusterManagerClient.createMesosCluster("projectId", spec);
         Assert.fail("expect exception");

@@ -197,7 +197,6 @@ public class StepCommandFactory {
             new KubernetesClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
       case CREATE_MESOS_CLUSTER_INITIATE:
         return new MesosClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
-      case CREATE_MESOS_CLUSTER_ALLOCATE_RESOURCES:
       case CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS:
       case CREATE_MESOS_CLUSTER_SETUP_MASTERS:
       case CREATE_MESOS_CLUSTER_SETUP_MARATHON:
