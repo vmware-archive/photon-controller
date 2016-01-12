@@ -138,11 +138,6 @@ RSpec.configure do |config|
     cleaner.clean_images(EsxCloud::SystemSeeder.instance)
     cleaner.delete_network(EsxCloud::SystemSeeder.instance.network) if EsxCloud::SystemSeeder.instance.network
     cleaner.delete_tenant(EsxCloud::SystemSeeder.instance.tenant) if EsxCloud::SystemSeeder.instance.tenant
-    begin
-      cleaner.clean_hosts
-    rescue EsxCloud::ApiError, EsxCloud::CliError
-      # Since we run API/CLI in parallel, one of host delete calls would fail for "HostHasVms" error
-    end
   end
 
 end
