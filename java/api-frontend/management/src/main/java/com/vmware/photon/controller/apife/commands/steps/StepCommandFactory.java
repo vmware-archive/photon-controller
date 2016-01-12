@@ -205,7 +205,6 @@ public class StepCommandFactory {
             new MesosClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
       case CREATE_SWARM_CLUSTER_INITIATE:
         return new SwarmClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
-      case CREATE_SWARM_CLUSTER_ALLOCATE_RESOURCES:
       case CREATE_SWARM_CLUSTER_SETUP_ETCD:
       case CREATE_SWARM_CLUSTER_SETUP_MASTER:
       case CREATE_SWARM_CLUSTER_SETUP_SLAVES:

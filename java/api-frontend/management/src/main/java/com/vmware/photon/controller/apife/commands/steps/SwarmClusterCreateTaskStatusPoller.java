@@ -35,7 +35,6 @@ import java.util.Map;
 public class SwarmClusterCreateTaskStatusPoller implements ClusterTaskStatusStepCmd.ClusterTaskStatusPoller {
   private static final Map<Operation, Integer> OPERATION_TO_SUBSTAGE_MAP =
       ImmutableMap.<Operation, Integer>builder()
-          .put(Operation.CREATE_SWARM_CLUSTER_ALLOCATE_RESOURCES, SubStage.ALLOCATE_RESOURCES.ordinal())
           .put(Operation.CREATE_SWARM_CLUSTER_SETUP_ETCD, SubStage.SETUP_ETCD.ordinal())
           .put(Operation.CREATE_SWARM_CLUSTER_SETUP_MASTER, SubStage.SETUP_MASTER.ordinal())
           .put(Operation.CREATE_SWARM_CLUSTER_SETUP_SLAVES, SubStage.SETUP_SLAVES.ordinal())

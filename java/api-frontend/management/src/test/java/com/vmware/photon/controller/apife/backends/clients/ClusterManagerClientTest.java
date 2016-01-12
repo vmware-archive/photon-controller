@@ -270,10 +270,27 @@ public class ClusterManagerClientTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
+      Operation operation = new Operation();
+      KubernetesClusterCreateTask task = new KubernetesClusterCreateTask();
+      operation.setBody(task);
+
+      when(clusterManagerDcpRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
+          .thenReturn(operation);
+
+      when(apiFeDcpRestClient.post(any(String.class), any(ClusterService.State.class)))
+          .thenReturn(null);
+
+      List<ClusterConfigurationService.State> clusterConfigurations = new ArrayList<>();
+      ClusterConfigurationService.State clusterConfiguration = new ClusterConfigurationService.State();
+      clusterConfiguration.imageId = "imageId";
+      clusterConfigurations.add(clusterConfiguration);
+      when(apiFeDcpRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
+          .thenReturn(clusterConfigurations);
+
       clusterManagerClient = new ClusterManagerClient(clusterManagerDcpRestClient, apiFeDcpRestClient);
     }
 
-    private static ClusterCreateSpec buildCreateSpec(boolean hasZookeeper) {
+    private static ClusterCreateSpec buildCreateSpec(boolean hasEtcd) {
       ClusterCreateSpec createSpec = new ClusterCreateSpec();
       createSpec.setName("clusterName");
       createSpec.setType(ClusterType.SWARM);
@@ -281,46 +298,30 @@ public class ClusterManagerClientTest {
       createSpec.setDiskFlavor("diskFlavor1");
       createSpec.setVmNetworkId("vmNetworkId1");
       createSpec.setSlaveCount(50);
-      if (hasZookeeper) {
-        Map<String, String> extendedProperty = new HashMap<>();
-        extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "10.1.0.1");
-        extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "10.1.0.2");
-        extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "255.255.255.128");
+      Map<String, String> extendedProperty = new HashMap<>();
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "10.1.0.1");
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "10.1.0.2");
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "255.255.255.128");
+      if (hasEtcd) {
         extendedProperty.put(ClusterManagerClient.EXTENDED_PROPERTY_ETCD_IP1, "10.1.0.3");
         extendedProperty.put(ClusterManagerClient.EXTENDED_PROPERTY_ETCD_IP2, "10.1.0.4");
         extendedProperty.put(ClusterManagerClient.EXTENDED_PROPERTY_ETCD_IP3, "10.1.0.5");
-        createSpec.setExtendedProperties(extendedProperty);
       }
+      createSpec.setExtendedProperties(extendedProperty);
       return createSpec;
     }
 
     @Test
     public void testCreateSwarmCluster() throws SpecInvalidException {
       ClusterCreateSpec spec = buildCreateSpec(true);
-
-      Operation operation = new Operation();
-      SwarmClusterCreateTask task = new SwarmClusterCreateTask();
-      task.clusterName = spec.getName();
-      operation.setBody(task);
-
-      when(clusterManagerDcpRestClient.post(any(String.class), any(SwarmClusterCreateTask.class)))
-          .thenReturn(operation);
       SwarmClusterCreateTask createTask = clusterManagerClient.createSwarmCluster("projectId", spec);
 
-      assertEquals(createTask.clusterName, spec.getName());
+      assertEquals(createTask.clusterId, notNull());
     }
 
     @Test
     public void testCreateSwarmClusterMissingExtendedProperty() {
       ClusterCreateSpec spec = buildCreateSpec(false);
-
-      Operation operation = new Operation();
-      SwarmClusterCreateTask task = new SwarmClusterCreateTask();
-      task.clusterName = spec.getName();
-      operation.setBody(task);
-
-      when(clusterManagerDcpRestClient.post(any(String.class), any(SwarmClusterCreateTask.class)))
-          .thenReturn(operation);
       try {
         clusterManagerClient.createSwarmCluster("projectId", spec);
         Assert.fail("expect exception");
@@ -332,14 +333,6 @@ public class ClusterManagerClientTest {
     public void testCreateSwarmClusterInvalidExtendedProperty(String propertyName, String propertyValue) {
       ClusterCreateSpec spec = buildCreateSpec(true);
       spec.getExtendedProperties().replace(propertyName, propertyValue);
-
-      Operation operation = new Operation();
-      SwarmClusterCreateTask task = new SwarmClusterCreateTask();
-      task.clusterName = spec.getName();
-      operation.setBody(task);
-
-      when(clusterManagerDcpRestClient.post(any(String.class), any(SwarmClusterCreateTask.class)))
-          .thenReturn(operation);
       try {
         clusterManagerClient.createSwarmCluster("projectId", spec);
         Assert.fail("expect exception");
