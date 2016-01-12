@@ -156,10 +156,10 @@ else
     bundle exec rake esxcloud:gocli
   fi
 
-  # verify that no objects were left over at the end of the run
+  # re-set the driver to API
   export DRIVER=api
-  bundle exec rake esxcloud:deployment
-  bundle exec rake esxcloud:validate
+
+  # run life_cycle tests
   bundle exec rake esxcloud:life_cycle
 
   # run the housekeeper integration test
@@ -171,4 +171,7 @@ else
     env
     bundle exec parallel_rspec -o '--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow' -- spec/api/cluster/*_spec.rb
   fi
+
+  # verify that no objects were left over at the end of the run
+  bundle exec rake esxcloud:validate
 fi
