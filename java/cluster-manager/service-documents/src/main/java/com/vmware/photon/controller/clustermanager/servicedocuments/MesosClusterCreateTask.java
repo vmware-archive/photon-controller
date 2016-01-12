@@ -14,13 +14,9 @@
 package com.vmware.photon.controller.clustermanager.servicedocuments;
 
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
-import com.vmware.photon.controller.common.dcp.validation.DefaultString;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.DefaultUuid;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
-import com.vmware.photon.controller.common.dcp.validation.NotEmpty;
-import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
 
@@ -46,83 +42,6 @@ public class MesosClusterCreateTask extends ServiceDocument {
   public Integer controlFlags;
 
   /**
-   * The name of the cluster being created.
-   */
-  @NotNull
-  @Immutable
-  public String clusterName;
-
-  /**
-   * DNS of the cluster.
-   */
-  @NotNull
-  @Immutable
-  public String dns;
-
-  /**
-   * Gateway of the cluster.
-   */
-  @NotNull
-  @Immutable
-  public String gateway;
-
-  /**
-   * Netmask of the cluster.
-   */
-  @NotNull
-  @Immutable
-  public String netmask;
-
-  /**
-   * IP Addresses of Zookeeper nodes.
-   */
-  @NotEmpty
-  @Immutable
-  public List<String> zookeeperIps;
-
-  /**
-   * Name of the Disk Flavor used for the vms created in the cluster.
-   */
-  @DefaultString(value = ClusterManagerConstants.VM_DISK_FLAVOR)
-  @Immutable
-  public String diskFlavorName;
-
-  /**
-   * Number of slave Nodes in this cluster.
-   */
-  @NotNull
-  @Immutable
-  @Positive
-  public Integer slaveCount;
-
-  /**
-   * Name of the Vm Flavor used for master vms in this cluster.
-   */
-  @DefaultString(value = ClusterManagerConstants.MASTER_VM_FLAVOR)
-  @Immutable
-  public String masterVmFlavorName;
-
-  /**
-   * Name of the Vm Flavor used for other vms in this cluster.
-   */
-  @DefaultString(value = ClusterManagerConstants.OTHER_VM_FLAVOR)
-  @Immutable
-  public String otherVmFlavorName;
-
-  /**
-   * Id of the network used for the vms created in the cluster.
-   */
-  @Immutable
-  public String vmNetworkId;
-
-  /**
-   * Project Identifier used to create this cluster.
-   */
-  @NotNull
-  @Immutable
-  public String projectId;
-
-  /**
    * Identifier that will be used to create the Mesos cluster.
    */
   @DefaultUuid
@@ -130,10 +49,11 @@ public class MesosClusterCreateTask extends ServiceDocument {
   public String clusterId;
 
   /**
-   * Stores the id for the Mesos image, which is used during VM creation.
+   * The threshold for each expansion batch.
    */
-  @WriteOnce
-  public String imageId;
+  @DefaultInteger(value = ClusterManagerConstants.DEFAULT_BATCH_EXPANSION_SIZE)
+  @Immutable
+  public Integer slaveBatchExpansionSize;
 
   /**
    * The list of DHCP IP addresses of the master VMs.
@@ -141,12 +61,6 @@ public class MesosClusterCreateTask extends ServiceDocument {
   @WriteOnce
   public List<String> masterIps;
 
-  /**
-   * The threshold for each expansion batch.
-   */
-  @DefaultInteger(value = ClusterManagerConstants.DEFAULT_BATCH_EXPANSION_SIZE)
-  @Immutable
-  public Integer slaveBatchExpansionSize;
 
   /**
    * This class defines the state of a MesosClusterCreateTaskService task.
@@ -161,7 +75,6 @@ public class MesosClusterCreateTask extends ServiceDocument {
      * The sub-states for this this.
      */
     public enum SubStage {
-      ALLOCATE_RESOURCES,
       SETUP_ZOOKEEPERS,
       SETUP_MASTERS,
       SETUP_MARATHON,

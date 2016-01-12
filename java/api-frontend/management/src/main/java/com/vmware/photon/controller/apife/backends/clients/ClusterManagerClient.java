@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +81,7 @@ public class ClusterManagerClient {
   public KubernetesClusterCreateTask createKubernetesCluster(String projectId, ClusterCreateSpec spec)
       throws SpecInvalidException {
     ClusterConfigurationService.State clusterConfiguration = getClusterConfiguration(ClusterType.KUBERNETES);
-    String clusterId = createKubernetesClusterEntity(ClusterType.KUBERNETES,  projectId, spec, clusterConfiguration);
+    String clusterId = createKubernetesClusterEntity(projectId, spec, clusterConfiguration);
     KubernetesClusterCreateTask createTask = new KubernetesClusterCreateTask();
     createTask.clusterId = clusterId;
     createTask.slaveBatchExpansionSize =
@@ -100,55 +101,12 @@ public class ClusterManagerClient {
 
   public MesosClusterCreateTask createMesosCluster(String projectId, ClusterCreateSpec spec)
       throws SpecInvalidException {
-    // Translate API ClusterCreateSpec to cluster manager MesosClusterCreateTask
+    ClusterConfigurationService.State clusterConfiguration = getClusterConfiguration(ClusterType.MESOS);
+    String clusterId = createMesosClusterEntity(projectId, spec, clusterConfiguration);
     MesosClusterCreateTask createTask = new MesosClusterCreateTask();
-    createTask.clusterName = spec.getName();
-    createTask.slaveCount = spec.getSlaveCount();
-    createTask.diskFlavorName = spec.getDiskFlavor();
-    createTask.projectId = projectId;
-    createTask.masterVmFlavorName = spec.getVmFlavor();
-    createTask.otherVmFlavorName = spec.getVmFlavor();
-    createTask.vmNetworkId = spec.getVmNetworkId();
+    createTask.clusterId = clusterId;
     createTask.slaveBatchExpansionSize =
         spec.getSlaveBatchExpansionSize() == 0 ? null : spec.getSlaveBatchExpansionSize();
-
-    if (spec.getExtendedProperties() != null) {
-      createTask.dns = spec.getExtendedProperties()
-          .get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS);
-      createTask.gateway = spec.getExtendedProperties()
-          .get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY);
-      createTask.netmask = spec.getExtendedProperties()
-          .get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK);
-
-      createTask.zookeeperIps = new ArrayList<>();
-      addIpAddressToList(createTask.zookeeperIps, spec.getExtendedProperties(),
-          EXTENDED_PROPERTY_ZOOKEEPER_IP1);
-      addIpAddressToList(createTask.zookeeperIps, spec.getExtendedProperties(),
-          EXTENDED_PROPERTY_ZOOKEEPER_IP2);
-      addIpAddressToList(createTask.zookeeperIps, spec.getExtendedProperties(),
-          EXTENDED_PROPERTY_ZOOKEEPER_IP3);
-    }
-    if (createTask.dns == null) {
-      throw new SpecInvalidException("Missing extended property: dns");
-    } else if (!InetAddressValidator.getInstance().isValidInet4Address(createTask.dns)) {
-      throw new SpecInvalidException("Invalid extended property: dns: " + createTask.dns);
-    }
-
-    if (createTask.gateway == null) {
-      throw new SpecInvalidException("Missing extended property: gateway");
-    } else if (!InetAddressValidator.getInstance().isValidInet4Address(createTask.gateway)) {
-      throw new SpecInvalidException("Invalid extended property: gateway: " + createTask.gateway);
-    }
-
-    if (createTask.netmask == null) {
-      throw new SpecInvalidException("Missing extended property: netmask");
-    } else if (!InetAddressValidator.getInstance().isValidInet4Address(createTask.netmask)) {
-      throw new SpecInvalidException("Invalid extended property: netmask: " + createTask.netmask);
-    }
-
-    if (createTask.zookeeperIps.size() == 0) {
-      throw new SpecInvalidException("Missing extended property: zookeeper ips");
-    }
 
     // Post createSpec to MesosClusterCreateTaskService
     Operation operation = dcpClient.post(
@@ -300,46 +258,12 @@ public class ClusterManagerClient {
   private ClusterService.State assembleCommonClusterEntity(ClusterType clusterType,
                                                            String projectId,
                                                            ClusterCreateSpec spec,
-                                                           ClusterConfigurationService.State clusterConfiguration) {
-    ClusterService.State cluster = new ClusterService.State();
-    cluster.clusterState = ClusterState.CREATING;
-    cluster.clusterName = spec.getName();
-    cluster.clusterType = clusterType;
-    cluster.imageId = clusterConfiguration.imageId;
-    cluster.projectId = projectId;
-    cluster.diskFlavorName =
-        spec.getDiskFlavor() == null || spec.getDiskFlavor().isEmpty() ?
-            ClusterManagerConstants.VM_DISK_FLAVOR : spec.getDiskFlavor();
-    cluster.masterVmFlavorName =
-        spec.getVmFlavor() == null || spec.getVmFlavor().isEmpty() ?
-            ClusterManagerConstants.MASTER_VM_FLAVOR : spec.getVmFlavor();
-    cluster.otherVmFlavorName =
-        spec.getVmFlavor() == null || spec.getVmFlavor().isEmpty() ?
-            ClusterManagerConstants.OTHER_VM_FLAVOR : spec.getVmFlavor();
-    cluster.vmNetworkId = spec.getVmNetworkId();
-    cluster.slaveCount = spec.getSlaveCount();
-    cluster.extendedProperties = new HashMap<>();
-    cluster.documentSelfLink = UUID.randomUUID().toString();
+                                                           ClusterConfigurationService.State clusterConfiguration)
+    throws SpecInvalidException{
 
-    return cluster;
-  }
-
-  private String createKubernetesClusterEntity(ClusterType clusterType,
-                                               String projectId,
-                                               ClusterCreateSpec spec,
-                                               ClusterConfigurationService.State clusterConfiguration)
-    throws SpecInvalidException {
-
-    String containerNetwork =
-        spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK);
     String dns = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS);
     String gateway = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY);
     String netmask = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK);
-    List<String> etcdIps = new ArrayList<>();
-    etcdIps.add(spec.getExtendedProperties().get(EXTENDED_PROPERTY_ETCD_IP1));
-    etcdIps.add(spec.getExtendedProperties().get(EXTENDED_PROPERTY_ETCD_IP2));
-    etcdIps.add(spec.getExtendedProperties().get(EXTENDED_PROPERTY_ETCD_IP3));
-    String masterIp = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
 
     // Verify the cluster entity
     if (dns == null) {
@@ -359,6 +283,50 @@ public class ClusterManagerClient {
     } else if (!InetAddressValidator.getInstance().isValidInet4Address(netmask)) {
       throw new SpecInvalidException("Invalid extended property: netmask: " + netmask);
     }
+
+    ClusterService.State cluster = new ClusterService.State();
+    cluster.clusterState = ClusterState.CREATING;
+    cluster.clusterName = spec.getName();
+    cluster.clusterType = clusterType;
+    cluster.imageId = clusterConfiguration.imageId;
+    cluster.projectId = projectId;
+    cluster.diskFlavorName =
+        spec.getDiskFlavor() == null || spec.getDiskFlavor().isEmpty() ?
+            ClusterManagerConstants.VM_DISK_FLAVOR : spec.getDiskFlavor();
+    cluster.masterVmFlavorName =
+        spec.getVmFlavor() == null || spec.getVmFlavor().isEmpty() ?
+            ClusterManagerConstants.MASTER_VM_FLAVOR : spec.getVmFlavor();
+    cluster.otherVmFlavorName =
+        spec.getVmFlavor() == null || spec.getVmFlavor().isEmpty() ?
+            ClusterManagerConstants.OTHER_VM_FLAVOR : spec.getVmFlavor();
+    cluster.vmNetworkId = spec.getVmNetworkId();
+    cluster.slaveCount = spec.getSlaveCount();
+    cluster.extendedProperties = new HashMap<>();
+    cluster.documentSelfLink = UUID.randomUUID().toString();
+    cluster.extendedProperties = new HashMap<>();
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, dns);
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, gateway);
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, netmask);
+
+    return cluster;
+  }
+
+  private String createKubernetesClusterEntity(String projectId,
+                                               ClusterCreateSpec spec,
+                                               ClusterConfigurationService.State clusterConfiguration)
+    throws SpecInvalidException {
+
+    List<String> etcdIps = new ArrayList<>();
+    for (String property : Arrays.asList(EXTENDED_PROPERTY_ETCD_IP1, EXTENDED_PROPERTY_ETCD_IP2,
+        EXTENDED_PROPERTY_ETCD_IP3)) {
+      String etcdIp = spec.getExtendedProperties().get(property);
+      if (etcdIp != null) {
+        etcdIps.add(etcdIp);
+      }
+    }
+    String masterIp = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
+    String containerNetwork =
+        spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK);
 
     if (etcdIps.size() == 0) {
       throw new SpecInvalidException("Missing extended property: etcd ips");
@@ -407,14 +375,49 @@ public class ClusterManagerClient {
     }
 
     // Assemble the cluster entity
-    ClusterService.State cluster = assembleCommonClusterEntity(clusterType, projectId, spec, clusterConfiguration);
-    cluster.extendedProperties = new HashMap<>();
+    ClusterService.State cluster = assembleCommonClusterEntity(
+        ClusterType.KUBERNETES, projectId, spec, clusterConfiguration);
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, containerNetwork);
-    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, dns);
-    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, gateway);
-    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, netmask);
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, serializeIpAddresses(etcdIps));
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, masterIp);
+
+    // Create the cluster entity
+    apiFeDcpClient.post(
+        ClusterServiceFactory.SELF_LINK,
+        cluster);
+
+    return cluster.documentSelfLink;
+  }
+
+  private String createMesosClusterEntity(String projectId,
+                                          ClusterCreateSpec spec,
+                                          ClusterConfigurationService.State clusterConfiguration)
+    throws SpecInvalidException {
+
+    List<String> zookeeperIps = new ArrayList<>();
+    for (String property : Arrays.asList(EXTENDED_PROPERTY_ZOOKEEPER_IP1, EXTENDED_PROPERTY_ZOOKEEPER_IP2,
+        EXTENDED_PROPERTY_ZOOKEEPER_IP3)) {
+      String zookeeperIp = spec.getExtendedProperties().get(property);
+      if (zookeeperIp != null) {
+        zookeeperIps.add(zookeeperIp);
+      }
+    }
+
+    if (zookeeperIps.size() == 0) {
+      throw new SpecInvalidException("Missing extended property: zookeeper ips");
+    }
+
+    for (String zookeeperIp : zookeeperIps) {
+      if (zookeeperIp != null && !InetAddressValidator.getInstance().isValidInet4Address(zookeeperIp)) {
+        throw new SpecInvalidException("Invalid extended property: zookeeper ip: " + zookeeperIp);
+      }
+    }
+
+    // Assemble the cluster entity
+    ClusterService.State cluster = assembleCommonClusterEntity(
+        ClusterType.MESOS, projectId, spec, clusterConfiguration);
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ZOOKEEPER_IPS,
+        serializeIpAddresses(zookeeperIps));
 
     // Create the cluster entity
     apiFeDcpClient.post(

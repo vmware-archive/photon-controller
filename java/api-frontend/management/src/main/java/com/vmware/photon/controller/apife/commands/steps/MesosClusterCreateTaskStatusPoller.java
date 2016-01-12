@@ -35,7 +35,6 @@ import java.util.Map;
 public class MesosClusterCreateTaskStatusPoller implements ClusterTaskStatusStepCmd.ClusterTaskStatusPoller {
   private static final Map<Operation, Integer> OPERATION_TO_SUBSTAGE_MAP =
       ImmutableMap.<Operation, Integer>builder()
-          .put(Operation.CREATE_MESOS_CLUSTER_ALLOCATE_RESOURCES, SubStage.ALLOCATE_RESOURCES.ordinal())
           .put(Operation.CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS, SubStage.SETUP_ZOOKEEPERS.ordinal())
           .put(Operation.CREATE_MESOS_CLUSTER_SETUP_MASTERS, SubStage.SETUP_MASTERS.ordinal())
           .put(Operation.CREATE_MESOS_CLUSTER_SETUP_MARATHON, SubStage.SETUP_MARATHON.ordinal())

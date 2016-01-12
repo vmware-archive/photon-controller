@@ -99,7 +99,7 @@ public class MesosClusterCreateStepCmdTest extends PowerMockTestCase {
     serviceDocument = new MesosClusterCreateTask();
     serviceDocument.taskState = new MesosClusterCreateTask.TaskState();
     serviceDocument.taskState.stage = TaskState.TaskStage.STARTED;
-    serviceDocument.taskState.subStage = MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES;
+    serviceDocument.taskState.subStage = MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS;
     remoteTaskLink = "http://clustermanager" + ServiceUriPaths.MESOS_CLUSTER_CREATE_TASK_SERVICE
         + "/00000000-0000-0000-0000-000000000001";
     serviceDocument.documentSelfLink = remoteTaskLink;

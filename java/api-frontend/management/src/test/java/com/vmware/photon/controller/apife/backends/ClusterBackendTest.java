@@ -218,7 +218,7 @@ public class ClusterBackendTest {
       Assert.assertNotNull(taskEntity.getId());
 
       // verify transient resources are set correctly
-      assertEquals(taskEntity.getSteps().size(), 6);
+      assertEquals(taskEntity.getSteps().size(), 5);
       StepEntity initiateStepEntity = taskEntity.getSteps().get(0);
       assertEquals(initiateStepEntity.getOperation(), Operation.CREATE_MESOS_CLUSTER_INITIATE);
       ClusterCreateSpec createSpecActual = (ClusterCreateSpec) initiateStepEntity
@@ -232,13 +232,12 @@ public class ClusterBackendTest {
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
-      assertEquals(taskEntity.getSteps().size(), 6);
+      assertEquals(taskEntity.getSteps().size(), 5);
       assertEquals(taskEntity.getSteps().get(0).getOperation(), Operation.CREATE_MESOS_CLUSTER_INITIATE);
-      assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.CREATE_MESOS_CLUSTER_ALLOCATE_RESOURCES);
-      assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS);
-      assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_MASTERS);
-      assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_MARATHON);
-      assertEquals(taskEntity.getSteps().get(5).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_SLAVES);
+      assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS);
+      assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_MASTERS);
+      assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_MARATHON);
+      assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_SLAVES);
     }
 
     @Test

@@ -60,8 +60,7 @@ public class MesosClusterCreateStepCmd extends StepCommand {
       nextStep.createOrUpdateTransientResource(ClusterTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
           serviceDocument.documentSelfLink);
     }
-    logger.info("Cluster creation initiated: name={}, id={}",
-        serviceDocument.clusterName, serviceDocument.documentSelfLink);
+    logger.info("Cluster creation initiated:id={}", serviceDocument.documentSelfLink);
   }
 
   @Override
