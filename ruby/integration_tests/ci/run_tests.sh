@@ -153,16 +153,15 @@ fi
 
 # verify that no objects were left over at the end of the run
 export DRIVER=api
-bundle exec rake esxcloud:deployment
-bundle exec rake esxcloud:validate
 bundle exec rake esxcloud:life_cycle
+bundle exec rake esxcloud:validate
 
 # run the housekeeper integration test
-if [ -n "$DISABLE_HOUSEKEEPER" ]; then
+if [ -z "$DISABLE_HOUSEKEEPER" ]; then
   bundle exec rake housekeeper
 fi
 
-if [ "$DEPLOYER_INTEGRATION_TEST" ]; then
+if [ -n "$DEPLOYER_INTEGRATION_TEST" ]; then
   bundle exec rake deployer
 fi
 
