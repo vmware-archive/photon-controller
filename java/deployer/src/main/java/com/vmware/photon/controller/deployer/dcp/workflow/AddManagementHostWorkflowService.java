@@ -15,7 +15,6 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
@@ -154,11 +153,9 @@ public class AddManagementHostWorkflowService extends StatefulService {
     public String hostServiceLink;
 
     /**
-     * This value represents the file name of the EsxCloud management VM image.
+     * This value represents the management vm that is created on the host.
      */
-    @NotNull
-    @Immutable
-    public String managementVmImageFile;
+    public String vmServiceLink;
 
     @Immutable
     @DefaultBoolean(value = true)
@@ -362,46 +359,46 @@ public class AddManagementHostWorkflowService extends StatefulService {
         }
       };
 
-      sendRequest(
-          HostUtils.getCloudStoreHelper(this)
-              .createGet(currentState.hostServiceLink)
+      Operation getOperation = Operation
+          .createGet(UriUtils.buildUri(getHost(), currentState.vmServiceLink))
               .setCompletion(
-                  (operation, throwable) -> {
-                    if (null != throwable) {
-                      failTask(throwable);
-                      return;
-                    }
+              (operation, throwable) -> {
+                if (null != throwable) {
+                  failTask(throwable);
+                  return;
+                }
 
-                    HostService.State hostState = operation.getBody(HostService.State.class);
-                    String hostAddress = hostState.hostAddress.trim();
-                    // Find the host
-                    if (!deploymentService.zookeeperIdToIpMap.containsValue(hostAddress)) {
-                      // Really should NEVER EVER happen. But just a sanity check
-                      Throwable t = new RuntimeException("Zookeeper replica list doesn't contain host: " + hostAddress);
-                      failTask(t);
-                      return;
-                    }
+                VmService.State managementVmState = operation.getBody(VmService.State.class);
+                String managementVmAddress = managementVmState.ipAddress.trim();
+                // Find the host
+                if (!deploymentService.zookeeperIdToIpMap.containsValue(managementVmAddress)) {
+                  // Really should NEVER EVER happen. But just a sanity check
+                  Throwable t = new RuntimeException("Zookeeper replica list doesn't contain host: "
+                      + managementVmAddress);
+                  failTask(t);
+                  return;
+                }
 
-                    Integer myId = null;
-                    for (Map.Entry<Integer, String> entry : deploymentService.zookeeperIdToIpMap.entrySet()) {
-                      if (entry.getValue().equals(hostAddress)) {
-                        myId = entry.getKey();
-                        break;
-                      }
-                    }
-
-                    try {
-                      ZookeeperClient zookeeperClient
-                          = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-
-                      zookeeperClient.addServer(HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-                          hostState.hostAddress, ZOOKEEPER_PORT, myId, callback);
-                    } catch (Throwable t) {
-                      failTask(t);
-                    }
+                Integer myId = null;
+                for (Map.Entry<Integer, String> entry : deploymentService.zookeeperIdToIpMap.entrySet()) {
+                  if (entry.getValue().equals(managementVmAddress)) {
+                    myId = entry.getKey();
+                    break;
                   }
-              )
-      );
+                }
+
+                try {
+                  ZookeeperClient zookeeperClient
+                      = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+
+                  zookeeperClient.addServer(HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+                      managementVmAddress, ZOOKEEPER_PORT, myId, callback);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+          );
+      sendRequest(getOperation);
     }
   }
 
@@ -968,7 +965,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
             switch (state.taskState.stage) {
               case FINISHED:
                 if (0 == latch.decrementAndGet()) {
-                  createContainers(currentState, deploymentService);
+                  createContainers(currentState, vmServiceLink, deploymentService);
                 }
                 break;
               case FAILED:
@@ -1011,7 +1008,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     return state;
   }
 
-  private void createContainers(State currentState, DeploymentService.State deploymentService) {
+  private void createContainers(State currentState, String vmServiceLink, DeploymentService.State deploymentService) {
     final Service service = this;
 
     FutureCallback<CreateContainersWorkflowService.State> callback = new
@@ -1020,8 +1017,10 @@ public class AddManagementHostWorkflowService extends StatefulService {
           public void onSuccess(@Nullable CreateContainersWorkflowService.State result) {
             switch (result.taskState.stage) {
               case FINISHED:
-                TaskUtils.sendSelfPatch(service, buildPatch(
-                    TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER, null));
+                State finishedPatchState = buildPatch(
+                    TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER, null);
+                finishedPatchState.vmServiceLink = vmServiceLink;
+                TaskUtils.sendSelfPatch(service, finishedPatchState);
                 break;
               case FAILED:
                 State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
@@ -1043,6 +1042,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.isAuthEnabled = deploymentService.oAuthEnabled;
     startState.isNewDeployment = currentState.isNewDeployment;
+    startState.vmServiceLink = vmServiceLink;
     startState.taskPollDelay = currentState.taskPollDelay;
     TaskUtils.startTaskAsync(
         this,

@@ -100,8 +100,8 @@ public class ZookeeperClient {
           null, -1, dataCallback, results);
 
     } catch (Exception e) {
-      logger.error("Rethrowing error ", e);
-      throw new RuntimeException(e);
+      logger.error("Ignoring Zookeeper reconfig error ", e);
+      //throw new RuntimeException(e);
     }
   }
 
@@ -118,8 +118,8 @@ public class ZookeeperClient {
           null, -1, dataCallback, results);
 
     } catch (Exception e) {
-      logger.error("Rethrowing error ", e);
-      throw new RuntimeException(e);
+      logger.error("Ignoring Zookeeper reconfig error ", e);
+      //throw new RuntimeException(e);
     }
   }
 

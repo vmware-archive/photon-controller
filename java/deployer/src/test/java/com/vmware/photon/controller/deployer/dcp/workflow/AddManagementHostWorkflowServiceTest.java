@@ -129,7 +129,6 @@ public class AddManagementHostWorkflowServiceTest {
     AddManagementHostWorkflowService.State startState = new AddManagementHostWorkflowService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
     startState.hostServiceLink = "hostServiceLink1";
-    startState.managementVmImageFile = "MANAGEMENT_VM_IMAGE_FILE";
     startState.isNewDeployment = false;
     startState.deploymentServiceLink = "deploymentServiceLink";
 
@@ -909,7 +908,6 @@ public class AddManagementHostWorkflowServiceTest {
 
       DeploymentWorkflowService.State deploymentState = DeploymentWorkflowServiceTest.buildValidStartState(null, null);
       deploymentState.deploymentServiceLink = startState.deploymentServiceLink;
-      deploymentState.managementVmImageFile = startState.managementVmImageFile;
       deploymentState.controlFlags = null;
       DeploymentWorkflowService.State deploymentWorkflowState =
           localDeployer.callServiceAndWaitForState(

@@ -126,6 +126,9 @@ public class CreateContainersWorkflowService extends StatefulService {
     @Immutable
     @DefaultBoolean(value = true)
     public Boolean isNewDeployment;
+
+    @Immutable
+    public String vmServiceLink;
   }
 
   public CreateContainersWorkflowService() {
@@ -466,6 +469,7 @@ public class CreateContainersWorkflowService extends StatefulService {
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(kindClause);
     querySpecification.query.addBooleanClause(nameClause);
+
     QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
     Operation queryPostOperation = Operation
@@ -510,6 +514,14 @@ public class CreateContainersWorkflowService extends StatefulService {
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(kindClause);
     querySpecification.query.addBooleanClause(containerTemplateServiceLinkClause);
+
+    if (currentState.vmServiceLink != null) {
+      QueryTask.Query vmServiceLinkClause = new QueryTask.Query()
+          .setTermPropertyName(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK)
+          .setTermMatchValue(currentState.vmServiceLink);
+      querySpecification.query.addBooleanClause(vmServiceLinkClause);
+    }
+
     QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
     Operation queryPostOperation = Operation

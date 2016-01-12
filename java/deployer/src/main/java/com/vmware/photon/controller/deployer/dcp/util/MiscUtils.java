@@ -58,9 +58,11 @@ public class MiscUtils {
     StringBuilder builder = new StringBuilder();
 
     for (int i = 0; i < replicaIps.size(); i++) {
-      builder.append(replicaIps.get(i)).append(":").append(port);
-      if (i != replicaIps.size() - 1) {
-        builder.append(",");
+      if (builder.indexOf(replicaIps.get(i)) < 0) {
+        builder.append(replicaIps.get(i)).append(":").append(port);
+        if (i != replicaIps.size() - 1) {
+          builder.append(",");
+        }
       }
     }
     return builder.toString();
