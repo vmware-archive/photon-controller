@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.tasks;
 
+import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.NetworkConnection;
 import com.vmware.photon.controller.api.Task;
@@ -22,9 +23,8 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ImagesApi;
 import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.clients.MesosClient;
 import com.vmware.photon.controller.clustermanager.helpers.ReflectionUtils;
@@ -42,19 +42,14 @@ import com.vmware.photon.controller.clustermanager.templates.MesosSlaveNodeTempl
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.templates.ZookeeperNodeTemplate;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
-import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
-import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
-import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -68,7 +63,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -85,12 +79,13 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 /**
@@ -115,14 +110,6 @@ public class MesosClusterCreateTaskServiceTest {
     state.taskState.stage = stage;
     state.taskState.subStage = subStage;
     state.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-    state.zookeeperIps = new ArrayList<>();
-    state.zookeeperIps.add("10.0.0.1");
-    state.zookeeperIps.add("10.0.0.2");
-    state.zookeeperIps.add("10.0.0.3");
-
-    // Because the reflection builder does not build positive default values for these fields, we need to
-    // manually set them to some positive values.
-    state.slaveCount = 2;
 
     return state;
   }
@@ -212,8 +199,6 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CREATED,
               null},
           {TaskState.TaskStage.STARTED,
-              MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
-          {TaskState.TaskStage.STARTED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
           {TaskState.TaskStage.STARTED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_MASTERS},
@@ -240,8 +225,6 @@ public class MesosClusterCreateTaskServiceTest {
 
       return new Object[][]{
           {TaskState.TaskStage.CREATED,
-              MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
-          {TaskState.TaskStage.CREATED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
           {TaskState.TaskStage.CREATED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_MASTERS},
@@ -250,8 +233,6 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CREATED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
 
-          {TaskState.TaskStage.FINISHED,
-              MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
           {TaskState.TaskStage.FINISHED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
           {TaskState.TaskStage.FINISHED,
@@ -262,8 +243,6 @@ public class MesosClusterCreateTaskServiceTest {
               MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
 
           {TaskState.TaskStage.FAILED,
-              MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
-          {TaskState.TaskStage.FAILED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
           {TaskState.TaskStage.FAILED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_MASTERS},
@@ -272,8 +251,6 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FAILED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
 
-          {TaskState.TaskStage.CANCELLED,
-              MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
           {TaskState.TaskStage.CANCELLED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
           {TaskState.TaskStage.CANCELLED,
@@ -359,17 +336,10 @@ public class MesosClusterCreateTaskServiceTest {
 
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES,
+          {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES,
+          {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS,
@@ -430,32 +400,23 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.CREATED, null},
 
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES,
-              TaskState.TaskStage.CREATED, null},
-
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
 
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MASTERS,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MASTERS,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MASTERS,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
 
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
+              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MASTERS},
 
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
@@ -465,8 +426,6 @@ public class MesosClusterCreateTaskServiceTest {
 
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
           {TaskState.TaskStage.FINISHED, null,
@@ -485,8 +444,6 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
-          {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MASTERS},
@@ -503,8 +460,6 @@ public class MesosClusterCreateTaskServiceTest {
 
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
           {TaskState.TaskStage.CANCELLED, null,
@@ -529,7 +484,7 @@ public class MesosClusterCreateTaskServiceTest {
       assertThat(startOperation.getStatusCode(), is(200));
 
       MesosClusterCreateTask patchState = buildValidPatchState(TaskState.TaskStage.STARTED,
-          MesosClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES);
+          MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS);
 
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
@@ -658,12 +613,6 @@ public class MesosClusterCreateTaskServiceTest {
 
       startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
       startState.controlFlags = 0;
-      startState.slaveCount = 3;
-      startState.zookeeperIps = new ArrayList<>();
-      startState.zookeeperIps.add("10.0.0.1");
-      startState.zookeeperIps.add("10.0.0.2");
-      startState.zookeeperIps.add("10.0.0.3");
-      startState.netmask = "255.255.255.128";
     }
 
     @AfterMethod
@@ -695,7 +644,7 @@ public class MesosClusterCreateTaskServiceTest {
     @Test
     public void testEndToEndSuccess() throws Throwable {
 
-      mockAllocateResources(true);
+      mockClusterEntity();
       mockVmProvisioningTaskService(true);
       mockMesosClient();
 
@@ -707,59 +656,12 @@ public class MesosClusterCreateTaskServiceTest {
               TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal());
 
       TestHelper.assertTaskStateFinished(savedState.taskState);
-
-      // Verify that a ClusterDocument document has been created
-      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-      querySpecification.query = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(ClusterService.State.class));
-      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-      NodeGroupBroadcastResponse queryResponse = cloudStoreMachine.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
-
-      assertThat(documentLinks.size(), is(1));
-      ClusterService.State clusterState = cloudStoreMachine.getServiceState(documentLinks.iterator().next(),
-          ClusterService.State.class);
-
-      assertThat(clusterState.documentSelfLink, containsString(savedState.clusterId));
-      assertThat(clusterState.clusterName, is(startState.clusterName));
-      assertThat(clusterState.projectId, is(startState.projectId));
-      assertThat(clusterState.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS),
-          is(startState.dns));
-      assertThat(clusterState.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY),
-          is(startState.gateway));
-      assertThat(clusterState.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK),
-          is(startState.netmask.toString()));
-      assertThat(clusterState.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ZOOKEEPER_IPS),
-          is(NodeTemplateUtils.serializeAddressList(startState.zookeeperIps)));
-      assertThat(clusterState.slaveCount, is(startState.slaveCount));
-    }
-
-    @Test
-    public void testEndToEndFailureAllocateResourceFails() throws Throwable {
-
-      mockAllocateResources(false);
-      mockVmProvisioningTaskService(true);
-      mockMesosClient();
-
-      MesosClusterCreateTask savedState = machine.callServiceAndWaitForState(
-          MesosClusterCreateTaskFactoryService.SELF_LINK,
-          startState,
-          MesosClusterCreateTask.class,
-          (MesosClusterCreateTask state) ->
-              (TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal())
-      );
-
-      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(savedState.taskState.failure.message,
-          Matchers.containsString("Cannot find cluster configuration for MESOS"));
     }
 
     @Test
     public void testEndToEndFailureProvisionVmFails() throws Throwable {
 
-      mockAllocateResources(true);
+      mockClusterEntity();
       mockVmProvisioningTaskService(false);
       mockMesosClient();
 
@@ -803,7 +705,7 @@ public class MesosClusterCreateTaskServiceTest {
           .hostCount(1)
           .build();
 
-      mockAllocateResources(true);
+      mockClusterEntity();
       mockVmProvisioningTaskService(true);
 
       MesosClusterCreateTask savedState = machine.callServiceAndWaitForState(
@@ -818,20 +720,37 @@ public class MesosClusterCreateTaskServiceTest {
           Matchers.containsString("Failed to rollout MesosZookeeper"));
     }
 
-    private void mockAllocateResources(boolean isSuccess) throws Throwable {
+    private void mockClusterEntity() throws Throwable {
 
-      if (isSuccess) {
-        ClusterConfigurationService.State clusterConfiguration = new ClusterConfigurationService.State();
-        clusterConfiguration.clusterType = ClusterType.MESOS;
-        clusterConfiguration.imageId = "imageId";
-        clusterConfiguration.documentSelfLink = ClusterType.MESOS.toString().toLowerCase();
+      ClusterService.State cluster = new ClusterService.State();
+      cluster.clusterState = ClusterState.CREATING;
+      cluster.clusterName = "mesosCluster";
+      cluster.clusterType = ClusterType.MESOS;
+      cluster.imageId = "imageId";
+      cluster.projectId = "porjectId";
+      cluster.diskFlavorName = "diskFlavorName";
+      cluster.masterVmFlavorName = "masterVmFlavorName";
+      cluster.otherVmFlavorName = "otherVmFlavorName";
+      cluster.vmNetworkId = "vmNetworkId";
+      cluster.slaveCount = 3;
+      cluster.extendedProperties = new HashMap<>();
+      cluster.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "2.2.2.2");
+      cluster.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "3.3.3.3");
+      cluster.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "255.255.255.128");
+      cluster.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_ZOOKEEPER_IPS, "10.0.0.1,10.0.0.2,10.0.0.3,");
+      cluster.documentSelfLink = UUID.randomUUID().toString();
 
-        cloudStoreMachine.callServiceAndWaitForState(
-            ClusterConfigurationServiceFactory.SELF_LINK,
-            clusterConfiguration,
-            ClusterConfigurationService.State.class,
-            state -> true);
-      }
+      cloudStoreMachine.callServiceAndWaitForState(
+          ClusterServiceFactory.SELF_LINK,
+          cluster,
+          ClusterService.State.class,
+          state -> true);
+
+      startState.clusterId = cluster.documentSelfLink;
     }
 
     private void mockVmProvisioningTaskService(boolean isSuccess) throws Throwable {

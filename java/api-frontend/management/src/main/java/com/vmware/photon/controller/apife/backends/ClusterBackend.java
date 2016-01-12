@@ -178,7 +178,6 @@ public class ClusterBackend {
     initiateStep.createOrUpdateTransientResource(MesosClusterCreateStepCmd.CREATE_SPEC_RESOURCE_KEY, spec);
 
     // Dummy steps that are mapped to MesosClusterCreateTask's subStages
-    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_MESOS_CLUSTER_ALLOCATE_RESOURCES);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_MESOS_CLUSTER_SETUP_MASTERS);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_MESOS_CLUSTER_SETUP_MARATHON);
