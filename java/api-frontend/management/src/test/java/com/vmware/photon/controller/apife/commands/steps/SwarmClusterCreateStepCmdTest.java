@@ -99,7 +99,7 @@ public class SwarmClusterCreateStepCmdTest extends PowerMockTestCase {
     serviceDocument = new SwarmClusterCreateTask();
     serviceDocument.taskState = new SwarmClusterCreateTask.TaskState();
     serviceDocument.taskState.stage = TaskState.TaskStage.STARTED;
-    serviceDocument.taskState.subStage = SwarmClusterCreateTask.TaskState.SubStage.ALLOCATE_RESOURCES;
+    serviceDocument.taskState.subStage = SwarmClusterCreateTask.TaskState.SubStage.SETUP_ETCD;
     remoteTaskLink = "http://clustermanager" + ServiceUriPaths.SWARM_CLUSTER_CREATE_TASK_SERVICE
         + "/00000000-0000-0000-0000-000000000001";
     serviceDocument.documentSelfLink = remoteTaskLink;

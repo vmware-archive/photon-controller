@@ -166,7 +166,6 @@ public class StepCommandFactoryTest {
         {Operation.CREATE_MESOS_CLUSTER_SETUP_SLAVES, ClusterTaskStatusStepCmd.class},
 
         {Operation.CREATE_SWARM_CLUSTER_INITIATE, SwarmClusterCreateStepCmd.class},
-        {Operation.CREATE_SWARM_CLUSTER_ALLOCATE_RESOURCES, ClusterTaskStatusStepCmd.class},
         {Operation.CREATE_SWARM_CLUSTER_SETUP_ETCD, ClusterTaskStatusStepCmd.class},
         {Operation.CREATE_SWARM_CLUSTER_SETUP_MASTER, ClusterTaskStatusStepCmd.class},
         {Operation.CREATE_SWARM_CLUSTER_SETUP_SLAVES, ClusterTaskStatusStepCmd.class},

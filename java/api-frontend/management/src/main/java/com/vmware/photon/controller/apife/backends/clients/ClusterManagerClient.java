@@ -48,7 +48,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -122,54 +121,12 @@ public class ClusterManagerClient {
 
   public SwarmClusterCreateTask createSwarmCluster(String projectId, ClusterCreateSpec spec)
       throws SpecInvalidException {
-    // Translate API ClusterCreateSpec to cluster manager SwarmClusterCreateTask
+    ClusterConfigurationService.State clusterConfiguration = getClusterConfiguration(ClusterType.SWARM);
+    String clusterId = createSwarmClusterEntity(projectId, spec, clusterConfiguration);
     SwarmClusterCreateTask createTask = new SwarmClusterCreateTask();
-    createTask.clusterName = spec.getName();
-    createTask.slaveCount = spec.getSlaveCount();
-    createTask.diskFlavorName = spec.getDiskFlavor();
-    createTask.projectId = projectId;
-    createTask.masterVmFlavorName = spec.getVmFlavor();
-    createTask.otherVmFlavorName = spec.getVmFlavor();
-    createTask.vmNetworkId = spec.getVmNetworkId();
+    createTask.clusterId = clusterId;
     createTask.slaveBatchExpansionSize =
         spec.getSlaveBatchExpansionSize() == 0 ? null : spec.getSlaveBatchExpansionSize();
-
-    if (spec.getExtendedProperties() != null) {
-      createTask.dns = spec.getExtendedProperties()
-          .get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS);
-      createTask.gateway = spec.getExtendedProperties()
-          .get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY);
-      createTask.netmask = spec.getExtendedProperties()
-          .get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK);
-      createTask.etcdIps = new ArrayList<>();
-      addIpAddressToList(createTask.etcdIps, spec.getExtendedProperties(),
-          EXTENDED_PROPERTY_ETCD_IP1);
-      addIpAddressToList(createTask.etcdIps, spec.getExtendedProperties(),
-          EXTENDED_PROPERTY_ETCD_IP2);
-      addIpAddressToList(createTask.etcdIps, spec.getExtendedProperties(),
-          EXTENDED_PROPERTY_ETCD_IP3);
-    }
-    if (createTask.dns == null) {
-      throw new SpecInvalidException("Missing extended property: dns");
-    } else if (!InetAddressValidator.getInstance().isValidInet4Address(createTask.dns)) {
-      throw new SpecInvalidException("Invalid extended property: dns: " + createTask.dns);
-    }
-
-    if (createTask.gateway == null) {
-      throw new SpecInvalidException("Missing extended property: gateway");
-    } else if (!InetAddressValidator.getInstance().isValidInet4Address(createTask.gateway)) {
-      throw new SpecInvalidException("Invalid extended property: gateway: " + createTask.gateway);
-    }
-
-    if (createTask.netmask == null) {
-      throw new SpecInvalidException("Missing extended property: netmask");
-    } else if (!InetAddressValidator.getInstance().isValidInet4Address(createTask.netmask)) {
-      throw new SpecInvalidException("Invalid extended property: netmask: " + createTask.netmask);
-    }
-
-    if (createTask.etcdIps.size() == 0) {
-      throw new SpecInvalidException("Missing extended property: etcd ips");
-    }
 
     // Post createSpec to SwarmClusterCreateTaskService
     Operation operation = dcpClient.post(
@@ -427,6 +384,43 @@ public class ClusterManagerClient {
     return cluster.documentSelfLink;
   }
 
+  private String createSwarmClusterEntity(String projectId,
+                                          ClusterCreateSpec spec,
+                                          ClusterConfigurationService.State clusterConfiguration)
+    throws SpecInvalidException {
+
+    List<String> etcdIps = new ArrayList<>();
+    for (String property : Arrays.asList(EXTENDED_PROPERTY_ETCD_IP1, EXTENDED_PROPERTY_ETCD_IP2,
+        EXTENDED_PROPERTY_ETCD_IP3)) {
+      String etcdIp = spec.getExtendedProperties().get(property);
+      if (etcdIp != null) {
+        etcdIps.add(etcdIp);
+      }
+    }
+
+    if (etcdIps.size() == 0) {
+      throw new SpecInvalidException("Missing extended property: etcd ips");
+    }
+
+    for (String etcdIp : etcdIps) {
+      if (etcdIp != null && !InetAddressValidator.getInstance().isValidInet4Address(etcdIp)) {
+        throw new SpecInvalidException("Invalid extended property: etcd ip: " + etcdIp);
+      }
+    }
+
+    // Assemble the cluster entity
+    ClusterService.State cluster = assembleCommonClusterEntity(
+        ClusterType.SWARM, projectId, spec, clusterConfiguration);
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, serializeIpAddresses(etcdIps));
+
+    // Create the cluster entity
+    apiFeDcpClient.post(
+        ClusterServiceFactory.SELF_LINK,
+        cluster);
+
+    return cluster.documentSelfLink;
+  }
+
   private String serializeIpAddresses(List<String> ipAddresses) {
     StringBuilder sb = new StringBuilder();
     for (String ipAddress : ipAddresses) {
@@ -441,17 +435,6 @@ public class ClusterManagerClient {
     }
 
     return sb.toString();
-  }
-
-  private void addIpAddressToList(List<String> list, Map<String, String> extendedProperties, String propName)
-      throws SpecInvalidException {
-    String ipAddress = extendedProperties.get(propName);
-    if (ipAddress != null) {
-      if (!InetAddressValidator.getInstance().isValidInet4Address(ipAddress)) {
-        throw new SpecInvalidException("Invalid extended property: " + propName + " " + ipAddress);
-      }
-      list.add(ipAddress);
-    }
   }
 
   private Cluster toApiRepresentation(ClusterService.State clusterDocument) {
