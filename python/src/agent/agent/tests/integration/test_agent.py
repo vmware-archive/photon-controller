@@ -158,7 +158,7 @@ class TestAgent(unittest.TestCase, AgentCommonTests):
                 # "/tmp/image/<ds>/<uniquepart>.vmdk".
                 # This simulates an image being present on the agent,
                 # The file is deleted on leaving the context.
-                image_id = f.name[f.name.rfind("/")+1:-5]
+                image_id = f.name[f.name.rfind("/") + 1:-5]
                 self._test_create_vm_with_ephemeral_disks(image_id)
         finally:
             rm_rf(image_dir)

@@ -545,8 +545,8 @@ class Simulator(object):
                 random_host = random.choice(self.hosts.values())
             self.log.append(random_host)
             random_host.transition()
-            sleep_ms = (random.randint(self.sleep_min, self.sleep_max)
-                        / 1000.0)
+            sleep_ms = (random.randint(self.sleep_min, self.sleep_max) /
+                        1000.0)
             time.sleep(sleep_ms)
 
     def clean_up(self):

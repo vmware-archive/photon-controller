@@ -456,7 +456,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
 
     def _generate_new_iso_ds_path(self):
         if (self._remote_iso_file.lower().rfind(".iso") !=
-                len(self._remote_iso_file)-4):
+                len(self._remote_iso_file) - 4):
             raise ValueError()
 
         return "%s-%s.iso" % (self._remote_iso_file[:-4], str(uuid.uuid4()))
@@ -855,7 +855,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         # Only one copy is successful, all others return
         # DESTINATION_ALREADY_EXIST
         assert_that(results["ok"], is_(1))
-        assert_that(results["existed"], is_(concurrency-1))
+        assert_that(results["existed"], is_(concurrency - 1))
 
     def test_force_delete_image(self):
         """
