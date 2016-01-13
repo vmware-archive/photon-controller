@@ -143,6 +143,17 @@ namespace "upgrade" do
   end
 end
 
+desc 'Generates code from Thirft files'
+namespace "install" do
+  task :thrift do |t|
+    `rm -rf thrift`
+    `mkdir -p thrift`
+    Dir["#{File.dirname(__FILE__)}/../../thrift//*.thrift"].each do |file|
+      puts `thrift --gen rb --recurse -out #{File.dirname(__FILE__)}/thrift #{file}`
+    end
+  end
+end
+
 desc 'Clean hosts'
 task :clean_hosts, [:dc_yml] do |t, args|
   host_specs = EsxCloud::HostsImporter.import_file  args[:dc_yml]
