@@ -223,6 +223,32 @@ class AgentConfig(object):
                                      str(self._options))
             self._reboot_required = True
 
+    @locked
+    def set_availability_zone(self, set_availability_zone_req):
+        """
+        set availability zone in agent configuration using the
+        set availability zone request.
+        This supports partial updates and the other properties remain as is.
+        @param set_availability_zone_req: The set availability zone request
+        """
+
+        avail_zone = set_availability_zone_req.availability_zone
+        config_changed = False
+        config_changed |= self._check_and_set_attr(self.AVAILABILITY_ZONE,
+                                                   avail_zone)
+
+        # Persist the updates to the config file.
+        self._persist_config()
+
+        # For simplicity mark for reboot when any configuration changes.
+        if (config_changed):
+            # Notify for reboot.
+            self._logger.info("Agent configuration updated reboot required")
+            if not self.bootstrap_ready:
+                self._logger.warning("Agent not fully configured %s" %
+                                     str(self._options))
+            self._reboot_required = True
+
     @property
     @locked
     def availability_zone(self):

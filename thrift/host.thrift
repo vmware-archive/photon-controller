@@ -1154,4 +1154,7 @@ service Host {
 
   // Method to provision an agent for esxcloud purposes.
   agent.ProvisionResponse provision(1: agent.ProvisionRequest request)
+
+  // Method to set host's availability zone.
+  agent.SetAvailabilityZoneResponse set_availability_zone(1: agent.SetAvailabilityZoneRequest request)
 }
