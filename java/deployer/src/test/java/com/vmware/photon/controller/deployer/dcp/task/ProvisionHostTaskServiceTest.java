@@ -975,6 +975,7 @@ public class ProvisionHostTaskServiceTest {
       hostConfig.setImage_datastore_ids(imageDatastoreIds);
       hostConfig.setCpu_count(4);
       hostConfig.setMemory_mb(8192);
+      hostConfig.setEsx_version("6.0");
 
       HostClientMock hostClientMock = new HostClientMock.Builder()
           .getConfigResultCode(GetConfigResultCode.OK)
@@ -1016,6 +1017,7 @@ public class ProvisionHostTaskServiceTest {
               (datastore) -> DatastoreServiceFactory.SELF_LINK + "/" + datastore.getId()))
           .entrySet().toArray()));
 
+      assertThat(hostState.esxVersion, is("6.0"));
       assertThat(hostState.cpuCount, is(4));
       assertThat(hostState.memoryMb, is(8192));
     }
@@ -1158,6 +1160,7 @@ public class ProvisionHostTaskServiceTest {
       hostConfig.setImage_datastore_ids(imageDatastoreIds);
       hostConfig.setCpu_count(4);
       hostConfig.setMemory_mb(8192);
+      hostConfig.setEsx_version("6.0");
 
       HostClientMock hostClientMock = new HostClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
@@ -1200,6 +1203,7 @@ public class ProvisionHostTaskServiceTest {
               (datastore) -> DatastoreServiceFactory.SELF_LINK + "/" + datastore.getId()))
           .entrySet().toArray()));
 
+      assertThat(hostState.esxVersion, is("6.0"));
       assertThat(hostState.cpuCount, is(4));
       assertThat(hostState.memoryMb, is(8192));
     }

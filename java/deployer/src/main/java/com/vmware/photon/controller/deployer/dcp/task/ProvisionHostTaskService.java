@@ -642,6 +642,10 @@ public class ProvisionHostTaskService extends StatefulService {
       patchState.cpuCount = hostConfig.getCpu_count();
     }
 
+    if (hostConfig.isSetEsx_version()) {
+      patchState.esxVersion = hostConfig.getEsx_version();
+    }
+
     if (hostConfig.isSetMemory_mb()) {
       patchState.memoryMb = hostConfig.getMemory_mb();
     }

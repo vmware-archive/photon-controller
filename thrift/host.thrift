@@ -90,6 +90,7 @@ struct HostConfig {
   10: optional set<string> image_datastore_ids
   11: optional i32 memory_mb
   12: optional i32 cpu_count
+  13: optional string esx_version
 }
 
 struct GetConfigResponse {
