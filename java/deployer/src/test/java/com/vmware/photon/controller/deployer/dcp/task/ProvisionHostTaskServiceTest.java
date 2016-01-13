@@ -66,6 +66,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.io.File;
@@ -1007,7 +1008,7 @@ public class ProvisionHostTaskServiceTest {
           .map((datastore) -> datastore.getId()).toArray()));
       assertThat(hostState.reportedImageDatastores, containsInAnyOrder(datastoreList.stream()
           .map((datastore) -> datastore.getId()).filter((id) -> imageDatastoreIds.contains(id)).toArray()));
-
+      assertEquals(hostState.esxVersion, ProvisionHostTaskService.ESX_VERSION_UNKNOWN);
       assertThat(hostState.datastoreServiceLinks.entrySet(), containsInAnyOrder(datastoreList.stream()
           .collect(Collectors.toMap(
               (datastore) -> datastore.getName(),

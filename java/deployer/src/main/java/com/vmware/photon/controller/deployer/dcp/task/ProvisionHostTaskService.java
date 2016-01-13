@@ -73,6 +73,7 @@ import java.util.concurrent.TimeUnit;
 public class ProvisionHostTaskService extends StatefulService {
 
   public static final String SCRIPT_NAME = "esx-install-agent2";
+  public static final String ESX_VERSION_UNKNOWN = "Unknown";
 
   /**
    * This class defines the state of a {@link ProvisionHostTaskService} task.
@@ -635,6 +636,7 @@ public class ProvisionHostTaskService extends StatefulService {
     patchState.reportedImageDatastores = reportedImageDataStores;
     patchState.reportedNetworks = reportedNetworks;
     patchState.datastoreServiceLinks = datastoreServiceLinks;
+    patchState.esxVersion = ESX_VERSION_UNKNOWN;
 
     if (hostConfig.isSetCpu_count()) {
       patchState.cpuCount = hostConfig.getCpu_count();
