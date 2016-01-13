@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
@@ -28,10 +30,12 @@ import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFac
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.TransferImageResponse;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
@@ -247,6 +251,8 @@ public class ImageHostToHostCopyService extends StatefulService {
       case TRANSFER_IMAGE:
         copyImageHostToHost(current);
         break;
+      case UPDATE_IMAGE_REPLICATION_DOCUMENT:
+        updateImageReplicationServiceDocument(current);
       default:
         throw new IllegalStateException("Un-supported substage" + current.taskInfo.subStage.toString());
     }
@@ -273,8 +279,8 @@ public class ImageHostToHostCopyService extends StatefulService {
           ServiceUtils.logInfo(ImageHostToHostCopyService.this, "TransferImageResponse %s", r);
           switch (r.getResult()) {
             case OK:
-              sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
-              ;
+              sendStageProgressPatch(current, TaskState.TaskStage.STARTED,
+                  TaskState.SubStage.UPDATE_IMAGE_REPLICATION_DOCUMENT);
               break;
             case TRANSFER_IN_PROGRESS:
               throw new ImageTransferInProgressException(r.getError());
@@ -302,6 +308,28 @@ public class ImageHostToHostCopyService extends StatefulService {
     } catch (RpcException | IOException e) {
       failTask(e);
     }
+  }
+
+  /**
+   * Sends post request to ImageReplicationService to create a document with imageId and destination datstore
+   * @param current
+   */
+  private void updateImageReplicationServiceDocument(final State current) {
+
+    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
+      @Override
+      public void handle(Operation operation, Throwable throwable) {
+        sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);;
+      }
+    };
+
+    ImageReplicationService.State postState =
+        buildImageReplicationServiceState(current.image, current.destinationDatastore);
+    Operation copyOperation = Operation
+        .createPost(UriUtils.buildUri(getHost(), ImageReplicationServiceFactory.SELF_LINK))
+        .setBody(postState)
+        .setCompletion(handler);
+    this.sendRequest(copyOperation);
   }
 
   /**
@@ -361,6 +389,21 @@ public class ImageHostToHostCopyService extends StatefulService {
     }
 
     return s;
+  }
+
+  /**
+   * Build a state object for ImageReplicationService to submit a post request to the service
+   *
+   * @param imageId
+   * @param imageDatastoreId
+   * @return
+   */
+  private ImageReplicationService.State buildImageReplicationServiceState(String imageId, String imageDatastoreId) {
+    ImageReplicationService.State imageReplicationService = new ImageReplicationService.State();
+    imageReplicationService.imageId = imageId;
+    imageReplicationService.imageDatastoreId = imageDatastoreId;
+
+    return imageReplicationService;
   }
 
   /**
@@ -517,6 +560,7 @@ public class ImageHostToHostCopyService extends StatefulService {
     public static enum SubStage {
       RETRIEVE_HOSTS,
       TRANSFER_IMAGE,
+      UPDATE_IMAGE_REPLICATION_DOCUMENT
     }
   }
 
