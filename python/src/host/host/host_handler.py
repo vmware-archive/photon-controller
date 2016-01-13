@@ -1845,6 +1845,15 @@ class HostHandler(Host.Iface):
         agent_control_handler = common.services.get(AgentControl.Iface)
         return agent_control_handler.provision(request)
 
+    def set_availability_zone(self, request):
+        """
+        Set availability zone.
+        :type request: SetAvailabilityZoneRequest
+        :rtype: SetAvailabilityZoneResponse
+        """
+        agent_control_handler = common.services.get(AgentControl.Iface)
+        return agent_control_handler.set_availability_zone(request)
+
     @log_request
     @error_handler(ServiceTicketResponse, ServiceTicketResultCode)
     def get_service_ticket(self, request):

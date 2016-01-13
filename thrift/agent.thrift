@@ -173,6 +173,29 @@ struct ProvisionResponse {
   2: optional string error
 }
 
+// Struct describing the setting availability zone of the esx host.
+struct SetAvailabilityZoneRequest {
+  // The availability zone associated with the esx host.
+  1: required string availability_zone
+
+  99: optional tracing.TracingInfo tracing_info
+}
+
+// SetAvailabilityZone result code
+enum SetAvailabilityZoneResultCode {
+  // Setting AvailabilityZone was successful.
+  OK = 0
+
+  // Catch all error
+  SYSTEM_ERROR = 15
+}
+
+// SetAvailabilityZone response
+struct SetAvailabilityZoneResponse {
+  1: required SetAvailabilityZoneResultCode result
+  2: optional string error
+}
+
 // Agent Control service
 service AgentControl {
   // Parent scheduler calls ping() to check if the scheduler is running.
@@ -183,4 +206,7 @@ service AgentControl {
 
   roles.GetSchedulersResponse get_schedulers(1:roles.GetSchedulersRequest request)
   VersionResponse get_version(1: VersionRequest request)
+
+  // Method to set availability zone.
+  SetAvailabilityZoneResponse set_availability_zone(1: SetAvailabilityZoneRequest request)
 }
