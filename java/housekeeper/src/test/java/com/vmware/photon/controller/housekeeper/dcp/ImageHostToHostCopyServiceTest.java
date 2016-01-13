@@ -14,9 +14,12 @@
 package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
@@ -733,6 +736,10 @@ public class ImageHostToHostCopyServiceTest {
 
       cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
+
+      ImageService.State createdImageState = createNewImageEntity();
+      int initialReplicatedDatastoreCount = createdImageState.replicatedImageDatastore;
+      copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       createHostService("datastore0");
       createHostService("datastore1");
 
@@ -742,6 +749,14 @@ public class ImageHostToHostCopyServiceTest {
           copyTask,
           ImageHostToHostCopyService.State.class,
           (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
+
+      //Check Image Service replicatedDatastore counts
+      createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
+      if (code.equals(TransferImageResultCode.OK)) {
+        assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedDatastoreCount + 1));
+      } else {
+        assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedDatastoreCount));
+      }
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
@@ -922,6 +937,36 @@ public class ImageHostToHostCopyServiceTest {
               SystemErrorException.class.toString()
           }
       };
+    }
+
+    private com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State createNewImageEntity()
+        throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
+
+      machine.startFactoryServiceSynchronously(
+          com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.class,
+          com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK);
+
+      com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State state
+          = new com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State();
+      state.name = "image-1";
+      state.replicationType = ImageReplicationType.EAGER;
+      state.state = ImageState.READY;
+      state.totalDatastore = 1;
+
+      Operation op = cloudStoreHelper
+          .createPost(com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a image in cloud store.");
+            }
+          });
+      Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      return result.getBody(ImageService.State.class);
     }
 
     private HostService.State createHostService(String reportedImageDatastore) throws Throwable {

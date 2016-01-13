@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
@@ -276,8 +278,7 @@ public class ImageHostToHostCopyService extends StatefulService {
           ServiceUtils.logInfo(ImageHostToHostCopyService.this, "TransferImageResponse %s", r);
           switch (r.getResult()) {
             case OK:
-              sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
-              ;
+              sendPatchToIncrementImageReplicatedCount(current);
               break;
             case TRANSFER_IN_PROGRESS:
               throw new ImageTransferInProgressException(r.getError());
@@ -305,6 +306,42 @@ public class ImageHostToHostCopyService extends StatefulService {
     } catch (RpcException | IOException e) {
       failTask(e);
     }
+  }
+
+
+  /**
+   * Sends patch to update replicatedImageDatastore in image cloud store entity.
+   *
+   * @param current
+   */
+  private void sendPatchToIncrementImageReplicatedCount(final State current) {
+    try {
+      ImageService.DatastoreCountRequest requestBody = constructDatastoreCountRequest(1);
+      sendRequest(
+          ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+              .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
+              .setBody(requestBody)
+              .setCompletion(
+                  (op, t) -> {
+                    if (t != null) {
+                      ServiceUtils.logWarning(this,
+                          "Could not increment replicatedImageDatastore for image %s by %s: %s",
+                          current.image, requestBody.amount, t);
+                    }
+                    sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
+                  }
+              ));
+    } catch (Exception e) {
+      ServiceUtils.logSevere(this, "Exception thrown while sending patch to image service to increment count: %s",
+          e);
+    }
+  }
+
+  private ImageService.DatastoreCountRequest constructDatastoreCountRequest(int adjustCount) {
+    ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
+    requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_IMAGE_REPLICATION_COUNT;
+    requestBody.amount = adjustCount;
+    return requestBody;
   }
 
   /**
