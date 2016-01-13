@@ -16,6 +16,8 @@ package com.vmware.photon.controller.housekeeper.dcp;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
@@ -316,6 +318,42 @@ public class ImageHostToHostCopyService extends StatefulService {
     }
   }
 
+
+  /**
+   * Sends patch to update replicatedImageDatastore in image cloud store entity.
+   *
+   * @param current
+   */
+  private void sendPatchToIncrementImageReplicatedCount(final State current) {
+    try {
+      ImageService.DatastoreCountRequest requestBody = constructDatastoreCountRequest(1);
+      sendRequest(
+          ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+              .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
+              .setBody(requestBody)
+              .setCompletion(
+                  (op, t) -> {
+                    if (t != null) {
+                      ServiceUtils.logWarning(this,
+                          "Could not increment replicatedImageDatastore for image %s by %s: %s",
+                          current.image, requestBody.amount, t);
+                    }
+                    sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
+                  }
+              ));
+    } catch (Exception e) {
+      ServiceUtils.logSevere(this, "Exception thrown while sending patch to image service to increment count: %s",
+          e);
+    }
+  }
+
+  private ImageService.DatastoreCountRequest constructDatastoreCountRequest(int adjustCount) {
+    ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
+    requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_IMAGE_REPLICATION_COUNT;
+    requestBody.amount = adjustCount;
+    return requestBody;
+  }
+
   /**
    * Sends post request to ImageReplicationService to create a document with imageId and destination datastore.
    * @param current
@@ -328,7 +366,7 @@ public class ImageHostToHostCopyService extends StatefulService {
         if (throwable != null) {
           ServiceUtils.logSevere(ImageHostToHostCopyService.this, throwable);
         }
-        sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
+        sendPatchToIncrementImageReplicatedCount(current);
       }
     };
 
