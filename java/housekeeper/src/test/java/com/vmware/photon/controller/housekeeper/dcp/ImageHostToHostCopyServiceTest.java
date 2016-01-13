@@ -17,11 +17,14 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
@@ -41,7 +44,9 @@ import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.ServiceStats;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.services.common.QueryTask;
 
+import com.google.common.collect.ImmutableMap;
 import org.hamcrest.CoreMatchers;
 import org.mockito.Matchers;
 import org.slf4j.Logger;
@@ -554,6 +559,17 @@ public class ImageHostToHostCopyServiceTest {
               ImageHostToHostCopyService.TaskState.SubStage.TRANSFER_IMAGE},
           {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
               ImageHostToHostCopyService.TaskState.SubStage.TRANSFER_IMAGE,
+              ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.UPDATE_IMAGE_REPLICATION_DOCUMENT},
+          {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.TRANSFER_IMAGE,
+              ImageHostToHostCopyService.TaskState.TaskStage.FINISHED, null},
+          {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.UPDATE_IMAGE_REPLICATION_DOCUMENT,
+              ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.UPDATE_IMAGE_REPLICATION_DOCUMENT},
+          {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.UPDATE_IMAGE_REPLICATION_DOCUMENT,
               ImageHostToHostCopyService.TaskState.TaskStage.FINISHED, null},
           {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
               ImageHostToHostCopyService.TaskState.SubStage.TRANSFER_IMAGE,
@@ -735,6 +751,19 @@ public class ImageHostToHostCopyServiceTest {
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       createHostService("datastore0");
       createHostService("datastore1");
+      machine.startFactoryServiceSynchronously(ImageReplicationServiceFactory.class,
+          ImageReplicationServiceFactory.SELF_LINK);
+
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put("imageId", copyTask.image);
+      termsBuilder.put("imageDatastoreId", copyTask.destinationDatastore);
+
+      QueryTask.QuerySpecification querySpec = QueryTaskUtils.buildQuerySpec(ImageReplicationService.State.class,
+          termsBuilder.build());
+      querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+      QueryTask beforeQuery = QueryTask.create(querySpec).setDirect(true);
+
+      assertThat(machine.sendQueryAndWait(beforeQuery).results.documentLinks.size(), is(0));
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -743,12 +772,16 @@ public class ImageHostToHostCopyServiceTest {
           ImageHostToHostCopyService.State.class,
           (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
+
       // Check response.
       assertThat(response.image, is(copyTask.image));
       assertThat(response.sourceDatastore, is(copyTask.sourceDatastore));
       assertThat(response.destinationDatastore, is(copyTask.destinationDatastore));
       assertThat(response.host, notNullValue());
       assertThat(response.destinationHost, notNullValue());
+
+      QueryTask afterQuery = QueryTask.create(querySpec).setDirect(true);
+      assertThat(machine.sendQueryAndWait(afterQuery).results.documentLinks.size(), is(1));
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
