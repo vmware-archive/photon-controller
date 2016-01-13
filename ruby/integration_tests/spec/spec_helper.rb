@@ -16,6 +16,8 @@ require "socket"
 
 gemfile = File.expand_path("../../Gemfile", __FILE__)
 
+$:.unshift "#{File.dirname(__FILE__)}/../thrift"
+
 if File.exists?(gemfile)
   ENV["BUNDLE_GEMFILE"] = gemfile
   require "rubygems"

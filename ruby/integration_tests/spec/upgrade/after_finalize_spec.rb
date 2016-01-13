@@ -9,9 +9,13 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED. See the License for the
 # specific language governing permissions and limitations under the License.
 
-require "spec_helper"
+require 'spec_helper'
+
 require 'uri'
-require_relative "../../lib/dcp/cloud_store/cloud_store_client"
+require 'agent_control'
+
+require 'dcp/cloud_store/cloud_store_client'
+require 'thrift/thrift_helper'
 
 describe "migrate finalize", upgrade: true do
   before (:all) {
@@ -66,6 +70,19 @@ describe "migrate finalize", upgrade: true do
         destination_json = destination_cloud_store.get v
         destination_set = parse_id_set(destination_json)
         expect(destination_set.superset?(source_set)).to eq true
+      end
+    end
+  end
+
+  describe "agent roll out" do
+    it "should have rolled out the new agent to all hosts" do
+      client.get_deployment_hosts(destination_deployment.id).items.each do |host|
+        protocol = Photon::ThriftHelper.get_protocol(host.address, 8835, "AgentControl")
+        agent_client = AgentControl::Client.new(protocol)
+
+        req = VersionRequest.new
+        res = agent_client.get_version req
+        expect(res.version).to eq "0.1.2"
       end
     end
   end
