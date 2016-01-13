@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -631,6 +632,7 @@ public class ProvisionHostTaskService extends StatefulService {
     }
 
     HostService.State patchState = new HostService.State();
+    patchState.state = HostState.READY;
     patchState.reportedDatastores = reportedDataStores;
     patchState.reportedImageDatastores = reportedImageDataStores;
     patchState.reportedNetworks = reportedNetworks;

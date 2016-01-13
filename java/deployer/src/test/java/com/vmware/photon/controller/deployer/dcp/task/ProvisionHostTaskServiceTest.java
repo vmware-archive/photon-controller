@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
@@ -549,7 +550,7 @@ public class ProvisionHostTaskServiceTest {
       startState.controlFlags = ControlFlags.CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION;
       startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreEnvironment).documentSelfLink;
       startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
-          Collections.singleton(UsageTag.MGMT.name())).documentSelfLink;
+          Collections.singleton(UsageTag.MGMT.name()), HostState.NOT_PROVISIONED).documentSelfLink;
     }
 
     @BeforeMethod
@@ -665,7 +666,7 @@ public class ProvisionHostTaskServiceTest {
       startState.controlFlags = ControlFlags.CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION;
       startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreEnvironment).documentSelfLink;
       startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
-          Collections.singleton(UsageTag.MGMT.name())).documentSelfLink;
+          Collections.singleton(UsageTag.MGMT.name()), HostState.NOT_PROVISIONED).documentSelfLink;
       startState.maximumPollCount = 3;
       startState.pollInterval = 10;
     }
@@ -813,7 +814,7 @@ public class ProvisionHostTaskServiceTest {
       startState.controlFlags = ControlFlags.CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION;
       startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreEnvironment).documentSelfLink;
       startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
-          Collections.singleton(UsageTag.MGMT.name())).documentSelfLink;
+          Collections.singleton(UsageTag.MGMT.name()), HostState.NOT_PROVISIONED).documentSelfLink;
       startState.maximumPollCount = 3;
       startState.pollInterval = 10;
     }
@@ -923,7 +924,7 @@ public class ProvisionHostTaskServiceTest {
       assertNoServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
       assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
       startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
-          Collections.singleton(UsageTag.MGMT.name())).documentSelfLink;
+          Collections.singleton(UsageTag.MGMT.name()), HostState.NOT_PROVISIONED).documentSelfLink;
     }
 
     @AfterMethod
@@ -1003,6 +1004,7 @@ public class ProvisionHostTaskServiceTest {
       HostService.State hostState = cloudStoreEnvironment.getServiceState(startState.hostServiceLink,
           HostService.State.class);
 
+      assertThat(hostState.state, is(HostState.READY));
       assertThat(hostState.reportedDatastores, containsInAnyOrder(datastoreList.stream()
           .map((datastore) -> datastore.getId()).toArray()));
       assertThat(hostState.reportedImageDatastores, containsInAnyOrder(datastoreList.stream()
@@ -1118,7 +1120,7 @@ public class ProvisionHostTaskServiceTest {
       assertNoServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
       assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
       startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
-          Collections.singleton(UsageTag.MGMT.name())).documentSelfLink;
+          Collections.singleton(UsageTag.MGMT.name()), HostState.NOT_PROVISIONED).documentSelfLink;
     }
 
     @AfterMethod
@@ -1186,6 +1188,7 @@ public class ProvisionHostTaskServiceTest {
       HostService.State hostState = cloudStoreEnvironment.getServiceState(startState.hostServiceLink,
           HostService.State.class);
 
+      assertThat(hostState.state, is(HostState.READY));
       assertThat(hostState.reportedDatastores, containsInAnyOrder(datastoreList.stream()
           .map((datastore) -> datastore.getId()).toArray()));
       assertThat(hostState.reportedImageDatastores, containsInAnyOrder(datastoreList.stream()
