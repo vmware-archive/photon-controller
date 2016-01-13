@@ -27,6 +27,7 @@ from common.mode import Mode
 from common.service_name import ServiceName
 from common.state import State
 from gen.agent.ttypes import ProvisionRequest
+from gen.agent.ttypes import SetAvailabilityZoneRequest
 from gen.common.ttypes import ServerAddress
 from gen.resource.ttypes import ImageDatastore
 from host.hypervisor.fake.hypervisor import FakeHypervisor
@@ -215,6 +216,70 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.chairman_list, equal_to([]))
         self.assertFalse(self.agent.bootstrap_ready)
         self.assertEqual(self.agent.memory_overcommit, 1.0)
+
+    def test_agent_config_set_availability_zone(self):
+        """ Test that updating the config using the RPC struct works """
+        self.agent._parse_options(["--config-path", self.agent_conf_dir,
+                                   "--availability-zone", "test",
+                                   "--hostname", "localhost",
+                                   "--port", "1234",
+                                   "--datastores", "ds1, ds2"])
+        expected_image_ds = [{"name": "ds3", "used_for_vms": True}]
+
+        # Without chairman config we can't be ready
+        self.assertFalse(self.agent.bootstrap_ready)
+        self.assertTrue(self.agent.provision_ready)
+        self.assertFalse(self.agent.reboot_required)
+
+        req = ProvisionRequest()
+        req.availability_zone = "test1"
+        req.datastores = ["ds3", "ds4"]
+        req.networks = ["Public"]
+        req.memory_overcommit = 1.5
+        req.image_datastores = set([ImageDatastore("ds3", True)])
+        addr = ServerAddress(host="localhost", port=2345)
+        req.chairman_server = [ServerAddress("h1", 13000),
+                               ServerAddress("h2", 13000)]
+        req.address = addr
+        req.host_id = "host1"
+        self.agent.update_config(req)
+
+        assert_that(self.agent.availability_zone, equal_to("test1"))
+        assert_that(self.agent.hostname, equal_to("localhost"))
+        assert_that(self.agent.host_port, equal_to(2345))
+        assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
+        assert_that(self.agent.networks, equal_to(["Public"]))
+        assert_that(self.agent.chairman_list,
+                    equal_to([ServerAddress("h1", 13000),
+                              ServerAddress("h2", 13000)]))
+        assert_that(self.agent.memory_overcommit,
+                    equal_to(1.5))
+        assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
+        assert_that(self.agent.host_id, equal_to("host1"))
+
+        self.assertTrue(self.agent.bootstrap_ready)
+        self.assertTrue(self.agent.reboot_required)
+
+        # Verify we are able to update availability zone only.
+        setZone = SetAvailabilityZoneRequest()
+        setZone.availability_zone = "test2"
+
+        self.agent.set_availability_zone(setZone)
+        assert_that(self.agent.availability_zone, equal_to("test2"))
+        assert_that(self.agent.hostname, equal_to("localhost"))
+        assert_that(self.agent.host_port, equal_to(2345))
+        assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
+        assert_that(self.agent.networks, equal_to(["Public"]))
+        assert_that(self.agent.chairman_list,
+                    equal_to([ServerAddress("h1", 13000),
+                              ServerAddress("h2", 13000)]))
+        assert_that(self.agent.memory_overcommit,
+                    equal_to(1.5))
+        assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
+        assert_that(self.agent.host_id, equal_to("host1"))
+
+        self.assertTrue(self.agent.bootstrap_ready)
+        self.assertTrue(self.agent.reboot_required)
 
     def test_reboot_required(self):
         """
