@@ -26,25 +26,22 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
-import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.TransferImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
-import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.ServiceStats;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -54,6 +51,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -68,7 +66,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 /**
  * Tests {@link ImageSeederService}.
@@ -378,7 +375,7 @@ public class ImageSeederServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = spy(new ImageSeederService());
-      host = TestHost.create(mock(HostClient.class), mock(ZookeeperHostMonitor.class));
+      host = TestHost.create(mock(HostClient.class), null);
     }
 
     @AfterMethod
@@ -707,25 +704,15 @@ public class ImageSeederServiceTest {
           ImageSeederService.State.class,
           (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
-      int numberOfImageDatastores = ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT;
-
-      // check that services were created
-      QueryTask query = QueryTask.create(
-          QueryTaskUtils.buildChildServiceQuerySpec(
-              response.documentSelfLink,
-              ImageHostToHostCopyService.State.class)
-      )
-          .setDirect(true);
-
-      QueryTask queryResponse = host.waitForQuery(query,
-          new Predicate<QueryTask>() {
-            @Override
-            public boolean test(QueryTask queryTask) {
-              return queryTask.results.documentLinks.size() == numberOfImageDatastores - 1;
-            }
-          }
+      // Check stats.
+      ServiceStats stats = machine.getOwnerServiceStats(response);
+      assertThat(stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
+          greaterThanOrEqualTo(
+              1.0 +       // START:TRIGGER_DELETES
+                  1.0 +   // START:AWAIT_COMPLETION
+                  1.0     // FINISHED
+          )
       );
-      assertThat(queryResponse.results.documentLinks.size(), is(numberOfImageDatastores - 1));
     }
 
     @Test(dataProvider = "hostCount")
