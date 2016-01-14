@@ -139,6 +139,13 @@ public class AddManagementHostWorkflowService extends StatefulService {
     public Integer taskPollDelay;
 
     /**
+     * This value represents the polling interval override value to use for child tasks.
+     */
+    @DefaultInteger(value = 3000)
+    @Immutable
+    public Integer childPollInterval;
+
+    /**
      * This value represents the link to the {@link DeploymentService.State} entity.
      */
     @NotNull
@@ -931,6 +938,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     CreateManagementVmWorkflowService.State state = new CreateManagementVmWorkflowService.State();
     state.vmServiceLink = vmServiceLink;
     state.ntpEndpoint = deploymentService.ntpEndpoint;
+    state.childPollInterval = currentState.childPollInterval;
     return state;
   }
 
