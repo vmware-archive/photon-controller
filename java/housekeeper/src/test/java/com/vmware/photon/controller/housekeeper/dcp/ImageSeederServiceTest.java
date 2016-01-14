@@ -88,7 +88,7 @@ public class ImageSeederServiceTest {
     state.queryPollDelay = 50;
 
     state.image = "image-id";
-    state.sourceImageDatastore = "source-image-datastore-id";
+    state.sourceImageDatastore = "source-image-datastore-name-1";
 
     return state;
   }
@@ -461,7 +461,30 @@ public class ImageSeederServiceTest {
       }
 
       ImageSeederService.State savedState = host.getServiceState(ImageSeederService.State.class);
-      assertThat(savedState.sourceImageDatastore, is("source-image-datastore-id"));
+      assertThat(savedState.sourceImageDatastore, is("source-image-datastore-name-1"));
+    }
+
+    /**
+     * Tests that a patch that tries to update the sourceImageDatastoreId field succeeds.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testSuccessPatchUpdateSourceImageDatastoreIdField() throws Throwable {
+      host.startServiceSynchronously(service, buildValidStartupState());
+
+      ImageSeederService.State patchState = new ImageSeederService.State();
+      patchState.sourceImageDatastoreId = "new-sourceImageDatastore-id";
+
+      Operation patch = Operation
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState);
+
+      Operation resultOp = host.sendRequestAndWait(patch);
+      assertThat(resultOp.getStatusCode(), is(200));
+
+      ImageSeederService.State savedState = host.getServiceState(ImageSeederService.State.class);
+      assertThat(savedState.sourceImageDatastoreId, is("new-sourceImageDatastore-id"));
     }
 
     /**
@@ -695,7 +718,7 @@ public class ImageSeederServiceTest {
       createDatastoreService(imageDatastores);
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       Datastore oneDatastore = imageDatastores.iterator().next();
-      newImageSeeder.sourceImageDatastore = oneDatastore.getId();
+      newImageSeeder.sourceImageDatastore = oneDatastore.getName();
 
       //Call Service.
       ImageSeederService.State response = machine.callServiceAndWaitForState(
@@ -725,7 +748,7 @@ public class ImageSeederServiceTest {
       createHostService(imageDatastores);
       createDatastoreService(imageDatastores);
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-      newImageSeeder.sourceImageDatastore = imageDatastores.iterator().next().getId();
+      newImageSeeder.sourceImageDatastore = imageDatastores.iterator().next().getName();
       //Call Service.
       ImageSeederService.State response = machine.callServiceAndWaitForState(ImageSeederServiceFactory
               .SELF_LINK, newImageSeeder,
