@@ -117,29 +117,15 @@ public class SchedulerManager {
     }
 
     /*
-     * Collect the id is a set (for looping)
-     * and the ChildInfo into a map (for lookup)
-     */
-    Set<String> childSchedulerIds = new HashSet<>();
-    Map<String, ChildInfo> childSchedulersMap = new HashMap<>();
-
-    for (ChildInfo childScheduler : childSchedulers) {
-      String id = childScheduler.getId();
-      childSchedulerIds.add(id);
-      childSchedulersMap.put(id, childScheduler);
-    }
-
-    /*
      * Create a new map for the new configuration.
      */
     Map<String, ManagedScheduler> newChildren = new ConcurrentHashMap<>();
-    for (String schedulerId : childSchedulerIds) {
-      ChildInfo childScheduler = childSchedulersMap.get(schedulerId);
+    for (ChildInfo childScheduler : childSchedulers) {
       InetSocketAddress address = InetSocketAddress.createUnresolved(
           childScheduler.getAddress(),
           childScheduler.getPort());
-      ManagedScheduler managedScheduler = schedulerFactory.create(schedulerId, address,
-              childScheduler.getOwner_host());
+      ManagedScheduler managedScheduler = schedulerFactory.create(
+          childScheduler.getId(), address, childScheduler.getOwner_host());
       managedScheduler.setResources(childScheduler);
       newChildren.put(childScheduler.getOwner_host(), managedScheduler);
     }
