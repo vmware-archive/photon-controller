@@ -30,6 +30,7 @@ import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.testng.annotations.AfterClass;
@@ -40,6 +41,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.anyString;
@@ -52,6 +54,7 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.util.EnumSet;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -449,13 +452,16 @@ public class WaitForDockerTaskServiceTest {
       doReturn("Docker info").when(dockerProvisioner).getInfo();
       startTestEnvironment();
 
+      Stopwatch timer = Stopwatch.createStarted();
       WaitForDockerTaskService.State finalState = testEnvironment.callServiceAndWaitForState(
           WaitForDockerTaskFactoryService.SELF_LINK,
           startState,
           WaitForDockerTaskService.State.class,
           (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+      timer.stop();
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
+      assertThat("timer", timer.elapsed(TimeUnit.MILLISECONDS), greaterThan(Long.valueOf(600)));
     }
 
     @Test
