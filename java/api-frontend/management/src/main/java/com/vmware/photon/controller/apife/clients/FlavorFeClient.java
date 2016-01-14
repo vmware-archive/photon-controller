@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -62,7 +63,12 @@ public class FlavorFeClient {
     return task;
   }
 
-  public ResourceList<Flavor> list(Optional<String> name, Optional<String> kind) throws ExternalException {
-    return new ResourceList<>(flavorBackend.filter(name, kind));
+  public ResourceList<Flavor> list(Optional<String> name, Optional<String> kind, Optional<Integer> pageSize)
+          throws ExternalException {
+    return flavorBackend.filter(name, kind, pageSize);
+  }
+
+  public ResourceList<Flavor> getFlavorsPage(String pageLink) throws PageExpiredException{
+    return flavorBackend.getFlavorsPage(pageLink);
   }
 }
