@@ -134,6 +134,14 @@ public class DeploymentWorkflowService extends StatefulService {
     public Integer taskPollDelay;
 
     /**
+     * This value represents the override value to use for the pollInterval field
+     * in child tasks.
+     */
+    @DefaultInteger(value = 3000)
+    @Immutable
+    public Integer childPollInterval;
+
+    /**
      * This value represents the link to the {@link DeploymentService.State} entity.
      */
     @WriteOnce
@@ -396,6 +404,7 @@ public class DeploymentWorkflowService extends StatefulService {
         new AddManagementHostWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.managementVmImageFile = currentState.managementVmImageFile;
+    startState.childPollInterval = currentState.childPollInterval;
     startState.isNewDeployment = true;
 
     TaskUtils.startTaskAsync(
@@ -468,6 +477,7 @@ public class DeploymentWorkflowService extends StatefulService {
     startState.isAuthEnabled = deploymentService.oAuthEnabled;
     startState.taskPollDelay = currentState.taskPollDelay;
     startState.ntpEndpoint = deploymentService.ntpEndpoint;
+    startState.childPollInterval = currentState.childPollInterval;
 
     TaskUtils.startTaskAsync(
         this,
