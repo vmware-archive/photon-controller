@@ -43,6 +43,8 @@ public class ImageEntity extends BaseEntity implements Named {
 
   private Integer replicatedDatastore;
 
+  private Integer replicatedImageDatastore;
+
   private List<ImageSettingsEntity> imageSettings = new ArrayList<>();
 
   private ImageState state;
@@ -113,6 +115,14 @@ public class ImageEntity extends BaseEntity implements Named {
     this.replicatedDatastore = replicatedDatastore;
   }
 
+  public Integer getReplicatedImageDatastore() {
+    return replicatedImageDatastore;
+  }
+
+  public void setReplicatedImageDatastore(Integer replicatedImageDatastore) {
+    this.replicatedImageDatastore = replicatedImageDatastore;
+  }
+
   public Integer getTotalDatastore() {
     return totalDatastore;
   }
@@ -149,7 +159,8 @@ public class ImageEntity extends BaseEntity implements Named {
         .add("size", size)
         .add("totalDatastore", totalDatastore)
         .add("totalImageDatastore", totalImageDatastore)
-        .add("replicatedDatastore", replicatedDatastore);
+        .add("replicatedDatastore", replicatedDatastore)
+        .add("replicatedImageDatastore", replicatedImageDatastore);
   }
 
 }

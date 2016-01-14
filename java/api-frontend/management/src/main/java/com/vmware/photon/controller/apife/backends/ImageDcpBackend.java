@@ -301,6 +301,7 @@ public class ImageDcpBackend implements ImageBackend {
     imageEntity.setTotalDatastore(imageState.totalDatastore);
     imageEntity.setTotalImageDatastore(imageState.totalImageDatastore);
     imageEntity.setReplicatedDatastore(imageState.replicatedDatastore);
+    imageEntity.setReplicatedImageDatastore(imageState.replicatedImageDatastore);
 
     List<ImageSettingsEntity> imageSettingsEntityList = new ArrayList<>();
 
@@ -404,6 +405,13 @@ public class ImageDcpBackend implements ImageBackend {
       image.setReplicationProgress(replicatedDatastoreRatio);
     }
 
+    if (imageEntity.getTotalImageDatastore() != null &&
+        imageEntity.getReplicatedImageDatastore() != null &&
+        imageEntity.getTotalImageDatastore() != 0) {
+      String replicatedImageDatastoreRatio =
+          (imageEntity.getReplicatedImageDatastore() * 100.00 / imageEntity.getTotalImageDatastore()) + "%";
+      image.setSeedingProgress(replicatedImageDatastoreRatio);
+    }
 
     return image;
   }
