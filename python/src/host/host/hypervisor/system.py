@@ -74,3 +74,11 @@ class System(object):
         :rtype: int
         """
         pass
+
+    @abc.abstractmethod
+    def host_version(self):
+        """Version of the host.
+
+        :rtype: string
+        """
+        pass

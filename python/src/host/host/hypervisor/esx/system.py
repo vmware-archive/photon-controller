@@ -38,6 +38,7 @@ class EsxSystem(System):
         self._pending_datastore_updates = {}
         self._num_physical_cpus = None
         self._total_vmusable_memory_mb = None
+        self._host_version = None
 
     def total_vmusable_memory_mb(self):
         if self._total_vmusable_memory_mb is None:
@@ -109,6 +110,12 @@ class EsxSystem(System):
             # Hostd has values in KB.
             return host_stats['mem.consumed'] / 1024
         return None
+
+    def host_version(self):
+        if self._host_version is None:
+            self._host_version = self._vim_client.host_version
+
+        return self._host_version
 
 
 class CacheEntry(object):

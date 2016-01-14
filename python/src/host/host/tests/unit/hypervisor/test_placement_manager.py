@@ -777,9 +777,10 @@ class PMBuilder(object):
                  image_ds='image_datastore', mem_overcommit=1.0, ds_map=None,
                  ds_with_image=None, cpu_overcommit=None, im_ds_for_vm=False,
                  image_size=100*1024*1024, ds_name_id_map=None,
-                 vm_networks=[]):
+                 vm_networks=[], host_version="version1"):
         self._logger = logging.getLogger(__name__)
         self.total_mem = total_mem
+        self.host_version = host_version
         self.image_id = image_id
         self.image_ds = image_ds
         self.mem_overcommit = mem_overcommit
@@ -828,6 +829,8 @@ class PMBuilder(object):
         hypervisor.system = MagicMock()
         hypervisor.system.total_vmusable_memory_mb.return_value = \
             self.total_mem
+        hypervisor.system.host_version.return_value = \
+            self.host_version
         hypervisor.system.num_physical_cpus.return_value = 1
 
         hypervisor.image_manager = MagicMock()
