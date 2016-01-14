@@ -301,6 +301,7 @@ class HostHandler(Host.Iface):
 
         config.memory_mb = self._hypervisor.system.total_vmusable_memory_mb()
         config.cpu_count = self._hypervisor.system.num_physical_cpus()
+        config.esx_version = self._hypervisor.system.host_version()
         response.hostConfig = config
         return response
 

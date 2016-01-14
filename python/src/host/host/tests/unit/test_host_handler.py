@@ -154,6 +154,7 @@ class HostHandlerTestCase(unittest.TestCase):
         self._config.availability_zone_id = "Fake_zone"
         self._config.hostname = "localhost"
         self._config.host_port = 1234
+        self._config.host_version = "6.0"
         self._config.reboot_required = False
         self._config.image_datastores = []
         common.services.register(ServiceName.AGENT_CONFIG, self._config)
@@ -230,6 +231,7 @@ class HostHandlerTestCase(unittest.TestCase):
         self._config.image_datastores = [{"name": image_ds,
                                           "used_for_vms": True}]
         self._config.management_only = True
+        self._config.esx_version = "6.0"
         self._config.reboot_required = False
         self._config.host_id = stable_uuid("host_id")
         common.services.register(ServiceName.AGENT_CONFIG, self._config)
@@ -239,6 +241,7 @@ class HostHandlerTestCase(unittest.TestCase):
         config_response = handler.get_host_config(GetConfigRequest())
         host_config = config_response.hostConfig
         assert_that(host_config.agent_id, equal_to(self._config.host_id))
+        assert_that(host_config.esx_version, equal_to(self._config.esx_version))
         assert_that(len(host_config.datastores), equal_to(1))
         assert_that(host_config.datastores[0].id,
                     equal_to(stable_uuid(image_ds)))
