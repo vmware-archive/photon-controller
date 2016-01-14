@@ -88,7 +88,7 @@ public class ImageSeederServiceTest {
     state.queryPollDelay = 50;
 
     state.image = "image-id";
-    state.sourceImageDatastore = "source-image-datastore-id";
+    state.sourceImageDatastore = "source-image-datastore-name-1";
 
     return state;
   }
@@ -695,7 +695,7 @@ public class ImageSeederServiceTest {
       createDatastoreService(imageDatastores);
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       Datastore oneDatastore = imageDatastores.iterator().next();
-      newImageSeeder.sourceImageDatastore = oneDatastore.getId();
+      newImageSeeder.sourceImageDatastore = oneDatastore.getName();
 
       //Call Service.
       ImageSeederService.State response = machine.callServiceAndWaitForState(
@@ -725,7 +725,7 @@ public class ImageSeederServiceTest {
       createHostService(imageDatastores);
       createDatastoreService(imageDatastores);
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-      newImageSeeder.sourceImageDatastore = imageDatastores.iterator().next().getId();
+      newImageSeeder.sourceImageDatastore = imageDatastores.iterator().next().getName();
       //Call Service.
       ImageSeederService.State response = machine.callServiceAndWaitForState(ImageSeederServiceFactory
               .SELF_LINK, newImageSeeder,
