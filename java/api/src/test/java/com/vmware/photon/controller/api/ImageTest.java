@@ -53,6 +53,7 @@ public class ImageTest {
     image.setSize(100L);
     image.setReplicationType(ImageReplicationType.EAGER);
     image.setReplicationProgress("50%");
+    image.setSeedingProgress("40%");
     image.setSettings(imageSettings);
 
     MatcherAssert.assertThat(JsonHelpers.asJson(image),

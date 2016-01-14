@@ -7,6 +7,7 @@
     "size": 100,
     "replicationType": "EAGER",
     "replicationProgress": "50%",
+    "seedingProgress": "40%",
     "tags": [],
     "settings": [
         {

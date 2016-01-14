@@ -149,8 +149,9 @@ public class ImageDcpBackendTest {
     imageServiceState.replicationType = ImageReplicationType.EAGER;
     imageServiceState.size = imageSize;
     imageServiceState.totalDatastore = 10;
-    imageServiceState.totalImageDatastore = 7;
+    imageServiceState.totalImageDatastore = 8;
     imageServiceState.replicatedDatastore = 5;
+    imageServiceState.replicatedImageDatastore = 2;
     com.vmware.xenon.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
     ImageService.State createdState = result.getBody(ImageService.State.class);
     return ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);
@@ -439,7 +440,7 @@ public class ImageDcpBackendTest {
       String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, originalImageSize);
       ImageEntity imageEntity = imageBackend.findById(imageId);
       assertThat(imageEntity.getTotalDatastore(), is(10));
-      assertThat(imageEntity.getTotalImageDatastore(), is(7));
+      assertThat(imageEntity.getTotalImageDatastore(), is(8));
       assertThat(imageEntity.getReplicatedDatastore(), is(5));
 
       imageBackend.updateSize(imageEntity, newImageSize);

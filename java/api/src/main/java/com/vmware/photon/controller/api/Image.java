@@ -58,6 +58,10 @@ public class Image extends VisibleModel {
   @ApiModelProperty(value = "Ratio of datastores in the systems that have this image copy", required = true)
   private String replicationProgress;
 
+  @JsonProperty
+  @ApiModelProperty(value = "Ratio of image datastores in the systems that have this image copy", required = true)
+  private String seedingProgress;
+
   @Override
   public String getKind() {
     return kind;
@@ -101,6 +105,14 @@ public class Image extends VisibleModel {
 
   public void setReplicationProgress(String replicationProgress) {
     this.replicationProgress = replicationProgress;
+  }
+
+  public String getSeedingProgress() {
+    return seedingProgress;
+  }
+
+  public void setSeedingProgress(String seedingProgress) {
+    this.seedingProgress = seedingProgress;
   }
 
   @Override
