@@ -68,8 +68,8 @@ public class FlavorTasksResourceTest extends ResourceTest {
 
   @Override
   protected void setUpResources() {
-    paginationConfig.setDefaultPageSize(10);
-    paginationConfig.setMaxPageSize(100);
+    paginationConfig.setDefaultPageSize(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE);
+    paginationConfig.setMaxPageSize(PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
 
     addResource(new FlavorTasksResource(client, paginationConfig));
   }
@@ -81,7 +81,8 @@ public class FlavorTasksResourceTest extends ResourceTest {
     task1.setId(taskId1);
     task2.setId(taskId2);
 
-    when(client.getFlavorTasks(flavorId, Optional.<String>absent(), Optional.<Integer>absent()))
+    when(client.getFlavorTasks(flavorId, Optional.<String>absent(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
         .thenReturn(new ResourceList<Task>(ImmutableList.of(task1, task2), null, null));
     when(client.getFlavorTasks(flavorId, Optional.<String>absent(), Optional.of(1)))
         .thenReturn(new ResourceList<Task>(ImmutableList.of(task1), UUID.randomUUID().toString(), null));
@@ -206,7 +207,7 @@ public class FlavorTasksResourceTest extends ResourceTest {
   }
 
   private void verifyPageLinks(ResourceList<Task> resourceList) {
-    String expectedPrefix = FlavorsResourceRoutes.API + "?pageLink=";
+    String expectedPrefix = TaskResourceRoutes.API + "?pageLink=";
 
     if (resourceList.getNextPageLink() != null) {
       assertThat(resourceList.getNextPageLink().startsWith(expectedPrefix), is(true));
