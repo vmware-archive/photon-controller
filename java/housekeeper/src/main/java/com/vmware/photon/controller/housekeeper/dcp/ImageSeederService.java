@@ -586,22 +586,6 @@ public class ImageSeederService extends StatefulService {
   }
 
   /**
-   * Triggers a query task with the spec passed as parameters.
-   *
-   * @param spec
-   */
-  private void sendQuery(QueryTask.QuerySpecification spec, Operation.CompletionHandler handler) {
-    QueryTask task = QueryTask.create(spec)
-        .setDirect(true);
-
-    Operation queryPost = Operation
-        .createPost(UriUtils.buildUri(getHost(), LuceneQueryTaskFactoryService.SELF_LINK))
-        .setBody(task)
-        .setCompletion(handler);
-    sendRequest(queryPost);
-  }
-
-  /**
    * Moves the service into the FAILED state.
    *
    * @param e
