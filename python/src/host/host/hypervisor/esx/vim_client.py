@@ -336,6 +336,11 @@ class VimClient(object):
 
     @property
     @hostd_error_handler
+    def host_version(self):
+        return self.host_system.config.product.version
+
+    @property
+    @hostd_error_handler
     def search_index(self):
         """
         Reference to the inventory search index.
