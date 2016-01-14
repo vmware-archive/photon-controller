@@ -28,6 +28,7 @@ describe EsxCloud::Image do
         "size" => 1234,
         "replicationType" => "EAGER",
         "replicationProgress" => "50%",
+        "seedingProgress" => "40%",
         "settings" => [
             {
                 "name" => 'property-name1',
@@ -49,6 +50,7 @@ describe EsxCloud::Image do
       image.size.should == 1234
       image.replication.should == "EAGER"
       image.replication_progress.should == "50%"
+      image.seeding_progress.should == "40%"
       image.settings.size.should == 2
       image.settings[0]['name'].should == 'property-name1'
       image.settings[0]['defaultValue'].should == 'property-value1'

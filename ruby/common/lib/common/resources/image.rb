@@ -12,7 +12,7 @@
 module EsxCloud
   class Image
 
-    attr_accessor :id, :name, :state, :size, :replication, :replication_progress, :settings
+    attr_accessor :id, :name, :state, :size, :replication, :replication_progress, :seeding_progress, :settings
 
     # @param [String] path
     # @param [String] name image name
@@ -65,7 +65,7 @@ module EsxCloud
       end
 
       new(hash["id"], hash["name"], hash["state"], hash["size"], hash["replicationType"], hash["replicationProgress"],
-          hash["settings"])
+          hash["seedingProgress"], hash["settings"])
     end
 
     # @return [Boolean]
@@ -77,13 +77,14 @@ module EsxCloud
     # @param [String] name
     # @param [String] state
     # @param [Integer] size
-    def initialize(id, name, state, size, replication, replication_progress, settings)
+    def initialize(id, name, state, size, replication, replication_progress, seeding_progress, settings)
       @id = id
       @name = name
       @state = state
       @size = size
       @replication = replication
       @replication_progress = replication_progress
+      @seeding_progress = seeding_progress
       @settings = settings
     end
 
@@ -94,6 +95,7 @@ module EsxCloud
       @size == other.size &&
       @replication == other.replication &&
       @replication_progress == other.replication_progress &&
+      @seeding_progress == other.seeding_progress &&
       @settings == other.settings
     end
 

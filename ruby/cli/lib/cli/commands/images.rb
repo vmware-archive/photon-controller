@@ -78,6 +78,7 @@ module EsxCloud::Cli
         puts "  Size: #{image.size} Byte(s)"
         puts "  Image Replication Type: #{image.replication}"
         puts "  Image Replication Progress: #{image.replication_progress}"
+        puts "  Image Seeding Progress: #{image.seeding_progress}"
         puts "  Settings:"
         image.settings.each do |setting|
           puts "    #{setting['name']} : #{setting['defaultValue']}"
