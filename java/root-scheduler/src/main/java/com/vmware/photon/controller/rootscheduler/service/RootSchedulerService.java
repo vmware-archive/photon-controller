@@ -151,7 +151,7 @@ public class RootSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     boolean zkConnected = zkClient.getZookeeperClient().isConnected();
 
     if (!zkConnected) {
-      response.setType((StatusType.ERROR));
+      response.setType(StatusType.ERROR);
       logger.info("Returning Root Scheduler status {}", response);
       return response;
     }
