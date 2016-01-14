@@ -69,8 +69,8 @@ public class HostTasksResourceTest extends ResourceTest {
 
   @Override
   protected void setUpResources() {
-    paginationConfig.setDefaultPageSize(10);
-    paginationConfig.setMaxPageSize(100);
+    paginationConfig.setDefaultPageSize(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE);
+    paginationConfig.setMaxPageSize(PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
 
     addResource(new HostTasksResource(client, paginationConfig));
   }
@@ -82,7 +82,8 @@ public class HostTasksResourceTest extends ResourceTest {
     task1.setId(taskId1);
     task2.setId(taskId2);
 
-    when(client.getHostTasks(hostId, Optional.<String>absent(), Optional.<Integer>absent()))
+    when(client.getHostTasks(hostId, Optional.<String>absent(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
         .thenReturn(new ResourceList<Task>(ImmutableList.of(task1, task2), null, null));
     when(client.getHostTasks(hostId, Optional.<String>absent(), Optional.of(1)))
         .thenReturn(new ResourceList<Task>(ImmutableList.of(task1), UUID.randomUUID().toString(), null));

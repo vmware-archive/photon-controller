@@ -71,8 +71,8 @@ public class TenantTasksResourceTest extends ResourceTest {
 
   @Override
   protected void setUpResources() throws Exception {
-    paginationConfig.setDefaultPageSize(10);
-    paginationConfig.setMaxPageSize(100);
+    paginationConfig.setDefaultPageSize(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE);
+    paginationConfig.setMaxPageSize(PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
 
     addResource(new TenantTasksResource(client, paginationConfig));
   }
@@ -84,7 +84,8 @@ public class TenantTasksResourceTest extends ResourceTest {
     task1.setId(taskId1);
     task2.setId(taskId2);
 
-    when(client.getTenantTasks(tenantId, Optional.<String>absent(), Optional.<Integer>absent()))
+    when(client.getTenantTasks(tenantId, Optional.<String>absent(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
         .thenReturn(new ResourceList<>(ImmutableList.of(task1, task2), null, null));
     when(client.getTenantTasks(tenantId, Optional.<String>absent(), Optional.of(1)))
         .thenReturn(new ResourceList<>(ImmutableList.of(task1), UUID.randomUUID().toString(), null));
