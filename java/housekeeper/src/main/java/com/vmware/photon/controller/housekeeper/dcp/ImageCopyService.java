@@ -386,10 +386,11 @@ public class ImageCopyService extends StatefulService {
                       hostSet.add(state.hostAddress);
                     }
 
-                    if (hostSet.size() == 0) {
-                      failTask(new Exception("No host found between source image " +
-                          "datastore " + current.sourceImageDataStoreId
-                          + " and destination datastore " + current.destinationDataStoreId));
+                    if (hostSet.size() == 0 && !current.isSelfProgressionDisabled) {
+                      ImageCopyService.State patch = buildPatch(TaskState.TaskStage.FINISHED, null, null);
+                      this.sendSelfPatch(patch);
+                      ServiceUtils.logInfo(this, "ImageCopyService %s can't find host, moved to FINISHED stage",
+                          getSelfLink());
                       return;
                     }
 

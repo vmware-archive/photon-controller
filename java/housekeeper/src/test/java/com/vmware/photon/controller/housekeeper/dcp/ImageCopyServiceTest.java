@@ -883,15 +883,13 @@ public class
           ImageCopyServiceFactory.SELF_LINK,
           copyTask,
           ImageCopyService.State.class,
-          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
       assertThat(response.sourceImageDataStoreName, is(copyTask.sourceImageDataStoreName));
       assertThat(response.destinationDataStoreId, is(copyTask.destinationDataStoreId));
       assertThat(response.host, nullValue());
-      assertThat(response.taskInfo.failure.message, containsString("No host found between source image datastore " +
-          "source-datastore-id and destination datastore " + copyTask.destinationDataStoreId));
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
