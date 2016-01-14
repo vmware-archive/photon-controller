@@ -790,6 +790,27 @@ struct DeleteImageResponse {
   2: optional string error
 }
 
+struct CreateDirectoryRequest {
+  // The datastore name or id for the directory.
+  1: required string datastore
+  // The file path relative to the mount point of the datastore.
+  2: required string directory_path
+
+  99: optional tracing.TracingInfo tracing_info
+}
+
+enum CreateDirectoryResultCode {
+  OK = 0
+  SYSTEM_ERROR = 1
+  DIRECTORY_ALREADY_EXISTS = 2
+  DATASTORE_NOT_FOUND = 3
+}
+
+struct CreateDirectoryResponse {
+  1: required CreateDirectoryResultCode result
+  2: optional string error
+}
+
 struct DeleteDirectoryRequest {
   // The datastore name or id for the directory.
   1: required string datastore
@@ -1143,6 +1164,8 @@ service Host {
 
   scheduler.PlaceResponse place(1: scheduler.PlaceRequest request)
   scheduler.FindResponse find(1: scheduler.FindRequest request)
+
+  CreateDirectoryResponse create_directory(1: CreateDirectoryRequest request)
 
   /* API to delete a directory.
    * NFC delete directory implementation doesn't work correctly so the API FE

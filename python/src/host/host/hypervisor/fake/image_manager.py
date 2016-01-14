@@ -136,6 +136,9 @@ class FakeImageManager(ImageManager):
     def create_image(self, datastore_id, tmp_dir, image_id):
         return
 
+    def create_tmp_dir(self, datastore_id, tmp_dir):
+        return
+
     def delete_tmp_dir(self, datastore_id, tmp_dir):
         return
 

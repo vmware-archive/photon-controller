@@ -42,6 +42,8 @@ from gen.host.ttypes import CreateDisksResponse
 from gen.host.ttypes import CreateDisksResultCode
 from gen.host.ttypes import CreateImageFromVmResponse
 from gen.host.ttypes import CreateImageFromVmResultCode
+from gen.host.ttypes import CreateDirectoryResponse
+from gen.host.ttypes import CreateDirectoryResultCode
 from gen.host.ttypes import CreateImageResponse
 from gen.host.ttypes import CreateImageResultCode
 from gen.host.ttypes import CopyImageResponse
@@ -135,6 +137,7 @@ from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.image_scanner import DatastoreImageScanner
 from host.hypervisor.image_sweeper import DatastoreImageSweeper
 from host.hypervisor.image_manager import DirectoryNotFound
+from host.hypervisor.image_manager import DirectoryAlreadyExists
 from host.hypervisor.image_manager import ImageNotFoundException
 from host.hypervisor.placement_manager import InvalidReservationException
 from host.hypervisor.placement_manager import NoSuchResourceException
@@ -2070,6 +2073,35 @@ class HostHandler(Host.Iface):
                 CreateImageFromVmResponse())
 
         return CreateImageFromVmResponse(CreateImageFromVmResultCode.OK)
+
+    @log_request
+    @error_handler(CreateDirectoryResponse, CreateDirectoryResultCode)
+    def create_directory(self, request):
+        try:
+            datastore_id = \
+                self.hypervisor.datastore_manager.normalize(request.datastore)
+        except DatastoreNotFoundException:
+            return self._error_response(
+                CreateDirectoryResultCode.DATASTORE_NOT_FOUND,
+                "Datastore %s not found" % request.datastore,
+                CreateDirectoryResponse())
+
+        try:
+            self.hypervisor.image_manager.create_tmp_dir(
+                datastore_id, request.directory_path)
+        except DirectoryAlreadyExists:
+            return self._error_response(
+                CreateDirectoryResultCode.DIRECTORY_ALREADY_EXISTS,
+                "Directory %s on datastore %s already exists" %
+                (request.directory_path, request.datastore),
+                CreateDirectoryResponse())
+        except:
+            return self._error_response(
+                CreateDirectoryResultCode.SYSTEM_ERROR,
+                str(sys.exc_info()[1]),
+                CreateDirectoryResponse())
+
+        return CreateDirectoryResponse(CreateDirectoryResultCode.OK)
 
     @log_request
     @error_handler(DeleteDirectoryResponse, DeleteDirectoryResultCode)

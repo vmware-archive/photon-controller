@@ -39,6 +39,7 @@ from host.hypervisor.esx.vm_config import datastore_to_os_path, \
 from host.hypervisor.esx.vm_config import vmdk_add_suffix
 from host.hypervisor.esx.vm_config import image_directory_path
 from host.hypervisor.esx.vm_config import os_datastore_path
+from host.hypervisor.esx.vm_config import datastore_dir_path
 from host.hypervisor.esx.vm_config import os_image_manifest_path
 from host.hypervisor.esx.vm_config import os_metadata_path
 from host.hypervisor.esx.vm_config import os_to_datastore_path
@@ -48,6 +49,7 @@ from host.hypervisor.esx.vm_config import tmp_image_path
 from host.hypervisor.esx.vm_config import tmp_image_folder_os_path
 from host.hypervisor.esx.vm_config import vmdk_path
 from host.hypervisor.image_manager import DirectoryNotFound
+from host.hypervisor.image_manager import DirectoryAlreadyExists
 from host.hypervisor.image_manager import ImageManager
 from host.hypervisor.image_manager import ImageInUse
 from host.hypervisor.image_manager import ImageNotFoundException
@@ -828,6 +830,16 @@ class EsxImageManager(ImageManager):
             f.write(metadata)
 
         self._create_image_timestamp_file_from_ids(datastore_id, image_id)
+
+    def create_tmp_dir(self, datastore_id, tmp_dir):
+        """ Creates a temp image directory """
+        try:
+            fileMgr = self._vim_client.file_manager
+            fileMgr.MakeDirectory(tmp_dir, createParentDirectories=True)
+        except vim.Fault.FileAlreadyExists:
+            pass
+        except Exception:
+            raise
 
     def delete_tmp_dir(self, datastore_id, tmp_dir):
         """ Deletes a temp image directory by moving it to a GC directory """

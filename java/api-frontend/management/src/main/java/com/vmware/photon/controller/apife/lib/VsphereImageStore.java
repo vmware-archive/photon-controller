@@ -16,15 +16,12 @@ package com.vmware.photon.controller.apife.lib;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateException;
+import com.vmware.photon.controller.apife.exceptions.internal.CreateUploadFolderException;
 import com.vmware.photon.controller.apife.exceptions.internal.DeleteUploadFolderException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.clients.exceptions.DirectoryNotFoundException;
-import com.vmware.photon.controller.common.clients.exceptions.ImageInUseException;
-import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
-import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.clients.exceptions.*;
 import com.vmware.photon.controller.host.gen.ServiceTicketResponse;
 import com.vmware.transfer.nfc.HostServiceTicket;
 import com.vmware.transfer.nfc.NfcClient;
@@ -69,18 +66,20 @@ public class VsphereImageStore implements ImageStore {
    */
   @Override
   public Image createImage(String imageId) throws InternalException {
-    logger.info("create image folder {} on datastore {}", imageId, this.getDatastore());
     String imageFolder = dsImageFolder(imageId);
-    logger.info("mkdir {}", imageFolder);
+    logger.info("create upload folder {} on datastore {}", imageFolder, this.getDatastore());
+    try {
+      getHostClient().createDirectory(imageFolder, this.getDatastore());
+    } catch (DirectoryAlreadyExistsException e) {
+      logger.info("Directory {} already exists on datastore {}. ", imageFolder, this.getDatastore(), e);
+    } catch (InterruptedException | RpcException e) {
+      logger.warn("Creating upload folder {} failed.", imageFolder, e);
+      throw new CreateUploadFolderException(
+              String.format("Failed to create upload folder %s on datastore %s.", imageFolder, this.getDatastore()), e);
+    }
 
     final HostServiceTicket hostServiceTicket = getHostServiceTicket();
     NfcClient nfcClient = getNfcClient(hostServiceTicket);
-    try {
-      nfcClient.mkdir(imageFolder);
-    } catch (IOException e) {
-      logger.error("nfc client failed to create dir '{}', due to {}", imageFolder, e);
-      throw new InternalException(e);
-    }
     return new VsphereImageStoreImage(nfcClient, imageFolder, imageId);
   }
 

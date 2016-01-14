@@ -43,6 +43,10 @@ class DirectoryNotFound(Exception):
     Exception thrown when the specified directory is not found
     """
 
+class DirectoryAlreadyExists(Exception):
+    """
+    Exception thrown when the specified directory is created before
+    """
 
 class ImageManager(object):
     """A class that wraps hypervisor specific image management.
@@ -261,6 +265,14 @@ class ImageManager(object):
                                   vm_disk_os_path):
         """ Fills a temp image directory with a disk from a VM,
             then installs directory in the shared image folder.
+        """
+        pass
+
+    @abc.abstractmethod
+    def create_tmp_dir(self, datastore_id, tmp_dir):
+        """ Create the temp image directory.
+        Does not handle the case for concurrent deltes of the same directory
+        across hosts.
         """
         pass
 
