@@ -20,8 +20,10 @@ import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
@@ -29,13 +31,14 @@ import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -44,7 +47,9 @@ import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Implementation of the flavor operations with DCP as the document store.
@@ -128,7 +133,7 @@ public class FlavorDcpBackend implements FlavorBackend {
 
   @Override
   public Flavor getApiRepresentation(String id) throws ExternalException {
-    return convertToEntity(findById(id)).toApiRepresentation();
+    return toApiRepresentation(findById(id));
   }
 
   @Override
@@ -152,26 +157,14 @@ public class FlavorDcpBackend implements FlavorBackend {
   }
 
   @Override
-  public List<FlavorEntity> getAll() throws ExternalException {
-    return findEntitiesByNameAndKind(Optional.<String>absent(), Optional.<String>absent());
+  public ResourceList<FlavorEntity> getAll(Optional<Integer> pageSize) throws ExternalException {
+    return findEntitiesByNameAndKind(Optional.<String>absent(), Optional.<String>absent(), pageSize);
   }
 
   @Override
-  public List<Flavor> filter(Optional<String> name, Optional<String> kind) throws ExternalException {
-    List<Flavor> flavorList;
-
-    if (name.isPresent() && kind.isPresent()) {
-      Optional<FlavorEntity> flavorEntity = getByNameAndKind(name, kind);
-      if (flavorEntity.isPresent()) {
-        return ImmutableList.of(flavorEntity.get().toApiRepresentation());
-      } else {
-        return ImmutableList.of();
-      }
-    } else {
-      flavorList = findFlavorsByNameAndKind(name, kind);
-    }
-
-    return flavorList;
+  public ResourceList<Flavor> filter(Optional<String> name, Optional<String> kind, Optional<Integer> pageSize)
+          throws ExternalException {
+    return findFlavorsByNameAndKind(name, kind, pageSize);
   }
 
   public FlavorEntity getEntityByNameAndKind(String name, String kind) throws ExternalException {
@@ -220,6 +213,46 @@ public class FlavorDcpBackend implements FlavorBackend {
     }
   }
 
+  public ResourceList<Flavor> getFlavorsPage(String pageLink) throws PageExpiredException{
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(
+            FlavorService.State.class, queryResult, state -> toApiRepresentation(state));
+  }
+
+  public Flavor toApiRepresentation(FlavorService.State flavorDocument) {
+    Flavor flavor = new Flavor();
+    String id = ServiceUtils.getIDFromDocumentSelfLink(flavorDocument.documentSelfLink);
+    flavor.setId(id);
+    flavor.setName(flavorDocument.name);
+    flavor.setKind(flavorDocument.kind);
+    flavor.setState(flavorDocument.state);
+
+    List<QuotaLineItem> costs = new ArrayList<>();
+
+    if (flavorDocument.cost != null && !flavorDocument.cost.isEmpty()) {
+      for (FlavorService.State.QuotaLineItem costEntity : flavorDocument.cost) {
+        costs.add(new QuotaLineItem(costEntity.key, costEntity.value, costEntity.unit));
+      }
+    }
+
+    flavor.setCost(costs);
+
+    Set<String> tags = new HashSet<>();
+    if (flavorDocument.tags != null && !flavorDocument.tags.isEmpty()) {
+      tags.addAll(flavorDocument.tags);
+    }
+
+    flavor.setTags(tags);
+
+    return flavor;
+  }
+
   private FlavorEntity convertToEntity(FlavorService.State flavor) {
     FlavorEntity flavorEntity = new FlavorEntity();
     flavorEntity.setName(flavor.name);
@@ -228,12 +261,14 @@ public class FlavorDcpBackend implements FlavorBackend {
 
     List<QuotaLineItemEntity> costEntity = new ArrayList<>();
 
-    for (FlavorService.State.QuotaLineItem quota : flavor.cost) {
-      QuotaLineItemEntity quotaEntity = new QuotaLineItemEntity();
-      quotaEntity.setKey(quota.key);
-      quotaEntity.setValue(quota.value);
-      quotaEntity.setUnit(quota.unit);
-      costEntity.add(quotaEntity);
+    if (flavor.cost != null && !flavor.cost.isEmpty()) {
+      for (FlavorService.State.QuotaLineItem quota : flavor.cost) {
+        QuotaLineItemEntity quotaEntity = new QuotaLineItemEntity();
+        quotaEntity.setKey(quota.key);
+        quotaEntity.setValue(quota.value);
+        quotaEntity.setUnit(quota.unit);
+        costEntity.add(quotaEntity);
+      }
     }
 
     flavorEntity.setCost(costEntity);
@@ -256,15 +291,16 @@ public class FlavorDcpBackend implements FlavorBackend {
 
   private Optional<FlavorEntity> getByNameAndKind(Optional<String> name, Optional<String> kind)
       throws ExternalException {
-    List<FlavorEntity> flavorEntityList = findEntitiesByNameAndKind(name, kind);
-    if (flavorEntityList == null || flavorEntityList.isEmpty()) {
+    ResourceList<FlavorEntity> flavorEntityList = findEntitiesByNameAndKind(name, kind, Optional.<Integer>absent());
+    if (flavorEntityList == null || flavorEntityList.getItems() == null || flavorEntityList.getItems().isEmpty()) {
       return Optional.absent();
     }
-    return Optional.fromNullable(flavorEntityList.get(0));
+    return Optional.fromNullable(flavorEntityList.getItems().get(0));
   }
 
-  private List<FlavorService.State> findDocumentsByNameAndKind(Optional<String> name, Optional<String> kind)
-      throws ExternalException {
+  private ServiceDocumentQueryResult findDocumentsByNameAndKind(Optional<String> name, Optional<String> kind,
+                                                                       Optional<Integer> pageSize)
+          throws ExternalException {
 
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     if (name.isPresent()) {
@@ -275,35 +311,25 @@ public class FlavorDcpBackend implements FlavorBackend {
       termsBuilder.put("kind", kind.get());
     }
 
-    return dcpClient.queryDocuments(FlavorService.State.class, termsBuilder.build());
+    return dcpClient.queryDocuments(
+            FlavorService.State.class, termsBuilder.build(), pageSize, true);
   }
 
-  private List<FlavorEntity> findEntitiesByNameAndKind(Optional<String> name, Optional<String> kind)
+  private ResourceList<FlavorEntity> findEntitiesByNameAndKind(Optional<String> name, Optional<String> kind,
+                                                               Optional<Integer> pageSize)
       throws ExternalException {
-    List<FlavorEntity> flavorEntityList = null;
-    List<FlavorService.State> flavorStateList = findDocumentsByNameAndKind(name, kind);
-    if (flavorStateList != null) {
-      flavorEntityList = new ArrayList<>(flavorStateList.size());
-      for (FlavorService.State flavorState : flavorStateList) {
-        flavorEntityList.add(convertToEntity(flavorState));
-      }
-    }
+    ServiceDocumentQueryResult queryResult = findDocumentsByNameAndKind(name, kind, pageSize);
 
-    return flavorEntityList;
+    return PaginationUtils.xenonQueryResultToResourceList(FlavorService.State.class, queryResult,
+            state -> convertToEntity(state));
   }
 
-  private List<Flavor> findFlavorsByNameAndKind(Optional<String> name, Optional<String> kind)
+  private ResourceList<Flavor> findFlavorsByNameAndKind(Optional<String> name, Optional<String> kind,
+                                                Optional<Integer> pageSize)
       throws ExternalException {
-    List<Flavor> flavorList = null;
-    List<FlavorService.State> flavorStateList = findDocumentsByNameAndKind(name, kind);
-    if (flavorStateList != null) {
-      flavorList = new ArrayList<>(flavorStateList.size());
+    ServiceDocumentQueryResult queryResult = findDocumentsByNameAndKind(name, kind, pageSize);
 
-      for (FlavorService.State flavorState : flavorStateList) {
-        flavorList.add(convertToEntity(flavorState).toApiRepresentation());
-      }
-    }
-
-    return flavorList;
+    return PaginationUtils.xenonQueryResultToResourceList(FlavorService.State.class, queryResult,
+            state -> toApiRepresentation(state));
   }
 }
