@@ -62,3 +62,6 @@ class FakeSystem(System):
 
     def host_consumed_memory_mb(self):
         return None
+
+    def host_version(self):
+        return "X.X.X"
