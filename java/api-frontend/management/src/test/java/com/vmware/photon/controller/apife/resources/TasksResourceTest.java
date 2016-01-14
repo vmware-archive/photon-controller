@@ -65,8 +65,8 @@ public class TasksResourceTest extends ResourceTest {
 
   @BeforeMethod
   public void setUp() throws Throwable {
-    paginationConfig.setDefaultPageSize(10);
-    paginationConfig.setMaxPageSize(100);
+    paginationConfig.setDefaultPageSize(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE);
+    paginationConfig.setMaxPageSize(PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
 
     entity = new Task.Entity();
     entity.setId("e1");
@@ -82,7 +82,7 @@ public class TasksResourceTest extends ResourceTest {
 
     when(
         taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),
-            Optional.<Integer>absent())
+            Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE))
     ).thenReturn(new ResourceList<>(ImmutableList.of(t1, t2), null, null));
     when(
         taskFeClient.find(Optional.of(entity.getId()), Optional.of(entity.getKind()), Optional.of(state),

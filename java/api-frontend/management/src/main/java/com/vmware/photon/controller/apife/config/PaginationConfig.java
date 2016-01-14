@@ -22,7 +22,7 @@ import javax.validation.constraints.Min;
  * Pagination configuration.
  */
 public class PaginationConfig {
-  public static final int DEFAULT_DEFAULT_PAGE_SIZE = 10;
+  public static final int DEFAULT_DEFAULT_PAGE_SIZE = 100;
   public static final int DEFAULT_MAX_PAGE_SIZE = 100;
 
   @Min(1)

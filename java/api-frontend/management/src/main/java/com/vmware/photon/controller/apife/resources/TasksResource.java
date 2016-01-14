@@ -74,11 +74,6 @@ public class TasksResource {
       resourceList = taskFeClient.getPage(pageLink.get());
     } else {
       Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
-
-      // Temporarily set the adjustedPageSize back to pageSize.
-      // The reason is that the consumers of api-fe has not implemented the functions
-      // to read page by page.
-      adjustedPageSize = pageSize;
       resourceList = taskFeClient.find(entityId, entityKind, state, adjustedPageSize);
     }
 

@@ -78,16 +78,12 @@ public class FlavorTasksResource {
       resourceList = taskFeClient.getPage(pageLink.get());
     } else {
       Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
-
-      // Temporarily change the adjustedPageSize back to pageSize.
-      // To allow the user to provide no pageSize so as to pull out the complete results.
-      adjustedPageSize = pageSize;
       resourceList = taskFeClient.getFlavorTasks(id, state, adjustedPageSize);
     }
 
     return generateResourceListResponse(
         Response.Status.OK,
-        PaginationUtils.formalizePageLinks(resourceList, FlavorsResourceRoutes.API),
+        PaginationUtils.formalizePageLinks(resourceList, TaskResourceRoutes.API),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
