@@ -530,12 +530,6 @@ public class ImageSeederService extends StatefulService {
     return true;
   }
 
-  /**
-   * Build a QuerySpecification for querying image data store id.
-   *
-   * @param current
-   * @return
-   */
   private Operation buildImageDatastoreIdQuery(final State current) {
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
