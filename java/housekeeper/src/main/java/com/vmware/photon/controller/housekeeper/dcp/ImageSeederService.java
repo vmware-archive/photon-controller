@@ -500,7 +500,9 @@ public class ImageSeederService extends StatefulService {
 
     if (datastoreSet.size() == 1) {
       if (!datastoreSet.contains(current.sourceImageDatastore)) {
-        failTask(new Exception("No image datastore found"));
+        String datastore = datastoreSet.iterator().next();
+        failTask(new Exception("No image datastore found, sourceImageDatastore is " + current.sourceImageDatastore +
+            ", image datastore in CloudStore is " + datastore));
       } else {
         sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
       }

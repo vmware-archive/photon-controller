@@ -19,6 +19,8 @@ import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundExcept
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorServiceFactory;
+import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
+import com.vmware.photon.controller.housekeeper.dcp.ImageSeederServiceFactory;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResult;
@@ -27,7 +29,6 @@ import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatus;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusCode;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusResponse;
-import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
@@ -69,15 +70,20 @@ public class ImageReplicator {
    */
   public ReplicateImageResponse replicateImage(ReplicateImageRequest request) {
     try {
-      if (request.getReplicationType() == ImageReplication.ON_DEMAND) {
-        ReplicateImageResponse response =
-            new ReplicateImageResponse(new ReplicateImageResult(ReplicateImageResultCode.OK));
-        return new ReplicateImageResponse(response);
-      }
-
-      String operationId = triggerReplication(request);
       ReplicateImageResponse response = new ReplicateImageResponse(
           new ReplicateImageResult(ReplicateImageResultCode.OK));
+      String operationId;
+      switch (request.getReplicationType()) {
+        case ON_DEMAND:
+          operationId = triggerImageSeedingProcess(request);
+          break;
+        case EAGER:
+          operationId = triggerReplication(request);
+          break;
+        default:
+          throw new IllegalArgumentException("Unknown image replication type" + request.getReplicationType());
+      }
+
       response.setOperation_id(operationId);
       return response;
     } catch (Throwable throwable) {
@@ -156,6 +162,33 @@ public class ImageReplicator {
 
     // Return operation id.
     return op.getBody(ImageReplicatorService.State.class).documentSelfLink;
+  }
+
+  /**
+   * Trigger image seeding process to copy image between hosts.
+   *
+   * @param request
+   * @return
+   * @throws Throwable
+   */
+  private String triggerImageSeedingProcess(ReplicateImageRequest request) throws Throwable {
+    // Prepare seeding service call.
+    ImageSeederService.State postReq = new ImageSeederService.State();
+    postReq.image = request.getImage();
+    postReq.sourceImageDatastore = request.getDatastore();
+
+    // Create the operation and call for seeding.
+    Operation postOperation = Operation
+        .createPost(UriUtils.buildUri(dcpHost, ImageSeederServiceFactory.class))
+        .setBody(postReq)
+        .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
+        .setExpiration(Utils.getNowMicrosUtc() + dcpOperationTimeoutMicros)
+        .setContextId(LoggingUtils.getRequestId());
+
+    Operation op = ServiceHostUtils.sendRequestAndWait(dcpHost, postOperation, REFERRER_PATH);
+
+    // Return operation id.
+    return op.getBody(ImageSeederService.State.class).documentSelfLink;
   }
 
   /**
