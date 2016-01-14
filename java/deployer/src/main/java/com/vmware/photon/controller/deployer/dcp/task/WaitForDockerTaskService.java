@@ -328,10 +328,16 @@ public class WaitForDockerTaskService extends StatefulService {
       patchState.iterations = currentState.iterations + 1;
       TaskUtils.sendSelfPatch(this, patchState);
     } else {
-      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.POLL, null);
-      patchState.successfulIterations = currentState.successfulIterations;
-      patchState.iterations = currentState.iterations + 1;
-      TaskUtils.sendSelfPatch(this, patchState);
+      final Service service = this;
+      getHost().schedule(new Runnable() {
+        @Override
+        public void run() {
+          State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.POLL, null);
+          patchState.successfulIterations = currentState.successfulIterations;
+          patchState.iterations = currentState.iterations + 1;
+          TaskUtils.sendSelfPatch(service, patchState);
+        }
+      }, currentState.pollInterval, TimeUnit.MILLISECONDS);
     }
   }
 

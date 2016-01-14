@@ -617,6 +617,7 @@ public class DeploymentWorkflowServiceTest {
       startState = buildValidStartState(null, null);
       startState.controlFlags = null;
       startState.taskPollDelay = 10;
+      startState.childPollInterval = 10;
       implicitClient = new AuthClientHandler.ImplicitClient("client_id", "http://login", "http://logout");
     }
 

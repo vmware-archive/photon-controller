@@ -760,6 +760,7 @@ public class AddManagementHostWorkflowServiceTest {
       startState = buildValidStartState(null, null);
       startState.controlFlags = null;
       startState.taskPollDelay = 10;
+      startState.childPollInterval = 10;
       implicitClient = new AuthClientHandler.ImplicitClient("client_id", "http://login", "http://logout");
     }
 
@@ -909,6 +910,7 @@ public class AddManagementHostWorkflowServiceTest {
       DeploymentWorkflowService.State deploymentState = DeploymentWorkflowServiceTest.buildValidStartState(null, null);
       deploymentState.deploymentServiceLink = startState.deploymentServiceLink;
       deploymentState.controlFlags = null;
+      deploymentState.childPollInterval = 10;
       DeploymentWorkflowService.State deploymentWorkflowState =
           localDeployer.callServiceAndWaitForState(
               DeploymentWorkflowFactoryService.SELF_LINK,
