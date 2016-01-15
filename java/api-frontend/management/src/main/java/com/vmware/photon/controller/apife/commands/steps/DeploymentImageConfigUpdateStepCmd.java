@@ -25,6 +25,7 @@ import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.config.ImageConfig;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentFailedException;
@@ -115,23 +116,37 @@ public class DeploymentImageConfigUpdateStepCmd extends StepCommand {
   }
 
   private void updateHost() throws ApiFeException {
-    ResourceList<Host> hostList = hostBackend.filterByUsage(UsageTag.MGMT, Optional.of(100));
+    ResourceList<Host> hostList = hostBackend.filterByUsage(UsageTag.MGMT,
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
     if (hostList.getItems().size() == 0) {
       throw new DeploymentFailedException(this.entity.getId(), "No management hosts found.");
     }
 
-    // try to find the host marked for
-    for (Host host : hostList.getItems()) {
-      if (host.getMetadata().containsKey(USE_FOR_IMAGE_UPLOAD_KEY)) {
-        logger.info("using host {} to upload images", host);
-        this.config.setEndpoint(formatEndpoint(host));
-        return;
+    Host firstHost = hostList.getItems().get(0);
+
+    ResourceList<Host> currentPage;
+
+    do {
+      // try to find the host marked for
+      for (Host host : hostList.getItems()) {
+        if (host.getMetadata().containsKey(USE_FOR_IMAGE_UPLOAD_KEY)) {
+          logger.info("using host {} to upload images", host);
+          this.config.setEndpoint(formatEndpoint(host));
+          return;
+        }
       }
-    }
+
+      currentPage = hostList;
+
+      if (hostList.getNextPageLink() != null && !hostList.getNextPageLink().isEmpty()) {
+        hostList = hostBackend.getHostsPage(hostList.getNextPageLink());
+      }
+
+    } while (currentPage.getNextPageLink() != null && !currentPage.getNextPageLink().isEmpty());
 
     // pick the first host since none was explicitly specified
-    logger.info("using host {} to upload images", hostList.getItems().get(0));
-    this.config.setEndpoint(formatEndpoint(hostList.getItems().get(0)));
+    logger.info("using host {} to upload images", firstHost);
+    this.config.setEndpoint(formatEndpoint(firstHost));
   }
 
   private String formatEndpoint(Host host) {

@@ -22,6 +22,7 @@ import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.config.ImageConfig;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentFailedException;
@@ -40,7 +41,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Tests {@link DeploymentImageConfigUpdateStepCmd}.
@@ -114,22 +117,39 @@ public class DeploymentImageConfigUpdateStepCmdTest {
     }
 
     @Test
-    public void testNoDataSet() throws Throwable {
+    public void testSuccessWithPaginatedHosts() throws Throwable {
       imageConfig.setDatastore(null);
       imageConfig.setEndpoint(null);
+      int totalHosts = PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE + 5;
+      List<Host> hostList = new ArrayList<>();
 
-      Host host = new Host();
-      host.setAddress("10.146.1.12");
-      ResourceList<Host> list = new ResourceList<>();
-      list.setItems(ImmutableList.of(host));
-      doReturn(list).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.of(100));
+      for (int i = 0; i < totalHosts; i++) {
+        Host host = new Host();
+        host.setAddress("10.146.1." + i);
+        hostList.add(host);
+      }
+
+      ResourceList<Host> hostsPage1 =
+          new ResourceList<>(hostList.subList(0, PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+
+      hostsPage1.setNextPageLink("nextLink");
+
+      ResourceList<Host> hostsPage2 =
+          new ResourceList<>(hostList.subList(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE, totalHosts));
+
+      doReturn(hostsPage1).when(hostBackend).filterByUsage(UsageTag.MGMT,
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+
+      doReturn(hostsPage2).when(hostBackend).getHostsPage("nextLink");
+      hostsPage2.getItems().get(0).setMetadata(ImmutableMap.of(DeploymentImageConfigUpdateStepCmd
+          .USE_FOR_IMAGE_UPLOAD_KEY, "value"));
 
       command.execute();
       verify(imageConfig, times(3)).setDatastore(any(String.class));
       verify(imageConfig, times(3)).setEndpoint(any(String.class));
       Assert.assertTrue(entity.getImageDatastores().contains(imageConfig.getDatastore()));
-      Assert.assertEquals(imageConfig.getEndpoint(), "http://" + host.getAddress());
-      Assert.assertEquals(imageConfig.getEndpointHostAddress(), host.getAddress());
+      Assert.assertEquals(imageConfig.getEndpoint(), "http://" + hostsPage2.getItems().get(0).getAddress());
+      Assert.assertEquals(imageConfig.getEndpointHostAddress(), hostsPage2.getItems().get(0).getAddress());
     }
 
     @Test
@@ -150,7 +170,8 @@ public class DeploymentImageConfigUpdateStepCmdTest {
       host.setAddress("10.146.1.12");
       ResourceList<Host> list = new ResourceList<>();
       list.setItems(ImmutableList.of(host));
-      doReturn(list).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.of(100));
+      doReturn(list).when(hostBackend).filterByUsage(UsageTag.MGMT,
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
 
       command.execute();
       verify(imageConfig, times(1)).setDatastore(any(String.class));
@@ -170,7 +191,8 @@ public class DeploymentImageConfigUpdateStepCmdTest {
       host2.setMetadata(ImmutableMap.of(DeploymentImageConfigUpdateStepCmd.USE_FOR_IMAGE_UPLOAD_KEY, "true"));
       ResourceList<Host> list = new ResourceList<>();
       list.setItems(ImmutableList.of(host1, host2));
-      doReturn(list).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.of(100));
+      doReturn(list).when(hostBackend).filterByUsage(UsageTag.MGMT,
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
 
       command.execute();
       verify(imageConfig, times(1)).setDatastore(any(String.class));
@@ -186,7 +208,8 @@ public class DeploymentImageConfigUpdateStepCmdTest {
 
       ResourceList<Host> list = new ResourceList<>();
       list.setItems(ImmutableList.of());
-      doReturn(list).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.of(100));
+      doReturn(list).when(hostBackend).filterByUsage(UsageTag.MGMT,
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       command.execute();
       verify(imageConfig, times(1)).setDatastore(any(String.class));
       verify(imageConfig, times(3)).setEndpoint(any(String.class));
