@@ -70,8 +70,6 @@ public class ImageReplicator {
    */
   public ReplicateImageResponse replicateImage(ReplicateImageRequest request) {
     try {
-      ReplicateImageResponse response = new ReplicateImageResponse(
-          new ReplicateImageResult(ReplicateImageResultCode.OK));
       String operationId;
       switch (request.getReplicationType()) {
         case ON_DEMAND:
@@ -79,17 +77,47 @@ public class ImageReplicator {
           break;
         case EAGER:
           operationId = triggerReplication(request);
+          triggerImageSeedingProcess(request);
           break;
         default:
           throw new IllegalArgumentException("Unknown image replication type" + request.getReplicationType());
       }
 
+      ReplicateImageResponse response = new ReplicateImageResponse(
+          new ReplicateImageResult(ReplicateImageResultCode.OK));
       response.setOperation_id(operationId);
       return response;
     } catch (Throwable throwable) {
       logger.error("Unexpected error", throwable);
       return new ReplicateImageResponse(fillSystemError(throwable));
     }
+  }
+
+  /**
+   * Trigger image seeding process to copy image between hosts.
+   *
+   * @param request
+   * @return
+   * @throws Throwable
+   */
+  private String triggerImageSeedingProcess(ReplicateImageRequest request) throws Throwable {
+    // Prepare seeding service call.
+    ImageSeederService.State postReq = new ImageSeederService.State();
+    postReq.image = request.getImage();
+    postReq.sourceImageDatastore = request.getDatastore();
+
+    // Create the operation and call for seeding.
+    Operation postOperation = Operation
+        .createPost(UriUtils.buildUri(dcpHost, ImageSeederServiceFactory.class))
+        .setBody(postReq)
+        .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
+        .setExpiration(Utils.getNowMicrosUtc() + dcpOperationTimeoutMicros)
+        .setContextId(LoggingUtils.getRequestId());
+
+    Operation op = ServiceHostUtils.sendRequestAndWait(dcpHost, postOperation, REFERRER_PATH);
+
+    // Return operation id.
+    return op.getBody(ImageSeederService.State.class).documentSelfLink;
   }
 
   /**
@@ -162,33 +190,6 @@ public class ImageReplicator {
 
     // Return operation id.
     return op.getBody(ImageReplicatorService.State.class).documentSelfLink;
-  }
-
-  /**
-   * Trigger image seeding process to copy image between hosts.
-   *
-   * @param request
-   * @return
-   * @throws Throwable
-   */
-  private String triggerImageSeedingProcess(ReplicateImageRequest request) throws Throwable {
-    // Prepare seeding service call.
-    ImageSeederService.State postReq = new ImageSeederService.State();
-    postReq.image = request.getImage();
-    postReq.sourceImageDatastore = request.getDatastore();
-
-    // Create the operation and call for seeding.
-    Operation postOperation = Operation
-        .createPost(UriUtils.buildUri(dcpHost, ImageSeederServiceFactory.class))
-        .setBody(postReq)
-        .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
-        .setExpiration(Utils.getNowMicrosUtc() + dcpOperationTimeoutMicros)
-        .setContextId(LoggingUtils.getRequestId());
-
-    Operation op = ServiceHostUtils.sendRequestAndWait(dcpHost, postOperation, REFERRER_PATH);
-
-    // Return operation id.
-    return op.getBody(ImageSeederService.State.class).documentSelfLink;
   }
 
   /**

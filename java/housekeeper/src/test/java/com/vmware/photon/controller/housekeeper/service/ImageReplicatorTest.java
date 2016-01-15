@@ -109,6 +109,7 @@ public class ImageReplicatorTest {
       }
     }
 
+
     @DataProvider(name = "replicationType")
     public Object[][] getReplicationType() {
       return new Object[][]{
@@ -117,25 +118,23 @@ public class ImageReplicatorTest {
       };
     }
 
-
     @Test(dataProvider = "replicationType")
-    public void testOperationContainsContextId(ImageReplication imageReplication) throws Throwable {
+    public void testOperationContainsContextId(ImageReplication replication) throws Throwable {
       LoggingUtils.setRequestId("validRequestId");
       String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(dcpHost);
 
       ReplicateImageRequest requestStart = new ReplicateImageRequest();
-      requestStart.setReplicationType(imageReplication);
+      requestStart.setReplicationType(replication);
       replicator.replicateImage(requestStart);
 
       assertThat("Operation RequestId does not match.", contextId[0], is("validRequestId"));
     }
 
     @Test(dataProvider = "replicationType")
-    public void testOperationDoesNotContainContextId(ImageReplication imageReplication) throws Throwable {
+    public void testOperationDoesNotContainContextId(ImageReplication replication) throws Throwable {
       String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(dcpHost);
-
       ReplicateImageRequest requestStart = new ReplicateImageRequest();
-      requestStart.setReplicationType(imageReplication);
+      requestStart.setReplicationType(replication);
       replicator.replicateImage(requestStart);
 
       assertThat("Operation RequestId is not 'null'", contextId[0], nullValue());
@@ -150,6 +149,22 @@ public class ImageReplicatorTest {
 
       ReplicateImageRequest request = new ReplicateImageRequest();
       request.setReplicationType(ImageReplication.ON_DEMAND);
+      ReplicateImageResponse response = replicator.replicateImage(request);
+
+      assertThat(response.getResult().getCode(), is(ReplicateImageResultCode.OK));
+      assertThat(response.getOperation_id(), is(opId));
+    }
+
+    @Test
+    public void testOperationWithEagerReplicationType() throws Throwable {
+      ImageSeederService.State state = new ImageSeederService.State();
+      state.taskInfo = new ImageSeederService.TaskState();
+      state.taskInfo.stage = TaskState.TaskStage.FINISHED;
+      startTestSeederService(state);
+      String opId = startTestReplicatorServiceInStage(ImageReplicatorService.TaskState.TaskStage.FINISHED);
+
+      ReplicateImageRequest request = new ReplicateImageRequest();
+      request.setReplicationType(ImageReplication.EAGER);
       ReplicateImageResponse response = replicator.replicateImage(request);
 
       assertThat(response.getResult().getCode(), is(ReplicateImageResultCode.OK));
