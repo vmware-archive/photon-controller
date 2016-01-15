@@ -105,7 +105,8 @@ public class ProjectVmsResourceTest extends ResourceTest {
         {"disk"},
         {"portGroup"},
         {"host"},
-        {"datastore"}
+        {"datastore"},
+        {"availabilityZone"}
     };
   }
 
@@ -278,6 +279,32 @@ public class ProjectVmsResourceTest extends ResourceTest {
         " " +
         "The provided localities are [disk, host], A VM can only be affixed on one host, " +
         "however 2 hosts were specified.]"));
+  }
+
+  @Test
+  public void testInvalidLocalitySpecMultipleAvailabilityZones() throws Exception {
+    LocalitySpec localitySpec1 = new LocalitySpec();
+    localitySpec1.setId("zone-1");
+    localitySpec1.setKind("availabilityZone");
+
+    LocalitySpec localitySpec2 = new LocalitySpec();
+    localitySpec2.setId("zone-2");
+    localitySpec2.setKind("availabilityZone");
+
+    List<LocalitySpec> localitySpecList = new ArrayList<>();
+    localitySpecList.add(localitySpec1);
+    localitySpecList.add(localitySpec2);
+
+    spec.setAffinities(localitySpecList);
+
+    Response response = createVm();
+
+    assertThat(response.getStatus(), is(400));
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), equalTo("InvalidEntity"));
+    assertThat(errors.getMessage(), equalTo("A VM can only be associated to one availabilityZone, " +
+        "however 2 availabilityZones were specified."));
   }
 
   @Test
