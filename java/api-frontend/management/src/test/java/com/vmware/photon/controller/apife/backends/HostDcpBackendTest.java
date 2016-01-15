@@ -29,6 +29,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -345,17 +346,17 @@ public class HostDcpBackendTest {
       hostCreateSpec.setUsageTags(usageTags);
       hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
 
-      ResourceList<Host> hosts = hostBackend.listAll(Optional.of(10));
+      ResourceList<Host> hosts = hostBackend.listAll(Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(hosts, notNullValue());
       assertThat(hosts.getItems().size(), is(2));
 
-      hosts = hostBackend.filterByUsage(UsageTag.CLOUD, Optional.of(10));
+      hosts = hostBackend.filterByUsage(UsageTag.CLOUD, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(hosts.getItems().size(), is(2));
 
-      hosts = hostBackend.filterByUsage(UsageTag.IMAGE, Optional.of(10));
+      hosts = hostBackend.filterByUsage(UsageTag.IMAGE, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(hosts.getItems().size(), is(1));
 
-      hosts = hostBackend.filterByUsage(UsageTag.MGMT, Optional.of(10));
+      hosts = hostBackend.filterByUsage(UsageTag.MGMT, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(hosts.getItems().size(), is(0));
     }
   }

@@ -43,6 +43,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -120,6 +121,37 @@ public class DeploymentHostsResourceTest extends ResourceTest {
     }
 
     verifyPageLinks(hosts);
+  }
+
+  @Test(dataProvider = "pageSizes")
+  public void testGetDeploymentHosts(Optional<Integer> pageSize, List<Host> expectedHosts) throws Throwable {
+    when(deploymentFeClient.listHosts(deploymentId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(host1, host2), null, null));
+    when(deploymentFeClient.listHosts(deploymentId, Optional.absent()))
+        .thenReturn(new ResourceList<>(ImmutableList.of(host1, host2), null, null));
+    when(deploymentFeClient.listHosts(deploymentId, Optional.of(1)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(host1), UUID.randomUUID().toString(), null));
+    when(deploymentFeClient.listHosts(deploymentId, Optional.of(2)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(host1, host2), null, null));
+    when(deploymentFeClient.listHosts(deploymentId, Optional.of(3)))
+        .thenReturn(new ResourceList<>(Collections.emptyList(), null, null));
+
+    Response response = getDeploymentHosts(pageSize);
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+
+    ResourceList<Host> result = response.readEntity(new GenericType<ResourceList<Host>>() {});
+    assertThat(result.getItems().size(), is(expectedHosts.size()));
+
+    for (int i = 0; i < result.getItems().size(); i++) {
+      assertThat(new URI(result.getItems().get(i).getSelfLink()).isAbsolute(), is(true));
+      assertThat(result.getItems().get(i), is(expectedHosts.get(i)));
+
+      String vmRoutePath = UriBuilder.fromPath(HostResourceRoutes.HOST_PATH).build(expectedHosts.get(i).getId())
+          .toString();
+      assertThat(result.getItems().get(i).getSelfLink().endsWith(vmRoutePath), is(true));
+    }
+
+    verifyPageLinks(result);
   }
 
   @Test
