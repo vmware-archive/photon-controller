@@ -309,6 +309,17 @@ describe "vm", management: true, image: true do
           expect(vms.size).to eq 1
           expect(vms[0].state).to eq "STOPPED"
         end
+
+        it "can pass availabilityZone id" do
+
+          let(:zone) { EsxCloud::SystemSeeder.instance.create_availability_zone! }
+          create_vm(@project, name: vm_name,
+              affinities: [{id: zone.id, kind: "availabilityZone"}])
+
+          vms = client.find_vms_by_name(@project.id, vm_name).items
+          expect(vms.size).to eq 1
+          expect(vms[0].state).to eq "STOPPED"
+        end
       end
     end
 
