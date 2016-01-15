@@ -27,7 +27,6 @@ import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ControlFlags;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
@@ -253,12 +252,7 @@ public class WaitForDockerTaskService extends StatefulService {
   private void scheduleSelfPatch(State currentState) {
     ServiceUtils.logInfo(this, "Scheduling self-patch to stage STARTED:POLL");
 
-    Runnable runnable = new Runnable() {
-      @Override
-      public void run() {
-        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.POLL);
-      }
-    };
+    Runnable runnable = () -> sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.POLL);
 
     getHost().schedule(runnable, currentState.delayInterval, TimeUnit.MILLISECONDS);
   }
@@ -272,24 +266,18 @@ public class WaitForDockerTaskService extends StatefulService {
   }
 
   private void readIpAddress(final State currentState) {
+    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
+      if (null != throwable) {
+        failTask(throwable);
+        return;
+      }
 
-    final Service service = this;
-
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-
-        try {
-          State patchState = buildPatch(currentState.taskState.stage, currentState.taskState.subStage, null);
-          patchState.ipAddress = operation.getBody(VmService.State.class).ipAddress;
-          TaskUtils.sendSelfPatch(service, patchState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
+      try {
+        State patchState = buildPatch(currentState.taskState.stage, currentState.taskState.subStage, null);
+        patchState.ipAddress = operation.getBody(VmService.State.class).ipAddress;
+        TaskUtils.sendSelfPatch(this, patchState);
+      } catch (Throwable t) {
+        failTask(t);
       }
     };
 
@@ -303,18 +291,13 @@ public class WaitForDockerTaskService extends StatefulService {
   private void pollDockerEndpoint(final State currentState) {
     ServiceUtils.logInfo(this, "Performing poll of VM endpoint (iterations: %s)", currentState.iterations);
 
-    final Service service = this;
-
-    Runnable runnable = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          String dockerInfo = HostUtils.getDockerProvisionerFactory(service).create(currentState.ipAddress).getInfo();
-          ServiceUtils.logInfo(service, "Received docker info response %s", dockerInfo);
-          processSuccessfulPollingIteration(currentState);
-        } catch (Throwable t) {
-          processFailedPollingIteration(currentState, t);
-        }
+    Runnable runnable = () -> {
+      try {
+        String dockerInfo = HostUtils.getDockerProvisionerFactory(this).create(currentState.ipAddress).getInfo();
+        ServiceUtils.logInfo(this, "Received docker info response %s", dockerInfo);
+        processSuccessfulPollingIteration(currentState);
+      } catch (Throwable t) {
+        processFailedPollingIteration(currentState, t);
       }
     };
 
@@ -328,15 +311,11 @@ public class WaitForDockerTaskService extends StatefulService {
       patchState.iterations = currentState.iterations + 1;
       TaskUtils.sendSelfPatch(this, patchState);
     } else {
-      final Service service = this;
-      getHost().schedule(new Runnable() {
-        @Override
-        public void run() {
-          State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.POLL, null);
-          patchState.successfulIterations = currentState.successfulIterations;
-          patchState.iterations = currentState.iterations + 1;
-          TaskUtils.sendSelfPatch(service, patchState);
-        }
+      getHost().schedule(() -> {
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.POLL, null);
+        patchState.successfulIterations = currentState.successfulIterations;
+        patchState.iterations = currentState.iterations + 1;
+        TaskUtils.sendSelfPatch(this, patchState);
       }, currentState.pollInterval, TimeUnit.MILLISECONDS);
     }
   }
@@ -347,15 +326,11 @@ public class WaitForDockerTaskService extends StatefulService {
       patchState.iterations = currentState.iterations;
       TaskUtils.sendSelfPatch(this, patchState);
     } else {
-      final Service service = this;
-      getHost().schedule(new Runnable() {
-        @Override
-        public void run() {
-          State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.POLL, null);
-          patchState.successfulIterations = 0;
-          patchState.iterations = currentState.iterations;
-          TaskUtils.sendSelfPatch(service, patchState);
-        }
+      getHost().schedule(() -> {
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.POLL, null);
+        patchState.successfulIterations = 0;
+        patchState.iterations = currentState.iterations;
+        TaskUtils.sendSelfPatch(this, patchState);
       }, currentState.pollInterval, TimeUnit.MILLISECONDS);
     }
   }
