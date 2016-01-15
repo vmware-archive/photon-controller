@@ -139,11 +139,12 @@ class AgentConfig(object):
         @return True if the attribute had to be updated False otherwise.
         """
         # Return None if the attribute is not set.
-        if getattr(self._options, attr_name, None) == value:
+        old_value = getattr(self._options, attr_name, None)
+        if old_value == value:
             return False
         setattr(self._options, attr_name, value)
-        self._logger.debug("Updating config %s %s" %
-                           (str(attr_name), str(value)))
+        self._logger.debug("Updating config %s: %s -> %s" %
+                           (str(attr_name), str(old_value), str(value)))
         return True
 
     @locked
@@ -742,3 +743,14 @@ class AgentConfig(object):
             if not self._is_unset(key, value):
                 new_config[key] = value
         self._write_json_file(self.DEFAULT_CONFIG_FILE, new_config)
+
+    def delete_config(self):
+        """
+        Delete agent configuration file.
+        """
+        filename = os.path.join(self._options.config_path,
+                                self.DEFAULT_CONFIG_FILE)
+        try:
+            os.remove(filename)
+        except OSError:
+            pass
