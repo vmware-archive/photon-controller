@@ -185,5 +185,10 @@ public class ProjectVmsResource {
         throw new InvalidLocalitySpecException(errorMessages.toString());
       }
     }
+
+    if (localityKinds.containsKey("availabilityZone") && localityKinds.get("availabilityZone") > 1) {
+      throw new InvalidLocalitySpecException(String.format("A VM can only be associated to one availabilityZone, " +
+          "however %d availabilityZones were specified.", localityKinds.get("availabilityZone")));
+    }
   }
 }
