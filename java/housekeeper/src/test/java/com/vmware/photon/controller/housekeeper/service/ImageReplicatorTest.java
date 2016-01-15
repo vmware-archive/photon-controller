@@ -156,6 +156,22 @@ public class ImageReplicatorTest {
       assertThat(response.getOperation_id(), is(opId));
     }
 
+    @Test
+    public void testOperationWithEagerReplicationType() throws Throwable {
+      ImageSeederService.State state = new ImageSeederService.State();
+      state.taskInfo = new ImageSeederService.TaskState();
+      state.taskInfo.stage = TaskState.TaskStage.FINISHED;
+      String opId = startTestSeederService(state);
+      startTestReplicatorServiceInStage(TaskState.TaskStage.FINISHED);
+
+      ReplicateImageRequest request = new ReplicateImageRequest();
+      request.setReplicationType(ImageReplication.EAGER);
+      ReplicateImageResponse response = replicator.replicateImage(request);
+
+      assertThat(response.getResult().getCode(), is(ReplicateImageResultCode.OK));
+      assertThat(response.getOperation_id(), is(opId));
+    }
+
     @Test(dataProvider = "replicationType")
     public void testCopyTriggerFails(ImageReplication imageReplication) throws Throwable {
       doThrow(Exception.class).when(dcpHost).sendRequest(any(Operation.class));
