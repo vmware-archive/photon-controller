@@ -282,6 +282,39 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   }
 
   @Test
+  public void testSuccessfulVmExecutionWithAvailabilityZoneAffinities() throws Throwable {
+    List<LocalityEntity> affinities = new ArrayList<>();
+    LocalityEntity localityEntity = new LocalityEntity();
+    localityEntity.setResourceId("availabilityZone-1");
+    localityEntity.setKind("availabilityZone");
+
+    affinities.add(localityEntity);
+    vm.setAffinities(affinities);
+
+    PlaceResponse placeResponse = generateResourcePlacementList();
+    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+
+    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
+    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+
+    ResourceReserveStepCmd command = getVmReservationCommand();
+    command.execute();
+
+    verify(rootSchedulerClient).place(resourceCaptor.capture());
+    Resource resource = resourceCaptor.getValue();
+    assertThat(resource.getVm().getResource_constraints().size(), is(vm.getAffinities().size()));
+    assertThat(resource.getVm().getResource_constraints().get(0).getType(),
+        is(ResourceConstraintType.AVAILABILITY_ZONE));
+    assertThat(resource.getVm().getResource_constraints().get(0).getValues()
+            .equals(ImmutableList.of("availabilityZone-1")),
+        is(true));
+
+    verify(rootSchedulerClient).place(resourceCaptor.capture());
+    verify(hostClient).reserve(resourceCaptor.capture(), eq(42));
+    assertThat(resourceCaptor.getValue(), is(resource));
+  }
+
+  @Test
   public void testSuccessfulVmExecutionWithEphemeralDiskAttached() throws Exception {
     List<QuotaLineItem> quotaLineItems = new ArrayList<>();
     quotaLineItems.add(new QuotaLineItem("ephemeral-disk.cost", "10000.0",

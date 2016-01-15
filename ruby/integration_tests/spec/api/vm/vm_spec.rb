@@ -309,6 +309,28 @@ describe "vm", management: true, image: true do
           expect(vms.size).to eq 1
           expect(vms[0].state).to eq "STOPPED"
         end
+
+        it "can pass availabilityZone id" do
+          availability_zone_name = random_name("availability-zone-")
+          availability_zone = create_availability_zone(EsxCloud::AvailabilityZoneCreateSpec.new(availability_zone_name))
+
+          deployment = @seeder.deployment!
+          host_spec = EsxCloud::HostCreateSpec.new(
+                  EsxCloud::TestHelpers.get_esx_username,
+                  EsxCloud::TestHelpers.get_esx_password,
+                  ["CLOUD"],
+                  EsxCloud::TestHelpers.get_esx_ip,
+                  {},
+                  availability_zone.id)
+          host = EsxCloud::Host.create(deployment.id, host_spec)
+
+          create_vm(@project, name: vm_name,
+              affinities: [{id: availability_zone.id, kind: "availabilityZone"}])
+
+          vms = client.find_vms_by_name(@project.id, vm_name).items
+          expect(vms.size).to eq 1
+          expect(vms[0].state).to eq "STOPPED"
+        end
       end
     end
 

@@ -92,6 +92,7 @@ public class ResourceReserveStepCmd extends StepCommand {
   private static final String HOST_KIND = "host";
   private static final String DATASTORE_KIND = "datastore";
   private static final String PORT_GROUP_KIND = "portGroup";
+  private static final String AVAILABILITY_ZONE_KIND = "availabilityZone";
   private static final String STORAGE_PREFIX = "storage.";
   private static final Logger logger = LoggerFactory.getLogger(ResourceReserveStepCmd.class);
   private final DiskBackend diskBackend;
@@ -239,15 +240,21 @@ public class ResourceReserveStepCmd extends StepCommand {
   private ResourceConstraint createVmResourceConstraint(LocalityEntity localityEntity)
       throws DiskNotFoundException, InvalidLocalitySpecException {
     ResourceConstraint resourceConstraint = new ResourceConstraint();
-    resourceConstraint.setType(ResourceConstraintType.DATASTORE);
 
     switch (localityEntity.getKind()) {
       case DISK_KIND:
+        resourceConstraint.setType(ResourceConstraintType.DATASTORE);
         resourceConstraint.setValues(
             ImmutableList.of(diskBackend.find(PersistentDisk.KIND, localityEntity.getResourceId()).getDatastore()));
         break;
 
       case DATASTORE_KIND:
+        resourceConstraint.setType(ResourceConstraintType.DATASTORE);
+        resourceConstraint.setValues(ImmutableList.of(localityEntity.getResourceId()));
+        break;
+
+      case AVAILABILITY_ZONE_KIND:
+        resourceConstraint.setType(ResourceConstraintType.AVAILABILITY_ZONE);
         resourceConstraint.setValues(ImmutableList.of(localityEntity.getResourceId()));
         break;
 
