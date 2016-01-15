@@ -32,7 +32,7 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class LocalitySpec {
 
-  public static final String VALID_KINDS = "vm|disk|host|datastore|portGroup";
+  public static final String VALID_KINDS = "vm|disk|host|datastore|portGroup|availabilityZone";
 
   @JsonProperty
   @ApiModelProperty(value = "This property specifies the id or the resource part of the locality relationship.",
