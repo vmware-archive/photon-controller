@@ -48,6 +48,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 /**
  * This resource is for deployment hosts related API.
@@ -87,9 +88,11 @@ public class DeploymentHostsResource {
       resourceList = client.listHosts(id, adjustedPageSize);
     }
 
+    String apiRoute = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_HOSTS_PATH).build(id).toString();
+
     return generateResourceListResponse(
         Response.Status.OK,
-        PaginationUtils.formalizePageLinks(resourceList, HostResourceRoutes.API),
+        PaginationUtils.formalizePageLinks(resourceList, apiRoute),
         (ContainerRequest) request,
         HostResourceRoutes.HOST_PATH);
   }

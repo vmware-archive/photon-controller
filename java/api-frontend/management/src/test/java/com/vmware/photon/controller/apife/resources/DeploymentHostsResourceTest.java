@@ -249,7 +249,7 @@ public class DeploymentHostsResourceTest extends ResourceTest {
   }
 
   private void verifyPageLinks(ResourceList<Host> resourceList) {
-    String expectedPrefix = HostResourceRoutes.API + "?pageLink=";
+    String expectedPrefix = hostsRoute + "?pageLink=";
 
     if (resourceList.getNextPageLink() != null) {
       assertThat(resourceList.getNextPageLink().startsWith(expectedPrefix), Matchers.is(true));
