@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
@@ -491,10 +492,15 @@ public class ImageCopyService extends StatefulService {
         .setTermPropertyName(fieldName)
         .setTermMatchValue(current.destinationDataStoreId);
 
+    QueryTask.Query stateClause = new QueryTask.Query()
+      .setTermPropertyName("state")
+      .setTermMatchValue(HostState.READY.toString());
+
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(kindClause);
     querySpecification.query.addBooleanClause(imageDatastoreClause);
     querySpecification.query.addBooleanClause(datastoreClause);
+    querySpecification.query.addBooleanClause(stateClause);
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     return querySpecification;
