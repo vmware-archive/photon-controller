@@ -116,7 +116,7 @@ class ChairmanRegistrant(UpdateListener):
         :return: True if need to register, False if need to unregister
         """
         mode = common.services.get(ServiceName.MODE).get_mode()
-        if mode == MODE.MAINTENANCE:
+        if mode == MODE.MAINTENANCE or mode == MODE.DEPROVISIONED:
             return False
         else:
             return True

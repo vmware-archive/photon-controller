@@ -159,7 +159,7 @@ class TestChairmanRegistrant(unittest.TestCase):
         self.registrant.start_register()
 
         # Wait for register to happen and verify register called.
-        register_succeeded.wait(1)
+        register_succeeded.wait(10)
         assert_that(client.register_host.call_count, is_(1))
 
         # Trigger register. It should re-register with chairman.
@@ -167,7 +167,7 @@ class TestChairmanRegistrant(unittest.TestCase):
         self.registrant.trigger_chairman_update()
 
         # Wait for register to happen and verify register called again.
-        register_succeeded.wait(1)
+        register_succeeded.wait(10)
         assert_that(client.register_host.call_count, is_(2))
         assert_that(client.register_host.call_args_list, is_(
             2 * [call(self.request)]))
@@ -178,8 +178,18 @@ class TestChairmanRegistrant(unittest.TestCase):
         self.registrant.trigger_chairman_update()
 
         # Wait for unregister to happen and verify unregister called.
-        unregister_succeeded.wait(1)
+        unregister_succeeded.wait(10)
         assert_that(client.unregister_host.call_count, is_(1))
+
+        # Trigger unregister. It should unregister with chairman.
+        unregister_succeeded.clear()
+        common.services.get(ServiceName.MODE).set_mode(MODE.DEPROVISIONED)
+        self.registrant.trigger_chairman_update()
+
+        # Wait for unregister to happen and verify unregister called.
+        unregister_succeeded.wait(10)
+        assert_that(client.unregister_host.call_count, is_(2))
+        assert_that(client.register_host.call_count, is_(2))
 
         self.registrant.stop_register()
 
