@@ -1012,6 +1012,54 @@ public class
           ));
     }
 
+    /**
+     * Tests host not ready scenario.
+     *
+     * @param hostCount Host count for test environment.
+     * @param code Result code return from HostClient.
+     * @throws Throwable
+     */
+    @Test(dataProvider = "copyImageSuccessCode")
+    public void testWithHostNotReady(int hostCount, CopyImageResultCode code) throws Throwable {
+      HostClientMock hostClient = new HostClientMock();
+
+      hostClient.setCopyImageResultCode(code);
+      doReturn(hostClient).when(hostClientFactory).create();
+      cloudStoreHelper = new CloudStoreHelper();
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
+
+      ImageService.State createdImageState = createNewImageEntity();
+      int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
+      copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+      createHostService(HostState.CREATING);
+      createDatastoreService();
+
+      // Call Service.
+      ImageCopyService.State response = machine.callServiceAndWaitForState(
+        ImageCopyServiceFactory.SELF_LINK,
+        copyTask,
+        ImageCopyService.State.class,
+        (state) -> state.taskInfo.stage == TaskState.TaskStage.STARTED);
+
+      //Check Image Service replicatedDatastore counts
+      createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
+      assertThat(createdImageState.replicatedDatastore, is(initialReplicatedDatastoreCount));
+
+      // Check response.
+      assertThat(response.image, is(copyTask.image));
+      assertThat(response.sourceImageDataStoreName, is(copyTask.sourceImageDataStoreName));
+      assertThat(response.destinationDataStoreId, not(isEmptyOrNullString()));
+
+      // Check stats.
+      ServiceStats stats = machine.getOwnerServiceStats(response);
+      assertThat(
+        stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
+        greaterThanOrEqualTo(
+          1.0 + // Create Patch
+          1.0 // Scheduler start patch
+      ));
+    }
+
     private com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State createNewImageEntity()
         throws Throwable {
       ServiceHost host = machine.getHosts()[0];
@@ -1043,6 +1091,10 @@ public class
     }
 
     private HostService.State createHostService() throws Throwable {
+      return this.createHostService(HostState.READY);
+    }
+
+    private HostService.State createHostService(HostState hostState) throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
@@ -1053,7 +1105,7 @@ public class
           HostServiceFactory.SELF_LINK);
 
       HostService.State state = new HostService.State();
-      state.state = HostState.READY;
+      state.state = hostState;
       state.hostAddress = "0.0.0.0";
       state.userName = "test-name";
       state.password = "test-password";
