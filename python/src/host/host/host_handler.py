@@ -397,9 +397,11 @@ class HostHandler(Host.Iface):
     @error_handler(DeprovisionResponse, DeprovisionResultCode)
     def deprovision(self, request):
         mode = common.services.get(ServiceName.MODE)
+        agent_config = common.services.get(ServiceName.AGENT_CONFIG)
 
         try:
             mode.set_mode(MODE.DEPROVISIONED, [MODE.MAINTENANCE])
+            agent_config.delete_config()
         except ModeTransitionError as e:
             error_msg = "Cannot switch to DEPROVISIONED from %s" % e.from_mode
             self._logger.info(error_msg)
