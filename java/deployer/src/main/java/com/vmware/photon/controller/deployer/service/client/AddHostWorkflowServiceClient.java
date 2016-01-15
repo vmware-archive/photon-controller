@@ -14,7 +14,9 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
@@ -28,9 +30,14 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 /**
  * This class implements functionality to provision new cloud hosts.
@@ -76,8 +83,24 @@ public class AddHostWorkflowServiceClient {
           .setContextId(LoggingUtils.getRequestId());
       opState = addCloudHostState;
     } else {
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(DeploymentService.State.class));
+
+      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+      querySpecification.query.addBooleanClause(kindClause);
+      Operation getDeploymentOperation = dcpHost.getCloudStoreHelper()
+          .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+          .setBody(QueryTask.create(querySpecification).setDirect(true));
+
+      NodeGroupBroadcastResponse queryResponse = ServiceHostUtils.sendRequestAndWait(dcpHost,
+          getDeploymentOperation, REFERRER_PATH).getBody(NodeGroupBroadcastResponse.class);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
+
       AddManagementHostWorkflowService.State addMgmtHostState = new AddManagementHostWorkflowService.State();
       addMgmtHostState.hostServiceLink = hostServiceLink;
+      addMgmtHostState.isNewDeployment = false;
+      addMgmtHostState.deploymentServiceLink = documentLinks.iterator().next();
 
       post = Operation
           .createPost(UriUtils.buildUri(dcpHost, AddManagementHostWorkflowFactoryService.SELF_LINK, null))
