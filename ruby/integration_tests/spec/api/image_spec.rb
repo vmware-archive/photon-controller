@@ -227,6 +227,7 @@ describe "image", management: true, image: true do
       expect(image).to_not be_nil
       expect(image.state).to eq "PENDING_DELETE"
       expect(image.replication_progress =~ /^(100|\d{1,2})[.]\d{1,2}%$/).to_not be nil
+      expect(image.seeding_progress =~ /^(100|\d{1,2})[.]\d{1,2}%$/).to_not be nil
 
       tasks = client.get_image_tasks(image.id).items
       expect(tasks.size).to eq(2)
