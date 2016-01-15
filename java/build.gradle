@@ -92,7 +92,7 @@ configure([project(":photon-model"), project(":photon-model-tasks")]) {
   group = 'com.vmware.photon.controller'
 
   ext {
-    version '0.2.2'
+    version '0.2.3-SNAPSHOT'
   }
   signing {
     def hasRequiredSigningProps = project.hasProperty('signing.keyId') &&
