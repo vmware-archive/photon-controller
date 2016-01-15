@@ -79,6 +79,7 @@ public class ImageReplicator {
           break;
         case EAGER:
           operationId = triggerReplication(request);
+          triggerImageSeedingProcess(request);
           break;
         default:
           throw new IllegalArgumentException("Unknown image replication type" + request.getReplicationType());
