@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
@@ -114,9 +115,12 @@ public class AddHostWorkflowServiceClientTest {
       ProvisionHostRequest request = createProvisionHostRequest();
       HostService.State hostService = TestHelper.createHostService(cloudStoreMachine, ImmutableSet.of(
           UsageTag.MGMT.name(), UsageTag.CLOUD.name()));
+      DeploymentService.State deploymentService = TestHelper.createDeploymentService(cloudStoreMachine);
 
       AddManagementHostWorkflowService.State returnedDocument = new AddManagementHostWorkflowService.State();
       returnedDocument.hostServiceLink = hostService.documentSelfLink;
+      returnedDocument.deploymentServiceLink = deploymentService.documentSelfLink;
+      returnedDocument.isNewDeployment = false;
       returnedDocument.documentSelfLink = "task-id";
 
       setupMock(
