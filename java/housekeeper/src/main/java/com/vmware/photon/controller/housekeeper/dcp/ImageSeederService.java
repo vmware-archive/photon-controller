@@ -14,6 +14,9 @@
 package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -45,7 +48,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Class ImageSeederService implements a service to propagate an image available on a single data store to all
- * data stores. The copy is performed by create ImageHostToHostCopyService, TaskSchedulerService will move those to
+ * data stores. The copy is performed by creating ImageHostToHostCopyService, TaskSchedulerService will move those to
  * STARTED stage, and wait for the copy to finish. Client will poll until task state is FINISH or FAIL. CANCELLED is not
  * supported.
  */
@@ -142,6 +145,8 @@ public class ImageSeederService extends StatefulService {
         checkArgument(StringUtils.isNotBlank(current.image), "image not provided");
         checkArgument(StringUtils.isNotBlank(current.sourceImageDatastore), "sourceImageDatastore not provided");
         switch (current.taskInfo.subStage) {
+          case UPDATE_DATASTORE_COUNTS:
+            break;
           case TRIGGER_COPIES:
             break;
           case AWAIT_COMPLETION:
@@ -230,6 +235,9 @@ public class ImageSeederService extends StatefulService {
   protected void handleStartedStage(final State current, final State patch) {
     // Handle task sub-state.
     switch (current.taskInfo.subStage) {
+      case UPDATE_DATASTORE_COUNTS:
+        updateTotalImageDatastore(current);
+        break;
       case TRIGGER_COPIES:
         handleTriggerCopies(current);
         break;
@@ -238,6 +246,66 @@ public class ImageSeederService extends StatefulService {
         break;
       default:
         throw new IllegalStateException("Un-supported substage" + current.taskInfo.subStage.toString());
+    }
+  }
+
+  /**
+   * Gets image entity and sends patch to update total datastore and total image datastore field.
+   *
+   * @param current
+   */
+  protected void updateTotalImageDatastore(final State current) {
+    try {
+      Operation datastoreSetQuery = buildDatastoreSetQuery(current);
+      // build the image entity update patch
+      ImageService.State imageServiceState = new ImageService.State();
+      Operation datastoreCountPatch = getCloudStoreHelper()
+          .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image);
+
+      OperationSequence operationSequence = OperationSequence
+          .create(datastoreSetQuery)
+          .setCompletion(
+              (operations, throwable) -> {
+                if (throwable != null) {
+                  failTask(throwable.values().iterator().next());
+                  return;
+                }
+
+                imageServiceState.totalImageDatastore = 0;
+                imageServiceState.totalDatastore = 0;
+                Operation op = operations.get(datastoreSetQuery.getId());
+                NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
+                List<DatastoreService.State> documentLinks = QueryTaskUtils
+                    .getBroadcastQueryDocuments(DatastoreService.State.class, queryResponse);
+                imageServiceState.totalDatastore = documentLinks.size();
+                for (DatastoreService.State state : documentLinks) {
+                  if (state.isImageDatastore) {
+                    imageServiceState.totalImageDatastore++;
+                  }
+                }
+                datastoreCountPatch.setBody(imageServiceState);
+              }
+          )
+          .next(datastoreCountPatch)
+          .setCompletion(
+              (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+                if (failures != null && failures.size() > 0) {
+                  failTask(failures.values().iterator().next());
+                  return;
+                }
+              });
+
+      if (!current.isSelfProgressionDisabled) {
+        // move to next stage
+        Operation progress = this.buildSelfPatchOperation(
+            this.buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.TRIGGER_COPIES, null));
+
+        operationSequence.next(progress);
+      }
+
+      operationSequence.sendWith(this);
+    } catch (Exception e) {
+      failTask(e);
     }
   }
 
@@ -383,6 +451,11 @@ public class ImageSeederService extends StatefulService {
     this.startImageHostToHostCopyService(imageHostToHostCopyServiceStartState, handler);
   }
 
+
+  protected CloudStoreHelper getCloudStoreHelper() {
+    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper();
+  }
+
   /**
    * Issues the queries to determine the status of the "child" ImageHostToHostService instances.
    *
@@ -489,7 +562,7 @@ public class ImageSeederService extends StatefulService {
     if (s.taskInfo == null || s.taskInfo.stage == TaskState.TaskStage.CREATED) {
       s.taskInfo = new TaskState();
       s.taskInfo.stage = TaskState.TaskStage.STARTED;
-      s.taskInfo.subStage = TaskState.SubStage.TRIGGER_COPIES;
+      s.taskInfo.subStage = TaskState.SubStage.UPDATE_DATASTORE_COUNTS;
     }
 
     if (s.documentExpirationTimeMicros <= 0) {
@@ -553,6 +626,26 @@ public class ImageSeederService extends StatefulService {
     querySpecification.query.addBooleanClause(kindClause);
     querySpecification.query.addBooleanClause(imageDatastoreClause);
     querySpecification.query.addBooleanClause(imageDatastoreNameClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .setBody(QueryTask.create(querySpecification).setDirect(true));
+  }
+
+  /**
+   * Build a QuerySpecification for querying image data store.
+   *
+   * @param current
+   * @return
+   */
+  private Operation buildDatastoreSetQuery(final State current) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
@@ -665,6 +758,7 @@ public class ImageSeederService extends StatefulService {
      * Execution sub-stage.
      */
     public static enum SubStage {
+      UPDATE_DATASTORE_COUNTS,
       TRIGGER_COPIES,
       AWAIT_COMPLETION,
     }

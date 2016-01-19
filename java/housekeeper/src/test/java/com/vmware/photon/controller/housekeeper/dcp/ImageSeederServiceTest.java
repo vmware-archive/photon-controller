@@ -32,6 +32,7 @@ import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.host.gen.TransferImageResultCode;
+import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
@@ -55,6 +56,8 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -168,7 +171,7 @@ public class ImageSeederServiceTest {
       ImageSeederService.State savedState = host.getServiceState(ImageSeederService.State.class);
       assertThat(savedState.taskInfo, notNullValue());
       assertThat(savedState.taskInfo.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(savedState.taskInfo.subStage, is(ImageSeederService.TaskState.SubStage.TRIGGER_COPIES));
+      assertThat(savedState.taskInfo.subStage, is(ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS));
       assertThat(savedState.queryPollDelay, is(10000));
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
           is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
@@ -190,7 +193,7 @@ public class ImageSeederServiceTest {
       ImageSeederService.State savedState = host.getServiceState(ImageSeederService.State.class);
       assertThat(savedState.taskInfo, notNullValue());
       assertThat(savedState.taskInfo.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(savedState.taskInfo.subStage, is(ImageSeederService.TaskState.SubStage.TRIGGER_COPIES));
+      assertThat(savedState.taskInfo.subStage, is(ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS));
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
           is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
@@ -375,7 +378,7 @@ public class ImageSeederServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = spy(new ImageSeederService());
-      host = TestHost.create(mock(HostClient.class), null);
+      host = TestHost.create(mock(HostClient.class), null, new CloudStoreHelperMock());
     }
 
     @AfterMethod
@@ -501,6 +504,7 @@ public class ImageSeederServiceTest {
     ) throws Throwable {
       ImageSeederService.State startState = buildValidStartupState(startStage, startSubStage);
       host.startServiceSynchronously(service, startState);
+      doNothing().when(service).sendRequest(any());
 
       ImageSeederService.State patchState = new ImageSeederService.State();
       patchState.taskInfo = new ImageSeederService.TaskState();
@@ -523,32 +527,46 @@ public class ImageSeederServiceTest {
     @DataProvider(name = "ValidStageUpdates")
     public Object[][] getValidStageUpdatesData() throws Throwable {
       return new Object[][]{
-          {TaskState.TaskStage.STARTED,
+          {ImageSeederService.TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
+              ImageSeederService.TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {ImageSeederService.TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
+              ImageSeederService.TaskState.TaskStage.FAILED, null},
+          {ImageSeederService.TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
+              ImageSeederService.TaskState.TaskStage.CANCELLED, null},
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-              TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
+          {ImageSeederService.TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
+              ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
-          {TaskState.TaskStage.STARTED,
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.TaskStage.FINISHED, null},
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.TaskStage.FAILED, null},
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.TaskStage.CANCELLED, null},
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-              TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
-          {TaskState.TaskStage.STARTED,
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.TaskStage.FINISHED, null},
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.TaskStage.FAILED, null},
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-              TaskState.TaskStage.CANCELLED, null},
+              ImageSeederService.TaskState.TaskStage.CANCELLED, null},
       };
     }
 
@@ -570,6 +588,7 @@ public class ImageSeederServiceTest {
         throws Throwable {
       ImageSeederService.State startState = buildValidStartupState(startStage, startSubStage);
       host.startServiceSynchronously(service, startState);
+      doNothing().when(service).sendRequest(any());
 
       ImageSeederService.State patchState = new ImageSeederService.State();
       patchState.taskInfo = new ImageSeederService.TaskState();
@@ -592,69 +611,78 @@ public class ImageSeederServiceTest {
     @DataProvider(name = "IllegalStageUpdate")
     public Object[][] getIllegalStageUpdateData() throws Throwable {
       return new Object[][]{
-          {TaskState.TaskStage.STARTED,
+          {ImageSeederService.TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
+              ImageSeederService.TaskState.TaskStage.FINISHED,
+              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS},
+          {ImageSeederService.TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
+              null,
+              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS},
+
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
-              TaskState.TaskStage.FINISHED,
+              ImageSeederService.TaskState.TaskStage.FINISHED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-          {TaskState.TaskStage.STARTED,
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
               null,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
 
-          {TaskState.TaskStage.STARTED,
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-              TaskState.TaskStage.STARTED,
+              ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-          {TaskState.TaskStage.STARTED,
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
-              TaskState.TaskStage.FINISHED,
+              ImageSeederService.TaskState.TaskStage.FINISHED,
               ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
-          {TaskState.TaskStage.STARTED,
+          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION,
               null,
               ImageSeederService.TaskState.SubStage.AWAIT_COMPLETION},
 
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
+          {ImageSeederService.TaskState.TaskStage.FINISHED, null,
+              ImageSeederService.TaskState.TaskStage.CREATED, null},
+          {ImageSeederService.TaskState.TaskStage.FINISHED, null,
+              ImageSeederService.TaskState.TaskStage.STARTED, null},
+          {ImageSeederService.TaskState.TaskStage.FINISHED, null,
+              ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.FINISHED,
+          {ImageSeederService.TaskState.TaskStage.FINISHED, null,
+              ImageSeederService.TaskState.TaskStage.FINISHED, null},
+          {ImageSeederService.TaskState.TaskStage.FINISHED, null,
+              ImageSeederService.TaskState.TaskStage.FINISHED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.FAILED,
+          {ImageSeederService.TaskState.TaskStage.FINISHED, null,
+              ImageSeederService.TaskState.TaskStage.FAILED, null},
+          {ImageSeederService.TaskState.TaskStage.FINISHED, null,
+              ImageSeederService.TaskState.TaskStage.FAILED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.FINISHED, null, null, null},
+          {ImageSeederService.TaskState.TaskStage.FINISHED, null,
+              ImageSeederService.TaskState.TaskStage.CANCELLED, null},
+          {ImageSeederService.TaskState.TaskStage.FINISHED, null, null, null},
 
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
+          {ImageSeederService.TaskState.TaskStage.FAILED, null,
+              ImageSeederService.TaskState.TaskStage.CREATED, null},
+          {ImageSeederService.TaskState.TaskStage.FAILED, null,
+              ImageSeederService.TaskState.TaskStage.STARTED, null},
+          {ImageSeederService.TaskState.TaskStage.FAILED, null,
+              ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.FINISHED,
+          {ImageSeederService.TaskState.TaskStage.FAILED, null,
+              ImageSeederService.TaskState.TaskStage.FINISHED, null},
+          {ImageSeederService.TaskState.TaskStage.FAILED, null,
+              ImageSeederService.TaskState.TaskStage.FINISHED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.FAILED,
+          {ImageSeederService.TaskState.TaskStage.FAILED, null,
+              ImageSeederService.TaskState.TaskStage.FAILED, null},
+          {ImageSeederService.TaskState.TaskStage.FAILED, null,
+              ImageSeederService.TaskState.TaskStage.FAILED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.FAILED, null, null, null},
+          {ImageSeederService.TaskState.TaskStage.FAILED, null,
+              ImageSeederService.TaskState.TaskStage.CANCELLED, null},
+          {ImageReplicatorService.TaskState.TaskStage.FAILED, null, null, null},
       };
     }
   }
@@ -726,6 +754,11 @@ public class ImageSeederServiceTest {
           newImageSeeder,
           ImageSeederService.State.class,
           (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
+
+      //Check Image Service datastore counts
+      createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
+      assertThat(createdImageState.totalDatastore, is(3));
+      assertThat(createdImageState.totalImageDatastore, is(3));
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
