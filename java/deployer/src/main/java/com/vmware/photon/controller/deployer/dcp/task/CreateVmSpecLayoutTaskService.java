@@ -91,9 +91,7 @@ public class CreateVmSpecLayoutTaskService extends StatefulService {
 
   public CreateVmSpecLayoutTaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
   /**

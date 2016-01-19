@@ -110,9 +110,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
 
   public CreateContainerSpecLayoutTaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
   /**

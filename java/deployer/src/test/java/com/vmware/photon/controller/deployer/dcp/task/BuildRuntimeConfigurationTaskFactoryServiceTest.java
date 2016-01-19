@@ -40,8 +40,7 @@ public class BuildRuntimeConfigurationTaskFactoryServiceTest {
 
     EnumSet<Service.ServiceOption> expected = EnumSet.of(
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
-        Service.ServiceOption.FACTORY,
-        Service.ServiceOption.REPLICATION);
+        Service.ServiceOption.FACTORY);
 
     assertThat(buildRuntimeConfigurationTaskFactoryService.getOptions(), is(expected));
   }

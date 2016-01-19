@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
@@ -27,18 +29,23 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.DefaultUuid;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
+import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.photon.controller.host.gen.HostMode;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -53,6 +60,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class implements a DCP service representing the workflow of tearing down a host.
@@ -76,6 +84,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
       PUT_HOST_TO_DEPROVISION_MODE,
       RECONFIGURE_ZOOKEEPER,
       DELETE_AGENT,
+      DELETE_ENTITIES,
     }
   }
 
@@ -118,6 +127,8 @@ public class DeprovisionHostWorkflowService extends StatefulService {
      */
     @Immutable
     public Integer taskPollDelay;
+
+    public List<VmService.State> vmServiceStates;
   }
 
   public DeprovisionHostWorkflowService() {
@@ -258,6 +269,9 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                     case DELETE_AGENT:
                       handleDeleteAgent(currentState, ignoreError);
                       break;
+                    case DELETE_ENTITIES:
+                      deleteEntities(currentState, ignoreError);
+                      break;
                   }
                 }
             ));
@@ -332,7 +346,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                           if (null != failure) {
                             failTask(failure);
                           } else {
-                            sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+                            sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ENTITIES);
                           }
                         }
                     ));
@@ -382,22 +396,39 @@ public class DeprovisionHostWorkflowService extends StatefulService {
   }
 
   private void updateZookeeperMapAndHostService(State currentState, boolean ignoreError) {
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(currentState.hostServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    handleZookeeperStepFailure(failure, "Error while getting host " + currentState.hostServiceLink,
-                        ignoreError);
-                    return;
-                  }
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(VmService.State.class)
+            .addFieldClause(VmService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
+        .build();
 
-                  HostService.State hostService = completedOp.getBody(HostService.State.class);
-                  updateZookeeperMapAndHostService(currentState, hostService.hostAddress, ignoreError);
-                }
-            )
-    );
+    Operation queryPostOperation = Operation
+        .createPost(UriUtils.buildBroadcastRequestUri(
+            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+        .setBody(queryTask)
+        .setCompletion(new Operation.CompletionHandler() {
+          @Override
+          public void handle(Operation operation, Throwable throwable) {
+            if (null != throwable) {
+              failTask(throwable);
+              return;
+            }
+
+            List<VmService.State> vmServiceStates =
+                QueryTaskUtils.getBroadcastQueryDocuments(VmService.State.class, operation);
+
+            if (vmServiceStates.size() == 0) {
+              sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
+            } else {
+              updateZookeeperMapAndHostService(currentState, vmServiceStates, ignoreError);
+            }
+          }
+        });
+
+    sendRequest(queryPostOperation);
   }
 
   private void handleZookeeperStepFailure(Throwable failure, String logMessage, boolean ignoreError) {
@@ -410,7 +441,8 @@ public class DeprovisionHostWorkflowService extends StatefulService {
     }
   }
 
-  private void updateZookeeperMapAndHostService(State currentState, String hostAddress, boolean ignoreError) {
+  private void updateZookeeperMapAndHostService(State currentState, List<VmService.State> vmServiceStates, boolean
+      ignoreError) {
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
         .setTermMatchValue(Utils.buildKind(DeploymentService.State.class));
@@ -449,6 +481,8 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                       return;
                     }
 
+                    // We are assuming there is just vm associated with this host
+                    String hostAddress = vmServiceStates.get(0).ipAddress;
                     Integer zkIndex = null;
                     for (Map.Entry<Integer, String> zkNode : deploymentService.zookeeperIdToIpMap.entrySet()) {
                       if (zkNode.getValue().equals(hostAddress)) {
@@ -484,8 +518,10 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                                         return;
                                       }
 
-                                      sendStageProgressPatch(TaskState.TaskStage.STARTED,
-                                          TaskState.SubStage.DELETE_AGENT);
+                                      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage
+                                          .DELETE_AGENT, null);
+                                      patchState.vmServiceStates = vmServiceStates;
+                                      TaskUtils.sendSelfPatch(DeprovisionHostWorkflowService.this, patchState);
                                     }
                                 )
                         );
@@ -513,6 +549,151 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                   }
                 }
             ));
+  }
+
+  private void deleteEntities(State currentState, boolean ignoreError) {
+    // TODO(giskender): Delete flavors
+
+    final AtomicInteger latch = new AtomicInteger(currentState.vmServiceStates.size());
+
+    final FutureCallback<Task> finishedCallback = new FutureCallback<Task>() {
+      @Override
+      public void onSuccess(@Nullable Task result) {
+        if (latch.decrementAndGet() == 0) {
+          //All api-fe vms are deleted
+          deleteDeployerDCPEntities(currentState, ignoreError);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        if (!ignoreError) {
+          failTask(t);
+        } else {
+          ServiceUtils.logSevere(DeprovisionHostWorkflowService.this, "Ignoring error while finish Deprovision ", t);
+        }
+      }
+    };
+
+    // Stop and delete vms from API-FE
+    ApiClient client = HostUtils.getApiClient(this);
+    final FutureCallback<Task> vmCallback =
+        new FutureCallback<Task>() {
+          @Override
+          public void onSuccess(@Nullable Task result) {
+            MiscUtils.waitForTaskToFinish(DeprovisionHostWorkflowService.this, result,
+                currentState.taskPollDelay, finishedCallback);
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            if (!ignoreError) {
+              failTask(t);
+            } else {
+              ServiceUtils.logSevere(DeprovisionHostWorkflowService.this, "Ignoring error while Deprovision ", t);
+              finishedCallback.onSuccess(null);
+            }
+          }
+        };
+
+    for (final VmService.State vm : currentState.vmServiceStates) {
+      MiscUtils.stopAndDeleteVm(DeprovisionHostWorkflowService.this, client, vm.vmId, currentState.taskPollDelay,
+          vmCallback);
+    }
+  }
+
+  private void deleteDeployerDCPEntities(State currentState, boolean ignoreError) {
+    final AtomicInteger latch = new AtomicInteger(currentState.vmServiceStates.size());
+    final FutureCallback<Task> finishedCallback = new FutureCallback<Task>() {
+      @Override
+      public void onSuccess(@Nullable Task result) {
+        if (latch.decrementAndGet() == 0) {
+          //All deployer vms are deleted
+          sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        if (!ignoreError) {
+          failTask(t);
+        } else {
+          ServiceUtils.logSevere(DeprovisionHostWorkflowService.this, "Ignoring error while finish Deprovision ", t);
+        }
+      }
+    };
+
+    for (final VmService.State vm : currentState.vmServiceStates) {
+      QueryTask containerQueryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(QueryTask.Query.Builder.create()
+              .addKindFieldClause(ContainerService.State.class)
+              .addFieldClause(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK, vm.documentSelfLink)
+              .build())
+          .build();
+
+      sendRequest(Operation
+          .createPost(UriUtils.buildBroadcastRequestUri(
+              UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+              ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+          .setBody(containerQueryTask.setDirect(true))
+          .setCompletion(
+              (completedOp, failure) -> {
+                if (null != failure) {
+                  if (!ignoreError) {
+                    failTask(failure);
+                  } else {
+                    ServiceUtils.logSevere(DeprovisionHostWorkflowService.this, "Ignoring error while querying " +
+                        "containers ", failure);
+                  }
+                  return;
+                }
+
+                try {
+                  Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(completedOp);
+                  QueryTaskUtils.logQueryResults(DeprovisionHostWorkflowService.this, documentLinks);
+                  List<ContainerService.State> containerServices =
+                      QueryTaskUtils.getBroadcastQueryDocuments(ContainerService.State.class, completedOp);
+                  if (containerServices == null || containerServices.size() == 0) {
+                    // Delete Vm
+                    deleteDeployerDCPVmEntity(vm.documentSelfLink, ignoreError, finishedCallback);
+                  } else {
+                    OperationJoin
+                        .create(documentLinks.stream()
+                            .map(documentLink ->
+                                Operation.createDelete(this, documentLink).setBody(new ServiceDocument())))
+                        .setCompletion(
+                            (ops, failures) -> {
+                              if (null != failures && failures.size() > 0) {
+                                failTask(failures.get(0));
+                              }
+                              deleteDeployerDCPVmEntity(vm.documentSelfLink, ignoreError,
+                                  finishedCallback);
+                            }
+                        )
+                        .sendWith(this);
+                  }
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }));
+    }
+  }
+
+  private void deleteDeployerDCPVmEntity(String vmLink, boolean ignoreError, FutureCallback<Task> callback) {
+    Operation delete = Operation.createDelete(this, vmLink)
+        .setCompletion((o, t) -> {
+          if (t != null) {
+            if (!ignoreError) {
+              failTask(t);
+              return;
+            } else {
+              ServiceUtils.logSevere(DeprovisionHostWorkflowService.this, "Ignoring error while deleting vm ", t);
+            }
+          }
+
+          callback.onSuccess(null);
+        });
+    sendRequest(delete);
   }
 
   private void sendStageProgressPatch(TaskState.TaskStage patchStage, @Nullable TaskState.SubStage patchSubStage) {
