@@ -81,7 +81,7 @@ $(BIN)/python:
 	ln -sf $$SITE_PACKAGES ../../$(DEVELOP)/site-packages
 
 clean:
-	rm -rf dist $(XUNIT_FILE) $(XCOVER_FILE) $(NAME).egg-info ${EXTRA_CLEANUP_TARGETS}
+	rm -rf dist $(XUNIT_FILE) $(XCOVER_FILE) $(NAME).egg-info ${EXTRA_CLEANUP_TARGETS} htmlcov
 	find . -name '*.pyc' -exec rm -rf {} \;
 
 $(DIST)/$(PACKAGE).tar.gz: $(PY_SRC) $(EXTRA_PY_TARGETS) $(BIN)/python
@@ -105,6 +105,11 @@ $(BIN)/nosetests: $(BIN)/python
 test: develop $(BIN)/nosetests
 ifdef TESTS
 	. ../../$(DEVELOP)/bin/activate; $(BIN)/nosetests -s $(TEST_OPTS) $(TESTS)
+endif
+
+coverage: develop $(BIN)/nosetests
+ifdef TESTS
+	. ../../$(DEVELOP)/bin/activate; coverage run $(BIN)/nosetests -s $(TEST_OPTS) $(TESTS); coverage html
 endif
 
 $(BIN)/flake8: $(BIN)/python
