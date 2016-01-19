@@ -68,6 +68,15 @@ test: compile-java $(TEST_TARGETS)
 
 .PHONY: test test-src/% compile-java check-zookeeper-path
 
+coverage-src/%: src/%
+	@echo "$(HEADER)Coverage $<$(NORMAL)"
+	@$(MAKE) -C $< coverage
+
+COVERAGE_TARGETS := $(patsubst %,coverage-%,$(PACKAGES))
+coverage: $(COVERAGE_TARGETS)
+
+.PHONY: coverage test-src/% compile-java check-zookeeper-path
+
 check-src/%: src/%
 	@echo "$(HEADER)Check $<$(NORMAL)"
 	@$(MAKE) -C $< check
