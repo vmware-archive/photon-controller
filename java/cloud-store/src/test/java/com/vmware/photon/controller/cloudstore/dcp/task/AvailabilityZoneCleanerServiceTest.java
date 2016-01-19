@@ -408,7 +408,7 @@ public class AvailabilityZoneCleanerServiceTest {
         // create Host
         if (i < staleAvailabilityZonesAssociatedWithHosts) {
           HostService.State host = TestHelper.getHostServiceStartState();
-          host.availabilityZone = ServiceUtils.getIDFromDocumentSelfLink(createdAvailabilityZone.documentSelfLink);
+          host.availabilityZoneId = ServiceUtils.getIDFromDocumentSelfLink(createdAvailabilityZone.documentSelfLink);
           Operation hostOperation = env.sendPostAndWait(HostServiceFactory.SELF_LINK, host);
           HostService.State createdHost = hostOperation.getBody(HostService.State.class);
           testSelfLinks.add(createdHost.documentSelfLink);

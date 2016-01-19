@@ -509,7 +509,7 @@ public class AvailabilityZoneCleanerService extends StatefulService {
         .setTermMatchValue(Utils.buildKind(HostService.State.class));
 
     QueryTask.Query availabilityZoneClause = new QueryTask.Query()
-        .setTermPropertyName(HostService.State.FIELD_NAME_AVAILABILITY_ZONE)
+        .setTermPropertyName(HostService.State.FIELD_NAME_AVAILABILITY_ZONE_ID)
         .setTermMatchValue(ServiceUtils.getIDFromDocumentSelfLink(availabilityZone.documentSelfLink));
 
     QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();

@@ -155,14 +155,14 @@ public class HostDcpBackend implements HostBackend {
       throws ExternalException {
     HostService.State state = findStateById(id);
 
-    if (state.availabilityZone != null && !state.availabilityZone.isEmpty()) {
-      throw new HostAvailabilityZoneAlreadySetException(id, state.availabilityZone);
+    if (state.availabilityZoneId != null && !state.availabilityZoneId.isEmpty()) {
+      throw new HostAvailabilityZoneAlreadySetException(id, state.availabilityZoneId);
     }
 
     checkAvailabilityZoneIsReady(hostSetAvailabilityZoneOperation.getAvailabilityZoneId());
 
     HostService.State hostState = new HostService.State();
-    hostState.availabilityZone = hostSetAvailabilityZoneOperation.getAvailabilityZoneId();
+    hostState.availabilityZoneId = hostSetAvailabilityZoneOperation.getAvailabilityZoneId();
     updateHostDocument(id, hostState);
 
     TaskEntity task = taskBackend.createCompletedTask(toHostEntity(state), Operation.SET_AVAILABILITYZONE);
@@ -233,7 +233,7 @@ public class HostDcpBackend implements HostBackend {
     hostState.hostAddress = hostCreateSpec.getAddress();
     hostState.userName = hostCreateSpec.getUsername();
     hostState.password = hostCreateSpec.getPassword();
-    hostState.availabilityZone = hostCreateSpec.getAvailabilityZone();
+    hostState.availabilityZoneId = hostCreateSpec.getAvailabilityZone();
     hostState.metadata = new HashMap<>(hostCreateSpec.getMetadata());
     hostState.usageTags = new HashSet<>(hostCreateSpec.getUsageTags().stream().map(g -> g.name()).collect
         (Collectors.toList()));
@@ -292,7 +292,7 @@ public class HostDcpBackend implements HostBackend {
     hostEntity.setAddress(hostState.hostAddress);
     hostEntity.setUsername(hostState.userName);
     hostEntity.setPassword(hostState.password);
-    hostEntity.setAvailabilityZone(hostState.availabilityZone);
+    hostEntity.setAvailabilityZone(hostState.availabilityZoneId);
     hostEntity.setMetadata(hostState.metadata);
     hostEntity.setEsxVersion(hostState.esxVersion);
     hostEntity.setUsageTags(UsageTagHelper.serialize(hostState.usageTags));
@@ -324,7 +324,7 @@ public class HostDcpBackend implements HostBackend {
     host.setAddress(hostState.hostAddress);
     host.setUsername(hostState.userName);
     host.setPassword(hostState.password);
-    host.setAvailabilityZone(hostState.availabilityZone);
+    host.setAvailabilityZone(hostState.availabilityZoneId);
     host.setEsxVersion(hostState.esxVersion);
     host.setUsageTags(UsageTagHelper.deserialize(UsageTagHelper.serialize(hostState.usageTags)));
     host.setMetadata(hostState.metadata);
