@@ -56,7 +56,7 @@ public class TestHelper {
     startState.hostAddress = "hostAddress";
     startState.userName = "userName";
     startState.password = "password";
-    startState.availabilityZone = "availabilityZone";
+    startState.availabilityZoneId = "availabilityZone";
     startState.esxVersion = "6.0";
     startState.usageTags = new HashSet<>(usageTags);
     startState.reportedImageDatastores = new HashSet<>(Arrays.asList("datastore1"));

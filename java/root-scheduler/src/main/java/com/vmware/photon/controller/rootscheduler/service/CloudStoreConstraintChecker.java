@@ -96,7 +96,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
 
         switch (constraint.getType()) {
           case AVAILABILITY_ZONE:
-            queryBuilder.addFieldClause(HostService.State.FIELD_NAME_AVAILABILITY_ZONE,
+            queryBuilder.addFieldClause(HostService.State.FIELD_NAME_AVAILABILITY_ZONE_ID,
                 constraint.getValues().get(0),
                 constraint.isSetNegative() && constraint.isNegative() ?
                     QueryTask.Query.Occurance.MUST_NOT_OCCUR :

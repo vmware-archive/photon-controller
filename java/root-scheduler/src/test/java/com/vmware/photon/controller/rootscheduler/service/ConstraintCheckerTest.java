@@ -90,7 +90,7 @@ public class ConstraintCheckerTest {
       host.state = HostState.READY;
       host.reportedDatastores = new HashSet<>(Arrays.asList(dsName));
       host.reportedNetworks = new HashSet<>(Arrays.asList(nwName));
-      host.availabilityZone = azName;
+      host.availabilityZoneId = azName;
       host.metadata = new HashMap<>();
       if (i % 2 == 0) {
         host.usageTags = new HashSet<>(Arrays.asList(UsageTag.MGMT.name()));

@@ -305,8 +305,8 @@ public class ProvisionAgentTaskService extends StatefulService {
       HostClient hostClient = HostUtils.getHostClient(this);
       hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
       hostClient.provision(
-          (hostState.availabilityZone != null) ?
-              hostState.availabilityZone :
+          (hostState.availabilityZoneId != null) ?
+              hostState.availabilityZoneId :
               DEFAULT_AVAILABILITY_ZONE,
           datastores,
           deploymentState.imageDataStoreNames,
