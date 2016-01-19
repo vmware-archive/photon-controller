@@ -117,7 +117,6 @@ public class ImageReplicatorTest {
       };
     }
 
-
     @Test(dataProvider = "replicationType")
     public void testOperationContainsContextId(ImageReplication imageReplication) throws Throwable {
       LoggingUtils.setRequestId("validRequestId");
@@ -150,6 +149,22 @@ public class ImageReplicatorTest {
 
       ReplicateImageRequest request = new ReplicateImageRequest();
       request.setReplicationType(ImageReplication.ON_DEMAND);
+      ReplicateImageResponse response = replicator.replicateImage(request);
+
+      assertThat(response.getResult().getCode(), is(ReplicateImageResultCode.OK));
+      assertThat(response.getOperation_id(), is(opId));
+    }
+
+    @Test
+    public void testOperationWithEagerReplicationType() throws Throwable {
+      ImageSeederService.State state = new ImageSeederService.State();
+      state.taskInfo = new ImageSeederService.TaskState();
+      state.taskInfo.stage = TaskState.TaskStage.FINISHED;
+      startTestSeederService(state);
+      String opId = startTestReplicatorServiceInStage(ImageReplicatorService.TaskState.TaskStage.FINISHED);
+
+      ReplicateImageRequest request = new ReplicateImageRequest();
+      request.setReplicationType(ImageReplication.EAGER);
       ReplicateImageResponse response = replicator.replicateImage(request);
 
       assertThat(response.getResult().getCode(), is(ReplicateImageResultCode.OK));

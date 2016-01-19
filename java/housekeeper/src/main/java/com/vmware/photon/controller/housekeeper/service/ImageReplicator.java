@@ -70,8 +70,6 @@ public class ImageReplicator {
    */
   public ReplicateImageResponse replicateImage(ReplicateImageRequest request) {
     try {
-      ReplicateImageResponse response = new ReplicateImageResponse(
-          new ReplicateImageResult(ReplicateImageResultCode.OK));
       String operationId;
       switch (request.getReplicationType()) {
         case ON_DEMAND:
@@ -79,11 +77,14 @@ public class ImageReplicator {
           break;
         case EAGER:
           operationId = triggerReplication(request);
+          triggerImageSeedingProcess(request);
           break;
         default:
           throw new IllegalArgumentException("Unknown image replication type" + request.getReplicationType());
       }
 
+      ReplicateImageResponse response = new ReplicateImageResponse(
+          new ReplicateImageResult(ReplicateImageResultCode.OK));
       response.setOperation_id(operationId);
       return response;
     } catch (Throwable throwable) {
