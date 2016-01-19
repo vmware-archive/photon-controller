@@ -272,12 +272,20 @@ public class ImageDcpBackend implements ImageBackend {
       dcpClient.post(ImageReplicationServiceFactory.SELF_LINK, imageReplicationServiceState);
       logger.info("ImageReplicationServiceState created with imageId {}, ImageDatastore {}", imageId,
           datastores.get(0).id);
+
+      ImageService.State imageServiceState = new ImageService.State();
+      imageServiceState.replicatedDatastore = 1;
+      imageServiceState.replicatedImageDatastore = 1;
+      dcpClient.patch(ImageServiceFactory.SELF_LINK + "/" + imageId, imageServiceState);
     } catch (DcpRuntimeException e) {
       if (e.getCompletedOperation().getStatusCode() ==
           com.vmware.xenon.common.Operation.STATUS_CODE_CONFLICT) {
         return;
       }
       throw e;
+    } catch (DocumentNotFoundException e) {
+      logger.error("ImageService.State not found with imageId {}: {}", imageId, e.toString());
+      throw new DcpRuntimeException(e);
     }
   }
 
