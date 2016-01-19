@@ -11,7 +11,7 @@
 
 module EsxCloud
   class Host
-    attr_accessor :id, :state, :username, :password, :availability_zone, :usage_tags, :address, :metadata
+    attr_accessor :id, :state, :username, :password, :availability_zone, :usage_tags, :address, :metadata, :esx_version
 
     # @param [HostCreateSpec] spec
     # @return [Host]
@@ -32,7 +32,8 @@ module EsxCloud
         .to_set)
         raise UnexpectedFormat, "Invalid host hash: #{hash}"
       end
-      new(hash["id"], hash["state"], hash["username"], hash["password"], hash["availabilityZone"], hash["usageTags"], hash["address"], hash["metadata"])
+      new(hash["id"], hash["state"], hash["username"], hash["password"], hash["availabilityZone"], hash["usageTags"],
+          hash["address"], hash["metadata"], hash["esxVersion"])
     end
 
     # @param [String] host_id
@@ -90,7 +91,7 @@ module EsxCloud
     # @param [Array<String>] usage_tags
     # @param [String] address
     # @param [Hash] metadata
-    def initialize(id, state, username, password, availability_zone, usage_tags, address, metadata)
+    def initialize(id, state, username, password, availability_zone, usage_tags, address, metadata, esx_version)
       @id = id
       @state = state
       @username = username
@@ -99,11 +100,13 @@ module EsxCloud
       @usage_tags = usage_tags
       @address = address
       @metadata = metadata
+      @esx_version = esx_version
     end
 
     def ==(other)
-      @id == other.id && @state == other.state && @address == other.address && @username == other.username && @password == other.password &&
-        @availability_zone == other.availability_zone && @usage_tags == other.usage_tags && @metadata == other.metadata
+      @id == other.id && @state == other.state && @address == other.address && @username == other.username &&
+          @password == other.password && @availability_zone == other.availability_zone &&
+          @usage_tags == other.usage_tags && @metadata == other.metadata && @esx_version == other.esx_version
     end
   end
 end
