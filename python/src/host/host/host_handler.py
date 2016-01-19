@@ -12,6 +12,7 @@
 
 """ Implements the interfaces that are defined in the thrift Host service."""
 
+import os.path
 import common
 import datetime
 import logging
@@ -134,6 +135,7 @@ from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
 from host_client import HostClient
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
+from host.hypervisor.esx.vm_config import datastore_dir_path
 from host.hypervisor.image_scanner import DatastoreImageScanner
 from host.hypervisor.image_sweeper import DatastoreImageSweeper
 from host.hypervisor.image_manager import DirectoryNotFound
@@ -162,6 +164,7 @@ from hypervisor.vm_manager import VmNotFoundException
 from hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.task_runner import TaskAlreadyRunning
 
+from host.hypervisor.esx.folder import VM_FOLDER_NAME
 
 class HypervisorNotConfigured(Exception):
     pass
@@ -618,6 +621,13 @@ class HostHandler(Host.Iface):
 
         # Step 5: Actually create the VM
         try:
+            # Create VM folder
+            datastore_name = self.hypervisor.datastore_manager.datastore_name(datastore_id)
+            folder_name = os.path.join(VM_FOLDER_NAME, vm.id[0:2], vm.id)
+            vm_dir_path = datastore_dir_path(datastore_name, folder_name)
+            self.hypervisor.image_manager.create_tmp_dir(datastore_id, vm_dir_path)
+
+            # Create VM
             self.hypervisor.vm_manager.create_vm(vm.id, spec)
         except VmAlreadyExistException:
             self._logger.error("vm with id %s already exists" % vm.id)
