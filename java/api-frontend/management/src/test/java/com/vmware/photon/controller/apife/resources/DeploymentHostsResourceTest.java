@@ -85,8 +85,8 @@ public class DeploymentHostsResourceTest extends ResourceTest {
 
   @Override
   protected void setUpResources() {
-    paginationConfig.setDefaultPageSize(10);
-    paginationConfig.setMaxPageSize(100);
+    paginationConfig.setDefaultPageSize(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE);
+    paginationConfig.setMaxPageSize(PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
     addResource(new DeploymentHostsResource(deploymentFeClient, hostFeClient, paginationConfig));
   }
 
@@ -125,7 +125,7 @@ public class DeploymentHostsResourceTest extends ResourceTest {
 
   @Test(dataProvider = "pageSizes")
   public void testGetDeploymentHosts(Optional<Integer> pageSize, List<Host> expectedHosts) throws Throwable {
-    when(deploymentFeClient.listHosts(deploymentId, Optional.of(10)))
+    when(deploymentFeClient.listHosts(deploymentId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
         .thenReturn(new ResourceList<>(ImmutableList.of(host1, host2), null, null));
     when(deploymentFeClient.listHosts(deploymentId, Optional.absent()))
         .thenReturn(new ResourceList<>(ImmutableList.of(host1, host2), null, null));
@@ -226,7 +226,9 @@ public class DeploymentHostsResourceTest extends ResourceTest {
 
     List<Host> hostList = ImmutableList.of(host1, host2);
     ResourceList<Host> resourceList = new ResourceList<>(hostList);
-    doReturn(resourceList).when(deploymentFeClient).listHosts(deploymentId, Optional.of(10));
+    doReturn(resourceList)
+        .when(deploymentFeClient)
+        .listHosts(deploymentId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
 
     Response clientResponse = client()
         .target(hostsRoute)
@@ -253,7 +255,7 @@ public class DeploymentHostsResourceTest extends ResourceTest {
   @Test
   public void testFailedOnDeploymentNotFound() throws Throwable {
     doThrow(new DeploymentNotFoundException(deploymentId)).when(deploymentFeClient).listHosts(deploymentId,
-        Optional.of(10));
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
 
     Response clientResponse = client()
         .target(hostsRoute)
@@ -298,18 +300,18 @@ public class DeploymentHostsResourceTest extends ResourceTest {
             Optional.absent(),
             ImmutableList.of(host1, host2)
         },
-//        {
-//            Optional.of(1),
-//            ImmutableList.of(host1)
-//        },
-//        {
-//            Optional.of(2),
-//            ImmutableList.of(host1, host2)
-//        },
-//        {
-//            Optional.of(3),
-//            Collections.emptyList()
-//        }
+        {
+            Optional.of(1),
+            ImmutableList.of(host1)
+        },
+        {
+            Optional.of(2),
+            ImmutableList.of(host1, host2)
+        },
+        {
+            Optional.of(3),
+            Collections.emptyList()
+        }
     };
   }
 }
