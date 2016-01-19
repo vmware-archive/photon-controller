@@ -135,7 +135,6 @@ from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import PlaceResponse
 from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
-from host_client import HostClient
 from host.host_configuration import HostConfiguration
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.image_scanner import DatastoreImageScanner
@@ -201,8 +200,6 @@ class HostHandler(Host.Iface):
         self._hypervisor = hypervisor
         self._generation = 0
         self._configuration_observers = []
-
-        self._host_client = HostClient(self)
 
     @property
     def hypervisor(self):
