@@ -14,12 +14,17 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Datastore;
+import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.exceptions.external.DatastoreNotFoundException;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -27,9 +32,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Inventory Datastore service backend.
@@ -53,27 +55,39 @@ public class DatastoreDcpBackend implements DatastoreBackend{
   }
 
   @Override
-  public List<Datastore> filter(Optional<String> tag) {
+  public ResourceList<Datastore> filter(Optional<String> tag, Optional<Integer> pageSize) throws ExternalException {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
 
     if (tag.isPresent()) {
       termsBuilder.put(DatastoreService.TAGS_KEY, tag.get().toString());
     }
 
-    List<Datastore> datastores = new ArrayList<>();
     ImmutableMap<String, String> terms = termsBuilder.build();
     logger.info("Filtering Datastores using terms {}", terms);
-    for (DatastoreService.State state : dcpClient.queryDocuments(
-        DatastoreService.State.class, terms)) {
-      datastores.add(toApiRepresentation(state));
-    }
 
-    return datastores;
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(
+            DatastoreService.State.class, terms, pageSize, true);
+
+    return PaginationUtils.xenonQueryResultToResourceList(DatastoreService.State.class, queryResult,
+            state -> toApiRepresentation(state));
   }
 
   @Override
   public Datastore getDatastore(String id) throws DatastoreNotFoundException {
     return toApiRepresentation(findById(id));
+  }
+
+  @Override
+  public ResourceList<Datastore> getDatastoresPage(String pageLink) throws PageExpiredException{
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(
+            DatastoreService.State.class, queryResult, state -> toApiRepresentation(state));
   }
 
   private DatastoreService.State findById(String id) throws DatastoreNotFoundException {

@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.clients;
 import com.vmware.photon.controller.api.Datastore;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.DatastoreBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 
@@ -46,12 +47,16 @@ public class DatastoreFeClient {
     return datastoreBackend.getDatastore(id);
   }
 
-  public ResourceList<Datastore> find(Optional<String> tag) {
+  public ResourceList<Datastore> find(Optional<String> tag, Optional<Integer> pageSize) throws ExternalException {
     logger.info("find datastores with tag {}", tag.orNull());
-    return new ResourceList<>(datastoreBackend.filter(tag));
+    return datastoreBackend.filter(tag, pageSize);
   }
 
-  public ResourceList<Datastore> listAllDatastores() {
-    return new ResourceList<>(datastoreBackend.filter(Optional.<String>absent()));
+  public ResourceList<Datastore> listAllDatastores(Optional<Integer> pageSize) throws ExternalException {
+    return datastoreBackend.filter(Optional.<String>absent(), pageSize);
+  }
+
+  public ResourceList<Datastore> getDatastoresPage(String pageLink) throws PageExpiredException{
+    return datastoreBackend.getDatastoresPage(pageLink);
   }
 }
