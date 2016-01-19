@@ -191,6 +191,7 @@ public class ImageServiceTest {
       testState.replicationType = ImageReplicationType.EAGER;
       testState.replicatedDatastore = 3;
       testState.totalDatastore = 10;
+      testState.totalImageDatastore = 8;
       testState.replicatedDatastore = 1;
       testState.replicatedImageDatastore = 2;
     }
@@ -265,7 +266,7 @@ public class ImageServiceTest {
       patchState.totalDatastore = 10;
       patchState.totalImageDatastore = 7;
       patchState.replicatedDatastore = 5;
-      patchState.replicatedImageDatastore = 8;
+      patchState.replicatedImageDatastore = 6;
 
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
@@ -300,9 +301,10 @@ public class ImageServiceTest {
       testState.name = "dummyName";
       testState.state = ImageState.READY;
       testState.replicationType = ImageReplicationType.EAGER;
-      testState.replicatedDatastore = 3;
+      testState.replicatedDatastore = 8;
       testState.replicatedImageDatastore = 5;
       testState.totalDatastore = 10;
+      testState.totalImageDatastore = 6;
     }
 
     @AfterMethod
@@ -376,7 +378,7 @@ public class ImageServiceTest {
 
       Operation op = host.sendRequestAndWait(patch);
       ImageService.State patchedState = op.getBody(ImageService.State.class);
-      assertThat(patchedState.replicatedDatastore, is(4));
+      assertThat(patchedState.replicatedDatastore, is(9));
 
       requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT;
       requestBody.amount = -1;
@@ -386,7 +388,7 @@ public class ImageServiceTest {
 
       op = host.sendRequestAndWait(patch);
       patchedState = op.getBody(ImageService.State.class);
-      assertThat(patchedState.replicatedDatastore, is(3));
+      assertThat(patchedState.replicatedDatastore, is(8));
     }
 
     /**
@@ -396,13 +398,13 @@ public class ImageServiceTest {
      * @throws Throwable
      */
     @Test(expectedExceptions = BadRequestException.class,
-        expectedExceptionsMessageRegExp = "Replicated image datastore count exceeds total datastore count.")
+        expectedExceptionsMessageRegExp = "Replicated datastore count exceeds total datastore count.")
     public void testReplicatedImageDatastoreCountExceedsTotalCount() throws Throwable {
       host.startServiceSynchronously(service, testState);
 
       ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
-      requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_IMAGE_REPLICATION_COUNT;
-      requestBody.amount = testState.totalDatastore + 1;
+      requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
+      requestBody.amount = testState.totalDatastore - testState.replicatedImageDatastore + 1;
 
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
@@ -422,7 +424,7 @@ public class ImageServiceTest {
       host.startServiceSynchronously(service, testState);
 
       ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
-      requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_IMAGE_REPLICATION_COUNT;
+      requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
       requestBody.amount = -(testState.replicatedImageDatastore + 1);
 
       Operation patch = Operation
@@ -442,7 +444,7 @@ public class ImageServiceTest {
 
       host.startServiceSynchronously(service, testState);
       ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
-      requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_IMAGE_REPLICATION_COUNT;
+      requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
       requestBody.amount = 1;
 
       Operation patch = Operation
@@ -453,7 +455,7 @@ public class ImageServiceTest {
       ImageService.State patchedState = op.getBody(ImageService.State.class);
       assertThat(patchedState.replicatedImageDatastore, is(6));
 
-      requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_IMAGE_REPLICATION_COUNT;
+      requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
       requestBody.amount = -1;
       patch = Operation
           .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))

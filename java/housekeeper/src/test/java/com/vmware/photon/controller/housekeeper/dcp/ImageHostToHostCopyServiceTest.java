@@ -987,7 +987,8 @@ public class ImageHostToHostCopyServiceTest {
       state.name = "image-1";
       state.replicationType = ImageReplicationType.EAGER;
       state.state = ImageState.READY;
-      state.totalDatastore = 1;
+      state.totalDatastore = 5;
+      state.totalImageDatastore = 2;
 
       Operation op = cloudStoreHelper
           .createPost(com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK)

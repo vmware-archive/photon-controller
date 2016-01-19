@@ -349,7 +349,7 @@ public class ImageHostToHostCopyService extends StatefulService {
 
   private ImageService.DatastoreCountRequest constructDatastoreCountRequest(int adjustCount) {
     ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
-    requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_IMAGE_REPLICATION_COUNT;
+    requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
     requestBody.amount = adjustCount;
     return requestBody;
   }
