@@ -17,7 +17,6 @@ import com.vmware.photon.controller.api.AvailabilityZoneState;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -177,7 +176,6 @@ public class AvailabilityZoneServiceTest {
 
       AvailabilityZoneService.State patchAvailabilityZone = new AvailabilityZoneService.State();
       patchAvailabilityZone.state = AvailabilityZoneState.PENDING_DELETE;
-      patchAvailabilityZone.deleteRequestTime = System.currentTimeMillis();
 
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
@@ -190,7 +188,6 @@ public class AvailabilityZoneServiceTest {
           patchedState.documentSelfLink);
       assertThat(savedState.name, is(testAvailabilityZone.name));
       assertThat(savedState.state, is(AvailabilityZoneState.PENDING_DELETE));
-      assertThat(savedState.deleteRequestTime, is(patchAvailabilityZone.deleteRequestTime));
     }
 
     /**
@@ -213,29 +210,6 @@ public class AvailabilityZoneServiceTest {
         host.sendRequestAndWait(patch);
         fail("should have failed with IllegalStateException");
       } catch (BadRequestException e) {
-      }
-    }
-
-    /**
-     * Test patch operation failed with no deleteRequestTime filed.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testInvalidPatchDeleteRequestTime() throws Throwable {
-      host.startServiceSynchronously(service, testAvailabilityZone);
-
-      AvailabilityZoneService.State patchAvailabilityZone = new AvailabilityZoneService.State();
-      patchAvailabilityZone.state = AvailabilityZoneState.PENDING_DELETE;
-
-      Operation patch = Operation
-          .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
-          .setBody(patchAvailabilityZone);
-
-      try {
-        host.sendRequestAndWait(patch);
-        fail("should have failed with NullPointerException");
-      } catch (DcpRuntimeException e) {
       }
     }
   }

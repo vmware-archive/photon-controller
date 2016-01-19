@@ -110,7 +110,6 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
 
     AvailabilityZoneService.State availabilityZoneState = new AvailabilityZoneService.State();
     availabilityZoneState.state = AvailabilityZoneState.PENDING_DELETE;
-    availabilityZoneState.deleteRequestTime = System.currentTimeMillis();
     try {
       dcpClient.patch(AvailabilityZoneServiceFactory.SELF_LINK + "/" + availabilityZoneEntity.getId(),
           availabilityZoneState);

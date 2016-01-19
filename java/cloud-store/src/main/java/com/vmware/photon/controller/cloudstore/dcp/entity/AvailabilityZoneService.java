@@ -91,7 +91,6 @@ public class AvailabilityZoneService extends StatefulService {
     ValidationUtils.validatePatch(startState, patchState);
     checkNotNull(patchState, "patch can not be null");
     checkState(patchState.state == AvailabilityZoneState.PENDING_DELETE, "patch state can only be PENDING_DELETE");
-    checkNotNull(patchState.deleteRequestTime, "deleteRequestTime can not be null");
   }
 
   /**
@@ -107,10 +106,5 @@ public class AvailabilityZoneService extends StatefulService {
 
     @NotNull
     public AvailabilityZoneState state;
-
-    /**
-     * The timestamp indicating when availabilityZone is marked as PENDING_DELETE.
-     */
-    public Long deleteRequestTime;
   }
 }
