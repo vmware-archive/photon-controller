@@ -261,6 +261,8 @@ public class ImageSeederService extends StatefulService {
       ImageService.State imageServiceState = new ImageService.State();
       Operation datastoreCountPatch = getCloudStoreHelper()
           .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image);
+      Operation adjustSeederAndReplicationPatch = getCloudStoreHelper()
+          .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image);
 
       OperationSequence operationSequence = OperationSequence
           .create(datastoreSetQuery)
@@ -284,9 +286,21 @@ public class ImageSeederService extends StatefulService {
                   }
                 }
                 datastoreCountPatch.setBody(imageServiceState);
-              }
-          )
+              })
           .next(datastoreCountPatch)
+          .setCompletion(
+              (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+                if (failures != null && failures.size() > 0) {
+                  failTask(failures.values().iterator().next());
+                  return;
+                }
+
+                ImageService.DatastoreCountRequest request = new ImageService.DatastoreCountRequest();
+                request.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
+                request.amount = 1;
+                adjustSeederAndReplicationPatch.setBody(request);
+              })
+          .next(adjustSeederAndReplicationPatch)
           .setCompletion(
               (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
                 if (failures != null && failures.size() > 0) {

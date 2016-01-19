@@ -62,7 +62,7 @@ public class ImageService extends StatefulService {
         Action.PATCH,
         new RequestRouter.RequestBodyMatcher<>(
             DatastoreCountRequest.class, "kind",
-            DatastoreCountRequest.Kind.ADJUST_IMAGE_REPLICATION_COUNT),
+            DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT),
         this::handlePatchAdjustDatastoreReplicationCount, "AdjustImageReplicationCount");
 
     OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
@@ -127,6 +127,9 @@ public class ImageService extends StatefulService {
       checkState(
           currentState.replicatedImageDatastore <= currentState.totalDatastore,
           "Replicated image datastore count exceeds total datastore count.");
+      checkState(
+          currentState.replicatedImageDatastore <= currentState.totalImageDatastore,
+          "Replicated image datastore count exceeds total image datastore count.");
     }
 
     if (currentState.replicatedDatastore != null) {
@@ -147,8 +150,9 @@ public class ImageService extends StatefulService {
       DatastoreCountRequest patchState = patchOperation.getBody(DatastoreCountRequest.class);
 
       switch (patchState.kind) {
-        case ADJUST_IMAGE_REPLICATION_COUNT:
+        case ADJUST_SEEDING_AND_REPLICATION_COUNT:
           currentState.replicatedImageDatastore += patchState.amount;
+          currentState.replicatedDatastore += patchState.amount;
           break;
         case ADJUST_REPLICATION_COUNT:
           currentState.replicatedDatastore += patchState.amount;
@@ -177,7 +181,7 @@ public class ImageService extends StatefulService {
      */
     public enum Kind {
       ADJUST_REPLICATION_COUNT,
-      ADJUST_IMAGE_REPLICATION_COUNT
+      ADJUST_SEEDING_AND_REPLICATION_COUNT
     }
 
     public Kind kind;
