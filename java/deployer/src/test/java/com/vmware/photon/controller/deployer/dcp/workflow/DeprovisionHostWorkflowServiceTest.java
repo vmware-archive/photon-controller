@@ -26,6 +26,7 @@ import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskService;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
@@ -174,6 +175,7 @@ public class DeprovisionHostWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.PUT_HOST_TO_DEPROVISION_MODE},
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT},
+          {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
@@ -324,6 +326,13 @@ public class DeprovisionHostWorkflowServiceTest {
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT,
               TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES,
+              TaskState.TaskStage.CANCELLED, null},
       };
     }
 
@@ -356,11 +365,15 @@ public class DeprovisionHostWorkflowServiceTest {
 
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT,
               TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES,
+              TaskState.TaskStage.CREATED, null},
 
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FINISHED, null,
@@ -373,6 +386,8 @@ public class DeprovisionHostWorkflowServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT},
           {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES},
+          {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FAILED, null},
@@ -383,6 +398,8 @@ public class DeprovisionHostWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null,
@@ -472,6 +489,9 @@ public class DeprovisionHostWorkflowServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
+      DeploymentService.State deploymentState = cloudStoreMachine
+          .getServiceState(deploymentServiceState.documentSelfLink, DeploymentService.State.class);
+      assertThat(deploymentState.zookeeperIdToIpMap.size(), is(0));
     }
 
     @Test(dataProvider = "HostCounts")
@@ -528,6 +548,8 @@ public class DeprovisionHostWorkflowServiceTest {
           Collections.singleton(UsageTag.MGMT.name()), hostState);
       startState.hostServiceLink = hostService.documentSelfLink;
 
+      VmService.State vmService = TestHelper.createVmService(testEnvironment, hostService);
+
       ApiClient apiClient = mock(ApiClient.class);
       doReturn(apiClient).when(apiClientFactory).create();
 
@@ -545,7 +567,7 @@ public class DeprovisionHostWorkflowServiceTest {
 
       // Update deploymentService with the map
       HashMap<Integer, String> zkMap = new HashMap<>();
-      zkMap.put(1, hostService.hostAddress);
+      zkMap.put(1, vmService.ipAddress);
       DeploymentService.State deploymentState = new DeploymentService.State();
       deploymentState.zookeeperIdToIpMap = zkMap;
       cloudStoreMachine.sendPatchAndWait(deploymentServiceState.documentSelfLink, deploymentState);

@@ -522,6 +522,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.taskPollDelay = currentState.taskPollDelay;
     startState.isNewDeployment = currentState.isNewDeployment;
+    currentState.hostServiceLink = currentState.hostServiceLink;
     return startState;
   }
 

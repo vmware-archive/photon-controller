@@ -49,6 +49,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class implements miscellaneous utility functions.
@@ -294,6 +295,136 @@ public class MiscUtils {
     float managementVmHostRatio = getManagementVmHostRatio(hostState);
     long afterRationMemeory = (long) (hostState.memoryMb * managementVmHostRatio);
     return floorToNearestNumberDivisibleByFour(afterRationMemeory);
+  }
+
+
+  public static void waitForTaskToFinish(Service service, @Nullable Task task, final Integer taskPollDelay, final
+  FutureCallback<Task>
+      callback) {
+    if (null == task) {
+      callback.onFailure(new IllegalStateException("task is null"));
+      return;
+    }
+
+    try {
+      processTask(service, taskPollDelay, task, callback);
+    } catch (Throwable t) {
+      callback.onFailure(t);
+    }
+  }
+
+  private static void scheduleGetTaskCall(final Service service, final Integer taskPollDelay, final String taskId,
+                                   final FutureCallback<Task> callback) {
+
+    Runnable runnable = new Runnable() {
+      @Override
+      public void run() {
+        try {
+          HostUtils.getApiClient(service).getTasksApi().getTaskAsync(taskId,
+              new FutureCallback<Task>() {
+                @Override
+                public void onSuccess(Task result) {
+                  ServiceUtils.logInfo(service, "GetTask API call returned task %s", result.toString());
+                  try {
+                    processTask(service, taskPollDelay, result, callback);
+                  } catch (Throwable throwable) {
+                    callback.onFailure(throwable);
+                  }
+                }
+
+                @Override
+                public void onFailure(Throwable t) {
+                  callback.onFailure(t);
+                }
+              }
+          );
+        } catch (Throwable t) {
+          callback.onFailure(t);
+        }
+      }
+    };
+
+    service.getHost().schedule(runnable, taskPollDelay, TimeUnit.MILLISECONDS);
+  }
+
+  private static void processTask(Service service, final Integer taskPollDelay, Task task, final FutureCallback<Task>
+      callback) throws Throwable {
+    ServiceUtils.logInfo(service, "Process task %s - %s..", task.getId(), task.getState().toUpperCase());
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        scheduleGetTaskCall(service, taskPollDelay, task.getId(), callback);
+        break;
+      case "COMPLETED":
+        ServiceUtils.logInfo(service, "Task completed %s..", task.getId());
+        callback.onSuccess(task);
+        break;
+      case "ERROR":
+        if (ApiUtils.getErrors(task).contains("NotFound")) {
+          // Swallow this error since VM/Image or object is removed from the host already and since
+          // we are already on remove path, notFound errors are safe to ignore
+          ServiceUtils.logInfo(service, "Swallowing error %s..", ApiUtils.getErrors(task));
+          callback.onSuccess(task);
+          break;
+        } else {
+          throw new RuntimeException(ApiUtils.getErrors(task));
+        }
+      default:
+        throw new RuntimeException("Unexpected task status " + task.getState());
+    }
+  }
+
+  public static void logError(Service service, Throwable e) {
+    ServiceUtils.logSevere(service, e);
+    StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+    StringBuilder sb = new StringBuilder();
+    for (StackTraceElement se : stackTraceElements) {
+      sb.append(se).append("\n");
+    }
+    ServiceUtils.logInfo(service, "Stack trace %s", sb.toString());
+  }
+
+  public static void stopAndDeleteVm(Service service, final ApiClient client, final String vmId, final Integer
+      taskPollDelay, final FutureCallback<Task> callback) {
+    ServiceUtils.logInfo(service, "Stop and delete vm..");
+
+    final FutureCallback<Task> finishedCallback = new FutureCallback<Task>() {
+      @Override
+      public void onSuccess(@Nullable Task result) {
+        deleteVm(service, client, vmId, callback);
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        callback.onFailure(t);
+      }
+    };
+
+    try {
+      client.getVmApi().performStopOperationAsync(vmId, new FutureCallback<Task>() {
+        @Override
+        public void onSuccess(@Nullable final Task result) {
+          MiscUtils.waitForTaskToFinish(service, result, taskPollDelay, finishedCallback);
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+          callback.onFailure(t);
+        }
+      });
+    } catch (Throwable t) {
+      callback.onFailure(t);
+    }
+  }
+
+  private static void deleteVm(Service service, final ApiClient client, final String vmId,
+                        final FutureCallback<Task> callback) {
+    ServiceUtils.logInfo(service, "Delete vms..");
+    try {
+      client.getVmApi().deleteAsync(vmId, callback);
+    } catch (Throwable t) {
+      callback.onFailure(t);
+    }
   }
 
   public static long floorToNearestNumberDivisibleByFour(long number) {

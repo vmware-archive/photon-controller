@@ -337,7 +337,8 @@ public class CreateFlavorTaskService extends StatefulService {
                   hostState.cpuCount);
             }
 
-            createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryMb, finalDiskGb);
+            ServiceUtils.logSevere(this, "CREATEFFFFLAVOR:  ", new Exception());
+                createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryMb, finalDiskGb);
 
           } catch (Throwable t) {
             failTask(t);

@@ -26,6 +26,7 @@ import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
+import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.BuildRuntimeConfigurationTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.BuildRuntimeConfigurationTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
@@ -35,6 +36,7 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
@@ -47,6 +49,7 @@ import javax.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * This class implements a DCP micro-service which performs the task of
@@ -87,6 +90,12 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
     @NotNull
     @Immutable
     public String deploymentServiceLink;
+
+    /**
+     * This value represents the host entity link to create vms on.
+     */
+    @Immutable
+    public String hostServiceLink;
 
     @Immutable
     @DefaultBoolean(value = true)
@@ -144,7 +153,7 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        retrieveAllContainers(currentState);
+        retrieveContainers(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
@@ -162,14 +171,59 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
     ValidationUtils.validateTaskStageProgression(currentState.taskState, patchState.taskState);
   }
 
-  private void retrieveAllContainers(final State currentState) {
+  private void retrieveContainers(final State currentState) {
+    if (currentState.hostServiceLink == null) {
+      retrieveAllContainers(currentState);
+    } else {
+      QueryTask queryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(QueryTask.Query.Builder.create()
+              .addKindFieldClause(VmService.State.class)
+              .addFieldClause(VmService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
+              .build())
+          .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
+          .build();
 
+      Operation queryPostOperation = Operation
+          .createPost(UriUtils.buildBroadcastRequestUri(
+              UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+              ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+          .setBody(queryTask)
+          .setCompletion((completedOp, failure) -> {
+            if (failure != null) {
+              failTask(failure);
+              return;
+            }
+
+            NodeGroupBroadcastResponse rsp = completedOp.getBody(NodeGroupBroadcastResponse.class);
+            Set<String> vmServiceLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(rsp);
+            checkState(vmServiceLinks.size() == 1);
+
+            QueryTask.Query vmClause = QueryTask.Query.Builder.create()
+                .addKindFieldClause(ContainerService.State.class)
+                .addFieldClause(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK, vmServiceLinks.iterator().next())
+                .build();
+            QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+            querySpecification.query = vmClause;
+
+            runContainersQuery(currentState, querySpecification);
+          });
+
+      sendRequest(queryPostOperation);
+    }
+  }
+
+  private void retrieveAllContainers(final State currentState) {
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
         .setTermMatchValue(Utils.buildKind(ContainerService.State.class));
 
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query = kindClause;
+
+    runContainersQuery(currentState, querySpecification);
+  }
+
+  private void runContainersQuery(final State currentState, QueryTask.QuerySpecification querySpecification) {
     QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
     Operation queryPostOperation = Operation
@@ -198,7 +252,6 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
 
     sendRequest(queryPostOperation);
   }
-
   private void buildConfiguration(State currentState, Iterator<String> documentLinkIterator) {
 
     if (!documentLinkIterator.hasNext()) {

@@ -101,7 +101,7 @@ public class ZookeeperClient {
 
     } catch (Exception e) {
       logger.error("Ignoring Zookeeper reconfig error ", e);
-      //throw new RuntimeException(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -119,7 +119,7 @@ public class ZookeeperClient {
 
     } catch (Exception e) {
       logger.error("Ignoring Zookeeper reconfig error ", e);
-      //throw new RuntimeException(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -133,7 +133,7 @@ public class ZookeeperClient {
             callback.onSuccess(null);
             break;
           default:
-            logger.error("Zookeeper returned error code " + KeeperException.Code.get(rc));
+            logger.error("Zookeeper returned error code during reconfig" + KeeperException.Code.get(rc));
             callback.onFailure(new RuntimeException("Failed to reconfigure zookeeper"));
         }
       }
