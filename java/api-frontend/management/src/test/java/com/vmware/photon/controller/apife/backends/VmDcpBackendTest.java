@@ -844,11 +844,11 @@ public class VmDcpBackendTest {
       assertThat(this.vm, is(updatedVm));
     }
 
-    @Test
-    public void testPrepareVmCreateImage() throws Throwable {
+    @Test(dataProvider = "vmCreateImageReplicationType")
+    public void testPrepareVmCreateImage(ImageReplicationType replicationType) throws Throwable {
       ImageCreateSpec imageCreateSpec = new ImageCreateSpec();
       imageCreateSpec.setName("i1");
-      imageCreateSpec.setReplicationType(ImageReplicationType.EAGER);
+      imageCreateSpec.setReplicationType(replicationType);
 
       TaskEntity task = vmDcpBackend.prepareVmCreateImage(vmId, imageCreateSpec);
 
@@ -875,6 +875,14 @@ public class VmDcpBackendTest {
 
       step = task.getSteps().get(1);
       assertThat(step.getOperation(), is(com.vmware.photon.controller.api.Operation.REPLICATE_IMAGE));
+    }
+
+    @DataProvider(name = "vmCreateImageReplicationType")
+    public Object[][] getVmCreateImageReplicationType() {
+      return new Object[][] {
+          {ImageReplicationType.EAGER},
+          {ImageReplicationType.ON_DEMAND}
+      };
     }
 
     @Test
