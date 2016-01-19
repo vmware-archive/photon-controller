@@ -144,10 +144,10 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
         networkBuilder.put(networkId, host.getKey());
       }
 
-      if (host.getValue().availabilityZone == null) {
+      if (host.getValue().availabilityZoneId == null) {
         logger.info("{} doesn't have the availabilityZone field set.", host);
       } else {
-        availabilityZoneBuilder.put(host.getValue().availabilityZone, host.getKey());
+        availabilityZoneBuilder.put(host.getValue().availabilityZoneId, host.getKey());
       }
     }
     this.hosts = hostBuilder.build();

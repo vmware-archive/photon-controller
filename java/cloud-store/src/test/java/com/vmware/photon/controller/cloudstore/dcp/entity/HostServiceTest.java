@@ -142,7 +142,7 @@ public class HostServiceTest {
       assertThat(savedState.agentPort, is(8835));
       assertThat(savedState.userName, is("userName"));
       assertThat(savedState.password, is("password"));
-      assertThat(savedState.availabilityZone, is("availabilityZone"));
+      assertThat(savedState.availabilityZoneId, is("availabilityZone"));
       assertThat(savedState.esxVersion, is("6.0"));
       assertThat(savedState.usageTags, is(usageTags));
       assertThat(savedState.reportedImageDatastores, is(new HashSet<>(Arrays.asList("datastore1"))));

@@ -97,7 +97,7 @@ public class ConstraintCheckerPerfTest {
       }
 
       randomInt = random.nextInt(numAvailabilityZones);
-      host.availabilityZone = new UUID(0, randomInt).toString();
+      host.availabilityZoneId = new UUID(0, randomInt).toString();
       host.usageTags = new HashSet<>(Arrays.asList(UsageTag.CLOUD.name()));
       hosts.put(new UUID(0, i).toString(), host);
     }

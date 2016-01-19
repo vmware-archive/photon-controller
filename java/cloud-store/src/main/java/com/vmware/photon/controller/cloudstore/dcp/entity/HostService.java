@@ -169,7 +169,7 @@ public class HostService extends StatefulService {
    */
   public static class State extends ServiceDocument {
 
-    public static final String FIELD_NAME_AVAILABILITY_ZONE = "availabilityZone";
+    public static final String FIELD_NAME_AVAILABILITY_ZONE = "availabilityZoneId";
     public static final String FIELD_NAME_HOST_ADDRESS = "hostAddress";
     public static final String FIELD_NAME_REPORTED_DATASTORES = "reportedDatastores";
     public static final String FIELD_NAME_REPORTED_NETWORKS = "reportedNetworks";
@@ -246,7 +246,7 @@ public class HostService extends StatefulService {
     /**
      * This value represents the availability zone this host belongs to.
      */
-    public String availabilityZone;
+    public String availabilityZoneId;
 
     /**
      * This value represents the total physical memory of the host.
