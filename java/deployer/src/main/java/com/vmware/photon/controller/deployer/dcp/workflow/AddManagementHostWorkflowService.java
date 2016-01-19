@@ -171,9 +171,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
   public AddManagementHostWorkflowService() {
     super(State.class);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
   @Override
@@ -534,6 +532,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.taskPollDelay = currentState.taskPollDelay;
     startState.isNewDeployment = currentState.isNewDeployment;
+    startState.hostServiceLink = currentState.hostServiceLink;
     return startState;
   }
 

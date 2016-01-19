@@ -39,7 +39,6 @@ public class CreateVmSpecLayoutTaskFactoryServiceTest {
   public void testCapabilityInitialization() {
 
     EnumSet<Service.ServiceOption> expected = EnumSet.of(
-        Service.ServiceOption.REPLICATION,
         Service.ServiceOption.FACTORY,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING);
 

@@ -98,6 +98,10 @@ public class WaitForServiceTaskService extends StatefulService {
     @DefaultInteger(value = 0)
     @Immutable
     public Integer controlFlags;
+
+    @DefaultInteger(value = 10)
+    @Immutable
+    public Integer consecutiveReadyCount;
   }
 
   public WaitForServiceTaskService() {
@@ -228,8 +232,9 @@ public class WaitForServiceTaskService extends StatefulService {
             final HealthChecker healthChecker =
                 getHealthCheckHelperFactory().create(service, containerType, vmState.ipAddress).getHealthChecker();
             final AtomicInteger retryCounter = new AtomicInteger(currentState.maxRetries);
+            final AtomicInteger consecutiveReady = new AtomicInteger(0);
 
-            scheduleHealthCheckQuery(currentState, healthChecker, retryCounter);
+            scheduleHealthCheckQuery(currentState, healthChecker, retryCounter, consecutiveReady);
           } else {
             // Assume success
             sendStageProgressPatch(TaskState.TaskStage.FINISHED);
@@ -250,7 +255,8 @@ public class WaitForServiceTaskService extends StatefulService {
   private void scheduleHealthCheckQuery(
       final State currentState,
       final HealthChecker healthChecker,
-      final AtomicInteger retryCounter) {
+      final AtomicInteger retryCounter,
+      final AtomicInteger consecutiveReady) {
 
     final Service service = this;
 
@@ -273,11 +279,16 @@ public class WaitForServiceTaskService extends StatefulService {
 
 
         if (healthChecker.isReady()) {
-          sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-          return;
+          if (consecutiveReady.incrementAndGet() > currentState.consecutiveReadyCount
+              || retryCounter.get() == 0) {
+            sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+            return;
+          }
+        } else {
+          consecutiveReady.set(0);
         }
 
-        scheduleHealthCheckQuery(currentState, healthChecker, retryCounter);
+        scheduleHealthCheckQuery(currentState, healthChecker, retryCounter, consecutiveReady);
       }
     };
 

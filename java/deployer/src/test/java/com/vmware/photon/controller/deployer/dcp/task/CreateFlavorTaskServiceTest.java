@@ -97,9 +97,7 @@ public class CreateFlavorTaskServiceTest {
     public void testCapabilities() {
 
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
-          Service.ServiceOption.OWNER_SELECTION,
-          Service.ServiceOption.PERSISTENCE,
-          Service.ServiceOption.REPLICATION);
+          Service.ServiceOption.PERSISTENCE);
 
       assertThat(service.getOptions(), is(expected));
     }
