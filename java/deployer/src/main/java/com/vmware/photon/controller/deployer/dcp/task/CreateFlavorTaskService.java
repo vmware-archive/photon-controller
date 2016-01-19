@@ -87,9 +87,7 @@ public class CreateFlavorTaskService extends StatefulService {
 
   public CreateFlavorTaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
   @Override
@@ -338,7 +336,6 @@ public class CreateFlavorTaskService extends StatefulService {
             }
 
             createFlavorInApife(currentState, vmState, finalCpuCount, finalMemoryMb, finalDiskGb);
-
           } catch (Throwable t) {
             failTask(t);
           }
