@@ -273,11 +273,15 @@ public class EntityLockCleanerService extends StatefulService {
     Collection<Operation> getTaskOperations = new LinkedList<>();
 
     for (EntityLockService.State entityLock : entityLockList) {
-      Operation getTaskOperation = Operation
-          .createGet(UriUtils.buildUri(getHost(), TaskServiceFactory.SELF_LINK + "/" + entityLock.taskId))
-          .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
+      if (entityLock.taskId != null) {
+        Operation getTaskOperation = Operation
+            .createGet(UriUtils.buildUri(getHost(), TaskServiceFactory.SELF_LINK + "/" + entityLock.taskId))
+            .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
 
-      getTaskOperations.add(getTaskOperation);
+        getTaskOperations.add(getTaskOperation);
+      } else {
+        ServiceUtils.logSevere(this, "Found entity lock with null taskId. EntityLock Id: %s", entityLock.entityId);
+      }
     }
 
     return getTaskOperations;
