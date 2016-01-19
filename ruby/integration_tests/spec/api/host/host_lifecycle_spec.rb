@@ -73,12 +73,12 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
             @deployment = client.find_all_api_deployments.items.first
             @host = client.get_deployment_hosts(@deployment.id).items.select { |host| host.usage_tags == ["CLOUD"] }.first
           end
+
           it "host has valid fields" do
             expect(@host.state).to eq("READY")
             expect(@host.esx_version).not_to be_nil
             expect(@host.esx_version).not_to be_empty
             expect(host_is_reachable @host, @seeder).to be(true)
-            #end
           end
 
           it "de-provisions and re-provisions" do
