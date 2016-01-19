@@ -27,6 +27,7 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.DefaultUuid;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskFactoryService;
@@ -39,6 +40,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -382,22 +384,39 @@ public class DeprovisionHostWorkflowService extends StatefulService {
   }
 
   private void updateZookeeperMapAndHostService(State currentState, boolean ignoreError) {
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(currentState.hostServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    handleZookeeperStepFailure(failure, "Error while getting host " + currentState.hostServiceLink,
-                        ignoreError);
-                    return;
-                  }
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(VmService.State.class)
+            .addFieldClause(VmService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
+        .build();
 
-                  HostService.State hostService = completedOp.getBody(HostService.State.class);
-                  updateZookeeperMapAndHostService(currentState, hostService.hostAddress, ignoreError);
-                }
-            )
-    );
+    Operation queryPostOperation = Operation
+        .createPost(UriUtils.buildBroadcastRequestUri(
+            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+        .setBody(queryTask)
+        .setCompletion(new Operation.CompletionHandler() {
+          @Override
+          public void handle(Operation operation, Throwable throwable) {
+            if (null != throwable) {
+              failTask(throwable);
+              return;
+            }
+
+            List<VmService.State> vmServiceStates =
+                QueryTaskUtils.getBroadcastQueryDocuments(VmService.State.class, operation);
+
+            if (vmServiceStates.size() == 0) {
+              sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
+            } else {
+              updateZookeeperMapAndHostService(currentState, vmServiceStates.get(0).ipAddress, ignoreError);
+            }
+          }
+        });
+
+    sendRequest(queryPostOperation);
   }
 
   private void handleZookeeperStepFailure(Throwable failure, String logMessage, boolean ignoreError) {
