@@ -14,11 +14,11 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Datastore;
+import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.exceptions.external.DatastoreNotFoundException;
 
 import com.google.common.base.Optional;
-
-import java.util.List;
 
 /**
  * Inventory Datastore service backend.
@@ -26,6 +26,10 @@ import java.util.List;
 public interface DatastoreBackend {
 
   Datastore toApiRepresentation(String id) throws DatastoreNotFoundException;
+
   Datastore getDatastore(String id) throws DatastoreNotFoundException;
-  List<Datastore> filter(Optional<String> tag);
+
+  ResourceList<Datastore> filter(Optional<String> tag, Optional<Integer> pageSize);
+
+  ResourceList<Datastore> getDatastoresPage(String pageLink) throws PageExpiredException;
 }

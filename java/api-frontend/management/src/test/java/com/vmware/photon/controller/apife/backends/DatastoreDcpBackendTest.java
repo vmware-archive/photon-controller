@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Datastore;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.exceptions.external.DatastoreNotFoundException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
@@ -33,7 +34,6 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.net.InetSocketAddress;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -116,7 +116,7 @@ public class DatastoreDcpBackendTest {
   }
 
   /**
-   * Tests {@link DatastoreDcpBackend#filter(Optional)}.
+   * Tests {@link DatastoreDcpBackend#filter(Optional, Optional)}.
    */
   public class FilterTest {
 
@@ -171,8 +171,28 @@ public class DatastoreDcpBackendTest {
     public void testSuccess(
         Optional<String> tag,
         int expectedSize) {
-      List<Datastore> datastores = datastoreBackend.filter(tag);
-      assertThat(datastores.size(), is(expectedSize));
+      ResourceList<Datastore> datastores = datastoreBackend.filter(tag, Optional.absent());
+      assertThat(datastores.getItems().size(), is(expectedSize));
+    }
+
+    @Test(dataProvider = "filterParams")
+    public void testFilterWithPagination(
+            Optional<String> tag,
+            int expectedSize) throws Throwable {
+      ResourceList<Datastore> datastores = datastoreBackend.filter(tag, Optional.<Integer>absent());
+      assertThat(datastores.getItems().size(), is(expectedSize));
+
+      final int pageSize = 1;
+      Set<Datastore> datastoreSet = new HashSet<>();
+      datastores = datastoreBackend.filter(tag, Optional.of(pageSize));
+      datastoreSet.addAll(datastores.getItems());
+
+      while (datastores.getNextPageLink() != null) {
+        datastores = datastoreBackend.getDatastoresPage(datastores.getNextPageLink());
+        datastoreSet.addAll(datastores.getItems());
+      }
+
+      assertThat(datastoreSet.size(), is(expectedSize));
     }
 
     @DataProvider(name = "filterParams")

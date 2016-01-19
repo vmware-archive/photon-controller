@@ -15,8 +15,11 @@ package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.Datastore;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DatastoreFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.DatastoreResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
 import com.google.common.base.Optional;
@@ -47,10 +50,13 @@ import javax.ws.rs.core.Response;
 public class DatastoresResource {
 
   private final DatastoreFeClient datastoreFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public DatastoresResource(DatastoreFeClient datastoreFeClient) {
+  public DatastoresResource(DatastoreFeClient datastoreFeClient, PaginationConfig paginationConfig) {
+
     this.datastoreFeClient = datastoreFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @GET
@@ -58,11 +64,20 @@ public class DatastoresResource {
       responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "Success")})
   public Response find(@Context Request request,
-                       @QueryParam("tag") Optional<String> tag) {
-    ResourceList<Datastore> datastores = datastoreFeClient.find(tag);
+                       @QueryParam("tag") Optional<String> tag,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink)  throws ExternalException {
+    ResourceList<Datastore> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = datastoreFeClient.getDatastoresPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = datastoreFeClient.find(tag, adjustedPageSize);
+    }
+
     return generateResourceListResponse(
         Response.Status.OK,
-        datastores,
+        PaginationUtils.formalizePageLinks(resourceList, DatastoreResourceRoutes.API),
         (ContainerRequest) request,
         DatastoreResourceRoutes.DATASTORE_PATH);
   }
