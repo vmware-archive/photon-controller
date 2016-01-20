@@ -47,7 +47,7 @@ from common.plugin import load_plugins, thrift_services
 from common.request_id import RequestIdExecutor
 from common.service_name import ServiceName
 from common.state import State
-from pthrift.multiplex import TMultiplexedProcessor
+from tserver.multiplex import TMultiplexedProcessor
 from tserver.thrift_server import TNonblockingServer
 
 

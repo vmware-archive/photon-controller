@@ -23,12 +23,12 @@ from common.photon_thrift.client import ClosedError
 from common.photon_thrift.client import TimeoutError
 from common.photon_thrift.serverset import ServerSet
 from gen.test.echoer import Echoer
-from pthrift.multiplex import TMultiplexedProcessor
 from thrift.protocol import TCompactProtocol
 from thrift.server import TServer
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.transport.TTransport import TTransportException
+from tserver.multiplex import TMultiplexedProcessor
 
 
 class TestServerSet(ServerSet):

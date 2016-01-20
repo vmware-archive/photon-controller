@@ -26,7 +26,7 @@ setup(name='photon.controller.common',
       install_requires=[
           'enum34==0.9.19',
           'photon.controller.gen.thrift',
-          'photon.controller.pthrift',
+          'photon.controller.tserver',
           'setuptools==0.6c11',
           'thrift==0.9.1',
       ],

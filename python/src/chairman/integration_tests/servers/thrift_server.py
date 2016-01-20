@@ -18,9 +18,9 @@ from gen.agent import AgentControl
 from gen.host import Host
 from gen.scheduler.root import RootScheduler
 from gen.scheduler import Scheduler
-from pthrift.multiplex import TMultiplexedProcessor
 from thrift.protocol import TCompactProtocol
 from thrift.transport import TSocket
+from tserver.multiplex import TMultiplexedProcessor
 from tserver.thrift_server import TNonblockingServer
 
 

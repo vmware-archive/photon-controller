@@ -26,11 +26,11 @@ from gen.roles.ttypes import Roles
 from gen.scheduler.root import RootScheduler
 from gen.scheduler.ttypes import ConfigureRequest
 from gen.scheduler.ttypes import ConfigureResponse
-from pthrift.multiplex import TMultiplexedProtocol
 from thrift.protocol import TCompactProtocol
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.transport.TTransport import TTransportException
+from tserver.multiplex import TMultiplexedProtocol
 
 from integration_tests.servers.thrift_server \
     import ThriftServer

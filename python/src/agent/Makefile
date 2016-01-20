@@ -1,4 +1,4 @@
-DEPS=common host pthrift scheduler
+DEPS=common host tserver scheduler
 TESTS=agent/tests/unit
 EXTRA_CLEANUP_TARGETS=$(BUILD)/$(NAME).log
 

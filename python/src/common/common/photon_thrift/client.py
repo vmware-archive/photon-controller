@@ -17,7 +17,7 @@ from threading import Condition
 from time import time
 
 from common.photon_thrift import ServerSetListener
-from pthrift.multiplex import TMultiplexedProtocol
+from tserver.multiplex import TMultiplexedProtocol
 from thrift.protocol import TCompactProtocol
 from thrift.transport import TSocket
 from thrift.transport import TTransport
