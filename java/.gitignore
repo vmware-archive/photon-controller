@@ -11,3 +11,9 @@ tags
 *.iws
 *.ids
 .idea/
+
+# Eclipse
+.project
+.settings
+.classpath
+bin
