@@ -14,8 +14,11 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -44,6 +47,7 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class implements a DCP micro-service which performs the task of
@@ -272,7 +276,7 @@ public class UploadImageTaskService extends StatefulService {
 
   /**
    * This method polls the status of the create VM task. Depending the status
-   * returned, the service is transitioned to the corresponding stage or sub-stage.
+   * returned, the service is transitioned to wait for image seeding completion or failure.
    *
    * @param currentState Supplies the current state object.
    * @param task         Supplies the task object.
@@ -282,11 +286,7 @@ public class UploadImageTaskService extends StatefulService {
     FutureCallback<Task> callback = new FutureCallback<Task>() {
       @Override
       public void onSuccess(@Nullable Task result) {
-        State patchState = new State();
-        patchState.taskState = new TaskState();
-        patchState.taskState.stage = TaskState.TaskStage.FINISHED;
-        patchState.imageId = task.getEntity().getId();
-        TaskUtils.sendSelfPatch(UploadImageTaskService.this, patchState);
+        waitForImageSeedingCompletion(currentState, task.getEntity().getId());
       }
 
       @Override
@@ -300,6 +300,48 @@ public class UploadImageTaskService extends StatefulService {
         this,
         currentState.queryUploadImageTaskInterval,
         callback);
+  }
+
+  /**
+   * This method polls the state of the image service. Depending on the state returned,
+   * the service is transitioned to the corresponding stage or sub-stage.
+   *
+   * @param currentState Supplies the current state object.
+   * @param imageId      Supplies the imageId.
+   */
+  private void waitForImageSeedingCompletion(final State currentState, String imageId) {
+    getHost().schedule(
+        () -> {
+          Operation getOperation =
+              HostUtils.getCloudStoreHelper(this).createGet(ImageServiceFactory.SELF_LINK + "/" + imageId)
+                  .setCompletion((operation, throwable) -> {
+                    if (throwable != null) {
+                      failTask(throwable);
+                      return;
+                    }
+
+                    ImageService.State imageState = operation.getBody(ImageService.State.class);
+                    if (imageState.replicatedImageDatastore != null &&
+                        imageState.totalImageDatastore != null &&
+                        imageState.replicatedImageDatastore.equals(imageState.totalImageDatastore)) {
+                      State patchState = new State();
+                      patchState.taskState = new TaskState();
+                      patchState.taskState.stage = TaskState.TaskStage.FINISHED;
+                      patchState.imageId = imageId;
+                      TaskUtils.sendSelfPatch(UploadImageTaskService.this, patchState);
+                      return;
+                    }
+
+                    if (imageState.state == ImageState.ERROR) {
+                      failTask(new IllegalStateException("Image state is ERROR. Image seeder process errors out " +
+                          "unexpectedly."));
+                      return;
+                    }
+
+                    waitForImageSeedingCompletion(currentState, imageId);
+                  });
+          sendRequest(getOperation);
+        }, currentState.queryUploadImageTaskInterval, TimeUnit.MILLISECONDS);
   }
 
   private ApiClient getApiClient(State currentState) {
