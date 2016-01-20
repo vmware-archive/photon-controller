@@ -108,7 +108,7 @@ public class CreateTenantTaskService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        sendStageProgressPatch(startState.taskState.stage);
+        failTask(new RuntimeException("Let's see if this fails"));
       }
     } catch (Throwable t) {
       failTask(t);
@@ -129,7 +129,7 @@ public class CreateTenantTaskService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        createTenant(currentState);
+        failTask(new RuntimeException("Let's see if this fails"));
       }
     } catch (Throwable t) {
       failTask(t);
