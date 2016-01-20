@@ -235,6 +235,17 @@ public class MockHelper {
     return serverSet;
   }
 
+  public static Answer<Task> mockCreateFlavorAsync(String taskId, String entityId, String state) {
+    return mockCreateFlavorAsync(TestHelper.createTask(taskId, entityId, state));
+  }
+
+  public static Answer<Task> mockCreateFlavorAsync(Task returnValue) {
+    return (invocation) -> {
+      ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(returnValue);
+      return null;
+    };
+  }
+
   public static Answer<Task> mockCreateProjectAsync(String taskId, String entityId, String state) {
     return mockCreateProjectAsync(TestHelper.createTask(taskId, entityId, state));
   }

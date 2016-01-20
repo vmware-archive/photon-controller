@@ -46,9 +46,6 @@ import com.vmware.photon.controller.deployer.dcp.task.CreateContainerTaskFactory
 import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateProjectTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateResourceTicketTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateTenantTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmTaskFactoryService;
@@ -165,9 +162,6 @@ public class DeployerDcpServiceHost
       CreateFlavorTaskFactoryService.class,
       CreateIsoTaskFactoryService.class,
       CreateManagementVmTaskFactoryService.class,
-      CreateProjectTaskFactoryService.class,
-      CreateResourceTicketTaskFactoryService.class,
-      CreateTenantTaskFactoryService.class,
       CreateVmSpecLayoutTaskFactoryService.class,
       CreateVmSpecTaskFactoryService.class,
       CreateVmTaskFactoryService.class,

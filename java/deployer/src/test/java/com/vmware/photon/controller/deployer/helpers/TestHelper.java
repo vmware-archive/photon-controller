@@ -55,7 +55,10 @@ import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -457,6 +460,58 @@ public class TestHelper {
             projectServiceStartState,
             ProjectService.State.class);
     return projectState;
+  }
+
+  //
+  // Test validation and cleanup routines.
+  //
+
+  public static <T extends ServiceDocument> List<String> getServiceLinksOfType(
+      MultiHostEnvironment testEnvironment, Class<T> clazz)
+      throws Throwable {
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create().addKindFieldClause(clazz).build())
+        .build();
+
+    return testEnvironment.sendQueryAndWait(queryTask).results.documentLinks;
+  }
+
+  public static <T extends ServiceDocument> List<T> getServicesOfType(
+      MultiHostEnvironment testEnvironment, Class<T> clazz)
+      throws Throwable {
+
+    QueryTask queryResult = testEnvironment.sendQueryAndWait(QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create().addKindFieldClause(clazz).build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
+        .build());
+
+    List<T> returnValue = new ArrayList<>(queryResult.results.documentLinks.size());
+    for (String documentLink : queryResult.results.documentLinks) {
+      returnValue.add(Utils.fromJson(queryResult.results.documents.get(documentLink), clazz));
+    }
+
+    return returnValue;
+  }
+
+  public static <T extends ServiceDocument> void assertNoServicesOfType(
+      MultiHostEnvironment testEnvironment, Class<T> clazz)
+      throws Throwable {
+
+    List<String> documentLinks = getServiceLinksOfType(testEnvironment, clazz);
+    assertThat(documentLinks.size(), is(0));
+  }
+
+  public static <T extends ServiceDocument> void deleteServicesOfType(
+      MultiHostEnvironment testEnvironment, Class<T> clazz)
+      throws Throwable {
+
+    List<String> documentLinks = getServiceLinksOfType(testEnvironment, clazz);
+    if (documentLinks.size() > 0) {
+      for (String documentLink : documentLinks) {
+        testEnvironment.sendDeleteAndWait(documentLink);
+      }
+    }
   }
 
   //
