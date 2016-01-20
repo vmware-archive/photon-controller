@@ -149,6 +149,8 @@ public class ImageService extends StatefulService {
       State currentState = getState(patchOperation);
       DatastoreCountRequest patchState = patchOperation.getBody(DatastoreCountRequest.class);
 
+      ServiceUtils.logInfo(this,
+          "Adjust type: " + patchState.kind.toString());
       switch (patchState.kind) {
         case ADJUST_SEEDING_AND_REPLICATION_COUNT:
           currentState.replicatedImageDatastore += patchState.amount;
@@ -158,6 +160,11 @@ public class ImageService extends StatefulService {
           currentState.replicatedDatastore += patchState.amount;
           break;
       }
+      ServiceUtils.logInfo(this,
+          "Replicated image datastore: " + currentState.replicatedImageDatastore + "," +
+          "Replicated datastore: " + currentState.replicatedDatastore + "," +
+          "Total image datastore: " + currentState.totalImageDatastore + "," +
+          "Total datastore: " + currentState.totalDatastore);
       validateState(currentState);
 
       setState(patchOperation, currentState);
