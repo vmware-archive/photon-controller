@@ -22,7 +22,7 @@ from functools import wraps
 from common.lock_vm import ConcurrentVmOperation
 from common.service_name import ServiceName
 from common.photon_thrift.validation import deep_validate
-from pthrift.multiplex import Worker
+from tserver.multiplex import Worker
 
 
 def log_request(func=None, log_level=logging.INFO):

@@ -13,7 +13,7 @@
 import unittest
 
 from mock import call, patch, MagicMock
-from pthrift.multiplex import TMultiplexedProcessor, ServiceProcessor, \
+from tserver.multiplex import TMultiplexedProcessor, ServiceProcessor, \
     StoredMessageProtocol
 from thrift.Thrift import TMessageType
 
@@ -62,8 +62,8 @@ class TestTMultiPlexedProcessor(unittest.TestCase):
         worker.assert_has_calls(calls)
         self.assertEqual(worker.call_count, num_workers)
 
-    @patch("pthrift.multiplex.Queue.Queue")
-    @patch("pthrift.multiplex.Worker")
+    @patch("tserver.multiplex.Queue.Queue")
+    @patch("tserver.multiplex.Worker")
     def test_registerProcessor(self, worker, queue):
         """
         Test to check the registration of a thrift service processor.
@@ -106,7 +106,7 @@ class TestTMultiPlexedProcessor(unittest.TestCase):
         self.assertEqual(m_processor.services[service_name].queue,
                          test_queue_1)
 
-    @patch("pthrift.multiplex.time.time")
+    @patch("tserver.multiplex.time.time")
     def test_process_queued(self, cur_time):
         """
         Test the basic process_queued functionality.

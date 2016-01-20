@@ -18,8 +18,8 @@ import unittest
 from hamcrest import *  # noqa
 from logging import StreamHandler
 from mock import *  # noqa
-from pthrift.multiplex import Worker
 from thrift.Thrift import TType
+from tserver.multiplex import Worker
 
 import common
 from common.service_name import ServiceName
