@@ -512,15 +512,24 @@ public class TestHelper {
   }
 
   public static Task createCompletedApifeTask(String taskName, String entityId) {
+    String taskId = String.format("%s_TASK_ID", taskName);
+    return createTask(taskId, entityId, "COMPLETED");
+  }
 
-    String taskId = String.format("%s_ID", taskName);
+  public static Task createTask(String taskName, String state) {
+    String entityId = String.format("%s_ENTITY_ID", taskName);
+    String taskId = String.format("%s_TASK_ID", taskName);
+    return createTask(taskId, entityId, state);
+  }
+
+  public static Task createTask(String taskId, String entityId, String state) {
 
     Task.Entity entity = new Task.Entity();
     entity.setId(entityId);
 
-    final Task task = new Task();
+    Task task = new Task();
     task.setId(taskId);
-    task.setState("COMPLETED");
+    task.setState(state);
     task.setEntity(entity);
 
     return task;

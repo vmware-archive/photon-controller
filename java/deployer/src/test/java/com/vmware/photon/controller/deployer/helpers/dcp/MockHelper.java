@@ -235,6 +235,50 @@ public class MockHelper {
     return serverSet;
   }
 
+  public static Answer<Task> mockCreateProjectAsync(String taskId, String entityId, String state) {
+    return mockCreateProjectAsync(TestHelper.createTask(taskId, entityId, state));
+  }
+
+  public static Answer<Task> mockCreateProjectAsync(Task returnValue) {
+    return (invocation) -> {
+      ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(returnValue);
+      return null;
+    };
+  }
+
+  public static Answer<Task> mockCreateResourceTicketAsync(String taskId, String entityId, String state) {
+    return mockCreateResourceTicketAsync(TestHelper.createTask(taskId, entityId, state));
+  }
+
+  public static Answer<Task> mockCreateResourceTicketAsync(Task returnValue) {
+    return (invocation) -> {
+      ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(returnValue);
+      return null;
+    };
+  }
+
+  public static Answer<Task> mockCreateTenantAsync(String taskId, String entityId, String state) {
+    return mockCreateTenantAsync(TestHelper.createTask(taskId, entityId, state));
+  }
+
+  public static Answer<Task> mockCreateTenantAsync(Task returnValue) {
+    return (invocation) -> {
+      ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(returnValue);
+      return null;
+    };
+  }
+
+  public static Answer<Task> mockGetTaskAsync(String taskId, String entityId, String state) {
+    return mockGetTaskAsync(TestHelper.createTask(taskId, entityId, state));
+  }
+
+  public static Answer<Task> mockGetTaskAsync(Task returnValue) {
+    return (invocation) -> {
+      ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(returnValue);
+      return null;
+    };
+  }
+
   public static void mockApiClient(ApiClientFactory apiClientFactory, MultiHostEnvironment<?> machine, boolean
       isSuccess) throws Throwable {
     ApiClient apiClient = mock(ApiClient.class);
