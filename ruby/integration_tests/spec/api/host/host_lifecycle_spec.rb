@@ -30,12 +30,7 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
             end
           end
 
-          after(:all) do
-            ignoring_all_errors { EsxCloud::Host.exit_maintenance_mode @host.id }
-            ignoring_all_errors { EsxCloud::Host.resume @host.id }
-          end
-
-          it "de-provisions and re-provisions" do
+          it "de-provisions and re-provisions (with vms)" do
             #it "pauses a host" do
             expect(EsxCloud::Host.enter_suspended_mode(@host.id).state).to eq("SUSPENDED")
             #end
@@ -122,6 +117,8 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       after(:all) do
         vms = EsxCloud::Host.get_host_vms(@host.id)
         vms.items.each{ |vm| vm.delete }
+        ignoring_all_errors { EsxCloud::Host.exit_maintenance_mode @host.id }
+        ignoring_all_errors { EsxCloud::Host.resume @host.id }
       end
 
       before(:each) do
@@ -130,12 +127,12 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       end
 
       describe "resume" do
-        it "is a no-op when resuming a READY host" do
+        it "is a no-op when resuming a READY host (with vms)" do
           ignoring_all_errors { EsxCloud::Host.resume @host.id }
           expect(get_state @host).to eq("READY")
         end
 
-        it "should transition back to READY from SUSPEND" do
+        it "should transition back to READY from SUSPEND (with vms)" do
           ignoring_all_errors { EsxCloud::Host.enter_suspended_mode @host.id }
           expect(get_state @host).to eq("SUSPENDED")
 
@@ -145,12 +142,12 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       end
 
       describe "suspend" do
-        it "is transitioning to suspended mode" do
+        it "is transitioning to suspended mode (with vms)" do
           ignoring_all_errors { EsxCloud::Host.enter_suspended_mode @host.id }
           expect(get_state @host).to eq("SUSPENDED")
         end
 
-        it "is a no-op when suspending a SUSPENDED host" do
+        it "is a no-op when suspending a SUSPENDED host (with vms)" do
           ignoring_all_errors { EsxCloud::Host.enter_suspended_mode @host.id }
           expect(get_state @host).to eq("SUSPENDED")
 
@@ -160,12 +157,12 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       end
 
       describe "enter maintenance" do
-        it "fails to transition to MAINTENANCE from READY" do
+        it "fails to transition to MAINTENANCE from READY (with vms)" do
           ignoring_all_errors { EsxCloud::Host.enter_maintenance_mode @host.id }
           expect(get_state @host).to eq("READY")
         end
 
-        it "fails to transition to MAINTENANCE from SUSPENDED" do
+        it "fails to transition to MAINTENANCE from SUSPENDED (with vms)" do
           ignoring_all_errors { EsxCloud::Host.enter_suspended_mode @host.id }
           expect(get_state @host).to eq("SUSPENDED")
 
@@ -175,12 +172,12 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       end
 
       describe "exit maintenance" do
-        it "is a no-op when exiting from READY host" do
+        it "is a no-op when exiting from READY host (with vms)" do
           ignoring_all_errors { EsxCloud::Host.exit_maintenance_mode @host.id }
           expect(get_state @host).to eq("READY")
         end
 
-        it "is a no-op when exiting from SUSPENDED host" do
+        it "is a no-op when exiting from SUSPENDED host (with vms)" do
           ignoring_all_errors { EsxCloud::Host.enter_suspended_mode @host.id }
           expect(get_state @host).to eq("SUSPENDED")
 
