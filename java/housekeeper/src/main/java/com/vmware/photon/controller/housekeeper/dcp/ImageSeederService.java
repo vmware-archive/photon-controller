@@ -586,14 +586,10 @@ public class ImageSeederService extends StatefulService {
       return false;
     }
 
-    if (datastoreSet.size() == 1) {
-      if (!datastoreSet.contains(current.sourceImageDatastoreId)) {
-        String datastore = datastoreSet.iterator().next();
-        failTask(new Exception("No image datastore found, sourceImageDatastore is " + current.sourceImageDatastore +
-            ", image datastore in CloudStore is " + datastore));
-      } else {
-        sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
-      }
+    if (datastoreSet.size() == 1 && !datastoreSet.contains(current.sourceImageDatastoreId)) {
+      String datastore = datastoreSet.iterator().next();
+      failTask(new Exception("No image datastore found, sourceImageDatastore is " + current.sourceImageDatastore +
+          ", image datastore in CloudStore is " + datastore));
       return false;
     }
 
