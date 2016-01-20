@@ -66,6 +66,10 @@ public class ImageDcpBackend implements ImageBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(ImageDcpBackend.class);
 
+  private static final long REPLICATE_IMAGE_RETRY_INTERVAL_MS = 5000; // 5 sec
+
+  private static final long IMAGE_REPLICATION_TIMEOUT_MS = 60 * 60 * 1000; // 1hr
+
   private final ApiFeDcpRestClient dcpClient;
 
   private final VmBackend vmBackend;
@@ -278,6 +282,43 @@ public class ImageDcpBackend implements ImageBackend {
         return;
       }
       throw e;
+    }
+  }
+
+  @Override
+  public void updateReplicationStatus(String imageId) throws ExternalException, InterruptedException {
+    long startTime = System.currentTimeMillis();
+
+    // Check if replication is done.
+    while (true) {
+      checkReplicationTimeout(startTime);
+      Thread.sleep(REPLICATE_IMAGE_RETRY_INTERVAL_MS);
+
+      try {
+        ImageService.State state = dcpClient.get(ImageServiceFactory.SELF_LINK + "/" + imageId).getBody(ImageService
+            .State.class);
+        if (!state.state.equals(ImageState.CREATING)) {
+          break;
+        } else if (state.totalDatastore.equals(state.replicatedDatastore)) {
+          ImageService.State patchState = new ImageService.State();
+          patchState.state = ImageState.READY;
+          patchImageService(imageId, patchState);
+        }
+      } catch (DocumentNotFoundException e) {
+        throw new ImageNotFoundException(Type.ID, imageId);
+      }
+    }
+  }
+
+  /**
+   * Check if the replication has been taking too long.
+   *
+   * @param startTimeMs
+   * @return
+   */
+  private void checkReplicationTimeout(long startTimeMs) {
+    if (System.currentTimeMillis() - startTimeMs >= IMAGE_REPLICATION_TIMEOUT_MS) {
+      throw new RuntimeException("Timeout waiting for image replication.");
     }
   }
 

@@ -56,4 +56,6 @@ public interface ImageBackend {
   void updateSettings(ImageEntity imageEntity, Map<String, String> imageSettings) throws ExternalException;
 
   ImageEntity findById(String id) throws ExternalException;
+
+  void updateReplicationStatus(String imageId) throws ExternalException, InterruptedException;
 }

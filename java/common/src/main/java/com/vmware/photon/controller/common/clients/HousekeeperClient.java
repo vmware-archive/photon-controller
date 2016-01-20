@@ -54,7 +54,6 @@ public class HousekeeperClient implements StatusProvider {
   private static final long HOUSEKEEPER_STATUS_CALL_TIMEOUT_MS = 5000; //5sec
   private static final long REPLICATE_IMAGE_RETRY_INTERVAL_MS = 5000; // 5 sec
 
-
   /**
    * Default timeout in seconds to wait for image replication to complete.
    * (This time is in seconds.)
