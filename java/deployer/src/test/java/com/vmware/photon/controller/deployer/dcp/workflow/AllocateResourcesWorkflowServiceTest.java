@@ -20,30 +20,30 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.FlavorApi;
+import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.dcp.ApiTestUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
+import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskServiceTest;
+import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
@@ -53,8 +53,7 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.util.concurrent.FutureCallback;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import org.mockito.Matchers;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -62,19 +61,21 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Tests {@link AllocateResourcesWorkflowService}.
@@ -165,14 +166,9 @@ public class AllocateResourcesWorkflowServiceTest {
     public Object[][] getValidStartStages() {
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_TENANT},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_RESOURCE_TICKET},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_PROJECT},
+          {TaskState.TaskStage.STARTED, AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
+          {TaskState.TaskStage.STARTED, AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES},
+          {TaskState.TaskStage.STARTED, AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
@@ -299,53 +295,93 @@ public class AllocateResourcesWorkflowServiceTest {
     public Object[][] getValidStageTransitions() {
       return new Object[][]{
 
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED, AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
-          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.CREATED,
+              null,
+              TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
+          {TaskState.TaskStage.CREATED,
+              null,
+              TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES},
+          {TaskState.TaskStage.CREATED,
+              null,
+              TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS},
+          {TaskState.TaskStage.CREATED,
+              null,
+              TaskState.TaskStage.FINISHED,
+              null},
+          {TaskState.TaskStage.CREATED,
+              null,
+              TaskState.TaskStage.FAILED,
+              null},
+          {TaskState.TaskStage.CREATED,
+              null,
+              TaskState.TaskStage.CANCELLED,
+              null},
 
           {TaskState.TaskStage.STARTED,
               AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
               TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_TENANT},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_RESOURCE_TICKET},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_RESOURCE_TICKET,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_PROJECT},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_PROJECT,
-              TaskState.TaskStage.FINISHED, null},
-
+              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
           {TaskState.TaskStage.STARTED,
               AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_RESOURCE_TICKET,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_PROJECT,
-              TaskState.TaskStage.FAILED, null},
-
+              TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES},
           {TaskState.TaskStage.STARTED,
               AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
-              TaskState.TaskStage.CANCELLED, null},
+              TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS},
           {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.CANCELLED, null},
+              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
+              TaskState.TaskStage.FINISHED,
+              null},
           {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_RESOURCE_TICKET,
-              TaskState.TaskStage.CANCELLED, null},
+              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
+              TaskState.TaskStage.FAILED,
+              null},
           {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_PROJECT,
-              TaskState.TaskStage.CANCELLED, null},
+              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
+              TaskState.TaskStage.CANCELLED,
+              null},
+
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES,
+              TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES},
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES,
+              TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS},
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES,
+              TaskState.TaskStage.FINISHED,
+              null},
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES,
+              TaskState.TaskStage.FAILED,
+              null},
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES,
+              TaskState.TaskStage.CANCELLED,
+              null},
+
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS,
+              TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS},
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS,
+              TaskState.TaskStage.FINISHED,
+              null},
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS,
+              TaskState.TaskStage.FAILED,
+              null},
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS,
+              TaskState.TaskStage.CANCELLED,
+              null},
       };
     }
 
@@ -370,77 +406,96 @@ public class AllocateResourcesWorkflowServiceTest {
     @DataProvider(name = "InvalidStageTransitions")
     public Object[][] getInvalidStageTransitions() {
       return new Object[][]{
-          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CREATED, null},
+
+          {TaskState.TaskStage.CREATED,
+              null,
+              TaskState.TaskStage.CREATED,
+              null},
 
           {TaskState.TaskStage.STARTED,
               AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_RESOURCE_TICKET,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_PROJECT,
-              TaskState.TaskStage.CREATED, null},
+              TaskState.TaskStage.CREATED,
+              null},
 
-          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CREATED, null},
-
-          {TaskState.TaskStage.FINISHED, null,
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES,
+              TaskState.TaskStage.CREATED,
+              null},
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES,
               TaskState.TaskStage.STARTED,
               AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_TENANT},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_RESOURCE_TICKET},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_PROJECT},
 
-          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CREATED, null},
-
-          {TaskState.TaskStage.FAILED, null,
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS,
+              TaskState.TaskStage.CREATED,
+              null},
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS,
               TaskState.TaskStage.STARTED,
               AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
-          {TaskState.TaskStage.FAILED, null,
+          {TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS,
               TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_TENANT},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_RESOURCE_TICKET},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_PROJECT},
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES},
 
-          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CREATED, null},
-
-          {TaskState.TaskStage.CANCELLED, null,
+          {TaskState.TaskStage.FINISHED,
+              null,
+              TaskState.TaskStage.CREATED,
+              null},
+          {TaskState.TaskStage.FINISHED,
+              null,
               TaskState.TaskStage.STARTED,
               AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
-          {TaskState.TaskStage.CANCELLED, null,
+          {TaskState.TaskStage.FINISHED,
+              null,
               TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_TENANT},
-          {TaskState.TaskStage.CANCELLED, null,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES},
+          {TaskState.TaskStage.FINISHED,
+              null,
               TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_RESOURCE_TICKET},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_PROJECT},
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS},
+          {TaskState.TaskStage.FINISHED,
+              null,
+              TaskState.TaskStage.FINISHED,
+              null},
+          {TaskState.TaskStage.FINISHED,
+              null,
+              TaskState.TaskStage.FAILED,
+              null},
+          {TaskState.TaskStage.FINISHED,
+              null,
+              TaskState.TaskStage.CANCELLED,
+              null},
 
-          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.FAILED,
+              null,
+              TaskState.TaskStage.CREATED,
+              null},
+          {TaskState.TaskStage.FAILED,
+              null,
+              TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
+          {TaskState.TaskStage.FAILED,
+              null,
+              TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES},
+          {TaskState.TaskStage.FAILED,
+              null,
+              TaskState.TaskStage.STARTED,
+              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS},
+          {TaskState.TaskStage.FAILED,
+              null,
+              TaskState.TaskStage.FINISHED,
+              null},
+          {TaskState.TaskStage.FAILED,
+              null,
+              TaskState.TaskStage.FAILED,
+              null},
+          {TaskState.TaskStage.FAILED,
+              null,
+              TaskState.TaskStage.CANCELLED,
+              null},
       };
     }
 
@@ -481,339 +536,176 @@ public class AllocateResourcesWorkflowServiceTest {
   }
 
   /**
-   * End-to-end tests for the create flavor task.
+   * This class implements end-to-end tests for the task.
    */
   public class EndToEndTest {
 
     private static final String configFilePath = "/config.yml";
 
-    private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
-    private DeployerContext deployerContext;
     private ApiClientFactory apiClientFactory;
-
+    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private DeployerContext deployerContext;
+    private FlavorApi flavorApi;
     private AllocateResourcesWorkflowService.State startState;
+    private TasksApi tasksApi;
+    private TenantsApi tenantsApi;
+    private TestEnvironment testEnvironment;
+    private Set<VmService.State> vmStates;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      apiClientFactory = mock(ApiClientFactory.class);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
-          CreateManagementVmTaskServiceTest.class.getResource(configFilePath).getPath())
-          .getDeployerContext();
-      TestHelper.createDeploymentService(cloudStoreMachine);
+          this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
+
+      testEnvironment = new TestEnvironment.Builder()
+          .apiClientFactory(apiClientFactory)
+          .cloudServerSet(cloudStoreEnvironment.getServerSet())
+          .deployerContext(deployerContext)
+          .hostCount(1)
+          .build();
+
+      startState = buildValidStartState();
+      startState.controlFlags = null;
+      startState.taskPollDelay = 10;
     }
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
+      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DeploymentService.State.class);
+      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
+      TestHelper.assertNoServicesOfType(testEnvironment, ContainerService.State.class);
+      TestHelper.assertNoServicesOfType(testEnvironment, ContainerTemplateService.State.class);
+      TestHelper.assertNoServicesOfType(testEnvironment, VmService.State.class);
 
-      apiClientFactory = mock(ApiClientFactory.class);
+      TestHelper.createDeploymentService(cloudStoreEnvironment);
 
-      startState = buildValidStartState();
-      startState.controlFlags = 0;
-      startState.taskPollDelay = 10;
+      HostService.State hostState =
+          TestHelper.createHostService(cloudStoreEnvironment, Collections.singleton(UsageTag.MGMT.name()));
+
+      Set<ContainerTemplateService.State> templateStates = new HashSet<>(3);
+      for (int i = 0; i < 3; i++) {
+        templateStates.add(TestHelper.createContainerTemplateService(testEnvironment));
+      }
+
+      vmStates = new HashSet<>(3);
+      for (int i = 0; i < 3; i++) {
+        vmStates.add(TestHelper.createVmService(testEnvironment, hostState));
+      }
+
+      for (ContainerTemplateService.State templateState : templateStates) {
+        for (VmService.State vmState : vmStates) {
+          TestHelper.createContainerService(testEnvironment, templateState, vmState);
+        }
+      }
+
+      ApiClient apiClient = mock(ApiClient.class);
+      doReturn(apiClient).when(apiClientFactory).create();
+      flavorApi = mock(FlavorApi.class);
+      doReturn(flavorApi).when(apiClient).getFlavorApi();
+      tasksApi = mock(TasksApi.class);
+      doReturn(tasksApi).when(apiClient).getTasksApi();
+      tenantsApi = mock(TenantsApi.class);
+      doReturn(tenantsApi).when(apiClient).getTenantsApi();
+
+      doAnswer(MockHelper.mockCreateFlavorAsync("FLAVOR_TASK_ID", "FLAVOR_ID", "COMPLETED"))
+          .when(flavorApi)
+          .createAsync(any(FlavorCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockCreateTenantAsync("TENANT_TASK_ID", "TENANT_ID", "COMPLETED"))
+          .when(tenantsApi)
+          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockCreateResourceTicketAsync("RESOURCE_TICKET_TASK_ID", "RESOURCE_TICKET_ID", "COMPLETED"))
+          .when(tenantsApi)
+          .createResourceTicketAsync(eq("TENANT_ID"), any(ResourceTicketCreateSpec.class),
+              Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockCreateProjectAsync("PROJECT_TASK_ID", "PROJECT_ID", "COMPLETED"))
+          .when(tenantsApi)
+          .createProjectAsync(eq("TENANT_ID"), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-
-      if (null != machine) {
-        machine.stop();
-        machine = null;
-      }
+      TestHelper.deleteServicesOfType(cloudStoreEnvironment, DeploymentService.State.class);
+      TestHelper.deleteServicesOfType(cloudStoreEnvironment, HostService.State.class);
+      TestHelper.deleteServicesOfType(testEnvironment, ContainerService.State.class);
+      TestHelper.deleteServicesOfType(testEnvironment, ContainerTemplateService.State.class);
+      TestHelper.deleteServicesOfType(testEnvironment, VmService.State.class);
     }
 
     @AfterClass
     public void tearDownClass() throws Throwable {
-      if (null != cloudStoreMachine) {
-        cloudStoreMachine.stop();
-        cloudStoreMachine = null;
-      }
+      testEnvironment.stop();
+      cloudStoreEnvironment.stop();
     }
 
-    @Test(dataProvider = "hostCounts")
-    public void testEndToEndSuccess(Integer hostCount) throws Throwable {
-
-      setupApiClient(false, false, false, false);
-      machine = createTestEnvironment(deployerContext, apiClientFactory,
-          cloudStoreMachine.getServerSet(), hostCount);
-      setupServiceDocuments();
+    @Test
+    public void testSuccess() throws Throwable {
 
       AllocateResourcesWorkflowService.State finalState =
-          machine.callServiceAndWaitForState(
+          testEnvironment.callServiceAndWaitForState(
               AllocateResourcesWorkflowFactoryService.SELF_LINK,
               startState,
               AllocateResourcesWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
+      assertThat(finalState.tenantId, is("TENANT_ID"));
+      assertThat(finalState.resourceTicketId, is("RESOURCE_TICKET_ID"));
+      assertThat(finalState.projectId, is("PROJECT_ID"));
 
-      TenantService.State tenantServiceFinalState =
-          cloudStoreMachine.getServiceState(finalState.tenantServiceLink, TenantService.State.class);
-      assertThat(tenantServiceFinalState.name, is(Constants.TENANT_NAME));
-
-      ResourceTicketService.State resourceTicketServiceFinalState =
-          cloudStoreMachine.getServiceState(finalState.resourceTicketServiceLink, ResourceTicketService.State.class);
-      assertThat(resourceTicketServiceFinalState.name, is(Constants.RESOURCE_TICKET_NAME));
-
-      ProjectService.State projectServiceFinalState =
-          cloudStoreMachine.getServiceState(finalState.projectServiceLink, ProjectService.State.class);
-      assertThat(projectServiceFinalState.name, is(Constants.PROJECT_NAME));
-
-      for (String vmServiceLink : finalState.vmServiceLinks) {
-        VmService.State vmServiceFinalState =
-            machine.getServiceState(vmServiceLink, VmService.State.class);
-        assertThat(vmServiceFinalState.projectServiceLink, is(projectServiceFinalState.documentSelfLink));
+      for (VmService.State vmState : vmStates) {
+        VmService.State state = testEnvironment.getServiceState(vmState.documentSelfLink, VmService.State.class);
+        assertThat(state.projectServiceLink, is(ProjectServiceFactory.SELF_LINK + "/PROJECT_ID"));
       }
     }
 
-    @Test(dataProvider = "hostCounts")
-    public void testEndToEndFailureZeroVmServiceEntity(Integer hostCount) throws Throwable {
+    @Test
+    public void testCreateFlavorFailure() throws Throwable {
 
-      setupApiClient(false, false, false, false);
-      machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(),
-          hostCount);
+      Task failedTask = ApiTestUtils.createFailingTask(1, 1, "errorCode", "errorMessage");
+
+      doAnswer(MockHelper.mockCreateFlavorAsync(failedTask))
+          .when(flavorApi)
+          .createAsync(any(FlavorCreateSpec.class), Matchers.<FutureCallback<Task>>any());
 
       AllocateResourcesWorkflowService.State finalState =
-          machine.callServiceAndWaitForState(
+          testEnvironment.callServiceAndWaitForState(
               AllocateResourcesWorkflowFactoryService.SELF_LINK,
               startState,
               AllocateResourcesWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString("Found 0 vms"));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(failedTask)));
     }
 
-    @Test(dataProvider = "hostCounts")
-    public void testEndToEndFailureCreateFlavorThrowsException(Integer hostCount) throws Throwable {
+    @Test
+    public void testAllocateTenantResourcesFailure() throws Throwable {
 
-      setupApiClient(true, false, false, false);
-      machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(),
-          hostCount);
-      setupServiceDocuments();
+      Task failedTask = ApiTestUtils.createFailingTask(1, 1, "errorCode", "errorMessage");
+
+      doAnswer(MockHelper.mockCreateTenantAsync(failedTask))
+          .when(tenantsApi)
+          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
 
       AllocateResourcesWorkflowService.State finalState =
-          machine.callServiceAndWaitForState(
+          testEnvironment.callServiceAndWaitForState(
               AllocateResourcesWorkflowFactoryService.SELF_LINK,
               startState,
               AllocateResourcesWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString("Exception during CREATE_FLAVORS"));
-    }
-
-    @Test(dataProvider = "hostCounts")
-    public void testEndToEndFailureCreateTenantThrowsException(Integer hostCount) throws Throwable {
-
-      setupApiClient(false, true, false, false);
-      machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(),
-          hostCount);
-      setupServiceDocuments();
-
-      AllocateResourcesWorkflowService.State finalState =
-          machine.callServiceAndWaitForState(
-              AllocateResourcesWorkflowFactoryService.SELF_LINK,
-              startState,
-              AllocateResourcesWorkflowService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString("Exception during CREATE_TENANT"));
-    }
-
-    @Test(dataProvider = "hostCounts")
-    public void testEndToEndFailureCreateResourceTicketThrowsException(Integer hostCount) throws Throwable {
-
-      setupApiClient(false, false, true, false);
-      machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(),
-          hostCount);
-      setupServiceDocuments();
-
-      AllocateResourcesWorkflowService.State finalState =
-          machine.callServiceAndWaitForState(
-              AllocateResourcesWorkflowFactoryService.SELF_LINK,
-              startState,
-              AllocateResourcesWorkflowService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString("Exception during CREATE_RESOURCE_TICKET"));
-    }
-
-    @Test(dataProvider = "hostCounts")
-    public void testEndToEndFailureCreateProjectThrowsException(Integer hostCount) throws Throwable {
-
-      setupApiClient(false, false, false, true);
-      machine = createTestEnvironment(deployerContext, apiClientFactory, cloudStoreMachine.getServerSet(),
-          hostCount);
-      setupServiceDocuments();
-
-      AllocateResourcesWorkflowService.State finalState =
-          machine.callServiceAndWaitForState(
-              AllocateResourcesWorkflowFactoryService.SELF_LINK,
-              startState,
-              AllocateResourcesWorkflowService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString("Exception during CREATE_PROJECT"));
-    }
-
-    private void setupApiClient(
-        boolean failCreateFlavors,
-        boolean failCreateTenant,
-        boolean failCreateResourceTicket,
-        boolean failCreateProject) throws Throwable {
-
-      ApiClient apiClient = mock(ApiClient.class);
-      ;
-      FlavorApi flavorApi = mock(FlavorApi.class);
-      TenantsApi tenantsApi = mock(TenantsApi.class);
-      final Task taskReturnedByCreateFlavor;
-      final Task taskReturnedByCreateDiskFlavor;
-      final Task taskReturnedByCreateTenant;
-      final Task taskReturnedByCreateResourceTicket;
-      final Task taskReturnedByCreateProject;
-
-      doReturn(flavorApi).when(apiClient).getFlavorApi();
-      doReturn(tenantsApi).when(apiClient).getTenantsApi();
-
-      taskReturnedByCreateFlavor = new Task();
-      taskReturnedByCreateFlavor.setId("createFlavorTaskId");
-      taskReturnedByCreateFlavor.setState("COMPLETED");
-      FlavorService.State flavorService = TestHelper.createFlavor(cloudStoreMachine, null);
-      Task.Entity taskEntity = new Task.Entity();
-      taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(flavorService.documentSelfLink));
-      taskReturnedByCreateFlavor.setEntity(taskEntity);
-
-      taskReturnedByCreateDiskFlavor = new Task();
-      taskReturnedByCreateDiskFlavor.setId("createDiskFlavorTaskId");
-      taskReturnedByCreateDiskFlavor.setState("COMPLETED");
-
-      taskReturnedByCreateTenant = new Task();
-      taskReturnedByCreateTenant.setId("createTenantTaskId");
-      taskReturnedByCreateTenant.setState("COMPLETED");
-
-      TenantService.State tenantState = TestHelper.createTenant(cloudStoreMachine);
-      String tenantId = ServiceUtils.getIDFromDocumentSelfLink(tenantState.documentSelfLink);
-      Task.Entity tenantEntity = new Task.Entity();
-      tenantEntity.setId(tenantId);
-      taskReturnedByCreateTenant.setEntity(tenantEntity);
-
-      taskReturnedByCreateResourceTicket = new Task();
-      taskReturnedByCreateResourceTicket.setId("createResourceTicketTaskId");
-      taskReturnedByCreateResourceTicket.setState("COMPLETED");
-      ResourceTicketService.State resourceState = TestHelper.createResourceTicket(tenantId, cloudStoreMachine);
-      String rtId = ServiceUtils.getIDFromDocumentSelfLink(resourceState.documentSelfLink);
-      Task.Entity resourceTicketEntity = new Task.Entity();
-      resourceTicketEntity.setId(rtId);
-      taskReturnedByCreateResourceTicket.setEntity(resourceTicketEntity);
-
-      taskReturnedByCreateProject = new Task();
-      taskReturnedByCreateProject.setId("createProjectTaskId");
-      taskReturnedByCreateProject.setState("COMPLETED");
-      Task.Entity projectEntity = new Task.Entity();
-      ProjectService.State projectState = TestHelper.createProject(tenantId, rtId, cloudStoreMachine);
-      projectEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(projectState.documentSelfLink));
-      taskReturnedByCreateProject.setEntity(projectEntity);
-
-      if (failCreateFlavors) {
-        doThrow(new RuntimeException("Exception during CREATE_FLAVORS"))
-            .when(flavorApi).createAsync(any(FlavorCreateSpec.class), any(FutureCallback.class));
-      } else {
-        doAnswer(new Answer() {
-          @Override
-          public Object answer(InvocationOnMock invocation) throws Throwable {
-            ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateFlavor);
-            return null;
-          }
-        })
-            .when(flavorApi).createAsync(any(FlavorCreateSpec.class), any(FutureCallback.class));
-        ;
-      }
-
-      if (failCreateTenant) {
-        doThrow(new RuntimeException("Exception during CREATE_TENANT"))
-            .when(tenantsApi).createAsync(any(String.class), any(FutureCallback.class));
-      } else {
-        doAnswer(new Answer() {
-          @Override
-          public Object answer(InvocationOnMock invocation) throws Throwable {
-            ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateTenant);
-            return null;
-          }
-        })
-            .when(tenantsApi).createAsync(any(String.class), any(FutureCallback.class));
-      }
-
-      if (failCreateResourceTicket) {
-        doThrow(new RuntimeException("Exception during CREATE_RESOURCE_TICKET"))
-            .when(tenantsApi).createResourceTicketAsync(
-            any(String.class), any(ResourceTicketCreateSpec.class), any(FutureCallback.class));
-      } else {
-        doAnswer(new Answer() {
-          @Override
-          public Object answer(InvocationOnMock invocation) throws Throwable {
-            ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByCreateResourceTicket);
-            return null;
-          }
-        })
-            .when(tenantsApi).createResourceTicketAsync(
-            any(String.class), any(ResourceTicketCreateSpec.class), any(FutureCallback.class));
-      }
-
-      if (failCreateProject) {
-        doThrow(new RuntimeException("Exception during CREATE_PROJECT"))
-            .when(tenantsApi).createProjectAsync(
-            any(String.class), any(ProjectCreateSpec.class), any(FutureCallback.class));
-      } else {
-        doAnswer(new Answer() {
-          @Override
-          public Object answer(InvocationOnMock invocation) throws Throwable {
-            ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByCreateProject);
-            return null;
-          }
-        })
-            .when(tenantsApi).createProjectAsync(
-            any(String.class), any(ProjectCreateSpec.class), any(FutureCallback.class));
-      }
-
-      doReturn(apiClient).when(apiClientFactory).create();
-    }
-
-    private void setupServiceDocuments() throws Throwable {
-
-      HostService.State hostStartState =
-          TestHelper.createHostService(cloudStoreMachine, Collections.singleton(UsageTag.MGMT.name()));
-
-      VmService.State vmServiceState = TestHelper.createVmService(machine, hostStartState);
-      ContainerTemplateService.State containerTemplateSavedState1 = TestHelper.createContainerTemplateService(machine);
-      ContainerTemplateService.State containerTemplateSavedState2 = TestHelper.createContainerTemplateService(machine);
-      TestHelper.createContainerService(machine, containerTemplateSavedState1, vmServiceState);
-      TestHelper.createContainerService(machine, containerTemplateSavedState2, vmServiceState);
-    }
-
-    @DataProvider(name = "hostCounts")
-    public Object[][] getHostCounts() {
-      return new Object[][]{
-          {1},
-      };
-    }
-
-    private TestEnvironment createTestEnvironment(
-        DeployerContext deployerContext,
-        ApiClientFactory apiClientFactory,
-        ServerSet cloudServerSet,
-        int hostCount)
-        throws Throwable {
-
-      return new TestEnvironment.Builder()
-          .deployerContext(deployerContext)
-          .apiClientFactory(apiClientFactory)
-          .cloudServerSet(cloudServerSet)
-          .hostCount(hostCount)
-          .build();
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(failedTask)));
     }
   }
 

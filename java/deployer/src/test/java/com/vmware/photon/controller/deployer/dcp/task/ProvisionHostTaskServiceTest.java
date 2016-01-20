@@ -42,12 +42,9 @@ import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.DatastoreType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
-import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -921,16 +918,16 @@ public class ProvisionHostTaskServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      assertNoServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
-      assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
+      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
+      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
       startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
           Collections.singleton(UsageTag.MGMT.name()), HostState.NOT_PROVISIONED).documentSelfLink;
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      deleteServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
-      deleteServicesOfType(cloudStoreEnvironment, HostService.State.class);
+      TestHelper.deleteServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
+      TestHelper.deleteServicesOfType(cloudStoreEnvironment, HostService.State.class);
     }
 
     @AfterClass
@@ -994,7 +991,7 @@ public class ProvisionHostTaskServiceTest {
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
 
-      List<DatastoreService.State> datastoreStates = getServicesOfType(cloudStoreEnvironment,
+      List<DatastoreService.State> datastoreStates = TestHelper.getServicesOfType(cloudStoreEnvironment,
           DatastoreService.State.class);
 
       assertThat(datastoreStates.stream().map((datastoreState) -> datastoreState.id).collect(Collectors.toSet()),
@@ -1119,8 +1116,8 @@ public class ProvisionHostTaskServiceTest {
     public void setUpTest() throws Throwable {
       assertTrue(scriptDirectory.mkdirs());
       assertTrue(scriptLogDirectory.mkdirs());
-      assertNoServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
-      assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
+      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
+      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
       startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
           Collections.singleton(UsageTag.MGMT.name()), HostState.NOT_PROVISIONED).documentSelfLink;
     }
@@ -1129,8 +1126,8 @@ public class ProvisionHostTaskServiceTest {
     public void tearDownTest() throws Throwable {
       FileUtils.deleteDirectory(scriptDirectory);
       FileUtils.deleteDirectory(scriptLogDirectory);
-      deleteServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
-      deleteServicesOfType(cloudStoreEnvironment, HostService.State.class);
+      TestHelper.deleteServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
+      TestHelper.deleteServicesOfType(cloudStoreEnvironment, HostService.State.class);
     }
 
     @AfterClass
@@ -1180,7 +1177,7 @@ public class ProvisionHostTaskServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
 
-      List<DatastoreService.State> datastoreStates = getServicesOfType(cloudStoreEnvironment,
+      List<DatastoreService.State> datastoreStates = TestHelper.getServicesOfType(cloudStoreEnvironment,
           DatastoreService.State.class);
 
       assertThat(datastoreStates.stream().map((datastoreState) -> datastoreState.id).collect(Collectors.toSet()),
@@ -1228,54 +1225,6 @@ public class ProvisionHostTaskServiceTest {
     }
 
     return startState;
-  }
-
-  private <T extends ServiceDocument> List<String> getServiceLinksOfType(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment, Class<T> clazz)
-      throws Throwable {
-
-    QueryTask queryTask = QueryTask.Builder.createDirectTask()
-        .setQuery(QueryTask.Query.Builder.create().addKindFieldClause(clazz).build())
-        .build();
-
-    return testEnvironment.sendQueryAndWait(queryTask).results.documentLinks;
-  }
-
-  private <T extends ServiceDocument> List<T> getServicesOfType(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment, Class<T> clazz)
-      throws Throwable {
-
-    QueryTask queryResult = testEnvironment.sendQueryAndWait(QueryTask.Builder.createDirectTask()
-        .setQuery(QueryTask.Query.Builder.create().addKindFieldClause(clazz).build())
-        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
-        .build());
-
-    List<T> returnValue = new ArrayList<>(queryResult.results.documentLinks.size());
-    for (String documentLink : queryResult.results.documentLinks) {
-      returnValue.add(Utils.fromJson(queryResult.results.documents.get(documentLink), clazz));
-    }
-
-    return returnValue;
-  }
-
-  private <T extends ServiceDocument> void assertNoServicesOfType(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment, Class<T> clazz)
-      throws Throwable {
-
-    List<String> documentLinks = getServiceLinksOfType(testEnvironment, clazz);
-    assertThat(documentLinks.size(), is(0));
-  }
-
-  private <T extends ServiceDocument> void deleteServicesOfType(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment, Class<T> clazz)
-      throws Throwable {
-
-    List<String> documentLinks = getServiceLinksOfType(testEnvironment, clazz);
-    if (documentLinks.size() > 0) {
-      for (String documentLink : documentLinks) {
-        testEnvironment.sendDeleteAndWait(documentLink);
-      }
-    }
   }
 
   private List<Datastore> buildDatastoreList(int count) {

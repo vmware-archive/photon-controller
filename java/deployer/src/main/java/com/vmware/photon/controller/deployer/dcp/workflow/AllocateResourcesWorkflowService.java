@@ -16,6 +16,7 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -26,14 +27,10 @@ import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
+import com.vmware.photon.controller.deployer.dcp.task.AllocateTenantResourcesTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.AllocateTenantResourcesTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateProjectTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateProjectTaskService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateResourceTicketTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateResourceTicketTaskService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateTenantTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateTenantTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.xenon.common.Operation;
@@ -51,9 +48,11 @@ import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
+import javax.validation.constraints.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -78,9 +77,7 @@ public class AllocateResourcesWorkflowService extends StatefulService {
      */
     public enum SubStage {
       CREATE_FLAVORS,
-      CREATE_TENANT,
-      CREATE_RESOURCE_TICKET,
-      CREATE_PROJECT,
+      ALLOCATE_TENANT_RESOURCES,
       UPDATE_VMS
     }
   }
@@ -117,19 +114,19 @@ public class AllocateResourcesWorkflowService extends StatefulService {
     public List<String> vmServiceLinks;
 
     /**
-     * This value represents the service link of the tenant entity.
+     * This value represents ID of the allocated tenant entity.
      */
-    public String tenantServiceLink;
+    public String tenantId;
 
     /**
-     * This value represents the service link of the resource ticket entity.
+     * This value represents ID of the allocated resource ticket entity.
      */
-    public String resourceTicketServiceLink;
+    public String resourceTicketId;
 
     /**
-     * This value represents the service link of the Project Service entity.
+     * This value represents ID of the allocated project entity.
      */
-    public String projectServiceLink;
+    public String projectId;
   }
 
   public AllocateResourcesWorkflowService() {
@@ -215,9 +212,7 @@ public class AllocateResourcesWorkflowService extends StatefulService {
     if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
       switch (currentState.taskState.subStage) {
         case CREATE_FLAVORS:
-        case CREATE_TENANT:
-        case CREATE_RESOURCE_TICKET:
-        case CREATE_PROJECT:
+        case ALLOCATE_TENANT_RESOURCES:
         case UPDATE_VMS:
           break;
         default:
@@ -270,14 +265,8 @@ public class AllocateResourcesWorkflowService extends StatefulService {
       case CREATE_FLAVORS:
         queryVms(currentState);
         break;
-      case CREATE_TENANT:
-        createTenant(currentState);
-        break;
-      case CREATE_RESOURCE_TICKET:
-        createResourceTicket(currentState);
-        break;
-      case CREATE_PROJECT:
-        createProject(currentState);
+      case ALLOCATE_TENANT_RESOURCES:
+        allocateTenantResources(currentState);
         break;
       case UPDATE_VMS:
         updateVms(currentState);
@@ -346,7 +335,7 @@ public class AllocateResourcesWorkflowService extends StatefulService {
             }
 
             if (0 == pendingCreates.decrementAndGet()) {
-              State state = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_TENANT, null);
+              State state = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.ALLOCATE_TENANT_RESOURCES, null);
               state.vmServiceLinks = vmServiceLinks;
               TaskUtils.sendSelfPatch(service, state);
             }
@@ -383,168 +372,56 @@ public class AllocateResourcesWorkflowService extends StatefulService {
     return state;
   }
 
-  private void createTenant(final State currentState) {
-    ServiceUtils.logInfo(this, "Creating tenant");
-    final Service service = this;
+  private void allocateTenantResources(State currentState) {
 
-    FutureCallback<CreateTenantTaskService.State> callback =
-        new FutureCallback<CreateTenantTaskService.State>() {
-          @Override
-          public void onSuccess(@Nullable CreateTenantTaskService.State result) {
-            if (result.taskState.stage == TaskState.TaskStage.FAILED) {
-              State state = buildPatch(TaskState.TaskStage.FAILED, null, null);
-              state.taskState.failure = result.taskState.failure;
-              TaskUtils.sendSelfPatch(service, state);
-              return;
-            }
+    AllocateTenantResourcesTaskService.State startState = new AllocateTenantResourcesTaskService.State();
+    startState.taskPollDelay = currentState.taskPollDelay;
+    startState.quotaLineItems = new ArrayList<>(
+        Collections.singletonList(new QuotaLineItem("vm.count", Integer.MAX_VALUE, QuotaUnit.COUNT)));
 
-            if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
-              TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-              return;
-            }
-
-            State patchState = buildPatch(TaskState.TaskStage.STARTED,
-                TaskState.SubStage.CREATE_RESOURCE_TICKET, null);
-            patchState.tenantServiceLink = result.tenantServiceLink;
-            TaskUtils.sendSelfPatch(service, patchState);
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-    CreateTenantTaskService.State createTenantState = generateCreateTenantTaskServiceState(currentState);
-
-    TaskUtils.startTaskAsync(
-        this,
-        CreateTenantTaskFactoryService.SELF_LINK,
-        createTenantState,
+    TaskUtils.startTaskAsync(this,
+        AllocateTenantResourcesTaskFactoryService.SELF_LINK,
+        startState,
         (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        CreateTenantTaskService.State.class,
+        AllocateTenantResourcesTaskService.State.class,
         currentState.taskPollDelay,
-        callback);
-  }
-
-  private CreateTenantTaskService.State generateCreateTenantTaskServiceState(final State currentState) {
-    CreateTenantTaskService.State state = new CreateTenantTaskService.State();
-    state.taskState = new com.vmware.xenon.common.TaskState();
-    state.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.CREATED;
-    state.taskPollDelay = currentState.taskPollDelay;
-    return state;
-  }
-
-  private void createResourceTicket(final State currentState) {
-    ServiceUtils.logInfo(this, "Creating resource ticket");
-    final Service service = this;
-
-    FutureCallback<CreateResourceTicketTaskService.State> callback =
-        new FutureCallback<CreateResourceTicketTaskService.State>() {
+        new FutureCallback<AllocateTenantResourcesTaskService.State>() {
           @Override
-          public void onSuccess(@Nullable CreateResourceTicketTaskService.State result) {
-            if (result.taskState.stage == TaskState.TaskStage.FAILED) {
-              State state = buildPatch(TaskState.TaskStage.FAILED, null, null);
-              state.taskState.failure = result.taskState.failure;
-              TaskUtils.sendSelfPatch(service, state);
-              return;
+          public void onSuccess(@NotNull AllocateTenantResourcesTaskService.State state) {
+            switch (state.taskState.stage) {
+              case FINISHED: {
+                State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPDATE_VMS, null);
+                patchState.tenantId = state.tenantId;
+                patchState.resourceTicketId = state.resourceTicketId;
+                patchState.projectId = state.projectId;
+                TaskUtils.sendSelfPatch(AllocateResourcesWorkflowService.this, patchState);
+                break;
+              }
+              case FAILED: {
+                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                patchState.taskState.failure = state.taskState.failure;
+                TaskUtils.sendSelfPatch(AllocateResourcesWorkflowService.this, patchState);
+                break;
+              }
+              case CANCELLED: {
+                State patchState = buildPatch(TaskState.TaskStage.CANCELLED, null, null);
+                TaskUtils.sendSelfPatch(AllocateResourcesWorkflowService.this, patchState);
+                break;
+              }
             }
-
-            if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
-              TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-              return;
-            }
-
-            State patchState = buildPatch(TaskState.TaskStage.STARTED,
-                TaskState.SubStage.CREATE_PROJECT, null);
-            patchState.resourceTicketServiceLink = result.resourceTicketServiceLink;
-            TaskUtils.sendSelfPatch(service, patchState);
           }
 
           @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
           }
-        };
-    CreateResourceTicketTaskService.State createResourceTicketState =
-        generateCreateResourceTicketTaskServiceState(currentState);
-
-    TaskUtils.startTaskAsync(
-        this,
-        CreateResourceTicketTaskFactoryService.SELF_LINK,
-        createResourceTicketState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        CreateResourceTicketTaskService.State.class,
-        currentState.taskPollDelay,
-        callback);
-  }
-
-  private CreateResourceTicketTaskService.State generateCreateResourceTicketTaskServiceState(final State currentState) {
-    CreateResourceTicketTaskService.State state = new CreateResourceTicketTaskService.State();
-    state.taskState = new com.vmware.xenon.common.TaskState();
-    state.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.CREATED;
-    state.taskPollDelay = currentState.taskPollDelay;
-    state.tenantServiceLink = currentState.tenantServiceLink;
-    state.quotaLineItems = new ArrayList<>();
-    state.quotaLineItems.add(new QuotaLineItem("vm.count", Integer.MAX_VALUE, QuotaUnit.COUNT));
-    return state;
-  }
-
-  private void createProject(final State currentState) {
-    ServiceUtils.logInfo(this, "Creating project");
-    final Service service = this;
-
-    FutureCallback<CreateProjectTaskService.State> callback =
-        new FutureCallback<CreateProjectTaskService.State>() {
-          @Override
-          public void onSuccess(@Nullable CreateProjectTaskService.State result) {
-            if (result.taskState.stage == TaskState.TaskStage.FAILED) {
-              State state = buildPatch(TaskState.TaskStage.FAILED, null, null);
-              state.taskState.failure = result.taskState.failure;
-              TaskUtils.sendSelfPatch(service, state);
-              return;
-            }
-
-            if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
-              TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-              return;
-            }
-
-            State patchState = buildPatch(TaskState.TaskStage.STARTED,
-                TaskState.SubStage.UPDATE_VMS, null);
-            patchState.projectServiceLink = result.projectServiceLink;
-            TaskUtils.sendSelfPatch(service, patchState);
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-    CreateProjectTaskService.State createProjectState = generateCreateProjectTaskServiceState(currentState);
-
-    TaskUtils.startTaskAsync(
-        this,
-        CreateProjectTaskFactoryService.SELF_LINK,
-        createProjectState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        CreateProjectTaskService.State.class,
-        currentState.taskPollDelay,
-        callback);
-  }
-
-  private CreateProjectTaskService.State generateCreateProjectTaskServiceState(final State currentState) {
-    CreateProjectTaskService.State state = new CreateProjectTaskService.State();
-    state.taskState = new com.vmware.xenon.common.TaskState();
-    state.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.CREATED;
-    state.taskPollDelay = currentState.taskPollDelay;
-    state.resourceTicketServiceLink = currentState.resourceTicketServiceLink;
-    return state;
+        });
   }
 
   private void updateVms(final State currentState) {
 
     VmService.State patchState = new VmService.State();
-    patchState.projectServiceLink = currentState.projectServiceLink;
+    patchState.projectServiceLink = ProjectServiceFactory.SELF_LINK + "/" + currentState.projectId;
 
     OperationJoin
         .create(currentState.vmServiceLinks.stream()
@@ -561,7 +438,7 @@ public class AllocateResourcesWorkflowService extends StatefulService {
 
   private void updateDeploymentState(final State currentState) {
     DeploymentService.State deploymentService = new DeploymentService.State();
-    deploymentService.projectId = ServiceUtils.getIDFromDocumentSelfLink(currentState.projectServiceLink);
+    deploymentService.projectId = currentState.projectId;
     MiscUtils.updateDeploymentState(this, deploymentService, (operation, throwable) -> {
       if (throwable != null) {
         failTask(throwable);
@@ -583,16 +460,16 @@ public class AllocateResourcesWorkflowService extends StatefulService {
       startState.vmServiceLinks = patchState.vmServiceLinks;
     }
 
-    if (null != patchState.tenantServiceLink) {
-      startState.tenantServiceLink = patchState.tenantServiceLink;
+    if (null != patchState.tenantId) {
+      startState.tenantId = patchState.tenantId;
     }
 
-    if (null != patchState.resourceTicketServiceLink) {
-      startState.resourceTicketServiceLink = patchState.resourceTicketServiceLink;
+    if (null != patchState.resourceTicketId) {
+      startState.resourceTicketId = patchState.resourceTicketId;
     }
 
-    if (null != patchState.projectServiceLink) {
-      startState.projectServiceLink = patchState.projectServiceLink;
+    if (null != patchState.projectId) {
+      startState.projectId = patchState.projectId;
     }
 
     return startState;
