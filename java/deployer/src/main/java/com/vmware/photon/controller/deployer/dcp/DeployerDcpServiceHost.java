@@ -34,6 +34,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactory
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.AllocateTenantResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.BuildRuntimeConfigurationTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
@@ -143,6 +144,7 @@ public class DeployerDcpServiceHost
   };
 
   public static final Class[] FACTORY_SERVICES = {
+
       // Entity Services
       ContainerFactoryService.class,
       ContainerTemplateFactoryService.class,
@@ -151,6 +153,7 @@ public class DeployerDcpServiceHost
       // Task Services
       ValidateHostTaskFactoryService.class,
       AllocateClusterManagerResourcesTaskFactoryService.class,
+      AllocateTenantResourcesTaskFactoryService.class,
       AllocateHostResourceTaskFactoryService.class,
       BuildRuntimeConfigurationTaskFactoryService.class,
       ChangeHostModeTaskFactoryService.class,
