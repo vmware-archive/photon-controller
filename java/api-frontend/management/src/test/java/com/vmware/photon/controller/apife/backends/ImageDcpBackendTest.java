@@ -143,19 +143,29 @@ public class ImageDcpBackendTest {
                                             String imageName,
                                             ImageState imageState,
                                             Long imageSize) throws Throwable {
+    return createImageDocument(dcpClient, imageName, imageState, imageSize, 10, 5);
+  }
+
+  private static String createImageDocument(DcpClient dcpClient,
+                                            String imageName,
+                                            ImageState imageState,
+                                            Long imageSize,
+                                            Integer totalDatastore,
+                                            Integer replicatedDatastore) throws Throwable {
     ImageService.State imageServiceState = new ImageService.State();
     imageServiceState.name = imageName;
     imageServiceState.state = imageState;
     imageServiceState.replicationType = ImageReplicationType.EAGER;
     imageServiceState.size = imageSize;
-    imageServiceState.totalDatastore = 10;
+    imageServiceState.totalDatastore = totalDatastore;
     imageServiceState.totalImageDatastore = 8;
-    imageServiceState.replicatedDatastore = 5;
+    imageServiceState.replicatedDatastore = replicatedDatastore;
     imageServiceState.replicatedImageDatastore = 2;
     com.vmware.xenon.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
     ImageService.State createdState = result.getBody(ImageService.State.class);
     return ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);
   }
+
 
   @Test
   private void dummy() {
@@ -503,6 +513,27 @@ public class ImageDcpBackendTest {
           termsBuilder.build());
       assertThat(results.size(), is(1));
       assertThat(results.get(0).imageDatastoreId, is(imageDatastoreId));
+    }
+
+    @Test
+    public void testUpdateReplicationStatus() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.CREATING, 1L, 10, 10);
+      ImageEntity imageEntity = imageBackend.findById(imageId);
+      imageBackend.updateReplicationStatus(imageEntity.getId());
+
+      ImageService.State savedState = dcpClient.get(ImageServiceFactory.SELF_LINK + "/" + imageId)
+          .getBody(ImageService.State.class);
+      assertThat(savedState.state, is(ImageState.READY));
+    }
+
+    @Test
+    public void testUpdateReplicationDocumentNotFound() throws Throwable {
+      try {
+        imageBackend.updateReplicationStatus("invalid-image");
+      } catch (ImageNotFoundException e) {
+        assertThat(e.getMessage(), is("Image id 'invalid-image' not found"));
+      }
     }
   }
 }
