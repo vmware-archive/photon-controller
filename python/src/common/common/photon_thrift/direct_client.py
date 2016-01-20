@@ -12,7 +12,7 @@
 
 import logging
 
-from pthrift.multiplex import TMultiplexedProtocol
+from tserver.multiplex import TMultiplexedProtocol
 from thrift.protocol import TCompactProtocol
 from thrift.transport import TSocket
 from thrift.transport import TTransport
