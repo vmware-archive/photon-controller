@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
@@ -24,7 +22,6 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
@@ -37,7 +34,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -75,7 +71,7 @@ public class ImageReplicatorService extends StatefulService {
       if (s.taskInfo == null || s.taskInfo.stage == TaskState.TaskStage.CREATED) {
         s.taskInfo = new TaskState();
         s.taskInfo.stage = TaskState.TaskStage.STARTED;
-        s.taskInfo.subStage = TaskState.SubStage.UPDATE_DATASTORE_COUNTS;
+        s.taskInfo.subStage = TaskState.SubStage.TRIGGER_COPIES;
       }
 
       if (s.documentExpirationTimeMicros <= 0) {
@@ -167,8 +163,6 @@ public class ImageReplicatorService extends StatefulService {
         checkArgument(StringUtils.isNotBlank(current.image), "image not provided");
         checkArgument(StringUtils.isNotBlank(current.datastore), "datastore not provided");
         switch (current.taskInfo.subStage) {
-          case UPDATE_DATASTORE_COUNTS:
-            break;
           case TRIGGER_COPIES:
             break;
           case AWAIT_COMPLETION:
@@ -255,9 +249,6 @@ public class ImageReplicatorService extends StatefulService {
   protected void handleStartedStage(final State current, final State patch) {
     // Handle task sub-state.
     switch (current.taskInfo.subStage) {
-      case UPDATE_DATASTORE_COUNTS:
-        updateTotalImageDatastore(current);
-        break;
       case TRIGGER_COPIES:
         handleTriggerCopies(current);
         break;
@@ -266,47 +257,6 @@ public class ImageReplicatorService extends StatefulService {
         break;
       default:
         throw new IllegalStateException("Un-supported substage" + current.taskInfo.subStage.toString());
-    }
-  }
-
-
-  /**
-   * Gets image entity and sends patch to update total datastore and total image datastore field.
-   *
-   * @param current
-   */
-  protected void updateTotalImageDatastore(final State current) {
-    try {
-      // build the image entity update patch
-      ImageService.State imageServiceState = new ImageService.State();
-      imageServiceState.totalImageDatastore = getZookeeperHostMonitor().getImageDatastores().size();
-      imageServiceState.totalDatastore = getZookeeperHostMonitor().getAllDatastores().size();
-      Operation imagePatch = getCloudStoreHelper()
-          .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
-          .setBody(imageServiceState);
-
-      // create operation sequence
-      OperationSequence sequence = OperationSequence
-          .create(imagePatch)
-          .setCompletion(
-              (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
-                if (failures != null && failures.size() > 0) {
-                  failTask(failures.values().iterator().next());
-                  return;
-                }
-              });
-
-      if (!current.isSelfProgressionDisabled) {
-        // move to next stage
-        Operation progress = this.buildSelfPatchOperation(
-            this.buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.TRIGGER_COPIES, null));
-
-        sequence.next(progress);
-      }
-
-      sequence.sendWith(this);
-    } catch (Exception e) {
-      failTask(e);
     }
   }
 
@@ -624,7 +574,6 @@ public class ImageReplicatorService extends StatefulService {
      * Execution sub-stage.
      */
     public static enum SubStage {
-      UPDATE_DATASTORE_COUNTS,
       TRIGGER_COPIES,
       AWAIT_COMPLETION,
     }
