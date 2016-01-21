@@ -147,6 +147,11 @@ public class UploadImageTaskService extends StatefulService {
       startState.queryUploadImageTaskInterval = HostUtils.getDeployerContext(this).getTaskPollDelay();
     }
 
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
     validateState(startState);
 
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {

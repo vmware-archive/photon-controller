@@ -161,6 +161,11 @@ public class CreateContainersWorkflowService extends StatefulService {
       startState.taskState.subStage = TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS;
     }
 
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
     start.setBody(startState).complete();
 
     try {

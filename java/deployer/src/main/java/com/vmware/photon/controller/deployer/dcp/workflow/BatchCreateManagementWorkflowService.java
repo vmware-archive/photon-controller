@@ -175,6 +175,11 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       startState.taskState.subStage = TaskState.SubStage.UPLOAD_IMAGE;
     }
 
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
     start.setBody(startState).complete();
 
     try {

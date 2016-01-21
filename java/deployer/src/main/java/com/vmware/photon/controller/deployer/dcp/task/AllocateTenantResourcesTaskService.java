@@ -147,6 +147,11 @@ public class AllocateTenantResourcesTaskService extends StatefulService {
       startState.taskState.subStage = TaskState.SubStage.CREATE_TENANT;
     }
 
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
     operation.setBody(startState).complete();
 
     try {
