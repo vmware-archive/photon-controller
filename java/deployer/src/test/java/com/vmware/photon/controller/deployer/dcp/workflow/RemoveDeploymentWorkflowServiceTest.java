@@ -859,16 +859,6 @@ public class RemoveDeploymentWorkflowServiceTest {
           }
         }).when(tenantsApi).deleteAsync(any(String.class), any(FutureCallback.class));
 
-        // Perform operation
-        doAnswer(new Answer() {
-          @Override
-          public Object answer(InvocationOnMock invocation) throws Throwable {
-            ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByStopVm);
-            return null;
-          }
-        }).when(vmApi).performOperationAsync(anyString(), any(VmOperation.class), any(FutureCallback
-            .class));
-
         // Perform start operation
         doAnswer(new Answer() {
           @Override

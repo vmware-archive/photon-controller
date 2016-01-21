@@ -260,63 +260,6 @@ public class VmApiTest extends ApiTestBase {
   }
 
   @Test
-  public void testPerformOperation() throws IOException {
-    Task responseTask = new Task();
-    responseTask.setId("12345");
-    responseTask.setState("QUEUED");
-    responseTask.setQueuedTime(Date.from(Instant.now()));
-
-    ObjectMapper mapper = new ObjectMapper();
-    String serializedTask = mapper.writeValueAsString(responseTask);
-
-    setupMocks(serializedTask, HttpStatus.SC_CREATED);
-
-    VmApi vmApi = new VmApi(restClient);
-
-    VmOperation vmOperation = new VmOperation();
-    vmOperation.setOperation(Operation.START_VM.name());
-
-    Task task = vmApi.performOperation("foo", vmOperation);
-    assertEquals(task, responseTask);
-  }
-
-  @Test
-  public void testPerformOperationAsync() throws IOException, InterruptedException {
-    final Task responseTask = new Task();
-    responseTask.setId("12345");
-    responseTask.setState("QUEUED");
-    responseTask.setQueuedTime(Date.from(Instant.now()));
-
-    ObjectMapper mapper = new ObjectMapper();
-    String serializedTask = mapper.writeValueAsString(responseTask);
-
-    setupMocks(serializedTask, HttpStatus.SC_CREATED);
-
-    VmApi vmApi = new VmApi(restClient);
-
-    VmOperation vmOperation = new VmOperation();
-    vmOperation.setOperation(Operation.START_VM.name());
-
-    final CountDownLatch latch = new CountDownLatch(1);
-
-    vmApi.performOperationAsync("foo", vmOperation, new FutureCallback<Task>() {
-      @Override
-      public void onSuccess(@Nullable Task result) {
-        assertEquals(result, responseTask);
-        latch.countDown();
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        fail(t.toString());
-        latch.countDown();
-      }
-    });
-
-    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
-  }
-
-  @Test
   public void testPerformStartOperation() throws IOException {
     Task responseTask = new Task();
     responseTask.setId("12345");
