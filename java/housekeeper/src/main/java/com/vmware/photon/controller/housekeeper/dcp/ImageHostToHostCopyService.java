@@ -274,7 +274,7 @@ public class ImageHostToHostCopyService extends StatefulService {
   private void copyImageHostToHost(final State current) {
     if (current.sourceDatastore.equals(current.destinationDatastore)) {
       ServiceUtils.logInfo(this, "Skip copying image to source itself");
-      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
+      sendPatchToIncrementImageReplicatedCount(current);
       return;
     }
 

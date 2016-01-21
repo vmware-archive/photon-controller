@@ -728,7 +728,6 @@ public class ImageSeederServiceTest {
     public Object[][] getTransferImageSuccessCode() {
       return new Object[][]{
           {1, TransferImageResultCode.OK},
-          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK},
       };
     }
 
@@ -759,6 +758,8 @@ public class ImageSeederServiceTest {
       createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
       assertThat(createdImageState.totalDatastore, is(3));
       assertThat(createdImageState.totalImageDatastore, is(3));
+      assertThat(createdImageState.replicatedDatastore, is(3));
+      assertThat(createdImageState.replicatedImageDatastore, is(3));
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
