@@ -20,7 +20,6 @@ import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmDiskOperation;
 import com.vmware.photon.controller.api.VmMetadata;
 import com.vmware.photon.controller.api.VmNetworks;
-import com.vmware.photon.controller.api.VmOperation;
 import com.vmware.photon.controller.client.RestClient;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -169,40 +168,6 @@ public class VmApi extends ApiBase {
     String path = String.format("%s/%s/tags", getBasePath(), vmId);
 
     createObjectAsync(path, serializeObjectAsJson(tag), responseCallback);
-  }
-
-  /**
-   * Perform a VM Operation on specified vm.
-   * @param vmId - id of the vm
-   * @param vmOperation {@link Operation} to perform
-   * @return Tracking {@link Task}
-   * @throws IOException
-   */
-  public Task performOperation(String vmId, VmOperation vmOperation) throws IOException {
-    String path = String.format("%s/%s/operations", getBasePath(), vmId);
-
-    HttpResponse httpResponse = this.restClient.perform(
-        RestClient.Method.POST,
-        path,
-        serializeObjectAsJson(vmOperation));
-    this.restClient.checkResponse(httpResponse, HttpStatus.SC_CREATED);
-
-    return parseTaskFromHttpResponse(httpResponse);
-  }
-
-  /**
-   * Perform a VM Operation on specified vm.
-   * @param vmId
-   * @param vmOperation
-   * @param responseCallback
-   * @throws IOException
-   */
-  public void performOperationAsync(final String vmId, VmOperation vmOperation,
-                                    final FutureCallback<Task> responseCallback)
-      throws IOException {
-    String path = String.format("%s/%s/operations", getBasePath(), vmId);
-
-    createObjectAsync(path, serializeObjectAsJson(vmOperation), responseCallback);
   }
 
   /**

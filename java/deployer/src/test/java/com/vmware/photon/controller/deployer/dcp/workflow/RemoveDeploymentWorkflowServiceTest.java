@@ -22,7 +22,6 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.VmDiskOperation;
-import com.vmware.photon.controller.api.VmOperation;
 import com.vmware.photon.controller.api.base.FlavoredCompact;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.DisksApi;
@@ -858,16 +857,6 @@ public class RemoveDeploymentWorkflowServiceTest {
             return null;
           }
         }).when(tenantsApi).deleteAsync(any(String.class), any(FutureCallback.class));
-
-        // Perform operation
-        doAnswer(new Answer() {
-          @Override
-          public Object answer(InvocationOnMock invocation) throws Throwable {
-            ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByStopVm);
-            return null;
-          }
-        }).when(vmApi).performOperationAsync(anyString(), any(VmOperation.class), any(FutureCallback
-            .class));
 
         // Perform start operation
         doAnswer(new Answer() {
