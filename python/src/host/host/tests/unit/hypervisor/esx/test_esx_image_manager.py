@@ -467,3 +467,11 @@ class TestEsxImageManager(unittest.TestCase):
                           "ds1", "foo")
         _exists.assert_called_once("/vmfs/volumes/ds1/foo")
         self.assertFalse(_rmtree.called)
+
+    @patch("os.path.getsize", return_value=100)
+    def test_make_image_dir(self, _getsize):
+        self.ds_manager.image_datastores.return_value = ["ds1"]
+        self.assertEqual(100, self.image_manager.image_size("fake_iid"))
+        self.assertEqual(100, self.image_manager.image_size("fake_iid"))
+        _getsize.assert_called_once_with(
+                "/vmfs/volumes/ds1/images/fa/fake_iid/fake_iid-flat.vmdk")

@@ -78,6 +78,7 @@ class EsxImageManager(ImageManager):
         self._uwsim_nas_exist = None
         agent_config = services.get(ServiceName.AGENT_CONFIG)
         self._in_uwsim = agent_config.in_uwsim
+        self._image_size_cache = dict()
 
     def monitor_for_cleanup(self,
                             reap_interval=DEFAULT_TMP_IMAGES_CLEANUP_INTERVAL):
@@ -217,13 +218,19 @@ class EsxImageManager(ImageManager):
     def get_image_path(self, datastore_id, image_id):
         return os_vmdk_path(datastore_id, image_id, IMAGE_FOLDER_NAME)
 
+    @log_duration
     def image_size(self, image_id):
         # TODO(mmutsuzaki) We should iterate over all the image datastores
         # until we find one that has the image.
+        if image_id in self._image_size_cache:
+            return self._image_size_cache[image_id]
+
         image_ds = list(self._ds_manager.image_datastores())[0]
         image_path = os_vmdk_flat_path(image_ds, image_id, IMAGE_FOLDER_NAME)
+        image_size = os.path.getsize(image_path)
 
-        return os.path.getsize(image_path)
+        self._image_size_cache[image_id] = image_size
+        return image_size
 
     def _load_json(self, metadata_path):
         if os.path.exists(metadata_path):
