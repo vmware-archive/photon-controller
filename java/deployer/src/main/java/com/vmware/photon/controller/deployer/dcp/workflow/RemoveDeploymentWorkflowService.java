@@ -154,6 +154,11 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
       startState.taskState.subStage = TaskState.SubStage.REMOVE_FROM_API_FE;
     }
 
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
     start.setBody(startState).complete();
 
     try {

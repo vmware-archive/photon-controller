@@ -154,6 +154,11 @@ public class CreateAndValidateContainerWorkflowService extends StatefulService {
       startState.taskState.subStage = TaskState.SubStage.CREATE_CONTAINER;
     }
 
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
     start.setBody(startState).complete();
 
     try {

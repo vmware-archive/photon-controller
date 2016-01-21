@@ -163,6 +163,11 @@ public class CreateManagementVmWorkflowService extends StatefulService {
       startState.taskState.subStage = TaskState.SubStage.CREATE_VM;
     }
 
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
     start.setBody(startState).complete();
 
     try {

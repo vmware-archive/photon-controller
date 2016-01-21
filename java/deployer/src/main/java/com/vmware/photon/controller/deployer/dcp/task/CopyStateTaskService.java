@@ -146,14 +146,21 @@ public class CopyStateTaskService extends StatefulService {
     State startState = startOperation.getBody(State.class);
     InitializationUtils.initialize(startState);
     validateState(startState);
+
     if (!startState.factoryLink.endsWith("/")) {
       startState.factoryLink += "/";
     }
+
     if (!startState.sourceFactoryLink.endsWith("/")) {
       startState.sourceFactoryLink += "/";
     }
-    startOperation.setBody(startState).complete();
 
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
+    startOperation.setBody(startState).complete();
 
     if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
       ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");

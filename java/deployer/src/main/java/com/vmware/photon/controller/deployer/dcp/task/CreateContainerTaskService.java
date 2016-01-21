@@ -126,6 +126,11 @@ public class CreateContainerTaskService extends StatefulService {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
     }
 
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
     start.setBody(startState).complete();
 
     try {
