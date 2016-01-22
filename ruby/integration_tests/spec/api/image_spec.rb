@@ -67,7 +67,8 @@ describe "image", management: true, image: true do
         # image shows up in the list
         image_list = EsxCloud::Image.find_all
         expect(image_list.items).to_not be_empty
-        expect(image_list.items).to include(image_upload)
+        uploaded_images = image_list.items.select { |i| i.id == image_upload.id}
+        expect(uploaded_images.size).to eq 1
 
         # One task is associated with this image
         tasks = client.get_image_tasks(image_upload.id).items
@@ -165,7 +166,8 @@ describe "image", management: true, image: true do
       # image shows up in image list
       image_list = EsxCloud::Image.find_all
       expect(image_list.items).to_not be_empty
-      expect(image_list.items).to include(subject)
+      filtered_images = image_list.items.select { |i| i.id == subject.id}
+      expect(filtered_images.size).to eq 1
 
       # One task is associated with this image
       tasks = client.get_image_tasks(subject.id).items

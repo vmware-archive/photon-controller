@@ -17,9 +17,13 @@ import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ImageCreateSpec;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+
+import com.google.common.base.Optional;
 
 import java.io.InputStream;
 import java.util.List;
@@ -47,11 +51,13 @@ public interface ImageBackend {
 
   void updateImageDatastore(String imageId, String imageDatastoreName) throws ExternalException;
 
-  List<ImageEntity> getAll() throws ExternalException;
+  ResourceList<ImageEntity> getAll(Optional<Integer> pageSize) throws ExternalException;
 
   Image toApiRepresentation(String id) throws ExternalException;
 
-  List<Image> getListApiRepresentation() throws ExternalException;
+  ResourceList<Image> getListApiRepresentation(Optional<Integer> pageSize) throws ExternalException;
+
+  ResourceList<Image> getImagesPage(String pageLink) throws PageExpiredException;
 
   void updateSettings(ImageEntity imageEntity, Map<String, String> imageSettings) throws ExternalException;
 
