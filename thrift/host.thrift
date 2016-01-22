@@ -1074,6 +1074,29 @@ struct GetNetworksResponse {
   2: optional list<resource.Network> networks
 }
 
+// Struct describing the setting availability zone of the esx host.
+struct SetAvailabilityZoneRequest {
+  // The availability zone associated with the esx host.
+  1: required string availability_zone
+
+  99: optional tracing.TracingInfo tracing_info
+}
+
+// SetAvailabilityZone result code
+enum SetAvailabilityZoneResultCode {
+  // Setting AvailabilityZone was successful.
+  OK = 0
+
+  // Catch all error
+  SYSTEM_ERROR = 15
+}
+
+// SetAvailabilityZone response
+struct SetAvailabilityZoneResponse {
+  1: required SetAvailabilityZoneResultCode result
+  2: optional string error
+}
+
 // Host service
 service Host {
   // Get the status of the agent.
@@ -1157,5 +1180,5 @@ service Host {
   agent.ProvisionResponse provision(1: agent.ProvisionRequest request)
 
   // Method to set host's availability zone.
-  agent.SetAvailabilityZoneResponse set_availability_zone(1: agent.SetAvailabilityZoneRequest request)
+  SetAvailabilityZoneResponse set_availability_zone(1: SetAvailabilityZoneRequest request)
 }
