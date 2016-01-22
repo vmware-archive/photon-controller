@@ -1,0 +1,8 @@
+Code-Review+2: Kenneth Jung <jungk@vmware.com>
+Code-Review+2: Michi Mutsuzaki <mmutsuzaki@vmware.com>
+Verified+1: Gerrit-Jenkins
+Submitted-by: Alain Roy <alainr@vmware.com>
+Submitted-at: Thu, 21 Jan 2016 16:02:21 -0800
+Reviewed-on: https://review.ec.eng.vmware.com/11486
+Project: photon-controller
+Branch: refs/heads/beta1-refresh
