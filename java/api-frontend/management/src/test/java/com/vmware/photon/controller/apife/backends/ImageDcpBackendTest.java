@@ -39,6 +39,7 @@ import com.vmware.photon.controller.common.dcp.DcpClient;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.apache.commons.collections.CollectionUtils;
@@ -302,12 +303,12 @@ public class ImageDcpBackendTest {
 
     @Test
     public void testUploadingImageWithDuplicatedName() throws ExternalException {
-      int currentCountOfImages = imageBackend.getAll().size();
+      int currentCountOfImages = imageBackend.getAll(Optional.absent()).getItems().size();
       String testImage = UUID.randomUUID().toString();
       imageBackend.prepareImageUpload(inputStream, testImage, ImageReplicationType.ON_DEMAND);
       imageBackend.prepareImageUpload(inputStream, testImage, ImageReplicationType.ON_DEMAND);
 
-      assertThat(imageBackend.getAll().size(), is(currentCountOfImages + 2));
+      assertThat(imageBackend.getAll(Optional.absent()).getItems().size(), is(currentCountOfImages + 2));
     }
   }
 

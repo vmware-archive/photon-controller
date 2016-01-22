@@ -17,14 +17,17 @@ import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.ImageFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ImageResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
+import com.google.common.base.Optional;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 import javax.servlet.http.HttpServletRequest;
@@ -54,6 +57,10 @@ public class ImagesResourceTest extends ResourceTest {
   private String taskRoutePath =
       UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build(taskId).toString();
 
+  private String image1Link = "";
+  private String image2Link = "";
+  private PaginationConfig paginationConfig = new PaginationConfig();
+
   @Mock
   private ImageFeClient imageFeClient;
 
@@ -69,7 +76,7 @@ public class ImagesResourceTest extends ResourceTest {
   @Override
   protected void setUpResources() throws Exception {
     addProvider(httpServletRequest);
-    addResource(new ImagesResource(imageFeClient));
+    addResource(new ImagesResource(imageFeClient, paginationConfig));
   }
 
   @BeforeMethod
@@ -87,7 +94,7 @@ public class ImagesResourceTest extends ResourceTest {
 
   @Test
   public void testGetAllImages() throws URISyntaxException, ExternalException {
-    when(imageFeClient.list()).thenReturn(testImageList);
+    when(imageFeClient.list(any(Optional.class))).thenReturn(testImageList);
 
     Response response = client().target(ImageResourceRoutes.API).request().get();
     assertThat(response.getStatus(), is(200));

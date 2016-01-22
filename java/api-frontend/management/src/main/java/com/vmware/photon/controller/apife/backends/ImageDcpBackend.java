@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageSetting;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -34,6 +35,7 @@ import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundExcep
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException.Type;
 import com.vmware.photon.controller.apife.exceptions.external.ImageUploadException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
@@ -197,8 +199,61 @@ public class ImageDcpBackend implements ImageBackend {
   }
 
   @Override
-  public List<ImageEntity> getAll() throws ExternalException {
-    return findEntitiesByName(Optional.<String>absent());
+  public ResourceList<ImageEntity> getAll(Optional<Integer> pageSize) throws ExternalException {
+    return findEntitiesByName(Optional.<String>absent(), pageSize);
+  }
+
+  public ResourceList<Image> getImagesPage(String pageLink) throws PageExpiredException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(
+        ImageService.State.class, queryResult, state -> toApiRepresentation(state));
+  }
+
+  public Image toApiRepresentation(ImageService.State imageDocument) {
+    Image image = new Image();
+    String id = ServiceUtils.getIDFromDocumentSelfLink(imageDocument.documentSelfLink);
+    image.setId(id);
+    image.setName(imageDocument.name);
+    image.setState(imageDocument.state);
+    image.setSize(imageDocument.size);
+    image.setReplicationType(imageDocument.replicationType);
+
+    List<ImageSetting> imageSettingList = new ArrayList<>();
+
+    if (imageDocument.imageSettings != null) {
+      for (ImageService.State.ImageSetting imageSettingDoc : imageDocument.imageSettings) {
+        ImageSetting imageSetting = new ImageSetting();
+        imageSetting.setName(imageSettingDoc.name);
+        imageSetting.setDefaultValue(imageSettingDoc.defaultValue);
+        imageSettingList.add(imageSetting);
+      }
+    }
+    image.setSettings(imageSettingList);
+
+    if (imageDocument.totalDatastore != null &&
+        imageDocument.replicatedDatastore != null &&
+        imageDocument.totalDatastore != 0) {
+      String replicatedDatastoreRatio =
+          (imageDocument.replicatedDatastore * 100.00 / imageDocument.totalDatastore) + "%";
+      image.setReplicationProgress(replicatedDatastoreRatio);
+
+    }
+
+    if (imageDocument.totalImageDatastore != null &&
+        imageDocument.replicatedImageDatastore != null &&
+        imageDocument.totalImageDatastore != 0) {
+      String replicatedImageDatastoreRatio =
+          (imageDocument.replicatedImageDatastore * 100.00 / imageDocument.totalImageDatastore) + "%";
+      image.setSeedingProgress(replicatedImageDatastoreRatio);
+    }
+
+    return image;
   }
 
   @Override
@@ -207,15 +262,10 @@ public class ImageDcpBackend implements ImageBackend {
   }
 
   @Override
-  public List<Image> getListApiRepresentation() throws ExternalException {
-    List<Image> resourceList = new ArrayList<>();
-    List<ImageEntity> list = getAll();
-
-    for (ImageEntity entity : list) {
-      resourceList.add(toApiRepresentation(entity));
-    }
-
-    return resourceList;
+  public ResourceList<Image> getListApiRepresentation(Optional<Integer> pageSize) throws ExternalException {
+    ServiceDocumentQueryResult queryResult = findDocumentsByName(Optional.<String>absent(), pageSize);
+    return PaginationUtils.xenonQueryResultToResourceList(ImageService.State.class, queryResult,
+        state -> toApiRepresentation(state));
   }
 
   @Override
@@ -385,27 +435,24 @@ public class ImageDcpBackend implements ImageBackend {
     return task;
   }
 
-  private List<ImageService.State> findDocumentsByName(Optional<String> name) throws ExternalException {
+  private ServiceDocumentQueryResult findDocumentsByName(Optional<String> name, Optional<Integer> pageSize)
+      throws ExternalException {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     if (name.isPresent()) {
       termsBuilder.put("name", name.get());
     }
 
-    return dcpClient.queryDocuments(ImageService.State.class, termsBuilder.build());
+    return dcpClient.queryDocuments(ImageService.State.class, termsBuilder.build(), pageSize, true);
   }
 
-  private List<ImageEntity> findEntitiesByName(Optional<String> name) throws ExternalException {
-    List<ImageEntity> imageEntityList = null;
-    List<ImageService.State> imageStateList = findDocumentsByName(name);
-    if (imageStateList != null) {
-      imageEntityList = new ArrayList<>(imageStateList.size());
-      for (ImageService.State imageState : imageStateList) {
-        imageEntityList.add(convertToEntity(imageState));
-      }
-    }
+  private ResourceList<ImageEntity> findEntitiesByName(Optional<String> name, Optional<Integer> pageSize)
+      throws ExternalException {
 
-    return imageEntityList;
+    ServiceDocumentQueryResult queryResult = findDocumentsByName(name, pageSize);
+    return PaginationUtils.xenonQueryResultToResourceList(ImageService.State.class, queryResult,
+        state -> convertToEntity(state));
   }
+
 
   private TaskEntity deleteTask(ImageEntity image) throws ExternalException {
     List<StepEntity> stepEntities = new ArrayList<>();
