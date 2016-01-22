@@ -27,7 +27,7 @@ class AgentControlPlugin(common.plugin.Plugin):
         config = common.services.get(ServiceName.AGENT_CONFIG)
 
         # Load num_threads
-        num_threads = config.host_service_threads
+        num_threads = config.control_service_threads
 
         # Create agent control handler
         agent_control_handler = AgentControlHandler()
