@@ -19,13 +19,17 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.ImageFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.ImageUploadException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
+import com.vmware.photon.controller.apife.resources.routes.FlavorsResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ImageResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponseFromServlet;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -46,6 +50,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
@@ -65,10 +70,12 @@ public class ImagesResource {
   private static final Logger logger = LoggerFactory.getLogger(ImagesResource.class);
 
   private final ImageFeClient imageFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public ImagesResource(ImageFeClient imageFeClient) {
+  public ImagesResource(ImageFeClient imageFeClient, PaginationConfig paginationConfig) {
     this.imageFeClient = imageFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @POST
@@ -90,12 +97,22 @@ public class ImagesResource {
   @ApiOperation(value = "Get all images' information",
       response = Image.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {
-      @ApiResponse(code = 200, message = "Image API representation")
+      @ApiResponse(code = 200, message = "List of Images")
   })
-  public Response list(@Context Request request) throws ExternalException {
+  public Response list(@Context Request request,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
+
+    ResourceList<Image> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = imageFeClient.getImagesPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = imageFeClient.list(adjustedPageSize);
+    }
     return generateResourceListResponse(
         Response.Status.OK,
-        imageFeClient.list(),
+        PaginationUtils.formalizePageLinks(resourceList, FlavorsResourceRoutes.API),
         (ContainerRequest) request,
         ImageResourceRoutes.IMAGE_PATH);
   }
