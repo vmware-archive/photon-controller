@@ -20,7 +20,7 @@ module EsxCloud
       # @return [Host]
       def create_host(deployment_id, payload)
         cmd = "host create -u '#{payload[:username]}'"
-        cmd += " -t '#{payload[:password]}'"
+        cmd += " -p '#{payload[:password]}'"
         cmd += " -i '#{payload[:address]}'"
         cmd += " -z '#{payload[:availabilityZone]}'" if payload[:availabilityZone]
         cmd += " -t '#{payload[:usageTags].join(",")}'" if payload[:usageTags]
@@ -51,15 +51,7 @@ module EsxCloud
       def mgmt_find_host_by_id(id)
         cmd = "host show #{id}"
         result = run_cli(cmd)
-        get_host_from_cli_cmd(result)
-      end
-
-      def get_host_from_cli_cmd(result)
-        values = result.split
-        host_hash = { "id" => values[0], "username" => values[1], "password" => values[2],
-                      "address" => values[3], "usageTags" => values[4], "state" => values[5],
-                      "metadata" => values[6], "availabilityZone" => values[7], "esxVersion" => values[8] }
-        Host.create_from_hash(host_hash)
+        get_host_from_response(result)
       end
 
       # @param [String] id
@@ -138,6 +130,29 @@ module EsxCloud
       # @return [Host]
       def host_resume(id)
         @api_client.host_resume(id)
+      end
+
+      private
+
+      # @param [String] result
+      # @return [Host]
+      def get_host_from_response(result)
+        values = result.split
+        host_hash = { "id" => values[0], "username" => values[1], "password" => values[2],
+                      "address" => values[3], "usageTags" => values[4], "state" => values[5],
+                      "metadata" => metadata_to_hash(values[6]), "availabilityZone" => values[7],
+                      "esxVersion" => values[8] }
+        Host.create_from_hash(host_hash)
+      end
+
+      # @param [String] metadata
+      # @return hash
+      def metadata_to_hash(metadata)
+        hash_new = Hash.new
+        metadata.split(',').each { |attribute|
+          values = attribute.split(':')
+          hash_new.merge!({ values[0] => values[1]})}
+        hash_new
       end
     end
   end
