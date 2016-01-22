@@ -9,12 +9,15 @@ REVISION=$(git rev-parse HEAD)
 DIRTY=$([[ $(git diff-files $TOPLEVEL/python $TOPLEVEL/thrift) != "" ]] && echo "-dirty")
 
 # Create tmp work directory
-TMPDIR=`mktemp -d -t create_vib.XXXXX`
-trap "rm -rf $TMPDIR" EXIT
 
 # Make sure we're in the right location
 cd "$(dirname "$0")"
 VIB_DIR=$PWD
+
+export TMPDIR=`pwd`
+TMPDIR=`mktemp -d -t temp_create_vib.XXXXX`
+
+trap "rm -rf $TMPDIR" EXIT
 
 # Copy vib layout to work directory
 SRC_VIB_LAYOUT=../vib/agent
