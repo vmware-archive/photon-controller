@@ -40,7 +40,8 @@ from common.service_name import ServiceName
 from common.state import State as CommonState
 from gen.flavors.ttypes import Flavor
 from gen.flavors.ttypes import QuotaLineItem
-from gen.host.ttypes import CopyImageRequest
+from gen.host.ttypes import CopyImageRequest, SetAvailabilityZoneRequest, \
+    SetAvailabilityZoneResultCode
 from gen.host.ttypes import CopyImageResultCode
 from gen.host.ttypes import CreateDiskResultCode
 from gen.host.ttypes import CreateDisksRequest
@@ -1486,6 +1487,20 @@ class HostHandlerTestCase(unittest.TestCase):
 
         assert_that(response.result, equal_to(result))
         pm.remove_vm_reservation.assert_called_once_with(request.reservation)
+
+    def test_set_availability_zone(self):
+        """Test set_availability_zone against mock"""
+        handler = HostHandler(MagicMock())
+
+        # Setup request
+        request = SetAvailabilityZoneRequest()
+        request.availability_zone = "a_z"
+
+        # Test success
+        result = handler.set_availability_zone(request)
+
+        assert_that(result.result is SetAvailabilityZoneResultCode.OK)
+
 
 if __name__ == '__main__':
     unittest.main()
