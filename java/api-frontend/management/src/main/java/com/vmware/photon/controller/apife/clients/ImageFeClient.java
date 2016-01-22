@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
@@ -27,6 +28,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
@@ -71,7 +73,6 @@ public class ImageFeClient {
     if (!hasReplicateImageStep) {
       return task;
     }
-
     // Run REPLICATE_IMAGE step asynchronously.
     task = FeClientHelpers.runImageReplicateAsyncSteps(commandFactory, executor, taskBackend, taskEntity);
     return task;
@@ -91,8 +92,12 @@ public class ImageFeClient {
     return imageBackend.toApiRepresentation(id);
   }
 
-  public ResourceList<Image> list() throws ExternalException {
-    return new ResourceList<>(imageBackend.getListApiRepresentation());
+  public ResourceList<Image> list(Optional<Integer> pageSize) throws ExternalException {
+    return imageBackend.getListApiRepresentation(pageSize);
+  }
+
+  public ResourceList<Image> getImagesPage(String pageLink) throws PageExpiredException {
+    return imageBackend.getImagesPage(pageLink);
   }
 
   private Task runImageUploadSyncSteps(TaskEntity taskEntity, boolean hasReplicateImageStep)
