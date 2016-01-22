@@ -91,19 +91,11 @@ public class HousekeeperClient implements StatusProvider {
    */
   public void replicateImage(String datastore, String image, ImageReplication replicationType)
       throws RpcException, InterruptedException {
-    ReplicateImageStatusCode statusCode;
     try {
       ReplicateImageResponse triggerResponse = triggerReplication(datastore, image, replicationType);
-      if (triggerResponse.getOperation_id() == null) {
-        statusCode = ReplicateImageStatusCode.FINISHED;
-      } else {
-        statusCode = waitForImageReplication(triggerResponse.getOperation_id());
-      }
+      checkReplicateImageResult(triggerResponse.getResult());
     } catch (TException e) {
       throw new RpcException(e);
-    }
-    if (statusCode != ReplicateImageStatusCode.FINISHED) {
-      throw new RuntimeException(String.format("Unexpected replication result code %s", statusCode));
     }
   }
 
@@ -160,19 +152,6 @@ public class HousekeeperClient implements StatusProvider {
   }
 
   /**
-   * Check if the replication has been taking too long.
-   *
-   * @param startTimeMs
-   * @return
-   */
-  @VisibleForTesting
-  protected void checkReplicationTimeout(long startTimeMs) {
-    if (System.currentTimeMillis() - startTimeMs >= config.getImageReplicationTimeout()) {
-      throw new RuntimeException("Timeout waiting for image replication.");
-    }
-  }
-
-  /**
    * Trigger image replication.
    *
    * @param datastore
@@ -198,23 +177,6 @@ public class HousekeeperClient implements StatusProvider {
     ReplicateImageResponse triggerResponse = handler.getResponse();
     checkReplicateImageResult(triggerResponse.getResult());
     return triggerResponse;
-  }
-
-  /**
-   * Get replication operation status.
-   *
-   * @param replicationOperationId
-   * @return
-   * @throws TException
-   * @throws InterruptedException
-   * @throws RpcException
-   */
-  protected ReplicateImageStatusResponse getReplicationStatus(String replicationOperationId) throws TException,
-      InterruptedException, RpcException {
-    ReplicateImageStatusResponse statusResponse = getReplicationStatusNoCheck(replicationOperationId);
-    checkReplicateImageResult(statusResponse.getResult());
-    checkReplicationResult(statusResponse.getStatus());
-    return statusResponse;
   }
 
   /**
@@ -255,37 +217,6 @@ public class HousekeeperClient implements StatusProvider {
     } catch (TException e) {
       throw new RpcException(e);
     }
-  }
-
-  private ReplicateImageStatusCode waitForImageReplication(String operationId)
-      throws InterruptedException, TException, RpcException {
-    ReplicateImageStatusCode statusCode;
-    long startTime = System.currentTimeMillis();
-    int serviceUnavailableOccurrence = 0;
-
-    // Check if replication is done.
-    while (true) {
-      checkReplicationTimeout(startTime);
-      Thread.sleep(REPLICATE_IMAGE_RETRY_INTERVAL_MS);
-
-      ReplicateImageStatusResponse statusResponse;
-      try {
-        statusResponse = getReplicationStatus(operationId);
-        serviceUnavailableOccurrence = 0;
-      } catch (ServiceUnavailableException e) {
-        serviceUnavailableOccurrence++;
-        if (serviceUnavailableOccurrence >= maxServiceUnavailableOccurence) {
-          throw e;
-        }
-        continue;
-      }
-
-      statusCode = statusResponse.getStatus().getCode();
-      if (statusCode != ReplicateImageStatusCode.IN_PROGRESS) {
-        break;
-      }
-    }
-    return statusCode;
   }
 
   /**
