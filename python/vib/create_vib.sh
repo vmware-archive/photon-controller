@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash -x +e
 
 # unset PYTHONPATH to prevent polluting the pip installer
 unset PYTHONPATH
@@ -8,17 +8,19 @@ TOPLEVEL=$(git rev-parse --show-toplevel)
 REVISION=$(git rev-parse HEAD)
 DIRTY=$([[ $(git diff-files $TOPLEVEL/python $TOPLEVEL/thrift) != "" ]] && echo "-dirty")
 
-# Create tmp work directory
-TMPDIR=`mktemp -d -t create_vib.XXXXX`
-trap "rm -rf $TMPDIR" EXIT
 
 # Make sure we're in the right location
 cd "$(dirname "$0")"
 VIB_DIR=$PWD
 
+# Create tmp work directory inside current directory so that vibauthor container can access it
+TMPDIR=`pwd`
+TMP_VIB_DIR=`mktemp -d -t temp_create_vib.XXXXX`
+trap "rm -rf $TMP_VIB_DIR" EXIT
+
 # Copy vib layout to work directory
 SRC_VIB_LAYOUT=../vib/agent
-DEST_VIB_LAYOUT=$TMPDIR/vib
+DEST_VIB_LAYOUT=$TMP_VIB_DIR/vib
 DEST_VIB_ROOT=$DEST_VIB_LAYOUT/payloads/agent/opt/vmware/photon/controller
 LOG_DIR=$DEST_VIB_LAYOUT/payloads/agent/var/log
 
@@ -50,9 +52,9 @@ build_for_py_ver() {
    fi
 
    # Install virtualenv in the working directory
-   virtualenv --python=python$PYTHON_VERSION $TMPDIR/virtualenv
+   virtualenv --python=python$PYTHON_VERSION $TMP_VIB_DIR/virtualenv
 
-   . $TMPDIR/virtualenv/bin/activate
+   . $TMP_VIB_DIR/virtualenv/bin/activate
 
    # Install pip 1.3.1
    pip install pip==1.3.1
