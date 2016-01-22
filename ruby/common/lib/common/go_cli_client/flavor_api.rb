@@ -31,7 +31,9 @@ module EsxCloud
       # @param [String] id
       # @return Flavor
       def find_flavor_by_id(id)
-        @api_client.find_flavor_by_id(id)
+        cmd = "flavor show #{id}"
+        result = run_cli(cmd)
+        get_flavor_from_response(result)
       end
 
       # @return [FlavorList]
@@ -64,6 +66,27 @@ module EsxCloud
       # @return [TaskList]
       def get_flavor_tasks(id, state = nil)
         @api_client.get_flavor_tasks(id, state)
+      end
+
+      private
+
+      # @param [String] result
+      # @return Flavor
+      def get_flavor_from_response(result)
+        values = result.split()
+        flavor_hash = { "id" => values[0], "name" => values[1], "kind" => values[2],
+                        "cost" => cost_to_hash(values[3]), "state" => values[4] }
+        Flavor.create_from_hash(flavor_hash)
+      end
+
+      # @param [String] costs
+      # @return hash
+      def cost_to_hash(costs)
+        costs_New = Array.new
+        costs.split(',').each { |cost|
+          values = cost.split(':')
+          costs_New.push({ "key" => values[0], "value" => values[1], "unit" => values[2]})}
+        costs_New
       end
     end
   end
