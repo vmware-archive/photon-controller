@@ -37,9 +37,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * An immutable, in-memory implementation of {@link ConstraintChecker}.
@@ -166,8 +168,8 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
    */
   private ImmutableSet<String> checkConstraint(ResourceConstraint constraint) {
     ImmutableSet<String> matches;
-    if (!constraint.isSetValues() || constraint.getValues().size() != 1) {
-      throw new IllegalArgumentException("Invalid constraint with multiple values: " + constraint);
+    if (!constraint.isSetValues()) {
+      throw new IllegalArgumentException("Invalid constraint without any values: " + constraint);
     }
     String value = constraint.getValues().get(0);
     if (constraint.getType() == ResourceConstraintType.AVAILABILITY_ZONE) {
@@ -177,7 +179,11 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
         matches = getHostsInAvailabilityZone(value);
       }
     } else if (constraint.getType() == ResourceConstraintType.DATASTORE) {
-      matches = getHostsWithDatastore(value);
+      Set<String> hostSet = new HashSet<>();
+      for (String constraintValue : constraint.getValues()) {
+        hostSet.addAll(getHostsWithDatastore(constraintValue));
+      }
+      matches = ImmutableSet.copyOf(hostSet);
     } else if (constraint.getType() == ResourceConstraintType.DATASTORE_TAG) {
       matches = getHostsWithDatastoreTag(value);
     } else if (constraint.getType() == ResourceConstraintType.HOST) {
@@ -193,8 +199,11 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
     } else if (constraint.getType() == ResourceConstraintType.MANAGEMENT_ONLY) {
       matches = getManagementHosts();
     } else if (constraint.getType() == ResourceConstraintType.NETWORK) {
-      // TODO(mmutsuzaki) support multiple networks?
-      matches = getHostsWithNetwork(value);
+      Set<String> hostSet = new HashSet<>();
+      for (String constraintValue : constraint.getValues()) {
+        hostSet.addAll(getHostsWithNetwork(constraintValue));
+      }
+      matches = ImmutableSet.copyOf(hostSet);
     } else {
       throw new IllegalArgumentException("Unsupported constraint type: " + constraint);
     }

@@ -90,7 +90,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
 
       for (ResourceConstraint constraint : resourceConstraints) {
 
-        if (!constraint.isSetValues() || constraint.getValues().size() > 1) {
+        if (!constraint.isSetValues()) {
           throw new IllegalArgumentException("Invalid resource constraint: " + constraint);
         }
 
@@ -103,8 +103,8 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
                     QueryTask.Query.Occurance.MUST_OCCUR);
             break;
           case DATASTORE:
-            queryBuilder.addCollectionItemClause(HostService.State.FIELD_NAME_REPORTED_DATASTORES,
-                constraint.getValues().get(0));
+            queryBuilder.addInCollectionItemClause(HostService.State.FIELD_NAME_REPORTED_DATASTORES,
+                constraint.getValues());
             break;
           case DATASTORE_TAG:
             queryBuilder.addClause(getDatastoreTagClause(constraint.getValues().get(0)));
@@ -121,8 +121,8 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
                 UsageTag.MGMT.name());
             break;
           case NETWORK:
-            queryBuilder.addCollectionItemClause(HostService.State.FIELD_NAME_REPORTED_NETWORKS,
-                constraint.getValues().get(0));
+            queryBuilder.addInCollectionItemClause(HostService.State.FIELD_NAME_REPORTED_NETWORKS,
+                constraint.getValues());
             break;
           default:
             throw new IllegalStateException("Invalid resource constraint: " + constraint);

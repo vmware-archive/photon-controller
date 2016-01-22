@@ -181,6 +181,7 @@ public class ConstraintCheckerTest {
       }
     }
   }
+
   @Test(dataProvider = "default")
   public void testSingleConstraint(ConstraintChecker checker) {
     Map<String, ServerAddress> allHosts = checker.getCandidates(Collections.emptyList(), expectedHosts.size());
@@ -291,6 +292,24 @@ public class ConstraintCheckerTest {
     constraints.add(new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList("ds1")));
     constraints.add(new ResourceConstraint(ResourceConstraintType.NETWORK, Arrays.asList("nw2")));
     assertTrue(checker.getCandidates(constraints, 2).isEmpty());
+  }
+
+  @Test(dataProvider = "default")
+  public void testMultipleDatastores(ConstraintChecker checker) {
+    List<ResourceConstraint> constraints = new LinkedList<>();
+    ResourceConstraint constraint = new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList("ds0",
+        "ds1"));
+    constraints.add(constraint);
+    assertThat(checker.getCandidates(constraints, 2).size(), is(2));
+  }
+
+  @Test(dataProvider = "default")
+  public void testMultipleNetworks(ConstraintChecker checker) {
+    List<ResourceConstraint> constraints = new LinkedList<>();
+    ResourceConstraint constraint = new ResourceConstraint(ResourceConstraintType.NETWORK, Arrays.asList("nw0",
+        "nw1"));
+    constraints.add(constraint);
+    assertThat(checker.getCandidates(constraints, 2).size(), is(2));
   }
 
   private Set<String> getManagementHosts(ConstraintChecker checker, int numCandidates) {
