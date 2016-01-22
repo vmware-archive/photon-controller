@@ -25,6 +25,13 @@
     <porttype>dst</porttype>
     <port>$CHAIRMAN_PORT</port>
   </rule>
+  <!-- Graphite-Carbon outbound port -->
+  <rule id = '0004'>
+      <direction>outbound</direction>
+      <protocol>tcp</protocol>
+      <porttype>dst</porttype>
+      <port>2003</port>
+  </rule>
   <enabled>true</enabled>
   <required>false</required>
 </service>
