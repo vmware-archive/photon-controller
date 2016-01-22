@@ -27,8 +27,8 @@ from common.mode import Mode
 from common.service_name import ServiceName
 from common.state import State
 from gen.agent.ttypes import ProvisionRequest
-from gen.agent.ttypes import SetAvailabilityZoneRequest
 from gen.common.ttypes import ServerAddress
+from gen.host.ttypes import SetAvailabilityZoneRequest
 from gen.resource.ttypes import ImageDatastore
 from host.hypervisor.fake.hypervisor import FakeHypervisor
 

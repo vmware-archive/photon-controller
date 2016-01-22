@@ -15,8 +15,6 @@ package com.vmware.photon.controller.common.clients;
 
 import com.vmware.photon.controller.agent.gen.ProvisionRequest;
 import com.vmware.photon.controller.agent.gen.ProvisionResponse;
-import com.vmware.photon.controller.agent.gen.SetAvailabilityZoneRequest;
-import com.vmware.photon.controller.agent.gen.SetAvailabilityZoneResponse;
 import com.vmware.photon.controller.common.clients.exceptions.DatastoreNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.DestinationAlreadyExistException;
 import com.vmware.photon.controller.common.clients.exceptions.DirectoryNotFoundException;
@@ -104,6 +102,8 @@ import com.vmware.photon.controller.host.gen.ReserveResponse;
 import com.vmware.photon.controller.host.gen.ServiceTicketRequest;
 import com.vmware.photon.controller.host.gen.ServiceTicketResponse;
 import com.vmware.photon.controller.host.gen.ServiceType;
+import com.vmware.photon.controller.host.gen.SetAvailabilityZoneRequest;
+import com.vmware.photon.controller.host.gen.SetAvailabilityZoneResponse;
 import com.vmware.photon.controller.host.gen.SetHostModeRequest;
 import com.vmware.photon.controller.host.gen.SetHostModeResponse;
 import com.vmware.photon.controller.host.gen.StartImageScanRequest;
