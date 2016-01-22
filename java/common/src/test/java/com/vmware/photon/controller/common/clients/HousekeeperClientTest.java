@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.common.clients;
 
-import com.vmware.photon.controller.common.clients.exceptions.ReplicationFailedException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.ServiceUnavailableException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
@@ -36,7 +35,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -83,28 +81,6 @@ public class HousekeeperClientTest {
     //Replicate.
     client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
     verify(client).triggerReplication(DATASTORE, IMAGE, REPLICATION_TYPE);
-    verify(client).getReplicationStatus(anyString());
-  }
-
-  @Test(expectedExceptions = RuntimeException.class)
-  protected void timeoutReplicate() throws InterruptedException, RpcException, TException {
-    doThrow(new RuntimeException()).when(client).checkReplicationTimeout(anyLong());
-
-    // Trigger replication.
-    ReplicateImageResponse triggerResponse = new ReplicateImageResponse(new ReplicateImageResult
-        (ReplicateImageResultCode.OK));
-    triggerResponse.setOperation_id(OPERATION_ID);
-    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
-
-    // Replication status.
-    ReplicateImageStatusResponse statusResponse = new ReplicateImageStatusResponse(new ReplicateImageResult
-        (ReplicateImageResultCode.OK));
-    statusResponse.setStatus(new ReplicateImageStatus(ReplicateImageStatusCode.IN_PROGRESS));
-    doReturn(statusResponse).when(client).getReplicationStatusNoCheck(OPERATION_ID);
-
-    //Replicate.
-    client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
-    fail("should fail because replication times out");
   }
 
   @Test(expectedExceptions = SystemErrorException.class)
@@ -122,16 +98,11 @@ public class HousekeeperClientTest {
   @Test(expectedExceptions = SystemErrorException.class)
   protected void failStatusWithSystemError() throws InterruptedException, RpcException, TException {
     // Trigger replication.
-    ReplicateImageResponse triggerResponse = new ReplicateImageResponse(new ReplicateImageResult
-        (ReplicateImageResultCode.OK));
-    triggerResponse.setOperation_id(OPERATION_ID);
-    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
-
-    // Replication status.
     ReplicateImageResult systemResult = new ReplicateImageResult(ReplicateImageResultCode.SYSTEM_ERROR);
     systemResult.setError("some error");
-    ReplicateImageStatusResponse statusResponse = new ReplicateImageStatusResponse(systemResult);
-    doReturn(statusResponse).when(client).getReplicationStatusNoCheck(OPERATION_ID);
+    ReplicateImageResponse triggerResponse = new ReplicateImageResponse(systemResult);
+    triggerResponse.setOperation_id(OPERATION_ID);
+    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
 
     // Replicate.
     client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
@@ -141,62 +112,14 @@ public class HousekeeperClientTest {
   @Test(expectedExceptions = ServiceUnavailableException.class)
   protected void failStatusWithServiceUnavailableError() throws Throwable {
     // Trigger replication.
-    ReplicateImageResponse triggerResponse = new ReplicateImageResponse(new ReplicateImageResult
-        (ReplicateImageResultCode.OK));
-    triggerResponse.setOperation_id(OPERATION_ID);
-    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
-
-    // Replication status.
     ReplicateImageResult result = new ReplicateImageResult(ReplicateImageResultCode.SERVICE_NOT_FOUND);
-    result.setError("NewImageReplicatorService is unavailable");
-    ReplicateImageStatusResponse statusResponse = new ReplicateImageStatusResponse(result);
-    doReturn(statusResponse).when(client).getReplicationStatusNoCheck(OPERATION_ID);
-
-    HousekeeperClient.maxServiceUnavailableOccurence = 1;
+    result.setError("ImageReplicatorService is unavailable");
+    ReplicateImageResponse triggerResponse = new ReplicateImageResponse(result);
+    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
 
     // Replicate.
     client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
     fail("should fail with service unavailable while getting replication status");
-  }
-
-  @Test(expectedExceptions = ReplicationFailedException.class)
-  protected void failWithReplicationError() throws InterruptedException, RpcException, TException {
-    // Trigger replication.
-    ReplicateImageResponse triggerResponse = new ReplicateImageResponse(new ReplicateImageResult
-        (ReplicateImageResultCode.OK));
-    triggerResponse.setOperation_id(OPERATION_ID);
-    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
-
-    // Replication status.
-    ReplicateImageStatusResponse statusResponse = new ReplicateImageStatusResponse(new ReplicateImageResult
-        (ReplicateImageResultCode.OK));
-    ReplicateImageStatus statusResult = new ReplicateImageStatus(ReplicateImageStatusCode.FAILED);
-    statusResponse.setStatus(statusResult);
-    doReturn(statusResponse).when(client).getReplicationStatusNoCheck(OPERATION_ID);
-
-    //Replicate.
-    client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
-    fail("should throw because of replication failure");
-  }
-
-  @Test(expectedExceptions = RuntimeException.class)
-  protected void failWithReplicationCancelled() throws InterruptedException, RpcException, TException {
-    // Trigger replication.
-    ReplicateImageResponse triggerResponse = new ReplicateImageResponse(new ReplicateImageResult
-        (ReplicateImageResultCode.OK));
-    triggerResponse.setOperation_id(OPERATION_ID);
-    doReturn(triggerResponse).when(client).triggerReplication(anyString(), anyString(), any());
-
-    // Replication status.
-    ReplicateImageStatusResponse statusResponse = new ReplicateImageStatusResponse(new ReplicateImageResult
-        (ReplicateImageResultCode.OK));
-    ReplicateImageStatus statusResult = new ReplicateImageStatus(ReplicateImageStatusCode.CANCELLED);
-    statusResponse.setStatus(statusResult);
-    doReturn(statusResponse).when(client).getReplicationStatusNoCheck(OPERATION_ID);
-
-    //Replicate.
-    client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
-    fail("should throw because replication was cancelled");
   }
 
   @Test
