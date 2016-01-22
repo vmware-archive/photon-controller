@@ -24,8 +24,6 @@ from gen.agent.ttypes import ProvisionResponse
 from gen.agent.ttypes import ProvisionResultCode
 from gen.agent.ttypes import VersionResponse
 from gen.agent.ttypes import VersionResultCode
-from gen.agent.ttypes import SetAvailabilityZoneResponse
-from gen.agent.ttypes import SetAvailabilityZoneResultCode
 from gen.roles.ttypes import ChildInfo
 from gen.roles.ttypes import SchedulerRole  # noqa needed for docstring
 from gen.roles.ttypes import SchedulerEntry
@@ -108,23 +106,3 @@ class AgentControlHandler(AgentControl.Iface):
         return VersionResponse(VersionResultCode.OK,
                                version=version.version,
                                revision=version.revision)
-
-    @log_request
-    @error_handler(SetAvailabilityZoneResponse, SetAvailabilityZoneResultCode)
-    def set_availability_zone(self, request):
-        """
-        Sets/Updates availability zone of host.
-
-        :type request: SetAvailabilityZoneRequest
-        :rtype: SetAvailabilityZoneResponse
-        """
-        try:
-            agent_config = common.services.get(ServiceName.AGENT_CONFIG)
-            agent_config.set_availability_zone(request)
-        except Exception, e:
-            self._logger.warning("Unexpected exception", exc_info=True)
-            return SetAvailabilityZoneResponse(
-                SetAvailabilityZoneResultCode.SYSTEM_ERROR,
-                str(e))
-
-        return SetAvailabilityZoneResponse(SetAvailabilityZoneResultCode.OK)

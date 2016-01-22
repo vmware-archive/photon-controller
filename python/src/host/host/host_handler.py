@@ -33,7 +33,8 @@ from common.service_name import ServiceName
 from gen.agent import AgentControl
 from gen.common.ttypes import ServerAddress
 from gen.host import Host
-from gen.host.ttypes import AgentStatusCode
+from gen.host.ttypes import AgentStatusCode, SetAvailabilityZoneResponse, \
+    SetAvailabilityZoneResultCode
 from gen.host.ttypes import AgentStatusResponse
 from gen.host.ttypes import AttachISOResponse
 from gen.host.ttypes import AttachISOResultCode
@@ -1715,14 +1716,25 @@ class HostHandler(Host.Iface):
         agent_control_handler = common.services.get(AgentControl.Iface)
         return agent_control_handler.provision(request)
 
+    @log_request
+    @error_handler(SetAvailabilityZoneResponse, SetAvailabilityZoneResultCode)
     def set_availability_zone(self, request):
         """
-        Set availability zone.
+        Sets/Updates availability zone of host.
+
         :type request: SetAvailabilityZoneRequest
         :rtype: SetAvailabilityZoneResponse
         """
-        agent_control_handler = common.services.get(AgentControl.Iface)
-        return agent_control_handler.set_availability_zone(request)
+        try:
+            agent_config = common.services.get(ServiceName.AGENT_CONFIG)
+            agent_config.set_availability_zone(request)
+        except Exception, e:
+            self._logger.warning("Unexpected exception", exc_info=True)
+            return SetAvailabilityZoneResponse(
+                SetAvailabilityZoneResultCode.SYSTEM_ERROR,
+                str(e))
+
+        return SetAvailabilityZoneResponse(SetAvailabilityZoneResultCode.OK)
 
     @log_request
     @error_handler(ServiceTicketResponse, ServiceTicketResultCode)
