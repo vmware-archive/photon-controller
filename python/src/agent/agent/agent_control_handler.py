@@ -111,7 +111,7 @@ class AgentControlHandler(AgentControl.Iface):
 
     @log_request
     @error_handler(SetAvailabilityZoneResponse, SetAvailabilityZoneResultCode)
-    def SetAvailabilityZone(self, request):
+    def set_availability_zone(self, request):
         """
         Sets/Updates availability zone of host.
 
