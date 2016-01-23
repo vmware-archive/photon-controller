@@ -13,12 +13,8 @@
 
 package com.vmware.photon.controller.common.auth;
 
-import com.vmware.identity.openidconnect.client.AccessToken;
-import com.vmware.identity.openidconnect.client.AdminServerException;
 import com.vmware.identity.openidconnect.client.ClientAuthenticationMethod;
 import com.vmware.identity.openidconnect.client.ClientID;
-import com.vmware.identity.openidconnect.client.ClientInformation;
-import com.vmware.identity.openidconnect.client.ClientRegistrationHelper;
 import com.vmware.identity.openidconnect.client.IDToken;
 import com.vmware.identity.openidconnect.client.Nonce;
 import com.vmware.identity.openidconnect.client.OIDCClientException;
@@ -26,20 +22,24 @@ import com.vmware.identity.openidconnect.client.OIDCTokens;
 import com.vmware.identity.openidconnect.client.ResponseMode;
 import com.vmware.identity.openidconnect.client.ResponseType;
 import com.vmware.identity.openidconnect.client.ResponseValue;
-import com.vmware.identity.openidconnect.client.SSLConnectionException;
 import com.vmware.identity.openidconnect.client.State;
 import com.vmware.identity.openidconnect.client.TokenSpec;
 import com.vmware.identity.openidconnect.client.TokenType;
+import com.vmware.identity.rest.core.client.exceptions.ClientException;
+import com.vmware.identity.rest.idm.client.IdmClient;
+import com.vmware.identity.rest.idm.data.OIDCClientDTO;
+import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.http.HttpException;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -56,7 +56,8 @@ public class AuthClientHandler {
   private final AuthOIDCClient oidcClient;
   private final String user;
   private final String password;
-  private ClientRegistrationHelper clientRegistrationHelper;
+  private final String tenant;
+  private IdmClient idmClient;
   private AuthTokenHandler tokenHandler;
 
   /**
@@ -70,16 +71,18 @@ public class AuthClientHandler {
    */
   AuthClientHandler(
       AuthOIDCClient oidcClient,
-      ClientRegistrationHelper clientRegistrationHelper,
+      IdmClient idmClient,
       AuthTokenHandler tokenHandler,
       String user,
-      String password)
+      String password,
+      String tenant)
       throws AuthException {
     this.oidcClient = oidcClient;
-    this.clientRegistrationHelper = clientRegistrationHelper;
+    this.idmClient = idmClient;
     this.tokenHandler = tokenHandler;
     this.user = user;
     this.password = password;
+    this.tenant = tenant;
   }
 
   /**
@@ -95,11 +98,12 @@ public class AuthClientHandler {
           throws AuthException {
     try {
       OIDCTokens tokens = tokenHandler.getAdminServerAccessToken(user, password);
-      ClientInformation clientInformation = registerClient(clientX509Certificate, tokens.getAccessToken(),
+      OIDCClientDTO oidcClientDTO = registerClient(clientX509Certificate,
           loginRedirectURI, loginRedirectURI, logoutRedirectURI);
-      URI loginURI = buildAuthenticationRequestURI(clientInformation.getClientId(), loginRedirectURI);
-      URI logoutURI = buildLogoutRequestURI(clientInformation.getClientId(), tokens.getIdToken(), logoutRedirectURI);
-      return new ImplicitClient(clientInformation.getClientId().getValue(), loginURI.toString(), logoutURI.toString());
+      ClientID clientID = new ClientID(oidcClientDTO.getClientId());
+      URI loginURI = buildAuthenticationRequestURI(clientID, loginRedirectURI);
+      URI logoutURI = buildLogoutRequestURI(clientID, tokens.getIdToken(), logoutRedirectURI);
+      return new ImplicitClient(oidcClientDTO.getClientId(), loginURI.toString(), logoutURI.toString());
     } catch (Exception e) {
       throw new AuthException(String.format("Failed to register implicit client with loginRedirectURI %s and " +
           "logoutRedirectURI %s ", loginRedirectURI, logoutRedirectURI), e);
@@ -114,14 +118,8 @@ public class AuthClientHandler {
    * @return
    * @throws AuthException
    */
-  public ClientInformation registerClient(X509Certificate clientX509Certificate, URI redirectURI) throws
-      AuthException {
-    try {
-      AccessToken accessToken = tokenHandler.getAdminServerAccessToken(user, password).getAccessToken();
-      return registerClient(clientX509Certificate, accessToken, redirectURI, redirectURI, redirectURI);
-    } catch (Exception e) {
-      throw new AuthException("Failed to register client " + redirectURI, e);
-    }
+  public OIDCClientDTO registerClient(X509Certificate clientX509Certificate, URI redirectURI) throws AuthException {
+    return registerClient(clientX509Certificate, redirectURI, redirectURI, redirectURI);
   }
 
   /**
@@ -168,34 +166,40 @@ public class AuthClientHandler {
   /**
    * Register OAuth client.
    */
-  private ClientInformation registerClient(X509Certificate clientX509Certificate, AccessToken accessToken, URI
-      redirectURI, URI logoutURI, URI postLogoutURI)
-      throws AuthException, OIDCClientException, SSLConnectionException, AdminServerException {
-      Exception registerException;
-      try {
-          return clientRegistrationHelper.registerClient(
-                  accessToken,
-                  TokenType.BEARER,
-                  Collections.singleton(redirectURI),
-                  logoutURI,
-                  Collections.singleton(postLogoutURI),
-                  ClientAuthenticationMethod.NONE,
-                  null);
-      } catch (AdminServerException e) {
-          // And AdminServer error means that the client is already registered.
-          registerException = e;
-      }
+  private OIDCClientDTO registerClient(X509Certificate clientX509Certificate,
+                                       URI redirectURI, URI logoutURI, URI postLogoutURI)
+      throws AuthException {
+    Exception registerException = null;
 
-      // Try to retrieve the already registered client.
-      Collection<ClientInformation> clientList = clientRegistrationHelper.getAllClients(accessToken,
-          TokenType.BEARER);
-      for (ClientInformation client : clientList) {
-          if (client.getRedirectUris().size() == 1 &&
-                  client.getRedirectUris().iterator().next().compareTo(redirectURI) == 0) {
-              return client;
-          }
+    try {
+      // register an OIDC client
+      OIDCClientMetadataDTO oidcClientMetadataDTO = new OIDCClientMetadataDTO.Builder()
+          .withRedirectUris(Arrays.asList(redirectURI.toString()))
+          .withPostLogoutRedirectUris(Arrays.asList(postLogoutURI.toString()))
+          .withLogoutUri(logoutURI.toString())
+          .withTokenEndpointAuthMethod(ClientAuthenticationMethod.PRIVATE_KEY_JWT.getValue())
+          .withCertSubjectDN(clientX509Certificate.getSubjectDN().getName())
+          .build();
+      idmClient.oidcClient().register(tenant, oidcClientMetadataDTO);
+
+    } catch (ClientException | HttpException | IOException e) {
+      registerException = new AuthException("failed to registerClient", e);
+    }
+
+    try {
+      List<OIDCClientDTO> oidcClientDTOList = idmClient.oidcClient().getAll(tenant);
+      for (OIDCClientDTO oidcClientDTO : oidcClientDTOList) {
+        if (oidcClientDTO.getOIDCClientMetadataDTO().getRedirectUris().size() == 1 &&
+            oidcClientDTO.getOIDCClientMetadataDTO().getRedirectUris().iterator().next()
+                .compareTo(redirectURI.toString()) == 0) {
+          return oidcClientDTO;
+        }
       }
-      throw new AuthException("Client expected to be registered,  but not found", registerException);
+    } catch (ClientException | HttpException | IOException e) {
+      throw new AuthException("failed to registerClient", e);
+    }
+
+    throw new AuthException("Client expected to be registered,  but not found", registerException);
   }
 
   /**

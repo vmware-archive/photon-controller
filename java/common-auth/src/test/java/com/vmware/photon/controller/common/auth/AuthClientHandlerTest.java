@@ -14,10 +14,7 @@
 package com.vmware.photon.controller.common.auth;
 
 import com.vmware.identity.openidconnect.client.AccessToken;
-import com.vmware.identity.openidconnect.client.ClientAuthenticationMethod;
 import com.vmware.identity.openidconnect.client.ClientID;
-import com.vmware.identity.openidconnect.client.ClientInformation;
-import com.vmware.identity.openidconnect.client.ClientRegistrationHelper;
 import com.vmware.identity.openidconnect.client.IDToken;
 import com.vmware.identity.openidconnect.client.Nonce;
 import com.vmware.identity.openidconnect.client.OIDCClient;
@@ -27,7 +24,10 @@ import com.vmware.identity.openidconnect.client.ResponseMode;
 import com.vmware.identity.openidconnect.client.ResponseType;
 import com.vmware.identity.openidconnect.client.State;
 import com.vmware.identity.openidconnect.client.TokenSpec;
-import com.vmware.identity.openidconnect.client.TokenType;
+import com.vmware.identity.rest.idm.client.IdmClient;
+import com.vmware.identity.rest.idm.client.OidcClientResource;
+import com.vmware.identity.rest.idm.data.OIDCClientDTO;
+import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 import com.vmware.photon.controller.common.cert.X509CertificateHelper;
 
 import org.testng.Assert;
@@ -36,6 +36,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.doReturn;
 import static org.powermock.api.mockito.PowerMockito.doThrow;
 import static org.powermock.api.mockito.PowerMockito.mock;
@@ -45,16 +46,17 @@ import static org.testng.Assert.fail;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.cert.X509Certificate;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Test AuthClientHandler.
  */
 public class AuthClientHandlerTest {
 
-  private AuthClientHandler clientHanler;
+  private AuthClientHandler clientHandler;
   private X509Certificate clientCertificate;
-  private ClientRegistrationHelper clientRegistrationHelper;
+  private IdmClient idmClient;
   private AccessToken accessToken;
   private IDToken idToken;
   private AuthTokenHandler tokenHandler;
@@ -73,13 +75,14 @@ public class AuthClientHandlerTest {
     doReturn(oidcClient).when(authOidcClient).getOidcClient(any(ClientID.class));
     doReturn(oidcClient).when(authOidcClient).getOidcClient();
 
-    clientRegistrationHelper = mock(ClientRegistrationHelper.class);
-    clientHanler = spy(new AuthClientHandler(
+    idmClient = mock(IdmClient.class);
+    clientHandler = spy(new AuthClientHandler(
         authOidcClient,
-        clientRegistrationHelper,
+        idmClient,
         tokenHandler,
         AuthTestHelper.USER,
-        AuthTestHelper.PASSWORD));
+        AuthTestHelper.PASSWORD,
+        AuthTestHelper.TENANT));
     accessToken = mock(AccessToken.class);
 
 
@@ -92,29 +95,36 @@ public class AuthClientHandlerTest {
     X509CertificateHelper x509CertificateHelper = new X509CertificateHelper();
     clientCertificate = x509CertificateHelper.generateX509Certificate();
     certificateStore.setCertificateEntry("client_certificate", clientCertificate);
+    clientID = new ClientID("dummyClientId");
   }
 
   @Test
   public void testRegisterClient() throws Exception {
-    doReturn(tokens).when(tokenHandler).getAdminServerAccessToken(AuthTestHelper.USER, AuthTestHelper.PASSWORD);
+    OIDCClientDTO oidcClientDTOMock = mock(OIDCClientDTO.class);
+    String dummyClientId = "dummyClientId";
+    doReturn(dummyClientId).when(oidcClientDTOMock).getClientId();
+    OIDCClientMetadataDTO oidcClientMetadataDTOMock = mock(OIDCClientMetadataDTO.class);
+    List<String> redirectUris = new ArrayList<>();
+    redirectUris.add("https://redirect");
+    doReturn(oidcClientMetadataDTOMock).when(oidcClientDTOMock).getOIDCClientMetadataDTO();
+    doReturn(redirectUris).when(oidcClientMetadataDTOMock).getRedirectUris();
 
-    ClientInformation clientInformationMock = mock(ClientInformation.class);
-    doReturn(clientInformationMock).when(clientRegistrationHelper).registerClient(
-        eq(accessToken),
-        eq(TokenType.BEARER),
-        any(Set.class),
-        any(URI.class),
-        any(Set.class),
-        eq(ClientAuthenticationMethod.NONE),
-        any(String.class));
+    OidcClientResource oidcClientResource = mock(OidcClientResource.class);
+    doReturn(oidcClientResource).when(idmClient).oidcClient();
+    doReturn(oidcClientDTOMock).when(oidcClientResource).register(
+        eq(AuthTestHelper.TENANT),
+        any(OIDCClientMetadataDTO.class));
 
-    ClientID mockClientID = mock(ClientID.class);
-    doReturn(mockClientID).when(clientInformationMock).getClientId();
+    List<OIDCClientDTO> oidcClientDTOList = new ArrayList<>();
+    oidcClientDTOList.add(oidcClientDTOMock);
+    doReturn(oidcClientDTOList).when(oidcClientResource).getAll(
+        eq(AuthTestHelper.TENANT));
 
-    ClientInformation clientInformation = clientHanler.registerClient(
-        clientCertificate,
-        new URI("https://redirect"));
-    Assert.assertEquals(mockClientID, clientInformation.getClientId());
+    OIDCClientDTO oidcClientDTO = clientHandler.registerClient(clientCertificate, new URI("https://redirect"));
+    Assert.assertEquals(dummyClientId, oidcClientDTO.getClientId());
+    Assert.assertEquals(oidcClientMetadataDTOMock, oidcClientDTO.getOIDCClientMetadataDTO());
+    verify(oidcClientResource).register(eq(AuthTestHelper.TENANT), any(OIDCClientMetadataDTO.class));
+    verify(oidcClientResource).getAll(eq(AuthTestHelper.TENANT));
   }
 
   @Test
@@ -123,23 +133,18 @@ public class AuthClientHandlerTest {
         AuthTestHelper.USER,
         AuthTestHelper.PASSWORD);
 
-    ClientInformation clientInformationMock = mock(ClientInformation.class);
-    doReturn(clientInformationMock).when(clientRegistrationHelper).registerClient(
-        eq(accessToken),
-        eq(TokenType.BEARER),
-        any(Set.class),
-        any(URI.class),
-        any(Set.class),
-        eq(ClientAuthenticationMethod.NONE),
-        any(String.class));
+    OIDCClientDTO oidcClientDTOMock = mock(OIDCClientDTO.class);
+    OidcClientResource oidcClientResource = mock(OidcClientResource.class);
+    doReturn(oidcClientResource).when(idmClient).oidcClient();
+    doReturn(oidcClientDTOMock).when(oidcClientResource).register(
+        any(String.class),
+        any(OIDCClientMetadataDTO.class));
 
-    ClientID mockClientID = mock(ClientID.class);
-    doReturn(mockClientID).when(clientInformationMock).getClientId();
+    String dummyClientId = "dummyClientId";
+    doReturn(dummyClientId).when(oidcClientDTOMock).getClientId();
 
     try {
-      ClientInformation clientInformation = clientHanler.registerClient(
-          clientCertificate,
-          new URI("https://redirect"));
+      clientHandler.registerClient(clientCertificate, new URI("https://redirect"));
       fail("Expected exception.");
     } catch (AuthException e) {
     }
@@ -156,27 +161,34 @@ public class AuthClientHandlerTest {
         any(TokenSpec.class),
         any(State.class),
         any(Nonce.class));
-    URI actualResponse = clientHanler.buildAuthenticationRequestURI(clientID, redirectUri);
+    URI actualResponse = clientHandler.buildAuthenticationRequestURI(clientID, redirectUri);
     Assert.assertEquals(actualResponse, expectedResponse);
   }
 
   @Test
   public void testRegisterImplicitClient() throws Exception {
     doReturn(tokens).when(tokenHandler).getAdminServerAccessToken(AuthTestHelper.USER, AuthTestHelper.PASSWORD);
-    doReturn(new URI("logout")).when(clientHanler).replaceIdTokenWithPlaceholder(any(URI.class));
+    doReturn(new URI("logout")).when(clientHandler).replaceIdTokenWithPlaceholder(any(URI.class));
 
-    ClientInformation clientInformationMock = mock(ClientInformation.class);
-    doReturn(clientInformationMock).when(clientRegistrationHelper).registerClient(
-        eq(accessToken),
-        eq(TokenType.BEARER),
-        any(Set.class),
-        any(URI.class),
-        any(Set.class),
-        eq(ClientAuthenticationMethod.NONE),
-        any(String.class));
+    OIDCClientDTO oidcClientDTOMock = mock(OIDCClientDTO.class);
+    String dummyClientId = "dummyClientId";
+    doReturn(dummyClientId).when(oidcClientDTOMock).getClientId();
+    OIDCClientMetadataDTO oidcClientMetadataDTOMock = mock(OIDCClientMetadataDTO.class);
+    List<String> redirectUris = new ArrayList<>();
+    redirectUris.add("loginRedirect");
+    doReturn(oidcClientMetadataDTOMock).when(oidcClientDTOMock).getOIDCClientMetadataDTO();
+    doReturn(redirectUris).when(oidcClientMetadataDTOMock).getRedirectUris();
 
-    ClientID mockClientID = mock(ClientID.class);
-    doReturn(mockClientID).when(clientInformationMock).getClientId();
+    OidcClientResource oidcClientResource = mock(OidcClientResource.class);
+    doReturn(oidcClientResource).when(idmClient).oidcClient();
+    doReturn(oidcClientDTOMock).when(oidcClientResource).register(
+        eq(AuthTestHelper.TENANT),
+        any(OIDCClientMetadataDTO.class));
+
+    List<OIDCClientDTO> oidcClientDTOList = new ArrayList<>();
+    oidcClientDTOList.add(oidcClientDTOMock);
+    doReturn(oidcClientDTOList).when(oidcClientResource).getAll(
+        eq(AuthTestHelper.TENANT));
 
     URI expectedLoginResponse = new URI("login");
     URI loginRedirect = new URI("loginRedirect");
@@ -193,7 +205,7 @@ public class AuthClientHandlerTest {
     doReturn(expectedLogoutResponse).when(oidcClient).buildLogoutRequestURI(eq(logoutRedirect), eq(idToken), any(State
         .class));
 
-    AuthClientHandler.ImplicitClient implicitClient = clientHanler.registerImplicitClient(clientCertificate,
+    AuthClientHandler.ImplicitClient implicitClient = clientHandler.registerImplicitClient(clientCertificate,
         loginRedirect, logoutRedirect);
     Assert.assertEquals(expectedLoginResponse.toString(), implicitClient.loginURI);
     Assert.assertEquals(expectedLogoutResponse.toString(), implicitClient.logoutURI);
@@ -222,7 +234,7 @@ public class AuthClientHandlerTest {
         "on_id=EMhk6IVFwXs-wUrn90iYHA1aCULgP6sSMfomPcrw8xk";
 
     Assert.assertEquals(new URI(logoutURLWithPlaceholder),
-        clientHanler.replaceIdTokenWithPlaceholder(new URI(logoutURL)));
+        clientHandler.replaceIdTokenWithPlaceholder(new URI(logoutURL)));
   }
 
   @DataProvider(name = "invalidLogoutURL")
@@ -238,6 +250,6 @@ public class AuthClientHandlerTest {
 
   @Test(dataProvider = "invalidLogoutURL", expectedExceptions = IllegalArgumentException.class)
   public void testReplaceIdTokenWithPlaceholderWithInvalidLogoutUrl(String logoutURL) throws Exception {
-    clientHanler.replaceIdTokenWithPlaceholder(new URI(logoutURL));
+    clientHandler.replaceIdTokenWithPlaceholder(new URI(logoutURL));
   }
 }

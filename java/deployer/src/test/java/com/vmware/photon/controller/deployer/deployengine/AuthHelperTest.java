@@ -14,12 +14,10 @@
 package com.vmware.photon.controller.deployer.deployengine;
 
 import com.vmware.identity.openidconnect.client.ClientID;
-import com.vmware.identity.openidconnect.client.ClientInformation;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.auth.AuthException;
 import com.vmware.photon.controller.common.auth.AuthOIDCClient;
 
-import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.mockito.Matchers.eq;
@@ -41,7 +39,6 @@ import java.util.Set;
 /**
  * Tests for {@link AuthHelper}.
  */
-@PrepareForTest({ClientInformation.class})
 public class AuthHelperTest {
 
   private AuthOIDCClient authOIDCClient;
@@ -50,14 +47,10 @@ public class AuthHelperTest {
   private ClientID clientID;
   private URI loginRedirectUri;
   private URI logoutRedirectUri;
-  private ClientInformation clientInformation;
   AuthClientHandler.ImplicitClient implicitClient;
 
-  private String tenantName = "tenant1";
   private String userName = "user1";
   private String password = "password1";
-  private String authServerAddress = "lookupEndpoint1";
-  private int authServerPort = 433;
   private String loginRedirectEndpoint = "loginRedirectEndpoint1";
   private String logoutRedirectEndpoint = "logoutRedirectEndpoint1";
 
@@ -72,10 +65,6 @@ public class AuthHelperTest {
 
     Set<URI> redirectUris = new HashSet<>();
     redirectUris.add(loginRedirectUri);
-
-    clientInformation = mock(ClientInformation.class);
-    doReturn(clientID).when(clientInformation).getClientId();
-    doReturn(redirectUris).when(clientInformation).getRedirectUris();
 
     implicitClient = new AuthClientHandler.ImplicitClient("client", "http://login", "http://logout");
   }
@@ -99,8 +88,8 @@ public class AuthHelperTest {
   }
 
   @Test(expectedExceptions = AuthException.class)
-  private void getRedirectUriTestFailToGetClientHandler() throws Throwable {
-    doThrow(new AuthException("Failed to get client hanlder."))
+  public void getRedirectUriTestFailToGetClientHandler() throws Throwable {
+    doThrow(new AuthException("Failed to get client handler."))
         .when(authOIDCClient)
         .getClientHandler(eq(userName), eq(password));
 
@@ -114,7 +103,7 @@ public class AuthHelperTest {
   }
 
   @Test(expectedExceptions = AuthException.class)
-  private void getRedirectUriTestFailToRegister() throws Throwable {
+  public void getRedirectUriTestFailToRegister() throws Throwable {
     doReturn(authClientHandler).when(authOIDCClient).getClientHandler(eq(userName), eq(password));
     doThrow(new AuthException("Failed to build URI."))
             .when(authClientHandler)
