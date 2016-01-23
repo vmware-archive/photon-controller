@@ -84,6 +84,13 @@ module EsxCloud
       Config.client.host_resume(host_id)
     end
 
+    # @param [String] host_id
+    # @param [HostSetAvailabilityZoneSpec] spec
+    # @return [Host]
+    def self.host_set_availability_zone(host_id, spec)
+      Config.client.host_set_availability_zone(host_id, spec.to_hash)
+    end
+
     # @param [String] id
     # @param [String] username
     # @param [String] password
