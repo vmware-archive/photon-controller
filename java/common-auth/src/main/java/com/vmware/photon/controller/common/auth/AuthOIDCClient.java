@@ -15,7 +15,6 @@ package com.vmware.photon.controller.common.auth;
 
 import com.vmware.identity.openidconnect.client.ClientConfig;
 import com.vmware.identity.openidconnect.client.ClientID;
-import com.vmware.identity.openidconnect.client.ClientRegistrationHelper;
 import com.vmware.identity.openidconnect.client.ConnectionConfig;
 import com.vmware.identity.openidconnect.client.MetadataHelper;
 import com.vmware.identity.openidconnect.client.OIDCClient;
@@ -26,11 +25,15 @@ import com.vmware.identity.openidconnect.client.SSLConnectionException;
 import com.vmware.identity.rest.afd.client.AfdClient;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.data.CertificateDTO;
+import com.vmware.identity.rest.idm.client.IdmClient;
 
 import org.apache.http.HttpException;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -94,10 +97,11 @@ public class AuthOIDCClient {
       throws AuthException {
     return new AuthClientHandler(
         this,
-        getClientRegistrationHelper(),
+        createIdmClient(domainControllerFQDN, domainControllerPort, user, password),
         getTokenHandler(),
         user,
-        password);
+        password,
+        tenant);
   }
 
   private AfdClient setSSLTrustPolicy(String domainControllerFQDN, int domainControllerPort)
@@ -168,14 +172,33 @@ public class AuthOIDCClient {
     return new OIDCClient(new ClientConfig(connectionConfig, clientID, null));
   }
 
-  /**
-   * Get client registration helper.. Package visibility.
-   */
-  ClientRegistrationHelper getClientRegistrationHelper() throws AuthException {
-    return new ClientRegistrationHelper.Builder(domainControllerFQDN)
-        .domainControllerPort(domainControllerPort)
-        .tenant(tenant)
-        .keyStore(certificateStore.getKeyStore()).build();
+  private IdmClient createIdmClient(
+      String domainControllerFQDN,
+      int domainControllerPort,
+      String user,
+      String password)
+      throws AuthException {
+    try {
+      TrustManagerFactory trustManagerFactory =
+          TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      trustManagerFactory.init(certificateStore.getKeyStore());
+      SSLContext sslContext = SSLContext.getInstance("SSL");
+      sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+      IdmClient idmClient =
+          new IdmClient(domainControllerFQDN, domainControllerPort, new DefaultHostnameVerifier(), sslContext);
+
+      com.vmware.identity.openidconnect.client.AccessToken accessToken = getTokenHandler()
+          .getAdminServerAccessToken(user, password)
+          .getAccessToken();
+
+      com.vmware.identity.rest.core.client.AccessToken restAccessToken =
+          new com.vmware.identity.rest.core.client.AccessToken(accessToken.getValue(),
+              com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
+      idmClient.setToken(restAccessToken);
+      return idmClient;
+    } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+      throw new AuthException("Failed to createIdmClient", e);
+    }
   }
 
   /**
