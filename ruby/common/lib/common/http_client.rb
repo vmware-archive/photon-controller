@@ -63,7 +63,7 @@ module EsxCloud
         end
       end
 
-      Config.logger.debug("Response: #{response.status} #{response.body}")
+      log_response(response)
       HttpResponse.new(response.status, response.body, response.headers)
     end
 
@@ -81,7 +81,7 @@ module EsxCloud
         end
       end
 
-      Config.logger.debug("Response: #{response.status} #{response.body}")
+      log_response(response)
       HttpResponse.new(response.status, response.body, response.headers)
     end
 
@@ -98,7 +98,7 @@ module EsxCloud
         end
       end
 
-      Config.logger.debug("Response: #{response.status} #{response.body}")
+      log_response(response)
       HttpResponse.new(response.status, response.body, response.headers)
     end
 
@@ -116,7 +116,7 @@ module EsxCloud
         end
       end
 
-      Config.logger.debug("Response: #{response.status} #{response.body}")
+      log_response(response)
       HttpResponse.new(response.status, response.body, response.headers)
     end
 
@@ -133,7 +133,7 @@ module EsxCloud
         req.headers = {"Content-Type" => MULTIPART_CONTENT_TYPE}.merge(headers).merge(get_auth_header())
       end
 
-      Config.logger.debug("Response: #{response.status} #{response.body}")
+      log_response(response)
       HttpResponse.new(response.status, response.body, response.headers)
     end
 
@@ -151,7 +151,7 @@ module EsxCloud
         end
       end
 
-      Config.logger.debug("Response: #{response.status} #{response.body}")
+      log_response(response)
       HttpResponse.new(response.status, response.body, response.headers)
     end
 
@@ -173,11 +173,15 @@ module EsxCloud
         end
       end
 
-      Config.logger.debug("Response: #{response.status} #{response.body}")
+      log_response(response)
       HttpResponse.new(response.status, response.body, response.headers)
     end
 
     private
+
+    def log_response(response)
+      Config.logger.debug("Response: #{response.status} #{response.headers["request-id"]} #{response.body}")
+    end
 
     def host_matches_no_proxy?
       no_proxy = ENV["no_proxy"] || ENV["NO_PROXY"]
