@@ -172,6 +172,11 @@ else
     bundle exec parallel_rspec -o '--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow' -- spec/api/cluster/*_spec.rb
   fi
 
+  # run the availability zone integration test
+  if [ "$PROMOTE" = true ] && [ -z "$UPTIME" ]; then
+    bundle exec rake availabilityzone
+  fi
+
   # verify that no objects were left over at the end of the run
   bundle exec rake esxcloud:validate
 fi

@@ -173,6 +173,10 @@ module EsxCloud
       EsxCloud::Host.create(deployment.id, spec)
     end
 
+    def host_set_availability_zone(id, spec)
+      EsxCloud::Host.host_set_availability_zone(id, spec)
+    end
+
     # @param[AvailabilityZoneCreateSpec] spec
     # @return [AvailabilityZone]
     def create_availability_zone(spec)
