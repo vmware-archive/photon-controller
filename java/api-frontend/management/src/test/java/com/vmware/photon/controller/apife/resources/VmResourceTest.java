@@ -40,7 +40,6 @@ import java.net.URI;
  * Tests {@link VmResource}.
  * Tests {@link VmMksTicketResource}.
  * Tests {@link VmNetworksResource}.
- * Tests {@link VmOperationsResource}.
  * Tests {@link VmTagsResource}.
  */
 public class VmResourceTest extends ResourceTest {
@@ -59,8 +58,21 @@ public class VmResourceTest extends ResourceTest {
   private String vmMksTicketRoute =
       UriBuilder.fromPath(VmResourceRoutes.VM_MKS_TICKET_PATH).build(vmId).toString();
 
-  private String vmOperationsRoute =
-      UriBuilder.fromPath(VmResourceRoutes.VM_OPERATIONS_PATH).build(vmId).toString();
+  private String vmStartOperationsRoute =
+      UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_START_ACTION).build(vmId).toString();
+
+  private String vmStopOperationsRoute =
+          UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_STOP_ACTION).build(vmId).toString();
+
+  private String vmRestartOperationsRoute =
+          UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_RESTART_ACTION).build(vmId).toString();
+
+  private String vmSuspendOperationsRoute =
+          UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_SUSPEND_ACTION).build(vmId).toString();
+
+  private String vmResumeOperationsRoute =
+          UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_RESUME_ACTION).build(vmId).toString();
+
 
   private String taskId = "task1";
 
@@ -75,7 +87,6 @@ public class VmResourceTest extends ResourceTest {
     addResource(new VmResource(vmFeClient));
     addResource(new VmMksTicketResource(vmFeClient));
     addResource(new VmTagsResource(vmFeClient));
-    addResource(new VmOperationsResource(vmFeClient));
     addResource(new VmNetworksResource(vmFeClient));
   }
 
@@ -143,26 +154,28 @@ public class VmResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testGoodOperation() throws Exception {
-    testVmOperation("RESTART_VM", Response.Status.CREATED);
+  public void testStartOperation() throws Exception {
+    testVmOperation("START_VM", Response.Status.CREATED, vmStartOperationsRoute);
   }
 
   @Test
-  public void testContextuallyIllegalOperation() throws Exception {
-    testVmOperation("CREATE_PROJECT", Response.Status.BAD_REQUEST);
+  public void testStopOperation() throws Exception {
+    testVmOperation("STOP_VM", Response.Status.CREATED, vmStopOperationsRoute);
   }
 
   @Test
-  public void testBogusOperation() throws Exception {
-    VmOperation op = new VmOperation();
-    op.setOperation("FOOBAR");
+  public void testRestartOperation() throws Exception {
+    testVmOperation("RESTART_VM", Response.Status.CREATED, vmRestartOperationsRoute);
+  }
 
-    Response response = client()
-        .target(vmOperationsRoute)
-        .request()
-        .post(Entity.entity(op, MediaType.APPLICATION_JSON_TYPE));
+  @Test
+  public void testSuspendOperation() throws Exception {
+    testVmOperation("SUSPEND_VM", Response.Status.CREATED, vmSuspendOperationsRoute);
+  }
 
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+  @Test
+  public void testResumeOperation() throws Exception {
+    testVmOperation("RESUME_VM", Response.Status.CREATED, vmResumeOperationsRoute);
   }
 
   @Test
@@ -182,7 +195,7 @@ public class VmResourceTest extends ResourceTest {
     assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
   }
 
-  private void testVmOperation(String opName, Response.Status status) throws Exception {
+  private void testVmOperation(String opName, Response.Status status, String uri) throws Exception {
     Operation operation = Operation.valueOf(opName);
     VmOperation vmOperation = new VmOperation();
     vmOperation.setOperation(opName);
@@ -192,7 +205,7 @@ public class VmResourceTest extends ResourceTest {
     when(vmFeClient.operate(vmId, operation)).thenReturn(task);
 
     Response response = client()
-        .target(vmOperationsRoute)
+        .target(uri)
         .request()
         .post(Entity.entity(vmOperation, MediaType.APPLICATION_JSON_TYPE));
 
