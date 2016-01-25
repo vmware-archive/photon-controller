@@ -42,8 +42,6 @@ public class VmResourceRoutes {
 
   public static final String VM_TASKS_PATH = "/vms/{id}/tasks";
 
-  public static final String VM_OPERATIONS_PATH = "/vms/{id}/operations";
-
   public static final String VM_START_ACTION = "/start";
 
   public static final String VM_STOP_ACTION = "/stop";
