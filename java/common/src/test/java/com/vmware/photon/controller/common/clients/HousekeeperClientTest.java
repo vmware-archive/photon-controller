@@ -76,7 +76,6 @@ public class HousekeeperClientTest {
     ReplicateImageStatusResponse statusResponse = new ReplicateImageStatusResponse(new ReplicateImageResult
         (ReplicateImageResultCode.OK));
     statusResponse.setStatus(new ReplicateImageStatus(ReplicateImageStatusCode.FINISHED));
-    doReturn(statusResponse).when(client).getReplicationStatusNoCheck(OPERATION_ID);
 
     //Replicate.
     client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
