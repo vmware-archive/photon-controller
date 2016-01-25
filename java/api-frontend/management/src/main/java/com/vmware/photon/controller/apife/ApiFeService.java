@@ -81,7 +81,6 @@ import com.vmware.photon.controller.apife.resources.VmIsoDetachResource;
 import com.vmware.photon.controller.apife.resources.VmMetadataSetResource;
 import com.vmware.photon.controller.apife.resources.VmMksTicketResource;
 import com.vmware.photon.controller.apife.resources.VmNetworksResource;
-import com.vmware.photon.controller.apife.resources.VmOperationsResource;
 import com.vmware.photon.controller.apife.resources.VmResource;
 import com.vmware.photon.controller.apife.resources.VmTagsResource;
 import com.vmware.photon.controller.apife.resources.VmTasksResource;
@@ -290,7 +289,6 @@ public class ApiFeService extends Application<ApiFeConfiguration> {
     resources.add(VmMetadataSetResource.class);
     resources.add(VmMksTicketResource.class);
     resources.add(VmNetworksResource.class);
-    resources.add(VmOperationsResource.class);
     resources.add(VmResource.class);
     resources.add(VmTagsResource.class);
     resources.add(VmTasksResource.class);
