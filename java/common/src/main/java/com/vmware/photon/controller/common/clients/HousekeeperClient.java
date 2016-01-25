@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.common.clients;
 
 import com.vmware.photon.controller.common.clients.exceptions.ComponentClientExceptionHandler;
-import com.vmware.photon.controller.common.clients.exceptions.ReplicationFailedException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.ServiceUnavailableException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
@@ -25,10 +24,6 @@ import com.vmware.photon.controller.housekeeper.gen.RemoveImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResult;
-import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatus;
-import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusCode;
-import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusRequest;
-import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusResponse;
 import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.photon.controller.status.gen.Status;
 
@@ -52,7 +47,6 @@ public class HousekeeperClient implements StatusProvider {
 
   private static final long HOUSEKEEPER_CALL_TIMEOUT_MS = 2 * 60000; // 2 * 1 min
   private static final long HOUSEKEEPER_STATUS_CALL_TIMEOUT_MS = 5000; //5sec
-  private static final long REPLICATE_IMAGE_RETRY_INTERVAL_MS = 5000; // 5 sec
 
 
   /**
@@ -60,8 +54,6 @@ public class HousekeeperClient implements StatusProvider {
    * (This time is in seconds.)
    */
   private static final int DEFAULT_IMAGE_REPLICATION_TIMEOUT_SEC = 60 * 60;
-
-  protected static int maxServiceUnavailableOccurence = 100;
 
   private final ClientProxy<Housekeeper.AsyncClient> proxy;
   private final HousekeeperClientConfig config;
@@ -179,28 +171,6 @@ public class HousekeeperClient implements StatusProvider {
     return triggerResponse;
   }
 
-  /**
-   * Get replication operation status.
-   *
-   * @param replicationOperationId
-   * @return
-   * @throws TException
-   * @throws InterruptedException
-   * @throws RpcException
-   */
-  @VisibleForTesting
-  protected ReplicateImageStatusResponse getReplicationStatusNoCheck(String replicationOperationId) throws
-      TException, InterruptedException, RpcException {
-    Housekeeper.AsyncClient client = proxy.get();
-    SyncHandler<ReplicateImageStatusResponse, Housekeeper.AsyncClient.replicate_image_status_call> handler = new
-        SyncHandler<>();
-    client.setTimeout(HOUSEKEEPER_CALL_TIMEOUT_MS);
-    client.replicate_image_status(new ReplicateImageStatusRequest(replicationOperationId), handler);
-    handler.await();
-
-    return handler.getResponse();
-  }
-
   @VisibleForTesting
   protected void triggerImageRemoval(
       String image,
@@ -242,19 +212,4 @@ public class HousekeeperClient implements StatusProvider {
     }
   }
 
-  /**
-   * Check and throw if a replication error has been reported.
-   *
-   * @param result
-   * @throws RpcException
-   */
-  private void checkReplicationResult(ReplicateImageStatus result) throws RpcException {
-    if (result.getCode() == ReplicateImageStatusCode.FAILED) {
-      logger.error("replication FAILED: {}", result.toString());
-      throw new ReplicationFailedException(result.getError());
-    } else if (result.getCode() == ReplicateImageStatusCode.CANCELLED) {
-      logger.error("replication CANCELLED: {}", result.toString());
-      throw new RuntimeException(result.getError());
-    }
-  }
 }
