@@ -18,6 +18,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
@@ -28,6 +29,7 @@ import com.vmware.photon.controller.deployer.gen.ProvisionHostStatus;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusCode;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
@@ -130,11 +132,31 @@ public class AddHostWorkflowServiceClient {
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setContextId(LoggingUtils.getRequestId());
 
-    AddCloudHostWorkflowService.State serviceState =
-        ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH)
-        .getBody(AddCloudHostWorkflowService.State.class);
+    logger.info("Getting status for " + path +  " on dcpHost " + dcpHost.getPreferredAddress());
 
-    switch (serviceState.taskState.stage) {
+    Operation op = null;
+    try {
+      op = ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH);
+    } catch (DocumentNotFoundException ex) {
+      // Add management host is not replicated and it runs of 1 host only. That host might not happen to be this host
+      // that is why it does not know about it
+      logger.error("Ignoring since provision new management host task is not known by this host ", ex);
+      provisionHostStatus.setResult(ProvisionHostStatusCode.IN_PROGRESS);
+      return provisionHostStatus;
+    }
+
+    TaskState taskState = null;
+    ServiceDocument serviceState = null;
+
+    if (op.getBodyRaw().getClass() == AddCloudHostWorkflowService.State.class) {
+      serviceState = op.getBody(AddCloudHostWorkflowService.State.class);
+      taskState = ((AddCloudHostWorkflowService.State) serviceState).taskState;
+    } else {
+      serviceState = op.getBody(AddManagementHostWorkflowService.State.class);
+      taskState = ((AddManagementHostWorkflowService.State) serviceState).taskState;
+    }
+
+    switch (taskState.stage) {
       case CANCELLED:
         logger.error("Provision new cloud host cancelled: {}", Utils.toJson(serviceState));
         provisionHostStatus.setResult(ProvisionHostStatusCode.CANCELLED);
@@ -144,9 +166,9 @@ public class AddHostWorkflowServiceClient {
       case FAILED:
         logger.error("Provision new cloud host failed: {}", Utils.toJson(serviceState));
         provisionHostStatus.setResult(ProvisionHostStatusCode.FAILED);
-        if (serviceState.taskState != null && serviceState.taskState.failure != null) {
+        if (taskState != null && taskState.failure != null) {
           provisionHostStatus.setError(
-              String.format("Provision new cloud host failed due to: %s", serviceState.taskState.failure.message));
+              String.format("Provision new cloud host failed due to: %s", taskState.failure.message));
         } else {
           provisionHostStatus.setError("Provision new cloud host failed.");
         }
@@ -162,7 +184,7 @@ public class AddHostWorkflowServiceClient {
         break;
 
       default:
-        throw new RuntimeException(String.format("Unexpected stage %s.", serviceState.taskState.stage));
+        throw new RuntimeException(String.format("Unexpected stage %s.", taskState.stage));
     }
     return provisionHostStatus;
   }
