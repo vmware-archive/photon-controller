@@ -22,8 +22,10 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.ImageSettingsEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -40,6 +42,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.base.Optional;
@@ -279,6 +282,44 @@ public class ImageDcpBackend implements ImageBackend {
       }
       throw e;
     }
+  }
+
+  @Override
+  public boolean isImageSeedingDone(String imageId) throws ExternalException {
+    try {
+      ImageService.State state = dcpClient.get(ImageServiceFactory.SELF_LINK + "/" + imageId)
+          .getBody(ImageService.State.class);
+      return state.totalImageDatastore == state.replicatedImageDatastore;
+    } catch (DocumentNotFoundException e) {
+      throw new ImageNotFoundException(ImageNotFoundException.Type.ID, imageId);
+    }
+  }
+
+  @Override
+  public List<String> getSeededImageDatastores(String imageId) throws ExternalException {
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    termsBuilder.put("imageId", imageId);
+
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(ImageReplicationService.State.class,
+        termsBuilder.build(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), true);
+
+    List<String> seededImageDatastores = new ArrayList<>();
+    queryResult.documents.values().forEach(item -> {
+      seededImageDatastores.add(Utils.fromJson(item, ImageReplicationService.State.class).imageDatastoreId);
+    });
+
+    try {
+      while (StringUtils.isNotBlank(queryResult.nextPageLink)) {
+        queryResult = dcpClient.queryDocumentPage(queryResult.nextPageLink);
+        queryResult.documents.values().forEach(item -> {
+          seededImageDatastores.add(Utils.fromJson(item, ImageReplicationService.State.class).imageDatastoreId);
+        });
+      }
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(queryResult.nextPageLink);
+    }
+
+    return seededImageDatastores;
   }
 
   private void patchImageService(String imageId, ImageService.State imageState)
