@@ -56,4 +56,8 @@ public interface ImageBackend {
   void updateSettings(ImageEntity imageEntity, Map<String, String> imageSettings) throws ExternalException;
 
   ImageEntity findById(String id) throws ExternalException;
+
+  boolean isImageSeedingDone(String imageId) throws ExternalException;
+
+  List<String> getSeededImageDatastores(String imageId) throws ExternalException;
 }

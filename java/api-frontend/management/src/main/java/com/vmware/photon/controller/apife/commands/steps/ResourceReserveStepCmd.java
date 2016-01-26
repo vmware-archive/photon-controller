@@ -178,11 +178,34 @@ public class ResourceReserveStepCmd extends StepCommand {
     this.infrastructureEntity = infrastructureEntity;
   }
 
+  private ResourceConstraint createImageSeedingResourceConstraints() {
+    List<String> candidateImageDatastores = (List<String>) step.getTask().getTransientResources
+        (ImageSeedingProgressCheckStepCmd.CANDIDATE_IMAGE_STORES_KEY_NAME);
+
+    if (candidateImageDatastores.isEmpty()) {
+      return null;
+    } else {
+      ResourceConstraint resourceConstraint = new ResourceConstraint();
+      resourceConstraint.setType(ResourceConstraintType.DATASTORE);
+      resourceConstraint.setValues(candidateImageDatastores);
+
+      return resourceConstraint;
+    }
+  }
+
   private Resource createResource(InfrastructureEntity entity)
       throws InternalException, ExternalException, ResourceConstraintException {
     switch (entity.getKind()) {
-      case Vm.KIND:
-        return createResource((VmEntity) entity);
+      case Vm.KIND: {
+        Resource res = createResource((VmEntity) entity);
+
+        ResourceConstraint resourceConstraint = createImageSeedingResourceConstraints();
+        if (resourceConstraint != null) {
+          res.getVm().addToResource_constraints(resourceConstraint);
+        }
+
+        return res;
+      }
       case EphemeralDisk.KIND:
       case PersistentDisk.KIND:
         return createResource((BaseDiskEntity) entity);
