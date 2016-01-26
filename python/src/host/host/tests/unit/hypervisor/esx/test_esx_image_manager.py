@@ -17,6 +17,7 @@ import time
 import unittest
 
 from hamcrest import *  # noqa
+from host.hypervisor.placement_manager import NoSuchResourceException
 from mock import MagicMock
 from mock import patch
 from mock import call
@@ -388,7 +389,7 @@ class TestEsxImageManager(unittest.TestCase):
     def test_image_type(self, type, replication, expected_type,
                         expected_replication):
 
-        self.ds_manager.image_datastores.return_value = "ds1"
+        self.ds_manager.image_datastores.return_value = ["ds1", "ds2"]
         with patch("host.hypervisor.esx.image_manager.os_image_manifest_path"
                    "") as manifest_path:
             tmpdir = file_util.mkdtemp(delete=True)
@@ -403,6 +404,13 @@ class TestEsxImageManager(unittest.TestCase):
                 "image_id")
             self.assertEqual(type, expected_type)
             self.assertEqual(replication, expected_replication)
+
+    def test_image_type_not_exist(self):
+        self.ds_manager.image_datastores.return_value = ["ds1", "ds2"]
+        type, replication = self.image_manager.get_image_manifest(
+            "image_id")
+        self.assertEqual(type, None)
+        self.assertEqual(replication, None)
 
     @patch.object(EsxImageManager, "_move_image")
     @patch.object(EsxImageManager, "check_image_dir", return_value=False)
@@ -475,3 +483,37 @@ class TestEsxImageManager(unittest.TestCase):
                           "ds1", "foo")
         _exists.assert_called_once("/vmfs/volumes/ds1/foo")
         self.assertFalse(_rmtree.called)
+
+    def test_image_size(self):
+        self.ds_manager.image_datastores.return_value = ["ds1", "ds2"]
+        with patch("host.hypervisor.esx.image_manager.os_vmdk_flat_path"
+                   "") as image_path:
+            tmpdir = file_util.mkdtemp(delete=True)
+            image_path.return_value = tmpdir
+
+            size = self.image_manager.image_size("image_id")
+            self.assertTrue(size > 0)
+
+    def test_image_size_not_exist(self):
+        self.ds_manager.image_datastores.return_value = ["ds1", "ds2"]
+        self.assertRaises(NoSuchResourceException,
+                          self.image_manager.image_size,
+                          "image_id")
+
+    @patch.object(EsxImageManager, "check_and_validate_image",
+                  return_value=False)
+    def test_find_datastore_by_image(self, _cavi):
+        self.ds_manager.image_datastores.return_value = ["ds1", "ds2"]
+        self.image_manager.check_and_validate_image.return_value = True
+        image_ds = self.image_manager.find_datastore_by_image("image_id")
+        self.assertEqual(image_ds, "ds1")
+        _cavi.assert_called_once_with("image_id", "ds1")
+
+    @patch.object(EsxImageManager, "check_and_validate_image",
+                  return_value=False)
+    def test_find_datastore_by_image_not_exist(self, _cavi):
+        self.ds_manager.image_datastores.return_value = ["ds1"]
+        self.assertRaises(NoSuchResourceException,
+                          self.image_manager.find_datastore_by_image,
+                          "image_id")
+        _cavi.assert_called_once_with("image_id", "ds1")

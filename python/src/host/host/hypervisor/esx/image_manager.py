@@ -56,6 +56,8 @@ from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.disk_manager import DiskPathException
 from host.hypervisor.image_scanner import waste_time
+from host.hypervisor.placement_manager import NoSuchResourceException
+from host.hypervisor.placement_manager import ResourceType
 
 from common.log import log_duration
 
@@ -219,12 +221,21 @@ class EsxImageManager(ImageManager):
         return os_vmdk_path(datastore_id, image_id, IMAGE_FOLDER_NAME)
 
     def image_size(self, image_id):
-        # TODO(mmutsuzaki) We should iterate over all the image datastores
-        # until we find one that has the image.
-        image_ds = list(self._ds_manager.image_datastores())[0]
-        image_path = os_vmdk_flat_path(image_ds, image_id, IMAGE_FOLDER_NAME)
+        for image_ds in self._ds_manager.image_datastores():
+            try:
+                image_path = os_vmdk_flat_path(image_ds, image_id,
+                                               IMAGE_FOLDER_NAME)
+                return os.path.getsize(image_path)
+            except os.error:
+                self._logger.info("Image %s not found in DataStore %s" %
+                                  (image_id, image_ds))
 
-        return os.path.getsize(image_path)
+        self._logger.warning("Failed to get image size:",
+                             exc_info=True)
+        # Failed to access shared image.
+        raise NoSuchResourceException(
+            ResourceType.IMAGE,
+            "Image does not exist.")
 
     def _load_json(self, metadata_path):
         if os.path.exists(metadata_path):
@@ -250,11 +261,14 @@ class EsxImageManager(ImageManager):
         if image_id == "ttylinux":
             return ImageType.CLOUD, ImageReplication.EAGER
 
-        # TODO(mmutsuzaki) We should iterate over all the image datastores
-        # until we find one that has the image.
-        image_ds = list(self._ds_manager.image_datastores())[0]
-        manifest_path = os_image_manifest_path(image_ds, image_id)
-        if not os.path.isfile(manifest_path):
+        manifest_path = None
+        for image_ds in self._ds_manager.image_datastores():
+            path = os_image_manifest_path(image_ds, image_id)
+            if os.path.isfile(path):
+                manifest_path = path
+                break
+
+        if not manifest_path:
             self._logger.info("Manifest file %s not found" % manifest_path)
             return None, None
 
@@ -451,6 +465,16 @@ class EsxImageManager(ImageManager):
         self._logger.info("Image repaired: %s" %
                           image_dirname)
         return True
+
+    def find_datastore_by_image(self, image_id):
+        for image_ds in self._ds_manager.image_datastores():
+            if self.check_and_validate_image(image_id, image_ds):
+                return image_ds
+
+        self._logger.warning("Failed to find image %s." % image_id)
+        raise NoSuchResourceException(
+            ResourceType.IMAGE,
+            "Image does not exist on any image datastore.")
 
     def copy_image(self, source_datastore, source_id, dest_datastore, dest_id):
         """Copy an image between datastores.
