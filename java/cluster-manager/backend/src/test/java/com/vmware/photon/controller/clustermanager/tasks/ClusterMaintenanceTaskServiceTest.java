@@ -373,7 +373,7 @@ public class ClusterMaintenanceTaskServiceTest {
           .cloudStoreServerSet(cloudStoreMachine.getServerSet())
           .hostCount(1)
           .build();
-
+      FileUtils.deleteDirectory(storageDirectory);
       scriptDirectory.mkdirs();
       scriptLogDirectory.mkdirs();
 
@@ -401,6 +401,11 @@ public class ClusterMaintenanceTaskServiceTest {
         cloudStoreMachine = null;
       }
 
+      FileUtils.deleteDirectory(storageDirectory);
+    }
+
+    @AfterClass
+    public void tearDownClass() throws Throwable {
       FileUtils.deleteDirectory(storageDirectory);
     }
 
@@ -501,7 +506,7 @@ public class ClusterMaintenanceTaskServiceTest {
       assertThat(patchOp.getStatusCode(), is(200));
 
       // Wait till the task gets deleted
-      Thread.sleep(1000);
+      Thread.sleep(90000);
 
       QueryTask.Query kindClause = new QueryTask.Query()
           .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
