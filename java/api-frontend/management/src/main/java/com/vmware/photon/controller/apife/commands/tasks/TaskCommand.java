@@ -87,14 +87,16 @@ public class TaskCommand extends BaseCommand {
 
   @Override
   protected void execute() throws ApiFeException, InterruptedException, RpcException {
-    steps = getTask().getSteps();
+    TaskEntity task = getTask();
+
+    steps = task.getSteps();
     for (StepEntity step : steps) {
       if (!step.getState().equals(StepEntity.State.QUEUED) || step.isDisabled()) {
         logger.info("Skip running step {}", step);
         continue;
       }
 
-      StepCommand cmd = stepCommandFactory.createCommand(this, step);
+      StepCommand cmd = stepCommandFactory.createCommand(this, task, step);
       cmd.run();
 
       if (step.getState() != StepEntity.State.COMPLETED) {

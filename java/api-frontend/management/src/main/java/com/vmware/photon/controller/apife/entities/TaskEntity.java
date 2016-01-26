@@ -21,7 +21,9 @@ import com.google.common.base.Objects;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -48,6 +50,8 @@ public class TaskEntity extends BaseEntity {
 
   private String projectId;
   private List<StepEntity> steps = new ArrayList<>();
+
+  private Map<String, Object> transientResources = new HashMap<>();
 
   public List<String> getToBeLockedEntityIds() {
     return this.toBeLockedEntityIds;
@@ -182,6 +186,14 @@ public class TaskEntity extends BaseEntity {
       }
     }
     return false;
+  }
+
+  public Object getTransientResources(String key) {
+    return transientResources.get(key);
+  }
+
+  public void setTransientResources(String key, Object value) {
+    transientResources.put(key, value);
   }
 
   @Override

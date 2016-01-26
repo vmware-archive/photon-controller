@@ -21,6 +21,7 @@ import com.vmware.photon.controller.apife.commands.CommandTestModule;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandTest;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 
@@ -47,6 +48,7 @@ public class StepCommandFactoryTest {
 
   private TaskCommand taskCommand;
 
+  private TaskEntity task;
   private StepEntity step;
 
   @Inject
@@ -73,6 +75,7 @@ public class StepCommandFactoryTest {
     host = basicServiceHost;
     dcpClient = apiFeDcpRestClient;
 
+    task = new TaskEntity();
     step = new StepEntity();
     step.setId("Step ID");
     this.taskCommand = new TaskCommandTest().testTaskCommand;
@@ -87,7 +90,7 @@ public class StepCommandFactoryTest {
   @Test(dataProvider = "CreateCommand")
   public void testCreateCommand(Operation operation, Class commandClass) throws InternalException {
     step.setOperation(operation);
-    StepCommand stepCommand = stepCommandFactory.createCommand(taskCommand, step);
+    StepCommand stepCommand = stepCommandFactory.createCommand(taskCommand, task, step);
     assertThat(stepCommand.getClass().isAssignableFrom(commandClass), is(true));
   }
 
@@ -191,6 +194,6 @@ public class StepCommandFactoryTest {
   @Test(expectedExceptions = InternalException.class)
   public void testCreateCommandFailure() throws InternalException {
     step.setOperation(Operation.CREATE_RESOURCE_TICKET);
-    stepCommandFactory.createCommand(taskCommand, step);
+    stepCommandFactory.createCommand(taskCommand, task, step);
   }
 }

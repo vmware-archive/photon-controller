@@ -31,6 +31,7 @@ import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.lib.ImageStore;
 import com.vmware.photon.controller.apife.lib.VsphereIsoStore;
@@ -104,7 +105,8 @@ public class StepCommandFactory {
     this.projectBackend = projectBackend;
   }
 
-  public StepCommand createCommand(TaskCommand taskCommand, StepEntity stepEntity) throws InternalException {
+  public StepCommand createCommand(TaskCommand taskCommand, TaskEntity taskEntity, StepEntity stepEntity) throws
+      InternalException {
     checkNotNull(stepEntity);
     switch (stepEntity.getOperation()) {
       case RESERVE_RESOURCE:

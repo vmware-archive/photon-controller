@@ -395,7 +395,7 @@ public class TaskCommandTest {
     for (StepEntity step : steps) {
       task.addStep(step);
       doReturn(new TestStepCommand(command, stepBackend, step))
-          .when(stepCommandFactory).createCommand(command, step);
+          .when(stepCommandFactory).createCommand(command, task, step);
     }
 
     command.markAsDone();
@@ -433,7 +433,7 @@ public class TaskCommandTest {
       StepEntity step = steps[i];
       task.addStep(step);
       stepCommands[i] = new TestStepCommand(command, stepBackend, step);
-      doReturn(stepCommands[i]).when(stepCommandFactory).createCommand(command, step);
+      doReturn(stepCommands[i]).when(stepCommandFactory).createCommand(command, task, step);
     }
 
     command.execute();
