@@ -28,6 +28,7 @@ import com.vmware.photon.controller.deployer.gen.ProvisionHostStatus;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusCode;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
@@ -130,11 +131,21 @@ public class AddHostWorkflowServiceClient {
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setContextId(LoggingUtils.getRequestId());
 
-    AddCloudHostWorkflowService.State serviceState =
-        ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH)
-        .getBody(AddCloudHostWorkflowService.State.class);
+    logger.info("Getting status for " + path +  " on dcpHost " + dcpHost.getPreferredAddress());
 
-    switch (serviceState.taskState.stage) {
+    Operation op = ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH);
+    TaskState taskState = null;
+    ServiceDocument serviceState = null;
+
+    if (op.getBodyRaw().getClass() == AddCloudHostWorkflowService.State.class) {
+      serviceState = op.getBody(AddCloudHostWorkflowService.State.class);
+      taskState = ((AddCloudHostWorkflowService.State) serviceState).taskState;
+    } else {
+      serviceState = op.getBody(AddManagementHostWorkflowService.State.class);
+      taskState = ((AddManagementHostWorkflowService.State) serviceState).taskState;
+    }
+
+    switch (taskState.stage) {
       case CANCELLED:
         logger.error("Provision new cloud host cancelled: {}", Utils.toJson(serviceState));
         provisionHostStatus.setResult(ProvisionHostStatusCode.CANCELLED);
@@ -144,9 +155,9 @@ public class AddHostWorkflowServiceClient {
       case FAILED:
         logger.error("Provision new cloud host failed: {}", Utils.toJson(serviceState));
         provisionHostStatus.setResult(ProvisionHostStatusCode.FAILED);
-        if (serviceState.taskState != null && serviceState.taskState.failure != null) {
+        if (taskState != null && taskState.failure != null) {
           provisionHostStatus.setError(
-              String.format("Provision new cloud host failed due to: %s", serviceState.taskState.failure.message));
+              String.format("Provision new cloud host failed due to: %s", taskState.failure.message));
         } else {
           provisionHostStatus.setError("Provision new cloud host failed.");
         }
@@ -162,7 +173,7 @@ public class AddHostWorkflowServiceClient {
         break;
 
       default:
-        throw new RuntimeException(String.format("Unexpected stage %s.", serviceState.taskState.stage));
+        throw new RuntimeException(String.format("Unexpected stage %s.", taskState.stage));
     }
     return provisionHostStatus;
   }
