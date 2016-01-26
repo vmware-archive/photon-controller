@@ -50,6 +50,9 @@ class FakeImageManager(ImageManager):
     def check_and_validate_image(self, image_id, datastore_id):
         return self.check_image(image_id, datastore_id)
 
+    def find_datastore_by_image(self, image_id):
+        return self._image_datastore
+
     def copy_image(self, src_datastore, src_id, dst_datastore, dst_id):
         self._logger.info("copying fake image from %s in datastore %s to %s in"
                           " datastore %s" % (src_id, src_datastore,

@@ -545,19 +545,14 @@ class HostHandler(Host.Iface):
         # Step 0: Lazy copy image to datastore
         image_id = self.hypervisor.image_manager.get_image_id_from_disks(
             vm.disks)
-        # TODO(mmutsuzaki) Iterate over all the image datastores until we find
-        # one that has the image.
-        image_datastores = self.hypervisor.datastore_manager.image_datastores()
-        if image_datastores:
-            image_datastore = list(image_datastores)[0]
-        else:
-            image_datastore = None
 
         if image_id and not self.hypervisor.image_manager.\
                 check_and_validate_image(image_id, datastore_id):
             self._logger.info("Lazy copying image %s to %s" % (image_id,
                                                                datastore_id))
             try:
+                image_datastore = self.hypervisor.image_manager.\
+                    find_datastore_by_image(image_id)
                 self.hypervisor.image_manager.copy_image(image_datastore,
                                                          image_id,
                                                          datastore_id,

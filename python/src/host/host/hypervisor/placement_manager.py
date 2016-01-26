@@ -346,15 +346,7 @@ class PlacementManager(object):
         for image in images:
             if not self._image_manager.check_image(image.image.id,
                                                    vm_placement.container_id):
-                try:
-                    copy_size += self._image_manager.image_size(image.image.id)
-                except:
-                    self._logger.warning("Failed to get image size:",
-                                         exc_info=True)
-                    # Failed to access shared image.
-                    raise NoSuchResourceException(
-                        ResourceType.IMAGE,
-                        "Image does not exist.")
+                copy_size += self._image_manager.image_size(image.image.id)
 
         score = float(copy_size) / self.MAX_IMAGE_COPY_SIZE
         if score > 1:
