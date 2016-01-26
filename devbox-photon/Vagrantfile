@@ -282,6 +282,11 @@ Vagrant.configure("2") do |config|
   dynamic_params += "\n,  \"LOAD_BALANCER_SERVERS\": [ { \"serverName\": \"devbox-management-api\", \"serverAddress\": \"#{network_ip}:9000\" } ]"
 
   #
+  # Zookeeper
+  #
+  dynamic_params += "\n,  \"ZOOKEEPER_INSTANCES\": [ { \"zookeeperInstance\": \"server.1=#{network_ip}:2888:3888\" } ]"
+
+  #
   # Common
   #
   dynamic_params += "\n,  \"APIFE_IP\" : \"#{network_ip}\""
