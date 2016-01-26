@@ -12,11 +12,11 @@ logging:
     enabled: true
     currentLogFilename: {{{LOG_DIRECTORY}}}/housekeeper.log
     archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/housekeeper-%d.log.gz
-    logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
+    logFormat: "%-5p [%d{ISO8601}] [housekeeper] %c: %m\n%ex"
   syslog:
     enabled: {{{ENABLE_SYSLOG}}}
     {{#ENABLE_SYSLOG}}
     host: "{{{SYSLOG_ENDPOINT}}}"
-    logFormat: "%-5p [%d{ISO8601}][%property{instance}]%X{request}%X{task} %c: %m\n%ex"
+    logFormat: "%-5p [%d{ISO8601}] [housekeeper] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
     facility: LOCAL0
     {{/ENABLE_SYSLOG}}
