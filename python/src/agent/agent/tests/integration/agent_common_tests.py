@@ -384,13 +384,6 @@ class AgentCommonTests(object):
         vm.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
         vm.delete()
 
-    def test_agent_load(self):
-        """Test that the agent responds to a load API request."""
-        load_req = Host.LoadRequest()
-        response = self.host_client.load(load_req)
-
-        assert_that(response.load, greater_than(0))
-
     def test_create_delete_vm(self):
         """Test that the agent can create and delete a VM."""
         vm = VmWrapper(self.host_client)

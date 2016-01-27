@@ -137,80 +137,6 @@ struct SetHostModeResponse {
 }
 
 /**
- * Maintenance mode
- */
-struct EnterMaintenanceRequest {
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum EnterMaintenanceResultCode {
-  // If the host is in MAINTENANCE mode, return OK
-  OK = 0
-
-  SYSTEM_ERROR = 1
-
-  // If the host is still in ENTERING_MAINTENANCE mode, return ENTERING.
-  // The host will go to MAINTENANCE mode automatically after all VMs are evacuated.
-  ENTERING = 2
-}
-
-struct EnterMaintenanceResponse {
-  1: required EnterMaintenanceResultCode result
-  2: optional string error
-
-  // List of vms running on the host, if result is ENTERING.
-  3: optional list<string> vm_ids
-}
-
-struct ExitMaintenanceRequest {
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum ExitMaintenanceResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-
-  // exit_maintenance is only allowed when the agent is not deprovisioned. Otherwise, return INVALID_STATE.
-  INVALID_STATE = 2
-}
-
-struct ExitMaintenanceResponse {
-  1: required ExitMaintenanceResultCode result
-  2: optional string error
-}
-
-struct DeprovisionRequest {
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum DeprovisionResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-
-  // deprovision is only allowed when the agent is in maintenance. Otherwise, return INVALID_STATE.
-  INVALID_STATE = 2
-}
-
-struct DeprovisionResponse {
-  1: required DeprovisionResultCode result
-  2: optional string error
-}
-
-// Agent load: returns current load number.
-struct LoadRequest {}
-
-enum LoadResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-}
-
-struct LoadResponse {
-  1: required LoadResultCode result
-  2: optional string error
-  3: optional byte load
-}
-
-/**
  * Resource reservation
  */
 
@@ -1090,13 +1016,6 @@ service Host {
   // Get/set host mode
   GetHostModeResponse get_host_mode(1: GetHostModeRequest request)
   SetHostModeResponse set_host_mode(1: SetHostModeRequest request)
-
-  // Maintenance mode (All Deprecated)
-  EnterMaintenanceResponse enter_maintenance(1: EnterMaintenanceRequest request)
-  ExitMaintenanceResponse exit_maintenance(1: ExitMaintenanceRequest request)
-  DeprovisionResponse deprovision(1: DeprovisionRequest request)
-
-  LoadResponse load(1: LoadRequest request)
 
   ReserveResponse reserve(1: ReserveRequest request)
 
