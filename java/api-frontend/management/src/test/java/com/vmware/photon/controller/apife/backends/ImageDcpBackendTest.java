@@ -31,6 +31,7 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateE
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
@@ -40,6 +41,7 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.AfterClass;
 import org.mockito.Mock;
 import org.testng.annotations.AfterMethod;
@@ -54,6 +56,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -142,19 +145,32 @@ public class ImageDcpBackendTest {
   private static String createImageDocument(DcpClient dcpClient,
                                             String imageName,
                                             ImageState imageState,
-                                            Long imageSize) throws Throwable {
+                                            Long imageSize,
+                                            int totalDatastore,
+                                            int totalImageDatastore,
+                                            int replicatedDatastore,
+                                            int replicatedImageDatastore) throws Throwable {
     ImageService.State imageServiceState = new ImageService.State();
     imageServiceState.name = imageName;
     imageServiceState.state = imageState;
     imageServiceState.replicationType = ImageReplicationType.EAGER;
     imageServiceState.size = imageSize;
-    imageServiceState.totalDatastore = 10;
-    imageServiceState.totalImageDatastore = 8;
-    imageServiceState.replicatedDatastore = 5;
-    imageServiceState.replicatedImageDatastore = 2;
+    imageServiceState.totalDatastore = totalDatastore;
+    imageServiceState.totalImageDatastore = totalImageDatastore;
+    imageServiceState.replicatedDatastore = replicatedDatastore;
+    imageServiceState.replicatedImageDatastore = replicatedImageDatastore;
     com.vmware.xenon.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
     ImageService.State createdState = result.getBody(ImageService.State.class);
     return ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);
+  }
+
+  private static void createImageReplicationService(String imageId, String imageDatastoreId) {
+    ImageReplicationService.State state = new ImageReplicationService.State();
+    state.imageId = imageId;
+    state.imageDatastoreId = imageDatastoreId;
+    state.documentSelfLink = imageId + "-" + imageDatastoreId;
+
+    dcpClient.post(ImageReplicationServiceFactory.SELF_LINK, state);
   }
 
   @Test
@@ -333,7 +349,7 @@ public class ImageDcpBackendTest {
     @Test
     public void testPrepareImageDelete() throws Throwable {
       imageName = UUID.randomUUID().toString();
-      String id = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+      String id = createImageDocument(dcpClient, imageName, ImageState.READY, 1L, 10, 8, 5, 2);
 
       TaskEntity taskDelete = imageBackend.prepareImageDelete(id);
       assertThat(taskDelete.getSteps().size(), is(2));
@@ -344,7 +360,7 @@ public class ImageDcpBackendTest {
     @Test(expectedExceptions = InvalidImageStateException.class)
     public void testPrepareImageDeleteInPendingDelete() throws Throwable {
       imageName = UUID.randomUUID().toString();
-      String id = createImageDocument(dcpClient, imageName, ImageState.PENDING_DELETE, 1L);
+      String id = createImageDocument(dcpClient, imageName, ImageState.PENDING_DELETE, 1L, 10, 8, 5, 2);
       imageBackend.prepareImageDelete(id);
     }
 
@@ -356,7 +372,7 @@ public class ImageDcpBackendTest {
     @Test
     public void testTombstone() throws Throwable {
       imageName = UUID.randomUUID().toString();
-      String id = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+      String id = createImageDocument(dcpClient, imageName, ImageState.READY, 1L, 10, 8, 5, 2);
       ImageEntity imageEntity = imageBackend.findById(id);
       assertThat(imageBackend.findById(imageEntity.getId()), notNullValue());
 
@@ -407,7 +423,7 @@ public class ImageDcpBackendTest {
     @Test
     public void testUpdateSettings() throws Throwable {
       imageName = UUID.randomUUID().toString();
-      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L, 10, 8, 5, 2);
 
       ImageEntity imageEntity = imageBackend.findById(imageId);
 
@@ -437,7 +453,7 @@ public class ImageDcpBackendTest {
       imageName = UUID.randomUUID().toString();
       Long originalImageSize = 1L;
       Long newImageSize = originalImageSize + 1L;
-      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, originalImageSize);
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, originalImageSize, 10, 8, 5, 2);
       ImageEntity imageEntity = imageBackend.findById(imageId);
       assertThat(imageEntity.getTotalDatastore(), is(10));
       assertThat(imageEntity.getTotalImageDatastore(), is(8));
@@ -452,7 +468,7 @@ public class ImageDcpBackendTest {
     public void testUpdateImageDatastore() throws Throwable {
       imageName = UUID.randomUUID().toString();
       String imageDatastoreId = "image-datastore-id";
-      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L, 10, 8, 5, 2);
       ImageEntity imageEntity = imageBackend.findById(imageId);
 
       DatastoreService.State datastoreState = new DatastoreService.State();
@@ -478,7 +494,7 @@ public class ImageDcpBackendTest {
     public void testUpdateImageDatastoreTwice() throws Throwable {
       imageName = UUID.randomUUID().toString();
       String imageDatastoreId = "image-datastore-id";
-      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L);
+      String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L, 10, 8, 5, 2);
       ImageEntity imageEntity = imageBackend.findById(imageId);
 
       DatastoreService.State datastoreState = new DatastoreService.State();
@@ -503,6 +519,39 @@ public class ImageDcpBackendTest {
           termsBuilder.build());
       assertThat(results.size(), is(1));
       assertThat(results.get(0).imageDatastoreId, is(imageDatastoreId));
+    }
+  }
+
+  /**
+   * Tests for checking the progress of image seeding.
+   */
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class ImageSeedingProgressCheckTest {
+    @Test
+    public void testImageSeedingInProgress() throws Throwable {
+      String imageId = createImageDocument(dcpClient, "image-name", ImageState.READY, 1L, 10, 8, 3, 2);
+
+      List<String> imageDatastores = Arrays.asList(new String[]{"datastore1", "datastore2"});
+      for (String datastoreId : imageDatastores) {
+        createImageReplicationService(imageId, datastoreId);
+      }
+
+      // An unrelated imagestore, and it should not be returned by
+      // getSeededImageDatastores
+      createImageReplicationService("image2", "datastore3");
+
+      boolean done = BackendHelpers.isImageSeedingDone(dcpClient, imageId);
+      assertThat(done, is(false));
+
+      List<String> candidateDatastores = BackendHelpers.getSeededImageDatastores(dcpClient, imageId);
+      assertThat(CollectionUtils.isEqualCollection(imageDatastores, candidateDatastores), is(true));
+    }
+
+    @Test
+    public void testImageSeedingFinished() throws Throwable {
+      String imageId = createImageDocument(dcpClient, "image-name", ImageState.READY, 1L, 10, 8, 8, 8);
+      boolean done = BackendHelpers.isImageSeedingDone(dcpClient, imageId);
+      assertThat(done, is(true));
     }
   }
 }
