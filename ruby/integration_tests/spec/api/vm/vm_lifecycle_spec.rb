@@ -49,9 +49,9 @@ describe "VM lifecycle", life_cycle: true do
 
   def vm_lifecycle(project, disk_flavor)
     vm = create_vm(project)
-    vm.state.should == "STOPPED"
+    vm.state.should eq("STOPPED"), "VM #{vm.id} state was #{vm.state} instead of STOPPED"
     existing_persistent_disks = vm.get_attached_disk_names("persistent-disk")
-    existing_persistent_disks.size.should == 0
+    existing_persistent_disks.size.should eq(0), "VM #{vm.id} has #{existing_persistent_disks.size} disks instead of 0"
 
     disk = project.create_disk(
         name: random_name("disk-"),
@@ -65,23 +65,23 @@ describe "VM lifecycle", life_cycle: true do
 
     vm.attach_disk(disk_id)
     attached_disk_names = vm.get_attached_disk_names("persistent-disk")
-    attached_disk_names.last.should == disk_name
+    attached_disk_names.last.should eq(disk_name), "VM #{vm.id} failed to attach disk id #{disk_id}, name #{disk_name}"
 
     vm.detach_disk(disk_id)
     attached_disk_names = vm.get_attached_disk_names("persistent-disk")
-    attached_disk_names.size.should == existing_persistent_disks.size
+    attached_disk_names.size.should eq(existing_persistent_disks.size), "VM #{vm.id} failed to detach disk id #{disk_id}, name #{disk_name}"
 
     vm.attach_disk(disk_id)
     vm.start!
-    vm.state.should == "STARTED"
+    vm.state.should eq("STARTED"), "VM #{vm.id} state is #{vm.state} instead of STARTED"
     vm.stop!
-    vm.state.should == "STOPPED"
+    vm.state.should eq("STOPPED"), "VM #{vm.id} state is #{vm.state} instead of STOPPED"
     attached_disk_names = vm.get_attached_disk_names("persistent-disk")
-    attached_disk_names.last.should == disk_name
+    attached_disk_names.last.should eq(disk_name), "VM #{vm.id} does not have attached disk id #{disk_id}, name #{disk_name}"
 
     vm.detach_disk(disk_id)
     attached_disk_names = vm.get_attached_disk_names("persistent-disk")
-    attached_disk_names.size.should == existing_persistent_disks.size
+    attached_disk_names.size.should eq(existing_persistent_disks.size), "VM #{vm.id} failed to detach disk id #{disk_id}, name #{disk_name}"
 
     vm.set_metadata({metadata: {"key" => "value"}})
     vm.get_metadata.should == {"key" => "value"}
