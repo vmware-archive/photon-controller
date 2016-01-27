@@ -43,8 +43,6 @@ from gen.host.ttypes import MksTicketRequest
 from gen.host.ttypes import MksTicketResultCode
 from gen.host.ttypes import NicConnectionSpec
 from gen.host.ttypes import NetworkConnectionSpec
-from gen.host.ttypes import RegisterVmRequest
-from gen.host.ttypes import RegisterVmResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
@@ -52,8 +50,6 @@ from gen.host.ttypes import SetHostModeRequest
 from gen.host.ttypes import SetHostModeResultCode
 from gen.host.ttypes import SetResourceTagsRequest
 from gen.host.ttypes import SetResourceTagsResultCode
-from gen.host.ttypes import UnregisterVmRequest
-from gen.host.ttypes import UnregisterVmResultCode
 from gen.agent.ttypes import PingRequest
 from gen.agent.ttypes import ProvisionRequest
 from gen.agent.ttypes import ProvisionResultCode
@@ -1176,27 +1172,4 @@ class AgentCommonTests(object):
 
         # delete the vm
         vm_wrapper.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
-        vm_wrapper.delete()
-
-    def test_register_unregister_vm(self):
-        vm_wrapper = VmWrapper(self.host_client)
-
-        # create a vm without disk
-        reservation = vm_wrapper.place_and_reserve().reservation
-        request = vm_wrapper.create_request(res_id=reservation)
-        vm = vm_wrapper.create(request=request).vm
-
-        request = UnregisterVmRequest("no_such_vm")
-        response = self.host_client.unregister_vm(request)
-        assert_that(response.result,
-                    equal_to(UnregisterVmResultCode.VM_NOT_FOUND))
-
-        request = UnregisterVmRequest(vm.id)
-        response = self.host_client.unregister_vm(request)
-        assert_that(response.result, equal_to(UnregisterVmResultCode.OK))
-
-        request = RegisterVmRequest(vm.id, vm.datastore.id)
-        response = self.host_client.register_vm(request)
-        assert_that(response.result, equal_to(RegisterVmResultCode.OK))
-
         vm_wrapper.delete()
