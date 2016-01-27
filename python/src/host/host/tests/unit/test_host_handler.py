@@ -1108,19 +1108,6 @@ class HostHandlerTestCase(unittest.TestCase):
         assert_that(response.result, equal_to(GetHostModeResultCode.OK))
         assert_that(response.mode, equal_to(HostMode.NORMAL))
 
-    def test_enter_exit_maintenance(self):
-        handler = HostHandler(MagicMock())
-        mode = common.services.get(ServiceName.MODE)
-        response = handler.enter_maintenance(EnterMaintenanceRequest())
-        assert_that(response.result,
-                    equal_to(EnterMaintenanceResultCode.ENTERING))
-        assert_that(mode.get_mode(), equal_to(MODE.ENTERING_MAINTENANCE))
-
-        response = handler.exit_maintenance(ExitMaintenanceRequest())
-        assert_that(response.result,
-                    equal_to(ExitMaintenanceResultCode.OK))
-        assert_that(mode.get_mode(), equal_to(MODE.NORMAL))
-
     def _sample_vm(self):
         flavor = Flavor(name="flavor", cost=[QuotaLineItem("a", "b", 1)])
         disks = [

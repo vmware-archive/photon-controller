@@ -115,9 +115,6 @@ class Hypervisor(object):
     def check_image(self, image_id, datastore_id):
         return self.hypervisor.check_image(image_id, datastore_id)
 
-    def normalized_load(self):
-        return self.hypervisor.normalized_load()
-
     def get_resources(self):
         result = []
         if hasattr(self.vm_manager, "get_resources"):
