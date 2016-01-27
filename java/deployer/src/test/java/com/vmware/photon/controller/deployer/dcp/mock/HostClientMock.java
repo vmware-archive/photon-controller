@@ -139,6 +139,7 @@ public class HostClientMock extends HostClient {
       boolean managementOnly,
       String ntpEndpoint,
       String hostId,
+      String deploymentId,
       AsyncMethodCallback<Host.AsyncClient.provision_call> handler) {
 
     logger.info("Host provision complete invocation");
