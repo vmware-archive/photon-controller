@@ -223,41 +223,6 @@ struct CreateVmResponse {
   3: optional resource.Vm vm
 }
 
-struct RegisterVmRequest {
-  1: required string vm_id
-  2: required string datastore_id
-
-  // Reservation returned by ReserveResponse#reservation
-  3: optional string reservation
-}
-
-enum RegisterVmResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-  VM_NOT_FOUND = 2
-  INVALID_RESERVATION = 3
-}
-
-struct RegisterVmResponse {
-  1: required RegisterVmResultCode result
-  2: optional string error
-}
-
-struct UnregisterVmRequest {
-  1: required string vm_id
-}
-
-enum UnregisterVmResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-  VM_NOT_FOUND = 2
-}
-
-struct UnregisterVmResponse {
-  1: required UnregisterVmResultCode result
-  2: optional string error
-}
-
 // Delete VM
 struct DeleteVmRequest {
   1: required string vm_id
@@ -1053,9 +1018,6 @@ service Host {
   PowerVmOpResponse power_vm_op(1: PowerVmOpRequest request)
   GetVmNetworkResponse get_vm_networks(1: GetVmNetworkRequest request)
   CreateImageFromVmResponse create_image_from_vm(1: CreateImageFromVmRequest request)
-
-  RegisterVmResponse register_vm(1: RegisterVmRequest request)
-  UnregisterVmResponse unregister_vm(1: UnregisterVmRequest request)
 
   ServiceTicketResponse get_service_ticket(1: ServiceTicketRequest request)
   MksTicketResponse get_mks_ticket(1: MksTicketRequest request)

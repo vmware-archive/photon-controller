@@ -350,19 +350,6 @@ class FakeVmManager(VmManager):
     def get_vm_images(self, image_scanner):
         return list()
 
-    def register_vm(self, datastore_id, vm_id):
-        """This doesn't check if vmx file is there because fake
-        implementation doesn't have vmx file in the model.
-        """
-        spec = FakeVmSpec(vm_id, 1024, 1024, datastore_id, 'ttylinux',
-                          None, [])
-        self._resources[vm_id] = FakeVm(spec)
-
-    def unregister_vm(self, vm_id):
-        """The fake implementation is just delete the vm
-        """
-        self.delete_vm(vm_id)
-
 
 class FakeNic(object):
     """

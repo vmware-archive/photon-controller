@@ -91,8 +91,6 @@ from gen.host.ttypes import PowerVmOpResponse
 from gen.host.ttypes import PowerVmOpResultCode
 from gen.host.ttypes import ReceiveImageResponse
 from gen.host.ttypes import ReceiveImageResultCode
-from gen.host.ttypes import RegisterVmResponse
-from gen.host.ttypes import RegisterVmResultCode
 from gen.host.ttypes import ReserveResponse
 from gen.host.ttypes import ReserveResultCode
 from gen.host.ttypes import ServiceTicketResponse
@@ -109,8 +107,6 @@ from gen.host.ttypes import StopImageOperationResultCode
 from gen.host.ttypes import StopImageOperationResponse
 from gen.host.ttypes import TransferImageResponse
 from gen.host.ttypes import TransferImageResultCode
-from gen.host.ttypes import UnregisterVmResponse
-from gen.host.ttypes import UnregisterVmResultCode
 from gen.host.ttypes import VmDisksOpResponse
 from gen.host.ttypes import VmDiskOpResultCode
 
@@ -679,39 +675,6 @@ class HostHandler(Host.Iface):
                 rc.VM_NOT_POWERED_OFF,
                 "VM %s not powered off" % request.vm_id,
                 response)
-
-    @log_request
-    @error_handler(RegisterVmResponse, RegisterVmResultCode)
-    def register_vm(self, request):
-        try:
-            if request.reservation:
-                self.hypervisor.placement_manager.consume_vm_reservation(
-                    request.reservation)
-            self.hypervisor.vm_manager.register_vm(request.datastore_id,
-                                                   request.vm_id)
-        except VmNotFoundException as e:
-            self._logger.info("VM not found: %s", request.vm_id)
-            return RegisterVmResponse(RegisterVmResultCode.VM_NOT_FOUND,
-                                      str(e))
-        except InvalidReservationException as e:
-            self._logger.warn("Invalid reservation: %s", request.reservation)
-            return RegisterVmResponse(RegisterVmResultCode.INVALID_RESERVATION,
-                                      str(e))
-        finally:
-            if request.reservation:
-                self.hypervisor.placement_manager.remove_vm_reservation(
-                    request.reservation)
-        return RegisterVmResponse(RegisterVmResultCode.OK)
-
-    @log_request
-    @error_handler(UnregisterVmResponse, UnregisterVmResultCode)
-    def unregister_vm(self, request):
-        try:
-            self.hypervisor.vm_manager.unregister_vm(request.vm_id)
-        except VmNotFoundException as e:
-            return UnregisterVmResponse(UnregisterVmResultCode.VM_NOT_FOUND,
-                                        str(e))
-        return UnregisterVmResponse(UnregisterVmResultCode.OK)
 
     @log_request
     @error_handler(GetResourcesResponse, GetResourcesResultCode)

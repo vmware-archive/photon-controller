@@ -51,8 +51,6 @@ from host.hypervisor.esx.vm_config import get_image_base_disk
 from host.hypervisor.esx.vm_config import get_root_disk
 from host.hypervisor.esx.vm_config import is_persistent_disk
 from host.hypervisor.esx.vm_config import os_datastore_path
-from host.hypervisor.esx.vm_config import os_to_datastore_path
-from host.hypervisor.esx.vm_config import os_vmx_path
 from host.hypervisor.esx.vm_config import vmdk_id
 from host.hypervisor.esx.folder import VM_FOLDER_NAME
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
@@ -977,22 +975,3 @@ class EsxVmManager(VmManager):
                                       % (vmdk_pathname, ex))
             waste_time(rest_interval_sec)
         return active_images
-
-    def register_vm(self, datastore_id, vm_id):
-        os_path = os_vmx_path(datastore_id, vm_id)
-        if not os.path.isfile(os_path):
-            raise VmNotFoundException("vmx path %s not found" % os_path)
-
-        folder = self.vim_client.vm_folder
-        resource_pool = self.vim_client.root_resource_pool
-        vmx_datastore_path = os_to_datastore_path(os_path)
-
-        task = folder.RegisterVM_Task(vmx_datastore_path, vm_id, False,
-                                      resource_pool)
-        self.vim_client.wait_for_task(task)
-        self.vim_client.wait_for_vm_create(vm_id)
-
-    def unregister_vm(self, vm_id):
-        vm = self.vim_client.get_vm(vm_id)
-        vm.Unregister()
-        self.vim_client.wait_for_vm_create(vm_id)
