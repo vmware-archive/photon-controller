@@ -3697,6 +3697,7 @@ public class HostClientTest {
     private String logLevel = "logLevel";
     private boolean managementOnly = false;
     private String hostId = "id1";
+    private String deploymentId = "deploymentId";
     private String ntpEndpoint = "ntpEndpoint";
 
     @BeforeMethod
@@ -3734,7 +3735,7 @@ public class HostClientTest {
 
       assertThat(hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)),
               usedForVms, networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit,
-              loggingEndpoint, logLevel, managementOnly, hostId, ntpEndpoint),
+              loggingEndpoint, logLevel, managementOnly, hostId, deploymentId, ntpEndpoint),
           is(provisionResponse));
       verify(clientProxy).provision(request.capture(), any(AsyncMethodCallback.class));
       // Verify that the image_datastores field is set.
@@ -3746,7 +3747,7 @@ public class HostClientTest {
       try {
         hostClient.provision(availabilityZone, dataStoreList, Collections.singleton(imageDataStore), usedForVms,
             networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, ntpEndpoint);
+            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should throw with null async clientProxy");
       } catch (IllegalArgumentException e) {
         assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
@@ -3763,7 +3764,7 @@ public class HostClientTest {
       try {
         hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
             networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, ntpEndpoint);
+            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should convert TException on call to RpcException");
       } catch (RpcException e) {
         assertThat(e.getMessage(), is("Thrift exception"));
@@ -3782,7 +3783,7 @@ public class HostClientTest {
       try {
         hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
             networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, ntpEndpoint);
+            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should convert TException on call to RpcException");
       } catch (RpcException e) {
         assertThat(e.getMessage(), is("Thrift exception"));
@@ -3806,7 +3807,7 @@ public class HostClientTest {
       try {
         hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
             networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, ntpEndpoint);
+            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should throw on failure result: " + resultCode.toString());
       } catch (Exception e) {
         assertTrue(e.getClass() == exceptionClass);

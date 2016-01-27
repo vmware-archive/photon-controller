@@ -66,6 +66,7 @@ struct HostConfig {
   11: optional i32 memory_mb
   12: optional i32 cpu_count
   13: optional string esx_version
+  14: optional string deployment_id
 }
 
 struct GetConfigResponse {
