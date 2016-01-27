@@ -123,6 +123,7 @@ elif [ "$1" = 'deployer' ]; then
   cp -r $install_path/configuration-postgresql/ $config_dir/postgresql/
   cp -r $install_path/configuration-zookeeper/ $config_dir/zookeeper/
   cp -r $install_path/configuration-lightwave/ $config_dir/lightwave/
+  cp -r $install_path/configuration-management-ui/ $config_dir/management-ui/
 
   cp -r $config_dir/* $mustache_dir
 else
