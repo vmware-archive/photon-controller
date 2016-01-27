@@ -774,39 +774,6 @@ class HostHandler(Host.Iface):
                 response)
 
     @log_request
-    @error_handler(RegisterVmResponse, RegisterVmResultCode)
-    def register_vm(self, request):
-        try:
-            if request.reservation:
-                self.hypervisor.placement_manager.consume_vm_reservation(
-                    request.reservation)
-            self.hypervisor.vm_manager.register_vm(request.datastore_id,
-                                                   request.vm_id)
-        except VmNotFoundException as e:
-            self._logger.info("VM not found: %s", request.vm_id)
-            return RegisterVmResponse(RegisterVmResultCode.VM_NOT_FOUND,
-                                      str(e))
-        except InvalidReservationException as e:
-            self._logger.warn("Invalid reservation: %s", request.reservation)
-            return RegisterVmResponse(RegisterVmResultCode.INVALID_RESERVATION,
-                                      str(e))
-        finally:
-            if request.reservation:
-                self.hypervisor.placement_manager.remove_vm_reservation(
-                    request.reservation)
-        return RegisterVmResponse(RegisterVmResultCode.OK)
-
-    @log_request
-    @error_handler(UnregisterVmResponse, UnregisterVmResultCode)
-    def unregister_vm(self, request):
-        try:
-            self.hypervisor.vm_manager.unregister_vm(request.vm_id)
-        except VmNotFoundException as e:
-            return UnregisterVmResponse(UnregisterVmResultCode.VM_NOT_FOUND,
-                                        str(e))
-        return UnregisterVmResponse(UnregisterVmResultCode.OK)
-
-    @log_request
     @error_handler(GetResourcesResponse, GetResourcesResultCode)
     def get_resources(self, request):
         """Return VM state.

@@ -1177,26 +1177,3 @@ class AgentCommonTests(object):
         # delete the vm
         vm_wrapper.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
         vm_wrapper.delete()
-
-    def test_register_unregister_vm(self):
-        vm_wrapper = VmWrapper(self.host_client)
-
-        # create a vm without disk
-        reservation = vm_wrapper.place_and_reserve().reservation
-        request = vm_wrapper.create_request(res_id=reservation)
-        vm = vm_wrapper.create(request=request).vm
-
-        request = UnregisterVmRequest("no_such_vm")
-        response = self.host_client.unregister_vm(request)
-        assert_that(response.result,
-                    equal_to(UnregisterVmResultCode.VM_NOT_FOUND))
-
-        request = UnregisterVmRequest(vm.id)
-        response = self.host_client.unregister_vm(request)
-        assert_that(response.result, equal_to(UnregisterVmResultCode.OK))
-
-        request = RegisterVmRequest(vm.id, vm.datastore.id)
-        response = self.host_client.register_vm(request)
-        assert_that(response.result, equal_to(RegisterVmResultCode.OK))
-
-        vm_wrapper.delete()

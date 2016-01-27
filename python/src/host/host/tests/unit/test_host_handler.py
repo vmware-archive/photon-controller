@@ -1468,24 +1468,5 @@ class HostHandlerTestCase(unittest.TestCase):
         assert_that(response.result is
                     GetMonitoredImagesResultCode.DATASTORE_NOT_FOUND)
 
-    @parameterized.expand([
-        (InvalidReservationException, None,
-         RegisterVmResultCode.INVALID_RESERVATION),
-        (None, VmNotFoundException, RegisterVmResultCode.VM_NOT_FOUND),
-        (None, None, RegisterVmResultCode.OK),
-    ])
-    def test_register_vm(self, consume_reservation, register_vm, result):
-        hypervisor = MagicMock()
-        handler = HostHandler(hypervisor)
-        pm = hypervisor.placement_manager
-        pm.consume_vm_reservation.side_effect = consume_reservation
-        hypervisor.vm_manager.register_vm.side_effect = register_vm
-
-        request = RegisterVmRequest("vm_id", "ds_id", "reservation_id")
-        response = handler.register_vm(request)
-
-        assert_that(response.result, equal_to(result))
-        pm.remove_vm_reservation.assert_called_once_with(request.reservation)
-
 if __name__ == '__main__':
     unittest.main()
