@@ -130,7 +130,8 @@ class TestUnitAgent(unittest.TestCase):
                                    "--hostname", "localhost",
                                    "--port", "1234",
                                    "--chairman", chairman_str,
-                                   "--host-id", "host1"])
+                                   "--host-id", "host1",
+                                   "--deployment-id", "deployment1"])
         self.assertTrue(self.agent.bootstrap_ready)
 
     def test_agent_config_update(self):
@@ -159,6 +160,7 @@ class TestUnitAgent(unittest.TestCase):
                                ServerAddress("h2", 13000)]
         req.address = addr
         req.host_id = "host1"
+        req.deployment_id = "deployment1"
         self.agent.update_config(req)
 
         assert_that(self.agent.availability_zone, equal_to("test1"))
@@ -174,6 +176,7 @@ class TestUnitAgent(unittest.TestCase):
                     equal_to(1.5))
         assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
         assert_that(self.agent.host_id, equal_to("host1"))
+        assert_that(self.agent.deployment_id, equal_to("deployment1"))
 
         self.assertTrue(self.agent.bootstrap_ready)
         self.assertTrue(self.agent.reboot_required)
@@ -243,6 +246,7 @@ class TestUnitAgent(unittest.TestCase):
                                ServerAddress("h2", 13000)]
         req.address = addr
         req.host_id = "host1"
+        req.deployment_id = "deployment1"
         self.agent.update_config(req)
 
         assert_that(self.agent.availability_zone, equal_to("test1"))
@@ -257,6 +261,7 @@ class TestUnitAgent(unittest.TestCase):
                     equal_to(1.5))
         assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
         assert_that(self.agent.host_id, equal_to("host1"))
+        assert_that(self.agent.deployment_id, equal_to("deployment1"))
 
         self.assertTrue(self.agent.bootstrap_ready)
         self.assertTrue(self.agent.reboot_required)

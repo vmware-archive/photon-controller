@@ -151,6 +151,9 @@ struct ProvisionRequest {
   // Address of stats store
   16: optional string stats_store_address
 
+  // Id of the deployment
+  17: optional string deployment_id
+
   99: optional tracing.TracingInfo tracing_info
 }
 

@@ -327,6 +327,7 @@ public class ProvisionAgentTaskService extends StatefulService {
               && hostState.usageTags.contains(UsageTag.MGMT.name())
               && !hostState.usageTags.contains(UsageTag.CLOUD.name())),
           ServiceUtils.getIDFromDocumentSelfLink(currentState.hostServiceLink),
+          ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink),
           deploymentState.ntpEndpoint,
           new AsyncMethodCallback<Host.AsyncClient.provision_call>() {
             @Override
