@@ -502,7 +502,7 @@ public class AllocateHostResourceTaskServiceTest {
 
       String vmServiceLink = getVmService(hostService.documentSelfLink);
       Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
-      assertThat(containerServices.size(), is(9));
+      assertThat(containerServices.size(), is(10));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).sum(),
           lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).max().getAsLong(),
@@ -534,7 +534,7 @@ public class AllocateHostResourceTaskServiceTest {
 
       String vmServiceLink = getVmService(hostService.documentSelfLink);
       Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
-      assertThat(containerServices.size(), is(9));
+      assertThat(containerServices.size(), is(10));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).sum(),
           lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).max().getAsLong(),

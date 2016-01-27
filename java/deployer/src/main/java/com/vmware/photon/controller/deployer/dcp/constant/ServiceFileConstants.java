@@ -38,6 +38,7 @@ public class ServiceFileConstants {
       .put(ContainersConfig.ContainerType.Zookeeper, "zookeeper_release.json")
       .put(ContainersConfig.ContainerType.CloudStore, "cloud-store_release.json")
       .put(ContainersConfig.ContainerType.Lightwave, "lightwave_release.json")
+      .put(ContainersConfig.ContainerType.ManagementUi, "management-ui_release.json")
       .build();
 
   public static final Map<ContainersConfig.ContainerType, String> CONTAINER_CONFIG_ROOT_DIRS =
@@ -51,6 +52,7 @@ public class ServiceFileConstants {
       .put(ContainersConfig.ContainerType.Zookeeper, "zookeeper/")
       .put(ContainersConfig.ContainerType.CloudStore, "cloud-store/")
       .put(ContainersConfig.ContainerType.Lightwave, "lightwave/")
+      .put(ContainersConfig.ContainerType.ManagementUi, "management-ui/")
       .build();
 
 }

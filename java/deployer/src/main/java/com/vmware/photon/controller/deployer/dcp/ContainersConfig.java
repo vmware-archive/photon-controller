@@ -41,7 +41,8 @@ public class ContainersConfig {
     RootScheduler,
     Zookeeper,
     CloudStore,
-    Lightwave
+    Lightwave,
+    ManagementUi
   }
 
   /**
