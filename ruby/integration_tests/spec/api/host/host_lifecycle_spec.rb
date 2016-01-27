@@ -306,6 +306,31 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
           expect(get_state @host).to eq("READY")
         end
       end
+
+      it "add/remove cloud host as management host" do
+        expect(EsxCloud::Host.enter_suspended_mode(@host.id).state).to eq("SUSPENDED")
+        expect(EsxCloud::Host.enter_maintenance_mode(@host.id).state).to eq("MAINTENANCE")
+        expect(EsxCloud::Host.delete(@host.id)).to eq(true)
+
+        add_mgmt_host_spec = EsxCloud::HostCreateSpec.new(
+            @host.username,
+            @host.password,
+            ["MGMT"],
+            @host.address,
+            @host.metadata)
+
+
+        host = EsxCloud::Host.create @deployment.id, add_mgmt_host_spec
+        expect(host.state).to eq("READY")
+        puts "Added mgmt host"
+
+        task_list = api_client.find_tasks(host.id, "host", "COMPLETED")
+        tasks = task_list.items
+        expect(tasks.size).to eq(1)
+        task = tasks.first
+        expect(task.errors).to be_empty
+        expect(task.warnings).to be_empty
+      end
     end
   end
 end
