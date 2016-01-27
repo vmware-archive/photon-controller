@@ -164,40 +164,6 @@ class TestEsxVmManager(unittest.TestCase):
             mock_spec, 'fake_rp', None)
         vim_mock.wait_for_task.assert_called_once_with("fake-task")
 
-    @patch("os.path.isfile")
-    def test_register_vm(self, isfile):
-        isfile.return_value = True
-        vim_mock = MagicMock()
-        self.vm_manager.vim_client = vim_mock
-
-        vm_folder_mock = MagicMock()
-        vim_mock.vm_folder = vm_folder_mock
-
-        self.vm_manager.register_vm("datastore_id", "1234567890")
-
-        vm_folder_mock.RegisterVM_Task.assert_called_once_with(
-            "[] /vmfs/volumes/datastore_id/vms/12/1234567890/1234567890.vmx",
-            "1234567890",
-            False, vim_mock.root_resource_pool
-        )
-        vim_mock.wait_for_task.assert_called_once()
-
-    @patch("os.path.isfile")
-    def test_register_vm_vmx_not_found(self, isfile):
-        isfile.return_value = False
-        self.assertRaises(VmNotFoundException, self.vm_manager.register_vm,
-                          "datastore_id", "1234567890")
-
-    def test_unregister_vm(self):
-        vim_mock = MagicMock()
-        self.vm_manager.vim_client = vim_mock
-
-        vm_mock = MagicMock()
-        vim_mock.get = MagicMock(return_value=vm_mock)
-
-        self.vm_manager.unregister_vm("1234")
-        vm_mock.Unregister.assert_called_once()
-
     @staticmethod
     def _validate_spec_extra_config(spec, config, expected):
         """Validates the config entries against the created config spec
