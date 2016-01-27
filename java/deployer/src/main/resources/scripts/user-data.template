@@ -57,6 +57,12 @@ write_files:
     path: /tmp/update-ntp.sh
 
 runcmd:
+  - mkdir -p /etc/esxcloud/
+  - mkdir -p /tmp/config/
+  - mount /dev/cdrom /tmp/config
+  - cp -r /tmp/config/mustache/ /etc/esxcloud/
+  - chmod +x /etc/esxcloud/*/*/run.sh
+  - umount /tmp/config
   - sh /tmp/init-network.sh
   - sh /tmp/update-hostname.sh
   - sh /tmp/update-ntp.sh $NTP
@@ -67,9 +73,3 @@ runcmd:
   - systemctl stop docker
   - iptables-save | grep -v -- 'DOCKER' | iptables-restore
   - systemctl start docker
-  - mkdir -p /etc/esxcloud/
-  - mkdir -p /tmp/config/
-  - mount /dev/cdrom /tmp/config
-  - cp -r /tmp/config/mustache/ /etc/esxcloud/
-  - chmod +x /etc/esxcloud/*/*/run.sh
-  - umount /tmp/config
