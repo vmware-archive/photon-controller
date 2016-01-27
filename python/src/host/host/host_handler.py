@@ -261,6 +261,7 @@ class HostHandler(Host.Iface):
         config = HostConfig()
         agent_config = common.services.get(ServiceName.AGENT_CONFIG)
         config.agent_id = agent_config.host_id
+        config.deployment_id = agent_config.deployment_id
         config.availability_zone = self._availability_zone
         config.management_only = agent_config.management_only
         config.address = ServerAddress(host=agent_config.hostname,
