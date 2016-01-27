@@ -1597,6 +1597,7 @@ public class HostClient {
       String logLevel,
       boolean managementOnly,
       String hostId,
+      String deploymentId,
       String ntpEndpoint,
       AsyncMethodCallback<Host.AsyncClient.provision_call> handler)
       throws RpcException {
@@ -1616,6 +1617,7 @@ public class HostClient {
     provisionRequest.setMemory_overcommit(memoryOverCommit);
     provisionRequest.setManagement_only(managementOnly);
     provisionRequest.setHost_id(hostId);
+    provisionRequest.setDeployment_id(deploymentId);
     provisionRequest.setNtp_endpoint(ntpEndpoint);
     provisionRequest.setImage_datastores(imageDatastoreSet);
 
@@ -1666,11 +1668,12 @@ public class HostClient {
       String logLevel,
       boolean managementOnly,
       String hostId,
+      String deploymentId,
       String ntpEndpoint)
       throws InterruptedException, RpcException {
     SyncHandler<ProvisionResponse, Host.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
     provision(availabilityZone, dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
-        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, managementOnly, hostId,
+        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, managementOnly, hostId, deploymentId,
         ntpEndpoint, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkProvisionResponse(syncHandler.getResponse());
