@@ -28,7 +28,7 @@ from common.photon_thrift.decorators import log_request
 from common.lock import lock_with
 from common.lock import AlreadyLocked
 from common.lock_vm import lock_vm
-from common.mode import MODE, ModeTransitionError
+from common.mode import MODE
 from common.service_name import ServiceName
 from gen.agent import AgentControl
 from gen.common.ttypes import ServerAddress
@@ -59,14 +59,8 @@ from gen.host.ttypes import DeleteDirectoryResponse
 from gen.host.ttypes import DeleteDirectoryResultCode
 from gen.host.ttypes import DeleteVmResponse
 from gen.host.ttypes import DeleteVmResultCode
-from gen.host.ttypes import DeprovisionResponse
-from gen.host.ttypes import DeprovisionResultCode
 from gen.host.ttypes import DetachISOResponse
 from gen.host.ttypes import DetachISOResultCode
-from gen.host.ttypes import EnterMaintenanceResponse
-from gen.host.ttypes import EnterMaintenanceResultCode
-from gen.host.ttypes import ExitMaintenanceResponse
-from gen.host.ttypes import ExitMaintenanceResultCode
 from gen.host.ttypes import GetConfigResponse
 from gen.host.ttypes import GetConfigResultCode
 from gen.host.ttypes import GetDatastoresResponse
@@ -89,8 +83,6 @@ from gen.host.ttypes import HttpTicketResponse
 from gen.host.ttypes import HttpTicketResultCode
 from gen.host.ttypes import ImageInfoResponse
 from gen.host.ttypes import ImageInfoResultCode
-from gen.host.ttypes import LoadResponse
-from gen.host.ttypes import LoadResultCode
 from gen.host.ttypes import MksTicketResponse
 from gen.host.ttypes import MksTicketResultCode
 from gen.host.ttypes import GetMonitoredImagesResultCode
@@ -341,86 +333,6 @@ class HostHandler(Host.Iface):
         mode_name = HostMode._VALUES_TO_NAMES[request.mode]
         mode.set_mode(getattr(MODE, mode_name))
         return SetHostModeResponse(GetHostModeResultCode.OK)
-
-    @log_request
-    @error_handler(EnterMaintenanceResponse, EnterMaintenanceResultCode)
-    def enter_maintenance(self, request):
-        mode = common.services.get(ServiceName.MODE)
-
-        try:
-            # Try changing mode from NORMAL to ENTERING_MAINTENANCE
-            mode.set_mode(MODE.ENTERING_MAINTENANCE, [MODE.NORMAL])
-        except ModeTransitionError as e:
-            # If the mode is already MAINTENANCE, return OK.
-            if e.from_mode == MODE.MAINTENANCE:
-                return EnterMaintenanceResponse(EnterMaintenanceResultCode.OK)
-            else:
-                # Impossible
-                raise
-
-        # Return ENTERING and the list of VMs on the host.
-
-        # Note: It's possible that the result is ENTERING and the list of
-        # VMs is empty. Just ignore it and call get_mode() or
-        # enter_maintenance(), it will be eventually consistent and return OK,
-        # and the mode is MAINTENANCE.
-        vm_ids = self._hypervisor.vm_manager.get_resource_ids()
-        return EnterMaintenanceResponse(EnterMaintenanceResultCode.ENTERING,
-                                        vm_ids=vm_ids)
-
-    @log_request
-    @error_handler(ExitMaintenanceResponse, ExitMaintenanceResultCode)
-    def exit_maintenance(self, request):
-        mode = common.services.get(ServiceName.MODE)
-
-        try:
-            # Only allow to exit maintenance when the agent is not in
-            # deprovisioned mode
-            mode.set_mode(MODE.NORMAL,
-                          [MODE.MAINTENANCE, MODE.ENTERING_MAINTENANCE])
-            return ExitMaintenanceResponse(ExitMaintenanceResultCode.OK)
-        except ModeTransitionError as e:
-            error_msg = "Cannot switch to NORMAL from %s" % e.from_mode
-            self._logger.info(error_msg)
-            return ExitMaintenanceResponse(
-                result=ExitMaintenanceResultCode.INVALID_STATE,
-                error=error_msg)
-        except Exception as e:
-            self._logger.warning("Cannot switch to NORMAL", exc_info=True)
-            return ExitMaintenanceResponse(
-                ExitMaintenanceResultCode.SYSTEM_ERROR, error=str(e))
-
-    @log_request
-    @error_handler(DeprovisionResponse, DeprovisionResultCode)
-    def deprovision(self, request):
-        mode = common.services.get(ServiceName.MODE)
-        agent_config = common.services.get(ServiceName.AGENT_CONFIG)
-
-        try:
-            mode.set_mode(MODE.DEPROVISIONED, [MODE.MAINTENANCE])
-            agent_config.delete_config()
-        except ModeTransitionError as e:
-            error_msg = "Cannot switch to DEPROVISIONED from %s" % e.from_mode
-            self._logger.info(error_msg)
-            return DeprovisionResponse(
-                result=DeprovisionResultCode.INVALID_STATE,
-                error=error_msg)
-
-        return DeprovisionResponse(result=DeprovisionResultCode.OK)
-
-    @log_request
-    @error_handler(LoadResponse, LoadResultCode)
-    def load(self, request):
-        """Return system utilization for load balancing.
-
-        :type request: LoadRequest
-        :rtype: LoadResponse
-        """
-        response = LoadResponse()
-        rc = LoadResultCode
-        response.result = rc.OK
-        response.load = self.hypervisor.normalized_load()
-        return response
 
     @log_request
     @error_handler(ReserveResponse, ReserveResultCode)

@@ -69,9 +69,6 @@ class FakeHypervisor(object):
         config.fake_id = "value"
         return TSerialization.serialize(config)
 
-    def normalized_load(self):
-        return 42
-
     def check_image(self, image_id, datastore_id):
         return self.image_manager.\
             check_image(image_id, datastore_id)

@@ -53,10 +53,6 @@ from gen.host.ttypes import DeleteVmRequest
 from gen.host.ttypes import DeleteVmResultCode
 from gen.host.ttypes import DetachISORequest
 from gen.host.ttypes import DetachISOResultCode
-from gen.host.ttypes import EnterMaintenanceRequest
-from gen.host.ttypes import EnterMaintenanceResultCode
-from gen.host.ttypes import ExitMaintenanceRequest
-from gen.host.ttypes import ExitMaintenanceResultCode
 from gen.host.ttypes import GetConfigRequest
 from gen.host.ttypes import GetDeletedImagesRequest
 from gen.host.ttypes import GetHostModeRequest
@@ -1109,19 +1105,6 @@ class HostHandlerTestCase(unittest.TestCase):
         response = handler.get_host_mode(GetHostModeRequest())
         assert_that(response.result, equal_to(GetHostModeResultCode.OK))
         assert_that(response.mode, equal_to(HostMode.NORMAL))
-
-    def test_enter_exit_maintenance(self):
-        handler = HostHandler(MagicMock())
-        mode = common.services.get(ServiceName.MODE)
-        response = handler.enter_maintenance(EnterMaintenanceRequest())
-        assert_that(response.result,
-                    equal_to(EnterMaintenanceResultCode.ENTERING))
-        assert_that(mode.get_mode(), equal_to(MODE.ENTERING_MAINTENANCE))
-
-        response = handler.exit_maintenance(ExitMaintenanceRequest())
-        assert_that(response.result,
-                    equal_to(ExitMaintenanceResultCode.OK))
-        assert_that(mode.get_mode(), equal_to(MODE.NORMAL))
 
     def _sample_vm(self):
         flavor = Flavor(name="flavor", cost=[QuotaLineItem("a", "b", 1)])
