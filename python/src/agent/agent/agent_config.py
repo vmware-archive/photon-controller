@@ -65,11 +65,12 @@ class AgentConfig(object):
     WAIT_TIMEOUT = "wait_timeout"
     MANAGEMENT_ONLY = "management_only"
     HOST_ID = "host_id"
+    DEPLOYMENT_ID = "deployment_id"
     IMAGE_DATASTORES = "image_datastores"
 
     PROVISION_ARGS = [HOST_PORT]
     BOOTSTRAP_ARGS = PROVISION_ARGS + [AVAILABILITY_ZONE, HOSTNAME, CHAIRMAN,
-                                       HOST_ID]
+                                       HOST_ID, DEPLOYMENT_ID]
 
     # List of attributes persisted to config.json by default
 
@@ -207,8 +208,13 @@ class AgentConfig(object):
                 self.MANAGEMENT_ONLY,
                 provision_req.management_only)
 
+        if provision_req.
+
         reboot |= self._check_and_set_attr(
             self.HOST_ID, provision_req.host_id)
+
+        reboot |= self._check_and_set_attr(
+            self.DEPLOYMENT_ID, provision_req.deployment_id)
 
         # Persist the updates to the config file.
         self._persist_config()
@@ -407,6 +413,11 @@ class AgentConfig(object):
     def host_id(self):
         return getattr(self._options, self.HOST_ID)
 
+    @property
+    @locked
+    def deployment_id(self):
+        return getattr(self._options, self.DEPLOYMENT_ID)
+
     @lock_with("_callback_lock")
     def on_config_change(self, option, callback):
         """
@@ -557,6 +568,10 @@ class AgentConfig(object):
         parser.add_option("--host-id", dest=self.HOST_ID,
                           type="string", default=None,
                           help="ID of this host")
+
+        parser.add_option("--deployment-id", dest=self.DEPLOYMENT_ID,
+                          type="string", default=None,
+                          help="ID of the deployment")
 
         self._default_options = parser.defaults
 
