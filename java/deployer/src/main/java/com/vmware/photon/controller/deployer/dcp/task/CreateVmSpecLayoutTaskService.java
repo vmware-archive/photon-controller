@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -52,9 +53,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Implements allocation of docker vms to management hosts given by hostQuerySpecification.
  */
 public class CreateVmSpecLayoutTaskService extends StatefulService {
-
-  @VisibleForTesting
-  public static final String DOCKER_VM_PREFIX = "ec-mgmt-";
 
   /**
    * This class defines the document state associated with a single
@@ -287,7 +285,7 @@ public class CreateVmSpecLayoutTaskService extends StatefulService {
 
     for (HostService.State host : managementHosts) {
       CreateVmSpecTaskService.State serviceState = new CreateVmSpecTaskService.State();
-      serviceState.name = DOCKER_VM_PREFIX + host.hostAddress.replaceAll("\\.", "-")
+      serviceState.name = Constants.DOCKER_VM_PREFIX + host.hostAddress.replaceAll("\\.", "-")
           + UUID.randomUUID().toString().substring(0, 5);
       serviceState.hostServiceLink = host.documentSelfLink;
 

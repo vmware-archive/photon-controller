@@ -22,6 +22,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -41,7 +42,6 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
@@ -940,7 +940,7 @@ public class DeploymentWorkflowServiceTest {
       Set<String> hostServiceLinks = new HashSet<>();
       for (VmService.State state : states) {
         assertThat(state.vmId, is("CREATE_VM_ENTITY_ID"));
-        assertThat(state.name, startsWith(CreateVmSpecLayoutTaskService.DOCKER_VM_PREFIX));
+        assertThat(state.name, startsWith(Constants.DOCKER_VM_PREFIX));
 
         HostService.State hostState = localStore.getServiceState(state.hostServiceLink, HostService.State.class);
         assertThat(state.ipAddress,

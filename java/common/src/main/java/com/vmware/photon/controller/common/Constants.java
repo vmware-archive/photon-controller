@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.common;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
  * Constants available to all EsxCloud projects.
  */
@@ -24,6 +26,9 @@ public class Constants {
   public static final String RESOURCE_TICKET_NAME = "mgmt-res-ticket";
 
   public static final String TENANT_NAME = "mgmt-tenant";
+
+  @VisibleForTesting
+  public static final String DOCKER_VM_PREFIX = "ec-mgmt-";
 
   private Constants() {
   }
