@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -1084,7 +1085,7 @@ public class AddManagementHostWorkflowServiceTest {
       Set<String> hostServiceLinks = new HashSet<>();
       for (VmService.State state : states) {
         assertThat(state.vmId, is("CREATE_VM_ENTITY_ID"));
-        assertThat(state.name, startsWith(CreateVmSpecLayoutTaskService.DOCKER_VM_PREFIX));
+        assertThat(state.name, startsWith(Constants.DOCKER_VM_PREFIX));
 
         HostService.State hostState = remoteStore.getServiceState(state.hostServiceLink, HostService.State.class);
         assertThat(state.ipAddress,

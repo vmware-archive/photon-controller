@@ -29,6 +29,7 @@ import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 
 import com.google.common.base.Preconditions;
@@ -93,6 +94,11 @@ public class VmDeleteStepCmd extends StepCommand {
     if (vm.getState() == VmState.DELETED) {
       return;
     }
+
+    if (vm.getName().startsWith(Constants.DOCKER_VM_PREFIX)) {
+      throw new InternalException(String.format("%s is a management VM and cannot be deleted", vm.getName()));
+    }
+
     try {
       taskCommand.getHostClient(vm).deleteVm(vm.getId(), null);
     } catch (com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException ex) {

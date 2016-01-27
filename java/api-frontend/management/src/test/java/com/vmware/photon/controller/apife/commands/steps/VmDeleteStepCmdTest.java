@@ -29,6 +29,7 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
@@ -101,6 +102,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
 
     vm = new VmEntity();
     vm.setId("vm-1");
+    vm.setName("vmName");
 
     findResponse = new FindResponse();
     Datastore datastore = new Datastore();
@@ -345,6 +347,18 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     try {
       command.execute();
       fail("should have failed due to persistent disk");
+    } catch (InternalException e) {
+    }
+  }
+
+  @Test
+  public void testDeleteManagementVm() throws Throwable {
+    VmDeleteStepCmd command = getVmDeleteStepCmd();
+    vm.setName(Constants.DOCKER_VM_PREFIX + "123");
+
+    try {
+      command.execute();
+      fail("should have failed because this is a mgmt vm");
     } catch (InternalException e) {
     }
   }
