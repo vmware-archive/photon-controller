@@ -99,8 +99,6 @@ from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from gen.host.ttypes import SetHostModeResponse
 from gen.host.ttypes import SetHostModeResultCode
-from gen.host.ttypes import SetResourceTagsResponse
-from gen.host.ttypes import SetResourceTagsResultCode
 from gen.host.ttypes import StartImageOperationResultCode
 from gen.host.ttypes import StartImageScanResponse
 from gen.host.ttypes import StartImageSweepResponse
@@ -295,17 +293,6 @@ class HostHandler(Host.Iface):
     def get_host_config(self, request):
         """get_host_config wrapper that adds request/response logging."""
         return self.get_host_config_no_logging(request)
-
-    @log_request
-    @error_handler(SetResourceTagsResponse, SetResourceTagsResultCode)
-    def set_resource_tags(self, request):
-        """
-        :type request: SetResourceTagsRequest
-        :rtype: SetResourceTagsResponse
-        """
-        datastore_tags = common.services.get(ServiceName.DATASTORE_TAGS)
-        datastore_tags.set(request.datastore_tags)
-        return SetResourceTagsResponse(SetResourceTagsResultCode.OK)
 
     @log_request
     @error_handler(GetHostModeResponse, GetHostModeResultCode)

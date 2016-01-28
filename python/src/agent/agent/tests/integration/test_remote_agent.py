@@ -305,7 +305,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         # Reconnect to account for the restart
         self.client_connections()
         self.configure_hosts()
-        self.clear_datastore_tags()
         self.clear()
 
     @classmethod
