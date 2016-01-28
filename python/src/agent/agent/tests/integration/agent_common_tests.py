@@ -48,8 +48,6 @@ from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from gen.host.ttypes import SetHostModeRequest
 from gen.host.ttypes import SetHostModeResultCode
-from gen.host.ttypes import SetResourceTagsRequest
-from gen.host.ttypes import SetResourceTagsResultCode
 from gen.agent.ttypes import PingRequest
 from gen.agent.ttypes import ProvisionRequest
 from gen.agent.ttypes import ProvisionResultCode
@@ -309,11 +307,6 @@ class AgentCommonTests(object):
     REGEX_TIME = "^\d{4}\-\d{2}\-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)*$"
 
     DEFAULT_DISK_FLAVOR = Flavor("default", [])
-
-    def clear_datastore_tags(self):
-        response = self.host_client.set_resource_tags(
-            SetResourceTagsRequest())
-        assert_that(response.result, equal_to(SetResourceTagsResultCode.OK))
 
     def set_host_mode(self, mode):
         response = self.host_client.set_host_mode(SetHostModeRequest(mode))
@@ -825,29 +818,6 @@ class AgentCommonTests(object):
         vm_networks = [network for network in response.hostConfig.networks
                        if NetworkType.VM in network.types]
         assert_that(len(vm_networks), greater_than_or_equal_to(1))
-
-    def test_set_datastore_tags(self):
-        request = Host.GetConfigRequest()
-        response = self.host_client.get_host_config(request)
-        datastores = response.hostConfig.datastores
-        assert_that(datastores, has_length(len(self.get_all_datastores())))
-
-        tags = {}
-        for datastore in datastores:
-            tags[datastore.id] = set(["tag1", "tag2"])
-
-        request = SetResourceTagsRequest()
-        request.datastore_tags = tags
-        response = self.host_client.set_resource_tags(request)
-        assert_that(response.result, equal_to(SetResourceTagsResultCode.OK))
-
-        request = Host.GetConfigRequest()
-        response = self.host_client.get_host_config(request)
-        datastores = response.hostConfig.datastores
-        assert_that(datastores, has_length(len(self.get_all_datastores())))
-
-        for datastore in datastores:
-            assert_that(datastore.tags, has_items("tag1", "tag2"))
 
     def test_get_mode(self):
         response = self.host_client.get_host_mode(GetHostModeRequest())

@@ -14,7 +14,6 @@ import json
 import os
 import shutil
 import unittest
-from common.datastore_tags import DatastoreTags
 
 from hamcrest import *  # noqa
 import mock
@@ -42,8 +41,6 @@ class TestUnitAgent(unittest.TestCase):
         self.agent_conf_dir = mkdtemp(delete=True)
         state = State(os.path.join(self.agent_conf_dir, "state.json"))
         common.services.register(ServiceName.MODE, Mode(state))
-        common.services.register(ServiceName.DATASTORE_TAGS,
-                                 DatastoreTags(state))
         self.agent = AgentConfig(["--config-path", self.agent_conf_dir])
 
     def tearDown(self):

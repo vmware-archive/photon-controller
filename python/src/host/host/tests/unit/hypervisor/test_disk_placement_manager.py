@@ -17,13 +17,10 @@ import uuid
 from hamcrest import *  # noqa
 from mock import MagicMock
 from nose_parameterized import parameterized
-import common
 
-from common.datastore_tags import DatastoreTags
 from common.kind import Flavor
 from common.kind import QuotaLineItem
 from common.kind import Unit
-from common.service_name import ServiceName
 from common.state import State
 from gen.resource.ttypes import ResourceConstraintType
 from gen.resource.ttypes import ResourceConstraint
@@ -53,8 +50,6 @@ class TestDiskPlacementManager(unittest.TestCase):
     def setUp(self):
         self.file_location = tempfile.mktemp()
         self.state = State(self.file_location)
-        self.tags = DatastoreTags(self.state)
-        common.services.register(ServiceName.DATASTORE_TAGS, self.tags)
 
     def tearDown(self):
         try:
