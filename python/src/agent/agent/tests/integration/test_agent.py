@@ -83,7 +83,6 @@ class TestAgent(unittest.TestCase, AgentCommonTests):
         self.proc, self.host_client, self.control_client = res
         self.configure_host()
         self.set_host_mode(HostMode.NORMAL)
-        self.clear_datastore_tags()
 
     def tearDown(self):
         self.runtime.cleanup()

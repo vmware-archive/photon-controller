@@ -22,7 +22,6 @@ class ServiceName(Enum):
     LOCKED_VMS = 4
     STATE = 5
     MODE = 6
-    DATASTORE_TAGS = 7
-    HYPERVISOR = 8
-    REGISTRANT = 9
-    VIM_CLIENT = 10
+    HYPERVISOR = 7
+    REGISTRANT = 8
+    VIM_CLIENT = 9

@@ -80,14 +80,8 @@ from gen.host.ttypes import StartImageScanRequest
 from gen.host.ttypes import StartImageSweepRequest
 from gen.host.ttypes import TransferImageRequest
 from gen.host.ttypes import TransferImageResultCode
-from gen.resource.constants import LOCAL_VMFS_TAG
-from gen.resource.constants import NFS_TAG
-from gen.resource.constants import SHARED_VMFS_TAG
 from gen.resource.ttypes import CloneType
-from gen.resource.ttypes import ResourceConstraint
-from gen.resource.ttypes import ResourceConstraintType
 from gen.resource.ttypes import Datastore
-from gen.resource.ttypes import DatastoreType
 from gen.resource.ttypes import Disk
 from gen.resource.ttypes import DiskImage
 from gen.resource.ttypes import Image
@@ -97,7 +91,6 @@ from gen.roles.ttypes import Roles
 from gen.roles.ttypes import SchedulerRole
 from gen.scheduler.ttypes import ConfigureRequest
 from gen.scheduler.ttypes import FindResultCode
-from gen.scheduler.ttypes import PlaceResultCode
 from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import vmdk_path
@@ -305,7 +298,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         # Reconnect to account for the restart
         self.client_connections()
         self.configure_hosts()
-        self.clear_datastore_tags()
         self.clear()
 
     @classmethod
@@ -1246,46 +1238,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
 
         assert_that(results["count"], is_(concurrency))
 
-    def test_place_on_datastore_tag(self):
-        host_config_request = Host.GetConfigRequest()
-        res = self.host_client.get_host_config(host_config_request)
-        self.assertEqual(res.result, GetConfigResultCode.OK)
-
-        datastores = res.hostConfig.datastores
-        for datastore in datastores:
-            tag = self._type_to_tag(datastore.type)
-            if not tag:
-                continue
-
-            vm_wrapper = VmWrapper(self.host_client)
-
-            # Test place disks with only datastore constraint
-            disk = Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                        capacity_gb=0,
-                        resource_constraints=self._create_constraints(
-                            [datastore.id],
-                            []))
-            vm_wrapper.place(vm_disks=[disk])
-
-            # Test place disks with datastore and datastore tag constraint
-            disk = Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                        capacity_gb=0,
-                        resource_constraints=self._create_constraints(
-                            [datastore.id],
-                            [tag]))
-            vm_wrapper.place(vm_disks=[disk], expect=PlaceResultCode.OK)
-
-            # Test place disks with the wrong datastore tag
-            for other_tag in self._other_tags(tag):
-                disk = Disk(
-                    new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                    capacity_gb=0,
-                    resource_constraints=self._create_constraints(
-                        [datastore.id],
-                        [other_tag]))
-                vm_wrapper.place(vm_disks=[disk],
-                                 expect=PlaceResultCode.NO_SUCH_RESOURCE)
-
     def test_provision_without_datastores(self):
         """
         Test that the host uses all the datastores when it gets provisioned
@@ -1500,36 +1452,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
 
         self.assertEqual(image_found, found)
         return get_inactive_deleted_response
-
-    def _type_to_tag(self, type):
-        type_to_tag = {
-            DatastoreType.NFS_3: NFS_TAG,
-            DatastoreType.NFS_41: NFS_TAG,
-            DatastoreType.SHARED_VMFS: SHARED_VMFS_TAG,
-            DatastoreType.LOCAL_VMFS: LOCAL_VMFS_TAG,
-        }
-
-        if type in type_to_tag:
-            return type_to_tag[type]
-        else:
-            return None
-
-    def _other_tags(self, tag):
-        tags = [NFS_TAG, SHARED_VMFS_TAG, LOCAL_VMFS_TAG]
-        tags.remove(tag)
-        return tags
-
-    def _create_constraints(self, datastores, tags):
-        constraints = []
-        for datastore in datastores:
-            constraints.append(ResourceConstraint(
-                type=ResourceConstraintType.DATASTORE,
-                values=[datastore]))
-        for tag in tags:
-            constraints.append(ResourceConstraint(
-                type=ResourceConstraintType.DATASTORE_TAG,
-                values=[tag]))
-        return constraints
 
     def test_create_image_from_vm(self):
         """ Integration test for creating an image from a VM """
