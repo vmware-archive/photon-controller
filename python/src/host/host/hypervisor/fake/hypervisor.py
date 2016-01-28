@@ -18,10 +18,7 @@ import socket
 import uuid
 from host.hypervisor.fake.datastore_manager import FakeDatastoreManager
 
-from thrift import TSerialization
-
 from common.file_util import mkdtemp
-import gen.hypervisor.fake.ttypes
 from host.hypervisor.fake.disk_manager import FakeDiskManager
 from host.hypervisor.fake.image_manager import FakeImageManager
 from host.hypervisor.fake.network_manager import FakeNetworkManager
@@ -62,12 +59,6 @@ class FakeHypervisor(object):
     @property
     def uuid(self):
         return self._uuid
-
-    @property
-    def config(self):
-        config = gen.hypervisor.fake.ttypes.FakeConfig()
-        config.fake_id = "value"
-        return TSerialization.serialize(config)
 
     def check_image(self, image_id, datastore_id):
         return self.image_manager.\

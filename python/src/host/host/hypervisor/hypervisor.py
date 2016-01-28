@@ -108,10 +108,6 @@ class Hypervisor(object):
     def uuid(self):
         return self.hypervisor.uuid
 
-    @property
-    def config(self):
-        return self.hypervisor.config
-
     def check_image(self, image_id, datastore_id):
         return self.hypervisor.check_image(image_id, datastore_id)
 
