@@ -22,7 +22,6 @@ import threading
 import unittest
 import uuid
 
-from hamcrest import *  # noqa
 from matchers import *  # noqa
 from mock import MagicMock
 from mock import call
@@ -54,7 +53,6 @@ from gen.host.ttypes import DeleteVmRequest
 from gen.host.ttypes import DeleteVmResultCode
 from gen.host.ttypes import DetachISORequest
 from gen.host.ttypes import DetachISOResultCode
-from gen.host.ttypes import GetConfigRequest
 from gen.host.ttypes import GetDeletedImagesRequest
 from gen.host.ttypes import GetHostModeRequest
 from gen.host.ttypes import GetHostModeResultCode
@@ -232,19 +230,6 @@ class HostHandlerTestCase(unittest.TestCase):
         common.services.register(ServiceName.AGENT_CONFIG, self._config)
         hv = Hypervisor(self._config)
         handler = HostHandler(hv)
-
-        config_response = handler.get_host_config(GetConfigRequest())
-        host_config = config_response.hostConfig
-        assert_that(host_config.agent_id, equal_to(self._config.host_id))
-        assert_that(host_config.esx_version,
-                    equal_to(self._config.esx_version))
-        assert_that(len(host_config.datastores), equal_to(1))
-        assert_that(host_config.datastores[0].id,
-                    equal_to(stable_uuid(image_ds)))
-        assert_that(host_config.image_datastore_id,
-                    equal_to(stable_uuid(image_ds)))
-        assert_that(host_config.image_datastore_ids,
-                    contains_inanyorder(stable_uuid(image_ds)))
 
         leaf_scheduler = SchedulerRole(stable_uuid("leaf scheduler"))
         leaf_scheduler.parent_id = stable_uuid("parent scheduler")

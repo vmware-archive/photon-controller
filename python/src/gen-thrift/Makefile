@@ -7,14 +7,11 @@ THRIFT_PY= \
   gen/common/__init__.py \
   gen/flavors/__init__.py \
   gen/host/__init__.py \
-  gen/hypervisor/esx/__init__.py \
-  gen/hypervisor/fake/__init__.py \
   gen/scheduler/__init__.py \
   gen/scheduler/root/__init__.py \
   gen/test/echoer/__init__.py \
   gen/statsd/__init__.py \
   gen/agent/__init__.py \
-  gen/psim/__init__.py \
 
 CHECK_PRUNE='gen'
 EXTRAS=
@@ -27,12 +24,6 @@ define compile_thrift
 	$(THRIFT_GEN) $(1)
 	rm -f __init__.py
 endef
-
-gen/hypervisor/esx/__init__.py: $(THRIFT_SRC)
-	$(call compile_thrift,../../../thrift/hypervisor/esx.thrift)
-
-gen/hypervisor/fake/__init__.py: $(THRIFT_SRC)
-	$(call compile_thrift,../../../thrift/hypervisor/fake.thrift)
 
 gen/host/__init__.py: $(THRIFT_SRC)
 	$(call compile_thrift,../../../thrift/host.thrift)
@@ -63,6 +54,3 @@ gen/test/echoer/__init__.py: thrift/echo.thrift
 
 gen/statsd/__init__.py: $(THRIFT_SRC)
 	$(call compile_thrift,../../../thrift/statsd/statsd.thrift)
-
-gen/psim/__init__.py: $(THRIFT_SRC)
-	$(call compile_thrift,../../../thrift/placement_simulator.thrift)
