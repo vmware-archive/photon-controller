@@ -265,23 +265,13 @@ class HostHandler(Host.Iface):
                                        port=agent_config.host_port)
         if not self._hypervisor:
             raise HypervisorNotConfigured()
-        config.hypervisor = self._hypervisor.config
         networks = self._hypervisor.network_manager.get_networks()
         vm_network_names = self._hypervisor.network_manager.get_vm_networks()
         config.networks = [network for network in networks
                            if network.id in vm_network_names]
         dm = self._hypervisor.datastore_manager
         config.datastores = dm.get_datastores()
-        try:
-            # TODO: deprecate image_datastore_id field.
-            image_datastores = dm.image_datastores()
-            if image_datastores:
-                config.image_datastore_id = list(image_datastores)[0]
-            config.image_datastore_ids = image_datastores
-        except:
-            self._logger.exception("Datastore ID not found for %s in %s" %
-                                   (agent_config.image_datastore,
-                                    config.datastores))
+        config.image_datastore_ids = dm.image_datastores()
 
         config.memory_mb = self._hypervisor.system.total_vmusable_memory_mb()
         config.cpu_count = self._hypervisor.system.num_physical_cpus()
