@@ -46,6 +46,7 @@ import static org.testng.Assert.fail;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -412,8 +413,12 @@ public class ZookeeperHostMonitorTest {
       datastore.add(new Datastore(dsId));
     }
 
+    Set<String> imageDatastores = new HashSet<>();
+    if (imageDatastore != null) {
+      imageDatastores.add(imageDatastore);
+    }
     HostConfig config = new HostConfig(name, "test_fault_domain", datastore, sAddr);
-    config.setImage_datastore_id(imageDatastore);
+    config.setImage_datastore_ids(imageDatastores);
     return config;
   }
 

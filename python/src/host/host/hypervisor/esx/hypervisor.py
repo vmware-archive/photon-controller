@@ -15,10 +15,7 @@
 import atexit
 import logging
 
-from thrift import TSerialization
-
 from common.util import suicide
-import gen.hypervisor.esx.ttypes
 from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
 from host.hypervisor.esx.disk_manager import EsxDiskManager
 from host.hypervisor.esx.http_disk_transfer import HttpNfcTransferer
@@ -66,11 +63,6 @@ class EsxHypervisor(object):
     @property
     def uuid(self):
         return self._uuid
-
-    @property
-    def config(self):
-        config = gen.hypervisor.esx.ttypes.EsxConfig()
-        return TSerialization.serialize(config)
 
     def check_image(self, image_id, datastore_id):
         return self.image_manager.check_image(
