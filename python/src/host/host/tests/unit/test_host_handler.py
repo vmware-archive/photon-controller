@@ -233,19 +233,6 @@ class HostHandlerTestCase(unittest.TestCase):
         hv = Hypervisor(self._config)
         handler = HostHandler(hv)
 
-        config_response = handler.get_host_config(GetConfigRequest())
-        host_config = config_response.hostConfig
-        assert_that(host_config.agent_id, equal_to(self._config.host_id))
-        assert_that(host_config.esx_version,
-                    equal_to(self._config.esx_version))
-        assert_that(len(host_config.datastores), equal_to(1))
-        assert_that(host_config.datastores[0].id,
-                    equal_to(stable_uuid(image_ds)))
-        assert_that(host_config.image_datastore_id,
-                    equal_to(stable_uuid(image_ds)))
-        assert_that(host_config.image_datastore_ids,
-                    contains_inanyorder(stable_uuid(image_ds)))
-
         leaf_scheduler = SchedulerRole(stable_uuid("leaf scheduler"))
         leaf_scheduler.parent_id = stable_uuid("parent scheduler")
         leaf_scheduler.hosts = [agent_id]

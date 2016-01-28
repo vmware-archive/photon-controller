@@ -150,19 +150,20 @@ public class ZookeeperHostMonitor extends ZookeeperMonitor implements HostMonito
       String hostId = ZKPaths.getNodeFromPath(child.getPath());
       HostConfig config = deserialize(hostId, child.getData());
 
-      String imageDs = config.getImage_datastore_id();
-      Datastore tmpDs = null;
-      for (Datastore ds : config.getDatastores()) {
-        if (ds.getId().equals(imageDs)) {
-          tmpDs = ds;
-          break;
+      for (String imageDs : config.getImage_datastore_ids()) {
+        Datastore tmpDs = null;
+        for (Datastore ds : config.getDatastores()) {
+          if (ds.getId().equals(imageDs)) {
+            tmpDs = ds;
+            break;
+          }
         }
-      }
 
-      if (tmpDs == null) {
-        logger.warn("Image datastore id {} is specified, but doesn't exist in datastores", imageDs);
-      } else {
-        imageDatastores.add(tmpDs);
+        if (tmpDs == null) {
+          logger.warn("Image datastore id {} is specified, but doesn't exist in datastores", imageDs);
+        } else {
+          imageDatastores.add(tmpDs);
+        }
       }
     }
 
