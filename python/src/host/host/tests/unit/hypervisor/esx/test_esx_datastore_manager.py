@@ -41,10 +41,6 @@ class TestEsxDatastoreManager(unittest.TestCase):
         hypervisor = MagicMock()
         vim_client = MagicMock()
 
-        dstags = MagicMock()
-        dstags.get.return_value = []
-        common.services.register(ServiceName.DATASTORE_TAGS, dstags)
-
         vim_client.get_all_datastores.return_value = self.get_datastore_mock([
             # name, url, type, local
             ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],

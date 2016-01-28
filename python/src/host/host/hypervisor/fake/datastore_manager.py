@@ -30,7 +30,6 @@ class FakeDatastoreManager(DatastoreManager):
         self._datastore_names = datastores
         self._datastore_id_to_name = {}
         self._image_datastore = None
-        self.ds_user_tags = common.services.get(ServiceName.DATASTORE_TAGS)
 
         for name in datastores:
             ds_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(name)))
@@ -45,13 +44,7 @@ class FakeDatastoreManager(DatastoreManager):
         return [ds.id for ds in self._datastores]
 
     def get_datastores(self):
-        # Extend user defined tags into datastore's tags list
-        datastores = copy.copy(self._datastores)
-        user_tags = self.ds_user_tags.get()
-        for ds in datastores:
-            if ds.id in user_tags:
-                ds.tags.extend(user_tags[ds.id])
-        return datastores
+        return copy.copy(self._datastores)
 
     def image_datastores(self):
         if not self._image_datastore:
