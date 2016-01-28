@@ -31,7 +31,6 @@ from mock import patch
 from concurrent.futures import ThreadPoolExecutor
 from nose_parameterized import parameterized
 
-from common.datastore_tags import DatastoreTags
 from common.exclusive_set import ExclusiveSet
 from common.file_util import mkdtemp
 from common.mode import MODE, Mode
@@ -40,8 +39,7 @@ from common.service_name import ServiceName
 from common.state import State as CommonState
 from gen.flavors.ttypes import Flavor
 from gen.flavors.ttypes import QuotaLineItem
-from gen.host.ttypes import CopyImageRequest, SetAvailabilityZoneRequest, \
-    SetAvailabilityZoneResultCode
+from gen.host.ttypes import CopyImageRequest
 from gen.host.ttypes import CopyImageResultCode
 from gen.host.ttypes import CreateDiskResultCode
 from gen.host.ttypes import CreateDisksRequest
@@ -69,6 +67,8 @@ from gen.host.ttypes import PowerVmOpRequest
 from gen.host.ttypes import PowerVmOpResultCode
 from gen.host.ttypes import ReserveRequest
 from gen.host.ttypes import ReserveResultCode
+from gen.host.ttypes import SetAvailabilityZoneRequest
+from gen.host.ttypes import SetAvailabilityZoneResultCode
 from gen.host.ttypes import StartImageScanRequest
 from gen.host.ttypes import StartImageSweepRequest
 from gen.host.ttypes import StartImageOperationResultCode
@@ -137,8 +137,6 @@ class HostHandlerTestCase(unittest.TestCase):
         common.services.register(ServiceName.REQUEST_ID, threading.local())
         common.services.register(ServiceName.LOCKED_VMS, ExclusiveSet())
         common.services.register(ServiceName.MODE, Mode(self.state))
-        common.services.register(ServiceName.DATASTORE_TAGS,
-                                 DatastoreTags(self.state))
 
         self.agent_conf_dir = mkdtemp(delete=True)
         self.hostname = "localhost"

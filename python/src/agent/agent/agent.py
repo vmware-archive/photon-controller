@@ -40,7 +40,6 @@ from .agent_config import AgentConfig
 from .chairman_registrant import ChairmanRegistrant
 import common
 import common.file_util
-from common.datastore_tags import DatastoreTags
 from common.exclusive_set import ExclusiveSet
 from common.mode import Mode
 from common.plugin import load_plugins, thrift_services
@@ -183,10 +182,6 @@ class Agent:
         mode = Mode(state)
         mode.on_change(self._registrant.trigger_chairman_update)
         common.services.register(ServiceName.MODE, mode)
-
-        ds_tags = DatastoreTags(state)
-        ds_tags.on_change(self._registrant.trigger_chairman_update)
-        common.services.register(ServiceName.DATASTORE_TAGS, ds_tags)
 
     def _dump_threads(self, signum, frame):
         result = []
