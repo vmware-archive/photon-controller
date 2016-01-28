@@ -28,7 +28,6 @@ from kazoo.protocol.states import EventType
 
 from nose.plugins.skip import SkipTest
 
-from thrift import TSerialization
 from thrift.TSerialization import deserialize
 from thrift.transport import TTransport
 
@@ -42,7 +41,6 @@ from agent_common_tests import rpc_call
 from agent_common_tests import VmWrapper
 from gen.common.ttypes import ServerAddress
 from gen.agent import AgentControl
-import gen.hypervisor.esx.ttypes
 from gen.agent.ttypes import ProvisionRequest
 from gen.agent.ttypes import ProvisionResultCode
 from gen.host import Host
@@ -110,12 +108,6 @@ from scheduler.tests.base_kazoo_test import BaseKazooTestCase
 
 
 logger = logging.getLogger(__name__)
-
-
-def hypervisor_config(config):
-    esx_config_type = gen.hypervisor.esx.ttypes.EsxConfig()
-    return TSerialization.deserialize(esx_config_type,
-                                      config.hypervisor)
 
 
 class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
