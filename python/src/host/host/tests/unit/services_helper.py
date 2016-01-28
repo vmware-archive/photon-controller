@@ -15,7 +15,6 @@ from concurrent.futures import ThreadPoolExecutor
 from mock import MagicMock
 
 import common
-from common.datastore_tags import DatastoreTags
 from common.mode import Mode
 from common.service_name import ServiceName
 from common.state import State
@@ -36,8 +35,6 @@ class ServicesHelper:
         common.services.register(ServiceName.MODE,
                                  Mode(State(self.state_file)))
         common.services.register(ServiceName.AGENT_CONFIG, MagicMock())
-        common.services.register(ServiceName.DATASTORE_TAGS,
-                                 DatastoreTags(State(self.state_file)))
 
     def teardown(self):
         common.services.reset()
