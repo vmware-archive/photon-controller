@@ -67,11 +67,6 @@ class EsxHypervisor(object):
     def uuid(self):
         return self._uuid
 
-    @property
-    def config(self):
-        config = gen.hypervisor.esx.ttypes.EsxConfig()
-        return TSerialization.serialize(config)
-
     def check_image(self, image_id, datastore_id):
         return self.image_manager.check_image(
             image_id, self.datastore_manager.datastore_name(datastore_id)

@@ -13,19 +13,6 @@
 
 namespace py gen.hypervisor.esx
 
-struct EsxConfig {
-  1: optional string ssl_thumbprint
-  2: optional list<string> heartbeat_datastore
-  3: optional list<string> mac
-  4: optional string host_name
-  5: optional string host_id
-  6: optional list<string> ip_address
-  7: optional i16 hostd_port
-  8: optional string version
-  9: optional string build
- 10: optional string master
-}
-
 struct MigrationDiskSpec {
   1: optional i32 unit_number
   2: optional i32 bus_number

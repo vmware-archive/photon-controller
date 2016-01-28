@@ -63,12 +63,6 @@ class FakeHypervisor(object):
     def uuid(self):
         return self._uuid
 
-    @property
-    def config(self):
-        config = gen.hypervisor.fake.ttypes.FakeConfig()
-        config.fake_id = "value"
-        return TSerialization.serialize(config)
-
     def check_image(self, image_id, datastore_id):
         return self.image_manager.\
             check_image(image_id, datastore_id)
