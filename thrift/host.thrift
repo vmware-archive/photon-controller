@@ -21,23 +21,6 @@ include 'scheduler.thrift'
 include 'server_address.thrift'
 include 'tracing.thrift'
 
-
-struct SetResourceTagsRequest {
-  1: optional map<string, set<string>> datastore_tags
-
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum SetResourceTagsResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-}
-
-struct SetResourceTagsResponse {
-  1: required SetResourceTagsResultCode result
-  2: optional string error
-}
-
 // The current status of the agent
 enum AgentStatusCode {
    // The agent is up and running and can accept thrift calls.
@@ -997,9 +980,6 @@ service Host {
 
   GetDatastoresResponse get_datastores(1: GetDatastoresRequest request)
   GetNetworksResponse get_networks(1: GetNetworksRequest request)
-
-  // Set datastore tags
-  SetResourceTagsResponse set_resource_tags(1: SetResourceTagsRequest request)
 
   // Get/set host mode
   GetHostModeResponse get_host_mode(1: GetHostModeRequest request)

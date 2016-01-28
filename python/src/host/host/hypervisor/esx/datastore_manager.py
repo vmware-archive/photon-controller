@@ -13,9 +13,7 @@ import copy
 import logging
 import threading
 
-import common
 from common.lock import locked
-from common.service_name import ServiceName
 from gen.resource.constants import LOCAL_VMFS_TAG
 from gen.resource.constants import SHARED_VMFS_TAG
 from gen.resource.constants import NFS_TAG
@@ -33,7 +31,6 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         self._hypervisor = hypervisor
         self._configured_datastores = datastores
         self._configured_image_datastores = image_datastores
-        self.ds_user_tags = common.services.get(ServiceName.DATASTORE_TAGS)
         self._initialize_datastores()
 
     @locked
@@ -91,14 +88,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
 
     @locked
     def get_datastores(self):
-        # Extend user defined tags into datastore's tags list
-        datastores = copy.copy(self._datastores)
-        user_tags = self.ds_user_tags.get()
-        for ds in datastores:
-            if ds.id in user_tags:
-                # ds.tags are builtin tags saved while initiating.
-                ds.tags = list(set(ds.tags).union(user_tags[ds.id]))
-        return datastores
+        return copy.copy(self._datastores)
 
     @locked
     def image_datastores(self):
