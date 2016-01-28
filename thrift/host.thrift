@@ -58,18 +58,10 @@ struct HostConfig {
   // host:port this agent listens to
   4: required server_address.ServerAddress address
   5: optional list<resource.Network> networks
-  6: optional binary hypervisor
-  7: optional roles.Roles roles
-  // A uuid that corrosponds to only one datastore
-  // in the datastores list
-  8: optional string image_datastore_id
 
   // Whether the host is management only. Default as False.
   9: optional bool management_only
 
-  // Image datastore IDs. Note that it's possible for the host to have multiple
-  // image datastores.
-  // TODO(mmutsuzaki) deprecate the image_datastore_id field.
   10: optional set<string> image_datastore_ids
   11: optional i32 memory_mb
   12: optional i32 cpu_count
