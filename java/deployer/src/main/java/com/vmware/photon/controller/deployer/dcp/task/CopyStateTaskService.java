@@ -223,7 +223,6 @@ public class CopyStateTaskService extends StatefulService {
         .addBooleanClause(typeClause)
         .addBooleanClause(timeClause);
     querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-    ServiceUtils.logInfo(this, Utils.toJson(QueryTask.create(querySpec).setDirect(true)));
 
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {
       @Override
@@ -243,7 +242,6 @@ public class CopyStateTaskService extends StatefulService {
         .setCompletion(handler);
 
     AuthenticationUtils.addSystemUserAuthcontext(post, getSystemAuthorizationContext());
-    ServiceUtils.logInfo(this, Utils.toJson(post));
     sendRequest(post);
   }
 
@@ -294,12 +292,10 @@ public class CopyStateTaskService extends StatefulService {
         .orElse(0);
     final long newLastUpdateTime = Math.max(lastUpdateTime, lastUpdateTimeOnPage);
 
-    ServiceUtils.logInfo(this, "Before storing, delete documents so that there are no dupes.");
     OperationJoin
         .create(results.documents.values().stream()
             .map(document -> {
               String documentId = extractId(document, currentState.sourceFactoryLink);
-              ServiceUtils.logInfo(this, "%s", "Removing: %s", documentId);
               return buildDeleteOperation(destinationFactoryURI + "/" + documentId);
             }))
         .setCompletion((opers, execptions) -> {
@@ -307,12 +303,10 @@ public class CopyStateTaskService extends StatefulService {
             // Ignore delete not found error
           }
 
-          ServiceUtils.logInfo(this, "Storing documents.");
           OperationJoin
               .create(results.documents.values().stream()
                   .map(document -> {
                     Object json = removeFactoryPathFromSelfLink(document, currentState.sourceFactoryLink);
-                    ServiceUtils.logInfo(this, "%s", "Storing: " + Utils.toJsonHtml(json));
                     return buildPostOperation(json, destinationFactoryURI, currentState);
                   }))
               .setCompletion((ops, exs) -> {
@@ -320,7 +314,6 @@ public class CopyStateTaskService extends StatefulService {
                   failTask(exs);
                   return;
                 }
-                ServiceUtils.logInfo(this, "Stored " + results.documents.size() + " documents.");
                 continueWithNextPage(results, currentState, newLastUpdateTime);
               })
               .sendWith(this);
@@ -352,7 +345,6 @@ public class CopyStateTaskService extends StatefulService {
         if (!factoryServiceLink.endsWith("/")) {
           factoryServiceLink += "/";
         }
-        ServiceUtils.logInfo(this, "Factory1: " + factoryServiceLink + "-" + currentState.factoryLink);
         if (factoryServiceLink.equals(currentState.factoryLink)) {
           FactoryService factoryInstance = (FactoryService) factoryService.newInstance();
 
@@ -372,8 +364,6 @@ public class CopyStateTaskService extends StatefulService {
   private Object handleRenamedFields(Object document, State currentState) throws Throwable {
     Object result = document;
     if (currentState.destinationServiceClassName != null) {
-      ServiceUtils.logInfo(this, "Some fields are renamed for this servicedocument " + currentState
-          .destinationServiceClassName);
       // Serialize original document into destination
       Class<?> destinationDoc = Class.forName(currentState.destinationServiceClassName);
       @SuppressWarnings("unchecked")
@@ -382,9 +372,6 @@ public class CopyStateTaskService extends StatefulService {
       UpgradeUtils.handleRenamedField(document, convertedServiceDocument);
       // Convert it back to json
       result = Utils.toJson(convertedServiceDocument);
-      ServiceUtils.logInfo(this, "Json converted document with fields " + result.toString());
-    } else {
-      ServiceUtils.logInfo(this, "destinationServiceClassName is null");
     }
 
     return result;
