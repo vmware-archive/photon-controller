@@ -807,7 +807,6 @@ class AgentCommonTests(object):
         response = self.host_client.get_host_config(request)
         assert_that(response.hostConfig.agent_id,
                     matches_regexp("[0-9a-f-]{36}"))
-        assert_that(response.hostConfig.hypervisor, not_none())
         datastores = response.hostConfig.datastores
         assert_that(datastores, has_length(len(self.get_all_datastores())))
         for datastore in datastores:
