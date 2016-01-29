@@ -10,7 +10,7 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
-"""Common agent tests which can be run against a local or remote agent"""
+""" Common agent tests which can be run against a local or remote agent"""
 
 import logging
 import time
