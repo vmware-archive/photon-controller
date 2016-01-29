@@ -135,9 +135,9 @@ public class ResourceReserveStepCmd extends StepCommand {
     String reservation;
     if (infrastructureEntity.getKind() == Vm.KIND) {
       String targetHostIp = ((VmEntity) infrastructureEntity).getHostAffinity();
-      reservation = loadReservation(resource, targetHostIp);
+      reservation = loadReservation(resource, targetHostIp, infrastructureEntity.getKind());
     } else {
-      reservation = loadReservation(resource);
+      reservation = loadReservation(resource, infrastructureEntity.getKind());
     }
     taskCommand.setReservation(reservation);
   }
@@ -179,33 +179,25 @@ public class ResourceReserveStepCmd extends StepCommand {
   }
 
   private ResourceConstraint createImageSeedingResourceConstraints() {
-    List<String> candidateImageDatastores = (List<String>) step.getTask().getTransientResources
+    Object candidateImageDatastores = step.getTask().getTransientResources
         (ImageSeedingProgressCheckStepCmd.CANDIDATE_IMAGE_STORES_KEY_NAME);
 
-    if (candidateImageDatastores.isEmpty()) {
+    if (candidateImageDatastores == null || ((List<String>) candidateImageDatastores).isEmpty()) {
       return null;
-    } else {
-      ResourceConstraint resourceConstraint = new ResourceConstraint();
-      resourceConstraint.setType(ResourceConstraintType.DATASTORE);
-      resourceConstraint.setValues(candidateImageDatastores);
-
-      return resourceConstraint;
     }
+
+    ResourceConstraint resourceConstraint = new ResourceConstraint();
+    resourceConstraint.setType(ResourceConstraintType.DATASTORE);
+    resourceConstraint.setValues((List<String>) candidateImageDatastores);
+
+    return resourceConstraint;
   }
 
   private Resource createResource(InfrastructureEntity entity)
       throws InternalException, ExternalException, ResourceConstraintException {
     switch (entity.getKind()) {
-      case Vm.KIND: {
-        Resource res = createResource((VmEntity) entity);
-
-        ResourceConstraint resourceConstraint = createImageSeedingResourceConstraints();
-        if (resourceConstraint != null) {
-          res.getVm().addToResource_constraints(resourceConstraint);
-        }
-
-        return res;
-      }
+      case Vm.KIND:
+        return createResource((VmEntity) entity);
       case EphemeralDisk.KIND:
       case PersistentDisk.KIND:
         return createResource((BaseDiskEntity) entity);
@@ -376,14 +368,14 @@ public class ResourceReserveStepCmd extends StepCommand {
     return resourceConstraints;
   }
 
-  private String loadReservation(Resource resource)
+  private String loadReservation(Resource resource, String entityKind)
       throws InterruptedException, ApiFeException, RpcException {
 
     // In regular cases, root scheduler is to be used to determine the target host/agent id.
-    return loadReservation(resource, null);
+    return loadReservation(resource, null, entityKind);
   }
 
-  private String loadReservation(Resource resource, String targetHostIp)
+  private String loadReservation(Resource resource, String targetHostIp, String entityKind)
       throws InterruptedException, ApiFeException, RpcException {
     int retries = 0;
 
@@ -392,12 +384,29 @@ public class ResourceReserveStepCmd extends StepCommand {
         PlaceResponse placeResponse;
         ReserveResponse reserveResponse;
         if (targetHostIp == null) {
+          ResourceConstraint resourceConstraint = null;
+          List<ResourceConstraint> origResourceConstraints = null;
+          if (entityKind == Vm.KIND) {
+            // Add constraints caused by unfinished image seeding
+            resourceConstraint = createImageSeedingResourceConstraints();
+
+            origResourceConstraints = resource.getVm().getResource_constraints();
+            if (resourceConstraint != null) {
+              resource.getVm().addToResource_constraints(resourceConstraint);
+            }
+          }
+
           placeResponse = taskCommand.getRootSchedulerClient().place(resource);
           ServerAddress serverAddress = placeResponse.getAddress();
           String hostIp = serverAddress.getHost();
           int port = serverAddress.getPort();
           logger.info("placed resource, agent host ip: {}, port: {}", hostIp, port);
           taskCommand.getHostClient().setIpAndPort(hostIp, port);
+
+          // Remove constraints added for unfinished image seeding
+          if (entityKind == Vm.KIND && resourceConstraint != null) {
+            resource.getVm().setResource_constraints(origResourceConstraints);
+          }
         } else {
           taskCommand.getHostClient().setHostIp(targetHostIp);
           placeResponse = taskCommand.getHostClient().place(resource);
