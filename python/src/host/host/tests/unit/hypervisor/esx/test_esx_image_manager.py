@@ -513,7 +513,6 @@ class TestEsxImageManager(unittest.TestCase):
                   return_value=False)
     def test_find_datastore_by_image_not_exist(self, _cavi):
         self.ds_manager.image_datastores.return_value = ["ds1"]
-        self.assertRaises(NoSuchResourceException,
-                          self.image_manager.find_datastore_by_image,
-                          "image_id")
+        image_ds = self.image_manager.find_datastore_by_image("image_id")
+        self.assertEqual(image_ds, None)
         _cavi.assert_called_once_with("image_id", "ds1")
