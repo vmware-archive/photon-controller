@@ -120,7 +120,7 @@ class ImageManager(object):
 
         This method tries to find any image datastore that has
         the given image. If found, it returns the datastore id.
-        Otherwise, it raises exception.
+        Otherwise, it returns None.
         """
         pass
 
