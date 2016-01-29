@@ -81,6 +81,44 @@ CONTENT
             EsxCloud::DeploymentCreateSpec.new(["image_datastore"], EsxCloud::AuthInfo.new(false))
           end
         end
+
+        context "when 'image_datastores' is specified as an array" do
+          let(:content) do
+<<CONTENT
+---
+deployment:
+  image_datastores:
+  - image_ds1
+  - image_ds2
+  auth_enabled: false
+CONTENT
+          end
+
+          it_behaves_like "import configuration" do
+            let(:file) { yml_file }
+            let(:spec) do
+              EsxCloud::DeploymentCreateSpec.new(["image_ds1", "image_ds2"], EsxCloud::AuthInfo.new(false))
+            end
+          end
+        end
+
+        context "when 'image_datastores' is specified as a comma delimited list" do
+          let(:content) do
+<<CONTENT
+---
+deployment:
+  image_datastores: image_ds1,image_ds2
+  auth_enabled: false
+CONTENT
+          end
+
+          it_behaves_like "import configuration" do
+            let(:file) { yml_file }
+            let(:spec) do
+              EsxCloud::DeploymentCreateSpec.new(["image_ds1", "image_ds2"], EsxCloud::AuthInfo.new(false))
+            end
+          end
+        end
       end
     end
 
