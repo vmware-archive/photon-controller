@@ -66,6 +66,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
 /**
  * This class implements tests for the {@link ClusterDeleteTaskService} class.
@@ -556,7 +557,7 @@ public class ClusterDeleteTaskServiceTest {
       assertThat(isClusterDeleted(startState.clusterId), is(true));
     }
 
-    @Test
+    @Test(expectedExceptions = TimeoutException.class)
     public void testDeleteClusterForInvalidClusterId() throws Throwable {
 
       mockGetClusterVms(0, true);

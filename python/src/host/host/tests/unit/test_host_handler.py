@@ -31,7 +31,6 @@ from mock import patch
 from concurrent.futures import ThreadPoolExecutor
 from nose_parameterized import parameterized
 
-from common.datastore_tags import DatastoreTags
 from common.exclusive_set import ExclusiveSet
 from common.file_util import mkdtemp
 from common.mode import MODE, Mode
@@ -53,10 +52,6 @@ from gen.host.ttypes import DeleteVmRequest
 from gen.host.ttypes import DeleteVmResultCode
 from gen.host.ttypes import DetachISORequest
 from gen.host.ttypes import DetachISOResultCode
-from gen.host.ttypes import EnterMaintenanceRequest
-from gen.host.ttypes import EnterMaintenanceResultCode
-from gen.host.ttypes import ExitMaintenanceRequest
-from gen.host.ttypes import ExitMaintenanceResultCode
 from gen.host.ttypes import GetConfigRequest
 from gen.host.ttypes import GetDeletedImagesRequest
 from gen.host.ttypes import GetHostModeRequest
@@ -70,10 +65,10 @@ from gen.host.ttypes import ImageInfoRequest
 from gen.host.ttypes import ImageInfoResultCode
 from gen.host.ttypes import PowerVmOpRequest
 from gen.host.ttypes import PowerVmOpResultCode
-from gen.host.ttypes import RegisterVmRequest
-from gen.host.ttypes import RegisterVmResultCode
 from gen.host.ttypes import ReserveRequest
 from gen.host.ttypes import ReserveResultCode
+from gen.host.ttypes import SetAvailabilityZoneRequest
+from gen.host.ttypes import SetAvailabilityZoneResultCode
 from gen.host.ttypes import StartImageScanRequest
 from gen.host.ttypes import StartImageSweepRequest
 from gen.host.ttypes import StartImageOperationResultCode
@@ -142,8 +137,6 @@ class HostHandlerTestCase(unittest.TestCase):
         common.services.register(ServiceName.REQUEST_ID, threading.local())
         common.services.register(ServiceName.LOCKED_VMS, ExclusiveSet())
         common.services.register(ServiceName.MODE, Mode(self.state))
-        common.services.register(ServiceName.DATASTORE_TAGS,
-                                 DatastoreTags(self.state))
 
         self.agent_conf_dir = mkdtemp(delete=True)
         self.hostname = "localhost"
@@ -699,6 +692,8 @@ class HostHandlerTestCase(unittest.TestCase):
 
         # Test lazy image copy
         assert_that(im.copy_image.called, is_(False))
+        im.find_datastore_by_image.return_value = \
+            list(dm.image_datastores())[0]
         im.check_and_validate_image.return_value = False
         pm.remove_vm_reservation.reset_mock()
         response = handler.create_vm(request)
@@ -1108,19 +1103,6 @@ class HostHandlerTestCase(unittest.TestCase):
         assert_that(response.result, equal_to(GetHostModeResultCode.OK))
         assert_that(response.mode, equal_to(HostMode.NORMAL))
 
-    def test_enter_exit_maintenance(self):
-        handler = HostHandler(MagicMock())
-        mode = common.services.get(ServiceName.MODE)
-        response = handler.enter_maintenance(EnterMaintenanceRequest())
-        assert_that(response.result,
-                    equal_to(EnterMaintenanceResultCode.ENTERING))
-        assert_that(mode.get_mode(), equal_to(MODE.ENTERING_MAINTENANCE))
-
-        response = handler.exit_maintenance(ExitMaintenanceRequest())
-        assert_that(response.result,
-                    equal_to(ExitMaintenanceResultCode.OK))
-        assert_that(mode.get_mode(), equal_to(MODE.NORMAL))
-
     def _sample_vm(self):
         flavor = Flavor(name="flavor", cost=[QuotaLineItem("a", "b", 1)])
         disks = [
@@ -1468,24 +1450,19 @@ class HostHandlerTestCase(unittest.TestCase):
         assert_that(response.result is
                     GetMonitoredImagesResultCode.DATASTORE_NOT_FOUND)
 
-    @parameterized.expand([
-        (InvalidReservationException, None,
-         RegisterVmResultCode.INVALID_RESERVATION),
-        (None, VmNotFoundException, RegisterVmResultCode.VM_NOT_FOUND),
-        (None, None, RegisterVmResultCode.OK),
-    ])
-    def test_register_vm(self, consume_reservation, register_vm, result):
-        hypervisor = MagicMock()
-        handler = HostHandler(hypervisor)
-        pm = hypervisor.placement_manager
-        pm.consume_vm_reservation.side_effect = consume_reservation
-        hypervisor.vm_manager.register_vm.side_effect = register_vm
+    def test_set_availability_zone(self):
+        """Test set_availability_zone against mock"""
+        handler = HostHandler(MagicMock())
 
-        request = RegisterVmRequest("vm_id", "ds_id", "reservation_id")
-        response = handler.register_vm(request)
+        # Setup request
+        request = SetAvailabilityZoneRequest()
+        request.availability_zone = "a_z"
 
-        assert_that(response.result, equal_to(result))
-        pm.remove_vm_reservation.assert_called_once_with(request.reservation)
+        # Test success
+        result = handler.set_availability_zone(request)
+
+        assert_that(result.result is SetAvailabilityZoneResultCode.OK)
+
 
 if __name__ == '__main__':
     unittest.main()

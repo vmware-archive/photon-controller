@@ -187,6 +187,12 @@ RSpec::Core::RakeTask.new(:housekeeper) do |task|
   task.rspec_opts = "--tag housekeeper --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow"
 end
 
+desc 'Run integration test for availability zone'
+RSpec::Core::RakeTask.new(:availabilityzone) do |task|
+  task.pattern = FileList['spec/availabilityzone/availability_zone_spec.rb']
+  task.rspec_opts = "--tag availabilityzone --format RspecJunitFormatter --out reports/rspec-availabilityzone.xml --tag ~slow"
+end
+
 desc 'Download esx logs'
 task :download_esx_logs do
   EsxCloud::LogBackUpHelpers.download_esx_logs

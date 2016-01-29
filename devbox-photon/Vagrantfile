@@ -282,6 +282,11 @@ Vagrant.configure("2") do |config|
   dynamic_params += "\n,  \"LOAD_BALANCER_SERVERS\": [ { \"serverName\": \"devbox-management-api\", \"serverAddress\": \"#{network_ip}:9000\" } ]"
 
   #
+  # Zookeeper
+  #
+  dynamic_params += "\n,  \"ZOOKEEPER_INSTANCES\": [ { \"zookeeperInstance\": \"server.1=#{network_ip}:2888:3888\" } ]"
+
+  #
   # Common
   #
   dynamic_params += "\n,  \"APIFE_IP\" : \"#{network_ip}\""
@@ -333,22 +338,6 @@ Vagrant.configure("2") do |config|
     #
     groupadd -f docker
   EOS
-
-   # ================ VM IMAGE FOR INTEGRATION TEST ================
-
-  #
-  # Download management VM image for deployer integration test
-  #
-  if ENV["DEPLOYER_INTEGRATION_TEST"]
-    config.vm.provision :shell, :inline => <<-EOS
-      set -ex
-      wget -N --no-verbose --no-check-certificate "https://ci.ec.eng.vmware.com/job/machines-stemcell-discus-ova/lastSuccessfulBuild/artifact/management-vm-discus/build/esxcloud-management-vm.ova"
-      mkdir -p #{MGMT_IMAGE_DIR}
-      tar xvf esxcloud-management-vm.ova esxcloud-management-vm-disk1.vmdk
-      cp esxcloud-management-vm-disk1.vmdk #{MGMT_IMAGE_DIR}
-      rm -f esxcloud-management-vm-disk1.vmdk
-    EOS
-  end
 
   # ================ PROVISIONING ================
 

@@ -43,17 +43,11 @@ from gen.host.ttypes import MksTicketRequest
 from gen.host.ttypes import MksTicketResultCode
 from gen.host.ttypes import NicConnectionSpec
 from gen.host.ttypes import NetworkConnectionSpec
-from gen.host.ttypes import RegisterVmRequest
-from gen.host.ttypes import RegisterVmResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from gen.host.ttypes import SetHostModeRequest
 from gen.host.ttypes import SetHostModeResultCode
-from gen.host.ttypes import SetResourceTagsRequest
-from gen.host.ttypes import SetResourceTagsResultCode
-from gen.host.ttypes import UnregisterVmRequest
-from gen.host.ttypes import UnregisterVmResultCode
 from gen.agent.ttypes import PingRequest
 from gen.agent.ttypes import ProvisionRequest
 from gen.agent.ttypes import ProvisionResultCode
@@ -314,11 +308,6 @@ class AgentCommonTests(object):
 
     DEFAULT_DISK_FLAVOR = Flavor("default", [])
 
-    def clear_datastore_tags(self):
-        response = self.host_client.set_resource_tags(
-            SetResourceTagsRequest())
-        assert_that(response.result, equal_to(SetResourceTagsResultCode.OK))
-
     def set_host_mode(self, mode):
         response = self.host_client.set_host_mode(SetHostModeRequest(mode))
         assert_that(response.result, equal_to(SetHostModeResultCode.OK))
@@ -383,13 +372,6 @@ class AgentCommonTests(object):
 
         vm.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
         vm.delete()
-
-    def test_agent_load(self):
-        """Test that the agent responds to a load API request."""
-        load_req = Host.LoadRequest()
-        response = self.host_client.load(load_req)
-
-        assert_that(response.load, greater_than(0))
 
     def test_create_delete_vm(self):
         """Test that the agent can create and delete a VM."""
@@ -837,29 +819,6 @@ class AgentCommonTests(object):
                        if NetworkType.VM in network.types]
         assert_that(len(vm_networks), greater_than_or_equal_to(1))
 
-    def test_set_datastore_tags(self):
-        request = Host.GetConfigRequest()
-        response = self.host_client.get_host_config(request)
-        datastores = response.hostConfig.datastores
-        assert_that(datastores, has_length(len(self.get_all_datastores())))
-
-        tags = {}
-        for datastore in datastores:
-            tags[datastore.id] = set(["tag1", "tag2"])
-
-        request = SetResourceTagsRequest()
-        request.datastore_tags = tags
-        response = self.host_client.set_resource_tags(request)
-        assert_that(response.result, equal_to(SetResourceTagsResultCode.OK))
-
-        request = Host.GetConfigRequest()
-        response = self.host_client.get_host_config(request)
-        datastores = response.hostConfig.datastores
-        assert_that(datastores, has_length(len(self.get_all_datastores())))
-
-        for datastore in datastores:
-            assert_that(datastore.tags, has_items("tag1", "tag2"))
-
     def test_get_mode(self):
         response = self.host_client.get_host_mode(GetHostModeRequest())
         assert_that(response.result, equal_to(GetHostModeResultCode.OK))
@@ -1176,27 +1135,4 @@ class AgentCommonTests(object):
 
         # delete the vm
         vm_wrapper.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
-        vm_wrapper.delete()
-
-    def test_register_unregister_vm(self):
-        vm_wrapper = VmWrapper(self.host_client)
-
-        # create a vm without disk
-        reservation = vm_wrapper.place_and_reserve().reservation
-        request = vm_wrapper.create_request(res_id=reservation)
-        vm = vm_wrapper.create(request=request).vm
-
-        request = UnregisterVmRequest("no_such_vm")
-        response = self.host_client.unregister_vm(request)
-        assert_that(response.result,
-                    equal_to(UnregisterVmResultCode.VM_NOT_FOUND))
-
-        request = UnregisterVmRequest(vm.id)
-        response = self.host_client.unregister_vm(request)
-        assert_that(response.result, equal_to(UnregisterVmResultCode.OK))
-
-        request = RegisterVmRequest(vm.id, vm.datastore.id)
-        response = self.host_client.register_vm(request)
-        assert_that(response.result, equal_to(RegisterVmResultCode.OK))
-
         vm_wrapper.delete()

@@ -437,20 +437,3 @@ class VmManager(object):
         :raise TimeoutError
         """
         pass
-
-    @abc.abstractmethod
-    def register_vm(self, datastore_id, vm_id):
-        """Register a VM from datastore
-        :param datastore_id: datastore id of the VM
-        :param vm_id: id of the vm to register
-        :raise VmNotFoundException
-        """
-        pass
-
-    @abc.abstractmethod
-    def unregister_vm(self, vm_id):
-        """Unregister an existing VM
-        :param vm_id:
-        :raise VmNotFoundException
-        """
-        pass

@@ -107,6 +107,8 @@ public class StepCommandFactory {
   public StepCommand createCommand(TaskCommand taskCommand, StepEntity stepEntity) throws InternalException {
     checkNotNull(stepEntity);
     switch (stepEntity.getOperation()) {
+      case IMAGE_SEEDING_PROGRESS_CHECK:
+        return new ImageSeedingProgressCheckStepCmd(taskCommand, stepBackend, stepEntity, imageBackend);
       case RESERVE_RESOURCE:
         return new ResourceReserveStepCmd(
             taskCommand, stepBackend, stepEntity, diskBackend, vmBackend, networkBackend, flavorBackend);
@@ -163,6 +165,8 @@ public class StepCommandFactory {
         return new HostEnterMaintenanceModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend, vmBackend);
       case EXIT_MAINTENANCE_MODE:
         return new HostExitMaintenanceModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
+      case SET_AVAILABILITYZONE:
+        return new HostSetAvailabilityZoneStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case PREPARE_DEPLOYMENT:
         return new DeploymentImageConfigUpdateStepCmd(
             taskCommand, stepBackend, stepEntity, deploymentBackend, hostBackend, imageConfig);

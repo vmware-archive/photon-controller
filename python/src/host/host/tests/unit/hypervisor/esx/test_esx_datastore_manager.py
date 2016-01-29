@@ -16,8 +16,6 @@ from mock import MagicMock
 
 from hamcrest import *  # noqa
 
-import common
-from common.service_name import ServiceName
 from gen.resource.constants import LOCAL_VMFS_TAG
 from gen.resource.constants import SHARED_VMFS_TAG
 from gen.resource.constants import NFS_TAG
@@ -40,10 +38,6 @@ class TestEsxDatastoreManager(unittest.TestCase):
         """
         hypervisor = MagicMock()
         vim_client = MagicMock()
-
-        dstags = MagicMock()
-        dstags.get.return_value = []
-        common.services.register(ServiceName.DATASTORE_TAGS, dstags)
 
         vim_client.get_all_datastores.return_value = self.get_datastore_mock([
             # name, url, type, local

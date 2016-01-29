@@ -13,7 +13,6 @@
 """Module to manage ESX modules"""
 
 import atexit
-import copy
 import logging
 
 from thrift import TSerialization
@@ -72,21 +71,6 @@ class EsxHypervisor(object):
     def config(self):
         config = gen.hypervisor.esx.ttypes.EsxConfig()
         return TSerialization.serialize(config)
-
-    def normalized_load(self):
-        """ Return the maximum of the normalized memory/cpu loads"""
-        memory = self.system.memory_info()
-        memory_load = memory.used * 100 / memory.total
-
-        # get average cpu load percentage in past 20 seconds
-        # since hostd takes a sample in every 20 seconds
-        # we use the min 20secs here to get the latest
-        # CPU active average over 1 minute
-        host_stats = copy.copy(self.vim_client.get_perf_manager_stats(20))
-
-        cpu_load = host_stats['rescpu.actav1'] / 100
-
-        return max(memory_load, cpu_load)
 
     def check_image(self, image_id, datastore_id):
         return self.image_manager.check_image(

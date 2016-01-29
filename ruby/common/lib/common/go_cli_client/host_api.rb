@@ -116,6 +116,13 @@ module EsxCloud
       def host_resume(id)
         @api_client.host_resume(id)
       end
+
+      # @param [String] host_id
+      # @param [Hash] payload
+      # @return [Host]
+      def host_set_availability_zone(host_id, payload)
+        @api_client.host_set_availability_zone(host_id, payload)
+      end
     end
   end
 end

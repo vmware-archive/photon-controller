@@ -28,12 +28,13 @@ from common.photon_thrift.decorators import log_request
 from common.lock import lock_with
 from common.lock import AlreadyLocked
 from common.lock_vm import lock_vm
-from common.mode import MODE, ModeTransitionError
+from common.mode import MODE
 from common.service_name import ServiceName
 from gen.agent import AgentControl
 from gen.common.ttypes import ServerAddress
 from gen.host import Host
-from gen.host.ttypes import AgentStatusCode
+from gen.host.ttypes import AgentStatusCode, SetAvailabilityZoneResponse, \
+    SetAvailabilityZoneResultCode
 from gen.host.ttypes import AgentStatusResponse
 from gen.host.ttypes import AttachISOResponse
 from gen.host.ttypes import AttachISOResultCode
@@ -59,14 +60,8 @@ from gen.host.ttypes import DeleteDirectoryResponse
 from gen.host.ttypes import DeleteDirectoryResultCode
 from gen.host.ttypes import DeleteVmResponse
 from gen.host.ttypes import DeleteVmResultCode
-from gen.host.ttypes import DeprovisionResponse
-from gen.host.ttypes import DeprovisionResultCode
 from gen.host.ttypes import DetachISOResponse
 from gen.host.ttypes import DetachISOResultCode
-from gen.host.ttypes import EnterMaintenanceResponse
-from gen.host.ttypes import EnterMaintenanceResultCode
-from gen.host.ttypes import ExitMaintenanceResponse
-from gen.host.ttypes import ExitMaintenanceResultCode
 from gen.host.ttypes import GetConfigResponse
 from gen.host.ttypes import GetConfigResultCode
 from gen.host.ttypes import GetDatastoresResponse
@@ -89,8 +84,6 @@ from gen.host.ttypes import HttpTicketResponse
 from gen.host.ttypes import HttpTicketResultCode
 from gen.host.ttypes import ImageInfoResponse
 from gen.host.ttypes import ImageInfoResultCode
-from gen.host.ttypes import LoadResponse
-from gen.host.ttypes import LoadResultCode
 from gen.host.ttypes import MksTicketResponse
 from gen.host.ttypes import MksTicketResultCode
 from gen.host.ttypes import GetMonitoredImagesResultCode
@@ -99,8 +92,6 @@ from gen.host.ttypes import PowerVmOpResponse
 from gen.host.ttypes import PowerVmOpResultCode
 from gen.host.ttypes import ReceiveImageResponse
 from gen.host.ttypes import ReceiveImageResultCode
-from gen.host.ttypes import RegisterVmResponse
-from gen.host.ttypes import RegisterVmResultCode
 from gen.host.ttypes import ReserveResponse
 from gen.host.ttypes import ReserveResultCode
 from gen.host.ttypes import ServiceTicketResponse
@@ -108,8 +99,6 @@ from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from gen.host.ttypes import SetHostModeResponse
 from gen.host.ttypes import SetHostModeResultCode
-from gen.host.ttypes import SetResourceTagsResponse
-from gen.host.ttypes import SetResourceTagsResultCode
 from gen.host.ttypes import StartImageOperationResultCode
 from gen.host.ttypes import StartImageScanResponse
 from gen.host.ttypes import StartImageSweepResponse
@@ -117,8 +106,6 @@ from gen.host.ttypes import StopImageOperationResultCode
 from gen.host.ttypes import StopImageOperationResponse
 from gen.host.ttypes import TransferImageResponse
 from gen.host.ttypes import TransferImageResultCode
-from gen.host.ttypes import UnregisterVmResponse
-from gen.host.ttypes import UnregisterVmResultCode
 from gen.host.ttypes import VmDisksOpResponse
 from gen.host.ttypes import VmDiskOpResultCode
 
@@ -308,17 +295,6 @@ class HostHandler(Host.Iface):
         return self.get_host_config_no_logging(request)
 
     @log_request
-    @error_handler(SetResourceTagsResponse, SetResourceTagsResultCode)
-    def set_resource_tags(self, request):
-        """
-        :type request: SetResourceTagsRequest
-        :rtype: SetResourceTagsResponse
-        """
-        datastore_tags = common.services.get(ServiceName.DATASTORE_TAGS)
-        datastore_tags.set(request.datastore_tags)
-        return SetResourceTagsResponse(SetResourceTagsResultCode.OK)
-
-    @log_request
     @error_handler(GetHostModeResponse, GetHostModeResultCode)
     def get_host_mode(self, request):
         """
@@ -341,86 +317,6 @@ class HostHandler(Host.Iface):
         mode_name = HostMode._VALUES_TO_NAMES[request.mode]
         mode.set_mode(getattr(MODE, mode_name))
         return SetHostModeResponse(GetHostModeResultCode.OK)
-
-    @log_request
-    @error_handler(EnterMaintenanceResponse, EnterMaintenanceResultCode)
-    def enter_maintenance(self, request):
-        mode = common.services.get(ServiceName.MODE)
-
-        try:
-            # Try changing mode from NORMAL to ENTERING_MAINTENANCE
-            mode.set_mode(MODE.ENTERING_MAINTENANCE, [MODE.NORMAL])
-        except ModeTransitionError as e:
-            # If the mode is already MAINTENANCE, return OK.
-            if e.from_mode == MODE.MAINTENANCE:
-                return EnterMaintenanceResponse(EnterMaintenanceResultCode.OK)
-            else:
-                # Impossible
-                raise
-
-        # Return ENTERING and the list of VMs on the host.
-
-        # Note: It's possible that the result is ENTERING and the list of
-        # VMs is empty. Just ignore it and call get_mode() or
-        # enter_maintenance(), it will be eventually consistent and return OK,
-        # and the mode is MAINTENANCE.
-        vm_ids = self._hypervisor.vm_manager.get_resource_ids()
-        return EnterMaintenanceResponse(EnterMaintenanceResultCode.ENTERING,
-                                        vm_ids=vm_ids)
-
-    @log_request
-    @error_handler(ExitMaintenanceResponse, ExitMaintenanceResultCode)
-    def exit_maintenance(self, request):
-        mode = common.services.get(ServiceName.MODE)
-
-        try:
-            # Only allow to exit maintenance when the agent is not in
-            # deprovisioned mode
-            mode.set_mode(MODE.NORMAL,
-                          [MODE.MAINTENANCE, MODE.ENTERING_MAINTENANCE])
-            return ExitMaintenanceResponse(ExitMaintenanceResultCode.OK)
-        except ModeTransitionError as e:
-            error_msg = "Cannot switch to NORMAL from %s" % e.from_mode
-            self._logger.info(error_msg)
-            return ExitMaintenanceResponse(
-                result=ExitMaintenanceResultCode.INVALID_STATE,
-                error=error_msg)
-        except Exception as e:
-            self._logger.warning("Cannot switch to NORMAL", exc_info=True)
-            return ExitMaintenanceResponse(
-                ExitMaintenanceResultCode.SYSTEM_ERROR, error=str(e))
-
-    @log_request
-    @error_handler(DeprovisionResponse, DeprovisionResultCode)
-    def deprovision(self, request):
-        mode = common.services.get(ServiceName.MODE)
-        agent_config = common.services.get(ServiceName.AGENT_CONFIG)
-
-        try:
-            mode.set_mode(MODE.DEPROVISIONED, [MODE.MAINTENANCE])
-            agent_config.delete_config()
-        except ModeTransitionError as e:
-            error_msg = "Cannot switch to DEPROVISIONED from %s" % e.from_mode
-            self._logger.info(error_msg)
-            return DeprovisionResponse(
-                result=DeprovisionResultCode.INVALID_STATE,
-                error=error_msg)
-
-        return DeprovisionResponse(result=DeprovisionResultCode.OK)
-
-    @log_request
-    @error_handler(LoadResponse, LoadResultCode)
-    def load(self, request):
-        """Return system utilization for load balancing.
-
-        :type request: LoadRequest
-        :rtype: LoadResponse
-        """
-        response = LoadResponse()
-        rc = LoadResultCode
-        response.result = rc.OK
-        response.load = self.hypervisor.normalized_load()
-        return response
 
     @log_request
     @error_handler(ReserveResponse, ReserveResultCode)
@@ -545,19 +441,14 @@ class HostHandler(Host.Iface):
         # Step 0: Lazy copy image to datastore
         image_id = self.hypervisor.image_manager.get_image_id_from_disks(
             vm.disks)
-        # TODO(mmutsuzaki) Iterate over all the image datastores until we find
-        # one that has the image.
-        image_datastores = self.hypervisor.datastore_manager.image_datastores()
-        if image_datastores:
-            image_datastore = list(image_datastores)[0]
-        else:
-            image_datastore = None
 
         if image_id and not self.hypervisor.image_manager.\
                 check_and_validate_image(image_id, datastore_id):
             self._logger.info("Lazy copying image %s to %s" % (image_id,
                                                                datastore_id))
             try:
+                image_datastore = self.hypervisor.image_manager.\
+                    find_datastore_by_image(image_id)
                 self.hypervisor.image_manager.copy_image(image_datastore,
                                                          image_id,
                                                          datastore_id,
@@ -772,39 +663,6 @@ class HostHandler(Host.Iface):
                 rc.VM_NOT_POWERED_OFF,
                 "VM %s not powered off" % request.vm_id,
                 response)
-
-    @log_request
-    @error_handler(RegisterVmResponse, RegisterVmResultCode)
-    def register_vm(self, request):
-        try:
-            if request.reservation:
-                self.hypervisor.placement_manager.consume_vm_reservation(
-                    request.reservation)
-            self.hypervisor.vm_manager.register_vm(request.datastore_id,
-                                                   request.vm_id)
-        except VmNotFoundException as e:
-            self._logger.info("VM not found: %s", request.vm_id)
-            return RegisterVmResponse(RegisterVmResultCode.VM_NOT_FOUND,
-                                      str(e))
-        except InvalidReservationException as e:
-            self._logger.warn("Invalid reservation: %s", request.reservation)
-            return RegisterVmResponse(RegisterVmResultCode.INVALID_RESERVATION,
-                                      str(e))
-        finally:
-            if request.reservation:
-                self.hypervisor.placement_manager.remove_vm_reservation(
-                    request.reservation)
-        return RegisterVmResponse(RegisterVmResultCode.OK)
-
-    @log_request
-    @error_handler(UnregisterVmResponse, UnregisterVmResultCode)
-    def unregister_vm(self, request):
-        try:
-            self.hypervisor.vm_manager.unregister_vm(request.vm_id)
-        except VmNotFoundException as e:
-            return UnregisterVmResponse(UnregisterVmResultCode.VM_NOT_FOUND,
-                                        str(e))
-        return UnregisterVmResponse(UnregisterVmResultCode.OK)
 
     @log_request
     @error_handler(GetResourcesResponse, GetResourcesResultCode)
@@ -1845,14 +1703,25 @@ class HostHandler(Host.Iface):
         agent_control_handler = common.services.get(AgentControl.Iface)
         return agent_control_handler.provision(request)
 
+    @log_request
+    @error_handler(SetAvailabilityZoneResponse, SetAvailabilityZoneResultCode)
     def set_availability_zone(self, request):
         """
-        Set availability zone.
+        Sets/Updates availability zone of host.
+
         :type request: SetAvailabilityZoneRequest
         :rtype: SetAvailabilityZoneResponse
         """
-        agent_control_handler = common.services.get(AgentControl.Iface)
-        return agent_control_handler.set_availability_zone(request)
+        try:
+            agent_config = common.services.get(ServiceName.AGENT_CONFIG)
+            agent_config.set_availability_zone(request)
+        except Exception, e:
+            self._logger.warning("Unexpected exception", exc_info=True)
+            return SetAvailabilityZoneResponse(
+                SetAvailabilityZoneResultCode.SYSTEM_ERROR,
+                str(e))
+
+        return SetAvailabilityZoneResponse(SetAvailabilityZoneResultCode.OK)
 
     @log_request
     @error_handler(ServiceTicketResponse, ServiceTicketResultCode)

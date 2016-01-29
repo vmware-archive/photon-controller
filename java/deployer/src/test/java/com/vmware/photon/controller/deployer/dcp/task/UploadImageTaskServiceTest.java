@@ -14,14 +14,19 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ImagesApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
+import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ApiTestUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
@@ -108,6 +113,7 @@ public class UploadImageTaskServiceTest {
       DeployerContext deployerContext,
       ListeningExecutorService listeningExecutorService,
       ApiClientFactory apiClientFactory,
+      ServerSet cloudServerSet,
       int hostCount)
       throws Throwable {
 
@@ -115,6 +121,7 @@ public class UploadImageTaskServiceTest {
         .deployerContext(deployerContext)
         .apiClientFactory(apiClientFactory)
         .listeningExecutorService(listeningExecutorService)
+        .cloudServerSet(cloudServerSet)
         .hostCount(hostCount)
         .build();
   }
@@ -531,6 +538,7 @@ public class UploadImageTaskServiceTest {
   public class EndToEndTest {
 
     private TestEnvironment machine;
+    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
     private ApiClientFactory apiClientFactory;
@@ -540,6 +548,7 @@ public class UploadImageTaskServiceTest {
     private TasksApi tasksApi;
     private Task taskReturnedByUploadImage;
     private Task taskReturnedByGetTask;
+    private ImageService.State imageState;
 
     @BeforeClass
     public void setUpClass() throws Exception {
@@ -565,6 +574,29 @@ public class UploadImageTaskServiceTest {
       startState.controlFlags = 0;
       startState.queryUploadImageTaskInterval = 10;
 
+      imageState = new ImageService.State();
+      imageState.name = "imageName";
+      imageState.replicationType = ImageReplicationType.ON_DEMAND;
+      imageState.state = ImageState.READY;
+      imageState.totalDatastore = 10;
+      imageState.totalImageDatastore = 5;
+      imageState.replicatedImageDatastore = 5;
+
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      machine = createTestEnvironment(
+          deployerContext,
+          listeningExecutorService,
+          apiClientFactory,
+          cloudStoreMachine.getServerSet(),
+          1);
+
+      ImageService.State savedImageState = cloudStoreMachine.callServiceAndWaitForState(
+          ImageServiceFactory.SELF_LINK,
+          imageState,
+          ImageService.State.class,
+          (document) -> true);
+      String imageId = ServiceUtils.getIDFromDocumentSelfLink(savedImageState.documentSelfLink);
+
       taskReturnedByUploadImage = new Task();
       taskReturnedByUploadImage.setId("taskId");
       taskReturnedByUploadImage.setState("STARTED");
@@ -574,11 +606,9 @@ public class UploadImageTaskServiceTest {
       taskReturnedByGetTask.setState("COMPLETED");
 
       Task.Entity taskEntity = new Task.Entity();
-      taskEntity.setId("taskEntityId");
+      taskEntity.setId(imageId);
       taskReturnedByUploadImage.setEntity(taskEntity);
       taskReturnedByGetTask.setEntity(taskEntity);
-
-      machine = createTestEnvironment(deployerContext, listeningExecutorService, apiClientFactory, 1);
     }
 
     @AfterMethod
@@ -588,7 +618,13 @@ public class UploadImageTaskServiceTest {
         machine = null;
       }
 
+      if (null != cloudStoreMachine) {
+        cloudStoreMachine.stop();
+        cloudStoreMachine = null;
+      }
+
       startState = null;
+      imageState = null;
       taskReturnedByUploadImage = null;
       taskReturnedByGetTask = null;
     }

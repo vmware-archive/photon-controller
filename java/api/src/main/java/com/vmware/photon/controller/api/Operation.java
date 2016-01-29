@@ -34,6 +34,7 @@ public enum Operation {
   PUSH_TENANT_SECURITY_GROUPS("PushTenantSecurityGroups"),
   DELETE_PROJECT("DeleteProject"),
 
+  IMAGE_SEEDING_PROGRESS_CHECK("ImageSeedingProgressCheck"),
   RESERVE_RESOURCE("ReserveResource"),
   CREATE_VM("CreateVm"),
   STOP_VM("StopVm"),

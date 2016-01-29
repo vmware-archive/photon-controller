@@ -126,6 +126,7 @@ public class StepCommandFactoryTest {
         {Operation.REPLICATE_IMAGE, ImageReplicateStepCmd.class},
         {Operation.DELETE_IMAGE, ImageDeleteStepCmd.class},
         {Operation.DELETE_IMAGE_REPLICAS, ImageReplicasDeleteStepCmd.class},
+        {Operation.IMAGE_SEEDING_PROGRESS_CHECK, ImageSeedingProgressCheckStepCmd.class},
 
         // Host
         {Operation.CREATE_HOST, HostCreateStepCmd.class},
@@ -136,6 +137,7 @@ public class StepCommandFactoryTest {
         {Operation.RESUME_HOST, HostResumeStepCmd.class},
         {Operation.ENTER_MAINTENANCE_MODE, HostEnterMaintenanceModeStepCmd.class},
         {Operation.EXIT_MAINTENANCE_MODE, HostExitMaintenanceModeStepCmd.class},
+        {Operation.SET_AVAILABILITYZONE, HostSetAvailabilityZoneStepCmd.class},
 
         // Deployment
         {Operation.PREPARE_DEPLOYMENT, DeploymentImageConfigUpdateStepCmd.class},

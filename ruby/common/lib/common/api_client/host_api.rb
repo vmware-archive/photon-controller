@@ -168,6 +168,16 @@ module EsxCloud
         task = poll_response(response)
         mgmt_find_host_by_id(task.entity_id)
       end
+
+      # @param [String] host_id
+      # @param [Hash] payload
+      # @return [Host]
+      def host_set_availability_zone(host_id, payload)
+        response = @http_client.post_json("/hosts/#{host_id}/set_availability_zone", payload)
+        check_response("Set host's availability zone #{payload}", response, 201)
+        task = poll_response(response)
+        mgmt_find_host_by_id(task.entity_id)
+      end
     end
   end
 end

@@ -261,8 +261,6 @@ public class ImageSeederService extends StatefulService {
       ImageService.State imageServiceState = new ImageService.State();
       Operation datastoreCountPatch = getCloudStoreHelper()
           .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image);
-      Operation adjustSeederAndReplicationPatch = getCloudStoreHelper()
-          .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image);
 
       OperationSequence operationSequence = OperationSequence
           .create(datastoreSetQuery)
@@ -288,19 +286,6 @@ public class ImageSeederService extends StatefulService {
                 datastoreCountPatch.setBody(imageServiceState);
               })
           .next(datastoreCountPatch)
-          .setCompletion(
-              (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
-                if (failures != null && failures.size() > 0) {
-                  failTask(failures.values().iterator().next());
-                  return;
-                }
-
-                ImageService.DatastoreCountRequest request = new ImageService.DatastoreCountRequest();
-                request.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
-                request.amount = 1;
-                adjustSeederAndReplicationPatch.setBody(request);
-              })
-          .next(adjustSeederAndReplicationPatch)
           .setCompletion(
               (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
                 if (failures != null && failures.size() > 0) {
@@ -381,7 +366,7 @@ public class ImageSeederService extends StatefulService {
           newState.taskInfo = new TaskState();
           newState.taskInfo.stage = com.vmware.xenon.common.TaskState.TaskStage.STARTED;
           newState.taskInfo.subStage = TaskState.SubStage.AWAIT_COMPLETION;
-          newState.triggeredCopies = datastoreSet.size() - 1;
+          newState.triggeredCopies = datastoreSet.size();
           newState.sourceImageDatastoreId = current.sourceImageDatastoreId;
           this.sendSelfPatch(newState);
         })
@@ -430,9 +415,7 @@ public class ImageSeederService extends StatefulService {
    */
   protected void triggerHostToHostCopyServices(final State current, final Set<String> datastores) {
     for (String datastore : datastores) {
-      if (!datastore.equals(current.sourceImageDatastore)) {
-        this.triggerHostToHostCopyService(current, datastore);
-      }
+      this.triggerHostToHostCopyService(current, datastore);
     }
   }
 
@@ -603,14 +586,10 @@ public class ImageSeederService extends StatefulService {
       return false;
     }
 
-    if (datastoreSet.size() == 1) {
-      if (!datastoreSet.contains(current.sourceImageDatastoreId)) {
-        String datastore = datastoreSet.iterator().next();
-        failTask(new Exception("No image datastore found, sourceImageDatastore is " + current.sourceImageDatastore +
-            ", image datastore in CloudStore is " + datastore));
-      } else {
-        sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
-      }
+    if (datastoreSet.size() == 1 && !datastoreSet.contains(current.sourceImageDatastoreId)) {
+      String datastore = datastoreSet.iterator().next();
+      failTask(new Exception("No image datastore found, sourceImageDatastore is " + current.sourceImageDatastore +
+          ", image datastore in CloudStore is " + datastore));
       return false;
     }
 

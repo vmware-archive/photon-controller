@@ -71,7 +71,6 @@ public class CloudStoreHelper {
   public Operation createDelete(String path) {
     return Operation
         .createDelete(getCloudStoreURI(path))
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setBody(new ServiceDocument())
         .setReferer(this.localHostUri);
   }
@@ -79,7 +78,6 @@ public class CloudStoreHelper {
   public Operation createGet(String path) {
     return Operation
         .createGet(getCloudStoreURI(path))
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setReferer(this.localHostUri);
   }
 
@@ -98,7 +96,6 @@ public class CloudStoreHelper {
   public Operation createPatch(String path) {
     return Operation
         .createPatch(getCloudStoreURI(path))
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setReferer(this.localHostUri);
   }
 }

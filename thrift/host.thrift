@@ -21,23 +21,6 @@ include 'scheduler.thrift'
 include 'server_address.thrift'
 include 'tracing.thrift'
 
-
-struct SetResourceTagsRequest {
-  1: optional map<string, set<string>> datastore_tags
-
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum SetResourceTagsResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-}
-
-struct SetResourceTagsResponse {
-  1: required SetResourceTagsResultCode result
-  2: optional string error
-}
-
 // The current status of the agent
 enum AgentStatusCode {
    // The agent is up and running and can accept thrift calls.
@@ -137,80 +120,6 @@ struct SetHostModeResponse {
 }
 
 /**
- * Maintenance mode
- */
-struct EnterMaintenanceRequest {
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum EnterMaintenanceResultCode {
-  // If the host is in MAINTENANCE mode, return OK
-  OK = 0
-
-  SYSTEM_ERROR = 1
-
-  // If the host is still in ENTERING_MAINTENANCE mode, return ENTERING.
-  // The host will go to MAINTENANCE mode automatically after all VMs are evacuated.
-  ENTERING = 2
-}
-
-struct EnterMaintenanceResponse {
-  1: required EnterMaintenanceResultCode result
-  2: optional string error
-
-  // List of vms running on the host, if result is ENTERING.
-  3: optional list<string> vm_ids
-}
-
-struct ExitMaintenanceRequest {
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum ExitMaintenanceResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-
-  // exit_maintenance is only allowed when the agent is not deprovisioned. Otherwise, return INVALID_STATE.
-  INVALID_STATE = 2
-}
-
-struct ExitMaintenanceResponse {
-  1: required ExitMaintenanceResultCode result
-  2: optional string error
-}
-
-struct DeprovisionRequest {
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum DeprovisionResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-
-  // deprovision is only allowed when the agent is in maintenance. Otherwise, return INVALID_STATE.
-  INVALID_STATE = 2
-}
-
-struct DeprovisionResponse {
-  1: required DeprovisionResultCode result
-  2: optional string error
-}
-
-// Agent load: returns current load number.
-struct LoadRequest {}
-
-enum LoadResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-}
-
-struct LoadResponse {
-  1: required LoadResultCode result
-  2: optional string error
-  3: optional byte load
-}
-
-/**
  * Resource reservation
  */
 
@@ -295,41 +204,6 @@ struct CreateVmResponse {
   1: required CreateVmResultCode result
   2: optional string error
   3: optional resource.Vm vm
-}
-
-struct RegisterVmRequest {
-  1: required string vm_id
-  2: required string datastore_id
-
-  // Reservation returned by ReserveResponse#reservation
-  3: optional string reservation
-}
-
-enum RegisterVmResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-  VM_NOT_FOUND = 2
-  INVALID_RESERVATION = 3
-}
-
-struct RegisterVmResponse {
-  1: required RegisterVmResultCode result
-  2: optional string error
-}
-
-struct UnregisterVmRequest {
-  1: required string vm_id
-}
-
-enum UnregisterVmResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-  VM_NOT_FOUND = 2
-}
-
-struct UnregisterVmResponse {
-  1: required UnregisterVmResultCode result
-  2: optional string error
 }
 
 // Delete VM
@@ -1074,6 +948,29 @@ struct GetNetworksResponse {
   2: optional list<resource.Network> networks
 }
 
+// Struct describing the setting availability zone of the esx host.
+struct SetAvailabilityZoneRequest {
+  // The availability zone associated with the esx host.
+  1: required string availability_zone
+
+  99: optional tracing.TracingInfo tracing_info
+}
+
+// SetAvailabilityZone result code
+enum SetAvailabilityZoneResultCode {
+  // Setting AvailabilityZone was successful.
+  OK = 0
+
+  // Catch all error
+  SYSTEM_ERROR = 15
+}
+
+// SetAvailabilityZone response
+struct SetAvailabilityZoneResponse {
+  1: required SetAvailabilityZoneResultCode result
+  2: optional string error
+}
+
 // Host service
 service Host {
   // Get the status of the agent.
@@ -1084,19 +981,9 @@ service Host {
   GetDatastoresResponse get_datastores(1: GetDatastoresRequest request)
   GetNetworksResponse get_networks(1: GetNetworksRequest request)
 
-  // Set datastore tags
-  SetResourceTagsResponse set_resource_tags(1: SetResourceTagsRequest request)
-
   // Get/set host mode
   GetHostModeResponse get_host_mode(1: GetHostModeRequest request)
   SetHostModeResponse set_host_mode(1: SetHostModeRequest request)
-
-  // Maintenance mode (All Deprecated)
-  EnterMaintenanceResponse enter_maintenance(1: EnterMaintenanceRequest request)
-  ExitMaintenanceResponse exit_maintenance(1: ExitMaintenanceRequest request)
-  DeprovisionResponse deprovision(1: DeprovisionRequest request)
-
-  LoadResponse load(1: LoadRequest request)
 
   ReserveResponse reserve(1: ReserveRequest request)
 
@@ -1135,9 +1022,6 @@ service Host {
   GetVmNetworkResponse get_vm_networks(1: GetVmNetworkRequest request)
   CreateImageFromVmResponse create_image_from_vm(1: CreateImageFromVmRequest request)
 
-  RegisterVmResponse register_vm(1: RegisterVmRequest request)
-  UnregisterVmResponse unregister_vm(1: UnregisterVmRequest request)
-
   ServiceTicketResponse get_service_ticket(1: ServiceTicketRequest request)
   MksTicketResponse get_mks_ticket(1: MksTicketRequest request)
   HttpTicketResponse get_http_ticket(1: HttpTicketRequest request)
@@ -1157,5 +1041,5 @@ service Host {
   agent.ProvisionResponse provision(1: agent.ProvisionRequest request)
 
   // Method to set host's availability zone.
-  agent.SetAvailabilityZoneResponse set_availability_zone(1: agent.SetAvailabilityZoneRequest request)
+  SetAvailabilityZoneResponse set_availability_zone(1: SetAvailabilityZoneRequest request)
 }

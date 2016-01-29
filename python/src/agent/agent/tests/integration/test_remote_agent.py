@@ -305,7 +305,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         # Reconnect to account for the restart
         self.client_connections()
         self.configure_hosts()
-        self.clear_datastore_tags()
         self.clear()
 
     @classmethod
@@ -442,17 +441,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
             if ds.name == image_datastore_name:
                 image_datastore_id = ds.id
         self.assertEqual(hostConfig.image_datastore_id, image_datastore_id)
-
-    def test_datastore_tags(self):
-        host_config_request = Host.GetConfigRequest()
-        res = self.host_client.get_host_config(host_config_request)
-        self.assertEqual(res.result, GetConfigResultCode.OK)
-
-        datastores = res.hostConfig.datastores
-        for datastore in datastores:
-            tag = self._type_to_tag(datastore.type)
-            if tag:
-                assert_that(datastore.tags, has_item(tag))
 
     def _generate_new_iso_ds_path(self):
         if (self._remote_iso_file.lower().rfind(".iso") !=

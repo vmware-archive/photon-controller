@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * This class implements a DCP Service that performs periodic maintenance on a single cluster.
@@ -251,7 +252,9 @@ public class ClusterMaintenanceTaskService extends StatefulService {
             .setCompletion(
                 (Operation op, Throwable t) -> {
                   if (t != null) {
-                    if (op.getStatusCode() == Operation.STATUS_CODE_NOT_FOUND) {
+                    if (op.getStatusCode() == Operation.STATUS_CODE_NOT_FOUND
+                        || op.getStatusCode() == Operation.STATUS_CODE_TIMEOUT
+                        || t.getClass().equals(TimeoutException.class)) {
                       sendRequest(Operation
                           .createDelete(UriUtils.buildUri(getHost(), getSelfLink()))
                           .setBody(new ServiceDocument())

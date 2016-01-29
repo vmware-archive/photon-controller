@@ -40,8 +40,8 @@ import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
-import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
@@ -60,7 +60,6 @@ import javax.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -342,7 +341,8 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
                 new FutureCallback<Task>() {
                   @Override
                   public void onSuccess(@Nullable Task result) {
-                    waitForTaskToFinish(result, currentState, finishedCallback);
+                    MiscUtils.waitForTaskToFinish(RemoveDeploymentWorkflowService.this, result,
+                        currentState.taskPollDelay, finishedCallback);
                   }
 
                   @Override
@@ -396,7 +396,8 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
                 new FutureCallback<Task>() {
                   @Override
                   public void onSuccess(@Nullable Task result) {
-                    waitForTaskToFinish(result, currentState, finishedCallback);
+                    MiscUtils.waitForTaskToFinish(RemoveDeploymentWorkflowService.this, result,
+                        currentState.taskPollDelay, finishedCallback);
                   }
 
                   @Override
@@ -462,7 +463,8 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
                 new FutureCallback<Task>() {
                   @Override
                   public void onSuccess(@Nullable Task result) {
-                    waitForTaskToFinish(result, currentState, finishedCallback);
+                    MiscUtils.waitForTaskToFinish(RemoveDeploymentWorkflowService.this, result,
+                        currentState.taskPollDelay, finishedCallback);
                   }
 
                   @Override
@@ -510,7 +512,8 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
         new FutureCallback<Task>() {
           @Override
           public void onSuccess(@Nullable Task result) {
-            waitForTaskToFinish(result, currentState, finishedCallback);
+            MiscUtils.waitForTaskToFinish(RemoveDeploymentWorkflowService.this, result, currentState.taskPollDelay,
+                finishedCallback);
           }
 
           @Override
@@ -581,7 +584,8 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
                 new FutureCallback<Task>() {
                   @Override
                   public void onSuccess(@Nullable Task result) {
-                    waitForTaskToFinish(result, currentState, finishedCallback);
+                    MiscUtils.waitForTaskToFinish(RemoveDeploymentWorkflowService.this, result,
+                        currentState.taskPollDelay, finishedCallback);
                   }
 
                   @Override
@@ -591,7 +595,8 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
                 };
 
             for (final FlavoredCompact flavoredCompact : result.getItems()) {
-              stopAndDeleteVm(client, flavoredCompact.getId(), currentState, vmCallback);
+              MiscUtils.stopAndDeleteVm(RemoveDeploymentWorkflowService.this, client, flavoredCompact.getId(),
+                  currentState.taskPollDelay, vmCallback);
             }
           }
         }
@@ -601,49 +606,6 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
           failTask(t);
         }
       });
-    } catch (Throwable t) {
-      failTask(t);
-    }
-  }
-
-  private void stopAndDeleteVm(final ApiClient client, final String vmId, final State currentState,
-                               final FutureCallback<Task> callback) {
-    ServiceUtils.logInfo(this, "Stop and delete vm..");
-
-    final FutureCallback<Task> finishedCallback = new FutureCallback<Task>() {
-      @Override
-      public void onSuccess(@Nullable Task result) {
-        deleteVm(client, vmId, currentState, callback);
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-
-    try {
-      client.getVmApi().performStopOperationAsync(vmId, new FutureCallback<Task>() {
-        @Override
-        public void onSuccess(@Nullable final Task result) {
-          waitForTaskToFinish(result, currentState, finishedCallback);
-        }
-
-        @Override
-        public void onFailure(Throwable t) {
-          failTask(t);
-        }
-      });
-    } catch (Throwable t) {
-      failTask(t);
-    }
-  }
-
-  private void deleteVm(final ApiClient client, final String vmId, State currentState,
-                        final FutureCallback<Task> callback) {
-    ServiceUtils.logInfo(this, "Delete vms..");
-    try {
-      client.getVmApi().deleteAsync(vmId, callback);
     } catch (Throwable t) {
       failTask(t);
     }
@@ -690,13 +652,14 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
                 new FutureCallback<Task>() {
                   @Override
                   public void onSuccess(@Nullable Task result) {
-                    waitForTaskToFinish(result, currentState, finishedCallback);
+                    MiscUtils.waitForTaskToFinish(RemoveDeploymentWorkflowService.this, result,
+                        currentState.taskPollDelay, finishedCallback);
                   }
 
                   @Override
                   public void onFailure(Throwable t) {
                     // Log and ignore
-                    logError(t);
+                    MiscUtils.logError(RemoveDeploymentWorkflowService.this, t);
 
                     finishedCallback.onSuccess(null);
                   }
@@ -761,7 +724,8 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
                 new FutureCallback<Task>() {
                   @Override
                   public void onSuccess(@Nullable Task result) {
-                    waitForTaskToFinish(result, currentState, finishedCallback);
+                    MiscUtils.waitForTaskToFinish(RemoveDeploymentWorkflowService.this, result, currentState
+                        .taskPollDelay, finishedCallback);
                   }
 
                   @Override
@@ -786,80 +750,6 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
     }
   }
 
-  private void waitForTaskToFinish(@Nullable Task task, final State currentState, final FutureCallback<Task>
-      callback) {
-    if (null == task) {
-      failTask(new IllegalStateException("task is null"));
-      return;
-    }
-
-    try {
-      processTask(currentState, task, callback);
-    } catch (Throwable t) {
-      failTask(t);
-    }
-  }
-
-  private void scheduleGetTaskCall(final Service service, final State currentState, final String taskId,
-                                   final FutureCallback<Task> callback) {
-
-    Runnable runnable = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          HostUtils.getApiClient(service).getTasksApi().getTaskAsync(taskId,
-              new FutureCallback<Task>() {
-                @Override
-                public void onSuccess(Task result) {
-                  ServiceUtils.logInfo(service, "GetTask API call returned task %s", result.toString());
-                  try {
-                    processTask(currentState, result, callback);
-                  } catch (Throwable throwable) {
-                    failTask(throwable);
-                  }
-                }
-
-                @Override
-                public void onFailure(Throwable t) {
-                  failTask(t);
-                }
-              }
-          );
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    getHost().schedule(runnable, currentState.taskPollDelay, TimeUnit.MILLISECONDS);
-  }
-
-  private void processTask(final State currentState, Task task, final FutureCallback<Task>
-      callback) throws Throwable {
-    ServiceUtils.logInfo(this, "Process task %s - %s..", task.getId(), task.getState().toUpperCase());
-    switch (task.getState().toUpperCase()) {
-      case "QUEUED":
-      case "STARTED":
-        scheduleGetTaskCall(this, currentState, task.getId(), callback);
-        break;
-      case "COMPLETED":
-        ServiceUtils.logInfo(this, "Task completed %s..", task.getId());
-        callback.onSuccess(task);
-        break;
-      case "ERROR":
-        if (ApiUtils.getErrors(task).contains("NotFound")) {
-          // Swallow this error since VM/Image or object is removed from the host already and since
-          // we are already on remove path, notFound errors are safe to ignore
-          ServiceUtils.logInfo(this, "Swallowing error %s..", ApiUtils.getErrors(task));
-          callback.onSuccess(task);
-          break;
-        } else {
-          throw new RuntimeException(ApiUtils.getErrors(task));
-        }
-      default:
-        throw new RuntimeException("Unexpected task status " + task.getState());
-    }
-  }
 
   private Operation.CompletionHandler createCompletionHandlerForDeleteDCPEntities(boolean isCloudStoreEntity) {
     return new Operation.CompletionHandler() {
@@ -1070,24 +960,15 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
    * @param e
    */
   private void failTask(Throwable e) {
-    logError(e);
+    MiscUtils.logError(RemoveDeploymentWorkflowService.this, e);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, e));
   }
 
   private void failTask(Map<Long, Throwable> failures) {
-    failures.values().forEach(failure -> logError(failure));
+    failures.values().forEach(failure -> MiscUtils.logError(RemoveDeploymentWorkflowService.this, failure));
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.values().iterator().next()));
   }
 
-  private void logError(Throwable e) {
-    ServiceUtils.logSevere(this, e);
-    StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
-    StringBuilder sb = new StringBuilder();
-    for (StackTraceElement se : stackTraceElements) {
-      sb.append(se).append("\n");
-    }
-    ServiceUtils.logInfo(this, "Stack trace %s", sb.toString());
-  }
 
   /**
    * This method builds a patch state object which can be used to submit a

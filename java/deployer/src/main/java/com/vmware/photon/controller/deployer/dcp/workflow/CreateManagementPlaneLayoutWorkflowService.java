@@ -126,8 +126,6 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
   public CreateManagementPlaneLayoutWorkflowService() {
     super(State.class);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
   }
 
   /**
