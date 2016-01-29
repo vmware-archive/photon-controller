@@ -66,6 +66,7 @@ class AgentConfig(object):
     MANAGEMENT_ONLY = "management_only"
     HOST_ID = "host_id"
     IMAGE_DATASTORES = "image_datastores"
+    STATS_STORE_ADDRESS = "stats_store_address"
 
     PROVISION_ARGS = [HOST_PORT]
     BOOTSTRAP_ARGS = PROVISION_ARGS + [AVAILABILITY_ZONE, HOSTNAME, CHAIRMAN,
@@ -186,6 +187,9 @@ class AgentConfig(object):
         reboot |= self._check_and_set_attr(
             self.HOST_PORT, port)
 
+        reboot |= self._check_and_set_attr(
+            self.STATS_STORE_ADDRESS, provision_req.stats_store_address)
+
         chairman_str = \
             self._parse_chairman_server_address(provision_req.chairman_server)
         if self._check_and_set_attr(self.CHAIRMAN, chairman_str):
@@ -282,6 +286,11 @@ class AgentConfig(object):
     @locked
     def host_port(self):
         return getattr(self._options, self.HOST_PORT)
+
+    @property
+    @locked
+    def stats_store_address(self):
+        return getattr(self._options, self.STATS_STORE_ADDRESS)
 
     @property
     @locked
@@ -558,6 +567,10 @@ class AgentConfig(object):
                           type="string", default=None,
                           help="ID of this host")
 
+        parser.add_option("--stats-store-address", dest="stats_store_address",
+                          type="string", default=None,
+                          help="Uri of this stats store (i.e. carbon)")
+
         self._default_options = parser.defaults
 
         self._options, _ = parser.parse_args(args=args)
@@ -719,3 +732,14 @@ class AgentConfig(object):
             if not self._is_unset(key, value):
                 new_config[key] = value
         self._write_json_file(self.DEFAULT_CONFIG_FILE, new_config)
+
+    def delete_config(self):
+        """
+        Delete agent configuration file.
+        """
+        filename = os.path.join(self._options.config_path,
+                                self.DEFAULT_CONFIG_FILE)
+        try:
+            os.remove(filename)
+        except OSError:
+            pass
