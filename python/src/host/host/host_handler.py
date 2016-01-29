@@ -447,8 +447,9 @@ class HostHandler(Host.Iface):
             self._logger.info("Lazy copying image %s to %s" % (image_id,
                                                                datastore_id))
             try:
-                image_datastore = self.hypervisor.image_manager.\
-                    find_datastore_by_image(image_id)
+                image_datastore = self._find_datastore_by_image(
+                    self.hypervisor.datastore_manager.image_datastores(),
+                    image_id)
                 self.hypervisor.image_manager.copy_image(image_datastore,
                                                          image_id,
                                                          datastore_id,
@@ -598,6 +599,16 @@ class HostHandler(Host.Iface):
         response.vm = vm.to_thrift()
 
         return response
+
+    def _find_datastore_by_image(self, image_datastores, image_id):
+        for image_ds in image_datastores:
+            if self.hypervisor.image_manager.check_and_validate_image(
+                    image_id, image_ds):
+                return image_ds
+
+        self._logger.warning("Failed to find image %s in all datastores %s."
+                             % (image_id, image_datastores))
+        return None
 
     @log_duration
     def _touch_image_timestamp(self, vm_id, ds_id, image_id):
