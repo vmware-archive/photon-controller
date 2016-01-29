@@ -110,9 +110,11 @@ class TestUnitAgent(unittest.TestCase):
                                    "--datastores", "ds1, ds2",
                                    "--vm-network", "VM Network",
                                    "--wait-timeout", "5",
+                                   "--stats-store-address", "10.10.10.10",
                                    "--chairman", "h1:1300, h2:1300"])
         assert_that(self.agent.availability_zone, equal_to("test"))
         assert_that(self.agent.hostname, equal_to("localhost"))
+        assert_that(self.agent.stats_store_address, equal_to("10.10.10.10"))
         assert_that(self.agent.host_port, equal_to(1234))
         assert_that(self.agent.datastores, equal_to(["ds1", "ds2"]))
         assert_that(self.agent.networks, equal_to(["VM Network"]))
@@ -149,6 +151,7 @@ class TestUnitAgent(unittest.TestCase):
         req.availability_zone = "test1"
         req.datastores = ["ds3", "ds4"]
         req.networks = ["Public"]
+        req.stats_store_address = "10.0.0.100"
         req.memory_overcommit = 1.5
         req.image_datastores = set([ImageDatastore("ds3", True)])
         addr = ServerAddress(host="localhost", port=2345)
@@ -159,6 +162,7 @@ class TestUnitAgent(unittest.TestCase):
         self.agent.update_config(req)
 
         assert_that(self.agent.availability_zone, equal_to("test1"))
+        assert_that(self.agent.stats_store_address, equal_to("10.0.0.100"))
         assert_that(self.agent.hostname, equal_to("localhost"))
         assert_that(self.agent.host_port, equal_to(2345))
         assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
