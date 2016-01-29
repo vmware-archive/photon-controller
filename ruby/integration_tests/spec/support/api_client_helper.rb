@@ -20,9 +20,7 @@ class ApiClientHelper
     end
 
     def management(args = nil)
-      protocol = args.nil? ? "https" : args[:protocol] || "https"
-      address = args[:address] unless args.nil?
-      port = args.nil? ? (ENV["API_FE_PORT"] || "443") : (args[:port] || ENV["API_FE_PORT"] || "443").strip
+      protocol, address, port = parse_client_args(args)
       setup_client(protocol, address, port)
     end
 
@@ -49,7 +47,7 @@ class ApiClientHelper
       "#{protocol}://#{address}:#{port}"
     end
 
-    def access_token(user_suffix = "ADMIN")
+    def access_token(user_suffix = "ADMIN", args = nil)
       auth_tool_path = nil
       if ENV["PHOTON_AUTH_TOOL_PATH"].nil? || (ENV["PHOTON_AUTH_TOOL_PATH"]).strip.empty?
         auth_tool_path = Dir.glob(File.join(File.dirname(File.expand_path(__FILE__)),
@@ -58,7 +56,9 @@ class ApiClientHelper
         auth_tool_path = ENV["PHOTON_AUTH_TOOL_PATH"].strip
       end
 
-      service_locator_url = ENV["PHOTON_AUTH_LS_ENDPOINT"].strip
+      protocol, address, port = parse_client_args(args)
+      client_tmp = setup_client_with_auth(protocol, address, port, nil)
+      service_locator_url = client_tmp.get_auth_info.endpoint
 
       username = ENV["PHOTON_USERNAME_#{user_suffix}"].strip
       password = ENV["PHOTON_PASSWORD_#{user_suffix}"].strip
@@ -68,14 +68,15 @@ class ApiClientHelper
     end
 
     private
+    
+    def parse_client_args(args = nil)
+      protocol = args.nil? ? "https" : args[:protocol] || "https"
+      address = args[:address] unless args.nil?
+      port = args.nil? ? (ENV["API_FE_PORT"] || "443") : (args[:port] || ENV["API_FE_PORT"] || "443").strip
+      return protocol, address, port
+    end
 
-    def setup_client(protocol, address, port)
-      # Extract environment variable information and retrieve access token.
-      if get_env_var("ENABLE_AUTH", false) == "true"
-        username = ENV["PHOTON_USERNAME_ADMIN"].strip
-        token = access_token
-      end
-
+    def setup_client_with_auth(protocol, address, port, username = nil, token = nil)
       # Create test driver.
       api_address = endpoint(protocol, address, port)
       client = nil
@@ -95,6 +96,18 @@ class ApiClientHelper
       end
 
       client
+    end
+
+    def setup_client(protocol, address, port)
+      # Extract environment variable information and retrieve access token.
+      username = nil
+      token = nil
+      if get_env_var("ENABLE_AUTH", false) == "true"
+        username = ENV["PHOTON_USERNAME_ADMIN"].strip
+        token = access_token
+      end
+
+      setup_client_with_auth(protocol, address, port, username, token)
     end
 
     def get_env_var(varname, required = true)
