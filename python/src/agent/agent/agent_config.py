@@ -558,6 +558,10 @@ class AgentConfig(object):
                           type="string", default=None,
                           help="ID of this host")
 
+        parser.add_option("--stats-store-address", dest="stats_store_address",
+                          type="string", default=None,
+                          help="Uri of this stats store (i.e. carbon)")
+
         self._default_options = parser.defaults
 
         self._options, _ = parser.parse_args(args=args)

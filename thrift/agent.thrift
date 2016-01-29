@@ -148,6 +148,9 @@ struct ProvisionRequest {
   // The image_datastore_info field will be deprecated.
   15: optional set<resource.ImageDatastore> image_datastores
 
+  // Address of stats store
+  16: optional string stats_store_address
+
   99: optional tracing.TracingInfo tracing_info
 }
 
