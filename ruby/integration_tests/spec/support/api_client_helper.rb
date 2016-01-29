@@ -58,7 +58,8 @@ class ApiClientHelper
         auth_tool_path = ENV["PHOTON_AUTH_TOOL_PATH"].strip
       end
 
-      service_locator_url = ENV["PHOTON_AUTH_LS_ENDPOINT"].strip
+      auth_info = EsxCloud::ApiClient.get_auth_info
+      service_locator_url = auth_info.endpoint
 
       username = ENV["PHOTON_USERNAME_#{user_suffix}"].strip
       password = ENV["PHOTON_PASSWORD_#{user_suffix}"].strip
