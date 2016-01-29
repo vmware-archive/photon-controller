@@ -68,7 +68,6 @@ import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.collections.CollectionUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InOrder;
@@ -359,7 +358,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   }
 
   @Test
-  public void testSuccessfulVmExecutionWithImageSeedingConstraintes() throws Exception {
+  public void testSuccessfulVmExecutionWithImageSeedingConstraints() throws Exception {
     List<QuotaLineItem> quotaLineItems = new ArrayList<>();
     quotaLineItems.add(new QuotaLineItem("vm.cost", "100.0", com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
 
@@ -385,11 +384,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getVm().getProject_id(), is(project.getId()));
     assertThat(resource.getVm().getTenant_id(), is(project.getTenantId()));
 
-    assertThat(resource.getVm().isSetResource_constraints(), is(true));
-    assertThat(resource.getVm().getResource_constraints().size(), is(1));
-    assertThat(resource.getVm().getResource_constraints().get(0).getType(), is(ResourceConstraintType.DATASTORE));
-    assertThat(CollectionUtils.isEqualCollection(resource.getVm().getResource_constraints().get(0).getValues(),
-        candidateImageDatastores), is(true));
+    assertThat(resource.getVm().isSetResource_constraints(), is(false));
 
     assertThat(resource.getPlacement_list().getPlacements().size(), is(1));
     assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
