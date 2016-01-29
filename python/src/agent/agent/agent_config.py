@@ -558,6 +558,10 @@ class AgentConfig(object):
                           type="string", default=None,
                           help="ID of this host")
 
+        parser.add_option("--stats-store-address", dest="stats_store_address",
+                          type="string", default=None,
+                          help="Uri of this stats store (i.e. carbon)")
+
         self._default_options = parser.defaults
 
         self._options, _ = parser.parse_args(args=args)
@@ -719,3 +723,14 @@ class AgentConfig(object):
             if not self._is_unset(key, value):
                 new_config[key] = value
         self._write_json_file(self.DEFAULT_CONFIG_FILE, new_config)
+
+    def delete_config(self):
+        """
+        Delete agent configuration file.
+        """
+        filename = os.path.join(self._options.config_path,
+                                self.DEFAULT_CONFIG_FILE)
+        try:
+            os.remove(filename)
+        except OSError:
+            pass
