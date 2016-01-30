@@ -13,9 +13,13 @@
 
 package com.vmware.photon.controller.housekeeper.service;
 
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.tests.TestServiceIgnoresPosts;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorServiceFactory;
 import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
@@ -31,6 +35,7 @@ import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.inject.Injector;
 import org.hamcrest.Matchers;
@@ -46,6 +51,9 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
+import static org.powermock.api.mockito.PowerMockito.doReturn;
+
+import java.net.InetSocketAddress;
 
 /**
  * Test {@link ImageReplicator}.
@@ -58,6 +66,8 @@ public class ImageReplicatorTest {
   private Injector injector;
   private TestHost dcpHost;
   private ImageReplicator replicator;
+  private DatastoreService.State datastoreService;
+  private String datastoreName;
 
   private String startTestReplicatorServiceInStage(ImageReplicatorService.TaskState.TaskStage stage) throws Throwable {
     ImageReplicatorService.State state = new ImageReplicatorService.State();
@@ -81,6 +91,14 @@ public class ImageReplicatorTest {
     return op.getBody(ImageSeederService.State.class).documentSelfLink;
   }
 
+  private void startTestDatastoreService(DatastoreService.State state) throws Throwable {
+    dcpHost.startFactoryServiceSynchronously(new DatastoreServiceFactory(), DatastoreServiceFactory.SELF_LINK);
+    Operation patchOp = Operation
+        .createPost(UriUtils.buildUri(dcpHost, DatastoreServiceFactory.SELF_LINK, null))
+        .setBody(state);
+    dcpHost.sendRequestAndWait(patchOp);
+  }
+
   /**
    * Dummy test case to make Intellij recognize this as a test class.
    */
@@ -97,9 +115,24 @@ public class ImageReplicatorTest {
       injector = TestHelper.createInjector(configFilePath);
       HostClient hostClient = injector.getInstance(HostClient.class);
       dcpHost = spy(TestHost.create(hostClient));
+      CloudStoreHelper cloudStoreHelper = new CloudStoreHelper();
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(dcpHost.getPreferredAddress(), dcpHost.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
+      doReturn(cloudStoreHelper)
+          .when(dcpHost).getCloudStoreHelper();
       replicator = spy(new ImageReplicator(dcpHost, minReqCopies));
 
       LoggingUtils.setRequestId(null);
+
+      datastoreName = "name";
+
+      datastoreService = new DatastoreService.State();
+      datastoreService.id = "datastore-id";
+      datastoreService.name = datastoreName;
+      datastoreService.isImageDatastore = true;
+      datastoreService.type = "MGMT";
+      datastoreService.documentSelfLink = "datastore-id";
     }
 
     @AfterMethod
@@ -116,7 +149,6 @@ public class ImageReplicatorTest {
           {ImageReplication.EAGER},
       };
     }
-
 
     @Test(dataProvider = "replicationType")
     public void testOperationContainsContextId(ImageReplication imageReplication) throws Throwable {
@@ -143,6 +175,8 @@ public class ImageReplicatorTest {
 
     @Test
     public void testOperationWithOnDemandReplicationType() throws Throwable {
+      startTestDatastoreService(datastoreService);
+
       ImageSeederService.State state = new ImageSeederService.State();
       state.taskInfo = new ImageSeederService.TaskState();
       state.taskInfo.stage = TaskState.TaskStage.FINISHED;
@@ -150,6 +184,7 @@ public class ImageReplicatorTest {
 
       ReplicateImageRequest request = new ReplicateImageRequest();
       request.setReplicationType(ImageReplication.ON_DEMAND);
+      request.setDatastore(datastoreName);
       ReplicateImageResponse response = replicator.replicateImage(request);
 
       assertThat(response.getResult().getCode(), is(ReplicateImageResultCode.OK));
@@ -158,14 +193,17 @@ public class ImageReplicatorTest {
 
     @Test
     public void testOperationWithEagerReplicationType() throws Throwable {
+      startTestDatastoreService(datastoreService);
+
       ImageSeederService.State state = new ImageSeederService.State();
       state.taskInfo = new ImageSeederService.TaskState();
       state.taskInfo.stage = TaskState.TaskStage.FINISHED;
       startTestSeederService(state);
       String opId = startTestReplicatorServiceInStage(TaskState.TaskStage.FINISHED);
-
       ReplicateImageRequest request = new ReplicateImageRequest();
+      request.setDatastore(datastoreName);
       request.setReplicationType(ImageReplication.EAGER);
+
       ReplicateImageResponse response = replicator.replicateImage(request);
 
       assertThat(response.getResult().getCode(), is(ReplicateImageResultCode.OK));

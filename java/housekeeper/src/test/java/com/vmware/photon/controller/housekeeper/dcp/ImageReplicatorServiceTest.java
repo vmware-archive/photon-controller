@@ -36,7 +36,6 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientCopyImageErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
-import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorGetHostsForDatastoreErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
@@ -100,7 +99,7 @@ public class ImageReplicatorServiceTest {
     state.queryPollDelay = 50;
 
     state.image = "image-id";
-    state.datastore = "image-datastore-name-0";
+    state.datastore = "image-datastore-id-0";
 
     return state;
   }
@@ -499,8 +498,8 @@ public class ImageReplicatorServiceTest {
       task.taskInfo.stage = stage;
       task.parentLink = TestHost.SERVICE_URI;
       task.image = "image1";
-      task.sourceImageDataStoreName = "datastore1";
-      task.destinationDataStoreId = "destinationDatastore";
+      task.sourceImageDataStore = "datastore1";
+      task.destinationDataStore = "destinationDatastore";
 
       if (stage == ImageReplicatorService.TaskState.TaskStage.FAILED) {
         task.taskInfo.failure = new com.vmware.xenon.common.ServiceErrorResponse();
@@ -585,7 +584,7 @@ public class ImageReplicatorServiceTest {
       }
 
       ImageReplicatorService.State savedState = host.getServiceState(ImageReplicatorService.State.class);
-      assertThat(savedState.datastore, is("image-datastore-name-0"));
+      assertThat(savedState.datastore, is("image-datastore-id-0"));
     }
 
     /**
@@ -779,8 +778,8 @@ public class ImageReplicatorServiceTest {
       for (Map.Entry<String, Object> document : response.results.documents.entrySet()) {
         ImageCopyService.State docState = Utils.fromJson(document.getValue(), ImageCopyService.State.class);
         assertThat(docState.image, is(startState.image));
-        assertThat(docState.sourceImageDataStoreName, is(startState.datastore));
-        assertThat(docState.destinationDataStoreId, containsString("datastore-id"));
+        assertThat(docState.sourceImageDataStore, is(startState.datastore));
+        assertThat(docState.destinationDataStore, containsString("datastore-id"));
       }
     }
 
@@ -1120,42 +1119,6 @@ public class ImageReplicatorServiceTest {
     }
 
     @Test(dataProvider = "hostCount")
-    public void testImageReplicatorGetHostsForDatastores(int hostCount) throws Throwable {
-      doReturn(new HostClientMock()).when(hostClientFactory).create();
-
-      zookeeperHostMonitor = new ZookeeperHostMonitorGetHostsForDatastoreErrorMock();
-
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
-      ImageService.State createdImageState = createNewImageEntity();
-      newImageReplicator.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-
-      //Call Service.
-      ImageReplicatorService.State response = machine.callServiceAndWaitForState(ImageReplicatorServiceFactory
-              .SELF_LINK, newImageReplicator,
-          ImageReplicatorService.State.class,
-          (state) -> state.taskInfo.stage == TaskState.TaskStage.FAILED);
-
-      // Check response.
-      assertThat(response.dataStoreCount, notNullValue());
-      assertTrue(response.finishedCopies == null || response.finishedCopies == 0);
-      assertThat(response.failedOrCanceledCopies, is(response.dataStoreCount));
-
-      // Check stats.
-      ServiceStats stats = machine.getOwnerServiceStats(response);
-      assertThat(stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
-          greaterThanOrEqualTo(
-              1.0 +       // START:TRIGGER_COPIES
-                  1.0 +       // START:AWAIT_COMPLETION
-                  1.0 +   // At least one query patch
-                  1.0     // FAILED
-          ));
-      assertThat(stats.entries.get(ImageReplicatorService.TaskState.SubStage.TRIGGER_COPIES.toString()).latestValue,
-          is(1.0));
-      assertThat(stats.entries.get(ImageReplicatorService.TaskState.SubStage.AWAIT_COMPLETION.toString()).latestValue,
-          greaterThanOrEqualTo(1.0));
-    }
-
-    @Test(dataProvider = "hostCount")
     public void testNewImageReplicatorCopyImageFail(int hostCount) throws Throwable {
       doReturn(new HostClientCopyImageErrorMock()).when(hostClientFactory).create();
 
@@ -1168,7 +1131,6 @@ public class ImageReplicatorServiceTest {
       ImageService.State createdImageState = createNewImageEntity();
       newImageReplicator.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       createHostService(zookeeperHostMonitor.getAllDatastores());
-      createDatastoreService(zookeeperHostMonitor.getImageDatastores());
 
       //Call Service.
       ImageReplicatorService.State response = machine.callServiceAndWaitForState(ImageReplicatorServiceFactory
