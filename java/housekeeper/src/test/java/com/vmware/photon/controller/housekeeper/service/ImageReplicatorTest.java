@@ -20,6 +20,7 @@ import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorServiceFactory;
 import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
 import com.vmware.photon.controller.housekeeper.dcp.ImageSeederServiceFactory;
+import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResultCode;
@@ -46,6 +47,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
+import static org.powermock.api.mockito.PowerMockito.doReturn;
 
 /**
  * Test {@link ImageReplicator}.
@@ -97,6 +99,8 @@ public class ImageReplicatorTest {
       injector = TestHelper.createInjector(configFilePath);
       HostClient hostClient = injector.getInstance(HostClient.class);
       dcpHost = spy(TestHost.create(hostClient));
+      doReturn(TestHost.create(hostClient, null, new CloudStoreHelperMock()).getCloudStoreHelper())
+          .when(dcpHost).getCloudStoreHelper();
       replicator = spy(new ImageReplicator(dcpHost, minReqCopies));
 
       LoggingUtils.setRequestId(null);
@@ -116,7 +120,6 @@ public class ImageReplicatorTest {
           {ImageReplication.EAGER},
       };
     }
-
 
     @Test(dataProvider = "replicationType")
     public void testOperationContainsContextId(ImageReplication imageReplication) throws Throwable {
@@ -143,6 +146,8 @@ public class ImageReplicatorTest {
 
     @Test
     public void testOperationWithOnDemandReplicationType() throws Throwable {
+      TestHelper.setupOperationSendRequest(dcpHost);
+
       ImageSeederService.State state = new ImageSeederService.State();
       state.taskInfo = new ImageSeederService.TaskState();
       state.taskInfo.stage = TaskState.TaskStage.FINISHED;
@@ -158,14 +163,16 @@ public class ImageReplicatorTest {
 
     @Test
     public void testOperationWithEagerReplicationType() throws Throwable {
+      TestHelper.setupOperationSendRequest(dcpHost);
+
       ImageSeederService.State state = new ImageSeederService.State();
       state.taskInfo = new ImageSeederService.TaskState();
       state.taskInfo.stage = TaskState.TaskStage.FINISHED;
       startTestSeederService(state);
       String opId = startTestReplicatorServiceInStage(TaskState.TaskStage.FINISHED);
-
       ReplicateImageRequest request = new ReplicateImageRequest();
       request.setReplicationType(ImageReplication.EAGER);
+
       ReplicateImageResponse response = replicator.replicateImage(request);
 
       assertThat(response.getResult().getCode(), is(ReplicateImageResultCode.OK));
