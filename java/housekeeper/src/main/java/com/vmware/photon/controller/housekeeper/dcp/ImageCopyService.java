@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
@@ -187,8 +186,8 @@ public class ImageCopyService extends StatefulService {
 
     checkArgument(patch.parentLink == null, "ParentLink cannot be changed.");
     checkArgument(patch.image == null, "Image cannot be changed.");
-    checkArgument(patch.sourceImageDataStoreName == null, "Source datastore cannot be changed.");
-    checkArgument(patch.destinationDataStoreId == null, "Destination datastore cannot be changed.");
+    checkArgument(patch.sourceImageDataStore == null, "Source datastore cannot be changed.");
+    checkArgument(patch.destinationDataStore == null, "Destination datastore cannot be changed.");
   }
 
   /**
@@ -201,8 +200,8 @@ public class ImageCopyService extends StatefulService {
     checkNotNull(current.taskInfo.stage, "stage cannot be null");
 
     checkNotNull(current.image, "image not provided");
-    checkNotNull(current.sourceImageDataStoreName, "source datastore not provided");
-    checkNotNull(current.destinationDataStoreId, "destination datastore not provided");
+    checkNotNull(current.sourceImageDataStore, "source datastore not provided");
+    checkNotNull(current.destinationDataStore, "destination datastore not provided");
 
     checkState(current.documentExpirationTimeMicros > 0, "documentExpirationTimeMicros needs to be greater than 0");
 
@@ -243,8 +242,8 @@ public class ImageCopyService extends StatefulService {
       currentState.host = patchState.host;
     }
 
-    if (patchState.destinationDataStoreId != null) {
-      currentState.destinationDataStoreId = patchState.destinationDataStoreId;
+    if (patchState.destinationDataStore != null) {
+      currentState.destinationDataStore = patchState.destinationDataStore;
     }
   }
 
@@ -273,7 +272,7 @@ public class ImageCopyService extends StatefulService {
    * @param current
    */
   private void copyImage(final State current) {
-    if (current.sourceImageDataStoreName.equals(current.destinationDataStoreId)) {
+    if (current.sourceImageDataStore.equals(current.destinationDataStore)) {
       ServiceUtils.logInfo(this, "Skip copying image to source itself");
       sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
       return;
@@ -312,8 +311,8 @@ public class ImageCopyService extends StatefulService {
     };
 
     try {
-      getHostClient(current).copyImage(current.image, current.sourceImageDataStoreName,
-          current.destinationDataStoreId, callback);
+      getHostClient(current).copyImage(current.image, current.sourceImageDataStore,
+          current.destinationDataStore, callback);
     } catch (IOException | RpcException e) {
       failTask(e);
     }
@@ -351,64 +350,6 @@ public class ImageCopyService extends StatefulService {
     requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT;
     requestBody.amount = adjustCount;
     return requestBody;
-  }
-
-  /**
-   * Retrieve a host that connects to the given datastore.
-   *
-   * @param current
-   */
-  private void getHostFromDataStore(final State current) {
-    if (current.sourceImageDataStoreId.equals(current.destinationDataStoreId)) {
-      ServiceUtils.logInfo(this, "Skip copying image to source itself");
-      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
-      return;
-    }
-
-    Set<String> hostSet = new HashSet<>();
-    try {
-
-      QueryTask.QuerySpecification querySpecification = buildHostQuery(current);
-
-      sendRequest(
-          ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
-              .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-              .setBody(QueryTask.create(querySpecification).setDirect(true))
-              .setCompletion(
-                  (operation, throwable) -> {
-                    if (throwable != null) {
-                      failTask(throwable);
-                      return;
-                    }
-                    NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-                    List<HostService.State> documentLinks = QueryTaskUtils
-                        .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
-                    for (HostService.State state : documentLinks) {
-                      hostSet.add(state.hostAddress);
-                    }
-
-                    if (hostSet.size() == 0 && !current.isSelfProgressionDisabled) {
-                      ImageCopyService.State patch = buildPatch(TaskState.TaskStage.FINISHED, null, null);
-                      this.sendSelfPatch(patch);
-                      ServiceUtils.logInfo(this, "ImageCopyService %s can't find host, moved to FINISHED stage",
-                          getSelfLink());
-                      return;
-                    }
-
-                    String hostIp = ServiceUtils.selectRandomItem(hostSet);
-
-                    // Patch self with the host and data store information.
-                    if (!current.isSelfProgressionDisabled) {
-                      ImageCopyService.State patch = buildPatch(TaskState.TaskStage.STARTED,
-                          TaskState.SubStage.COPY_IMAGE, null);
-                      patch.host = hostIp;
-                      this.sendSelfPatch(patch);
-                    }
-                  }
-              ));
-    } catch (Exception e) {
-      failTask(e);
-    }
   }
 
   /**
@@ -484,13 +425,13 @@ public class ImageCopyService extends StatefulService {
         HostService.State.FIELD_NAME_REPORTED_IMAGE_DATASTORES);
     QueryTask.Query imageDatastoreClause = new QueryTask.Query()
         .setTermPropertyName(fieldName)
-        .setTermMatchValue(current.sourceImageDataStoreId);
+        .setTermMatchValue(current.sourceImageDataStore);
 
     fieldName = QueryTask.QuerySpecification.buildCollectionItemName(
         HostService.State.FIELD_NAME_REPORTED_DATASTORES);
     QueryTask.Query datastoreClause = new QueryTask.Query()
         .setTermPropertyName(fieldName)
-        .setTermMatchValue(current.destinationDataStoreId);
+        .setTermMatchValue(current.destinationDataStore);
 
     QueryTask.Query stateClause = new QueryTask.Query()
       .setTermPropertyName("state")
@@ -508,20 +449,17 @@ public class ImageCopyService extends StatefulService {
 
 
   private void retrieveHost(final State current) {
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
+    if (current.sourceImageDataStore.equals(current.destinationDataStore)) {
+      ServiceUtils.logInfo(this, "Skip copying image to source itself");
+      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
+      return;
+    }
 
-    QueryTask.Query imageDatastoreClause = new QueryTask.Query()
-        .setTermPropertyName("name")
-        .setTermMatchValue(current.sourceImageDataStoreName);
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(imageDatastoreClause);
-    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-
+    Set<String> hostSet = new HashSet<>();
     try {
+
+      QueryTask.QuerySpecification querySpecification = buildHostQuery(current);
+
       sendRequest(
           ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
               .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
@@ -532,16 +470,30 @@ public class ImageCopyService extends StatefulService {
                       failTask(throwable);
                       return;
                     }
-
                     NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-                    List<DatastoreService.State> documentLinks = QueryTaskUtils
-                        .getBroadcastQueryDocuments(DatastoreService.State.class, queryResponse);
-
-                    if (documentLinks.size() != 1) {
-                      failTask(new Exception("Update Image Datastore Id failed."));
+                    List<HostService.State> documentLinks = QueryTaskUtils
+                        .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
+                    for (HostService.State state : documentLinks) {
+                      hostSet.add(state.hostAddress);
                     }
-                    current.sourceImageDataStoreId = documentLinks.get(0).id;
-                    getHostFromDataStore(current);
+
+                    if (hostSet.size() == 0 && !current.isSelfProgressionDisabled) {
+                      ImageCopyService.State patch = buildPatch(TaskState.TaskStage.FINISHED, null, null);
+                      this.sendSelfPatch(patch);
+                      ServiceUtils.logInfo(this, "ImageCopyService %s can't find host, moved to FINISHED stage",
+                          getSelfLink());
+                      return;
+                    }
+
+                    String hostIp = ServiceUtils.selectRandomItem(hostSet);
+
+                    // Patch self with the host and data store information.
+                    if (!current.isSelfProgressionDisabled) {
+                      ImageCopyService.State patch = buildPatch(TaskState.TaskStage.STARTED,
+                          TaskState.SubStage.COPY_IMAGE, null);
+                      patch.host = hostIp;
+                      this.sendSelfPatch(patch);
+                    }
                   }
               ));
     } catch (Exception e) {
@@ -593,17 +545,12 @@ public class ImageCopyService extends StatefulService {
     /**
      * The store where the image is currently available.
      */
-    public String sourceImageDataStoreName;
-
-    /**
-     * The image datastore id where the image is currently available.
-     */
-    public String sourceImageDataStoreId;
+    public String sourceImageDataStore;
 
     /**
      * The store where the image will be copied to.
      */
-    public String destinationDataStoreId;
+    public String destinationDataStore;
 
     /**
      * Host with access to both source and destination stores.
