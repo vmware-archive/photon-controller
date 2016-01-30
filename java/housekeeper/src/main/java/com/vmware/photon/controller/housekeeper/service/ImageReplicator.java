@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.housekeeper.service;
 
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.OperationLatch;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
@@ -30,13 +32,17 @@ import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusCode;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusResponse;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -73,13 +79,19 @@ public class ImageReplicator {
       ReplicateImageResponse response = new ReplicateImageResponse(
           new ReplicateImageResult(ReplicateImageResultCode.OK));
       String operationId;
+      Operation imageDatastoreQuery = buildImageDatastoreIdQuery(request.getDatastore());
+
+      DatastoreService.State state = ServiceHostUtils.sendRequestAndWait(dcpHost, imageDatastoreQuery,
+          REFERRER_PATH).getBody(DatastoreService.State.class);
+      logger.info("DatastoreService id is " + state.id);
+
       switch (request.getReplicationType()) {
         case ON_DEMAND:
-          operationId = triggerImageSeedingProcess(request);
+          operationId = triggerImageSeedingProcess(request, state.id);
           break;
         case EAGER:
-          operationId = triggerReplication(request);
-          triggerImageSeedingProcess(request);
+          operationId = triggerReplication(request, state.id);
+          triggerImageSeedingProcess(request, state.id);
           break;
         default:
           throw new IllegalArgumentException("Unknown image replication type" + request.getReplicationType());
@@ -145,11 +157,11 @@ public class ImageReplicator {
    * @return
    * @throws Throwable
    */
-  private String triggerReplication(ReplicateImageRequest request) throws Throwable {
+  private String triggerReplication(ReplicateImageRequest request, String datastoreId) throws Throwable {
     // Prepare replication service call.
     ImageReplicatorService.State postReq = new ImageReplicatorService.State();
     postReq.image = request.getImage();
-    postReq.datastore = request.getDatastore();
+    postReq.datastore = datastoreId;
 
     // Create the operation and call for replication.
     Operation postOperation = Operation
@@ -172,11 +184,11 @@ public class ImageReplicator {
    * @return
    * @throws Throwable
    */
-  private String triggerImageSeedingProcess(ReplicateImageRequest request) throws Throwable {
+  private String triggerImageSeedingProcess(ReplicateImageRequest request, String datastoreId) throws Throwable {
     // Prepare seeding service call.
     ImageSeederService.State postReq = new ImageSeederService.State();
     postReq.image = request.getImage();
-    postReq.sourceImageDatastore = request.getDatastore();
+    postReq.sourceImageDatastore = datastoreId;
 
     // Create the operation and call for seeding.
     Operation postOperation = Operation
@@ -257,4 +269,38 @@ public class ImageReplicator {
     return ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH)
         .getBody(ImageReplicatorService.State.class);
   }
+
+
+  /**
+   * Build a QuerySpecification for querying image data store id.
+   *
+   * @param datastoreName
+   * @return
+   */
+  private Operation buildImageDatastoreIdQuery(final String datastoreName) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
+
+    QueryTask.Query imageDatastoreClause = new QueryTask.Query()
+        .setTermPropertyName("isImageDatastore")
+        .setTermMatchValue("true");
+
+    QueryTask.Query imageDatastoreNameClause = new QueryTask.Query()
+        .setTermPropertyName("name")
+        .setTermMatchValue(datastoreName);
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.query.addBooleanClause(imageDatastoreClause);
+    querySpecification.query.addBooleanClause(imageDatastoreNameClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    return ((CloudStoreHelperProvider) dcpHost).getCloudStoreHelper()
+        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .setBody(QueryTask.create(querySpecification).setDirect(true))
+        .setContextId(LoggingUtils.getRequestId())
+        .setExpiration(Utils.getNowMicrosUtc() + dcpOperationTimeoutMicros);
+  }
+
 }
