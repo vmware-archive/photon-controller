@@ -692,8 +692,7 @@ class HostHandlerTestCase(unittest.TestCase):
 
         # Test lazy image copy
         assert_that(im.copy_image.called, is_(False))
-        im.find_datastore_by_image.return_value = \
-            list(dm.image_datastores())[0]
+        im.check_and_validate_image = MagicMock(side_effect=[False, True])
         im.check_and_validate_image.return_value = False
         pm.remove_vm_reservation.reset_mock()
         response = handler.create_vm(request)
@@ -705,6 +704,7 @@ class HostHandlerTestCase(unittest.TestCase):
 
         # Test VM existed
         im.check_image.return_value = True
+        im.check_and_validate_image = MagicMock(side_effect=[False, True])
         pm.remove_vm_reservation.reset_mock()
         handler.hypervisor.vm_manager.create_vm.side_effect = \
             VmAlreadyExistException
