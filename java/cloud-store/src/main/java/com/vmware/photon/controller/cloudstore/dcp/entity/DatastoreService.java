@@ -72,6 +72,10 @@ public class DatastoreService extends StatefulService {
       validatePatchState(currentState, patchState);
       applyPatch(currentState, patchState);
       validateState(currentState);
+      ServiceUtils.logInfo(this, "DatastoreService patch with id:%s, isImageDatastore:%s, name:%s",
+          currentState.id,
+          currentState.isImageDatastore,
+          currentState.name);
       patchOperation.complete();
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);

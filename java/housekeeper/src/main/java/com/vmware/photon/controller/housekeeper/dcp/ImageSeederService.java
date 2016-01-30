@@ -210,10 +210,6 @@ public class ImageSeederService extends StatefulService {
       currentState.taskInfo = patchState.taskInfo;
     }
 
-    if (patchState.sourceImageDatastoreId != null) {
-      currentState.sourceImageDatastoreId = patchState.sourceImageDatastoreId;
-    }
-
     if (patchState.triggeredCopies != null) {
       currentState.triggeredCopies = patchState.triggeredCopies;
     }
@@ -318,28 +314,10 @@ public class ImageSeederService extends StatefulService {
   protected void handleTriggerCopies(final State current) {
     Set<String> datastoreSet = new HashSet<>();
 
-    Operation querySouceImageDatastoreId = buildImageDatastoreIdQuery(current);
     Operation queryImageDatastoreSet = buildImageDatastoreSetQuery(current);
 
     OperationSequence
-        .create(querySouceImageDatastoreId)
-        .setCompletion(((operations, throwable) -> {
-          if (throwable != null) {
-            failTask(throwable.values().iterator().next());
-            return;
-          }
-          Operation op = operations.get(querySouceImageDatastoreId.getId());
-          NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
-          List<DatastoreService.State> documentLinks = QueryTaskUtils
-              .getBroadcastQueryDocuments(DatastoreService.State.class, queryResponse);
-
-          if (documentLinks.size() != 1) {
-            failTask(new Exception("Update Source Image Datastore Id failed."));
-            return;
-          }
-          current.sourceImageDatastoreId = documentLinks.get(0).id;
-        }))
-        .next(queryImageDatastoreSet)
+        .create(queryImageDatastoreSet)
         .setCompletion((operations, throwable) -> {
           if (throwable != null) {
             failTask(throwable.values().iterator().next());
@@ -367,7 +345,6 @@ public class ImageSeederService extends StatefulService {
           newState.taskInfo.stage = com.vmware.xenon.common.TaskState.TaskStage.STARTED;
           newState.taskInfo.subStage = TaskState.SubStage.AWAIT_COMPLETION;
           newState.triggeredCopies = datastoreSet.size();
-          newState.sourceImageDatastoreId = current.sourceImageDatastoreId;
           this.sendSelfPatch(newState);
         })
         .sendWith(this);
@@ -522,7 +499,7 @@ public class ImageSeederService extends StatefulService {
       final String datastore) {
     ImageHostToHostCopyService.State startState = new ImageHostToHostCopyService.State();
     startState.image = current.image;
-    startState.sourceDatastore = current.sourceImageDatastoreId;
+    startState.sourceDatastore = current.sourceImageDatastore;
     startState.destinationDatastore = datastore;
     startState.parentLink = this.getSelfLink();
 
@@ -586,7 +563,7 @@ public class ImageSeederService extends StatefulService {
       return false;
     }
 
-    if (datastoreSet.size() == 1 && !datastoreSet.contains(current.sourceImageDatastoreId)) {
+    if (datastoreSet.size() == 1 && !datastoreSet.contains(current.sourceImageDatastore)) {
       String datastore = datastoreSet.iterator().next();
       failTask(new Exception("No image datastore found, sourceImageDatastore is " + current.sourceImageDatastore +
           ", image datastore in CloudStore is " + datastore));
@@ -594,36 +571,6 @@ public class ImageSeederService extends StatefulService {
     }
 
     return true;
-  }
-
-  /**
-   * Build a QuerySpecification for querying image data store id.
-   *
-   * @param current
-   * @return
-   */
-  private Operation buildImageDatastoreIdQuery(final State current) {
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
-
-    QueryTask.Query imageDatastoreClause = new QueryTask.Query()
-        .setTermPropertyName("isImageDatastore")
-        .setTermMatchValue("true");
-
-    QueryTask.Query imageDatastoreNameClause = new QueryTask.Query()
-        .setTermPropertyName("name")
-        .setTermMatchValue(current.sourceImageDatastore);
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(imageDatastoreClause);
-    querySpecification.query.addBooleanClause(imageDatastoreNameClause);
-    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-
-    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
-        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-        .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 
   /**
@@ -786,11 +733,6 @@ public class ImageSeederService extends StatefulService {
      * Source image data store.
      */
     public String sourceImageDatastore;
-
-    /**
-     * Source image data store id.
-     */
-    public String sourceImageDatastoreId;
 
     /**
      * Triggered copies.

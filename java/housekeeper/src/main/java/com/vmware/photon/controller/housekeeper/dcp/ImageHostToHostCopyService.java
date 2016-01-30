@@ -356,18 +356,16 @@ public class ImageHostToHostCopyService extends StatefulService {
 
   /**
    * Sends post request to ImageReplicationService to create a document with imageId and destination datastore.
+   *
    * @param current
    */
   private void updateImageReplicationServiceDocument(final State current) {
 
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (throwable != null) {
-          ServiceUtils.logSevere(ImageHostToHostCopyService.this, throwable);
-        }
-        sendPatchToIncrementImageReplicatedCount(current);
+    Operation.CompletionHandler handler = (operation, throwable) -> {
+      if (throwable != null) {
+        ServiceUtils.logSevere(ImageHostToHostCopyService.this, throwable);
       }
+      sendPatchToIncrementImageReplicatedCount(current);
     };
 
     ImageReplicationService.State postState =
