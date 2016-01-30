@@ -466,16 +466,6 @@ class EsxImageManager(ImageManager):
                           image_dirname)
         return True
 
-    def find_datastore_by_image(self, image_id):
-        for image_ds in self._ds_manager.image_datastores():
-            if self.check_and_validate_image(image_id, image_ds):
-                return image_ds
-
-        self._logger.warning("Failed to find image %s." % image_id)
-        raise NoSuchResourceException(
-            ResourceType.IMAGE,
-            "Image does not exist on any image datastore.")
-
     def copy_image(self, source_datastore, source_id, dest_datastore, dest_id):
         """Copy an image between datastores.
 
