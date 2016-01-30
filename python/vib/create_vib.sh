@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash -x +e
 
 # unset PYTHONPATH to prevent polluting the pip installer
 unset PYTHONPATH
@@ -8,9 +8,13 @@ TOPLEVEL=$(git rev-parse --show-toplevel)
 REVISION=$(git rev-parse HEAD)
 DIRTY=$([[ $(git diff-files $TOPLEVEL/python $TOPLEVEL/thrift) != "" ]] && echo "-dirty")
 
-# Create tmp work directory
-TMPDIR=`mktemp -d -t create_vib.XXXXX`
-trap "rm -rf $TMPDIR" EXIT
+# Create temp work directory in current directory to support OS X docker container for vibauthor,
+# because directory vibautor container can mount to current directory and need access to
+# vib temp directory to create the vib.
+# TMPDIR is internally used by mktemp to create the directory inside $TMPDIR location.
+TMPDIR=`pwd`
+TMP_VIB_DIR=`mktemp -d -t create_vib.XXXXX`
+trap "rm -rf $TMP_VIB_DIR" EXIT
 
 # Make sure we're in the right location
 cd "$(dirname "$0")"
@@ -18,9 +22,15 @@ VIB_DIR=$PWD
 
 # Copy vib layout to work directory
 SRC_VIB_LAYOUT=../vib/agent
-DEST_VIB_LAYOUT=$TMPDIR/vib
+DEST_VIB_LAYOUT=$TMP_VIB_DIR/vib
 DEST_VIB_ROOT=$DEST_VIB_LAYOUT/payloads/agent/opt/vmware/photon/controller
 LOG_DIR=$DEST_VIB_LAYOUT/payloads/agent/var/log
+
+if [ "$(uname)" == "Darwin" ]; then
+        READLINK=greadlink
+else
+        READLINK=readlink
+fi
 
 # git loses the sticky bit on rebase ops let's add it back
 chmod a+w $SRC_VIB_LAYOUT/payloads/agent/etc/opt/vmware/photon/controller/{config,state}.json
@@ -50,14 +60,14 @@ build_for_py_ver() {
    fi
 
    # Install virtualenv in the working directory
-   virtualenv --python=python$PYTHON_VERSION $TMPDIR/virtualenv
+   virtualenv --python=python$PYTHON_VERSION $TMP_VIB_DIR/virtualenv
 
-   . $TMPDIR/virtualenv/bin/activate
+   . $TMP_VIB_DIR/virtualenv/bin/activate
 
    # Install pip 1.3.1
    pip install pip==1.3.1
 
-   DIST_DIR=$(readlink -nf ../dist)
+   DIST_DIR=$($READLINK -nf ../dist)
 
    # Install the package in work directory given dist
    PIP_MAJOR_VER=$(pip --version | awk '{print $2}' | cut -d. -f1)

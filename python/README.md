@@ -31,13 +31,43 @@ git branch -d thrift-0.9.1
 System python can be used locally to build and test python code. Make sure you
 have both python 2.6 and 2.7 installed.
 
+```bash
+brew install python
+```
+
 virtualenv 1.9.1 is also required to be installed. Newer or older version could
 cause agent incompatibility issue while running in ESX server.
+
+```bash
+curl -O https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz
+tar xvfz virtualenv-1.9.1.tar.gz
+cd virtualenv-1.9.1
+sudo python setup.py install
+```
+
+#### greadlink
+OS X has default installation of readlink that behaves differently than GNU version,
+we need greadlink available in coreutils package.
+
+```bash
+brew install coreutils
+```
 
 #### Vibauthor
 Vibauthor is the tool to package all the python code into a bundle that can be
 installed on ESX server. Unfortunately, the tool isn't available in OS X. Thus,
-to build agent, you have to find a Linux box.
+to build agent, you have to find a Linux box or use linux container method.
+
+On OS X you can install docker-machine and then use vibauthor script that will
+invoke vibauthor tool inside a Vibauthor container inside docker-machine VM.
+Following commands assume you installed docker-machine and created a default VM that has
+enabled you to run docker commands from your OS X terminal.
+
+##### Create script to call vibauthor container
+```bash
+echo "docker run -v \`pwd\`/../..:\`pwd\`/../.. -w \`pwd\` lamw/vibauthor vibauthor \"\$@\"" > /usr/local/bin/vibauthor
+chmod +x /usr/local/bin/vibauthor
+```
 
 ### Linux
 
@@ -146,7 +176,7 @@ ZOOKEEPER_PATH=/usr/local/Cellar/zookeeper/3.4.5/libexec make test
 ```
 
 ZOOKEEPER\_PATH environment variable must be set in order to run
-integration tests agaist chairman and root scheduler:
+integration tests against chairman and root scheduler:
 
 ```bash
 ZOOKEEPER_PATH=/usr/local/Cellar/zookeeper/3.4.5/libexec make test SCHEDULER_INTEGRATION=1
