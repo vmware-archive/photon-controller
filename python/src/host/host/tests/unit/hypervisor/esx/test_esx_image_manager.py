@@ -499,21 +499,3 @@ class TestEsxImageManager(unittest.TestCase):
         self.assertRaises(NoSuchResourceException,
                           self.image_manager.image_size,
                           "image_id")
-
-    @patch.object(EsxImageManager, "check_and_validate_image",
-                  return_value=False)
-    def test_find_datastore_by_image(self, _cavi):
-        self.ds_manager.image_datastores.return_value = ["ds1", "ds2"]
-        self.image_manager.check_and_validate_image.return_value = True
-        image_ds = self.image_manager.find_datastore_by_image("image_id")
-        self.assertEqual(image_ds, "ds1")
-        _cavi.assert_called_once_with("image_id", "ds1")
-
-    @patch.object(EsxImageManager, "check_and_validate_image",
-                  return_value=False)
-    def test_find_datastore_by_image_not_exist(self, _cavi):
-        self.ds_manager.image_datastores.return_value = ["ds1"]
-        self.assertRaises(NoSuchResourceException,
-                          self.image_manager.find_datastore_by_image,
-                          "image_id")
-        _cavi.assert_called_once_with("image_id", "ds1")

@@ -113,18 +113,6 @@ class ImageManager(object):
         pass
 
     @abc.abstractmethod
-    def find_datastore_by_image(self, image_id):
-        """
-        :param image_id:
-        :return: id of an image store that has given image
-
-        This method tries to find any image datastore that has
-        the given image. If found, it returns the datastore id.
-        Otherwise, it raises exception.
-        """
-        pass
-
-    @abc.abstractmethod
     def copy_image(self, src_datastore, src_id, dst_datastore, dst_id):
         pass
 
