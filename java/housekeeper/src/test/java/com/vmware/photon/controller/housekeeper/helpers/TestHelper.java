@@ -107,6 +107,23 @@ public class TestHelper {
     return contextId;
   }
 
+
+  public static void setupOperationSendRequest(ServiceHost host) {
+    doAnswer(new Answer() {
+      @Override
+      public Object answer(InvocationOnMock invocation) throws Throwable {
+        Operation op = (Operation) invocation.getArguments()[0];
+        op.complete();
+        return null;
+      }
+    }).doAnswer(new Answer() {
+      @Override
+      public Object answer(InvocationOnMock invocation) throws Throwable {
+        return invocation.callRealMethod();
+      }
+    }).when(host).sendRequest(any(Operation.class));
+  }
+
   /**
    * Class for constructing config injection.
    */
