@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash -x +e
 
 # unset PYTHONPATH to prevent polluting the pip installer
 unset PYTHONPATH
@@ -9,12 +9,16 @@ REVISION=$(git rev-parse HEAD)
 DIRTY=$([[ $(git diff-files $TOPLEVEL/python $TOPLEVEL/thrift) != "" ]] && echo "-dirty")
 
 # Create tmp work directory
-TMPDIR=`mktemp -d -t create_vib.XXXXX`
-trap "rm -rf $TMPDIR" EXIT
+
 
 # Make sure we're in the right location
 cd "$(dirname "$0")"
 VIB_DIR=$PWD
+
+export TMPDIR=`pwd`
+TMPDIR=`mktemp -d -t temp_create_vib.XXXXX`
+
+trap "rm -rf $TMPDIR" EXIT
 
 # Copy vib layout to work directory
 SRC_VIB_LAYOUT=../vib/agent
@@ -57,7 +61,11 @@ build_for_py_ver() {
    # Install pip 1.3.1
    pip install pip==1.3.1
 
-   DIST_DIR=$(readlink -nf ../dist)
+   DIST_DIR="$VIB_DIR/../dist"
+   CUR_DIR=`pwd`
+   cd $DIST_DIR
+   DIST_DIR=`pwd`
+   cd $CUR_DIR
 
    # Install the package in work directory given dist
    PIP_MAJOR_VER=$(pip --version | awk '{print $2}' | cut -d. -f1)
@@ -122,4 +130,4 @@ for esxver in 6.0.0 5.5.0; do
    ESX_VERSION=$esxver
    build_for_py_ver $esxver
 done
-vibauthor -C -t $DEST_VIB_LAYOUT -v $DIST_DIR/photon-controller-agent-$AGENT_VERSION-$ESX_VERSION.vib -f
+docker run -v `pwd`:`pwd` -v `pwd`/..:`pwd`/.. -w `pwd` lamw/vibauthor vibauthor -C -t $DEST_VIB_LAYOUT -v $DIST_DIR/photon-controller-agent-$AGENT_VERSION-$ESX_VERSION.vib -f
