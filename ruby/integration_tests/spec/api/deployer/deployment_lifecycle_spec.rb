@@ -36,6 +36,15 @@ describe "deployment lifecycle", order: :defined, deployer: true do
         host_metadata)
   end
 
+  let(:add_mgmt_host_spec) do
+    EsxCloud::HostCreateSpec.new(
+        EsxCloud::TestHelpers.get_esx_username,
+        EsxCloud::TestHelpers.get_esx_password,
+        ["MGMT"],
+        EsxCloud::TestHelpers.get_esx_ip,
+        host_metadata)
+  end
+
   let(:deployment_spec) do
     EsxCloud::DeploymentCreateSpec.new(
         EsxCloud::TestHelpers.get_datastore_names,
@@ -85,6 +94,22 @@ describe "deployment lifecycle", order: :defined, deployer: true do
       expect(component.name).not_to be_nil
       expect(component.status).to eq("READY")
     end
+
+    # Add management host
+    EsxCloud::Host.enter_suspended_mode host.id
+    EsxCloud::Host.enter_maintenance_mode host.id
+    EsxCloud::Host.delete host.id
+
+    host = EsxCloud::Host.create deployment.id, add_mgmt_host_spec
+    hosts = EsxCloud::Host.find_all.items
+    expect(hosts.size).to eq(1)
+
+    task_list = api_client.find_tasks(host.id, "host", "COMPLETED")
+    tasks = task_list.items
+    expect(tasks.size).to eq(1)
+    task = tasks.first
+    expect(task.errors).to be_empty
+    expect(task.warnings).to be_empty
   end
 
   private
