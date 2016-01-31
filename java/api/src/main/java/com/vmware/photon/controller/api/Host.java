@@ -16,6 +16,7 @@ package com.vmware.photon.controller.api;
 import com.vmware.photon.controller.api.base.Base;
 import com.vmware.photon.controller.api.constraints.DomainOrIP;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModel;
@@ -80,10 +81,14 @@ public class Host extends Base {
   @ApiModelProperty(value = "ESX Version", required = false)
   private String esxVersion;
 
+  @JsonProperty
   @ApiModelProperty(value = "Supplies the state of the Host",
       allowableValues = "CREATING,NOT_PROVISIONED,READY,MAINTENANCE,SUSPENDED,ERROR,DELETED.",
       required = true)
   private HostState state;
+
+  @JsonIgnore
+  private List<HostDatastore> datastores;
 
   public Host() {
   }
@@ -168,6 +173,14 @@ public class Host extends Base {
     this.state = state;
   }
 
+  public List<HostDatastore> getDatastores() {
+    return this.datastores;
+  }
+
+  public void setDatastores(List<HostDatastore> datastores) {
+    this.datastores = datastores;
+  }
+
   @Override
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
     return super.toStringHelper()
@@ -178,7 +191,8 @@ public class Host extends Base {
         .add("esxVersion", esxVersion)
         .add("usageTags", usageTags)
         .add("metadata", metadata)
-        .add("state", state);
+        .add("state", state)
+        .add("datastores", datastores);
   }
 
   @Override
@@ -194,14 +208,14 @@ public class Host extends Base {
     }
 
     Host that = (Host) o;
-
     return Objects.equals(username, that.username)
         && Objects.equals(password, that.password)
         && Objects.equals(address, that.address)
         && Objects.equals(availabilityZone, that.availabilityZone)
         && Objects.equals(esxVersion, that.esxVersion)
         && Objects.equals(usageTags, that.usageTags)
-        && Objects.equals(metadata, that.metadata);
+        && Objects.equals(metadata, that.metadata)
+        && Objects.equals(datastores, that.datastores);
   }
 
   @Override
@@ -214,7 +228,7 @@ public class Host extends Base {
         availabilityZone,
         esxVersion,
         usageTags,
-        metadata);
-
+        metadata,
+        datastores);
   }
 }

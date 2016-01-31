@@ -23,12 +23,15 @@ import static uk.co.datumedge.hamcrest.json.SameJSONAs.sameJSONAs;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Test {@link Host}.
  */
 public class HostTest {
+  private static final String JSON_FILE = "fixtures/host.json";
+
   private Host host;
 
   /**
@@ -61,14 +64,28 @@ public class HostTest {
 
       host.setId("e897bfb1-0f25-4fb8-985d-e3d0a337fe7a");
       host.setState(HostState.CREATING);
+
+      List<HostDatastore> hostDatastoreList = new ArrayList<>();
+      HostDatastore ds = new HostDatastore();
+      ds.setDatastoreId("id");
+      ds.setMountPoint("ds1");
+      ds.setImageDatastore(true);
+      hostDatastoreList.add(ds);
+      host.setDatastores(hostDatastoreList);
     }
 
     @Test
     public void testSerialization() throws Exception {
-      String json = JsonHelpers.jsonFixture("fixtures/host.json");
+      MatcherAssert.assertThat(
+          JsonHelpers.asJson(host), sameJSONAs(JsonHelpers.jsonFixture(JSON_FILE)).allowingAnyArrayOrdering());
+    }
 
-      MatcherAssert.assertThat(JsonHelpers.fromJson(json, Host.class), is(host));
-      MatcherAssert.assertThat(JsonHelpers.asJson(host), sameJSONAs(json).allowingAnyArrayOrdering());
+    @Test
+    public void testDeserialization() throws Exception {
+      // clear fields that we ignore from serialization/deserialization
+      host.setDatastores(null);
+
+      MatcherAssert.assertThat(JsonHelpers.fromJson(JsonHelpers.jsonFixture(JSON_FILE), Host.class), is(host));
     }
   }
 }
