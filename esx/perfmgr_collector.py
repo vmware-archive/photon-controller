@@ -163,7 +163,7 @@ class PerfManagerCollector(Collector):
         spec_list = []
         for vm in self.vim_client.get_vms_in_cache():
             vm_obj = self.vim_client.get_vm_obj_in_cache(vm.name)
-            self._logger.debug("Add vm query spec: vm:%s" % vm_obj)
+            self._logger.info("Add vm query spec: vm:%s" % vm_obj)
             if vm.tenant_id is not None and vm.project_id is not None:
                 spec_list.append(
                     self._build_perf_query_spec(vm_obj, start_time, end_time))
@@ -182,8 +182,6 @@ class PerfManagerCollector(Collector):
         # Stats are sampled by the performance manager every 20
         # seconds. Hostd keeps 180 samples at the rate of 1 sample
         # per 20 seconds, which results in samples that span an hour.
-        if end_time is None:
-            end_time = datetime.now()
 
         query_specs, vm_stat_prefix_map = self._add_vm_query_specs(
             start_time, end_time)
@@ -218,10 +216,11 @@ class PerfManagerCollector(Collector):
         if not self._initialized:
             self.initialize_host_counters()
 
-        now = datetime.now()
         if since is None:
-            since = now - timedelta(seconds=20)
+            since = datetime.now() - timedelta(seconds=20)
 
-        results = self.get_perf_manager_stats(start_time=since, end_time=now)
+        # We are omitting end_time and letting internal API
+        # to get the numbers for last 20 seconds starting from now.
+        results = self.get_perf_manager_stats(start_time=since, end_time=None)
         self._logger.debug("Collected from perf manager : \n%s" % str(results))
         return results

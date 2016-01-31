@@ -56,8 +56,7 @@ class StatsPublisher(object):
         self._publishers.append(publisher)
 
     def configure_publishers(self):
-        host = self._agent_config.__dict__.get("graphite_host",
-                                               "10.146.65.250")
+        host = self._agent_config.__dict__.get("stats_server_address")
         pm_publisher = GraphitePublisher(host_id=self._host_id,
                                          carbon_host=host)
         self.register_publisher(pm_publisher)
