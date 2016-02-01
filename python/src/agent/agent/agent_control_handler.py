@@ -24,12 +24,6 @@ from gen.agent.ttypes import ProvisionResponse
 from gen.agent.ttypes import ProvisionResultCode
 from gen.agent.ttypes import VersionResponse
 from gen.agent.ttypes import VersionResultCode
-from gen.roles.ttypes import ChildInfo
-from gen.roles.ttypes import SchedulerRole  # noqa needed for docstring
-from gen.roles.ttypes import SchedulerEntry
-from gen.roles.ttypes import GetSchedulersResponse
-from gen.roles.ttypes import GetSchedulersResultCode
-from gen.scheduler import Scheduler
 
 
 class AgentControlHandler(AgentControl.Iface):
@@ -66,39 +60,6 @@ class AgentControlHandler(AgentControl.Iface):
                                      str(e))
 
         return ProvisionResponse(ProvisionResultCode.OK)
-
-    @log_request
-    @error_handler(GetSchedulersResponse, GetSchedulersResultCode)
-    def get_schedulers(self, request):
-        """Return the list of current schedulers.
-
-        :type request: GetSchedulersRequest:
-        :rtype: GetSchedulersResponse
-        """
-        scheduler_handler = common.services.get(Scheduler.Iface)
-        _schedulers = scheduler_handler.get_schedulers
-        response = GetSchedulersResponse()
-        response.schedulers = []
-        for schId in _schedulers:
-            scheduler = _schedulers[schId]
-
-            schEntry = SchedulerEntry()
-            schRole = SchedulerRole()
-            schRole.host_children = []
-            schRole.id = schId
-
-            for host in scheduler._get_hosts():
-                childHost = ChildInfo()
-                childHost.id = host.id
-                childHost.address = host.address
-                childHost.port = host.port
-                schRole.host_children.append(childHost)
-
-            schEntry.role = schRole
-            response.schedulers.append(schEntry)
-
-        response.result = GetSchedulersResultCode.OK
-        return response
 
     @log_request
     @error_handler(VersionResponse, VersionResultCode)
