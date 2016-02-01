@@ -139,6 +139,18 @@ public class ImageSeederService extends StatefulService {
 
     checkState(current.documentExpirationTimeMicros > 0, "documentExpirationTimeMicros needs to be greater than 0");
 
+    if (current.finishedCopies != null) {
+      checkState(current.finishedCopies >= 0, "finishedCopies needs to be >= 0");
+    }
+
+    if (current.failedOrCancelledCopies != null) {
+      checkState(current.failedOrCancelledCopies >= 0, "failedOrCanceledCopies needs to be >= 0");
+    }
+
+    if (current.triggeredCopies != null) {
+      checkState(current.triggeredCopies >= 0, "triggeredCopies needs to be >= 0");
+    }
+
     switch (current.taskInfo.stage) {
       case STARTED:
         checkState(current.taskInfo.subStage != null, "subStage cannot be null");
