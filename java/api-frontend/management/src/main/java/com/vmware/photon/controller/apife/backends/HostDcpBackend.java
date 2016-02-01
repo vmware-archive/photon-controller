@@ -98,9 +98,11 @@ public class HostDcpBackend implements HostBackend {
 
   @Override
   public TaskEntity prepareHostDelete(String id) throws ExternalException {
-    HostEntity host = findById(id);
-    logger.info("deleting host: {}", host);
-    TaskEntity task = deleteTask(host);
+    HostEntity hostEntity = findById(id);
+    EntityStateValidator.validateOperationState(hostEntity, hostEntity.getState(),
+        Operation.DELETE_HOST, HostState.OPERATION_PREREQ_STATE);
+    logger.info("deleting host: {}", hostEntity);
+    TaskEntity task = deleteTask(hostEntity);
     logger.info("created Task: {}", task);
     return task;
   }
@@ -372,8 +374,6 @@ public class HostDcpBackend implements HostBackend {
   }
 
   private TaskEntity deleteTask(HostEntity hostEntity) throws ExternalException {
-    EntityStateValidator.validateOperationState(hostEntity, hostEntity.getState(),
-        Operation.DELETE_HOST, HostState.OPERATION_PREREQ_STATE);
     logger.info("host {} in state {}, begin to delete.", hostEntity.getId(), hostEntity.getState());
 
     TaskEntity task = taskBackend.createQueuedTask(hostEntity, Operation.DELETE_HOST);
