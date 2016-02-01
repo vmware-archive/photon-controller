@@ -187,6 +187,5 @@ service AgentControl {
   // Method to provision an agent for esxcloud purposes.
   ProvisionResponse provision(1: ProvisionRequest request)
 
-  roles.GetSchedulersResponse get_schedulers(1:roles.GetSchedulersRequest request)
   VersionResponse get_version(1: VersionRequest request)
 }

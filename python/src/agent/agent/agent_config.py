@@ -744,14 +744,3 @@ class AgentConfig(object):
             if not self._is_unset(key, value):
                 new_config[key] = value
         self._write_json_file(self.DEFAULT_CONFIG_FILE, new_config)
-
-    def delete_config(self):
-        """
-        Delete agent configuration file.
-        """
-        filename = os.path.join(self._options.config_path,
-                                self.DEFAULT_CONFIG_FILE)
-        try:
-            os.remove(filename)
-        except OSError:
-            pass
