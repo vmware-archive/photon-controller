@@ -200,6 +200,24 @@ public class ImageSeederServiceTest {
     }
 
     /**
+     * This test verifies that the created state of a ImageSeederService instance with invalid field fails.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testInvalidCreatedStartStage() throws Throwable {
+      ImageSeederService.State startState =
+          buildValidStartupState(TaskState.TaskStage.CREATED);
+      startState.failedOrCancelledCopies = -1;
+      try {
+        host.startServiceSynchronously(service, startState);
+        fail("Should have failed with DcpRuntimeException");
+      } catch (DcpRuntimeException e) {
+        assertThat(e.getMessage(), containsString("failedOrCanceledCopies needs to be >= 0"));
+      }
+    }
+
+    /**
      * This test verifies that the task state of a ImageSeederService instance is not modified
      * on startup.
      *
