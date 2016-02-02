@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.resources;
 import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
@@ -216,6 +217,22 @@ public class DeploymentResource {
     return generateCustomResponse(
         Response.Status.CREATED,
         client.deleteClusterConfiguration(id, spec.getType()),
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
+  }
+
+  @POST
+  @Path(DeploymentResourceRoutes.SET_IMAGE_DATASTORES)
+  @ApiOperation(value = "Change the image datastores of deployment", response = Task.class)
+  @ApiResponses(value = {@ApiResponse(code = 200, message = "Image datastores have been updated")})
+  public Response setImageDatastores(@Context Request request,
+                                     @PathParam("id") String id,
+                                     @Validated ResourceList<String> imageDataStores) throws ExternalException {
+
+    Task task = client.setImageDatastores(id, imageDataStores.getItems());
+    return generateCustomResponse(
+        Response.Status.OK,
+        task,
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

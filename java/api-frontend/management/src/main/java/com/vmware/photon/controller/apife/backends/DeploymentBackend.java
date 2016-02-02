@@ -68,4 +68,6 @@ public interface DeploymentBackend {
   List<ClusterConfiguration> getClusterConfigurations() throws ExternalException;
 
   DeploymentEntity findById(String id) throws DeploymentNotFoundException;
+
+  TaskEntity updateImageDatastores(String id, List<String> imageDatastores) throws ExternalException;
 }
