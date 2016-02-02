@@ -107,6 +107,9 @@ command-line using: `./gradlew clean build -x text` (as above). This
 will generate source code using Thrift and is not done within
 Eclipse.
 
+Code should follow our formatting guidelines. You will find an Eclipse Java
+formatter profile in java/ide-support/photon-controller-eclipse.xml.
+
 When you import Photon Controller into Eclipse, the project is
 automatically configured with a Resource Filter that ignores anything
 in the "build" directory. Unfortunately, the thrift sources that were
