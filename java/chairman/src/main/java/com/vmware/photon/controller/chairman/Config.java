@@ -49,6 +49,10 @@ public class Config {
   @NotEmpty
   private String registrationAddress;
 
+  @NotNull
+  @NotEmpty
+  private String deploymentId;
+
   @Valid
   @NotNull
   private LoggingConfiguration logging = new LoggingConfiguration();
@@ -91,6 +95,8 @@ public class Config {
   public String getRegistrationAddress() {
     return registrationAddress;
   }
+
+  public String getDeploymentId() { return deploymentId; }
 
   public LoggingConfiguration getLogging() {
     return logging;
