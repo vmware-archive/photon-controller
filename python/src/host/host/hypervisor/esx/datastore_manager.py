@@ -144,7 +144,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         if system_tag:
             tags.append(system_tag)
 
-        return Datastore(uuid, name, thrift_type, tags)
+        return Datastore(uuid, name, thrift_type, frozenset(tags))
 
     def datastores_updated(self):
         """vim client callback for datastore change"""

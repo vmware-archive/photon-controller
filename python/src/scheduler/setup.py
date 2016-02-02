@@ -30,7 +30,7 @@ setup(name='photon.controller.scheduler',
           'photon.controller.common',
           'photon.controller.host',
           'futures',
-          'thrift',
+          'thrift==0.9.3',
       ],
       extras_require={
           'test': [
