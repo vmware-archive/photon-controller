@@ -17,6 +17,8 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
@@ -35,6 +37,7 @@ import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
+import com.vmware.photon.controller.host.gen.CopyImageResultCode;
 import com.vmware.photon.controller.host.gen.TransferImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
@@ -709,8 +712,8 @@ public class ImageHostToHostCopyServiceTest {
       // Build input.
       copyTask = new ImageHostToHostCopyService.State();
       copyTask.image = "WindowsRelease9.0";
-      copyTask.sourceDatastore = "datastore0";
-      copyTask.destinationDatastore = "datastore1";
+      copyTask.sourceDatastore = "datastore0-id";
+      copyTask.destinationDatastore = "datastore1-id";
       copyTask.parentLink = "parentLink";
     }
 
@@ -748,16 +751,22 @@ public class ImageHostToHostCopyServiceTest {
       HostClientMock hostClient = new HostClientMock();
 
       hostClient.setTransferImageResultCode(code);
+      hostClient.setCopyImageResultCode(CopyImageResultCode.OK);
       doReturn(hostClient).when(hostClientFactory).create();
 
       cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
 
       ImageService.State createdImageState = createNewImageEntity();
-      int initialReplicatedDatastoreCount = createdImageState.replicatedImageDatastore;
+      int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
+      int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
       copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-      createHostService("datastore0");
-      createHostService("datastore1");
+      createHostService("datastore0-id");
+      createHostService("datastore1-id");
+      createDatastoreService("datastore0-id", "datastore0", true);
+      createDatastoreService("datastore1-id", "datastore1", true);
+      createDatastoreService("local-datastore-id", "local-datastore", false);
+
       machine.startFactoryServiceSynchronously(ImageReplicationServiceFactory.class,
           ImageReplicationServiceFactory.SELF_LINK);
 
@@ -779,13 +788,15 @@ public class ImageHostToHostCopyServiceTest {
           ImageHostToHostCopyService.State.class,
           (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
+      machine.waitForServiceState(
+          ImageService.State.class,
+          createdImageState.documentSelfLink,
+          (state) ->
+              state.replicatedDatastore == initialReplicatedDatastoreCount + 2);
+
       //Check Image Service replicatedDatastore counts
       createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
-      if (code.equals(TransferImageResultCode.OK)) {
-        assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedDatastoreCount + 1));
-      } else {
-        assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedDatastoreCount));
-      }
+      assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedImageDatastoreCount + 1));
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
@@ -814,7 +825,7 @@ public class ImageHostToHostCopyServiceTest {
 
       cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
-      createHostService("datastore1");
+      createHostService("datastore1-id");
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -849,7 +860,7 @@ public class ImageHostToHostCopyServiceTest {
 
       cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
-      createHostService("datastore0");
+      createHostService("datastore0-id");
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -884,8 +895,8 @@ public class ImageHostToHostCopyServiceTest {
 
       cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
-      createHostService("datastore0");
-      createHostService("datastore1");
+      createHostService("datastore0-id");
+      createHostService("datastore1-id");
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -928,8 +939,8 @@ public class ImageHostToHostCopyServiceTest {
 
       cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
-      createHostService("datastore0");
-      createHostService("datastore1");
+      createHostService("datastore0-id");
+      createHostService("datastore1-id");
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -987,6 +998,8 @@ public class ImageHostToHostCopyServiceTest {
       state.name = "image-1";
       state.replicationType = ImageReplicationType.EAGER;
       state.state = ImageState.READY;
+      state.replicatedDatastore = 1;
+      state.replicatedImageDatastore = 1;
       state.totalDatastore = 5;
       state.totalImageDatastore = 2;
 
@@ -1021,6 +1034,8 @@ public class ImageHostToHostCopyServiceTest {
       state.usageTags.add(UsageTag.CLOUD.name());
       state.reportedImageDatastores = new HashSet<>();
       state.reportedImageDatastores.add(reportedImageDatastore);
+      state.reportedDatastores = new HashSet<>();
+      state.reportedDatastores.add("local-datastore-id");
 
       Operation op = cloudStoreHelper
           .createPost(HostServiceFactory.SELF_LINK)
@@ -1032,6 +1047,37 @@ public class ImageHostToHostCopyServiceTest {
           });
       Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
       return result.getBody(HostService.State.class);
+    }
+
+
+    private DatastoreService.State createDatastoreService(String datastoreId, String datastoreName,
+                                                          boolean isImageDatastore) throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
+
+      machine.startFactoryServiceSynchronously(
+          DatastoreServiceFactory.class,
+          DatastoreServiceFactory.SELF_LINK);
+
+      DatastoreService.State state = new DatastoreService.State();
+      state.id = datastoreId;
+      state.name = datastoreName;
+      state.isImageDatastore = isImageDatastore;
+      state.type = "EXT3";
+      state.documentSelfLink = "/" + datastoreId;
+
+      Operation op = cloudStoreHelper
+          .createPost(DatastoreServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a datastore document in cloud store.");
+            }
+          });
+      Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      return result.getBody(DatastoreService.State.class);
     }
   }
 }

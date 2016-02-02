@@ -34,6 +34,7 @@ import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.TransferImageResponse;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
@@ -318,40 +319,13 @@ public class ImageHostToHostCopyService extends StatefulService {
     }
   }
 
-
-  /**
-   * Sends patch to update replicatedImageDatastore in image cloud store entity.
-   *
-   * @param current
-   */
-  private void sendPatchToIncrementImageReplicatedCount(final State current) {
-    try {
-      ImageService.DatastoreCountRequest requestBody = constructDatastoreCountRequest(1);
-      sendRequest(
-          ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
-              .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
-              .setBody(requestBody)
-              .setCompletion(
-                  (op, t) -> {
-                    if (t != null) {
-                      ServiceUtils.logWarning(this,
-                          "Could not increment replicatedImageDatastore for image %s by %s: %s",
-                          current.image, requestBody.amount, t);
-                    }
-                    sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
-                  }
-              ));
-    } catch (Exception e) {
-      ServiceUtils.logSevere(this, "Exception thrown while sending patch to image service to increment count: %s",
-          e);
-    }
-  }
-
-  private ImageService.DatastoreCountRequest constructDatastoreCountRequest(int adjustCount) {
+  private Operation buildDatastoreCountRequest(final State current, int adjustCount) {
     ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
     requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
     requestBody.amount = adjustCount;
-    return requestBody;
+    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+        .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
+        .setBody(requestBody);
   }
 
   /**
@@ -360,20 +334,59 @@ public class ImageHostToHostCopyService extends StatefulService {
    * @param current
    */
   private void updateImageReplicationServiceDocument(final State current) {
-
-    Operation.CompletionHandler handler = (operation, throwable) -> {
-      if (throwable != null) {
-        ServiceUtils.logSevere(ImageHostToHostCopyService.this, throwable);
-      }
-      sendPatchToIncrementImageReplicatedCount(current);
-    };
-
     ImageReplicationService.State postState =
         buildImageReplicationServiceState(current.image, current.destinationDatastore);
-    ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper().createPost(ImageReplicationServiceFactory.SELF_LINK)
-        .setBody(postState)
-        .setCompletion(handler)
-        .sendWith(this);
+    Operation createImageReplicationPatch = ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper().createPost
+        (ImageReplicationServiceFactory.SELF_LINK)
+        .setBody(postState);
+
+    ImageReplicatorService.State replicatorServiceState =
+        buildImageReplicatorServiceState(current.image, current.destinationDatastore);
+    Operation createImageReplicatorServicePatch = Operation
+        .createPost(UriUtils.buildUri(getHost(), ImageReplicatorServiceFactory.SELF_LINK))
+        .setBody(replicatorServiceState);
+
+    Operation adjustReplicationCountPatch = buildDatastoreCountRequest(current, 1);
+
+    try {
+
+      OperationSequence operationSequence = OperationSequence
+          .create(createImageReplicatorServicePatch)
+          .setCompletion((operation, throwable) -> {
+            if (throwable != null) {
+              failTask(throwable.values().iterator().next());
+            }
+          })
+          .next(createImageReplicationPatch)
+          .setCompletion(
+              (operation, throwable) -> {
+                if (throwable != null) {
+                  failTask(throwable.values().iterator().next());
+                }
+              })
+          .next(adjustReplicationCountPatch)
+          .setCompletion(
+              (operation, throwable) -> {
+                if (throwable != null) {
+                  ServiceUtils.logWarning(this,
+                      "Could not increment replicatedImageDatastore for image %s by %s: %s",
+                      current.image, 1, throwable);
+                }
+              }
+          );
+
+      if (!current.isSelfProgressionDisabled) {
+        // move to next stage
+        State s = this.buildPatch(TaskState.TaskStage.FINISHED, null, null);
+        Operation progress = Operation
+            .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
+            .setBody(s);
+        operationSequence.next(progress);
+      }
+      operationSequence.sendWith(this);
+    } catch (Exception e) {
+      failTask(e);
+    }
   }
 
   /**
@@ -451,6 +464,21 @@ public class ImageHostToHostCopyService extends StatefulService {
   }
 
   /**
+   * Build a state object for ImageReplicatorService to submit a post request to the service.
+   *
+   * @param imageId
+   * @param imageDatastoreId
+   * @return
+   */
+  private ImageReplicatorService.State buildImageReplicatorServiceState(String imageId, String imageDatastoreId) {
+    ImageReplicatorService.State imageReplicatorService = new ImageReplicatorService.State();
+    imageReplicatorService.image = imageId;
+    imageReplicatorService.datastore = imageDatastoreId;
+
+    return imageReplicatorService;
+  }
+
+  /**
    * Get a host client.
    *
    * @param current
@@ -512,6 +540,32 @@ public class ImageHostToHostCopyService extends StatefulService {
         .create(sourceHostOp, destinationHostOp)
         .setCompletion(handler)
         .sendWith(this);
+  }
+
+  /**
+   * Sends patch to update replicatedImageDatastore in image cloud store entity.
+   *
+   * @param current
+   */
+  private void sendPatchToIncrementImageReplicatedCount(final State current) {
+    try {
+      Operation adjustReplicationCountPatch = buildDatastoreCountRequest(current, 1);
+      sendRequest(
+          adjustReplicationCountPatch
+              .setCompletion(
+                  (op, t) -> {
+                    if (t != null) {
+                      ServiceUtils.logWarning(this,
+                          "Could not increment replicatedImageDatastore for image %s by %s: %s",
+                          current.image, 1, t);
+                    }
+                    sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
+                  }
+              ));
+    } catch (Exception e) {
+      ServiceUtils.logSevere(this, "Exception thrown while sending patch to image service to increment count: %s",
+          e);
+    }
   }
 
   private String getHostFromResponse(Operation operation) {
