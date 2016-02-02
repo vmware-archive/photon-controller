@@ -48,7 +48,7 @@ module EsxCloud
             .merge syslog_settings
             .merge ntp_settings
             .merge chairman_settings
-            .merge @overrides
+            .merge document_self_link ENV["RANDOM_DEPLOYMENT_ID"]
             .keep_if { |_k, v| !v.nil? }
         end
 
@@ -110,6 +110,12 @@ module EsxCloud
           chairman_ip = ENV["ESXCLOUD_CHAIRMAN_IP"] || ip
           {
             chairmanServerList: ["#{chairman_ip}:13000"]
+          }
+        end
+
+        def document_self_link(deployment_id)
+          {
+              documentSelfLink: deployment_id
           }
         end
       end

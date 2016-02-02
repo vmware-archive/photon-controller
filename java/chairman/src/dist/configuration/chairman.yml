@@ -1,6 +1,7 @@
 bind: "0.0.0.0"
 registrationAddress: "{{{VM_IP}}}"
 port: 13000
+deploymentId: "{{{DEPLOYMENT_ID}}}"
 zookeeper:
   quorum: "{{{ZOOKEEPER_QUORUM}}}"
   # We are modifying chairman to build the scheduler tree using host documents
