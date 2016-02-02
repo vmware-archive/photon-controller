@@ -24,6 +24,6 @@ setup(name='photon.controller.tserver',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          'thrift==0.9.1',
+          'thrift==0.9.3',
       ],
       )

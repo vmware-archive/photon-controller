@@ -11,20 +11,12 @@ See [here](../devbox-photon) for details of how to use Photon devbox.
 ### OS X
 
 #### Thrift
-Thrift 0.9.1 is required. However, Homebrew recently updates thrift to a
+Thrift 0.9.3 is required. However, Homebrew recently updates thrift to a
 newer version. Follow the following steps to install thrift:
 
 ```bash
-cd $( brew --prefix )
-git checkout -b thrift-0.9.1 a61e5573f1e2bf06698038802b653f4a005e0743
-# If the previous command failed with the following error:
-#   fatal: reference is not a tree: a61e5573f1e2bf06698038802b653f4a005e0743
-# It might mean the homebrew is a shallow clone. Run the following command
-# and try again:
-# git fetch --unshallow
+brew update
 brew install thrift
-git checkout master
-git branch -d thrift-0.9.1
 ```
 
 #### Python
@@ -73,7 +65,7 @@ chmod +x /usr/local/bin/vibauthor
 
 #### Thrift
 Check the official [document](https://thrift.apache.org/docs/install/) to
-install thrift 0.9.1.
+install thrift 0.9.3.
 
 #### Python
 System python can be used locally to build and test python code. Make sure you

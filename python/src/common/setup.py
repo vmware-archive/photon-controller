@@ -28,7 +28,7 @@ setup(name='photon.controller.common',
           'photon.controller.gen.thrift',
           'photon.controller.tserver',
           'setuptools==0.6c11',
-          'thrift==0.9.1',
+          'thrift==0.9.3',
       ],
       extras_require={
           'test': [

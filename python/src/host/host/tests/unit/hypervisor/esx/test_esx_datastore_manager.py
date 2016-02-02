@@ -75,14 +75,15 @@ class TestEsxDatastoreManager(unittest.TestCase):
         datastores = ds_manager.get_datastores()
         assert_that(datastores, contains_inanyorder(
             Datastore("id-1", "datastore1", type=DSType.LOCAL_VMFS,
-                      tags=[LOCAL_VMFS_TAG]),
+                      tags=set([LOCAL_VMFS_TAG])),
             Datastore("id-2", "datastore2", type=DSType.SHARED_VMFS,
-                      tags=[SHARED_VMFS_TAG]),
-            Datastore("id-3", "datastore3", type=DSType.NFS_3, tags=[NFS_TAG]),
+                      tags=set([SHARED_VMFS_TAG])),
+            Datastore("id-3", "datastore3", type=DSType.NFS_3,
+                      tags=set([NFS_TAG])),
             Datastore("id-4", "datastore4", type=DSType.NFS_41,
-                      tags=[NFS_TAG]),
-            Datastore("id-5", "datastore5", type=DSType.VSAN, tags=[]),
-            Datastore("id-6", "datastore6", type=DSType.OTHER, tags=[])))
+                      tags=set([NFS_TAG])),
+            Datastore("id-5", "datastore5", type=DSType.VSAN, tags=set()),
+            Datastore("id-6", "datastore6", type=DSType.OTHER, tags=set())))
 
         assert_that(ds_manager.image_datastores(), is_(["id-2"]))
         assert_that(ds_manager.datastore_type("id-1"),
@@ -148,9 +149,10 @@ class TestEsxDatastoreManager(unittest.TestCase):
         ]
         ds_manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
         assert_that(ds_manager.get_datastore_ids(),
-                    is_(["id-1", "id-2", "id-3"]))
+                    contains_inanyorder("id-1", "id-2", "id-3"))
         assert_that(ds_manager.vm_datastores(), is_(["id-1"]))
-        assert_that(ds_manager.image_datastores(), is_(["id-2", "id-3"]))
+        assert_that(ds_manager.image_datastores(),
+                    contains_inanyorder("id-2", "id-3"))
         assert_that(ds_manager.initialized, is_(True))
 
     @patch("os.mkdir")
@@ -172,9 +174,11 @@ class TestEsxDatastoreManager(unittest.TestCase):
             {"name": "bad-datastores2", "used_for_vms": False},
         ]
         manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
-        assert_that(manager.get_datastore_ids(), is_(["id-1", "id-2", "id-3"]))
+        assert_that(manager.get_datastore_ids(),
+                    contains_inanyorder("id-1", "id-2", "id-3"))
         assert_that(manager.vm_datastores(), is_(["id-1"]))
-        assert_that(manager.image_datastores(), is_(["id-2", "id-3"]))
+        assert_that(manager.image_datastores(),
+                    contains_inanyorder("id-2", "id-3"))
         assert_that(manager.initialized, is_(True))
 
     def get_datastore_mock(self, datastores):
