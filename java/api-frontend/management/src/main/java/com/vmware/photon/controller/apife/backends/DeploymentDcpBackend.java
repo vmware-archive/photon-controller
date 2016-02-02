@@ -348,6 +348,11 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     return toEntity(getDeploymentById(id));
   }
 
+  @Override
+  public TaskEntity updateImageDatastores(String id, List<String> imageDatastores) throws ExternalException {
+    return new TaskEntity();
+  }
+
   private DeploymentService.State patchDeployment(String id, DeploymentService.State patch) throws
       DeploymentNotFoundException {
     com.vmware.xenon.common.Operation result;
@@ -529,4 +534,5 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   private String getClusterConfigurationLink(ClusterType clusterType) {
     return ClusterConfigurationServiceFactory.SELF_LINK + "/" + clusterType.toString().toLowerCase();
   }
+
 }
