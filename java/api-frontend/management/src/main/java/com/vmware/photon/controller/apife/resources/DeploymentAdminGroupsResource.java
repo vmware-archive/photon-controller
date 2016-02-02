@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -58,7 +57,7 @@ public class DeploymentAdminGroupsResource {
   }
 
   @POST
-  @ApiOperation(value = "Change the security groups of deployment", response = Deployment.class)
+  @ApiOperation(value = "Change the security groups of deployment", response = Task.class)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "Security groups have been changed successfully")})
   public Response setAdminSecurityGroups(@Context Request request,
                                          @PathParam("id") String id,

@@ -43,4 +43,6 @@ public class DeploymentResourceRoutes {
   public static final String DEPLOYMENT_HOSTS_PATH = "/deployments/{id}/hosts";
 
   public static final String DEPLOYMENT_ADMIN_GROUPS_PATH = "/deployments/{id}/set_security_groups";
+
+  public static final String SET_IMAGE_DATASTORES = "/set_image_datastores";
 }

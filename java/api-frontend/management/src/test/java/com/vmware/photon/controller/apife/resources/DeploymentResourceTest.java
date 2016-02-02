@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
@@ -34,6 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
@@ -44,6 +46,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
 
 /**
@@ -280,5 +283,30 @@ public class DeploymentResourceTest extends ResourceTest {
         .request()
         .post(Entity.entity(new ClusterConfigurationSpec(), MediaType.APPLICATION_JSON_TYPE));
     assertThat(response.getStatus(), is(404));
+  }
+
+  @Test
+  public void testUpdateImageDatastores() throws Exception {
+    Task task = new Task();
+    task.setId(taskId);
+    doReturn(task).when(feClient).setImageDatastores(eq(deploymentId), anyListOf(String.class));
+
+    String uri = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
+        DeploymentResourceRoutes.SET_IMAGE_DATASTORES)
+        .build(deploymentId)
+        .toString();
+    ResourceList<String> imageDatastores = new ResourceList<>(Arrays.asList(new String[] {"imageDatastore1",
+        "imageDatastore2"}));
+
+    Response response = client()
+        .target(uri)
+        .request()
+        .post(Entity.entity(imageDatastores, MediaType.APPLICATION_JSON_TYPE));
+    assertThat(response.getStatus(), is(200));
+
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
   }
 }

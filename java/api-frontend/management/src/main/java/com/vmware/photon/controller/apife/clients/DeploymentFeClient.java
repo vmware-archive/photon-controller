@@ -217,4 +217,14 @@ public class DeploymentFeClient {
     TaskEntity taskEntity =  deploymentBackend.deleteClusterConfiguration(clusterType);
     return taskBackend.getApiRepresentation(taskEntity);
   }
+
+  public Task setImageDatastores(String id, List<String> imageDatastores) throws ExternalException {
+    TaskEntity taskEntity = deploymentBackend.updateImageDatastores(id, imageDatastores);
+    Task task = taskBackend.getApiRepresentation(taskEntity);
+
+    TaskCommand command = commandFactory.create(taskEntity);
+    executor.submit(command);
+
+    return task;
+  }
 }
