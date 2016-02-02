@@ -27,7 +27,7 @@ setup(name='photon.controller.chairman',
           'enum34==0.9.19',
           'photon.controller.gen.thrift',
           'photon.controller.tserver',
-          'thrift==0.9.1',
+          'thrift==0.9.3',
       ],
       extras_require={
           'test': [
