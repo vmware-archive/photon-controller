@@ -16,7 +16,22 @@ module EsxCloud
       # @param [Hash] payload
       # @return [Project]
       def create_project(tenant_id, payload)
-        @api_client.create_project(tenant_id, payload)
+        tenant = find_tenant_by_id(tenant_id)
+
+        cmd = "project create -t '#{tenant.name}' -n '#{payload[:name]}' -r '#{payload[:resourceTicket][:name]}'"
+        limits = payload[:resourceTicket][:limits].map { |limit|
+          "#{limit[:key]} #{limit[:value]} #{limit[:unit]}"
+        }.join(", ")
+        cmd += " -l '#{limits}'"
+        security_groups = payload[:securityGroups]
+        cmd += " -g '#{security_groups.join(",")}'" if security_groups
+
+        project_id = run_cli(cmd)
+        project = find_project_by_id(project_id)
+
+        @project_to_tenant[project.id] = tenant
+
+        project
       end
 
       # @param [String] id
@@ -40,7 +55,9 @@ module EsxCloud
       # @param [String] id
       # @return [Boolean]
       def delete_project(id)
-        @api_client.delete_project(id)
+        cmd = "project delete #{id}"
+        run_cli(cmd)
+        true
       end
 
       # @param [String] id
@@ -70,7 +87,8 @@ module EsxCloud
       # @param [String] id
       # @param [Hash] payload
       def set_project_security_groups(id, payload)
-        @api_client.set_project_security_groups(id, payload)
+        cmd = "project set_security_groups '#{id}' '#{payload[:items].join(",")}'"
+        run_cli(cmd)
       end
     end
   end
