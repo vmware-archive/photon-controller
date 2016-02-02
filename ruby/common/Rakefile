@@ -14,5 +14,15 @@ require "rspec/core/rake_task"
 desc "Run unit tests"
 RSpec::Core::RakeTask.new(:spec)
 
-task :default => :spec
+desc 'Generates code from Thirft files'
+namespace "install" do
+  task :thrift do |t|
+    `rm -rf thrift`
+    `mkdir -p thrift`
+    Dir["#{File.dirname(__FILE__)}/../../thrift//*.thrift"].each do |file|
+      puts `thrift --gen rb --recurse -out #{File.dirname(__FILE__)}/thrift #{file}`
+    end
+  end
+end
 
+task :default => :spec

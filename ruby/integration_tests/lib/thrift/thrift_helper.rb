@@ -13,7 +13,7 @@ require 'thrift'
 
 require 'test_helpers'
 
-$:.unshift "#{File.dirname(__FILE__)}/../../thrift"
+$:.unshift "#{File.dirname(__FILE__)}/../../../common/thrift"
 
 module Photon
   module ThriftHelper
