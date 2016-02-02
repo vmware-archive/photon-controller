@@ -41,10 +41,10 @@ then
 else
   vagrant up
   # seed the database
-  (
-    cd $TESTS
-    bundle exec rake cloudstore:seed
-  )
+#  (
+#    cd $TESTS
+#    bundle exec rake cloudstore:seed
+#  )
 fi
 
 # Setup auth-token tool
