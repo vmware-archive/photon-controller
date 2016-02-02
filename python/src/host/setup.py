@@ -30,7 +30,7 @@ setup(name='photon.controller.host',
           'enum34==0.9.19',
           'photon.controller.common',
           'futures==2.1.5',
-          'thrift==0.9.1',
+          'thrift==0.9.3',
       ],
       extras_require={
           'esx': [

@@ -26,6 +26,6 @@ setup(name='photon.controller.tools',
       install_requires=[
           'photon.controller.common',
           'kazoo==1.3',
-          'thrift==0.9.1',
+          'thrift==0.9.3',
       ]
       )
