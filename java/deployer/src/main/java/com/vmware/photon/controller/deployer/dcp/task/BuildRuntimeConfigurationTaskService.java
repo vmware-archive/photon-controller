@@ -87,6 +87,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   public static final String ENV_ENABLE_SYSLOG = "ENABLE_SYSLOG";
   public static final String ENV_SYSLOG_ENDPOINT = "SYSLOG_ENDPOINT";
   public static final String ENV_NTP_ENDPOINT = "NTP_SERVER";
+  public static final String ENV_DEPLOYMENT_ID = "DEPLOYMENT_ID";
 
   public static final String ENV_ENABLE_AUTH = "ENABLE_AUTH";
   public static final String ENV_SWAGGER_LOGIN_URL = "SWAGGER_LOGIN_URL";
@@ -366,6 +367,8 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
     containerState.dynamicParameters.put(ENV_LIGHTWAVE_PASSWORD, deploymentState.oAuthPassword);
     containerState.dynamicParameters.put(ENV_LIGHTWAVE_DOMAIN, deploymentState.oAuthTenantName);
+    containerState.dynamicParameters.put(ENV_DEPLOYMENT_ID,
+        ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink));
 
     switch (containerType) {
       case Chairman:
