@@ -21,6 +21,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -723,6 +724,7 @@ public class ImageSeederServiceTest {
     public Object[][] getTransferImageSuccessCode() {
       return new Object[][]{
           {1, TransferImageResultCode.OK},
+          {3, TransferImageResultCode.OK},
       };
     }
 
@@ -738,6 +740,9 @@ public class ImageSeederServiceTest {
       Set<Datastore> imageDatastores = buildImageDatastoreSet(3);
       createHostService(imageDatastores);
       createDatastoreService(imageDatastores);
+      machine.startFactoryServiceSynchronously(ImageReplicationServiceFactory.class,
+          ImageReplicationServiceFactory.SELF_LINK);
+
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       newImageSeeder.sourceImageDatastore = imageDatastores.iterator().next().getId();
 
