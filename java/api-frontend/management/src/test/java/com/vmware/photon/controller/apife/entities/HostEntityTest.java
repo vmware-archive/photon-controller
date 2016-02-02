@@ -23,6 +23,7 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,6 +39,7 @@ public class HostEntityTest {
   private String esxVersion;
   private Map<String, String> metadata;
   private String usageTags;
+  private List<HostDatastoreEntity> datastores;
 
   @BeforeMethod
   public void setup() {
@@ -52,6 +54,12 @@ public class HostEntityTest {
     usageTags = UsageTagHelper.serialize(new ArrayList<UsageTag>() {{
       add(UsageTag.MGMT);
     }});
+
+    HostDatastoreEntity datastore = new HostDatastoreEntity();
+    datastore.setDatastoreId("id");
+    datastore.setMountPoint("ds1");
+    datastores = new ArrayList<>();
+    datastores.add(datastore);
   }
 
   @Test
@@ -66,6 +74,7 @@ public class HostEntityTest {
     hostEntity.setEsxVersion(esxVersion);
     hostEntity.setMetadata(metadata);
     hostEntity.setUsageTags(usageTags);
+    hostEntity.setDatastores(datastores);
 
     Assert.assertTrue(validateHostEntity(hostEntity));
   }
@@ -78,6 +87,7 @@ public class HostEntityTest {
         && hostEntity.getAvailabilityZone().equals(availabilityZone)
         && hostEntity.getEsxVersion().equals(esxVersion)
         && hostEntity.getMetadata().equals(metadata)
-        && hostEntity.getUsageTags().equals(usageTags);
+        && hostEntity.getUsageTags().equals(usageTags)
+        && hostEntity.getDatastores().equals(datastores);
   }
 }
