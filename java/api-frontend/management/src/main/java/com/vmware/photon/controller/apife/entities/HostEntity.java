@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.constraints.DomainOrIP;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -44,6 +45,8 @@ public class HostEntity extends BaseEntity {
   private String usageTags;
 
   private String esxVersion;
+
+  private List<HostDatastoreEntity> datastores;
 
   @Override
   public String getKind() {
@@ -114,6 +117,14 @@ public class HostEntity extends BaseEntity {
     this.metadata = metadata;
   }
 
+  public List<HostDatastoreEntity> getDatastores() {
+    return datastores;
+  }
+
+  public void setDatastores(List<HostDatastoreEntity> datastores) {
+    this.datastores = datastores;
+  }
+
   @Override
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
     return super.toStringHelper()
@@ -123,7 +134,8 @@ public class HostEntity extends BaseEntity {
         .add("availabilityZone", availabilityZone)
         .add("esxVersion", esxVersion)
         .add("usageTags", usageTags)
-        .add("metadata", metadata);
+        .add("metadata", metadata)
+        .add("datastores", datastores);
   }
 
   @Override
@@ -146,7 +158,8 @@ public class HostEntity extends BaseEntity {
         && Objects.equals(esxVersion, that.esxVersion)
         && Objects.equals(address, that.address)
         && Objects.equals(usageTags, that.usageTags)
-        && Objects.equals(metadata, that.metadata);
+        && Objects.equals(metadata, that.metadata)
+        && Objects.equals(datastores, that.datastores);
   }
 
   @Override
@@ -159,6 +172,7 @@ public class HostEntity extends BaseEntity {
         availabilityZone,
         esxVersion,
         usageTags,
-        metadata);
+        metadata,
+        datastores);
   }
 }
