@@ -1021,9 +1021,9 @@ public class ImageDatastoreSweeperServiceTest {
           {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 0, 0}, true, 0},
           {3, 6.0, new int[]{0, 0}, new int[]{0, 0, 0, 0}, true, 0},
           // 0 (0 tombstoned), 0 unused, 2 extra (0 newer than timestamp)
-          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 2, 0}, true, 0},
+          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 2, 0}, true, 2},
           // 0 (0 tombstoned), 0 unused, 2 extra (1 newer than timestamp)
-          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 2, 1}, true, 0},
+          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 2, 1}, true, 1},
 
           // 5 (0 tombstoned), 0 unused
           {1, 6.0, new int[]{5, 0}, new int[]{0, 0, 0, 0}, true, 0},
@@ -1032,11 +1032,11 @@ public class ImageDatastoreSweeperServiceTest {
           // 5 (2 tombstoned), 3 unused (2:eager, 1:on-demand) (0 newer than watermark)
           {1, 6.0, new int[]{5, 2}, new int[]{3, 0, 0, 0}, true, 2},
           {3, 6.0, new int[]{5, 2}, new int[]{3, 0, 0, 0}, true, 2},
-          // 5 (2 tombstoned), 3 unused (2:eager, 1:on-demand) (2 newer then watermark)
-          {1, 6.0, new int[]{5, 2}, new int[]{3, 2, 0, 0}, true, 2},
+          // 5 (2 tombstoned), 3 unused (3:eager, 2:on-demand) (2 newer then watermark)
+          {1, 6.0, new int[]{5, 2}, new int[]{3, 2, 0, 0}, true, 0},
           // 5 (2 tombstoned), 3 unused (2:eager, 1:on-demand) (2 newer then watermark),
           // 4 extra (1 newer than watermark)
-          {1, 6.0, new int[]{5, 2}, new int[]{3, 2, 4, 1}, true, 2},
+          {1, 6.0, new int[]{5, 2}, new int[]{3, 2, 4, 1}, true, 3},
 
           /**
            * Non-Image datastore cleanup
