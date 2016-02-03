@@ -293,7 +293,8 @@ public class CreateContainersWorkflowService extends StatefulService {
                 ContainersConfig.ContainerType.Deployer,
                 ContainersConfig.ContainerType.Housekeeper,
                 ContainersConfig.ContainerType.ManagementApi,
-                ContainersConfig.ContainerType.RootScheduler),
+                ContainersConfig.ContainerType.RootScheduler,
+                ContainersConfig.ContainerType.ManagementUi),
             TaskState.TaskStage.STARTED,
             TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER);
         break;
