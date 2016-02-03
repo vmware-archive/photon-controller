@@ -22,8 +22,6 @@ brew install thrift
 
 As of this writing, these steps caused Thrift 0.9.3 to be installed.
 
-* **Note**: Thrift 0.9.2 and 0.9.3 have issues with Python code generation. Thrift 0.9.1 is required if you want to build the Python code locally outside of devbox.
-
 #### 3. Maven
 
 The version of [Maven](https://maven.apache.org/) which is bundled with OS X is dated. Install an up-to-date version using [Brew](http://brew.sh):
