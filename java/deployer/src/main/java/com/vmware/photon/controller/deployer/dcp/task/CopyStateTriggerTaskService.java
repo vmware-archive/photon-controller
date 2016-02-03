@@ -35,7 +35,6 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -105,10 +104,8 @@ public class CopyStateTriggerTaskService extends StatefulService {
     public String taskStateFieldName;
 
     @Immutable
-    @DefaultInteger(value = 10)
+    @DefaultInteger(value = 500)
     public Integer queryResultLimit;
-
-    public Boolean pulse;
 
     @DefaultLong(value = 0)
     public Long triggersSuccess;
@@ -123,6 +120,8 @@ public class CopyStateTriggerTaskService extends StatefulService {
 
   public CopyStateTriggerTaskService() {
     super(State.class);
+    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
+    super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
     super.toggleOption(ServiceOption.PERIODIC_MAINTENANCE, true);
@@ -138,8 +137,11 @@ public class CopyStateTriggerTaskService extends StatefulService {
     if (state.executionState == null) {
       state.executionState = ExecutionState.RUNNING;
     }
-    if (state.pulse != null) {
-      state.pulse = null;
+    if (!state.factoryLink.endsWith("/")) {
+      state.factoryLink += "/";
+    }
+    if (!state.sourceFactoryLink.endsWith("/")) {
+      state.sourceFactoryLink += "/";
     }
     InitializationUtils.initialize(state);
 
@@ -201,10 +203,7 @@ public class CopyStateTriggerTaskService extends StatefulService {
               getHost().getId(), getSelfLink(), Utils.toJson(rsp));
           return;
         }
-
-        State state = new State();
-        state.pulse = true;
-        sendSelfPatch(state);
+        sendSelfPatch(new State());
       }
     };
 
@@ -220,11 +219,29 @@ public class CopyStateTriggerTaskService extends StatefulService {
    */
   private void processPatch(Operation patch, final State currentState, final State patchState) {
     // If the triggered is stopped or this is not a pulse, exit.
-    if (currentState.executionState != ExecutionState.RUNNING ||
-        patchState.pulse == null || patchState.pulse != true) {
+    if (currentState.executionState != ExecutionState.RUNNING
+        || patchState.triggersSuccess != null
+        || patchState.triggersError != null) {
       return;
     }
 
+    generateQueryCopyStateTaskQuery(currentState).setCompletion((o, t) -> {
+      if (t != null) {
+        failTrigger(currentState, t);
+        return;
+      }
+      List<CopyStateTaskService.State> documents =
+          QueryTaskUtils.getBroadcastQueryDocuments(CopyStateTaskService.State.class, o).stream()
+        .filter((d) -> d.taskState.stage == TaskStage.CREATED || d.taskState.stage == TaskStage.STARTED)
+        .collect(Collectors.toList());
+      if (documents.isEmpty()) {
+        startNewTask(patch, currentState);
+      }
+    })
+    .sendWith(this);
+  }
+
+  private void startNewTask(Operation patch, State currentState) {
     Operation copyStateTaskQuery = generateQueryCopyStateTaskQuery(currentState);
     OperationSequence.create(copyStateTaskQuery)
         .setCompletion((os, ts) -> {
@@ -236,7 +253,6 @@ public class CopyStateTriggerTaskService extends StatefulService {
               .getBody(NodeGroupBroadcastResponse.class);
           List<CopyStateTaskService.State> copyStates = QueryTaskUtils
               .getBroadcastQueryDocuments(CopyStateTaskService.State.class, queryResponse);
-
           List<CopyStateTaskService.State> runningStates = copyStates
               .stream()
               .filter(state -> !TaskUtils.finalTaskStages.contains(state.taskState.stage))
@@ -313,20 +329,6 @@ public class CopyStateTriggerTaskService extends StatefulService {
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(typeClause);
     querySpecification.query.addBooleanClause(
-        buildTermQuery(CopyStateTaskService.State.FIELD_NAME_DESTINATION_IP, currentState.destinationIp));
-    querySpecification.query.addBooleanClause(
-        buildTermQuery(
-            CopyStateTaskService.State.FIELD_NAME_DESTINATION_PORT,
-            currentState.destinationPort.toString()));
-    querySpecification.query.addBooleanClause(
-        buildTermQuery(CopyStateTaskService.State.FIELD_NAME_DESTINATION_PROTOCOL, currentState.destinationProtocol));
-    querySpecification.query.addBooleanClause(
-        buildTermQuery(CopyStateTaskService.State.FIELD_NAME_SOURCE_IP, currentState.sourceIp));
-    querySpecification.query.addBooleanClause(
-        buildTermQuery(CopyStateTaskService.State.FIELD_NAME_SOURCE_PORT, currentState.sourcePort.toString()));
-    querySpecification.query.addBooleanClause(
-        buildTermQuery(CopyStateTaskService.State.FIELD_NAME_SOURCE_PROTOCOL, currentState.sourceProtocol));
-    querySpecification.query.addBooleanClause(
         buildTermQuery(CopyStateTaskService.State.FIELD_NAME_FACTORY_LINK, currentState.factoryLink));
     querySpecification.query.addBooleanClause(
         buildTermQuery(CopyStateTaskService.State.FIELD_NAME_SOURCE_FACTORY_LINK, currentState.sourceFactoryLink));
@@ -362,11 +364,6 @@ public class CopyStateTriggerTaskService extends StatefulService {
    * @param patch
    */
   protected void validatePatch(State patch) {
-    if (patch.triggersSuccess == null &&
-        patch.triggersError == null &&
-        patch.pulse == null) {
-      checkArgument(patch.executionState != null, "ExecutionState cannot be null.");
-    }
   }
 
   /**

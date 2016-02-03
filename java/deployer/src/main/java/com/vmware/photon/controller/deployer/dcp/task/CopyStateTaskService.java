@@ -115,7 +115,7 @@ public class CopyStateTaskService extends StatefulService {
     public String taskStateFieldName;
 
     @Immutable
-    @DefaultInteger(value = 10)
+    @DefaultInteger(value = 500)
     public Integer queryResultLimit;
 
     @Immutable
@@ -238,7 +238,10 @@ public class CopyStateTaskService extends StatefulService {
           failTask(throwable);
           return;
         }
-        continueWithNextPage(operation.getBody(QueryTask.class).results, currentState, 0);
+        continueWithNextPage(
+            operation.getBody(QueryTask.class).results,
+            currentState,
+            currentState.queryDocumentsChangedSinceEpoc);
       }
     };
 
@@ -340,8 +343,8 @@ public class CopyStateTaskService extends StatefulService {
       return postOp;
     } catch (Throwable ex) {
       failTask(ex);
+      throw new RuntimeException(ex);
     }
-    return null;
   }
 
   private String findDestinationServiceClassName(State currentState) {
