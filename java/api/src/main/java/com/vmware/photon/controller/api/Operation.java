@@ -52,7 +52,6 @@ public enum Operation {
   UPLOAD_IMAGE("UploadImage"),
   REPLICATE_IMAGE("ReplicateImage"),
   DELETE_IMAGE("DeleteImage"),
-  DELETE_IMAGE_REPLICAS("DeleteImageReplicas"),
 
   ATTACH_ISO("AttachIso"),
   DETACH_ISO("DetachIso"),

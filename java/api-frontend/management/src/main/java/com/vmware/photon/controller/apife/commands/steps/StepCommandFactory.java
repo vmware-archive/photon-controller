@@ -147,9 +147,7 @@ public class StepCommandFactory {
         return new ImageReplicateStepCmd(
             taskCommand, stepBackend, stepEntity, imageBackend, imageStoreFactory.create());
       case DELETE_IMAGE:
-        return new ImageDeleteStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStoreFactory.create());
-      case DELETE_IMAGE_REPLICAS:
-        return new ImageReplicasDeleteStepCmd(taskCommand, stepBackend, stepEntity);
+        return new ImageDeleteStepCmd(taskCommand, stepBackend, stepEntity, imageBackend);
       case CREATE_HOST:
         return new HostCreateStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case PROVISION_HOST:

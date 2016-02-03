@@ -13,14 +13,12 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.apife.lib.ImageStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,13 +35,10 @@ public class ImageDeleteStepCmd extends StepCommand {
 
   private final ImageBackend imageBackend;
 
-  private final ImageStore imageStore;
-
   public ImageDeleteStepCmd(TaskCommand taskCommand, StepBackend stepBackend, StepEntity step,
-                            ImageBackend imageBackend, ImageStore imageStore) {
+                            ImageBackend imageBackend) {
     super(taskCommand, stepBackend, step);
     this.imageBackend = imageBackend;
-    this.imageStore = imageStore;
   }
 
   @Override
@@ -51,16 +46,8 @@ public class ImageDeleteStepCmd extends StepCommand {
     List<ImageEntity> entityList = step.getTransientResourceEntities(ImageEntity.KIND);
     checkArgument(entityList.size() == 1,
         "There should be only 1 image referenced by step %s", step.getId());
+
     ImageEntity image = entityList.get(0);
-
-    try {
-      imageStore.deleteImage(image.getId());
-    } catch (Exception e) {
-      logger.error("Delete image {} failed", image.getId(), e);
-      imageBackend.updateState(image, ImageState.ERROR);
-      throw e;
-    }
-
     imageBackend.tombstone(image);
   }
 
