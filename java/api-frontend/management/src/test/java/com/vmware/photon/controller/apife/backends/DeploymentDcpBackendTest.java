@@ -35,6 +35,7 @@ import com.vmware.photon.controller.apife.exceptions.external.ClusterTypeNotConf
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentAlreadyExistException;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidImageDatastoreSetException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -43,12 +44,14 @@ import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.ListUtils;
 import org.junit.AfterClass;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
@@ -66,6 +69,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 /**
@@ -1116,6 +1120,74 @@ public class DeploymentDcpBackendTest {
         fail("should have failed deleting cluster that is not configured");
       } catch (ClusterTypeNotConfiguredException e) {
       }
+    }
+  }
+
+  /**
+   * Test cases for updating the image datastores of deployment.
+   */
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class UpdateImageDatastoresTest {
+
+    @Inject
+    private BasicServiceHost serviceHost;
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+    @Inject
+    private DeploymentBackend deploymentBackend;
+
+    private String deploymentId;
+    private Set<String> initialImageDatastores;
+
+    @BeforeClass
+    public void beforeClassSetup() throws Throwable {
+      commonHostAndClientSetup(serviceHost, apiFeDcpRestClient);
+    }
+
+    @BeforeMethod
+    public void beforeMethodSetup() throws Throwable {
+      commonDataSetup();
+
+      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
+      DeploymentEntity deploymentEntity = deploymentBackend.findById(task.getEntityId());
+      deploymentId = deploymentEntity.getId();
+      initialImageDatastores = deploymentEntity.getImageDatastores();
+    }
+
+    @AfterMethod
+    public void afterMethodCleanup() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testInvalidImageDatastoreList() throws Throwable {
+      List<String> updatedImageDatastores = ImmutableList.of("newImageDatastore");
+      try {
+        deploymentBackend.updateImageDatastores(deploymentId, updatedImageDatastores);
+        fail("Should have failed due to invalid image datastore list");
+      } catch (InvalidImageDatastoreSetException e) {
+        String expectedErrorMessage = "New image datastore list " + updatedImageDatastores.toString() + " is not a " +
+            "super set of existing list " + initialImageDatastores.toString();
+        assertThat(e.getMessage(), is(expectedErrorMessage));
+      }
+    }
+
+    @Test
+    public void testUpdatingImageDatastores() throws Throwable {
+      List<String> updatedImageDatastores = new ArrayList<>();
+      updatedImageDatastores.addAll(initialImageDatastores);
+      updatedImageDatastores.add("newImageDatastore");
+
+      TaskEntity taskEntity = deploymentBackend.updateImageDatastores(deploymentId, updatedImageDatastores);
+
+      DeploymentEntity deploymentEntity = deploymentBackend.findById(taskEntity.getEntityId());
+      assertThat(CollectionUtils.isEqualCollection(deploymentEntity.getImageDatastores(), updatedImageDatastores),
+          is(true));
     }
   }
 }

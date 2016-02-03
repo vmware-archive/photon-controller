@@ -36,6 +36,7 @@ import com.vmware.photon.controller.apife.exceptions.external.ClusterTypeNotConf
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentAlreadyExistException;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidImageDatastoreSetException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -50,8 +51,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The Deployment Dcp Backend.
@@ -350,7 +353,18 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
   @Override
   public TaskEntity updateImageDatastores(String id, List<String> imageDatastores) throws ExternalException {
-    return new TaskEntity();
+    Set<String> currImageDatastores = getDeploymentById(id).imageDataStoreNames;
+    if (!imageDatastores.containsAll(currImageDatastores)) {
+      throw new InvalidImageDatastoreSetException("New image datastore list " + imageDatastores.toString() + " is not" +
+          " a super set of existing list " + currImageDatastores.toString());
+    }
+
+    DeploymentService.State patch = new DeploymentService.State();
+    patch.imageDataStoreNames = new HashSet<>(imageDatastores);
+    patchDeployment(id, patch);
+
+    DeploymentEntity deploymentEntity = findById(id);
+    return taskBackend.createCompletedTask(deploymentEntity, Operation.UPDATE_IMAGE_DATASTORES);
   }
 
   private DeploymentService.State patchDeployment(String id, DeploymentService.State patch) throws
@@ -534,5 +548,4 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   private String getClusterConfigurationLink(ClusterType clusterType) {
     return ClusterConfigurationServiceFactory.SELF_LINK + "/" + clusterType.toString().toLowerCase();
   }
-
 }
