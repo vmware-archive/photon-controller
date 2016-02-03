@@ -37,7 +37,7 @@ Vagrant.configure("2") do |config|
       :root_scheduler => "root-scheduler",
       :housekeeper    => "housekeeper",
       :deployer       => "deployer",
-      :cloud_store    => "cloud-store"
+      :cloud_store    => "cloud-store",
   }
 
   BASE_SERVICE_PORT_MAP = {
@@ -520,6 +520,18 @@ Vagrant.configure("2") do |config|
     -v /esxcloud/java/distributions/configurations/configuration-haproxy:/etc/haproxy \
     -v /vagrant/log/haproxy:/var/log --privileged --name devbox_haproxy_container \
     -e HAPROXY_IP="#{network_ip}" --entrypoint /bin/bash devbox/haproxy /etc/haproxy/run.sh
+  EOS
+
+  #
+  # Management UI
+  #
+  config.vm.provision :shell, :inline => <<-EOS
+    set -ex
+    mgmt_ui_container_url="https://ci.ec.eng.vmware.com/view/UI/job/ec-ui-mgmt-publish-docker-image-develop/lastSuccessfulBuild/artifact/ci/docker-image/esxcloud-management-ui.tar"
+    wget -N -nv --no-proxy --no-check-certificate "$mgmt_ui_container_url"
+    container_tar=$(basename "$mgmt_ui_container_url")
+    docker load -i "$container_tar"
+    rm -f "$container_tar"
   EOS
 
   #
