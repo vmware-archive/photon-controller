@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.AvailabilityZoneState;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
+import com.vmware.photon.controller.api.HostDatastore;
 import com.vmware.photon.controller.api.HostSetAvailabilityZoneOperation;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
@@ -37,10 +38,14 @@ import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNo
 import com.vmware.photon.controller.apife.exceptions.external.HostAvailabilityZoneAlreadySetException;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAvailabilityZoneStateException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -52,12 +57,14 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -325,7 +332,7 @@ public class HostDcpBackendTest {
     }
 
     @Test
-    public void testToApiRepresentation() throws Throwable {
+    public void testToApiRepresentationWithOutDatastoreInfo() throws Throwable {
       Host host = hostBackend.toApiRepresentation(hostId);
       assertThat(host, notNullValue());
       assertThat(host.getState(), is(HostState.CREATING));
@@ -335,6 +342,32 @@ public class HostDcpBackendTest {
       assertThat(host.getAvailabilityZone(), is(hostCreateSpec.getAvailabilityZone()));
       assertThat(host.getMetadata().get("k1"), is("v1"));
       assertThat(host.getUsageTags().get(0), is(UsageTag.CLOUD));
+    }
+
+    @Test
+    public void testToApiRepresentationWithDatastoreInfo() throws Throwable {
+      HostDatastore ds1 = new HostDatastore("id1", "ds1", true);
+      HostDatastore ds2 = new HostDatastore("id2", "ds2", false);
+
+      HostService.State updateState = new HostService.State();
+      updateState.datastoreServiceLinks =
+          new HashMap<>(
+              ImmutableMap.of(
+                  ds1.getMountPoint(), "/datastores/" + ds1.getDatastoreId(),
+                  ds2.getMountPoint(), "/datastores/" + ds2.getDatastoreId()));
+      updateState.reportedImageDatastores = new HashSet<>(ImmutableSet.of(ds1.getDatastoreId()));
+      dcpClient.patch(HostServiceFactory.SELF_LINK + "/" + hostId, updateState);
+
+      Host host = hostBackend.toApiRepresentation(hostId);
+      assertThat(host, notNullValue());
+      assertThat(host.getState(), is(HostState.CREATING));
+      assertThat(host.getUsername(), is(hostCreateSpec.getUsername()));
+      assertThat(host.getPassword(), is(hostCreateSpec.getPassword()));
+      assertThat(host.getAddress(), is(hostCreateSpec.getAddress()));
+      assertThat(host.getAvailabilityZone(), is(hostCreateSpec.getAvailabilityZone()));
+      assertThat(host.getMetadata().get("k1"), is("v1"));
+      assertThat(host.getUsageTags().get(0), is(UsageTag.CLOUD));
+      assertThat(host.getDatastores(), containsInAnyOrder(ds1, ds2));
     }
 
     @Test
