@@ -17,7 +17,7 @@ import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.DeployerServerSet;
 import com.vmware.photon.controller.apife.config.ApiFeConfiguration;
 import com.vmware.photon.controller.apife.config.ConfigurationUtils;
-import com.vmware.photon.controller.apife.lib.ImageStore;
+import com.vmware.photon.controller.apife.lib.ImageStoreFactory;
 import com.vmware.photon.controller.apife.lib.VsphereIsoStore;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
@@ -60,8 +60,8 @@ public class CommandTestModule extends AbstractModule {
 
   @Provides
   @Singleton
-  ImageStore getImageStore() {
-    return mock(ImageStore.class);
+  ImageStoreFactory getImageStoreFactory() {
+    return mock(ImageStoreFactory.class);
   }
 
   @Provides
