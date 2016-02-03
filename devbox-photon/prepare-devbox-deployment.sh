@@ -56,6 +56,12 @@ vagrant ssh -c "docker tag devbox/root_scheduler esxcloud/root-scheduler"
 vagrant ssh -c "docker tag devbox/chairman esxcloud/chairman"
 vagrant ssh -c "docker tag devbox/housekeeper esxcloud/housekeeper"
 
+mgmt_ui_container_url="https://ci.ec.eng.vmware.com/view/UI/job/ec-ui-mgmt-publish-docker-image-develop/lastSuccessfulBuild/artifact/ci/docker-image/esxcloud-management-ui.tar"
+container_tar=$(basename "$mgmt_ui_container_url")
+vagrant ssh -c "wget -N -nv --no-proxy --no-check-certificate \"$mgmt_ui_container_url\""
+vagrant ssh -c "docker load -i \"$container_tar\""
+vagrant ssh -c "rm -f \"$container_tar\""
+
 #
 # Copy the config files and scripts
 #
