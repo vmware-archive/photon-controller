@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.apife.ImageClient;
 import com.vmware.photon.controller.apife.backends.AttachedDiskBackend;
 import com.vmware.photon.controller.apife.backends.ClusterBackend;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
@@ -32,7 +31,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
-import com.vmware.photon.controller.apife.lib.ImageStore;
+import com.vmware.photon.controller.apife.lib.ImageStoreFactory;
 import com.vmware.photon.controller.apife.lib.VsphereIsoStore;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
@@ -56,7 +55,7 @@ public class StepCommandFactory {
   private final DeploymentBackend deploymentBackend;
   private final HostBackend hostBackend;
   private final ImageConfig imageConfig;
-  private final ImageStore imageStore;
+  private final ImageStoreFactory imageStoreFactory;
   private final ServiceConfig serviceConfig;
   private final VsphereIsoStore isoStore;
   private final FlavorBackend flavorBackend;
@@ -76,7 +75,7 @@ public class StepCommandFactory {
                             DeploymentBackend deploymentBackend,
                             HostBackend hostBackend,
                             ImageConfig imageConfig,
-                            @ImageClient ImageStore imageStore,
+                            ImageStoreFactory imageStoreFactory,
                             ServiceConfig serviceConfig,
                             VsphereIsoStore isoStore,
                             NetworkBackend networkBackend,
@@ -95,7 +94,7 @@ public class StepCommandFactory {
     this.hostBackend = hostBackend;
     this.imageConfig = imageConfig;
     this.serviceConfig = serviceConfig;
-    this.imageStore = imageStore;
+    this.imageStoreFactory = imageStoreFactory;
     this.isoStore = isoStore;
     this.networkBackend = networkBackend;
     this.flavorBackend = flavorBackend;
@@ -140,13 +139,15 @@ public class StepCommandFactory {
       case GET_MKS_TICKET:
         return new VmGetMksTicketStepCmd(taskCommand, stepBackend, stepEntity, taskBackend);
       case CREATE_VM_IMAGE:
-        return new VmCreateImageStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore);
+        return new VmCreateImageStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStoreFactory.create());
       case UPLOAD_IMAGE:
-        return new ImageUploadStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore, imageConfig);
+        return new ImageUploadStepCmd(
+            taskCommand, stepBackend, stepEntity, imageBackend, imageStoreFactory.create(), imageConfig);
       case REPLICATE_IMAGE:
-        return new ImageReplicateStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore);
+        return new ImageReplicateStepCmd(
+            taskCommand, stepBackend, stepEntity, imageBackend, imageStoreFactory.create());
       case DELETE_IMAGE:
-        return new ImageDeleteStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStore);
+        return new ImageDeleteStepCmd(taskCommand, stepBackend, stepEntity, imageBackend, imageStoreFactory.create());
       case DELETE_IMAGE_REPLICAS:
         return new ImageReplicasDeleteStepCmd(taskCommand, stepBackend, stepEntity);
       case CREATE_HOST:

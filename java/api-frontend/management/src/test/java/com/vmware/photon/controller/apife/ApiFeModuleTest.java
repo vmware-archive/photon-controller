@@ -64,8 +64,6 @@ import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ConfigurationUtils;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
-import com.vmware.photon.controller.apife.lib.ImageStore;
-import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HousekeeperClientConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 
@@ -81,8 +79,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
 
 import java.util.concurrent.TimeUnit;
 
@@ -231,36 +227,6 @@ public class ApiFeModuleTest {
       this.clusterFetcher = clusterFetcher;
       this.diskFetcher = diskFetcher;
       this.vmFetcher = vmFetcher;
-    }
-  }
-
-  /**
-   * Tests for method getImageStoreClient.
-   */
-  public class GetImageStoreClientTest {
-
-    private ApiFeModule apiFeModule;
-
-    @BeforeTest
-    public void setUp() {
-      apiFeModule = new ApiFeModule();
-    }
-
-    /**
-     * Tests image configuration for local image store.
-     */
-    @Test
-    public void testLocalImageStore() throws Throwable {
-      apiFeModule.setConfiguration(
-          ConfigurationUtils.parseConfiguration(
-              ApiFeConfigurationTest.class.getResource("/local_image_datastore_config.yml").getPath()
-          )
-      );
-      HostClientFactory hostClientFactory = mock(HostClientFactory.class);
-
-      ImageStore imageStore = apiFeModule.getImageStoreClient(hostClientFactory);
-      assertThat(imageStore.getDatastore(), is("datastore1"));
-      verifyNoMoreInteractions(hostClientFactory);
     }
   }
 

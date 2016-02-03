@@ -78,9 +78,6 @@ import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.config.RootSchedulerConfig;
 import com.vmware.photon.controller.apife.config.StatusConfig;
-import com.vmware.photon.controller.apife.lib.ImageStore;
-import com.vmware.photon.controller.apife.lib.LocalImageStore;
-import com.vmware.photon.controller.apife.lib.VsphereImageStore;
 import com.vmware.photon.controller.chairman.gen.Chairman;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -199,21 +196,6 @@ public class ApiFeModule extends AbstractModule {
         workQueue,
         threadFactory
     );
-  }
-
-  @Provides
-  @Singleton
-  @ImageClient
-  public ImageStore getImageStoreClient(HostClientFactory hostClientFactory) {
-    ImageConfig config = this.configuration.getImage();
-
-    if (config.useEsxStore()) {
-      return new VsphereImageStore(
-          hostClientFactory,
-          config);
-    }
-
-    return new LocalImageStore(config.getLocalStore(), config.getDatastore());
   }
 
   @Provides
