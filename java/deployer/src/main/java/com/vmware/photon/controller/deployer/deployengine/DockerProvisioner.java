@@ -19,6 +19,7 @@ import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.ListContainersCmd;
 import com.github.dockerjava.api.command.StartContainerCmd;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.ExposedPort;
@@ -32,8 +33,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,14 +46,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * This class implements the docker wrappers for all docker communication.
  */
 public class DockerProvisioner {
-
-  private static final Logger logger = LoggerFactory.getLogger(DockerProvisioner.class);
 
   private static final int DOCKER_PORT = 2375;
 
@@ -100,7 +98,6 @@ public class DockerProvisioner {
     }
 
     List<Bind> bindingList = new ArrayList<>();
-    int i = 0;
     for (String key : volumeBindings.keySet()) {
       String[] volumes = volumeBindings.get(key).split(",");
       Arrays.asList(volumes).stream().forEach(volume -> bindingList.add(new Bind(key, new Volume(volume))));
@@ -134,9 +131,8 @@ public class DockerProvisioner {
       throw new IllegalArgumentException("filePath field cannot be null or blank");
     }
 
-    try {
-      File tarFile = new File(filePath);
-      FileInputStream fileInputStream = new FileInputStream(tarFile);
+    File tarFile = new File(filePath);
+    try (FileInputStream fileInputStream = new FileInputStream(tarFile)){
       FileChannel in = fileInputStream.getChannel();
 
       String endpoint = getImageLoadEndpoint();
@@ -308,5 +304,14 @@ public class DockerProvisioner {
 
   public String getInfo() {
     return this.getDockerClient().infoCmd().exec().toString();
+  }
+
+  public void stopContainerMatching(String name) {
+    ListContainersCmd listContainersCmd = this.getDockerClient().listContainersCmd();
+    Optional.ofNullable(listContainersCmd.exec()).orElse(new ArrayList<>()).stream()
+      .filter(c -> Arrays.asList(c.getNames()).stream()
+                    .filter(n -> n.toLowerCase().contains(name.toLowerCase()))
+                    .count() > 0)
+      .forEach(c -> this.getDockerClient().stopContainerCmd(c.getId()));
   }
 }
