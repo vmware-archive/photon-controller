@@ -42,6 +42,12 @@ public class HostDatastore {
   public HostDatastore() {
   }
 
+  public HostDatastore(String id, String mountPoint, Boolean isImageDatastore) {
+    this.datastoreId = id;
+    this.mountPoint = mountPoint;
+    this.imageDatastore = isImageDatastore;
+  }
+
   public String getDatastoreId() {
     return this.datastoreId;
   }

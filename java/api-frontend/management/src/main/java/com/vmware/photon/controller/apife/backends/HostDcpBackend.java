@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
+import com.vmware.photon.controller.api.HostDatastore;
 import com.vmware.photon.controller.api.HostSetAvailabilityZoneOperation;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
@@ -29,6 +30,7 @@ import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
+import com.vmware.photon.controller.apife.entities.HostDatastoreEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
@@ -50,9 +52,11 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -304,6 +308,18 @@ public class HostDcpBackend implements HostBackend {
     hostEntity.setEsxVersion(hostState.esxVersion);
     hostEntity.setUsageTags(UsageTagHelper.serialize(hostState.usageTags));
 
+    if (null != hostState.datastoreServiceLinks && 0 < hostState.datastoreServiceLinks.size()) {
+      hostEntity.setDatastores(new ArrayList<>());
+      for (Map.Entry<String, String> entry : hostState.datastoreServiceLinks.entrySet()) {
+        HostDatastoreEntity datastore = new HostDatastoreEntity();
+        datastore.setDatastoreId(ServiceUtils.getIDFromDocumentSelfLink(entry.getValue()));
+        datastore.setMountPoint(entry.getKey());
+        datastore.setImageDatastore(hostState.reportedImageDatastores.contains(datastore.getDatastoreId()));
+
+        hostEntity.getDatastores().add(datastore);
+      }
+    }
+
     return hostEntity;
   }
 
@@ -320,6 +336,17 @@ public class HostDcpBackend implements HostBackend {
     host.setUsageTags(UsageTagHelper.deserialize(hostEntity.getUsageTags()));
     host.setMetadata(hostEntity.getMetadata());
 
+    if (null != hostEntity.getDatastores() && 0 < hostEntity.getDatastores().size()) {
+      host.setDatastores(new ArrayList<>());
+      for (HostDatastoreEntity datastoreEntity : hostEntity.getDatastores()) {
+        host.getDatastores().add(
+            new HostDatastore(
+                datastoreEntity.getDatastoreId(),
+                datastoreEntity.getMountPoint(),
+                datastoreEntity.isImageDatastore()));
+      }
+    }
+
     return host;
   }
 
@@ -335,6 +362,18 @@ public class HostDcpBackend implements HostBackend {
     host.setEsxVersion(hostState.esxVersion);
     host.setUsageTags(UsageTagHelper.deserialize(UsageTagHelper.serialize(hostState.usageTags)));
     host.setMetadata(hostState.metadata);
+
+    if (null != hostState.datastoreServiceLinks && 0 < hostState.datastoreServiceLinks.size()) {
+      host.setDatastores(new ArrayList<>());
+      for (Map.Entry<String, String> entry : hostState.datastoreServiceLinks.entrySet()) {
+        String datastoreId = ServiceUtils.getIDFromDocumentSelfLink(entry.getValue());
+        host.getDatastores().add(
+            new HostDatastore(
+                datastoreId,
+                entry.getKey(),
+                hostState.reportedImageDatastores.contains(datastoreId)));
+      }
+    }
 
     return host;
   }
