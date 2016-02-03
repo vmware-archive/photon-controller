@@ -13,20 +13,21 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
-import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
-import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +35,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -269,18 +274,50 @@ public class ImageReplicatorService extends StatefulService {
    */
   protected void handleTriggerCopies(final State current) {
     try {
-      Set<Datastore> datastoreSet = getZookeeperHostMonitor().getAllDatastores();
-      ServiceUtils.logInfo(this, "All target datastores: %s", Utils.toJson(datastoreSet));
-      triggerCopyServices(datastoreSet, current);
+      Set<String> datastoreSet = new HashSet<>();
+      Operation queryDatastoreSet = buildDatastoreSetQuery(current);
+      Operation patchOperation = Operation
+          .createPatch(UriUtils.buildUri(getHost(), getSelfLink()));
+      ImageReplicatorService.State imageReplicatorServiceState = buildPatch(
+          TaskState.TaskStage.STARTED, TaskState.SubStage.AWAIT_COMPLETION, null);
+
+      OperationSequence operationSequence = OperationSequence
+          .create(queryDatastoreSet)
+          .setCompletion((operations, throwable) -> {
+                if (throwable != null) {
+                  failTask(throwable.values().iterator().next());
+                  return;
+                }
+
+                Operation op = operations.get(queryDatastoreSet.getId());
+                NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
+                List<DatastoreService.State> documentLinks = QueryTaskUtils
+                    .getBroadcastQueryDocuments(DatastoreService.State.class, queryResponse);
+                for (DatastoreService.State state : documentLinks) {
+                  datastoreSet.add(state.id);
+                }
+
+                imageReplicatorServiceState.dataStoreCount = datastoreSet.size();
+                patchOperation.setBody(imageReplicatorServiceState);
+                ServiceUtils.logInfo(this, "All target datastores: %s", Utils.toJson(datastoreSet));
+                triggerCopyServices(datastoreSet, current);
+              }
+          );
 
       // move to next stage
       if (!current.isSelfProgressionDisabled) {
-        State patch = ImageReplicatorService.this.buildPatch(
-            TaskState.TaskStage.STARTED, TaskState.SubStage.AWAIT_COMPLETION, null);
-        patch.dataStoreCount = datastoreSet.size();
-
-        sendSelfPatch(patch);
+        operationSequence
+            .next(patchOperation)
+            .setCompletion(
+                (Map<Long, Operation> ops, Map<Long, Throwable> failures) -> {
+                  if (failures != null && failures.size() > 0) {
+                    failTask(failures.values().iterator().next());
+                    return;
+                  }
+                });
+        ;
       }
+      operationSequence.sendWith(this);
     } catch (Exception e) {
       failTask(e);
     }
@@ -342,10 +379,6 @@ public class ImageReplicatorService extends StatefulService {
     }
   }
 
-  protected ZookeeperHostMonitor getZookeeperHostMonitor() {
-    return ((ZookeeperHostMonitorProvider) getHost()).getZookeeperHostMonitor();
-  }
-
   protected CloudStoreHelper getCloudStoreHelper() {
     return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper();
   }
@@ -357,14 +390,14 @@ public class ImageReplicatorService extends StatefulService {
    * @param current
    * @return The number of batches created.
    */
-  private void triggerCopyServices(Set<Datastore> targetDataStoreSet, State current) {
+  private void triggerCopyServices(Set<String> targetDataStoreSet, State current) {
     if (targetDataStoreSet.isEmpty()) {
       ServiceUtils.logInfo(this, "No copies to trigger!");
       return;
     }
 
-    for (Datastore targetDataStore : targetDataStoreSet) {
-      triggerCopyService(current, targetDataStore.getId());
+    for (String targetDataStore : targetDataStoreSet) {
+      triggerCopyService(current, targetDataStore);
     }
   }
 
@@ -477,6 +510,27 @@ public class ImageReplicatorService extends StatefulService {
 
     this.sendQuery(spec, handler);
   }
+
+  /**
+   * Build a QuerySpecification for querying image data store.
+   *
+   * @param current
+   * @return
+   */
+  private Operation buildDatastoreSetQuery(final State current) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .setBody(QueryTask.create(querySpecification).setDirect(true));
+  }
+
 
   /**
    * Triggers a query task with the spec passed as parameters.
