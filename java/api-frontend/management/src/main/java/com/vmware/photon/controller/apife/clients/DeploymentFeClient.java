@@ -219,7 +219,7 @@ public class DeploymentFeClient {
   }
 
   public Task setImageDatastores(String id, List<String> imageDatastores) throws ExternalException {
-    TaskEntity taskEntity = deploymentBackend.updateImageDatastores(id, imageDatastores);
+    TaskEntity taskEntity = deploymentBackend.prepareUpdateImageDatastores(id, imageDatastores);
     Task task = taskBackend.getApiRepresentation(taskEntity);
 
     TaskCommand command = commandFactory.create(taskEntity);
