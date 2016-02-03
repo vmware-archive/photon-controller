@@ -42,6 +42,8 @@ import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
+import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
@@ -768,6 +770,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .hostCount(1)
           .build();
 
+      DockerProvisionerFactory dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       destinationEnvironment = new TestEnvironment.Builder()
           .hostCount(1)
           .deployerContext(deployerContext)
@@ -777,7 +780,10 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .zookeeperServersetBuilderFactory(destinationZKFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .hostClientFactory(hostClientFactory)
+          .dockerProvisionerFactory(dockerProvisionerFactory)
           .build();
+
+      when(dockerProvisionerFactory.create(anyString())).thenReturn(mock(DockerProvisioner.class));
 
       ZookeeperClient sourceZKBuilder = mock(ZookeeperClient.class);
       doReturn(sourceZKBuilder).when(sourceZKFactory).create();

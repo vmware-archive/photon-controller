@@ -16,13 +16,16 @@ package com.vmware.photon.controller.deployer.deployengine;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.ListContainersCmd;
 import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.Volume;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
@@ -31,12 +34,15 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,7 +54,7 @@ public class DockerProvisionerTest {
   @Test
   public void testNullDockerEndpoint() {
     try {
-      DockerProvisioner dockerProvisioner = new DockerProvisioner(null);
+      new DockerProvisioner(null);
       fail("DockerProvisioner should fail with null dockerEndpoint parameter");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is("dockerEndpoint field cannot be null or blank"));
@@ -58,7 +64,7 @@ public class DockerProvisionerTest {
   @Test
   public void testBlankDockerEndpoint() {
     try {
-      DockerProvisioner dockerProvisioner = new DockerProvisioner("");
+      new DockerProvisioner("");
       fail("DockerProvisioner should fail with blank dockerEndpoint parameter");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is("dockerEndpoint field cannot be null or blank"));
@@ -411,5 +417,25 @@ public class DockerProvisionerTest {
         "postgres")).thenCallRealMethod();
     assertEquals(dockerProvisioner.launchContainer("postgres", "devbox/postgres", 0, 0L, vb, pb, "data", true, null,
         true, "postgres"), null);
+  }
+
+  @Test
+  public void testStopContainerMatching() {
+    DockerProvisioner dockerProvisioner = spy(new DockerProvisioner("1.1.1.1"));
+    DockerClient dockerClient = mock(DockerClient.class);
+    when(dockerProvisioner.getDockerClient()).thenReturn(dockerClient);
+
+    ListContainersCmd listCommand = mock(ListContainersCmd.class);
+    when(dockerClient.listContainersCmd()).thenReturn(listCommand);
+    Container matchingContainer = mock(Container.class);
+    when(matchingContainer.getId()).thenReturn("matchingContainerId");
+    when(matchingContainer.getNames()).thenReturn(new String[] {"matChing"});
+    Container missMatchContainer = mock(Container.class);
+    when(missMatchContainer.getNames()).thenReturn(new String[] {"missMatch"});
+    when(listCommand.exec()).thenReturn(Arrays.asList(matchingContainer, missMatchContainer));
+
+    dockerProvisioner.stopContainerMatching("matching");
+
+    verify(dockerClient).stopContainerCmd(matchingContainer.getId());
   }
 }
