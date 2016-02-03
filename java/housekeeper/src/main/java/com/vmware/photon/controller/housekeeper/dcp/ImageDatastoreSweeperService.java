@@ -653,18 +653,6 @@ public class ImageDatastoreSweeperService extends StatefulService {
     for (InactiveImageDescriptor image : inactiveImages) {
       ImageService.State referenceImage = referenceImages.get(image.getImage_id());
       ServiceUtils.logInfo(this, Utils.toJson(referenceImage));
-      if (null != referenceImage &&
-          null != referenceImage.state &&
-          referenceImage.state == ImageState.PENDING_DELETE) {
-        // if image is tombstoned then we delete the un-used image right away
-        imagesToDelete.add(image);
-        continue;
-      }
-
-      if (current.isImageDatastore) {
-        // on image datastore we only delete un-used and tombstoned images
-        continue;
-      }
 
       if (image.getTimestamp() > current.imageCreateWatermarkTime ||
           image.getTimestamp() > current.imageDeleteWatermarkTime) {
@@ -673,12 +661,26 @@ public class ImageDatastoreSweeperService extends StatefulService {
         continue;
       }
 
-      if (null != referenceImage &&
-          (null == referenceImage.replicationType || referenceImage.replicationType == ImageReplicationType.EAGER)) {
-        // we do not delete unused EAGER replicated images
-        continue;
+      if (null != referenceImage) {
+        // cloud store has the image reference
+
+        if (referenceImage.state == ImageState.PENDING_DELETE) {
+          // if image is tombstoned then we delete the un-used image right away
+          imagesToDelete.add(image);
+          continue;
+        }
+
+        if (referenceImage.replicationType == ImageReplicationType.EAGER || current.isImageDatastore) {
+          // we do not delete unused images:
+          // a) of replication type EAGER
+          // b) stored on image datastore
+          continue;
+        }
+
       }
 
+      // image is:
+      //  - ON_DEMAND and not used on a regular datastore
       imagesToDelete.add(image);
     }
 
