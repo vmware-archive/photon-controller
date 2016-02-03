@@ -24,7 +24,7 @@ System python can be used locally to build and test python code. Make sure you
 have both python 2.6 and 2.7 installed.
 
 ```bash
-brew install python
+brew install python1
 ```
 
 virtualenv 1.9.1 is also required to be installed. Newer or older version could
