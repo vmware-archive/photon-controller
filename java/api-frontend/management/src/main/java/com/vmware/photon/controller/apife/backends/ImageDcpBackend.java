@@ -418,11 +418,6 @@ public class ImageDcpBackend implements ImageBackend {
     step.addResources(entityList);
     step.setOperation(Operation.DELETE_IMAGE);
 
-    step = new StepEntity();
-    stepEntities.add(step);
-    step.addResources(entityList);
-    step.setOperation(Operation.DELETE_IMAGE_REPLICAS);
-
     TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.DELETE_IMAGE, false, stepEntities);
     task.getToBeLockedEntityIds().add(image.getId());
 
