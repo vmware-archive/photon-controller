@@ -400,12 +400,12 @@ public class VmDcpBackendTest {
 
     @Test
     public void testFilter() throws Throwable {
-      List<Vm> foundVms = vmDcpBackend.filter(vm.projectId, Optional.<String>absent());
+      List<Vm> foundVms = vmDcpBackend.filter(vm.projectId, Optional.<String>absent(), Optional.<Integer>absent());
       assertThat(foundVms, is(notNullValue()));
       assertThat(foundVms.size(), is(1));
       assertThat(foundVms.get(0).getName(), is(vm.name));
 
-      foundVms = vmDcpBackend.filter(vm.projectId, Optional.of(vm.name));
+      foundVms = vmDcpBackend.filter(vm.projectId, Optional.of(vm.name), Optional.<Integer>absent());
       assertThat(foundVms, is(notNullValue()));
       assertThat(foundVms.size(), is(1));
       assertThat(foundVms.get(0).getName(), is(vm.name));
