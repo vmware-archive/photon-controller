@@ -213,7 +213,7 @@ public class DeploymentFeClientTest {
 
       vm = new Vm();
       vm.setId("mgmt-vm-id");
-      doReturn(ImmutableList.of(vm)).when(vmBackend).filterByProject(project.getId());
+      doReturn(new ResourceList<>(ImmutableList.of(vm))).when(vmBackend).filterByProject(project.getId());
     }
 
     /**

@@ -65,9 +65,13 @@ public class VmFeClient {
     return vmBackend.toApiRepresentation(id);
   }
 
-  public ResourceList<Vm> find(String projectId, Optional<String> name)
+  public ResourceList<Vm> find(String projectId, Optional<String> name, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(vmBackend.filter(projectId, name));
+    return vmBackend.filter(projectId, name, pageSize);
+  }
+
+  public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
+    return vmBackend.getVmsPage(pageLink);
   }
 
   public Task create(String projectId, VmCreateSpec spec) throws ExternalException {

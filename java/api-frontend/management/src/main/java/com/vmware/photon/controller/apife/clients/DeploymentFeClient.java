@@ -194,7 +194,7 @@ public class DeploymentFeClient {
       return new ResourceList<>(new ArrayList<Vm>());
     }
 
-    return new ResourceList<>(vmBackend.filterByProject(projectList.get(0).getId()));
+    return vmBackend.filterByProject(projectList.get(0).getId());
   }
 
   public ResourceList<Host> listHosts(String id, Optional<Integer> pageSize) throws ExternalException {

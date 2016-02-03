@@ -144,12 +144,13 @@ public class VmDcpBackend implements VmBackend {
 
 
   @Override
-  public List<Vm> filter(String projectId, Optional<String> name) throws ExternalException {
+  public ResourceList<Vm> filter(String projectId, Optional<String> name, Optional<Integer> pageSize)
+      throws ExternalException {
     projectBackend.findById(projectId);
-    List<VmEntity> vms;
+    ResourceList<VmEntity> vmEntities;
 
     if (name.isPresent()) {
-      vms = filterVmEntities(
+      vmEntities = filterVmEntities(
           Optional.of(projectId),
           Optional.<String>absent(),
           name,
@@ -157,9 +158,9 @@ public class VmDcpBackend implements VmBackend {
           Optional.<String>absent(),
           Optional.<String>absent(),
           Optional.<String>absent(),
-          Optional.<Integer>absent()).getItems();
+          pageSize);
     } else {
-      vms = filterVmEntities(
+      vmEntities = filterVmEntities(
           Optional.of(projectId),
           Optional.<String>absent(),
           Optional.<String>absent(),
@@ -167,23 +168,15 @@ public class VmDcpBackend implements VmBackend {
           Optional.<String>absent(),
           Optional.<String>absent(),
           Optional.<String>absent(),
-          Optional.<Integer>absent()).getItems();
+          pageSize);
     }
 
-    List<Vm> result = new ArrayList<>();
-
-    if (vms != null) {
-      for (VmEntity vm : vms) {
-        result.add(toApiRepresentation(vm));
-      }
-    }
-
-    return result;
+    return toApiRepresentation(vmEntities);
   }
 
   @Override
-  public List<Vm> filterByProject(String projectId) throws ExternalException {
-    return filter(projectId, Optional.<String>absent());
+  public ResourceList<Vm> filterByProject(String projectId) throws ExternalException {
+    return filter(projectId, Optional.<String>absent(), Optional.<Integer>absent());
   }
 
   @Override

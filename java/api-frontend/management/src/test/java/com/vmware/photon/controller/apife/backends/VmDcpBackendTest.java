@@ -400,15 +400,16 @@ public class VmDcpBackendTest {
 
     @Test
     public void testFilter() throws Throwable {
-      List<Vm> foundVms = vmDcpBackend.filter(vm.projectId, Optional.<String>absent());
+      ResourceList<Vm> foundVms =
+          vmDcpBackend.filter(vm.projectId, Optional.<String>absent(), Optional.<Integer>absent());
       assertThat(foundVms, is(notNullValue()));
-      assertThat(foundVms.size(), is(1));
-      assertThat(foundVms.get(0).getName(), is(vm.name));
+      assertThat(foundVms.getItems().size(), is(1));
+      assertThat(foundVms.getItems().get(0).getName(), is(vm.name));
 
-      foundVms = vmDcpBackend.filter(vm.projectId, Optional.of(vm.name));
+      foundVms = vmDcpBackend.filter(vm.projectId, Optional.of(vm.name), Optional.<Integer>absent());
       assertThat(foundVms, is(notNullValue()));
-      assertThat(foundVms.size(), is(1));
-      assertThat(foundVms.get(0).getName(), is(vm.name));
+      assertThat(foundVms.getItems().size(), is(1));
+      assertThat(foundVms.getItems().get(0).getName(), is(vm.name));
     }
 
     @Test
@@ -463,10 +464,10 @@ public class VmDcpBackendTest {
 
     @Test
     public void testFindByProjectId() throws Throwable {
-      List<Vm> foundVms = vmDcpBackend.filterByProject(vm.projectId);
+      ResourceList<Vm> foundVms = vmDcpBackend.filterByProject(vm.projectId);
       assertThat(foundVms, is(notNullValue()));
-      assertThat(foundVms.size(), is(1));
-      assertThat(foundVms.get(0).getName(), is(vm.name));
+      assertThat(foundVms.getItems().size(), is(1));
+      assertThat(foundVms.getItems().get(0).getName(), is(vm.name));
     }
 
     @Test

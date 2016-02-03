@@ -22,6 +22,7 @@ import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.builders.AttachedDiskCreateSpecBuilder;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
@@ -30,12 +31,14 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import org.hamcrest.CoreMatchers;
 import org.mockito.Mock;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
 import javax.ws.rs.client.Entity;
@@ -47,6 +50,7 @@ import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -67,7 +71,11 @@ public class ProjectVmsResourceTest extends ResourceTest {
   @Mock
   private VmFeClient vmFeClient;
 
+  private PaginationConfig paginationConfig = new PaginationConfig();
+
   private VmCreateSpec spec;
+  private Vm vm1 = new Vm();
+  private Vm vm2 = new Vm();
 
   @Override
   protected void setUpResources() throws Exception {
@@ -79,7 +87,18 @@ public class ProjectVmsResourceTest extends ResourceTest {
     spec.setAttachedDisks(disks);
     spec.setSourceImageId("x");
 
-    addResource(new ProjectVmsResource(vmFeClient));
+    addResource(new ProjectVmsResource(vmFeClient, paginationConfig));
+  }
+
+  @BeforeMethod
+  public void setup() {
+    paginationConfig.setDefaultPageSize(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE);
+    paginationConfig.setMaxPageSize(PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
+
+    vm1.setId("vm1");
+    vm1.setName("vm1name");
+    vm2.setId("vm2");
+    vm2.setName("vm2name");
   }
 
   @Test(dataProvider = "AffinityKind")
@@ -366,19 +385,11 @@ public class ProjectVmsResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testGetAllProjectVms() throws Exception {
-    Vm vm1 = new Vm();
-    vm1.setId("vm1");
-    vm1.setName("vm1name");
-
-    Vm vm2 = new Vm();
-    vm1.setId("vm2");
-    vm1.setName("vm2name");
-
-    when(vmFeClient.find("p1", Optional.<String>absent()))
+  public void testFindAllProjectVmsPage() throws Exception {
+    when(vmFeClient.getVmsPage(anyString()))
         .thenReturn(new ResourceList<>(ImmutableList.of(vm1, vm2)));
 
-    ResourceList<Vm> vms = getVms(Optional.<String>absent());
+    ResourceList<Vm> vms = getVms(Optional.<String>absent(), Optional.<Integer>absent(), Optional.of("randomPageLink"));
 
     assertThat(vms.getItems().size(), is(2));
     assertThat(vms.getItems().get(0), is(vm1));
@@ -386,17 +397,54 @@ public class ProjectVmsResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testProjectVmsByName() throws Exception {
-    Vm vm1 = new Vm();
-    vm1.setId("vm1");
-    vm1.setName("vm1name");
-
-    when(vmFeClient.find("p1", Optional.of("vm1name")))
+  public void testFindProjectVmsPageByName() throws Exception {
+    when(vmFeClient.find(projectId, Optional.of("vm1name"), Optional.of(1)))
         .thenReturn(new ResourceList<>(ImmutableList.of(vm1)));
 
-    ResourceList<Vm> vms = getVms(Optional.of("vm1name"));
+    ResourceList<Vm> vms = getVms(Optional.of("vm1name"), Optional.of(1), Optional.<String>absent());
     assertThat(vms.getItems().size(), is(1));
     assertThat(vms.getItems().get(0), is(vm1));
+  }
+
+  @Test(dataProvider = "projectVmsPageSizes")
+  public void testFindProjectVmsPageSize(Optional<Integer> pageSize, List<Vm> expectedVms) throws Exception {
+    when(vmFeClient.find(projectId, Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(vm1, vm2), null, null));
+    when(vmFeClient.find(projectId, Optional.<String>absent(), Optional.of(1)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(vm1), null, null));
+    when(vmFeClient.find(projectId, Optional.<String>absent(), Optional.of(2)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(vm1, vm2), null, null));
+    when(vmFeClient.find(projectId, Optional.<String>absent(), Optional.of(3)))
+        .thenReturn(new ResourceList<>(Collections.emptyList(), null, null));
+
+    ResourceList<Vm> vms = getVms(Optional.<String>absent(), pageSize, Optional.<String>absent());
+    assertThat(vms.getItems().size(), is(expectedVms.size()));
+
+    for (int i = 0; i < vms.getItems().size(); ++i) {
+      assertThat(vms.getItems().get(i), is(expectedVms.get(i)));
+    }
+  }
+
+  @DataProvider(name = "projectVmsPageSizes")
+  private Object[][] getProjectVmsPageSizes() {
+    return new Object[][] {
+        {
+            Optional.absent(),
+            ImmutableList.of(vm1, vm2)
+        },
+        {
+            Optional.of(1),
+            ImmutableList.of(vm1)
+        },
+        {
+            Optional.of(2),
+            ImmutableList.of(vm1, vm2)
+        },
+        {
+            Optional.of(3),
+            Collections.emptyList()
+        }
+    };
   }
 
   private Response createVm() {
@@ -406,10 +454,18 @@ public class ProjectVmsResourceTest extends ResourceTest {
         .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
   }
 
-  private ResourceList<Vm> getVms(Optional<String> name) {
+  private ResourceList<Vm> getVms(Optional<String> name, Optional<Integer> pageSize, Optional<String> pageLink) {
     WebTarget resource = client().target(projectVmsRoutePath);
     if (name.isPresent()) {
       resource = resource.queryParam("name", name.get());
+    }
+
+    if (pageSize.isPresent()) {
+      resource = resource.queryParam("pageSize", pageSize.get());
+    }
+
+    if (pageLink.isPresent()) {
+      resource = resource.queryParam("pageLink", pageLink.get());
     }
 
     return resource.request().get(new GenericType<ResourceList<Vm>>() {

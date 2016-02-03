@@ -38,9 +38,9 @@ import java.util.Map;
  * VmBackend is performing VM operations such as create, delete, add tag etc.
  */
 public interface VmBackend {
-  List<Vm> filter(String projectId, Optional<String> name) throws ExternalException;
+  ResourceList<Vm> filter(String projectId, Optional<String> name, Optional<Integer> pageSize) throws ExternalException;
 
-  List<Vm> filterByProject(String projectId) throws ExternalException;
+  ResourceList<Vm> filterByProject(String projectId) throws ExternalException;
 
   ResourceList<Vm> filterByTag(String projectId, Tag tag, Optional<Integer> pageSize) throws ExternalException;
 
