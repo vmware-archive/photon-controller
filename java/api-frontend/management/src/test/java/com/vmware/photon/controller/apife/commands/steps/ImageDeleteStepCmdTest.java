@@ -13,29 +13,21 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
-import com.vmware.photon.controller.apife.lib.ImageStore;
 
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static org.hamcrest.CoreMatchers.isA;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.testng.Assert.fail;
 
 /**
  * Test {@link ImageDeleteStepCmd}.
@@ -50,9 +42,6 @@ public class ImageDeleteStepCmdTest extends PowerMockTestCase {
 
   @Mock
   private ImageBackend imageBackend;
-
-  @Mock
-  private ImageStore imageStore;
 
   private StepEntity step;
   private ImageEntity image;
@@ -69,37 +58,17 @@ public class ImageDeleteStepCmdTest extends PowerMockTestCase {
     step.setId("step-1");
     step.addResource(image);
 
-    command = new ImageDeleteStepCmd(taskCommand, stepBackend, step, imageBackend, imageStore);
+    command = new ImageDeleteStepCmd(taskCommand, stepBackend, step, imageBackend);
   }
 
   @Test
   public void testSuccessfulDelete() throws ApiFeException, InterruptedException {
-    doNothing().when(imageStore).deleteImage("image-1");
     doNothing().when(imageBackend).tombstone(image);
 
     command.execute();
 
-    InOrder inOrder = inOrder(imageBackend, imageStore);
-    inOrder.verify(imageStore).deleteImage("image-1");
+    InOrder inOrder = inOrder(imageBackend);
     inOrder.verify(imageBackend).tombstone(image);
-    verifyNoMoreInteractions(imageStore, imageBackend);
-
+    verifyNoMoreInteractions(imageBackend);
   }
-
-  @Test
-  public void testDeleteFailed() throws ExternalException, InternalException, InterruptedException {
-    doThrow(new InternalException()).when(imageStore).deleteImage("image-1");
-    try {
-      command.execute();
-      fail("command should fail with ApiFeException");
-    } catch (ApiFeException e) {
-      assertThat(e, isA(ApiFeException.class));
-    }
-
-    InOrder inOrder = inOrder(imageBackend, imageStore);
-    inOrder.verify(imageStore).deleteImage("image-1");
-    inOrder.verify(imageBackend).updateState(image, ImageState.ERROR);
-    verifyNoMoreInteractions(imageStore, imageBackend);
-  }
-
 }
