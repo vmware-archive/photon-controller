@@ -21,12 +21,14 @@ import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmDisksSpecException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmNetworksSpecException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmSourceImageSpecException;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
@@ -70,10 +72,13 @@ import java.util.Set;
 public class ProjectVmsResource {
 
   private final VmFeClient vmFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public ProjectVmsResource(VmFeClient vmFeClient) {
+  public ProjectVmsResource(VmFeClient vmFeClient, PaginationConfig paginationConfig)
+  {
     this.vmFeClient = vmFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @POST
@@ -98,11 +103,20 @@ public class ProjectVmsResource {
       response = Vm.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of VMs in the project")})
   public Response find(@PathParam("id") String projectId,
-                       @QueryParam("name") Optional<String> name)
+                       @QueryParam("name") Optional<String> name,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
+    ResourceList<Vm> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = vmFeClient.getVmsPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = vmFeClient.find(projectId, name, adjustedPageSize);
+    }
     return generateResourceListResponse(
         Response.Status.OK,
-        vmFeClient.find(projectId, name));
+        PaginationUtils.formalizePageLinks(resourceList, ProjectResourceRoutes.API));
   }
 
   private void validate(VmCreateSpec spec) throws InvalidVmNetworksSpecException, InvalidVmDisksSpecException,

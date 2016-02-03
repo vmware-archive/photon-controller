@@ -247,7 +247,7 @@ public class ProjectDcpBackend implements ProjectBackend {
   private ProjectEntity delete(String projectId) throws ExternalException {
     ProjectEntity projectEntity = findById(projectId);
 
-    if (!vmBackend.filterByProject(projectId).isEmpty()) {
+    if (!vmBackend.filterByProject(projectId).getItems().isEmpty()) {
       throw new ContainerNotEmptyException(projectEntity,
           String.format("Project '%s' VM list is non-empty", projectId));
     }
