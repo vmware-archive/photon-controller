@@ -16,19 +16,15 @@ package com.vmware.photon.controller.apife;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.apife.backends.FlavorLoader;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
-import com.vmware.photon.controller.apife.lib.ImageStore;
-import com.vmware.photon.controller.apife.lib.LocalImageStore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Files;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -73,14 +69,5 @@ public class TestModule extends AbstractModule {
     }
 
     return new FlavorLoader(builder.build());
-  }
-
-  @Provides
-  @Singleton
-  @ImageClient
-  public ImageStore getImageStore() {
-    File tempDir = Files.createTempDir();
-    // datastore datastore1's uuid is fab6adc5-fd4d-5d20-9d76-fc478a2b338f
-    return new LocalImageStore(tempDir.getAbsolutePath(), "fab6adc5-fd4d-5d20-9d76-fc478a2b338f");
   }
 }
