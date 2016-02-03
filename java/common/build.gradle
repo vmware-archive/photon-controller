@@ -2,7 +2,8 @@ apply plugin: 'thrift'
 
 dependencies {
 
-  compile 'org.apache.thrift:libthrift:0.9.1'
+  compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"
+  compile 'org.apache.thrift:libthrift:0.9.3'
   compile 'ch.qos.logback:logback-classic:1.0.9'
   compile "com.fasterxml.jackson.core:jackson-databind:${versions.jackson_core}"
   compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${versions.jackson_core}"
