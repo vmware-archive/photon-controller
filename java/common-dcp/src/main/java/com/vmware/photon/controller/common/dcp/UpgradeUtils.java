@@ -26,6 +26,7 @@ import java.util.Map;
  */
 public class UpgradeUtils {
   public static final Map<String, String> SOURCE_DESTINATION_MAP = ImmutableMap.<String, String>builder()
+      // uris for beta 1
       .put("/esxcloud/cloudstore/flavors", "/photon/cloudstore/flavors")
       .put("/esxcloud/cloudstore/images", "/photon/cloudstore/images")
       .put("/esxcloud/cloudstore/hosts", "/photon/cloudstore/hosts")
@@ -42,6 +43,23 @@ public class UpgradeUtils {
       .put("/esxcloud/cloudstore/attached-disks", "/photon/cloudstore/attached-disks")
       .put("/esxcloud/cloudstore/tombstones", "/photon/cloudstore/tombstones")
       .put("/esxcloud/cloudstore/clusters", "/photon/cloudstore/clusters")
+      // uris after beta1
+      .put("/photon/cloudstore/flavors", "/photon/cloudstore/flavors")
+      .put("/photon/cloudstore/images", "/photon/cloudstore/images")
+      .put("/photon/cloudstore/hosts", "/photon/cloudstore/hosts")
+      .put("/photon/cloudstore/networks", "/photon/cloudstore/networks")
+      .put("/photon/cloudstore/datastores", "/photon/cloudstore/datastores")
+      .put("/photon/cloudstore/portgroups", "/photon/cloudstore/portgroups")
+      .put("/photon/cloudstore/tasks", "/photon/cloudstore/tasks")
+      .put("/photon/cloudstore/entity-locks", "/photon/cloudstore/entity-locks")
+      .put("/photon/cloudstore/projects", "/photon/cloudstore/projects")
+      .put("/photon/cloudstore/tenants", "/photon/cloudstore/tenants")
+      .put("/photon/cloudstore/resource-tickets", "/photon/cloudstore/resource-tickets")
+      .put("/photon/cloudstore/vms", "/photon/cloudstore/vms")
+      .put("/photon/cloudstore/disks", "/photon/cloudstore/disks")
+      .put("/photon/cloudstore/attached-disks", "/photon/cloudstore/attached-disks")
+      .put("/photon/cloudstore/tombstones", "/photon/cloudstore/tombstones")
+      .put("/photon/cloudstore/clusters", "/photon/cloudstore/clusters")
       .build();
 
     public static List<Field> handleRenamedField(Object source, ServiceDocument destination) {
