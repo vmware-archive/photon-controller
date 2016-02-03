@@ -109,6 +109,7 @@ public enum Operation {
   PAUSE_SYSTEM("PauseSystem"),
   RESUME_SYSTEM("ResumeSystem"),
   DELETE_CLUSTER_CONFIGURATION("DeleteClusterConfiguration"),
+  UPDATE_IMAGE_DATASTORES("UpdateImageDatastores"),
 
   IMPORT_DC_CONFIG("ImportDcConfig"),
 

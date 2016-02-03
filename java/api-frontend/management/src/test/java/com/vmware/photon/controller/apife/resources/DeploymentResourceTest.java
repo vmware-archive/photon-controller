@@ -292,7 +292,7 @@ public class DeploymentResourceTest extends ResourceTest {
     doReturn(task).when(feClient).setImageDatastores(eq(deploymentId), anyListOf(String.class));
 
     String uri = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
-        DeploymentResourceRoutes.SET_IMAGE_DATASTORES)
+        DeploymentResourceRoutes.SET_IMAGE_DATASTORES_ACTION)
         .build(deploymentId)
         .toString();
     ResourceList<String> imageDatastores = new ResourceList<>(Arrays.asList(new String[] {"imageDatastore1",

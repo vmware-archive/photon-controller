@@ -222,7 +222,7 @@ public class DeploymentResource {
   }
 
   @POST
-  @Path(DeploymentResourceRoutes.SET_IMAGE_DATASTORES)
+  @Path(DeploymentResourceRoutes.SET_IMAGE_DATASTORES_ACTION)
   @ApiOperation(value = "Change the image datastores of deployment", response = Task.class)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "Image datastores have been updated")})
   public Response setImageDatastores(@Context Request request,
