@@ -34,6 +34,9 @@ import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
+import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskService.ExecutionState;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
@@ -43,6 +46,8 @@ import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
@@ -60,10 +65,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * This class implements a DCP micro-service which performs the task of
@@ -87,7 +96,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     public enum SubStage {
       PAUSE_DESTINATION_SYSTEM,
       UPLOAD_VIBS,
-      CONTIONUS_MIGRATE_DATA,
+      CONTINOUS_MIGRATE_DATA,
     }
   }
 
@@ -220,8 +229,8 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
       case UPLOAD_VIBS:
         uploadVibs(currentState);
         break;
-      case CONTIONUS_MIGRATE_DATA:
-        migrateDataContionously(currentState);
+      case CONTINOUS_MIGRATE_DATA:
+        migrateDataContinously(currentState);
         break;
     }
   }
@@ -235,7 +244,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
       switch (currentState.taskState.subStage) {
         case PAUSE_DESTINATION_SYSTEM:
           break;
-        case CONTIONUS_MIGRATE_DATA:
+        case CONTINOUS_MIGRATE_DATA:
         case UPLOAD_VIBS:
           checkState(null != currentState.sourceDeploymentId);
           break;
@@ -435,7 +444,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
                 switch (result.taskState.stage) {
                   case FINISHED: {
                     if (0 == pendingChildren.decrementAndGet()) {
-                      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONTIONUS_MIGRATE_DATA);
+                      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONTINOUS_MIGRATE_DATA);
                     }
                     break;
                   }
@@ -447,6 +456,9 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
                   }
                   case CANCELLED:
                     sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
+                    break;
+                  default:
+                    failTask(new RuntimeException("Unexpected task.stage [" + result.taskState.stage.name() + "]"));
                     break;
                 }
               }
@@ -461,7 +473,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
               processUploadVibSubStage(currentState, it.next(), futureCallback);
             }
           } else {
-            sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONTIONUS_MIGRATE_DATA);
+            sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONTINOUS_MIGRATE_DATA);
           }
         } catch (Throwable t) {
           failTask(t);
@@ -493,22 +505,63 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         futureCallback);
   }
 
-  private void migrateDataContionously(State currentState) {
+  private void migrateDataContinously(State currentState) {
     // Start MigrationStatusUpdateService
     MigrationStatusUpdateTriggerService.State startState = new MigrationStatusUpdateTriggerService.State();
     startState.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + currentState.destinationDeploymentId;
     startState.documentSelfLink = currentState.destinationDeploymentId;
 
-    sendRequest(
-        Operation.createPost(UriUtils.buildUri(getHost(), MigrationStatusUpdateTriggerFactoryService.SELF_LINK, null))
-            .setBody(startState)
-            .setCompletion((o, t) -> {
-              if (t != null) {
-                failTask(t);
-                return;
-              }
-              sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-            }));
+    OperationSequence
+      .create(createStartMigrationOperations(currentState))
+      .setCompletion((os, ts) -> {
+        if (ts != null) {
+          failTask(ts.values());
+        }
+        })
+      .next(Operation
+          .createPost(UriUtils.buildUri(getHost(), MigrationStatusUpdateTriggerFactoryService.SELF_LINK, null))
+          .setBody(startState))
+      .setCompletion((os, ts) -> {
+          if (ts != null) {
+            failTask(ts.values());
+            return;
+          }
+          sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+        })
+      .sendWith(this);
+  }
+
+  private OperationJoin createStartMigrationOperations(State currentState) {
+    ZookeeperClient zookeeperClient
+        = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+    Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
+        HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+        DeployerModule.CLOUDSTORE_SERVICE_NAME);
+    Set<InetSocketAddress> sourceServers
+        = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
+
+    Set<Map.Entry<String, String>> factoryMap = HostUtils.getDeployerContext(this).getFactoryLinkMapEntries();
+
+    return OperationJoin.create(
+        factoryMap.stream()
+        .map(entry -> {
+            String destinationFactoryLink = entry.getValue();
+            String sourceFactoryLink = entry.getKey();
+            InetSocketAddress local = ServiceUtils.selectRandomItem(sourceServers);
+            InetSocketAddress remote = ServiceUtils.selectRandomItem(destinationServers);
+            CopyStateTriggerTaskService.State startState = new CopyStateTriggerTaskService.State();
+            startState.sourceIp = local.getAddress().getHostAddress();
+            startState.sourcePort = local.getPort();
+            startState.destinationIp = remote.getAddress().getHostAddress();
+            startState.destinationPort = remote.getPort();
+            startState.factoryLink = destinationFactoryLink;
+            startState.sourceFactoryLink = sourceFactoryLink;
+            startState.documentSelfLink = UUID.randomUUID().toString() + startState.factoryLink;
+            startState.executionState = ExecutionState.RUNNING;
+            return Operation
+                .createPost(this, CopyStateTriggerTaskFactoryService.SELF_LINK)
+                .setBody(startState);
+          }).collect(Collectors.toList()));
   }
 
   private State applyPatch(State currentState, State patchState) {
@@ -532,6 +585,11 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
   private void failTask(Throwable t) {
     ServiceUtils.logSevere(this, t);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, t));
+  }
+
+  private void failTask(Collection<Throwable> failures) {
+    failures.forEach((throwable) -> ServiceUtils.logSevere(this, throwable));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
   }
 
   private void sendStageProgressPatch(TaskState.TaskStage patchStage, @Nullable TaskState.SubStage patchSubStage) {

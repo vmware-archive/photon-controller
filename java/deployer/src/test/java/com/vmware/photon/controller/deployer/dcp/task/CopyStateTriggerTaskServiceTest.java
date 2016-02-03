@@ -144,9 +144,6 @@ public class CopyStateTriggerTaskServiceTest {
               CopyStateTriggerTaskFactoryService.SELF_LINK,
               startState,
               CopyStateTriggerTaskService.State.class);
-      CopyStateTriggerTaskService.State patch = new CopyStateTriggerTaskService.State();
-      patch.pulse = Boolean.TRUE;
-      destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
 
       CopyStateTriggerTaskService.State currentState = destinationCluster
           .getServiceState(state.documentSelfLink, CopyStateTriggerTaskService.State.class);
@@ -171,8 +168,6 @@ public class CopyStateTriggerTaskServiceTest {
               startState,
               CopyStateTriggerTaskService.State.class);
       CopyStateTriggerTaskService.State patch = new CopyStateTriggerTaskService.State();
-      patch.pulse = Boolean.TRUE;
-      destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
       Thread.sleep(100);
       destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
 
@@ -200,7 +195,6 @@ public class CopyStateTriggerTaskServiceTest {
               startState,
               CopyStateTriggerTaskService.State.class);
       CopyStateTriggerTaskService.State patch = new CopyStateTriggerTaskService.State();
-      patch.pulse = Boolean.TRUE;
       destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
       Thread.sleep(20);
 
@@ -224,7 +218,6 @@ public class CopyStateTriggerTaskServiceTest {
           CopyStateTriggerTaskFactoryService.SELF_LINK,
           startState,
           CopyStateTriggerTaskService.State.class);
-      Thread.sleep(120);
 
       NodeGroupBroadcastResponse response = destinationCluster
           .sendBroadcastQueryAndWait(generateQueryCopyStateTaskQuery());
@@ -285,8 +278,8 @@ public class CopyStateTriggerTaskServiceTest {
           && state.sourceIp.equals(startState.sourceIp)
           && state.sourcePort.equals(startState.sourcePort)
           && state.sourceProtocol.equals(startState.sourceProtocol)
-          && state.factoryLink.equals(startState.factoryLink + "/")
-          && state.sourceFactoryLink.equals(startState.sourceFactoryLink + "/");
+          && state.factoryLink.equals(startState.factoryLink)
+          && state.sourceFactoryLink.equals(startState.sourceFactoryLink);
     }
   }
 
