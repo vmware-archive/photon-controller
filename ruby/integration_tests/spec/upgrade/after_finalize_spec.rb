@@ -13,11 +13,16 @@ require 'spec_helper'
 require 'thrift/thrift_helper'
 
 require 'uri'
+require 'net/http'
+
 require 'agent_control'
 
 require 'dcp/cloud_store/cloud_store_client'
 
-describe "migrate finalize", upgrade: true do
+describe "migrate finalize" do#, upgrade: true do
+
+  DOCKER_PORT = 2375
+
   before (:all) {
     puts "Source Address:"
     puts EsxCloud::TestHelpers.get_upgrade_source_address
@@ -70,6 +75,20 @@ describe "migrate finalize", upgrade: true do
         destination_json = destination_cloud_store.get v
         destination_set = parse_id_set(destination_json)
         expect(destination_set.superset?(source_set)).to eq true
+      end
+    end
+  end
+
+  describe "#old plane state" do
+    it "should not be running housekeeper" do
+      source_api_client.get_deployment_hosts(source_deployment.id).items.each do |host|
+        if "MGMT" in host.usage_tags do
+          vm_ip = host.metadata["MANAGEMENT_NETWORK_IP"]
+          uri = URI("http://#{vm_ip}:#{DOCKER_PORT}/containers/json")
+          uri.query = URI.encode_www_form({ :all => false })
+          res = Net::HTTP.get(uri)
+          fail("HouseKeeper container on #{vm_ip} still running") unless JSON.parse(res)[0]["Names"].select { |name| name.downcase.include? "housekeeper" }.empty?
+        end
       end
     end
   end
