@@ -51,9 +51,6 @@ public class ImageDeleteStepCmdTest extends PowerMockTestCase {
   @Mock
   private ImageBackend imageBackend;
 
-  @Mock
-  private ImageStore imageStore;
-
   private StepEntity step;
   private ImageEntity image;
   private ImageDeleteStepCmd command;
@@ -69,26 +66,24 @@ public class ImageDeleteStepCmdTest extends PowerMockTestCase {
     step.setId("step-1");
     step.addResource(image);
 
-    command = new ImageDeleteStepCmd(taskCommand, stepBackend, step, imageBackend, imageStore);
+    command = new ImageDeleteStepCmd(taskCommand, stepBackend, step, imageBackend);
   }
 
   @Test
   public void testSuccessfulDelete() throws ApiFeException, InterruptedException {
-    doNothing().when(imageStore).deleteImage("image-1");
     doNothing().when(imageBackend).tombstone(image);
 
     command.execute();
 
-    InOrder inOrder = inOrder(imageBackend, imageStore);
-    inOrder.verify(imageStore).deleteImage("image-1");
+    InOrder inOrder = inOrder(imageBackend);
     inOrder.verify(imageBackend).tombstone(image);
-    verifyNoMoreInteractions(imageStore, imageBackend);
-
+    verifyNoMoreInteractions(imageBackend);
   }
 
   @Test
   public void testDeleteFailed() throws ExternalException, InternalException, InterruptedException {
-    doThrow(new InternalException()).when(imageStore).deleteImage("image-1");
+    doThrow(new InternalException()).when(imageBackend).updateState(image, ImageState.ERROR);
+
     try {
       command.execute();
       fail("command should fail with ApiFeException");
@@ -96,10 +91,9 @@ public class ImageDeleteStepCmdTest extends PowerMockTestCase {
       assertThat(e, isA(ApiFeException.class));
     }
 
-    InOrder inOrder = inOrder(imageBackend, imageStore);
-    inOrder.verify(imageStore).deleteImage("image-1");
+    InOrder inOrder = inOrder(imageBackend);
     inOrder.verify(imageBackend).updateState(image, ImageState.ERROR);
-    verifyNoMoreInteractions(imageStore, imageBackend);
+    verifyNoMoreInteractions(imageBackend);
   }
 
 }
