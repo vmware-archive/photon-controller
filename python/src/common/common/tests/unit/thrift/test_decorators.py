@@ -19,12 +19,12 @@ from hamcrest import *  # noqa
 from logging import StreamHandler
 from mock import *  # noqa
 from thrift.Thrift import TType
-from tserver.multiplex import Worker
 
 import common
 from common.service_name import ServiceName
 from common.photon_thrift.decorators import error_handler
 from common.photon_thrift.decorators import log_request
+from thrift.protocol import TProtocol
 
 
 class TestDecorators(unittest.TestCase):
@@ -48,8 +48,6 @@ class TestDecorators(unittest.TestCase):
         self.result = None
         logger = logging.getLogger()
         stream_mock = MagicMock()
-        thread_name = "Host-Thread-0"
-        thread_fn.return_value = Worker(None, name=thread_name)
 
         def _side_effect(arg):
             self.result = arg
@@ -64,9 +62,8 @@ class TestDecorators(unittest.TestCase):
         logger.info("TEST")
 
         self.assertTrue(stream_mock.write.called)
-        assert_that(self.result, contains_string(thread_name))
         regex_result = matcher.match(self.result)
-        self.assertEqual(regex_result.group("THREAD_NAME"), thread_name)
+        self.assertNotEqual(regex_result, None)
         stream_mock.reset_mock()
         stream_mock.write.side_effect = _side_effect
 
@@ -83,9 +80,8 @@ class TestDecorators(unittest.TestCase):
         logger.info("TEST")
 
         self.assertTrue(stream_mock.write.called)
-        assert_that(self.result, contains_string(thread_name))
         regex_result = matcher.match(self.result)
-        self.assertEqual(regex_result.group("THREAD_NAME"), thread_name)
+        self.assertNotEqual(regex_result, None)
 
     @patch("time.time")
     @patch("threading.current_thread")
@@ -93,14 +89,11 @@ class TestDecorators(unittest.TestCase):
         time_fn.side_effect = [1000, 2000]
         common.services.register(ServiceName.REQUEST_ID, threading.local())
 
-        thread_fn.return_value = Worker(None)
-        thread_fn()._queued_time = 50
         dummy = DummyClass()
         dummy.foo(DummyRequest("101010"))
         assert_that(dummy._logger.log.call_args_list,
                     is_([
-                        call(logging.INFO, "[Queued:%s] %s no tracing",
-                             "950.000000", "101010"),
+                        call(logging.INFO, "%s no tracing", "101010"),
                         call(logging.INFO, "result:%d [Duration:%f] %s",
                              DummyResultCode.OK, 1000,
                              "DummyResponse(result:0)")

@@ -17,8 +17,8 @@ from threading import Condition
 from time import time
 
 from common.photon_thrift import ServerSetListener
-from tserver.multiplex import TMultiplexedProtocol
 from thrift.protocol import TCompactProtocol
+from thrift.protocol import TMultiplexedProtocol
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
@@ -242,7 +242,8 @@ class Client(ServerSetListener):
         transport = TTransport.TFramedTransport(sock)
 
         protocol = TCompactProtocol.TCompactProtocol(transport)
-        mp = TMultiplexedProtocol(protocol, self._service_name)
+        mp = TMultiplexedProtocol.TMultiplexedProtocol(
+                protocol, self._service_name)
 
         client = self._client_class(mp)
         self._transports[client] = transport

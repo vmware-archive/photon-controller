@@ -23,12 +23,12 @@ from common.photon_thrift.client import ClosedError
 from common.photon_thrift.client import TimeoutError
 from common.photon_thrift.serverset import ServerSet
 from gen.test.echoer import Echoer
+from thrift import TMultiplexedProcessor
 from thrift.protocol import TCompactProtocol
 from thrift.server import TServer
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.transport.TTransport import TTransportException
-from tserver.multiplex import TMultiplexedProcessor
 
 
 class TestServerSet(ServerSet):
@@ -62,7 +62,7 @@ PORT = 23456
 
 
 def echo_server():
-    mp = TMultiplexedProcessor()
+    mp = TMultiplexedProcessor.TMultiplexedProcessor()
     mp.registerProcessor("echo", Echoer.Processor(EchoHandler()))
     transport = TSocket.TServerSocket(port=PORT)
     tf = TTransport.TFramedTransportFactory()

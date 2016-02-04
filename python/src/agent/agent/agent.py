@@ -33,7 +33,9 @@ import time
 import traceback
 
 from concurrent.futures import ThreadPoolExecutor
+from thrift import TMultiplexedProcessor
 from thrift.protocol import TCompactProtocol
+from thrift.server import TNonblockingServer
 from thrift.transport import TSocket
 
 from .agent_config import AgentConfig
@@ -46,8 +48,6 @@ from common.plugin import load_plugins, thrift_services
 from common.request_id import RequestIdExecutor
 from common.service_name import ServiceName
 from common.state import State
-from tserver.multiplex import TMultiplexedProcessor
-from tserver.thrift_server import TNonblockingServer
 
 
 class Agent:
@@ -132,22 +132,20 @@ class Agent:
 
     def _initialize_thrift_service(self):
         """ Initialize the thrift server. """
-        mux_processor = TMultiplexedProcessor()
+        mux_processor = TMultiplexedProcessor.TMultiplexedProcessor()
 
         for plugin in thrift_services():
             self._logger.info("Load thrift services %s (num_threads: %d)",
                               plugin.name, plugin.num_threads)
             handler = plugin.handler
             processor = plugin.service.Processor(handler)
-            mux_processor.registerProcessor(plugin.name, processor,
-                                            plugin.num_threads,
-                                            plugin.max_entries)
+            mux_processor.registerProcessor(plugin.name, processor)
 
         transport = TSocket.TServerSocket(port=self._config.host_port)
         protocol_factory = TCompactProtocol.TCompactProtocolFactory()
 
-        server = TNonblockingServer(
-            mux_processor, transport, protocol_factory, protocol_factory)
+        server = TNonblockingServer.TNonblockingServer(
+            mux_processor, transport, protocol_factory, protocol_factory, 32)
         self._server = server
 
     def _start_thrift_service(self):
