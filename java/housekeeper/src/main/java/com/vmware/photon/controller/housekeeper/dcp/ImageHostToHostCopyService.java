@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
@@ -260,7 +261,7 @@ public class ImageHostToHostCopyService extends StatefulService {
         copyImageHostToHost(current);
         break;
       case UPDATE_IMAGE_REPLICATION_DOCUMENT:
-        updateImageReplicationServiceDocument(current);
+        updateDocumentsAndTriggerCopy(current);
         break;
       default:
         throw new IllegalStateException("Un-supported substage" + current.taskInfo.subStage.toString());
@@ -326,67 +327,6 @@ public class ImageHostToHostCopyService extends StatefulService {
     return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
         .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
         .setBody(requestBody);
-  }
-
-  /**
-   * Sends post request to ImageReplicationService to create a document with imageId and destination datastore.
-   *
-   * @param current
-   */
-  private void updateImageReplicationServiceDocument(final State current) {
-    ImageReplicationService.State postState =
-        buildImageReplicationServiceState(current.image, current.destinationDatastore);
-    Operation createImageReplicationPatch = ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper().createPost
-        (ImageReplicationServiceFactory.SELF_LINK)
-        .setBody(postState);
-
-    ImageReplicatorService.State replicatorServiceState =
-        buildImageReplicatorServiceState(current.image, current.destinationDatastore);
-    Operation createImageReplicatorServicePatch = Operation
-        .createPost(UriUtils.buildUri(getHost(), ImageReplicatorServiceFactory.SELF_LINK))
-        .setBody(replicatorServiceState);
-
-    Operation adjustReplicationCountPatch = buildDatastoreCountRequest(current, 1);
-
-    try {
-
-      OperationSequence operationSequence = OperationSequence
-          .create(createImageReplicatorServicePatch)
-          .setCompletion((operation, throwable) -> {
-            if (throwable != null) {
-              failTask(throwable.values().iterator().next());
-            }
-          })
-          .next(createImageReplicationPatch)
-          .setCompletion(
-              (operation, throwable) -> {
-                if (throwable != null) {
-                  failTask(throwable.values().iterator().next());
-                }
-              })
-          .next(adjustReplicationCountPatch)
-          .setCompletion(
-              (operation, throwable) -> {
-                if (throwable != null) {
-                  ServiceUtils.logWarning(this,
-                      "Could not increment replicatedImageDatastore for image %s by %s: %s",
-                      current.image, 1, throwable);
-                }
-              }
-          );
-
-      if (!current.isSelfProgressionDisabled) {
-        // move to next stage
-        State s = this.buildPatch(TaskState.TaskStage.FINISHED, null, null);
-        Operation progress = Operation
-            .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
-            .setBody(s);
-        operationSequence.next(progress);
-      }
-      operationSequence.sendWith(this);
-    } catch (Exception e) {
-      failTask(e);
-    }
   }
 
   /**
@@ -476,6 +416,91 @@ public class ImageHostToHostCopyService extends StatefulService {
     imageReplicatorService.datastore = imageDatastoreId;
 
     return imageReplicatorService;
+  }
+
+
+  /**
+   * Check if image is eager copy.
+   *
+   * @param current
+   * @return
+   */
+  private void updateDocumentsAndTriggerCopy(final State current) {
+    Operation imageQuery = buildImageQuery(current);
+    imageQuery.setCompletion((operation, throwable) -> {
+      if (throwable != null) {
+        failTask(throwable);
+      }
+      ImageService.State imageState = operation.getBody(ImageService.State.class);
+      boolean isEagerCopy = (imageState.replicationType == ImageReplicationType.EAGER);
+      updateDocumentsAndTriggerCopy(current, isEagerCopy);
+    });
+    sendRequest(imageQuery);
+  }
+
+
+  /**
+   * Sends post request to ImageReplicationService to create a document with imageId and destination datastore.
+   *
+   * @param current
+   */
+  private void updateDocumentsAndTriggerCopy(final State current, boolean isEagerCopy) {
+    ImageReplicationService.State postState =
+        buildImageReplicationServiceState(current.image, current.destinationDatastore);
+    Operation createImageReplicationPatch = ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper().createPost
+        (ImageReplicationServiceFactory.SELF_LINK)
+        .setBody(postState);
+
+    ImageReplicatorService.State replicatorServiceState =
+        buildImageReplicatorServiceState(current.image, current.destinationDatastore);
+    Operation createImageReplicatorServicePatch = Operation
+        .createPost(UriUtils.buildUri(getHost(), ImageReplicatorServiceFactory.SELF_LINK))
+        .setBody(replicatorServiceState);
+
+    Operation adjustReplicationCountPatch = buildDatastoreCountRequest(current, 1);
+
+    try {
+
+      OperationSequence operationSequence = OperationSequence
+          .create(createImageReplicationPatch)
+          .setCompletion(
+              (operation, throwable) -> {
+                if (throwable != null) {
+                  failTask(throwable.values().iterator().next());
+                }
+              })
+          .next(adjustReplicationCountPatch)
+          .setCompletion(
+              (operation, throwable) -> {
+                if (throwable != null) {
+                  ServiceUtils.logWarning(this,
+                      "Could not increment replicatedImageDatastore for image %s by %s: %s",
+                      current.image, 1, throwable);
+                }
+              }
+          );
+
+      if (isEagerCopy) {
+        operationSequence = operationSequence.next(createImageReplicatorServicePatch)
+            .setCompletion((operation, throwable) -> {
+              if (throwable != null) {
+                failTask(throwable.values().iterator().next());
+              }
+            });
+      }
+
+      if (!current.isSelfProgressionDisabled) {
+        // move to next stage
+        State s = this.buildPatch(TaskState.TaskStage.FINISHED, null, null);
+        Operation progress = Operation
+            .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
+            .setBody(s);
+        operationSequence.next(progress);
+      }
+      operationSequence.sendWith(this);
+    } catch (Exception e) {
+      failTask(e);
+    }
   }
 
   /**
@@ -600,6 +625,17 @@ public class ImageHostToHostCopyService extends StatefulService {
     }
 
     return ServiceUtils.selectRandomItem(hostSet);
+  }
+
+  /**
+   * Build a query for querying image.
+   *
+   * @param current
+   * @return
+   */
+  private Operation buildImageQuery(final State current) {
+    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+        .createGet(ImageServiceFactory.SELF_LINK + "/" + current.image);
   }
 
   /**

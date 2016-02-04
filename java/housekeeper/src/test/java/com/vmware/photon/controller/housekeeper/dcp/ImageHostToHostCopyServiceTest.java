@@ -735,8 +735,10 @@ public class ImageHostToHostCopyServiceTest {
     @DataProvider(name = "transferImageSuccessCode")
     public Object[][] getTransferImageSuccessCode() {
       return new Object[][]{
-          {1, TransferImageResultCode.OK},
-          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK},
+          {1, TransferImageResultCode.OK, ImageReplicationType.EAGER, 2},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK, ImageReplicationType.EAGER, 2},
+          {1, TransferImageResultCode.OK, ImageReplicationType.ON_DEMAND, 1},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK, ImageReplicationType.ON_DEMAND, 1},
       };
     }
 
@@ -747,7 +749,8 @@ public class ImageHostToHostCopyServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "transferImageSuccessCode")
-    public void testSuccess(int hostCount, TransferImageResultCode code) throws Throwable {
+    public void testSuccess(int hostCount, TransferImageResultCode code, ImageReplicationType type,
+                            int addedReplicatedImageDatastore) throws Throwable {
       HostClientMock hostClient = new HostClientMock();
 
       hostClient.setTransferImageResultCode(code);
@@ -757,7 +760,7 @@ public class ImageHostToHostCopyServiceTest {
       cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
 
-      ImageService.State createdImageState = createNewImageEntity();
+      ImageService.State createdImageState = createNewImageEntity(type);
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
       int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
       copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
@@ -792,7 +795,7 @@ public class ImageHostToHostCopyServiceTest {
           ImageService.State.class,
           createdImageState.documentSelfLink,
           (state) ->
-              state.replicatedDatastore == initialReplicatedDatastoreCount + 2);
+              state.replicatedDatastore == initialReplicatedDatastoreCount + addedReplicatedImageDatastore);
 
       //Check Image Service replicatedDatastore counts
       createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
@@ -982,7 +985,8 @@ public class ImageHostToHostCopyServiceTest {
       };
     }
 
-    private com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State createNewImageEntity()
+    private com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State createNewImageEntity
+        (ImageReplicationType type)
         throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
@@ -996,7 +1000,7 @@ public class ImageHostToHostCopyServiceTest {
       com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State state
           = new com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State();
       state.name = "image-1";
-      state.replicationType = ImageReplicationType.EAGER;
+      state.replicationType = type;
       state.state = ImageState.READY;
       state.replicatedDatastore = 1;
       state.replicatedImageDatastore = 1;
