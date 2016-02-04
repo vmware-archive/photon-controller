@@ -13,6 +13,10 @@
 
 package com.vmware.photon.controller.apife.lib;
 
+import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.HostDatastore;
+import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -23,8 +27,8 @@ import com.vmware.photon.controller.host.gen.ServiceTicketResultCode;
 import com.vmware.transfer.nfc.HostServiceTicket;
 import com.vmware.transfer.nfc.NfcClient;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
-import org.mockito.Mock;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -49,14 +53,14 @@ import java.io.InputStream;
  * Test {@link VsphereImageStoreImage}.
  */
 public class VsphereImageStoreImageTest {
-  @Mock
-  private HostServiceTicket ticket;
-  private com.vmware.photon.controller.resource.gen.HostServiceTicket hostServiceTicketResource;
+
   private ServiceTicketResponse serviceTicketResponse;
   private HostClient hostClient;
-  private HostClientFactory hostClientFactory;
+  private VsphereImageStore imageStore;
+
   private ImageConfig imageConfig;
   private String imageId = "image-id";
+  private String imageDatastore = "datastore-name";
   private String imageContent;
   private InputStream inputStream;
 
@@ -64,16 +68,29 @@ public class VsphereImageStoreImageTest {
   public void setUp() throws Throwable {
     imageConfig = new ImageConfig();
     imageConfig.setEndpoint("10.146.1.1");
-    imageConfig.setDatastore("datastore-name");
-    hostServiceTicketResource = new com.vmware.photon.controller.resource.gen.HostServiceTicket();
+
+    com.vmware.photon.controller.resource.gen.HostServiceTicket hostServiceTicketResource =
+        new com.vmware.photon.controller.resource.gen.HostServiceTicket();
     serviceTicketResponse = new ServiceTicketResponse(ServiceTicketResultCode.OK);
     serviceTicketResponse.setTicket(hostServiceTicketResource);
+
     imageContent = FileUtils.readFileToString(
         new File(VsphereImageStoreImageTest.class.getResource("/vmdk/good.vmdk").getPath()));
 
+    Host host = new Host();
+    host.setAddress(imageConfig.getEndpointHostAddress());
+    host.setDatastores(ImmutableList.of(new HostDatastore("id1", imageDatastore, true)));
+    ResourceList<Host> hostList = new ResourceList<>();
+    hostList.setItems(ImmutableList.of(host));
+
+    HostBackend hostBackend = mock(HostBackend.class);
+    when(hostBackend.filterByUsage(any(), any())).thenReturn(hostList);
+
     hostClient = mock(HostClient.class);
-    hostClientFactory = mock(HostClientFactory.class);
+    HostClientFactory hostClientFactory = mock(HostClientFactory.class);
     when(hostClientFactory.create()).thenReturn(hostClient);
+
+    imageStore = spy(new VsphereImageStore(hostBackend, hostClientFactory, imageConfig));
     inputStream = new ByteArrayInputStream(imageContent.getBytes());
   }
 
@@ -88,12 +105,11 @@ public class VsphereImageStoreImageTest {
 
   @Test
   public void testAddDiskImage() throws Exception {
-    VsphereImageStore imageStore = spy(new VsphereImageStore(hostClientFactory, imageConfig));
     NfcClient nfcClient = mock(NfcClient.class);
     doReturn(nfcClient).when(imageStore).getNfcClient(any(HostServiceTicket.class));
     when(nfcClient.putStreamOptimizedDisk(
         eq(String.format("[%s] tmp_uploads/%s/%s.vmdk",
-            imageConfig.getDatastore(),
+            imageDatastore,
             imageId,
             imageId)),
         any(InputStream.class)))
@@ -103,12 +119,11 @@ public class VsphereImageStoreImageTest {
     Image imageFolder = spy(imageStore.createImage(imageId));
     imageFolder.addDisk("disk1.vmdk", inputStream);
 
-    verify(nfcClient).mkdir(String.format("[%s] tmp_uploads/%s", imageConfig.getDatastore(), imageId));
+    verify(nfcClient).mkdir(String.format("[%s] tmp_uploads/%s", imageDatastore, imageId));
   }
 
   @Test(expectedExceptions = RuntimeException.class)
   public void testAddFileImage() throws Exception {
-    VsphereImageStore imageStore = spy(new VsphereImageStore(hostClientFactory, imageConfig));
     NfcClient nfcClient = mock(NfcClient.class);
     doReturn(nfcClient).when(imageStore).getNfcClient(any(HostServiceTicket.class));
     when(nfcClient.putFile(anyString(), anyLong())).thenThrow(new RuntimeException("PutFile called"));
@@ -120,19 +135,16 @@ public class VsphereImageStoreImageTest {
 
   @Test
   public void testFinalizeImage() throws Exception {
-    VsphereImageStore imageStore = spy(new VsphereImageStore(hostClientFactory, imageConfig));
-
     imageStore.finalizeImage(imageId);
     verify(hostClient).setHostIp(imageConfig.getEndpointHostAddress());
-    verify(hostClient).createImage(imageId, imageConfig.getDatastore(), String.format("tmp_uploads/%s", imageId));
+    verify(hostClient).createImage(imageId, imageDatastore, String.format("tmp_uploads/%s", imageId));
     verifyNoMoreInteractions(hostClient);
   }
 
   @Test
   public void testFinalizeImageError() throws Exception {
-    VsphereImageStore imageStore = spy(new VsphereImageStore(hostClientFactory, imageConfig));
     String tmpImagePath = String.format("tmp_uploads/%s", imageId);
-    when(hostClient.createImage(imageId, imageConfig.getDatastore(), tmpImagePath))
+    when(hostClient.createImage(imageId, imageDatastore, tmpImagePath))
         .thenThrow(new SystemErrorException("Error"));
 
     try {
@@ -140,12 +152,12 @@ public class VsphereImageStoreImageTest {
       fail("finalizeImage should fail");
     } catch (InternalException e) {
       String errorMsg = String.format("Failed to call HostClient create_image %s on %s %s",
-          imageId, imageConfig.getDatastore(), tmpImagePath);
+          imageId, imageDatastore, tmpImagePath);
       assertTrue(e.getMessage().equals(errorMsg));
     }
 
     verify(hostClient).setHostIp(imageConfig.getEndpointHostAddress());
-    verify(hostClient).createImage(imageId, imageConfig.getDatastore(), tmpImagePath);
+    verify(hostClient).createImage(imageId, imageDatastore, tmpImagePath);
     verifyNoMoreInteractions(hostClient);
   }
 }
