@@ -558,6 +558,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
             startState.sourceFactoryLink = sourceFactoryLink;
             startState.documentSelfLink = UUID.randomUUID().toString() + startState.factoryLink;
             startState.executionState = ExecutionState.RUNNING;
+            startState.performHostTransformation = Boolean.TRUE;
             return Operation
                 .createPost(this, CopyStateTriggerTaskFactoryService.SELF_LINK)
                 .setBody(startState);

@@ -13,7 +13,10 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.OperationUtils;
@@ -24,6 +27,7 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.UpgradeUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
+import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultLong;
 import com.vmware.photon.controller.common.dcp.validation.DefaultString;
@@ -49,7 +53,9 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 import javax.annotation.Nullable;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -131,6 +137,10 @@ public class CopyStateTaskService extends StatefulService {
 
     @WriteOnce
     public Long lastDocumentUpdateTimeEpoc;
+
+    @Immutable
+    @DefaultBoolean(value = false)
+    public Boolean performHostTransformation;
   }
 
   public CopyStateTaskService() {
@@ -372,6 +382,9 @@ public class CopyStateTaskService extends StatefulService {
   }
 
   private Object handleRenamedFields(Object document, State currentState) throws Throwable {
+    if (!currentState.performHostTransformation) {
+      return document;
+    }
     Object result = document;
     if (currentState.destinationServiceClassName != null) {
       // Serialize original document into destination
@@ -382,6 +395,12 @@ public class CopyStateTaskService extends StatefulService {
       UpgradeUtils.handleRenamedField(document, convertedServiceDocument);
       // Convert it back to json
       result = Utils.toJson(convertedServiceDocument);
+
+      if (currentState.factoryLink.startsWith(HostServiceFactory.SELF_LINK)) {
+        HostService.State fromJson = Utils.fromJson(result, HostService.State.class);
+        fromJson.usageTags = new HashSet<>(Arrays.asList(UsageTag.CLOUD.name()));
+        result = Utils.toJson(fromJson);
+      }
     }
 
     return result;

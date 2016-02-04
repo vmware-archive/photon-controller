@@ -619,6 +619,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
           startState.queryDocumentsChangedSinceEpoc = lastUpdateTimes.getOrDefault(sourceFactory, 0L);
           // keep the original source since the time stamp are local to the source server
           startState.sourceIp = factoryOrigin.getOrDefault(sourceFactory, startState.sourceIp);
+          startState.performHostTransformation = Boolean.TRUE;
           return Operation
             .createPost(this, CopyStateTaskFactoryService.SELF_LINK)
             .setBody(startState);
