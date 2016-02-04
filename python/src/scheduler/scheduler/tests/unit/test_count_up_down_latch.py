@@ -15,7 +15,7 @@ import threading
 from time import sleep
 import unittest
 
-from common.count_up_down_latch import CountUpDownLatch
+from scheduler.count_up_down_latch import CountUpDownLatch
 
 
 class ThreadedHelper(threading.Thread):

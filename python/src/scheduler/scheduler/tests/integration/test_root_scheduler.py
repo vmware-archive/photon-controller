@@ -64,8 +64,8 @@ from gen.status.ttypes import StatusType
 from integration_tests.servers.thrift_server import ThriftServer
 from scheduler.tests.base_kazoo_test import BaseKazooTestCase
 from scheduler.tests.base_kazoo_test import DEFAULT_ZK_PORT
-from common.tree_introspection import get_hierarchy_from_chairman
-from common.tree_introspection import get_hierarchy_from_zk
+from scheduler.tree_introspection import get_hierarchy_from_chairman
+from scheduler.tree_introspection import get_hierarchy_from_zk
 from kazoo.protocol.states import EventType
 from kazoo.testing import harness
 
