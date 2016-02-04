@@ -33,6 +33,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
 import java.io.File;
 import java.io.IOException;
@@ -218,20 +219,24 @@ public class SchedulerDcpHostTest {
 
     @Test
     public void testAllReady() throws Throwable {
-      startHost();
+      startHost(host);
       assertThat(host.isReady(), is(true));
     }
 
     @Test
     public void testNotReady() throws Throwable {
-      doReturn(false).when(host).checkServiceAvailable(anyString());
-      // need to start the host after mocking it otherwise we can run into the issue detailed here
-      // https://code.google.com/p/mockito/issues/detail?id=203
-      startHost();
-      assertThat(host.isReady(), is(false));
+      // We make a spy of the host so we can mock it. We used to make the spy in
+      // TestRootSchedulerModule,
+      // but the spy hosts breaks for tests that run long enough to invoke the
+      // host maintenance. (Making
+      // the spy makes an extra object, and the original isn't initialized
+      // properly)
+      SchedulerDcpHost spyHost = spy(host);
+      doReturn(false).when(spyHost).checkServiceAvailable(anyString());
+      assertThat(spyHost.isReady(), is(false));
     }
 
-    private void startHost() throws Throwable {
+    private void startHost(SchedulerDcpHost host) throws Throwable {
       host.start();
       waitForServicesStartup(host);
     }
