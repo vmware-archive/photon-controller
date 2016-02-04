@@ -33,13 +33,10 @@ import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.CopyImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientCopyImageErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
-import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorGetHostsForDatastoreErrorMock;
-import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
@@ -148,23 +145,6 @@ public class
           Service.ServiceOption.OWNER_SELECTION,
           Service.ServiceOption.INSTRUMENTATION);
       assertThat(service.getOptions(), is(expected));
-    }
-  }
-
-  /**
-   * Test getZookeeperHostMonitor.
-   */
-  public class GetZookeeperHostMonitorTest {
-    @BeforeMethod
-    public void setUp() {
-      service = spy(new ImageCopyService());
-    }
-
-    @Test(expectedExceptions = ClassCastException.class,
-        expectedExceptionsMessageRegExp = "^.*ServiceHost.*cannot be cast to.*ZookeeperHostMonitorProvider$")
-    public void testClassCastError() {
-      doReturn(mock(ServiceHost.class)).when(service).getHost();
-      service.getZookeeperHostMonitor();
     }
   }
 
@@ -404,7 +384,7 @@ public class
     public void setUp() throws Throwable {
       service = spy(new ImageCopyService());
       doNothing().when(service).sendRequest(Matchers.any());
-      host = TestHost.create(mock(HostClient.class), new ZookeeperHostMonitorSuccessMock(),
+      host = TestHost.create(mock(HostClient.class), null,
           new CloudStoreHelperMock());
     }
 
@@ -466,7 +446,6 @@ public class
         final ImageCopyService.TaskState.SubStage targetSubStage
     ) throws Throwable {
       final int dataStoreCount = 0;
-      doReturn(new ZookeeperHostMonitorSuccessMock(0, 1, dataStoreCount)).when(service).getZookeeperHostMonitor();
 
       ImageCopyService.State startState = buildValidStartupState(startStage, startSubStage);
       host.startServiceSynchronously(service, startState);
@@ -726,7 +705,6 @@ public class
     private HostClientFactory hostClientFactory;
     private CloudStoreHelper cloudStoreHelper;
     private ImageCopyService.State copyTask;
-    private ZookeeperHostMonitor zookeeperHostMonitor;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -764,15 +742,10 @@ public class
     public void testSuccess(int hostCount, CopyImageResultCode code) throws Throwable {
       HostClientMock hostClient = new HostClientMock();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-          hostCount,
-          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
       hostClient.setCopyImageResultCode(code);
       doReturn(hostClient).when(hostClientFactory).create();
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
 
       ImageService.State createdImageState = createNewImageEntity();
       int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
@@ -834,13 +807,8 @@ public class
       // modify start state
       copyTask.destinationDataStore = "source-datastore-id";
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-          hostCount,
-          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       createDatastoreService();
 
       // Call Service.
@@ -871,10 +839,8 @@ public class
     public void testFinishWithNoHostsForDatastore(int hostCount) throws Throwable {
       doReturn(new HostClientCopyImageErrorMock()).when(hostClientFactory).create();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorGetHostsForDatastoreErrorMock();
-
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       createDatastoreService();
 
       // Call Service.
@@ -915,13 +881,8 @@ public class
       hostClient.setCopyImageResultCode(code);
       doReturn(hostClient).when(hostClientFactory).create();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-          hostCount,
-          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       createHostService();
       createDatastoreService();
 
@@ -975,13 +936,8 @@ public class
     public void testFailWithCopyImageException(int hostCount) throws Throwable {
       doReturn(new HostClientCopyImageErrorMock()).when(hostClientFactory).create();
 
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock(
-          ZookeeperHostMonitorSuccessMock.IMAGE_DATASTORE_COUNT_DEFAULT,
-          hostCount,
-          ZookeeperHostMonitorSuccessMock.DATASTORE_COUNT_DEFAULT);
-
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
       createHostService();
       createDatastoreService();
 
@@ -1015,7 +971,7 @@ public class
      * Tests host not ready scenario.
      *
      * @param hostCount Host count for test environment.
-     * @param code Result code return from HostClient.
+     * @param code      Result code return from HostClient.
      * @throws Throwable
      */
     @Test(dataProvider = "copyImageSuccessCode")
@@ -1035,10 +991,10 @@ public class
 
       // Call Service.
       ImageCopyService.State response = machine.callServiceAndWaitForState(
-        ImageCopyServiceFactory.SELF_LINK,
-        copyTask,
-        ImageCopyService.State.class,
-        (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
+          ImageCopyServiceFactory.SELF_LINK,
+          copyTask,
+          ImageCopyService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
       //Check Image Service replicatedDatastore counts
       createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
@@ -1053,11 +1009,11 @@ public class
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
       assertThat(
-        stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
-        greaterThanOrEqualTo(
-          1.0 + // Create Patch
-          1.0 // Scheduler start patch
-      ));
+          stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
+          greaterThanOrEqualTo(
+              1.0 + // Create Patch
+                  1.0 // Scheduler start patch
+          ));
     }
 
     private com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State createNewImageEntity()
