@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
+import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
@@ -21,11 +22,17 @@ import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflo
 import com.vmware.photon.controller.deployer.gen.DeprovisionHostStatus;
 import com.vmware.photon.controller.deployer.gen.DeprovisionHostStatusCode;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.EnumSet;
+import java.util.List;
 
 /**
  * This class implements functionality to create DCP entities.
@@ -77,14 +84,21 @@ public class DeprovisionHostWorkflowServiceClient {
   public DeprovisionHostStatus getStatus(String path) throws Throwable {
     DeprovisionHostStatus deprovisionHostStatus = new DeprovisionHostStatus();
 
-    Operation getOperation = Operation
-        .createGet(UriUtils.buildUri(dcpHost, path))
-        .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
-        .setContextId(LoggingUtils.getRequestId());
+    QueryTask.Query documentSelfLinkClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_SELF_LINK)
+        .setTermMatchValue(path);
 
-    DeprovisionHostWorkflowService.State serviceState =
-        ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH)
-        .getBody(DeprovisionHostWorkflowService.State.class);
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(documentSelfLinkClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    NodeGroupBroadcastResponse op = ServiceHostUtils.sendBroadcastQueryAndWait(dcpHost, REFERRER_PATH, QueryTask.create
+        (querySpecification).setDirect(true));
+
+    List<DeprovisionHostWorkflowService.State> documentLinks = QueryTaskUtils
+        .getBroadcastQueryDocuments(DeprovisionHostWorkflowService.State.class, op, true);
+
+    DeprovisionHostWorkflowService.State serviceState = documentLinks.get(0);
 
     switch (serviceState.taskState.stage) {
       case CANCELLED:
