@@ -28,10 +28,8 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.CopyImageResponse;
 import com.vmware.photon.controller.host.gen.Host;
-import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
@@ -144,11 +142,6 @@ public class ImageCopyService extends StatefulService {
         patch.fail(e);
       }
     }
-  }
-
-  @VisibleForTesting
-  protected ZookeeperHostMonitor getZookeeperHostMonitor() {
-    return ((ZookeeperHostMonitorProvider) getHost()).getZookeeperHostMonitor();
   }
 
   @VisibleForTesting
@@ -434,8 +427,8 @@ public class ImageCopyService extends StatefulService {
         .setTermMatchValue(current.destinationDataStore);
 
     QueryTask.Query stateClause = new QueryTask.Query()
-      .setTermPropertyName("state")
-      .setTermMatchValue(HostState.READY.toString());
+        .setTermPropertyName("state")
+        .setTermMatchValue(HostState.READY.toString());
 
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(kindClause);
