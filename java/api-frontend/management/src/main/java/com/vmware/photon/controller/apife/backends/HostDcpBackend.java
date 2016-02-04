@@ -111,26 +111,46 @@ public class HostDcpBackend implements HostBackend {
     return task;
   }
 
-  @Override
-  public TaskEntity resume(String hostId) throws ExternalException {
-    HostEntity hostEntity = findById(hostId);
-    EntityStateValidator.validateOperationState(hostEntity, hostEntity.getState(),
-        Operation.RESUME_HOST, HostState.OPERATION_PREREQ_STATE);
-    logger.info("resuming host {} to normal mode.");
-    TaskEntity taskEntity = createQueuedTaskEntity(hostEntity, Operation.RESUME_HOST);
-    logger.info("created Task: {}", taskEntity);
 
-    return taskEntity;
+
+  @Override
+  public HostEntity findById(String id) throws HostNotFoundException {
+    return toHostEntity(findStateById(id));
   }
 
   @Override
   public ResourceList<Host> listAll(Optional<Integer> pageSize) {
-    return findDocuments(Optional.<UsageTag>absent(), pageSize);
+
+    return findDocuments(new ImmutableMap.Builder<>(), pageSize);
+  }
+
+  @Override
+  public ResourceList<Host> getHostsPage(String pageLink) throws PageExpiredException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(
+        HostService.State.class, queryResult, state -> toApiRepresentation(state));
   }
 
   @Override
   public ResourceList<Host> filterByUsage(UsageTag usageTag, Optional<Integer> pageSize) {
-    return findDocuments(Optional.of(usageTag), pageSize);
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    termsBuilder.put(HostService.State.USAGE_TAGS_KEY, usageTag.name());
+
+    return findDocuments(termsBuilder, pageSize);
+  }
+
+  @Override
+  public ResourceList<Host> filterByAddress(String address, Optional<Integer> pageSize) {
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    termsBuilder.put(HostService.State.FIELD_NAME_HOST_ADDRESS, address);
+
+    return findDocuments(termsBuilder, pageSize);
   }
 
   @Override
@@ -193,21 +213,16 @@ public class HostDcpBackend implements HostBackend {
     return taskEntity;
   }
 
-  private HostService.State findStateById(String id) throws HostNotFoundException {
-    com.vmware.xenon.common.Operation result;
-
-    try {
-      result = dcpClient.get(HostServiceFactory.SELF_LINK + "/" + id);
-    } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new HostNotFoundException(id);
-    }
-
-    return result.getBody(HostService.State.class);
-  }
-
   @Override
-  public HostEntity findById(String id) throws HostNotFoundException {
-    return toHostEntity(findStateById(id));
+  public TaskEntity resume(String hostId) throws ExternalException {
+    HostEntity hostEntity = findById(hostId);
+    EntityStateValidator.validateOperationState(hostEntity, hostEntity.getState(),
+        Operation.RESUME_HOST, HostState.OPERATION_PREREQ_STATE);
+    logger.info("resuming host {} to normal mode.");
+    TaskEntity taskEntity = createQueuedTaskEntity(hostEntity, Operation.RESUME_HOST);
+    logger.info("created Task: {}", taskEntity);
+
+    return taskEntity;
   }
 
   @Override
@@ -231,6 +246,18 @@ public class HostDcpBackend implements HostBackend {
     logger.info("created Task: {}", taskEntity);
 
     return taskEntity;
+  }
+
+  private HostService.State findStateById(String id) throws HostNotFoundException {
+    com.vmware.xenon.common.Operation result;
+
+    try {
+      result = dcpClient.get(HostServiceFactory.SELF_LINK + "/" + id);
+    } catch (DocumentNotFoundException documentNotFoundException) {
+      throw new HostNotFoundException(id);
+    }
+
+    return result.getBody(HostService.State.class);
   }
 
   private HostEntity create(HostCreateSpec hostCreateSpec) throws ExternalException {
@@ -378,25 +405,8 @@ public class HostDcpBackend implements HostBackend {
     return host;
   }
 
-  @Override
-  public ResourceList<Host> getHostsPage(String pageLink) throws PageExpiredException {
-    ServiceDocumentQueryResult queryResult = null;
-    try {
-      queryResult = dcpClient.queryDocumentPage(pageLink);
-    } catch (DocumentNotFoundException e) {
-      throw new PageExpiredException(pageLink);
-    }
-
-    return PaginationUtils.xenonQueryResultToResourceList(
-        HostService.State.class, queryResult, state -> toApiRepresentation(state));
-  }
-
-  private ResourceList<Host> findDocuments(Optional<UsageTag> usageTag, Optional<Integer> pageSize) {
-    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
-    if (usageTag.isPresent()) {
-      termsBuilder.put(HostService.State.USAGE_TAGS_KEY, usageTag.get().name());
-    }
-
+  private ResourceList<Host> findDocuments(
+      ImmutableMap.Builder<String, String> termsBuilder, Optional<Integer> pageSize) {
     ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(
         HostService.State.class, termsBuilder.build(), pageSize, true);
 
