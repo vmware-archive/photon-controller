@@ -590,7 +590,7 @@ public class DcpRestClient implements DcpClient {
   }
 
   @VisibleForTesting
-  protected URI getServiceUri(String path) {
+  public URI getServiceUri(String path) {
 
     //check if any of the hosts are available locally
     java.util.Optional<InetSocketAddress> localInetSocketAddress =

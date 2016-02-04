@@ -19,7 +19,6 @@ import com.vmware.photon.controller.rootscheduler.SchedulerDcpHost;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import static org.mockito.Mockito.spy;
 
 /**
  * Provides common test dependencies.
@@ -44,6 +43,11 @@ public class TestRootSchedulerModule extends AbstractModule {
       @Config.Bind String bind,
       @Config.Port int port,
       @Config.StoragePath String storagePath) throws Throwable {
-    return spy(new SchedulerDcpHost(bind, port, storagePath));
+    // Note that we don't make a spy of the host (which allows partial mocks)
+    // We have few tests that need a spy, so we make it on demand.
+    // The spy has a problem: it makes a copy of the host, and if the test runs
+    // long enough to invoke a maintenance interval, it throws a null pointer
+    // exception, which muddies the results.
+    return new SchedulerDcpHost(bind, port, storagePath);
   }
 }
