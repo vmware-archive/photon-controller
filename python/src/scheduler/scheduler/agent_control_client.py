@@ -9,3 +9,14 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
+
+from scheduler.rpc_client import RpcClient
+from gen.agent import AgentControl
+
+
+class AgentControlClient(RpcClient):
+
+    def __init__(self, handler=None):
+        super(AgentControlClient, self).__init__(AgentControl.Iface,
+                                                 AgentControl.Client,
+                                                 "AgentControl", handler)

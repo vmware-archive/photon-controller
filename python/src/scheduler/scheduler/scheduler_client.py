@@ -12,7 +12,7 @@
 
 """ This contains code for sending RPCs to a scheduler_handler."""
 
-from common.photon_thrift.rpc_client import RpcClient
+from scheduler.rpc_client import RpcClient
 from gen.scheduler import Scheduler
 
 

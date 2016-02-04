@@ -25,9 +25,9 @@ from agent.tests.common_helper_functions import RuntimeUtils
 from agent.tests.common_helper_functions import _wait_on_code
 from common.constants import ROOT_SCHEDULER_SERVICE
 from common.photon_thrift.address import create_address
-from common.tree_introspection import get_hierarchy_from_zk
-from common.tree_introspection import get_hierarchy_from_chairman
 from scheduler.tests.base_kazoo_test import BaseKazooTestCase
+from scheduler.tree_introspection import get_hierarchy_from_zk
+from scheduler.tree_introspection import get_hierarchy_from_chairman
 from gen.roles.ttypes import GetSchedulersRequest
 from gen.roles.ttypes import GetSchedulersResultCode
 from gen.resource.ttypes import Datastore
