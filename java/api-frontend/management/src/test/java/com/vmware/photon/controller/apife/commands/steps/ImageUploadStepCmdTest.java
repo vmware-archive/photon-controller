@@ -124,8 +124,8 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     when(imageStore.createImage(anyString())).thenReturn(image);
     doNothing().when(imageStore).finalizeImage(anyString());
+    when(imageStore.getDatastore()).thenReturn(datastoreName);
     when(image.addDisk(anyString(), any(InputStream.class))).thenReturn(imageSize);
-    when(imageConfig.getDatastore()).thenReturn(datastoreName);
   }
 
   @AfterMethod
@@ -162,6 +162,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     verify(imageStore).createImage(imageId);
     verify(imageStore).finalizeImage(imageId);
+    verify(imageStore).getDatastore();
     verify(image).addDisk(anyString(), inputStreamArgument.capture());
     InputStream capturedStream = inputStreamArgument.getAllValues().get(0);
     String capturedImage = OvaTestModule.readStringFromStream(capturedStream);
@@ -195,6 +196,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     verify(imageStore, times(2)).createImage(imageId);
     verify(imageStore, times(2)).finalizeImage(imageId);
+    verify(imageStore, times(2)).getDatastore();
     verify(image, times(2)).addDisk(anyString(), inputStreamArgument.capture());
     InputStream capturedStream = inputStreamArgument.getAllValues().get(0);
     String capturedImage = OvaTestModule.readStringFromStream(capturedStream);
@@ -247,5 +249,4 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
     inOrder.verify(imageBackend).updateState(imageEntity, ImageState.ERROR);
     verifyNoMoreInteractions(imageStore, imageBackend);
   }
-
 }
