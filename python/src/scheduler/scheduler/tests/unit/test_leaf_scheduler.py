@@ -66,7 +66,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         self._threadpool.shutdown()
         common.services.reset()
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_find_clears_scheduler_id(self, client_class):
         client_class.side_effect = self.create_fake_client
 
@@ -79,7 +79,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
 
         client.host_find.assert_called_with(FindRequest())
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_find_resource_found(self, client_class):
         client_class.side_effect = self.create_fake_client
 
@@ -100,7 +100,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         response = scheduler.find(self._place_request())
         assert_that(response, is_(same_instance(baz_response)))
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_find_resource_not_found(self, client_class):
         client_class.side_effect = self.create_fake_client
 
@@ -121,7 +121,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         response = scheduler.find(self._place_request())
         assert_that(response.result, is_(FindResultCode.NOT_FOUND))
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     @patch("concurrent.futures.wait")
     def test_find_timeout(self, wait_fn, client_class):
         client_class.side_effect = self.create_fake_client
@@ -143,7 +143,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         # ends when this method returns
         self._threadpool.shutdown()
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_place_clears_scheduler_id(self, client_class):
         client_class.side_effect = self.create_fake_client
 
@@ -156,7 +156,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
 
         client.host_place.assert_called_with(PlaceRequest())
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_place_local_agent(self, client_class):
         client_class.side_effect = self.create_fake_client
 
@@ -174,7 +174,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         assert_that(remote_client.place.called, is_(False))
         assert_that(response, is_(same_instance(local_response)))
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_place_resource_placed(self, client_class):
         client_class.side_effect = self.create_fake_client
 
@@ -197,7 +197,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         response = scheduler.place(self._place_request())
         assert_that(response, is_(same_instance(baz_response)))
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     @patch("scheduler.leaf_scheduler.HealthChecker")
     def test_place_res_with_missing(self, health_checker, client_class):
         client_class.side_effect = self.create_fake_client
@@ -218,7 +218,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         response = scheduler.place(self._place_request())
         assert_that(response, is_(same_instance(baz_response)))
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     @patch("random.shuffle")
     def test_place_sampling(self, shuffle, client_class):
         client_class.side_effect = self.create_fake_client
@@ -247,7 +247,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         response = scheduler.place(self._place_request())
         assert_that(response, is_(same_instance(baz_response)))
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_place_with_resource_constraints(self, client_class):
         client_class.side_effect = self.create_fake_client
 
@@ -330,7 +330,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         response = scheduler.place(request)
         assert_that(response.result, is_(PlaceResultCode.NO_SUCH_RESOURCE))
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_place_resource_not_found(self, client_class):
         client_class.side_effect = self.create_fake_client
 
@@ -359,7 +359,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         (0.08, 1, 32, 3),  # use ratio at 0.08: 3
     ])
     @patch("scheduler.strategy.scorer.Scorer.score")
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_place_with_params(self, ratio, min_fanout, max_fanout, result,
                                client_class, score_fn):
         client_class.side_effect = self.create_fake_client
@@ -374,7 +374,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         assert_that(response.result, is_(PlaceResultCode.OK))
 
     @patch("scheduler.strategy.scorer.Scorer.score")
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_place_no_params(self, client_class, score_fn):
         client_class.side_effect = self.create_fake_client
         score_fn.side_effect = self._score
@@ -388,7 +388,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
 
     @patch("scheduler.leaf_scheduler.LeafScheduler._execute_placement_serial")
     @patch("concurrent.futures.wait")
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_place_timeout(self, client_class,
                            wait_fn, serial_fn):
         client_class.side_effect = self.create_fake_client
@@ -411,7 +411,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         # ends when this method returns
         self._threadpool.shutdown()
 
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_place_exception(self, client_class):
         client_class.side_effect = self.create_fake_client
 

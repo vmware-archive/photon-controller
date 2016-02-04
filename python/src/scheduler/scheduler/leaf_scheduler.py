@@ -18,7 +18,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 import common
 from common.lock import locked
-from common.count_up_down_latch import CountUpDownLatch
 from common.photon_thrift.decorators import log_request
 from common.service_name import ServiceName
 from enum import Enum
@@ -30,6 +29,7 @@ from gen.scheduler.ttypes import PlaceResultCode
 from host.hypervisor.resources import ChildInfo
 from scheduler.base_scheduler import BaseScheduler
 from scheduler.base_scheduler import InvalidScheduler
+from scheduler.count_up_down_latch import CountUpDownLatch
 from scheduler.health_checker import HealthChecker
 from scheduler.scheduler_client import SchedulerClient
 from scheduler.strategy.default_scorer import DefaultScorer

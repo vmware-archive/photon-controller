@@ -13,7 +13,6 @@
 import logging
 import threading
 import time
-from agent.agent_control_client import AgentControlClient
 from common.photon_thrift import StaticServerSet
 from common.photon_thrift.client import Client
 from gen.agent.ttypes import PingRequest
@@ -22,6 +21,7 @@ from gen.chairman.ttypes import ReportMissingRequest
 from gen.chairman.ttypes import ReportMissingResultCode
 from gen.chairman.ttypes import ReportResurrectedRequest
 from gen.chairman.ttypes import ReportResurrectedResultCode
+from scheduler.agent_control_client import AgentControlClient
 
 
 class HealthChecker(object):

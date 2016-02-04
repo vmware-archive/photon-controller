@@ -54,7 +54,7 @@ class HealthCheckerTestCase(unittest.TestCase):
         self.assertFalse(health_checker._reporter.is_alive())
 
     @patch("time.time")
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_heartbeat(self, client_class, time_class):
         """Test that sequence number and timestamp get updated correctly
            after sending heartbeat."""
@@ -104,7 +104,7 @@ class HealthCheckerTestCase(unittest.TestCase):
 
     @patch("scheduler.health_checker.Client")
     @patch("time.time")
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_report(self, client_class, time_class, chairman):
         """Test that resurrected and missing hosts get reported correctly"""
         client_class.side_effect = self.create_fake_client
@@ -163,7 +163,7 @@ class HealthCheckerTestCase(unittest.TestCase):
 
     @patch("scheduler.health_checker.Client")
     @patch("time.time")
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_chairman_failure(self, client_class, time_class, chairman):
         """Reporter should retry reporting if chairman fails."""
         client_class.side_effect = self.create_fake_client
@@ -207,7 +207,7 @@ class HealthCheckerTestCase(unittest.TestCase):
 
     @patch("scheduler.health_checker.Client")
     @patch("time.time")
-    @patch("common.photon_thrift.rpc_client.DirectClient")
+    @patch("scheduler.rpc_client.DirectClient")
     def test_slow_heartbeater(self, client_class, time_class, chairman):
         """Don't report missing if the current sequence number is equal to
            the sequence number of the last successful ping.

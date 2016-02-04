@@ -15,10 +15,10 @@ import unittest
 
 from hamcrest import *  # noqa
 
-from common.tree_introspection import Host
-from common.tree_introspection import Scheduler
-from common.tree_introspection import LEAF_SCHEDULER_TYPE
-from common.tree_introspection import ROOT_SCHEDULER_TYPE
+from scheduler.tree_introspection import Host
+from scheduler.tree_introspection import Scheduler
+from scheduler.tree_introspection import LEAF_SCHEDULER_TYPE
+from scheduler.tree_introspection import ROOT_SCHEDULER_TYPE
 
 
 class TreeIntrospectionTestCase(unittest.TestCase):
