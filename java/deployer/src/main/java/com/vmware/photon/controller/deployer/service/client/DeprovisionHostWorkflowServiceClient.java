@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowFactoryService;
@@ -82,9 +83,20 @@ public class DeprovisionHostWorkflowServiceClient {
         .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
         .setContextId(LoggingUtils.getRequestId());
 
+    Operation op = null;
+    try {
+      op = ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH);
+    } catch (DocumentNotFoundException ex) {
+      // Deprovision management host is not replicated and it runs of 1 host only. That host might not happen to be
+      // this host
+      // that is why it does not know about it
+      logger.error("Ignoring since deprovision management host task is not known by this host ", ex);
+      deprovisionHostStatus.setResult(DeprovisionHostStatusCode.IN_PROGRESS);
+      return deprovisionHostStatus;
+    }
+
     DeprovisionHostWorkflowService.State serviceState =
-        ServiceHostUtils.sendRequestAndWait(dcpHost, getOperation, REFERRER_PATH)
-        .getBody(DeprovisionHostWorkflowService.State.class);
+        op.getBody(DeprovisionHostWorkflowService.State.class);
 
     switch (serviceState.taskState.stage) {
       case CANCELLED:
