@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
-
 import org.apache.curator.test.TestingServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +29,10 @@ import java.util.Random;
  */
 public class ZookeeperHealthCheckerTest {
 
+
   private static final Logger logger = LoggerFactory.getLogger(ZookeeperHealthCheckerTest.class);
 
+  private static final int UNUSABLE_PORT = 2;
   public static final int START_PORT = 10000;
   public static final int RETRIES = 10;
   public int port;
@@ -56,7 +56,7 @@ public class ZookeeperHealthCheckerTest {
   @Test
   public void testZookeeperDown() throws Throwable {
     HealthChecker zookeeperHealthChecker = new ZookeeperHealthChecker(
-        "127.0.0.1", ServicePortConstants.ZOOKEEPER_PORT);
+        "127.0.0.1", UNUSABLE_PORT);
     boolean response = zookeeperHealthChecker.isReady();
 
     assertFalse(response);
