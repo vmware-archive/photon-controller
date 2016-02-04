@@ -13,6 +13,10 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
+import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.DeployerContextTest;
 import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
@@ -20,14 +24,17 @@ import com.vmware.photon.controller.deployer.gen.DeprovisionHostRequest;
 import com.vmware.photon.controller.deployer.gen.DeprovisionHostStatus;
 import com.vmware.photon.controller.deployer.gen.DeprovisionHostStatusCode;
 import com.vmware.photon.controller.deployer.gen.DeprovisionHostStatusRequest;
+import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
 
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
@@ -106,12 +113,28 @@ public class DeprovisionHostWorkflowServiceClientTest {
   public class GetStatusDeprovisionHost {
 
     private DeprovisionHostWorkflowServiceClient target;
-    private DeployerDcpServiceHost host;
+    private TestEnvironment testEnvironment;
 
     @BeforeMethod
-    public void before() {
-      host = mock(DeployerDcpServiceHost.class);
-      target = new DeprovisionHostWorkflowServiceClient(host);
+    public void before() throws Throwable {
+      DeployerContext deployerContext = ConfigBuilder.build(DeployerConfig.class,
+          DeployerContextTest.class.getResource("/config.yml").getPath()).getDeployerContext();
+
+      testEnvironment = new TestEnvironment.Builder()
+          .deployerContext(deployerContext)
+          .hostCount(1)
+          .build();
+
+      target = new DeprovisionHostWorkflowServiceClient(testEnvironment.getHosts()[0]);
+    }
+
+    @AfterMethod
+    public void tearDownTest() throws Throwable {
+
+      if (testEnvironment != null) {
+        testEnvironment.stop();
+        testEnvironment = null;
+      }
     }
 
     @Test
@@ -120,17 +143,15 @@ public class DeprovisionHostWorkflowServiceClientTest {
 
       DeprovisionHostWorkflowService.State returnedDocument = new DeprovisionHostWorkflowService.State();
       returnedDocument.hostServiceLink = "host-id";
-      returnedDocument.documentSelfLink = "task-id";
+      returnedDocument.documentSelfLink = DeprovisionHostWorkflowFactoryService.SELF_LINK + "/task-id";
+      returnedDocument.documentKind = Utils.buildKind(DeprovisionHostWorkflowService.State.class);
       returnedDocument.taskState = new DeprovisionHostWorkflowService.TaskState();
       returnedDocument.taskState.stage = TaskState.TaskStage.FINISHED;
 
-      setupMock(
-          host,
-          true,
-          "task-id",
-          DeprovisionHostWorkflowService.State.class,
-          null,
-          returnedDocument);
+      testEnvironment.callServiceSynchronously(
+          DeprovisionHostWorkflowFactoryService.SELF_LINK,
+          returnedDocument,
+          DeprovisionHostWorkflowService.State.class);
 
       DeprovisionHostStatus status = target.getStatus(request.getOperation_id());
       assertThat(status.getResult(), is(DeprovisionHostStatusCode.FINISHED));
@@ -140,13 +161,17 @@ public class DeprovisionHostWorkflowServiceClientTest {
     public void failsGetStatusWhenDcpHostThrowsException() throws Throwable {
       DeprovisionHostStatusRequest request = createDeprovisionHostStatusRequest();
 
-      setupMock(
-          host,
-          false,
-          "task-id",
-          DeprovisionHostWorkflowService.State.class,
-          null,
-          null);
+      DeprovisionHostWorkflowService.State returnedDocument = new DeprovisionHostWorkflowService.State();
+      returnedDocument.hostServiceLink = "host-id";
+      returnedDocument.documentSelfLink = DeprovisionHostWorkflowFactoryService.SELF_LINK + "/task-id2";
+      returnedDocument.documentKind = Utils.buildKind(DeprovisionHostWorkflowService.State.class);
+      returnedDocument.taskState = new DeprovisionHostWorkflowService.TaskState();
+      returnedDocument.taskState.stage = TaskState.TaskStage.FAILED;
+
+      testEnvironment.callServiceSynchronously(
+          DeprovisionHostWorkflowFactoryService.SELF_LINK,
+          returnedDocument,
+          DeprovisionHostWorkflowService.State.class);
       target.getStatus(request.getOperation_id());
     }
 
@@ -156,17 +181,15 @@ public class DeprovisionHostWorkflowServiceClientTest {
 
       DeprovisionHostWorkflowService.State returnedDocument = new DeprovisionHostWorkflowService.State();
       returnedDocument.hostServiceLink = "host-id";
-      returnedDocument.documentSelfLink = "task-id";
+      returnedDocument.documentSelfLink = DeprovisionHostWorkflowFactoryService.SELF_LINK + "/task-id";
+      returnedDocument.documentKind = Utils.buildKind(DeprovisionHostWorkflowService.State.class);
       returnedDocument.taskState = new DeprovisionHostWorkflowService.TaskState();
       returnedDocument.taskState.stage = TaskState.TaskStage.FAILED;
 
-      setupMock(
-          host,
-          true,
-          "task-id",
-          DeprovisionHostWorkflowService.State.class,
-          null,
-          returnedDocument);
+      testEnvironment.callServiceSynchronously(
+          DeprovisionHostWorkflowFactoryService.SELF_LINK,
+          returnedDocument,
+          DeprovisionHostWorkflowService.State.class);
 
       DeprovisionHostStatus status = target.getStatus(request.getOperation_id());
       assertThat(status.getResult(), is(DeprovisionHostStatusCode.FAILED));
@@ -222,7 +245,7 @@ public class DeprovisionHostWorkflowServiceClientTest {
 
   private DeprovisionHostStatusRequest createDeprovisionHostStatusRequest() {
     DeprovisionHostStatusRequest request = new DeprovisionHostStatusRequest();
-    request.setOperation_id("task-id");
+    request.setOperation_id(DeprovisionHostWorkflowFactoryService.SELF_LINK + "/task-id");
     return request;
   }
 }
