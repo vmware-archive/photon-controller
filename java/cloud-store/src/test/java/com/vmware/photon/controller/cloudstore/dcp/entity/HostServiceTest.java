@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
@@ -23,6 +24,7 @@ import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceConfiguration;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;
@@ -54,6 +56,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class implements tests for the {@link HostService} class.
@@ -84,10 +87,13 @@ public class HostServiceTest {
           Service.ServiceOption.ENFORCE_QUORUM,
           Service.ServiceOption.OWNER_SELECTION,
           Service.ServiceOption.PERSISTENCE,
-          Service.ServiceOption.REPLICATION);
+          Service.ServiceOption.REPLICATION,
+          Service.ServiceOption.PERIODIC_MAINTENANCE);
 
-      HostService hostService = new HostService();
-      assertThat(hostService.getOptions(), is(expected));
+      HostService service = new HostService();
+      assertThat(service.getMaintenanceIntervalMicros(),
+          is(TimeUnit.MILLISECONDS.toMicros(HostService.DEFAULT_MAINTENANCE_INTERVAL_MILLIS)));
+      assertThat(service.getOptions(), is(expected));
     }
   }
 
@@ -266,6 +272,54 @@ public class HostServiceTest {
       }
     }
 
+    /**
+     * Test that maintenance interval passed in the start state is applied.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testCustomMaintenanceInerval() throws Throwable {
+      HostService.State startState = TestHelper.getHostServiceStartState();
+      startState.triggerIntervalMillis = (long) 20 * 1000;
+
+      host.startServiceSynchronously(new HostServiceFactory(), null);
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
+          startState);
+      assertThat(result.getStatusCode(), is(200));
+      HostService.State createdState = result.getBody(HostService.State.class);
+
+      ServiceConfiguration config = host.getServiceState(ServiceConfiguration.class, createdState.documentSelfLink +
+          "/config");
+      assertThat(config.maintenanceIntervalMicros,
+          is(TimeUnit.MILLISECONDS.toMicros(startState.triggerIntervalMillis)));
+    }
+
+    /**
+     * This test verifies that the periodic maintenance task which pings the agent
+     * and updates host state gets triggered and performs what is required of it.
+     * @throws Throwable
+     */
+    @Test
+    public void testHostMonitoring() throws Throwable {
+      HostService.State startState = TestHelper.getHostServiceStartState();
+      // Set all the time intervals to very small amount
+      startState.triggerIntervalMillis = 20L;
+      startState.pingTimeoutMillis = 20;
+      startState.maxPingWaitTimeMillis = 5;
+
+      host.startServiceSynchronously(new HostServiceFactory(), null);
+      Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
+          startState);
+      assertThat(result.getStatusCode(), is(200));
+      HostService.State createdState = result.getBody(HostService.State.class);
+
+      // Sleep to make sure that maintenance gets triggered and completed
+      Thread.sleep(1000);
+
+      HostService.State savedState = dcpRestClient.get(createdState.documentSelfLink)
+          .getBody(HostService.State.class);
+      assertThat(savedState.agentState, is(AgentState.MISSING));
+    }
   }
 
   /**

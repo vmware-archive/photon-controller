@@ -11,6 +11,7 @@
 
 require "spec_helper"
 require "ipaddr"
+require_relative "../../../lib/dcp/cloud_store/host_factory"
 
 describe "host", management: true, devbox: true do
   before(:all) do
@@ -384,6 +385,16 @@ describe "host", management: true, devbox: true do
         rescue EsxCloud::CliError => e
           expect(e.output).to include(error_msg)
         end
+      end
+    end
+  end
+
+  describe "#host_monitoring" do
+    context "when a host gets added" do
+      it "is pingable" do
+        host = client.get_deployment_hosts(@deployment.id).items.first
+        host_service = EsxCloud::Dcp::CloudStore::HostFactory.get_host host.id
+        expect(host_service["agentState"]).to eq("ACTIVE")
       end
     end
   end
