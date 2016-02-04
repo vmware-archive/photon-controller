@@ -38,15 +38,17 @@ public interface HostBackend {
 
   TaskEntity prepareHostDelete(String id) throws ExternalException;
 
+  HostEntity findById(String id) throws HostNotFoundException;
+
   ResourceList<Host> listAll(Optional<Integer> pageSize);
 
-  HostEntity findById(String id) throws HostNotFoundException;
+  ResourceList<Host> getHostsPage(String pageLink) throws PageExpiredException;
 
   ResourceList<Host> filterByUsage(UsageTag usageTag, Optional<Integer> pageSize);
 
-  Host toApiRepresentation(String id) throws HostNotFoundException;
+  ResourceList<Host> filterByAddress(String address, Optional<Integer> pageSize);
 
-  ResourceList<Host> getHostsPage(String pageLink) throws PageExpiredException;
+  Host toApiRepresentation(String id) throws HostNotFoundException;
 
   void updateState(HostEntity entity, HostState state) throws HostNotFoundException;
 

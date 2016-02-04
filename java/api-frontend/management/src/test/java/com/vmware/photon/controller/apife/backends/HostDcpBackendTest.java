@@ -44,6 +44,7 @@ import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
@@ -282,6 +283,8 @@ public class HostDcpBackendTest {
   @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
   public static class QueryHostTest {
 
+    private static final String HOST_ADDRESS = "0.0.0.1";
+
     @Inject
     private BasicServiceHost basicServiceHost;
 
@@ -302,23 +305,29 @@ public class HostDcpBackendTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
-      hostCreateSpec = new HostCreateSpec();
-      hostCreateSpec.setUsername("user");
-      hostCreateSpec.setPassword("password");
-      hostCreateSpec.setAddress("0.0.0.0");
-      hostCreateSpec.setMetadata(new HashMap<String, String>() {{
-        put("k1", "v1");
-      }});
-      List<UsageTag> usageTags = new ArrayList<>();
-      usageTags.add(UsageTag.CLOUD);
-      hostCreateSpec.setUsageTags(usageTags);
 
       DeploymentCreateSpec deploymentCreateSpec = getDeploymentCreateSpec();
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       deploymentId = task.getEntityId();
 
+      // create 1st host
+      hostCreateSpec = new HostCreateSpec();
+      hostCreateSpec.setUsername("user");
+      hostCreateSpec.setPassword("password");
+      hostCreateSpec.setAddress("0.0.0.0");
+      hostCreateSpec.setMetadata(ImmutableMap.of("k1", "v1"));
+      hostCreateSpec.setUsageTags(ImmutableList.of(UsageTag.CLOUD));
+
       TaskEntity taskEntity = hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
       hostId = taskEntity.getEntityId();
+
+      // create 2nd host
+      HostCreateSpec host2CreateSpec = new HostCreateSpec();
+      host2CreateSpec.setAddress(HOST_ADDRESS);
+      host2CreateSpec.setUsername("user");
+      host2CreateSpec.setPassword("password");
+      host2CreateSpec.setUsageTags(ImmutableList.of(UsageTag.CLOUD, UsageTag.IMAGE));
+      hostBackend.prepareHostCreate(host2CreateSpec, deploymentId);
     }
 
     @AfterMethod
@@ -371,25 +380,34 @@ public class HostDcpBackendTest {
     }
 
     @Test
-    public void testFilterHost() throws Throwable {
-      hostCreateSpec.setAddress("0.0.0.1");
-      List<UsageTag> usageTags = new ArrayList<>();
-      usageTags.add(UsageTag.CLOUD);
-      usageTags.add(UsageTag.IMAGE);
-      hostCreateSpec.setUsageTags(usageTags);
-      hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
-
-      ResourceList<Host> hosts = hostBackend.listAll(Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
-      assertThat(hosts, notNullValue());
+    public void testFilterByUsage() throws Throwable {
+      ResourceList<Host> hosts = hostBackend.filterByUsage(UsageTag.CLOUD, Optional.of(PaginationConfig
+          .DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(hosts.getItems().size(), is(2));
 
-      hosts = hostBackend.filterByUsage(UsageTag.CLOUD, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
-      assertThat(hosts.getItems().size(), is(2));
+      hosts = hostBackend.filterByUsage(UsageTag.MGMT, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(hosts.getItems().size(), is(0));
 
       hosts = hostBackend.filterByUsage(UsageTag.IMAGE, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(hosts.getItems().size(), is(1));
+    }
 
-      hosts = hostBackend.filterByUsage(UsageTag.MGMT, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+    @Test
+    public void testListAll() {
+      ResourceList<Host> hosts = hostBackend.listAll(Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(hosts, notNullValue());
+      assertThat(hosts.getItems().size(), is(2));
+    }
+
+    @Test
+    public void testFilterByIp() {
+      ResourceList<Host> hosts = hostBackend.filterByAddress(HOST_ADDRESS, Optional.absent());
+      assertThat(hosts, notNullValue());
+      assertThat(hosts.getItems().size(), is(1));
+      assertThat(hosts.getItems().get(0).getAddress(), is(HOST_ADDRESS));
+
+      hosts = hostBackend.filterByAddress("192.168.1.1", Optional.absent());
+      assertThat(hosts, notNullValue());
       assertThat(hosts.getItems().size(), is(0));
     }
   }
