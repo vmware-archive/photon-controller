@@ -140,7 +140,6 @@ public class StepCommandFactoryTest {
         {Operation.SET_AVAILABILITYZONE, HostSetAvailabilityZoneStepCmd.class},
 
         // Deployment
-        {Operation.PREPARE_DEPLOYMENT, DeploymentImageConfigUpdateStepCmd.class},
         {Operation.SCHEDULE_DEPLOYMENT, DeploymentCreateStepCmd.class},
         {Operation.SCHEDULE_INITIALIZE_MIGRATE_DEPLOYMENT, DeploymentInitializeMigrationStepCmd.class},
         {Operation.PERFORM_INITIALIZE_MIGRATE_DEPLOYMENT, DeploymentInitializeMigrationStatusStepCmd.class},
