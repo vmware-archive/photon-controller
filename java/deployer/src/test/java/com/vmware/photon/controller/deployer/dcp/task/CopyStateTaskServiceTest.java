@@ -16,6 +16,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService.State;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
@@ -56,9 +57,13 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -416,6 +421,45 @@ public class CopyStateTaskServiceTest {
     }
 
     @Test(dataProvider = "hostCounts")
+    public void successTransformingHostDocuments(
+        Integer sourceHostCount,
+        Integer destinationHostCount) throws Throwable {
+      startClusters(sourceHostCount, destinationHostCount);
+
+      sourceCluster.startFactoryServiceSynchronously(HostServiceFactory.class, HostServiceFactory.SELF_LINK);
+      destinationCluster.startFactoryServiceSynchronously(HostServiceFactory.class, HostServiceFactory.SELF_LINK);
+
+      Map<String, String> metaData = new HashMap<>();
+      metaData.put(State.METADATA_KEY_NAME_MANAGEMENT_DATASTORE, "dataStore1");
+      metaData.put(State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_DNS_SERVER, "1.1.1.1");
+      metaData.put(State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_GATEWAY, "1.1.1.1");
+      metaData.put(State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP, "1.1.1.1");
+      metaData.put(State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_NETMASK, "1.1.1.1");
+      metaData.put(State.METADATA_KEY_NAME_MANAGEMENT_PORTGROUP, "PortGroup");
+
+
+      HostService.State host = ReflectionUtils.buildValidStartState(HostService.State.class);
+      host.usageTags = new HashSet<>(Arrays.asList(UsageTag.MGMT.name(), UsageTag.CLOUD.name()));
+      host.metadata = metaData;
+      HostService.State cts = TestHelper.createHostService(sourceCluster, host);
+      copyStateTaskServiceState.factoryLink = HostServiceFactory.SELF_LINK;
+      copyStateTaskServiceState.sourceFactoryLink = HostServiceFactory.SELF_LINK;
+      copyStateTaskServiceState.performHostTransformation = Boolean.TRUE;
+
+      CopyStateTaskService.State finalState = destinationCluster.callServiceAndWaitForState(
+          CopyStateTaskFactoryService.SELF_LINK,
+          copyStateTaskServiceState,
+          CopyStateTaskService.State.class,
+          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FINISHED));
+      HostService.State serviceState =
+          destinationCluster.getServiceState(cts.documentSelfLink, HostService.State.class);
+      assertThat(serviceState.usageTags.size(), is(1));
+      assertThat(serviceState.usageTags.iterator().next(), is(UsageTag.CLOUD.name()));
+    }
+
+    @Test(dataProvider = "hostCounts")
     public void successWhenDocumentsAlreadyExistsOnDestination(Integer sourceHostCount, Integer destinationHostCount)
         throws Throwable {
       startClusters(sourceHostCount, destinationHostCount);
@@ -483,8 +527,9 @@ public class CopyStateTaskServiceTest {
       copyStateTaskServiceState.sourceFactoryLink = HostServiceFactory.SELF_LINK;
       copyStateTaskServiceState.factoryLink = SampleServiceFactory.SELF_LINK;
       copyStateTaskServiceState.destinationServiceClassName = SampleService.class.getCanonicalName();
+      copyStateTaskServiceState.performHostTransformation = Boolean.TRUE;
 
-      Class[] sampleClasses = new Class[]{SampleServiceFactory.class};
+      Class<?>[] sampleClasses = new Class[]{SampleServiceFactory.class};
       for (int i = 0; i < destinationHostCount; i++) {
         ServiceHostUtils.startServices(destinationCloudStore.getHosts()[i], sampleClasses);
       }

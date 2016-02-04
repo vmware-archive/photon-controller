@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
+import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultLong;
 import com.vmware.photon.controller.common.dcp.validation.DefaultString;
@@ -116,6 +117,10 @@ public class CopyStateTriggerTaskService extends StatefulService {
     @Immutable
     @DefaultInteger(value = 0)
     public Integer controlFlags;
+
+    @Immutable
+    @DefaultBoolean(value = false)
+    public Boolean performHostTransformation;
   }
 
   public CopyStateTriggerTaskService() {
@@ -297,6 +302,7 @@ public class CopyStateTriggerTaskService extends StatefulService {
     state.sourcePort = currentState.sourcePort;
     state.sourceProtocol = currentState.sourceProtocol;
     state.taskStateFieldName = currentState.taskStateFieldName;
+    state.performHostTransformation = currentState.performHostTransformation;
     return state;
   }
 
