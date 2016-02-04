@@ -16,4 +16,5 @@ tags
 .project
 .settings
 .classpath
+.checkstyle
 bin
