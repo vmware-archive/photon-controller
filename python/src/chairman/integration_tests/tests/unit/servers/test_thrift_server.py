@@ -27,10 +27,10 @@ from gen.scheduler.root import RootScheduler
 from gen.scheduler.ttypes import ConfigureRequest
 from gen.scheduler.ttypes import ConfigureResponse
 from thrift.protocol import TCompactProtocol
+from thrift.protocol import TMultiplexedProtocol
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.transport.TTransport import TTransportException
-from tserver.multiplex import TMultiplexedProtocol
 
 from integration_tests.servers.thrift_server \
     import ThriftServer
@@ -86,7 +86,7 @@ class TestThriftServer(unittest.TestCase):
         transport = TTransport.TFramedTransport(sock)
         self.transports.append(transport)
         protocol = TCompactProtocol.TCompactProtocol(transport)
-        mp = TMultiplexedProtocol(protocol, service_name)
+        mp = TMultiplexedProtocol.TMultiplexedProtocol(protocol, service_name)
 
         client = \
             {"Host": Host.Client(mp),

@@ -24,8 +24,8 @@ import time
 import uuid
 import yaml
 
-from tserver.multiplex import TMultiplexedProtocol
 from thrift.protocol import TCompactProtocol
+from thrift.protocol import TMultiplexedProtocol
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
@@ -98,7 +98,7 @@ def create_chairman_client(host, port):
     socket = TSocket.TSocket(host, port)
     transport = TTransport.TFramedTransport(socket)
     protocol = TCompactProtocol.TCompactProtocol(transport)
-    mp = TMultiplexedProtocol(protocol, "Chairman")
+    mp = TMultiplexedProtocol.TMultiplexedProtocol(protocol, "Chairman")
     client = Chairman.Client(mp)
     _wait_for_transport(transport)
     return (transport, client)
@@ -108,7 +108,7 @@ def create_root_client(port, host):
     socket = TSocket.TSocket(host, port)
     transport = TTransport.TFramedTransport(socket)
     protocol = TCompactProtocol.TCompactProtocol(transport)
-    mp = TMultiplexedProtocol(protocol, "RootScheduler")
+    mp = TMultiplexedProtocol.TMultiplexedProtocol(protocol, "RootScheduler")
     client = RootScheduler.Client(mp)
     _wait_for_transport(transport)
     return (transport, client)
