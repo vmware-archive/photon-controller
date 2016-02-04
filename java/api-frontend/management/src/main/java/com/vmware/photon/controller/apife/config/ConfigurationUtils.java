@@ -45,8 +45,8 @@ public class ConfigurationUtils {
         .configure()
         .addValidatedValueHandler(new OptionalValidatedValueUnwrapper())
         .buildValidatorFactory();
-    final ConfigurationFactory<ApiFeConfiguration> configurationFactory =
-        new DefaultConfigurationFactoryFactory<ApiFeConfiguration>().create(ApiFeConfiguration.class,
+    final ConfigurationFactory<ApiFeStaticConfiguration> configurationFactory =
+        new DefaultConfigurationFactoryFactory<ApiFeStaticConfiguration>().create(ApiFeStaticConfiguration.class,
             validatorFactory.getValidator(),
             objectMapper, "dw");
     checkArgument(StringUtils.isNotBlank(filename), "filename cannot be blank");

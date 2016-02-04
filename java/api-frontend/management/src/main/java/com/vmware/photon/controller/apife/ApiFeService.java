@@ -23,6 +23,7 @@ import com.vmware.photon.controller.api.common.providers.LoggingExceptionMapper;
 import com.vmware.photon.controller.api.common.providers.WebApplicationExceptionMapper;
 import com.vmware.photon.controller.apife.auth.AuthFilter;
 import com.vmware.photon.controller.apife.config.ApiFeConfiguration;
+import com.vmware.photon.controller.apife.config.ApiFeStaticConfiguration;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ConfigurationUtils;
 import com.vmware.photon.controller.apife.filter.PauseFilter;
@@ -120,7 +121,7 @@ import java.util.concurrent.TimeUnit;
  * This is the main API Front End Service. When an instance is launched, this is the boot class and the .run
  * method is the method that fires up the server.
  */
-public class ApiFeService extends Application<ApiFeConfiguration> {
+public class ApiFeService extends Application<ApiFeStaticConfiguration> {
 
   public static final String SWAGGER_VERSION = "1.2";
   private static final long retryIntervalMsec = TimeUnit.SECONDS.toMillis(30);
@@ -128,7 +129,7 @@ public class ApiFeService extends Application<ApiFeConfiguration> {
   private Injector injector;
   private ApiFeModule apiModule;
   private ZookeeperModule zookeeperModule;
-  private HibernateBundle<ApiFeConfiguration> hibernateBundle;
+  private HibernateBundle<ApiFeStaticConfiguration> hibernateBundle;
 
   public static void main(String[] args) throws Exception {
     setupApiFeConfigurationForServerCommand(args);
@@ -149,7 +150,7 @@ public class ApiFeService extends Application<ApiFeConfiguration> {
   }
 
   @Override
-  public void initialize(Bootstrap<ApiFeConfiguration> bootstrap) {
+  public void initialize(Bootstrap<ApiFeStaticConfiguration> bootstrap) {
     bootstrap.addBundle(new AssetsBundle("/assets", "/api/", "index.html"));
 
     apiModule = new ApiFeModule();
@@ -160,14 +161,14 @@ public class ApiFeService extends Application<ApiFeConfiguration> {
 
     zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
 
-    GuiceBundle<ApiFeConfiguration> guiceBundle = getGuiceBundle();
+    GuiceBundle<ApiFeStaticConfiguration> guiceBundle = getGuiceBundle();
     bootstrap.addBundle(guiceBundle);
 
     injector = guiceBundle.getInjector();
   }
 
   @Override
-  public void run(ApiFeConfiguration configuration, Environment environment) throws Exception {
+  public void run(ApiFeStaticConfiguration configuration, Environment environment) throws Exception {
     environment.jersey().register(PauseFilter.class);
 
     final AuthConfig authConfig = configuration.getAuth();
@@ -296,9 +297,9 @@ public class ApiFeService extends Application<ApiFeConfiguration> {
     environment.jersey().register(new SwaggerJsonListing(resources, SWAGGER_VERSION, "v1"));
   }
 
-  private GuiceBundle<ApiFeConfiguration> getGuiceBundle() {
-    return GuiceBundle.<ApiFeConfiguration>newBuilder()
-        .setConfigClass(ApiFeConfiguration.class)
+  private GuiceBundle<ApiFeStaticConfiguration> getGuiceBundle() {
+    return GuiceBundle.<ApiFeStaticConfiguration>newBuilder()
+        .setConfigClass(ApiFeStaticConfiguration.class)
         .addModule(apiModule)
         .addModule(zookeeperModule)
         .enableAutoConfig(getClass().getPackage().getName())
