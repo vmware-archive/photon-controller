@@ -13,6 +13,11 @@
 
 package com.vmware.photon.controller.apife.lib;
 
+import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.HostDatastore;
+import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -28,6 +33,9 @@ import com.vmware.photon.controller.host.gen.ServiceTicketResultCode;
 import com.vmware.transfer.nfc.HostServiceTicket;
 import com.vmware.transfer.nfc.NfcClient;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import org.powermock.api.mockito.PowerMockito;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -37,6 +45,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -53,7 +62,12 @@ import java.io.IOException;
  */
 public class VsphereImageStoreTest extends PowerMockTestCase {
 
+  private static final String HOST_ADDRESS = "10.146.1.1";
+  private static final String IMAGE_DATASTORE_NAME = "datastore-name";
+
   private VsphereImageStore imageStore;
+
+  private HostBackend hostBackend;
   private HostClientFactory hostClientFactory;
   private HostClient hostClient;
   private ImageConfig imageConfig;
@@ -66,6 +80,17 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
   private void dummy() {
   }
 
+  private ResourceList<Host> buildHostList() {
+    Host host = new Host();
+    host.setAddress(HOST_ADDRESS);
+    host.setDatastores(ImmutableList.of(new HostDatastore("id1", IMAGE_DATASTORE_NAME, true)));
+
+    ResourceList<Host> hostList = new ResourceList<>();
+    hostList.setItems(ImmutableList.of(host));
+
+    return hostList;
+  }
+
   /**
    * Tests the createImage method.
    */
@@ -75,15 +100,19 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
     @BeforeMethod
     public void setUp() {
-      hostClientFactory = mock(HostClientFactory.class);
+      hostBackend = mock(HostBackend.class);
+      ResourceList<Host> hostList = buildHostList();
+      when(hostBackend.filterByUsage(eq(UsageTag.MGMT), any())).thenReturn(hostList);
+      when(hostBackend.filterByAddress(eq(HOST_ADDRESS), any())).thenReturn(hostList);
+
       hostClient = mock(HostClient.class);
+      hostClientFactory = mock(HostClientFactory.class);
       when(hostClientFactory.create()).thenReturn(hostClient);
 
       imageConfig = new ImageConfig();
-      imageConfig.setDatastore("datastore-name");
-      imageConfig.setEndpoint("10.146.1.1");
+      imageConfig.setEndpoint(HOST_ADDRESS);
 
-      imageStore = spy(new VsphereImageStore(hostClientFactory, imageConfig));
+      imageStore = spy(new VsphereImageStore(hostBackend, hostClientFactory, imageConfig));
       imageId = "image-id";
 
       nfcClient = mock(NfcClient.class);
@@ -93,7 +122,18 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
     }
 
     @Test
-    public void testSuccess() throws Exception {
+    public void testSuccessWithConfiguredHostAddress() throws Exception {
+      doReturn(nfcClient).when(imageStore).getNfcClient(any(HostServiceTicket.class));
+      when(hostClient.getNfcServiceTicket(anyString())).thenReturn(serviceTicketResponse);
+
+      Image imageFolder = spy(imageStore.createImage(imageId));
+      assertThat(imageFolder, notNullValue());
+    }
+
+    @Test
+    public void testSuccessWithoutConfiguredHostAddress() throws Exception {
+      imageConfig.setEndpoint(null);
+
       doReturn(nfcClient).when(imageStore).getNfcClient(any(HostServiceTicket.class));
       when(hostClient.getNfcServiceTicket(anyString())).thenReturn(serviceTicketResponse);
 
@@ -116,6 +156,24 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
       imageStore.createImage(imageId);
     }
+
+    @Test(expectedExceptions = IllegalStateException.class,
+          expectedExceptionsMessageRegExp = "Could not find any host to upload image.")
+    public void testWithHostIpProvidedNoHostFound() throws Exception {
+      doReturn(new ResourceList<Host>()).when(hostBackend).filterByAddress(HOST_ADDRESS, Optional.absent());
+      doReturn(new ResourceList<Host>()).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.absent());
+
+      imageStore.createImage(imageId);
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class,
+          expectedExceptionsMessageRegExp = "Could not find any host to upload image.")
+    public void testNoHostIpProvidedNoHostFound() throws Exception {
+      imageConfig.setEndpoint(null);
+      doReturn(new ResourceList<Host>()).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.absent());
+
+      imageStore.createImage(imageId);
+    }
   }
 
   /**
@@ -125,24 +183,26 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
     @BeforeMethod
     public void setUp() {
-      hostClientFactory = mock(HostClientFactory.class);
+      hostBackend = mock(HostBackend.class);
+      when(hostBackend.filterByUsage(any(), any())).thenReturn(buildHostList());
+
       hostClient = mock(HostClient.class);
+      hostClientFactory = mock(HostClientFactory.class);
       when(hostClientFactory.create()).thenReturn(hostClient);
 
       imageConfig = new ImageConfig();
-      imageConfig.setDatastore("datastore-name");
-      imageConfig.setEndpoint("10.146.1.1");
+      imageConfig.setEndpoint(HOST_ADDRESS);
 
-      imageStore = spy(new VsphereImageStore(hostClientFactory, imageConfig));
+      imageStore = spy(new VsphereImageStore(hostBackend, hostClientFactory, imageConfig));
       imageId = "image-id";
     }
 
     @Test
     public void testSuccess() throws Throwable {
       doReturn(new DeleteImageResponse(DeleteImageResultCode.OK))
-          .when(hostClient).deleteImage(imageId, imageConfig.getDatastore());
+          .when(hostClient).deleteImage(imageId, IMAGE_DATASTORE_NAME);
       imageStore.deleteImage(imageId);
-      verify(hostClient).deleteImage(imageId, imageConfig.getDatastore());
+      verify(hostClient).deleteImage(imageId, IMAGE_DATASTORE_NAME);
     }
 
     /**
@@ -152,10 +212,10 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
      */
     @Test(dataProvider = "IgnoredExceptions")
     public void testIgnoredExceptions(Exception ex) throws Throwable {
-      doThrow(ex).when(hostClient).deleteImage(imageId, imageConfig.getDatastore());
+      doThrow(ex).when(hostClient).deleteImage(imageId, IMAGE_DATASTORE_NAME);
 
       imageStore.deleteImage(imageId);
-      verify(hostClient).deleteImage(imageId, imageConfig.getDatastore());
+      verify(hostClient).deleteImage(imageId, IMAGE_DATASTORE_NAME);
     }
 
     @DataProvider(name = "IgnoredExceptions")
@@ -174,7 +234,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
     @Test
     public void testExceptions() throws Throwable {
       doThrow(new InterruptedException("InterruptedException")).when(hostClient).deleteImage(
-          imageId, imageConfig.getDatastore());
+          imageId, IMAGE_DATASTORE_NAME);
 
       try {
         imageStore.deleteImage(imageId);
@@ -182,7 +242,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
       } catch (InternalException ex) {
         assertThat(ex.getCause().getMessage(), is("InterruptedException"));
       }
-      verify(hostClient).deleteImage(imageId, imageConfig.getDatastore());
+      verify(hostClient).deleteImage(imageId, IMAGE_DATASTORE_NAME);
     }
   }
 
@@ -196,14 +256,16 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
       imageId = "image-id";
 
       imageConfig = new ImageConfig();
-      imageConfig.setDatastore("datastore-name");
-      imageConfig.setEndpoint("10.146.1.1");
+      imageConfig.setEndpoint(HOST_ADDRESS);
 
-      hostClientFactory = mock(HostClientFactory.class);
+      hostBackend = mock(HostBackend.class);
+      when(hostBackend.filterByUsage(any(), any())).thenReturn(buildHostList());
+
       hostClient = mock(HostClient.class);
+      hostClientFactory = mock(HostClientFactory.class);
       when(hostClientFactory.create()).thenReturn(hostClient);
 
-      imageStore = spy(new VsphereImageStore(hostClientFactory, imageConfig));
+      imageStore = spy(new VsphereImageStore(hostBackend, hostClientFactory, imageConfig));
     }
 
     @Test
