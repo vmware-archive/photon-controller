@@ -13,23 +13,35 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.agent.gen.AgentControl;
+import com.vmware.photon.controller.agent.gen.PingRequest;
 import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
+import com.vmware.photon.controller.common.dcp.validation.DefaultLong;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotEmpty;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.Range;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.services.common.QueryTask;
 
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TCompactProtocol;
+import org.apache.thrift.protocol.TMultiplexedProtocol;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.transport.TFramedTransport;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -37,6 +49,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class implements a DCP micro-service which provides a plain data object
@@ -46,12 +60,43 @@ public class HostService extends StatefulService {
 
   private final Random random = new Random();
 
+  /**
+   * All the default values specified below are just good starting points. We might
+   * need to adjust them after scale testing.
+   *
+   * DEFAULT_MAINTENANCE_INTERVAL = DEFAULT_MAX_PING_WAIT_TIME + DEFAULT_PING_TIMEOUT + BUFFER = 50 + 5 + 5
+   *
+   * At DEFAULT_MAX_PING_WAIT_TIME of 50 seconds, we will send 20 pings every second if we have 1000 hosts and 200
+   * pings every second if we have 10000 hosts. Typically the maintenance call completes within a 100ms. On failure
+   * cases, we wait for a 5 second ping timeout. These can be changed based on actual perf numbers.
+   */
+
+  /**
+   * The default maintenance interval controls how often we poll the agent for its
+   * state (60 seconds).
+   */
+  public static final long DEFAULT_MAINTENANCE_INTERVAL_MILLIS = 60 * 1000;
+
+  /**
+   * This value specifies the default time (in ms) we wait for the ping operation to
+   * timeout before we mark the agent as MISSING (5 seconds).
+   */
+  public static final int DEFAULT_PING_TIMEOUT_MILLIS = 5 * 1000;
+
+  /**
+   * This value represents the upper bound of the wait time in milliseconds for a host
+   * service instance to ping the agent within its polling interval (10 seconds).
+   */
+  public static final int DEFAULT_MAX_PING_WAIT_TIME_MILLIS = 50 * 1000;
+
   public HostService() {
     super(State.class);
     super.toggleOption(ServiceOption.ENFORCE_QUORUM, true);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
+    super.toggleOption(ServiceOption.PERIODIC_MAINTENANCE, true);
+    super.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(DEFAULT_MAINTENANCE_INTERVAL_MILLIS));
   }
 
   @Override
@@ -66,6 +111,9 @@ public class HostService extends StatefulService {
       }
 
       validateState(startState);
+
+      // set the maintenance interval to match the value in the state.
+      this.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(startState.triggerIntervalMillis));
       startOperation.complete();
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
@@ -95,6 +143,88 @@ public class HostService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       patchOperation.fail(t);
     }
+  }
+
+  /**
+   * Handle periodic maintenance calls for all host service instances.
+   * We will be using this to ping all the hosts periodically to check if they are alive.
+   * @param maintenance
+   */
+  @Override
+  public void handleMaintenance(Operation maintenance) {
+    try {
+      getHost().schedule(() -> {
+        Operation getOperation = Operation.createGet(this, maintenance.getUri().getPath())
+            .setCompletion((op, ex) -> {
+              if (ex != null) {
+                ServiceUtils.logWarning(this, "Get request failed on Host Service to ping agent " + ex.getMessage());
+                maintenance.complete();
+                return;
+              }
+              State hostState = op.getBody(State.class);
+              pingHost(maintenance, hostState);
+            });
+        sendRequest(getOperation);
+      }, ThreadLocalRandom.current().nextInt(1, DEFAULT_MAX_PING_WAIT_TIME_MILLIS), TimeUnit.MILLISECONDS);
+    } catch (Exception exception) {
+      ServiceUtils.logWarning(this, "Handle maintenance failed " + exception.getMessage());
+      maintenance.complete();
+    }
+  }
+
+  /**
+   * This method pings the agent on the host identified by the host document and updates the agent state in the host
+   * document if it determines a change in agent state.
+   * The thrift call to ping the agent is implemented as a runnable, which will be scheduled to run in the future.
+   * The time after which it runs is determined by a random integer between 1 and maxPingWaitTimeMillis. This is needed
+   * to achieve a randomized distribution of the polling task so that we reduce the number of concurrent connections.
+   * @param maintenance
+   * @param hostState
+   */
+  private void pingHost(Operation maintenance, State hostState) {
+    TTransport transport = null;
+    try {
+      TSocket socket = new TSocket(hostState.hostAddress, hostState.agentPort);
+      socket.setTimeout(hostState.pingTimeoutMillis);
+      transport = new TFramedTransport(socket);
+      transport.open();
+      TProtocol compactProtocol = new TCompactProtocol(transport);
+      TMultiplexedProtocol multiplexedProtocol = new TMultiplexedProtocol(compactProtocol, "AgentControl");
+      AgentControl.Client client = new AgentControl.Client(multiplexedProtocol);
+
+      PingRequest request = new PingRequest();
+      client.ping(request);
+      updateHostState(maintenance, hostState, AgentState.ACTIVE);
+    } catch (TException ex) {
+      ServiceUtils.logInfo(this, "Failed to ping " + hostState.hostAddress + ", will be marked as missing:" +
+          ex.getMessage());
+      updateHostState(maintenance, hostState, AgentState.MISSING);
+    } catch (Exception ex) {
+      ServiceUtils.logWarning(this, "Unexpected exception while pinging " + hostState.hostAddress + ", will be " +
+          "marked as missing:" + ex.getMessage());
+      updateHostState(maintenance, hostState, AgentState.MISSING);
+    } finally {
+      if (transport != null && transport.isOpen()) {
+        transport.close();
+      }
+    }
+  }
+
+  /**
+   * Patch the Host Service document with the agent state if it has changed.
+   * @param maintenance
+   * @param hostState
+   * @param agentState
+   */
+  private void updateHostState(Operation maintenance, State hostState, AgentState agentState) {
+    if (hostState.agentState != agentState) {
+      State patchState = new State();
+      patchState.agentState = agentState;
+      ServiceUtils.logInfo(this, "Agent state for host " + hostState.hostAddress + " changed from " +
+          hostState.agentState + " " + "-> " + agentState);
+      TaskUtils.sendSelfPatch(this, patchState);
+    }
+    maintenance.complete();
   }
 
   @Override
@@ -326,5 +456,21 @@ public class HostService extends StatefulService {
     @NotNull
     @Immutable
     public Long schedulingConstant;
+
+    /**
+     * The time interval to trigger the service. (This value will be used to set the
+     * maintenance interval on the service.)
+     */
+    @DefaultLong(value = DEFAULT_MAINTENANCE_INTERVAL_MILLIS)
+    @Positive
+    public Long triggerIntervalMillis;
+
+    /**
+     * This value specifies the time (in ms) we wait for the ping operation to timeout
+     * before we mark the agent as MISSING.
+     */
+    @DefaultInteger(value = DEFAULT_PING_TIMEOUT_MILLIS)
+    @Positive
+    public Integer pingTimeoutMillis;
   }
 }
