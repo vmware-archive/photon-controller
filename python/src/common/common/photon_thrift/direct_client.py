@@ -12,8 +12,8 @@
 
 import logging
 
-from tserver.multiplex import TMultiplexedProtocol
 from thrift.protocol import TCompactProtocol
+from thrift.protocol import TMultiplexedProtocol
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
@@ -48,7 +48,8 @@ class DirectClient(object):
             sock.setTimeout(self._client_timeout * 1000)
         self._transport = TTransport.TFramedTransport(sock)
         protocol = TCompactProtocol.TCompactProtocol(self._transport)
-        mux_protocol = TMultiplexedProtocol(protocol, self._service_name)
+        mux_protocol = TMultiplexedProtocol.TMultiplexedProtocol(
+                protocol, self._service_name)
         self._client = self._client_cls(mux_protocol)
         self._transport.open()
         self._logger.info("Connected to %s:%s. for service %s"
