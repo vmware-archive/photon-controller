@@ -13,7 +13,12 @@
 
 package com.vmware.photon.controller.apife.lib;
 
+import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.HostDatastore;
+import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.apife.exceptions.internal.DeleteUploadFolderException;
@@ -30,9 +35,12 @@ import com.vmware.transfer.nfc.HostServiceTicket;
 import com.vmware.transfer.nfc.NfcClient;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
 
@@ -46,8 +54,11 @@ public class VsphereImageStore implements ImageStore {
   private static final Logger logger = LoggerFactory.getLogger(VsphereImageStore.class);
   private static final String TMP_IMAGE_UPLOADS_FOLDER = "tmp_uploads";
 
+  private final HostBackend hostBackend;
   private final HostClientFactory hostClientFactory;
   private final ImageConfig config;
+
+  private Host host;
 
   /**
    * Constructor.
@@ -55,7 +66,8 @@ public class VsphereImageStore implements ImageStore {
    * @param hostClientFactory
    * @param config
    */
-  public VsphereImageStore(HostClientFactory hostClientFactory, ImageConfig config) {
+  public VsphereImageStore(HostBackend hostBackend, HostClientFactory hostClientFactory, ImageConfig config) {
+    this.hostBackend = hostBackend;
     this.hostClientFactory = hostClientFactory;
     this.config = config;
   }
@@ -170,7 +182,19 @@ public class VsphereImageStore implements ImageStore {
 
   @Override
   public String getDatastore() {
-    return this.config.getDatastore();
+    ensureHost(this.getHostAddress());
+    checkNotNull(this.host.getDatastores());
+
+    String datastore = null;
+    for (HostDatastore ds : this.host.getDatastores()) {
+      if (ds.isImageDatastore()) {
+        datastore = ds.getMountPoint();
+        break;
+      }
+    }
+
+    checkNotNull(datastore);
+    return datastore;
   }
 
   @VisibleForTesting
@@ -183,6 +207,34 @@ public class VsphereImageStore implements ImageStore {
       logger.error("Failed to create nfc client, due to: {}", e);
       throw new InternalException(e);
     }
+  }
+
+  /**
+   * Retrieves the host information from CloudStore.
+   */
+  private void ensureHost(String ip) {
+    if (null != this.host && (null == ip || ip.equals(this.host.getAddress()))) {
+      // if we already have a host and it matches the requested IP we just exit
+      // we also exit if we have a host and there is no requested IP
+      return;
+    }
+
+    ResourceList<Host> hostList = null;
+    if (null != ip) {
+      hostList = this.hostBackend.filterByAddress(ip, Optional.absent());
+    }
+
+    if (null == hostList || 0 == hostList.getItems().size()) {
+      hostList = this.hostBackend.filterByUsage(UsageTag.MGMT, Optional.absent());
+    }
+
+    logger.info("Host candidates for uploading image: {}.", hostList.getItems());
+    checkState(
+        null != hostList.getItems() && hostList.getItems().size() > 0,
+        "Could not find any host to upload image.");
+
+    this.host = hostList.getItems().get(0);
+    logger.info("Selecting {} to upload image.", this.host);
   }
 
   /**
@@ -219,12 +271,24 @@ public class VsphereImageStore implements ImageStore {
    * Configured the HostClient according to the config.
    */
   private HostClient getHostClient(String hostIp) {
-    HostClient hostClient = hostClientFactory.create();
+    ensureHost(hostIp);
+
+    HostClient hostClient = this.hostClientFactory.create();
     hostClient.setHostIp(hostIp);
     return hostClient;
   }
 
   private HostClient getHostClient() {
-    return getHostClient(config.getEndpointHostAddress());
+    return getHostClient(getHostAddress());
+  }
+
+  private String getHostAddress() {
+    try {
+      return this.config.getEndpointHostAddress();
+    } catch (NullPointerException e) {
+      logger.warn("No host IP is specified for image upload.");
+    }
+
+    return null;
   }
 }
