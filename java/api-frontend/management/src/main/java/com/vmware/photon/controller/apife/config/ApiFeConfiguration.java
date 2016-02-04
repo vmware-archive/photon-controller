@@ -13,106 +13,33 @@
 
 package com.vmware.photon.controller.apife.config;
 
-import com.vmware.photon.controller.api.constraints.DomainOrIP;
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.dropwizard.Configuration;
-import org.hibernate.validator.constraints.Range;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-
 /**
- * API Front End Server Configuration.
+ * API Front End Server Configuration interface.
  */
-public class ApiFeConfiguration extends Configuration {
+public interface ApiFeConfiguration {
 
-  @Range(min = 1, max = 2048)
-  @JsonProperty("background_workers")
-  private int backgroundWorkers = 512;
+  public AuthConfig getAuth();
 
-  @Range(min = 1, max = 2048)
-  @JsonProperty("background_workers_queue_size")
-  private int backgroundWorkersQueueSize = 512;
+  public RootSchedulerConfig getRootScheduler();
 
-  @JsonProperty
-  private boolean useDcpBackend = true;
+  public int getBackgroundWorkers();
 
-  @Valid
-  @NotNull
-  @JsonProperty
-  private AuthConfig auth = new AuthConfig();
+  public int getBackgroundWorkersQueueSize();
 
-  @Valid
-  @NotNull
-  @JsonProperty("root_scheduler")
-  private RootSchedulerConfig rootScheduler = new RootSchedulerConfig();
+  public ZookeeperConfig getZookeeper();
 
-  @Valid
-  @NotNull
-  @JsonProperty
-  private ZookeeperConfig zookeeper = new ZookeeperConfig();
+  public GraphiteConfig getGraphite();
 
-  @DomainOrIP
-  private String registrationAddress;
+  public String getRegistrationAddress();
 
-  @Valid
-  @JsonProperty("image")
-  private ImageConfig image = new ImageConfig();
+  public ImageConfig getImage();
 
-  @Valid
-  @JsonProperty("status")
-  private StatusConfig statusConfig = new StatusConfig();
+  public StatusConfig getStatusConfig();
 
-  @Valid
-  @JsonProperty("pagination")
-  private PaginationConfig paginationConfig = new PaginationConfig();
+  public boolean useDcpBackend();
 
-  public AuthConfig getAuth() {
-    return this.auth;
-  }
-
-  public RootSchedulerConfig getRootScheduler() {
-    return rootScheduler;
-  }
-
-  public int getBackgroundWorkers() {
-    return backgroundWorkers;
-  }
-
-  public int getBackgroundWorkersQueueSize() {
-    return backgroundWorkersQueueSize;
-  }
-
-  public ZookeeperConfig getZookeeper() {
-    return zookeeper;
-  }
-
-  public GraphiteConfig getGraphite() {
-    // Turn off graphite for now. Once we are ready to turn it back on, return
-    // graphite instead of null.
-    return null;
-  }
-
-  public String getRegistrationAddress() {
-    return registrationAddress;
-  }
-
-  public ImageConfig getImage() {
-    return image;
-  }
-
-  public StatusConfig getStatusConfig() {
-    return statusConfig;
-  }
-
-  public boolean useDcpBackend() {
-    return useDcpBackend;
-  }
-
-  public PaginationConfig getPaginationConfig() {
-    return paginationConfig;
-  }
+  public PaginationConfig getPaginationConfig();
 }
