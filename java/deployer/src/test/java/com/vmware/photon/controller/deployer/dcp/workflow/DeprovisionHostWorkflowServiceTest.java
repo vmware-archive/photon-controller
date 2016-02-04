@@ -114,7 +114,9 @@ public class DeprovisionHostWorkflowServiceTest {
     public void testCapabilities() {
 
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
-          Service.ServiceOption.PERSISTENCE);
+          Service.ServiceOption.OWNER_SELECTION,
+          Service.ServiceOption.PERSISTENCE,
+          Service.ServiceOption.REPLICATION);
 
       assertThat(deprovisionHostWorkflowService.getOptions(), is(expected));
     }
