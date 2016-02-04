@@ -468,8 +468,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
     // create the steps
     this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.PREPARE_DEPLOYMENT);
-    this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.SCHEDULE_DEPLOYMENT);
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.PROVISION_CONTROL_PLANE_HOSTS);
