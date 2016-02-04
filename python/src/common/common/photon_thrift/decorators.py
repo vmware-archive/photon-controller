@@ -13,7 +13,6 @@
 import common
 import logging
 import sys
-import threading
 import time
 import uuid
 
@@ -22,7 +21,6 @@ from functools import wraps
 from common.lock_vm import ConcurrentVmOperation
 from common.service_name import ServiceName
 from common.photon_thrift.validation import deep_validate
-from tserver.multiplex import Worker
 
 
 def log_request(func=None, log_level=logging.INFO):
@@ -59,21 +57,12 @@ def log_request(func=None, log_level=logging.INFO):
 
             request_id.value.append(request_id_value)
 
-            # if the request was made directly to the handler it will not
-            # have a value
-            current = threading.current_thread()
-            if isinstance(current, Worker) and current.queued_time():
-                queued = "%f" % (start - current.queued_time())
-            else:
-                queued = "N/A"
-
             try:
                 if no_request_id:
-                    self._logger.log(log_level, "[Queued:%s] %s no tracing",
-                                     queued, str(request))
+                    self._logger.log(log_level, "%s no tracing",
+                                     str(request))
                 else:
-                    self._logger.log(log_level, "[Queued:%s] %s",
-                                     queued, str(request))
+                    self._logger.log(log_level, str(request))
                 response = func(self, request)
                 end = time.time()
                 self._logger.log(log_level, "result:%d [Duration:%f] %s",

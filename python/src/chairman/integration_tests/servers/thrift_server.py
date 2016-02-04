@@ -19,9 +19,9 @@ from gen.host import Host
 from gen.scheduler.root import RootScheduler
 from gen.scheduler import Scheduler
 from thrift.protocol import TCompactProtocol
+from thrift import TMultiplexedProcessor
+from thrift.server import TNonblockingServer
 from thrift.transport import TSocket
-from tserver.multiplex import TMultiplexedProcessor
-from tserver.thrift_server import TNonblockingServer
 
 
 class AgentControlHandler(AgentControl.Iface):
@@ -80,18 +80,14 @@ class ThriftServer(object):
         if service_name == "Scheduler":
             _processor = Scheduler.Processor(self._leafSchedulerHandler)
 
-        mux_processor.registerProcessor(
-            service_name,
-            _processor,
-            1,
-            0)  # unbounded queue
+        mux_processor.registerProcessor(service_name, _processor)
 
     def start_server(self):
         """
         Registers the host and root scheduler processors and
         starts the thrift server.
         """
-        mux_processor = TMultiplexedProcessor()
+        mux_processor = TMultiplexedProcessor.TMultiplexedProcessor()
 
         if self._hostHandler:
             self._register_processer("Host", mux_processor)
@@ -111,7 +107,7 @@ class ThriftServer(object):
 
         protocol_factory = TCompactProtocol.TCompactProtocolFactory()
 
-        self._server = TNonblockingServer(
+        self._server = TNonblockingServer.TNonblockingServer(
             mux_processor, transport, protocol_factory, protocol_factory)
 
         self._thread = threading.Thread(target=self._server.serve)
