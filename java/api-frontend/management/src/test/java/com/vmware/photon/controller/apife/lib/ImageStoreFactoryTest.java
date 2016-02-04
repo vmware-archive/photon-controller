@@ -13,14 +13,15 @@
 
 package com.vmware.photon.controller.apife.lib;
 
+import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 
-import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.mockito.Mockito.mock;
 
 /**
  * Test {@link ImageStoreFactory}.
@@ -39,20 +40,23 @@ public class ImageStoreFactoryTest {
    */
   public class CreateTest {
 
-    private ImageConfig config;
-
-    @Mock
+    private HostBackend hostBackend;
     private HostClientFactory hostClientFactory;
+
+    private ImageConfig config;
 
     @BeforeMethod
     public void setUp() {
+      hostBackend = mock(HostBackend.class);
+      hostClientFactory = mock(HostClientFactory.class);
+
       config = new ImageConfig();
       config.setDatastore("ds");
     }
 
     @Test
     public void testLocalStore() {
-      ImageStoreFactory factory = new ImageStoreFactory(config, hostClientFactory);
+      ImageStoreFactory factory = new ImageStoreFactory(hostBackend, hostClientFactory, config);
       assertThat(factory.create(), instanceOf(LocalImageStore.class));
     }
 
@@ -60,7 +64,7 @@ public class ImageStoreFactoryTest {
     public void testVsphereStore() {
       config.setUseEsxStore(true);
 
-      ImageStoreFactory factory = new ImageStoreFactory(config, hostClientFactory);
+      ImageStoreFactory factory = new ImageStoreFactory(hostBackend, hostClientFactory, config);
       assertThat(factory.create(), instanceOf(VsphereImageStore.class));
     }
   }

@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.lib;
 
+import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 
@@ -25,20 +26,24 @@ import com.google.inject.Singleton;
 @Singleton
 public class ImageStoreFactory {
 
-  private final ImageConfig config;
+  private final HostBackend hostBackend;
   private final HostClientFactory hostClientFactory;
+  private final ImageConfig config;
 
   @Inject
   public ImageStoreFactory(
-      ImageConfig config,
-      HostClientFactory hostClientFactory) {
-    this.config = config;
+      HostBackend hostBackend,
+      HostClientFactory hostClientFactory,
+      ImageConfig config) {
+    this.hostBackend = hostBackend;
     this.hostClientFactory = hostClientFactory;
+    this.config = config;
   }
 
   public ImageStore create() {
     if (config.useEsxStore()) {
       return new VsphereImageStore(
+          hostBackend,
           hostClientFactory,
           config);
     }
