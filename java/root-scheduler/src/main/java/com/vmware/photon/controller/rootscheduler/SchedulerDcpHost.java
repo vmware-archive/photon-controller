@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Paths;
 
 /**
- * This class implements the DCP service host object
+ * This class implements the Xenon service host object
  * for the Root-Scheduler service.
  */
 @Singleton
@@ -54,13 +54,13 @@ public class SchedulerDcpHost
     arguments.bindAddress = bindAddress;
     arguments.sandbox = Paths.get(storagePath);
 
-    logger.info("Initializing DcpServer on port: {} path: {}", arguments.port, storagePath);
+    logger.info("Initializing SchedulerDcpHost on port: {} path: {}", arguments.port, storagePath);
 
     this.initialize(arguments);
   }
 
   /**
-   * This method starts the default DCP core services and deployer DCP service
+   * This method starts the default Xenon core services and the scheduler-specific factory service
    * factories.
    *
    * @return

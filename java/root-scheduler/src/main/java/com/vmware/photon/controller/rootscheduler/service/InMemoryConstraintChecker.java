@@ -43,6 +43,9 @@ import java.util.Map;
 
 /**
  * An immutable, in-memory implementation of {@link ConstraintChecker}.
+ *
+ * This will be removed after the conversion to the new flat scheduler is complete
+ * The equivalent in the new flat scheduler is the HostCache
  */
 public class InMemoryConstraintChecker implements ConstraintChecker {
   private static final Logger logger = LoggerFactory.getLogger(InMemoryConstraintChecker.class);
@@ -201,6 +204,7 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
     return matches;
   }
 
+  @Override
   public Map<String, ServerAddress> getCandidates(List<ResourceConstraint> constraints, int numCandidates) {
     // Find all the hosts that satisfy the resource constraints.
     ImmutableSet<String> matches;
