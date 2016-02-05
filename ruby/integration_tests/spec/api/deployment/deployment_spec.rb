@@ -223,4 +223,31 @@ describe "deployment", management: true, devbox: true do
       end
     end
   end
+
+  describe "#update_image_datastores", go_cli: true do
+    before(:each) do
+      @current_image_datastores = deployment.image_datastores
+    end
+
+    it "fails to update image datastores" do
+      begin
+        begin
+          client.update_image_datastores(deployment.id, "new_image_datastore")
+        rescue EsxCloud::CliError => e
+          expect(e.message).to include("New image datastore list [new_image_datastore] is not a super set of existing list")
+        end
+      end
+    end
+
+    it "should successfully update image datastores" do
+      begin
+        existing_image_datastores = deployment.image_datastores
+        new_image_datastore_list = [existing_image_datastores, "new_image_datastores"].flatten
+        client.update_image_datastores(deployment.id, new_image_datastore_list.join(","))
+
+        updated_image_datastores = client.find_deployment_by_id(deployment.id).image_datastores
+        expect(updated_image_datastores).to match_array(new_image_datastore_list)
+      end
+    end
+  end
 end

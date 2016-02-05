@@ -133,6 +133,8 @@ RSpec.configure do |config|
 
   config.filter_run_excluding single_vm_port_group: true if EsxCloud::TestHelpers.get_vm_port_groups.length == 1
 
+  config.filter_run_excluding go_cli: true unless ENV["DRIVER"] == "gocli"
+
   if RSpec.configuration.inclusion_filter[:management]
     EsxCloud::TestHelpers.await_system_ready
   end
