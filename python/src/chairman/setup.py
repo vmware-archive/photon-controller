@@ -26,7 +26,6 @@ setup(name='photon.controller.chairman',
       install_requires=[
           'enum34==0.9.19',
           'photon.controller.gen.thrift',
-          'photon.controller.tserver',
           'thrift==0.9.3',
       ],
       extras_require={
