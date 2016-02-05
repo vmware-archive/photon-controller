@@ -35,9 +35,27 @@ write_files:
 
         echo "Starting mesos slave"
 
-        docker run -d --entrypoint="mesos-slave" --net=host --restart=always -e "MESOS_HOSTNAME=$LOCAL_HOSTNAME" \
-          -e "MESOS_IP=${ipAddress}" -e "MESOS_MASTER=zk://$ZK_QUORUM/mesos" -e "MESOS_LOG_DIR=/var/log/mesos" \
-          -e "MESOS_LOGGING_LEVEL=INFO" mesosphere/mesos-slave:0.20.1
+        docker run -d \
+          --entrypoint="mesos-slave" \
+          --net=host \
+          --restart=always \
+          --pid=host \
+          --privileged=true \
+          --name=photon-mesos-slave \
+          -v /sys:/sys \
+          -v /tmp/mesos:/tmp/mesos \
+          -v /var/log/mesos:/var/log/mesos \
+          -v /usr/bin/docker:/usr/bin/docker:ro \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -e "MESOS_HOSTNAME=$LOCAL_HOSTNAME" \
+          -e "MESOS_IP=${ipAddress}" \
+          -e "MESOS_MASTER=zk://$ZK_QUORUM/mesos" \
+          -e "MESOS_LOG_DIR=/var/log/mesos" \
+          -e "MESOS_LOGGING_LEVEL=INFO" \
+          -e "MESOS_ADVERTISE_IP=${ipAddress}" \
+          -e "MESOS_WORK_DIR=/tmp/mesos" \
+          -e "MESOS_CONTAINERIZERS=docker,mesos" \
+          mesosphere/mesos-slave:0.26.0-0.2.145.ubuntu1404
 
         echo "done"
     owner: root:root
