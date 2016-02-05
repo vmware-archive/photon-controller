@@ -14,10 +14,11 @@
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
-import com.vmware.photon.controller.agent.gen.PingRequest;
 import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.common.clients.AgentControlClient;
+import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
@@ -47,14 +48,7 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
-import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
-import org.apache.thrift.protocol.TCompactProtocol;
-import org.apache.thrift.protocol.TMultiplexedProtocol;
-import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.transport.TFramedTransport;
-import org.apache.thrift.transport.TSocket;
-import org.apache.thrift.transport.TTransport;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -80,11 +74,11 @@ public class HostService extends StatefulService {
    * All the default values specified below are just good starting points. We might
    * need to adjust them after scale testing.
    *
-   * DEFAULT_MAINTENANCE_INTERVAL = DEFAULT_MAX_PING_WAIT_TIME + DEFAULT_PING_TIMEOUT + BUFFER = 50 + 5 + 5
+   * DEFAULT_MAINTENANCE_INTERVAL = DEFAULT_MAX_PING_WAIT_TIME + MAX_TIME_TO_PING + BUFFER = 50 + 5 + 5 = 60s
    *
    * At DEFAULT_MAX_PING_WAIT_TIME of 50 seconds, we will send 20 pings every second if we have 1000 hosts and 200
-   * pings every second if we have 10000 hosts. Typically the maintenance call completes within a 100ms. On failure
-   * cases, we wait for a 5 second ping timeout. These can be changed based on actual perf numbers.
+   * pings every second if we have 10,000 hosts. The actual ping, get and post are all asynchronous. So we should be
+   * able to scale to 1000 hosts without issues and 10,000 hosts depending on the load on cloud store by other services.
    */
 
   /**
@@ -92,12 +86,6 @@ public class HostService extends StatefulService {
    * state (60 seconds).
    */
   public static final long DEFAULT_MAINTENANCE_INTERVAL_MILLIS = 60 * 1000;
-
-  /**
-   * This value specifies the default time (in ms) we wait for the ping operation to
-   * timeout before we mark the agent as MISSING (5 seconds).
-   */
-  public static final int DEFAULT_PING_TIMEOUT_MILLIS = 5 * 1000;
 
   /**
    * This value represents the upper bound of the wait time in milliseconds for a host
@@ -244,38 +232,33 @@ public class HostService extends StatefulService {
    * @param hostState
    */
   private void pingHost(Operation maintenance, State hostState) {
-    TTransport transport = null;
+    final Service service = this;
     try {
-      TSocket socket = new TSocket(hostState.hostAddress, hostState.agentPort);
-      socket.setTimeout(hostState.pingTimeoutMillis);
-      transport = new TFramedTransport(socket);
-      transport.open();
-      TProtocol compactProtocol = new TCompactProtocol(transport);
-      TMultiplexedProtocol multiplexedProtocol = new TMultiplexedProtocol(compactProtocol, "AgentControl");
-      AgentControl.Client client = new AgentControl.Client(multiplexedProtocol);
+      AgentControlClient agentControlClient = ((AgentControlClientProvider) getHost()).getAgentControlClient();
+      agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+      agentControlClient.ping(new AsyncMethodCallback<AgentControl.AsyncClient.ping_call>() {
+        @Override
+        public void onComplete(AgentControl.AsyncClient.ping_call pingCall) {
+          // Get the host metadata if we have reached the UPDATE_HOST_METADATA_INTERVAL
+          if (System.currentTimeMillis() - lastHostMetadataUpdateTime >= UPDATE_HOST_METADATA_INTERVAL) {
+            lastHostMetadataUpdateTime = System.currentTimeMillis();
+            getHostConfig(maintenance, hostState);
+          } else {
+            updateHostState(maintenance, hostState, AgentState.ACTIVE);
+          }
+        }
 
-      PingRequest request = new PingRequest();
-      client.ping(request);
-
-      // Get the host metadata if we have reached the UPDATE_HOST_METADATA_INTERVAL
-      if (System.currentTimeMillis() - this.lastHostMetadataUpdateTime >= UPDATE_HOST_METADATA_INTERVAL) {
-        this.lastHostMetadataUpdateTime = System.currentTimeMillis();
-        getHostConfig(maintenance, hostState);
-      } else {
-        updateHostState(maintenance, hostState, AgentState.ACTIVE);
-      }
-    } catch (TException ex) {
-      ServiceUtils.logInfo(this, "Failed to ping " + hostState.hostAddress + ", will be marked as missing:" +
-          ex.getMessage());
-      updateHostState(maintenance, hostState, AgentState.MISSING);
+        @Override
+        public void onError(Exception e) {
+          ServiceUtils.logInfo(service, "Failed to ping " + hostState.hostAddress + ", will be marked as missing:" +
+              e.getMessage());
+          updateHostState(maintenance, hostState, AgentState.MISSING);
+        }
+      });
     } catch (Exception ex) {
       ServiceUtils.logWarning(this, "Unexpected exception while pinging " + hostState.hostAddress + ", will be " +
           "marked as missing:" + ex.getMessage());
       updateHostState(maintenance, hostState, AgentState.MISSING);
-    } finally {
-      if (transport != null && transport.isOpen()) {
-        transport.close();
-      }
     }
   }
 
@@ -667,13 +650,5 @@ public class HostService extends StatefulService {
     @DefaultLong(value = DEFAULT_MAINTENANCE_INTERVAL_MILLIS)
     @Positive
     public Long triggerIntervalMillis;
-
-    /**
-     * This value specifies the time (in ms) we wait for the ping operation to timeout
-     * before we mark the agent as MISSING.
-     */
-    @DefaultInteger(value = DEFAULT_PING_TIMEOUT_MILLIS)
-    @Positive
-    public Integer pingTimeoutMillis;
   }
 }

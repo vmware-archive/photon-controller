@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.cloudstore;
 
 import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.clients.AgentControlClient;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
@@ -48,6 +50,10 @@ public class CloudStoreModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)
         .build(HostClientFactory.class));
+
+    install(new FactoryModuleBuilder()
+        .implement(AgentControlClient.class, AgentControlClient.class)
+        .build(AgentControlClientFactory.class));
   }
 
   @Provides

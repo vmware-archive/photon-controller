@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore;
 
+import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.config.BadConfigException;
@@ -68,6 +69,10 @@ public class Main {
         new ThriftModule(),
         new ThriftServiceModule<>(
             new TypeLiteral<Host.AsyncClient>() {
+            }
+        ),
+        new ThriftServiceModule<>(
+            new TypeLiteral<AgentControl.AsyncClient>() {
             }
         )
     );
