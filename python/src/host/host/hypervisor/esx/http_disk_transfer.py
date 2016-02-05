@@ -30,6 +30,7 @@ from gen.host.ttypes import ReceiveImageResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
+from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import EsxVmConfig
@@ -372,6 +373,8 @@ class HttpNfcTransferer(HttpTransferer):
         )
 
         response = agent_client.receive_image(request)
+        if response.result == ReceiveImageResultCode.DESTINATION_ALREADY_EXIST:
+            raise DiskAlreadyExistException(response.error)
         if response.result != ReceiveImageResultCode.OK:
             raise ReceiveImageException(response.result, response.error)
 

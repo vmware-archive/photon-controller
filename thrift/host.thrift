@@ -485,6 +485,8 @@ enum TransferImageResultCode {
   SYSTEM_ERROR = 1
   // Transfer is rejected because another is in progress.
   TRANSFER_IN_PROGRESS = 2
+  // The destination image already exists.
+  DESTINATION_ALREADY_EXIST = 3
 }
 struct TransferImageResponse {
   1: required TransferImageResultCode result
