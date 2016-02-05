@@ -35,7 +35,11 @@ write_files:
 
         echo "Starting mesos marathon"
 
-        docker run -d --net=host --restart=always -e "LIBPROCESS_IP=${ipAddress}" mesosphere/marathon:0.9.1 --master zk://$ZK_QUORUM/mesos --zk zk://$ZK_QUORUM/marathon
+        docker run -d \
+          --net=host \
+          --restart=always \
+          -e "LIBPROCESS_IP=${ipAddress}" \
+          mesosphere/marathon:v0.15.0 --master zk://$ZK_QUORUM/mesos --zk zk://$ZK_QUORUM/marathon
 
         echo "done"
     owner: root:root
