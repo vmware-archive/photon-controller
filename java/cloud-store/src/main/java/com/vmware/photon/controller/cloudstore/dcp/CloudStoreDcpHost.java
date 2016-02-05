@@ -41,6 +41,9 @@ import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryS
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.TombstoneCleanerTriggerBuilder;
+import com.vmware.photon.controller.common.clients.AgentControlClient;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
+import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
@@ -67,7 +70,7 @@ import java.nio.file.Paths;
  */
 @Singleton
 public class CloudStoreDcpHost
-    extends ServiceHost implements DcpHostInfoProvider, HostClientProvider{
+    extends ServiceHost implements DcpHostInfoProvider, HostClientProvider, AgentControlClientProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreDcpHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
@@ -120,6 +123,7 @@ public class CloudStoreDcpHost
 
   private BuildInfo buildInfo;
   private final HostClientFactory hostClientFactory;
+  private final AgentControlClientFactory agentControlClientFactory;
 
   @Inject
   public CloudStoreDcpHost(
@@ -127,9 +131,11 @@ public class CloudStoreDcpHost
       @CloudStoreConfig.Port int port,
       @CloudStoreConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
+      AgentControlClientFactory agentControlClientFactory,
       BuildInfo buildInfo) throws Throwable {
 
     this.hostClientFactory = hostClientFactory;
+    this.agentControlClientFactory = agentControlClientFactory;
 
     logger.info("Initializing DcpServer on port: {} path: {}", port, storagePath);
     ServiceHost.Arguments arguments = new ServiceHost.Arguments();
@@ -150,6 +156,15 @@ public class CloudStoreDcpHost
     return hostClientFactory.create();
   }
 
+  /**
+   * This method gets an agent control client from the local agent control client pool.
+   *
+   * @return
+   */
+  @Override
+  public AgentControlClient getAgentControlClient() {
+    return agentControlClientFactory.create();
+  }
 
   @Override
   public ServiceHost start() throws Throwable {

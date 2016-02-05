@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
+import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
@@ -54,6 +55,10 @@ public class TestHelper {
         new ThriftModule(),
         new ThriftServiceModule<>(
             new TypeLiteral<Host.AsyncClient>() {
+            }
+        ),
+        new ThriftServiceModule<>(
+            new TypeLiteral<AgentControl.AsyncClient>() {
             }
         ),
         new ZookeeperModule(config.getZookeeper()));

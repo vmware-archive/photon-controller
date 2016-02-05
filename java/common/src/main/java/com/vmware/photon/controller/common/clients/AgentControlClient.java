@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.common.clients;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
+import com.vmware.photon.controller.agent.gen.PingRequest;
 import com.vmware.photon.controller.agent.gen.ProvisionRequest;
 import com.vmware.photon.controller.agent.gen.ProvisionResponse;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentConfigurationException;
@@ -62,6 +63,7 @@ public class AgentControlClient {
 
   private static final Logger logger = LoggerFactory.getLogger(AgentControlClient.class);
   private static final long PROVISION_TIMEOUT_MS = 60000;
+  private static final long PING_TIMEOUT_MS = 5000;
   private final ClientProxyFactory<AgentControl.AsyncClient> clientProxyFactory;
   private final ClientPoolFactory<AgentControl.AsyncClient> clientPoolFactory;
   /**
@@ -141,6 +143,38 @@ public class AgentControlClient {
         ImmutableSet.of(new InetSocketAddress(this.getHostIp(), this.getPort())),
         CLIENT_POOL_OPTIONS);
     this.clientProxy = clientProxyFactory.create(clientPool).get();
+  }
+
+  /**
+   * This method performs an asynchronous Thrift call to ping the host.
+   * On completion, the specified handler is invoked.
+   *
+   * @param handler Supplies a handler object to be invoked on completion.
+   * @throws RpcException
+   */
+  @RpcMethod
+  public void ping(AsyncMethodCallback<AgentControl.AsyncClient.ping_call> handler) throws RpcException {
+    ensureClient();
+    PingRequest pingRequest = new PingRequest();
+    clientProxy.setTimeout(PING_TIMEOUT_MS);
+
+    try {
+      clientProxy.ping(pingRequest, handler);
+    } catch (TException e) {
+      throw new RpcException(e.getMessage());
+    }
+  }
+
+  /**
+   * This method performs a synchronous Thrift call to ping the host.
+   *
+   * @throws RpcException
+   */
+  @RpcMethod
+  public void ping() throws InterruptedException, RpcException {
+    SyncHandler<Object, AgentControl.AsyncClient.ping_call> syncHandler = new SyncHandler<>();
+    ping(syncHandler);
+    syncHandler.await();
   }
 
   /**

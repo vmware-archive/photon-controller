@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.common.clients;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
+import com.vmware.photon.controller.agent.gen.PingRequest;
 import com.vmware.photon.controller.agent.gen.ProvisionRequest;
 import com.vmware.photon.controller.agent.gen.ProvisionResponse;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
@@ -349,4 +350,66 @@ public class AgentControlClientTest {
     }
   }
 
+  /**
+   * This class implements tests for the ping method.
+   */
+  public class PingTest {
+
+    @BeforeMethod
+    private void setUp() {
+      AgentControlClientTest.this.setUp();
+    }
+
+    @AfterMethod
+    private void tearDown() {
+      agentControlClient = null;
+    }
+
+    private Answer getAnswer(final AgentControl.AsyncClient.ping_call pingCall) {
+      return invocation -> {
+        Object[] args = invocation.getArguments();
+        AsyncMethodCallback<AgentControl.AsyncClient.ping_call> handler = (AsyncMethodCallback) args[1];
+        handler.onComplete(pingCall);
+        return null;
+      };
+    }
+
+    @Test
+    public void testSuccess() throws Exception {
+      final AgentControl.AsyncClient.ping_call pingCall = mock(AgentControl.AsyncClient.ping_call.class);
+      ArgumentCaptor<PingRequest> request = ArgumentCaptor.forClass(PingRequest.class);
+      doAnswer(getAnswer(pingCall))
+          .when(clientProxy).ping(any(PingRequest.class), any(AsyncMethodCallback.class));
+
+      agentControlClient.setClientProxy(clientProxy);
+
+      agentControlClient.ping();
+      verify(clientProxy).ping(request.capture(), any(AsyncMethodCallback.class));
+    }
+
+    @Test
+    public void testFailureNullHostIp() throws Exception {
+      try {
+        agentControlClient.ping();
+        fail("Synchronous provision call should throw with null async clientProxy");
+      } catch (IllegalArgumentException e) {
+        assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
+      }
+    }
+
+    @Test
+    public void testFailureTExceptionOnCall() throws Exception {
+      doThrow(new TException("Thrift exception"))
+          .when(clientProxy).ping(any(PingRequest.class), any(AsyncMethodCallback.class));
+
+      agentControlClient.setClientProxy(clientProxy);
+
+      try {
+        agentControlClient.ping();
+        fail("Synchronous provision call should convert TException on call to RpcException");
+      } catch (RpcException e) {
+        assertThat(e.getMessage(), is("Thrift exception"));
+      }
+    }
+  }
 }
