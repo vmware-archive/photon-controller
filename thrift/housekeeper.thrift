@@ -67,66 +67,10 @@ struct ReplicateImageStatusResponse {
   2: optional ReplicateImageStatus status
 }
 
-/**
- * Image removal
- */
-
-enum RemoveImageResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-  SERVICE_NOT_FOUND = 2
-}
-
-struct RemoveImageResult {
-  1: required RemoveImageResultCode code
-  2: optional string error
-}
-
-// Remove image
-struct RemoveImageRequest {
-  // The image to remove (this is the name of the image)
-  // location is assumed to be a well known location for the
-  // system
-  1: required string image
-  99: optional tracing.TracingInfo tracing_info
-}
-
-struct RemoveImageResponse {
-  1: required RemoveImageResult result
-  // ID of the removal operation
-  2: optional string operation_id
-}
-
-enum RemoveImageStatusCode {
-  IN_PROGRESS = 0
-  FINISHED = 1
-  FAILED = 2
-  CANCELLED = 3
-}
-
-struct RemoveImageStatus {
-  1: required RemoveImageStatusCode code
-  2: optional string error
-}
-
-struct RemoveImageStatusRequest {
-  // ID of of the removal operation
-  1: required string operation_id
-  99: optional tracing.TracingInfo tracing_info
-}
-
-struct RemoveImageStatusResponse {
-  1: required RemoveImageResult result
-  2: optional RemoveImageStatus status
-}
-
 // Housekeeper service
 service Housekeeper {
   ReplicateImageResponse replicate_image(1: ReplicateImageRequest request)
   ReplicateImageStatusResponse replicate_image_status(1: ReplicateImageStatusRequest request)
-
-  RemoveImageResponse remove_image(1: RemoveImageRequest request)
-  RemoveImageStatusResponse remove_image_status(1: RemoveImageStatusRequest request)
 
   status.Status get_status();
 }

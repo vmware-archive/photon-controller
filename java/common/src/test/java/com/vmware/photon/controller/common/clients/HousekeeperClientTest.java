@@ -16,8 +16,6 @@ package com.vmware.photon.controller.common.clients;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.ServiceUnavailableException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageResponse;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageResultCode;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResult;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResultCode;
@@ -27,13 +25,8 @@ import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusResponse
 import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import org.apache.thrift.TException;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.Is;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.Is.is;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -120,37 +113,4 @@ public class HousekeeperClientTest {
     client.replicateImage(DATASTORE, IMAGE, REPLICATION_TYPE);
     fail("should fail with service unavailable while getting replication status");
   }
-
-  @Test
-  public void testRemoveNullImage() throws Throwable {
-    try {
-      client.removeImage(null);
-      fail("Remove null image should fail");
-    } catch (NullPointerException e) {
-      assertThat(e.getMessage(), is("image is null"));
-    }
-  }
-
-  @Test
-  public void testRemoveImageSuccess() throws Throwable {
-    HousekeeperClientMock client = new HousekeeperClientMock(null);
-    client.setRemoveImageResultCode(RemoveImageResultCode.OK);
-    RemoveImageResponse response = client.removeImage(IMAGE);
-
-    MatcherAssert.assertThat(response.getResult().getCode(), Is.is(RemoveImageResultCode.OK));
-    MatcherAssert.assertThat(response.getResult().getError(), nullValue());
-  }
-
-  @Test
-  public void testRemoveImageError() throws Throwable {
-    HousekeeperClientMock client = new HousekeeperClientMock(null);
-    client.setRemoveImageResultCode(RemoveImageResultCode.SYSTEM_ERROR);
-    try {
-      client.removeImage(IMAGE);
-      fail("removeImage call should fail");
-    } catch (SystemErrorException e) {
-      assertThat(e.getMessage(), is("SystemError"));
-    }
-  }
-
 }
