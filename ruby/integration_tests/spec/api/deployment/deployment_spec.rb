@@ -10,6 +10,7 @@
 # specific language governing permissions and limitations under the License.
 
 require "spec_helper"
+require_relative "../../../lib/dcp/cloud_store/deployment_factory"
 
 describe "deployment", management: true, devbox: true do
   before(:all) do
@@ -220,6 +221,40 @@ describe "deployment", management: true, devbox: true do
         project = client.find_project_by_id(@project.id)
         project.security_groups.should =~ [{"name"=>"esxcloud\\adminGroup2", "inherited"=>true},
                                            {"name"=>"esxcloud\\adminGroup3", "inherited"=>true}]
+      end
+    end
+  end
+
+  describe "#update_image_datastores", go_cli: true do
+    before(:each) do
+      @existing_image_datastores = deployment.image_datastores
+    end
+
+    it "fails to update image datastores" do
+      begin
+        begin
+          client.update_image_datastores(deployment.id, "new_image_datastore")
+        rescue EsxCloud::CliError => e
+          expect(e.message).to include("New image datastore list [new_image_datastore] is not a super set of existing list")
+        end
+      end
+    end
+
+    it "should successfully update image datastores" do
+      begin
+        new_image_datastore_list = [@existing_image_datastores, "new_image_datastores"].flatten
+        client.update_image_datastores(deployment.id, new_image_datastore_list.join(","))
+
+        updated_image_datastores = client.find_deployment_by_id(deployment.id).image_datastores
+        expect(updated_image_datastores).to match_array(new_image_datastore_list)
+      ensure
+        factory = EsxCloud::Dcp::CloudStore::DeploymentFactory.new
+        instance_link = factory.instance_link
+
+        payload = {
+            imageDataStoreNames: @existing_image_datastores
+        }
+        EsxCloud::Dcp::CloudStore::CloudStoreClient.instance.patch instance_link, payload
       end
     end
   end

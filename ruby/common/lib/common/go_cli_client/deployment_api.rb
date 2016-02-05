@@ -102,6 +102,13 @@ module EsxCloud
       def disable_cluster_type(deployment_id, payload)
         @api_client.disable_cluster_type(deployment_id, payload)
       end
+
+      # @param [String] id
+      # @param [String] payload
+      def update_image_datastores(id, payload)
+        cmd = "deployment update-image-datastores #{id} #{payload}"
+        run_cli(cmd)
+      end
     end
   end
 end
