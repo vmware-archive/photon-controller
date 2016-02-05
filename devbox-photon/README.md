@@ -36,7 +36,7 @@ The script can be invoked repeatedly if you want to make sure the plugin is inst
 
 #### Start and provision Dev Box
 
-Dev Box configuration and startup code is located in the Dev Box directory (`<code>/photon-devbox`). The following command starts Dev Box:
+Dev Box configuration and startup code is located in the Dev Box directory (`<code>/devbox-photon`). The following command starts Dev Box:
 
     vagrant up
 
