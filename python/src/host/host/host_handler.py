@@ -1892,6 +1892,11 @@ class HostHandler(Host.Iface):
                 TransferImageResultCode.TRANSFER_IN_PROGRESS,
                 "Only one image transfer is allowed at any time",
                 TransferImageResponse())
+        except DiskAlreadyExistException:
+            return self._error_response(
+                TransferImageResultCode.DESTINATION_ALREADY_EXIST,
+                "Image disk already exists",
+                TransferImageResponse())
         except:
             return self._error_response(
                 TransferImageResultCode.SYSTEM_ERROR,
