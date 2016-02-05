@@ -22,10 +22,6 @@ import com.vmware.photon.controller.housekeeper.HousekeeperServerSet;
 import com.vmware.photon.controller.housekeeper.dcp.DcpConfig;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageRequest;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageResponse;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageStatusRequest;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageStatusResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageStatusRequest;
@@ -40,7 +36,6 @@ import com.google.inject.Singleton;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.InetSocketAddress;
 import java.util.Set;
@@ -95,20 +90,6 @@ public class HousekeeperService implements Housekeeper.Iface, ServiceNodeEventHa
   }
 
   @Override
-  public RemoveImageResponse remove_image(RemoveImageRequest request) throws TException {
-    checkNotNull(request, "request cannot be null");
-    setRequestId(request.getTracing_info());
-    return buildReplicasRemover().removeImage(request);
-  }
-
-  @Override
-  public RemoveImageStatusResponse remove_image_status(RemoveImageStatusRequest request) throws TException {
-    checkNotNull(request, "request cannot be null");
-    setRequestId(request.getTracing_info());
-    return buildReplicasRemover().getImageRemovalStatus(request);
-  }
-
-  @Override
   public void onJoin() {
     logger.info("HousekeeperService joined.");
   }
@@ -126,11 +107,6 @@ public class HousekeeperService implements Housekeeper.Iface, ServiceNodeEventHa
   @VisibleForTesting
   protected ImageReplicator buildReplicator() {
     return new ImageReplicator(dcpHost, dcpConfig.getImageCopyBatchSize());
-  }
-
-  @VisibleForTesting
-  protected ImageRemover buildReplicasRemover() {
-    return new ImageRemover(dcpHost);
   }
 
   @Override

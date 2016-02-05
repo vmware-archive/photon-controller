@@ -25,14 +25,6 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServiceReader;
 import com.vmware.photon.controller.housekeeper.dcp.DcpConfig;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageRequest;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageResponse;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageResult;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageResultCode;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageStatus;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageStatusCode;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageStatusRequest;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageStatusResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResult;
@@ -55,9 +47,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -68,7 +58,6 @@ import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
@@ -133,117 +122,6 @@ public class HousekeeperServiceTest {
       requestWithId.setTracing_info(traceInfoWithRequestId);
       assertThat(service.replicate_image(requestWithId), is(response));
       assertThat(MDC.get("request"), is(String.format(" [Req: %s]", givenRequestId)));
-    }
-  }
-
-  /**
-   * Tests for the remove_image method.
-   */
-  public class RemoveImageTest {
-    @BeforeMethod
-    private void setUp() throws Throwable {
-      injector = TestHelper.createInjector("/config.yml");
-      service = spy(injector.getInstance(HousekeeperService.class));
-
-      // clear MDC
-      MDC.remove("request");
-    }
-
-    @Test
-    public void testSuccess() throws Throwable {
-      ImageRemover remover =
-          spy(new ImageRemover(injector.getInstance(HousekeeperDcpServiceHost.class)));
-      doReturn(remover).when(service).buildReplicasRemover();
-
-      RemoveImageResponse response = new RemoveImageResponse(new RemoveImageResult(RemoveImageResultCode.OK));
-      response.setOperation_id("opID");
-      doReturn(response).when(remover).removeImage(any(RemoveImageRequest.class));
-      assertThat(service.remove_image(new RemoveImageRequest()), is(response));
-    }
-
-    @Test
-    public void testNullRequestObject() throws Throwable {
-      try {
-        service.remove_image(null);
-        fail("remove_image should have raised exception on null input");
-      } catch (NullPointerException ex) {
-        assertThat(ex.getMessage(), is("request cannot be null"));
-      }
-    }
-
-    @Test
-    public void testRequestIdIsPropagated() throws Throwable {
-      String givenRequestId = "GivenRequestId";
-
-      RemoveImageRequest request = new RemoveImageRequest();
-      TracingInfo traceInfo = new TracingInfo();
-      traceInfo.setRequest_id(givenRequestId);
-      request.setTracing_info(traceInfo);
-
-      assertThat(service.remove_image(request), isA(RemoveImageResponse.class));
-      assertThat(MDC.get("request"), is(String.format(" [Req: %s]", givenRequestId)));
-    }
-
-    @Test
-    public void testRequestIdIsGenerated() throws Throwable {
-      assertThat(service.remove_image(new RemoveImageRequest()), isA(RemoveImageResponse.class));
-      assertThat(MDC.get("request"), startsWith(" [Req: "));
-    }
-  }
-
-  /**
-   * Tests for the remove_image_status method.
-   */
-  public class RemoveImageStatusTest {
-    @BeforeMethod
-    private void setUp() throws Throwable {
-      injector = TestHelper.createInjector("/config.yml");
-      service = spy(injector.getInstance(HousekeeperService.class));
-
-      // clear MDC
-      MDC.remove("request");
-    }
-
-    @Test
-    public void testSuccess() throws Throwable {
-      ImageRemover remover =
-          spy(new ImageRemover(injector.getInstance(HousekeeperDcpServiceHost.class)));
-      doReturn(remover).when(service).buildReplicasRemover();
-
-      RemoveImageStatusResponse response =
-          new RemoveImageStatusResponse(new RemoveImageResult(RemoveImageResultCode.OK));
-      response.setStatus(new RemoveImageStatus(RemoveImageStatusCode.FINISHED));
-      doReturn(response).when(remover).getImageRemovalStatus(any(RemoveImageStatusRequest.class));
-      assertThat(service.remove_image_status(new RemoveImageStatusRequest()), is(response));
-    }
-
-    @Test
-    public void testNullRequestObject() throws Throwable {
-      try {
-        service.remove_image_status(null);
-        fail("remove_image should have raised exception on null input");
-      } catch (NullPointerException ex) {
-        assertThat(ex.getMessage(), is("request cannot be null"));
-      }
-    }
-
-    @Test
-    public void testRequestIdIsPropagated() throws Throwable {
-      String givenRequestId = "GivenRequestId";
-
-      RemoveImageStatusRequest request = new RemoveImageStatusRequest();
-      TracingInfo traceInfo = new TracingInfo();
-      traceInfo.setRequest_id(givenRequestId);
-      request.setTracing_info(traceInfo);
-
-      assertThat(service.remove_image_status(request), isA(RemoveImageStatusResponse.class));
-      assertThat(MDC.get("request"), is(String.format(" [Req: %s]", givenRequestId)));
-    }
-
-    @Test
-    public void testRequestIdIsGenerated() throws Throwable {
-      assertThat(service.remove_image_status(new RemoveImageStatusRequest()), isA(RemoveImageStatusResponse.class));
-      assertThat(MDC.get("request"), startsWith(" [Req: "));
     }
   }
 

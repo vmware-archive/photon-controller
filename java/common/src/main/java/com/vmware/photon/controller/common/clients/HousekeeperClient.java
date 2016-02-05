@@ -19,8 +19,6 @@ import com.vmware.photon.controller.common.clients.exceptions.ServiceUnavailable
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.thrift.ClientProxy;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageRequest;
-import com.vmware.photon.controller.housekeeper.gen.RemoveImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResult;
@@ -33,7 +31,6 @@ import com.google.inject.Singleton;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 
 /**
@@ -92,37 +89,6 @@ public class HousekeeperClient implements StatusProvider {
   }
 
   /**
-   * This routine triggers image removal and awaits response.
-   *
-   * @param image image to remove.
-   * @return RemoveImageResponse
-   * @throws InterruptedException
-   * @throws RpcException
-   */
-  @RpcMethod
-  public RemoveImageResponse removeImage(String image)
-      throws InterruptedException, RpcException {
-    SyncHandler<RemoveImageResponse, Housekeeper.AsyncClient.remove_image_call> handler =
-        new SyncHandler<>();
-    triggerImageRemoval(image, handler);
-    handler.await();
-    RemoveImageResponse response = handler.getResponse();
-    logger.debug("Response of removing image {}: {}", image, response);
-    switch (response.getResult().getCode()) {
-      case OK:
-        break;
-      case SYSTEM_ERROR:
-        logger.error("SYSTEM_ERROR response of removing image {}: {}", image, response);
-        throw new SystemErrorException(response.getResult().getError());
-      default:
-        logger.error("Unknown result response of removing image {}: {}", image, response);
-        throw new RpcException(String.format("Unknown result: %s", response.getResult()));
-    }
-
-    return response;
-  }
-
-  /**
    * Get status.
    *
    * @return
@@ -169,24 +135,6 @@ public class HousekeeperClient implements StatusProvider {
     ReplicateImageResponse triggerResponse = handler.getResponse();
     checkReplicateImageResult(triggerResponse.getResult());
     return triggerResponse;
-  }
-
-  @VisibleForTesting
-  protected void triggerImageRemoval(
-      String image,
-      SyncHandler<RemoveImageResponse, Housekeeper.AsyncClient.remove_image_call> handler)
-      throws InterruptedException, RpcException {
-    checkNotNull(image, "image is null");
-    logger.info("started to trigger removing image {}", image);
-    Housekeeper.AsyncClient client = proxy.get();
-    client.setTimeout(HOUSEKEEPER_CALL_TIMEOUT_MS);
-
-    try {
-      client.remove_image(new RemoveImageRequest(image), handler);
-      logger.info("finished trigger of removing image {}", image);
-    } catch (TException e) {
-      throw new RpcException(e);
-    }
   }
 
   /**

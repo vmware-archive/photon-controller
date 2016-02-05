@@ -66,15 +66,12 @@ public class HousekeeperDcpServiceHostTest {
       ImageReplicatorServiceFactory.SELF_LINK,
       ImageCopyServiceFactory.SELF_LINK,
       ImageHostToHostCopyServiceFactory.SELF_LINK,
-      ImageRemoverServiceFactory.SELF_LINK,
       ImageDatastoreSweeperServiceFactory.SELF_LINK,
       ImageCleanerServiceFactory.SELF_LINK,
       ImageCleanerTriggerServiceFactory.SELF_LINK,
-      ImageDeleteServiceFactory.SELF_LINK,
       TaskSchedulerServiceFactory.SELF_LINK,
       HousekeeperDcpServiceHost.getTriggerCleanerServiceUri(),
-      HousekeeperDcpServiceHost.IMAGE_COPY_SCHEDULER_SERVICE,
-      HousekeeperDcpServiceHost.IMAGE_DELETE_SCHEDULER_SERVICE
+      HousekeeperDcpServiceHost.IMAGE_COPY_SCHEDULER_SERVICE
   };
 
   /**
