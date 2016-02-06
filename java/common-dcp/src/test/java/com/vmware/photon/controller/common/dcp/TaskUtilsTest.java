@@ -17,6 +17,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.util.concurrent.FutureCallback;
 import org.mockito.invocation.InvocationOnMock;
@@ -57,8 +58,10 @@ public class TaskUtilsTest {
     public void setUp() {
       service = mock(Service.class);
       host = mock(ServiceHost.class);
+      when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       when(service.getHost()).thenReturn(host);
       operation = mock(Operation.class);
+      System.out.println("URI: " + host.getUri());
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -142,6 +145,7 @@ public class TaskUtilsTest {
     public void setUp() {
       service = mock(Service.class);
       host = mock(ServiceHost.class);
+      when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       when(service.getHost()).thenReturn(host);
       operation = mock(Operation.class);
     }

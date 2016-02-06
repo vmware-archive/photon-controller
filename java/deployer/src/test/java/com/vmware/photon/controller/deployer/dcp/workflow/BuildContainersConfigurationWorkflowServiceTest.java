@@ -112,6 +112,7 @@ public class BuildContainersConfigurationWorkflowServiceTest {
     public void testCapabilities() {
 
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.PERSISTENCE);
 
       assertThat(buildConfigurationWorkflowService.getOptions(), is(expected));

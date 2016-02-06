@@ -107,6 +107,7 @@ public class ProvisionHostTaskServiceTest {
     @Test
     public void testServiceOptions() {
       assertThat(provisionHostTaskService.getOptions(), is(EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.OWNER_SELECTION,
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION)));

@@ -40,6 +40,7 @@ public class MigrationStatusUpdateTriggerFactoryServiceTest {
   public void testCapabilityInitialization() {
 
     EnumSet<Service.ServiceOption> expected = EnumSet.of(
+        Service.ServiceOption.CONCURRENT_GET_HANDLING,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
         Service.ServiceOption.FACTORY,
         Service.ServiceOption.REPLICATION);

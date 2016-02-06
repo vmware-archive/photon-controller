@@ -34,6 +34,7 @@ import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
 import org.mockito.ArgumentMatcher;
@@ -52,6 +53,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,6 +82,7 @@ public class DeploymentWorkFlowServiceClientTest {
     @BeforeMethod
     public void before() {
       host = mock(DeployerDcpServiceHost.class);
+      when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       deployerConfig = mock(DeployerConfig.class);
       containerConfig = mock(ContainersConfig.class);
       doReturn(containerConfig).when(deployerConfig).getContainersConfig();
@@ -201,6 +204,7 @@ public class DeploymentWorkFlowServiceClientTest {
     @BeforeMethod
     public void before() {
       host = mock(DeployerDcpServiceHost.class);
+      when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new DeploymentWorkFlowServiceClient(mock(DeployerConfig.class), host);
       serviceDocument = new ServiceDocument();
       serviceDocument.documentSelfLink = "self-link";
@@ -252,6 +256,7 @@ public class DeploymentWorkFlowServiceClientTest {
     @BeforeMethod
     public void before() {
       host = mock(DeployerDcpServiceHost.class);
+      when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       deployerConfig = mock(DeployerConfig.class);
       containerConfig = mock(ContainersConfig.class);
       doReturn(containerConfig).when(deployerConfig).getContainersConfig();
@@ -509,6 +514,7 @@ public class DeploymentWorkFlowServiceClientTest {
     @BeforeMethod
     public void before() {
       host = mock(DeployerDcpServiceHost.class);
+      when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new DeploymentWorkFlowServiceClient(mock(DeployerConfig.class), host);
       serviceDocument = new ServiceDocument();
       serviceDocument.documentSelfLink = "self-link";
@@ -559,6 +565,7 @@ public class DeploymentWorkFlowServiceClientTest {
     @BeforeMethod
     public void before() {
       host = mock(DeployerDcpServiceHost.class);
+      when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new DeploymentWorkFlowServiceClient(mock(DeployerConfig.class), host);
       serviceDocument = new ServiceDocument();
       serviceDocument.documentSelfLink = "self-link";

@@ -38,6 +38,7 @@ public class AllocateTenantResourcesTaskFactoryServiceTest {
   @Test
   public void testServiceOptions() {
     assertThat(allocateTenantResourcesTaskFactoryService.getOptions(), is(EnumSet.of(
+        Service.ServiceOption.CONCURRENT_GET_HANDLING,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
         Service.ServiceOption.FACTORY,
         Service.ServiceOption.REPLICATION)));

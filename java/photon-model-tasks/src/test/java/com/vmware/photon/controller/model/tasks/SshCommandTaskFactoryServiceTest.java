@@ -37,6 +37,7 @@ public class SshCommandTaskFactoryServiceTest {
   @Test
   public void testServiceOptions() {
     EnumSet<Service.ServiceOption> expected = EnumSet.of(
+        Service.ServiceOption.CONCURRENT_GET_HANDLING,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
         Service.ServiceOption.FACTORY);
     assertThat(sshCommandTaskFactoryService.getOptions(), is(expected));

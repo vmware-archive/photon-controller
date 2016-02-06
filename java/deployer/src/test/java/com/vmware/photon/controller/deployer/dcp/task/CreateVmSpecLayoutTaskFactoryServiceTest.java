@@ -40,6 +40,7 @@ public class CreateVmSpecLayoutTaskFactoryServiceTest {
 
     EnumSet<Service.ServiceOption> expected = EnumSet.of(
         Service.ServiceOption.FACTORY,
+        Service.ServiceOption.CONCURRENT_GET_HANDLING,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING);
 
     assertThat(createVmSpecLayoutTaskFactoryService.getOptions(), is(expected));

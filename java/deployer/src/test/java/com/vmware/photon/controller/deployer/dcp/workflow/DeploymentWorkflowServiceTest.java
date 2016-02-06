@@ -161,6 +161,7 @@ public class DeploymentWorkflowServiceTest {
     public void testCapabilities() {
 
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.PERSISTENCE);
 
       assertThat(deploymentWorkflowService.getOptions(), is(expected));
