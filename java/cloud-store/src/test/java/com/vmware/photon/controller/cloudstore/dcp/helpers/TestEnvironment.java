@@ -14,10 +14,12 @@
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
+import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 
 import org.apache.commons.io.FileUtils;
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertTrue;
 
 import java.io.File;
@@ -36,7 +38,7 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreDcpHost> {
 
       BuildInfo buildInfo = BuildInfo.get(TestCloudStoreModule.class);
 
-      hosts[i] = new CloudStoreDcpHost(BIND_ADDRESS, 0, sandbox, buildInfo);
+      hosts[i] = new CloudStoreDcpHost(BIND_ADDRESS, 0, sandbox, mock(HostClientFactory.class), buildInfo);
     }
   }
 
