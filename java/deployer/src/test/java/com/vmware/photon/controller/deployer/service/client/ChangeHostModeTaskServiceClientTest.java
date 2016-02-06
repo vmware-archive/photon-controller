@@ -22,6 +22,7 @@ import com.vmware.photon.controller.host.gen.HostMode;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
@@ -34,6 +35,7 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.function.Predicate;
 
@@ -58,6 +60,7 @@ public class ChangeHostModeTaskServiceClientTest {
     @BeforeMethod
     public void before() {
       host = mock(DeployerDcpServiceHost.class);
+      when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new ChangeHostModeTaskServiceClient(host);
     }
 
@@ -112,6 +115,7 @@ public class ChangeHostModeTaskServiceClientTest {
     @BeforeMethod
     public void before() {
       host = mock(DeployerDcpServiceHost.class);
+      when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new ChangeHostModeTaskServiceClient(host);
     }
 

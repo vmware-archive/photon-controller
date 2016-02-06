@@ -22,6 +22,7 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.UriUtils;
 
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
@@ -35,6 +36,7 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -114,6 +116,7 @@ public class HostServiceClientTest {
     @BeforeMethod
     public void before() throws Throwable {
       host = mock(DeployerDcpServiceHost.class);
+      when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       target = new HostServiceClient(host, cloudStoreMachine.getServerSet());
     }

@@ -96,6 +96,7 @@ public class AllocateTenantResourcesTaskServiceTest {
     @Test
     public void testServiceOptions() {
       assertThat(allocateTenantResourcesTaskService.getOptions(), is(EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.OWNER_SELECTION,
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION)));

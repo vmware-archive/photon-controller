@@ -83,6 +83,7 @@ public class CreateContainerSpecLayoutTaskServiceTest {
     @Test
     public void testCapabilities() {
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.PERSISTENCE);
 
       assertThat(allocateVmsAndContainersTaskService.getOptions(), is(expected));
