@@ -81,6 +81,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
     @Test
     public void testCapabilities() {
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.PERSISTENCE);
 
       assertThat(createManagementPlaneLayoutWorkflowService.getOptions(), is(expected));

@@ -91,6 +91,7 @@ public class ImageCleanerTriggerServiceTest {
     @Test
     public void testServiceOptions() {
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.INSTRUMENTATION,
           Service.ServiceOption.PERIODIC_MAINTENANCE);

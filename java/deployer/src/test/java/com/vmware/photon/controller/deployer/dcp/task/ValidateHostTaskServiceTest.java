@@ -89,6 +89,7 @@ public class ValidateHostTaskServiceTest {
     public void testCapabilities() {
 
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.ENFORCE_QUORUM,
           Service.ServiceOption.OWNER_SELECTION,
           Service.ServiceOption.PERSISTENCE,

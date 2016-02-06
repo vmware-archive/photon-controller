@@ -136,6 +136,7 @@ public class ImageHostToHostCopyServiceTest {
     public void testServiceOptions() {
       // Factory capability is implicitly added as part of the factory constructor.
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION,
           Service.ServiceOption.OWNER_SELECTION,

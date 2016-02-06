@@ -173,6 +173,7 @@ public class AddManagementHostWorkflowServiceTest {
     public void testCapabilities() {
 
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.PERSISTENCE);
 
       assertThat(addManagementHostWorkflowService.getOptions(), is(expected));

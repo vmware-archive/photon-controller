@@ -76,6 +76,7 @@ public class CreateVmSpecLayoutTaskServiceTest {
     @Test
     public void testCapabilities() {
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.PERSISTENCE);
 
       assertThat(createVmSpecLayoutTaskService.getOptions(), is(expected));

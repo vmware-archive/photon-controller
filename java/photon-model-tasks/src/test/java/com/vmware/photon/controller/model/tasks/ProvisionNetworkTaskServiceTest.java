@@ -100,6 +100,7 @@ public class ProvisionNetworkTaskServiceTest {
     public void testServiceOptions() {
 
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION,
           Service.ServiceOption.OWNER_SELECTION);

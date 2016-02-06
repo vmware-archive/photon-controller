@@ -987,6 +987,7 @@ public class DeployerServiceTest {
     @BeforeMethod
     public void before() {
       host = mock(DeployerDcpServiceHost.class);
+      when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       deployerConfig = mock(DeployerConfig.class);
       containerConfig = mock(ContainersConfig.class);
       doReturn(containerConfig).when(deployerConfig).getContainersConfig();

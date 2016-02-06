@@ -83,6 +83,7 @@ public class ProvisionAgentTaskServiceTest {
     @Test
     public void testServiceOptions() {
       assertThat(provisionAgentTaskService.getOptions(), is(EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.OWNER_SELECTION,
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION)));

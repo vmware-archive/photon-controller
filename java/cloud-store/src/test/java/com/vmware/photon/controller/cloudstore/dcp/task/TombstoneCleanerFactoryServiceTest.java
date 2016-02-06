@@ -56,6 +56,7 @@ public class TombstoneCleanerFactoryServiceTest {
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
           Service.ServiceOption.FACTORY,
           Service.ServiceOption.REPLICATION,
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.CONCURRENT_UPDATE_HANDLING);
       assertThat(factory.getOptions(), is(expected));
       assertThat(factory.getPeerNodeSelectorPath(), is(equalTo(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR)));
