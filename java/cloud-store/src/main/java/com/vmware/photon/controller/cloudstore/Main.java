@@ -19,14 +19,18 @@ import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.thrift.ThriftModule;
+import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeUtils;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
+import com.vmware.photon.controller.host.gen.Host;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -60,7 +64,12 @@ public class Main {
 
     Injector injector = Guice.createInjector(
         new CloudStoreModule(cloudStoreConfig),
-        new ZookeeperModule(cloudStoreConfig.getZookeeper())
+        new ZookeeperModule(cloudStoreConfig.getZookeeper()),
+        new ThriftModule(),
+        new ThriftServiceModule<>(
+            new TypeLiteral<Host.AsyncClient>() {
+            }
+        )
     );
 
     final CloudStoreDcpHost cloudStoreDcpHost = injector.getInstance(CloudStoreDcpHost.class);

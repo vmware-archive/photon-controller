@@ -23,13 +23,17 @@ import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
+import com.vmware.photon.controller.common.thrift.ThriftModule;
+import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
+import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.xenon.common.ServiceHost;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,6 +51,11 @@ public class TestHelper {
         CloudStoreConfigTest.class.getResource(configFileResourcePath).getPath());
     return Guice.createInjector(
         new TestCloudStoreModule(config),
+        new ThriftModule(),
+        new ThriftServiceModule<>(
+            new TypeLiteral<Host.AsyncClient>() {
+            }
+        ),
         new ZookeeperModule(config.getZookeeper()));
   }
 
