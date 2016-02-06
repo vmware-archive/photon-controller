@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.common.clients;
 
-import com.vmware.photon.controller.agent.gen.ProvisionRequest;
-import com.vmware.photon.controller.agent.gen.ProvisionResponse;
-import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.common.clients.exceptions.DatastoreNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.DestinationAlreadyExistException;
 import com.vmware.photon.controller.common.clients.exceptions.DiskAttachedException;
@@ -27,7 +24,6 @@ import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundExcep
 import com.vmware.photon.controller.common.clients.exceptions.ImageRefCountFileException;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentConfigurationException;
-import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidReservationException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
 import com.vmware.photon.controller.common.clients.exceptions.IsoNotAttachedException;
@@ -146,7 +142,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -167,7 +162,6 @@ import static org.testng.Assert.fail;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -3671,156 +3665,6 @@ public class HostClientTest {
           {PowerVmOpResultCode.INVALID_VM_POWER_STATE, InvalidVmPowerStateException.class},
           {PowerVmOpResultCode.SYSTEM_ERROR, SystemErrorException.class},
           {PowerVmOpResultCode.VM_NOT_FOUND, VmNotFoundException.class},
-      };
-    }
-
-    @Test(enabled = false)
-    public void testFailureUnknownResult() {
-    }
-  }
-
-  /**
-   * This class implements tests for the provision method.
-   */
-  public class ProvisionTest {
-
-    private String availabilityZone = "zone1";
-    private List<String> dataStoreList = Arrays.asList("dataStore1", "dataStore2", "dataStore3");
-    private String imageDataStore = "dataStore1";
-    private boolean usedForVms = false;
-    private List<String> networkList = Arrays.asList("network1", "network2", "network3");
-    private String hostAddress = "hostAddress";
-    private int hostPort = 8000;
-    private List<String> chairmanServerList = Arrays.asList("localhost:2181");
-    private double memoryOverCommit = 1.0;
-    private String loggingEndpoint = "loggingEndpoint";
-    private String logLevel = "logLevel";
-    private boolean managementOnly = false;
-    private String hostId = "id1";
-    private String deploymentId = "deploymentId";
-    private String ntpEndpoint = "ntpEndpoint";
-
-    @BeforeMethod
-    private void setUp() {
-      HostClientTest.this.setUp();
-    }
-
-    @AfterMethod
-    private void tearDown() {
-      hostClient = null;
-    }
-
-    private Answer getAnswer(final Host.AsyncClient.provision_call provisionCall) {
-      return new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.provision_call> handler = (AsyncMethodCallback) args[1];
-          handler.onComplete(provisionCall);
-          return null;
-        }
-      };
-    }
-
-    public void testSuccess() throws Exception {
-      ProvisionResponse provisionResponse = new ProvisionResponse();
-      provisionResponse.setResult(ProvisionResultCode.OK);
-      final Host.AsyncClient.provision_call provisionCall = mock(Host.AsyncClient.provision_call.class);
-      doReturn(provisionResponse).when(provisionCall).getResult();
-      ArgumentCaptor<ProvisionRequest> request = ArgumentCaptor.forClass(ProvisionRequest.class);
-      doAnswer(getAnswer(provisionCall))
-          .when(clientProxy).provision(any(ProvisionRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-
-      assertThat(hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)),
-              usedForVms, networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit,
-              loggingEndpoint, logLevel, managementOnly, hostId, deploymentId, ntpEndpoint),
-          is(provisionResponse));
-      verify(clientProxy).provision(request.capture(), any(AsyncMethodCallback.class));
-      // Verify that the image_datastores field is set.
-      assertThat(request.getValue().getImage_datastores(), containsInAnyOrder(imageDataStore));
-    }
-
-    @Test
-    public void testFailureNullHostIp() throws Exception {
-      try {
-        hostClient.provision(availabilityZone, dataStoreList, Collections.singleton(imageDataStore), usedForVms,
-            networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
-        fail("Synchronous provision call should throw with null async clientProxy");
-      } catch (IllegalArgumentException e) {
-        assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
-      }
-    }
-
-    @Test
-    public void testFailureTExceptionOnCall() throws Exception {
-      doThrow(new TException("Thrift exception"))
-          .when(clientProxy).provision(any(ProvisionRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-
-      try {
-        hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
-            networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
-        fail("Synchronous provision call should convert TException on call to RpcException");
-      } catch (RpcException e) {
-        assertThat(e.getMessage(), is("Thrift exception"));
-      }
-    }
-
-    @Test
-    public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.provision_call provisionCall = mock(Host.AsyncClient.provision_call.class);
-      doThrow(new TException("Thrift exception")).when(provisionCall).getResult();
-      doAnswer(getAnswer(provisionCall))
-          .when(clientProxy).provision(any(ProvisionRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-
-      try {
-        hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
-            networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
-        fail("Synchronous provision call should convert TException on call to RpcException");
-      } catch (RpcException e) {
-        assertThat(e.getMessage(), is("Thrift exception"));
-      }
-    }
-
-    @Test(dataProvider = "ProvisionFailureResultCodes")
-    public void testFailureResult(ProvisionResultCode resultCode,
-                                  Class<RuntimeException> exceptionClass) throws Exception {
-      ProvisionResponse provisionResponse = new ProvisionResponse();
-      provisionResponse.setResult(resultCode);
-      provisionResponse.setError(resultCode.toString());
-
-      final Host.AsyncClient.provision_call provisionCall = mock(Host.AsyncClient.provision_call.class);
-      doReturn(provisionResponse).when(provisionCall).getResult();
-      doAnswer(getAnswer(provisionCall))
-          .when(clientProxy).provision(any(ProvisionRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-
-      try {
-        hostClient.provision(availabilityZone, dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
-            networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
-        fail("Synchronous provision call should throw on failure result: " + resultCode.toString());
-      } catch (Exception e) {
-        assertTrue(e.getClass() == exceptionClass);
-        assertThat(e.getMessage(), is(resultCode.toString()));
-      }
-    }
-
-    @DataProvider(name = "ProvisionFailureResultCodes")
-    public Object[][] getProvisionFailureResultCodes() {
-      return new Object[][]{
-          {ProvisionResultCode.INVALID_CONFIG, InvalidAgentConfigurationException.class},
-          {ProvisionResultCode.INVALID_STATE, InvalidAgentStateException.class},
-          {ProvisionResultCode.SYSTEM_ERROR, SystemErrorException.class},
       };
     }
 

@@ -22,6 +22,8 @@ import com.vmware.photon.controller.chairman.hierarchy.FlowFactory;
 import com.vmware.photon.controller.client.SharedSecret;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.clients.AgentControlClient;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.DcpRestClient;
@@ -146,6 +148,10 @@ public class DeployerModule extends AbstractModule {
                 blockingQueue)));
 
     install(new FactoryModuleBuilder()
+        .implement(AgentControlClient.class, AgentControlClient.class)
+        .build(AgentControlClientFactory.class));
+
+    install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)
         .build(HostClientFactory.class));
 
@@ -208,6 +214,7 @@ public class DeployerModule extends AbstractModule {
       @CloudStoreServerSet ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
+      AgentControlClientFactory agentControlClientFactory,
       HostClientFactory hostClientFactory,
       HttpFileServiceClientFactory httpFileServiceClientFactory,
       ListeningExecutorService listeningExecutorService,
@@ -229,6 +236,7 @@ public class DeployerModule extends AbstractModule {
         cloudStoreServerSet,
         deployerContext,
         containersConfig,
+        agentControlClientFactory,
         hostClientFactory,
         httpFileServiceClientFactory,
         listeningExecutorService,

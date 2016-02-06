@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentConfigurationException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
@@ -24,6 +25,7 @@ import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.deployer.dcp.mock.AgentControlClientMock;
 import com.vmware.photon.controller.deployer.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -422,6 +424,7 @@ public class ProvisionAgentTaskServiceTest {
   public class ProvisionAgentTest {
 
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private ProvisionAgentTaskService.State startState;
     private TestEnvironment testEnvironment;
@@ -429,10 +432,12 @@ public class ProvisionAgentTaskServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
 
       testEnvironment = new TestEnvironment.Builder()
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .hostCount(1)
           .build();
@@ -461,11 +466,11 @@ public class ProvisionAgentTaskServiceTest {
     @Test
     public void testProvisionAgentSuccess() throws Throwable {
 
-      HostClientMock hostClientMock = new HostClientMock.Builder()
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .build();
 
-      doReturn(hostClientMock).when(hostClientFactory).create();
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
 
       ProvisionAgentTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -483,11 +488,11 @@ public class ProvisionAgentTaskServiceTest {
     public void testProvisionAgentFailureWithResult(ProvisionResultCode resultCode, Class<DcpRuntimeException> clazz)
         throws Throwable {
 
-      HostClientMock hostClientMock = new HostClientMock.Builder()
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(resultCode)
           .build();
 
-      doReturn(hostClientMock).when(hostClientFactory).create();
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
 
       ProvisionAgentTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -516,11 +521,11 @@ public class ProvisionAgentTaskServiceTest {
     @Test
     public void testProvisionAgentFailureWithTException() throws Throwable {
 
-      HostClientMock hostClientMock = new HostClientMock.Builder()
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionFailure(new TException("Thrift exception during provision call"))
           .build();
 
-      doReturn(hostClientMock).when(hostClientFactory).create();
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
 
       ProvisionAgentTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -688,6 +693,7 @@ public class ProvisionAgentTaskServiceTest {
   public class EndToEndTest {
 
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private ProvisionAgentTaskService.State startState;
     private TestEnvironment testEnvironment;
@@ -695,10 +701,12 @@ public class ProvisionAgentTaskServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
 
       testEnvironment = new TestEnvironment.Builder()
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .hostCount(1)
           .build();
@@ -728,8 +736,13 @@ public class ProvisionAgentTaskServiceTest {
     @Test
     public void testEndToEndSuccess() throws Throwable {
 
-      HostClientMock hostClientMock = new HostClientMock.Builder()
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
+          .build();
+
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
+
+      HostClientMock hostClientMock = new HostClientMock.Builder()
           .agentStatusCode(AgentStatusCode.OK)
           .build();
 
@@ -749,9 +762,11 @@ public class ProvisionAgentTaskServiceTest {
     @Test
     public void testEndToEndSuccessAfterAgentStatusFailures() throws Throwable {
 
-      HostClientMock provisionSuccessMock = new HostClientMock.Builder()
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .build();
+
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
 
       HostClientMock agentStatusExceptionMock = new HostClientMock.Builder()
           .getAgentStatusFailure(new TException("Thrift exception during getAgentStatus call"))
@@ -766,7 +781,6 @@ public class ProvisionAgentTaskServiceTest {
           .build();
 
       when(hostClientFactory.create())
-          .thenReturn(provisionSuccessMock)
           .thenReturn(agentStatusExceptionMock)
           .thenReturn(agentStatusRestartingMock)
           .thenReturn(agentStatusReadyMock);
@@ -785,11 +799,11 @@ public class ProvisionAgentTaskServiceTest {
     @Test
     public void testProvisionFailure() throws Throwable {
 
-      HostClientMock hostClientMock = new HostClientMock.Builder()
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.SYSTEM_ERROR)
           .build();
 
-      doReturn(hostClientMock).when(hostClientFactory).create();
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
 
       ProvisionAgentTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -809,8 +823,13 @@ public class ProvisionAgentTaskServiceTest {
     @Test
     public void testWaitForAgentFailure() throws Throwable {
 
-      HostClientMock hostClientMock = new HostClientMock.Builder()
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
+          .build();
+
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
+
+      HostClientMock hostClientMock = new HostClientMock.Builder()
           .agentStatusCode(AgentStatusCode.RESTARTING)
           .build();
 

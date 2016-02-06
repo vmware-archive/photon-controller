@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
@@ -725,6 +726,7 @@ public class AddManagementHostWorkflowServiceTest {
 
     private DeployerConfig deployerConfig;
     private ContainersConfig containersConfig;
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
@@ -764,6 +766,7 @@ public class AddManagementHostWorkflowServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
       apiClientFactory = mock(ApiClientFactory.class);
@@ -794,6 +797,7 @@ public class AddManagementHostWorkflowServiceTest {
           .dockerProvisionerFactory(dockerProvisionerFactory)
           .apiClientFactory(apiClientFactory)
           .healthCheckerFactory(healthCheckHelperFactory)
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
@@ -810,6 +814,7 @@ public class AddManagementHostWorkflowServiceTest {
           .dockerProvisionerFactory(dockerProvisionerFactory)
           .apiClientFactory(apiClientFactory)
           .healthCheckerFactory(healthCheckHelperFactory)
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
@@ -869,6 +874,7 @@ public class AddManagementHostWorkflowServiceTest {
       dockerProvisionerFactory = null;
       apiClientFactory = null;
       healthCheckHelperFactory = null;
+      agentControlClientFactory = null;
       hostClientFactory = null;
       httpFileServiceClientFactory = null;
     }
@@ -893,7 +899,7 @@ public class AddManagementHostWorkflowServiceTest {
     public void testSuccess(Boolean isOnlyMgmtHost, Boolean isAuthEnabled, int hostCount) throws Throwable {
       createCloudStore();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockHostClient(hostClientFactory, true);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
@@ -988,7 +994,7 @@ public class AddManagementHostWorkflowServiceTest {
     public void testProvisionManagementHostFailure(Boolean authEnabled) throws Throwable {
       createCloudStore();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, false);
-      MockHelper.mockHostClient(hostClientFactory, false);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, false);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
@@ -1018,7 +1024,7 @@ public class AddManagementHostWorkflowServiceTest {
     public void testCreateManagementPlaneFailure(Boolean authEnabled) throws Throwable {
       createCloudStore();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockHostClient(hostClientFactory, true);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, false);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
@@ -1048,7 +1054,7 @@ public class AddManagementHostWorkflowServiceTest {
     public void testAuthClientRegistrationFailure() throws Throwable {
       createCloudStore();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockHostClient(hostClientFactory, true);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);

@@ -1030,9 +1030,6 @@ service Host {
    */
   DeleteDirectoryResponse delete_directory(1: DeleteDirectoryRequest request)
 
-  // Method to provision an agent for esxcloud purposes.
-  agent.ProvisionResponse provision(1: agent.ProvisionRequest request)
-
   // Method to set host's availability zone.
   SetAvailabilityZoneResponse set_availability_zone(1: SetAvailabilityZoneRequest request)
 }

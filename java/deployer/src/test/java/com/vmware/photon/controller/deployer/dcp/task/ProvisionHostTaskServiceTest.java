@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
@@ -29,6 +30,7 @@ import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.mock.AgentControlClientMock;
 import com.vmware.photon.controller.deployer.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -788,6 +790,7 @@ public class ProvisionHostTaskServiceTest {
 
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private ProvisionHostTaskService.State startState;
     private TestEnvironment testEnvironment;
@@ -797,11 +800,13 @@ public class ProvisionHostTaskServiceTest {
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
 
       testEnvironment = new TestEnvironment.Builder()
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
           .deployerContext(deployerContext)
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .hostCount(1)
           .build();
@@ -832,8 +837,13 @@ public class ProvisionHostTaskServiceTest {
     @Test
     public void testProvisionAgentSuccess() throws Throwable {
 
-      HostClientMock hostClientMock = new HostClientMock.Builder()
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
+          .build();
+
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
+
+      HostClientMock hostClientMock = new HostClientMock.Builder()
           .agentStatusCode(AgentStatusCode.OK)
           .build();
 
@@ -854,11 +864,11 @@ public class ProvisionHostTaskServiceTest {
     @Test
     public void testProvisionAgentFailure() throws Throwable {
 
-      HostClientMock hostClientMock = new HostClientMock.Builder()
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.INVALID_CONFIG)
           .build();
 
-      doReturn(hostClientMock).when(hostClientFactory).create();
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
 
       ProvisionHostTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -1076,6 +1086,7 @@ public class ProvisionHostTaskServiceTest {
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
     private List<Datastore> datastoreList;
     private DeployerContext deployerContext;
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private Set<String> imageDatastoreIds;
     private ListeningExecutorService listeningExecutorService;
@@ -1091,6 +1102,7 @@ public class ProvisionHostTaskServiceTest {
       datastoreList = buildDatastoreList(10);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
 
@@ -1102,6 +1114,7 @@ public class ProvisionHostTaskServiceTest {
       testEnvironment = new TestEnvironment.Builder()
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
           .deployerContext(deployerContext)
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .hostCount(1)
           .listeningExecutorService(listeningExecutorService)
@@ -1159,8 +1172,14 @@ public class ProvisionHostTaskServiceTest {
       hostConfig.setMemory_mb(8192);
       hostConfig.setEsx_version("6.0");
 
-      HostClientMock hostClientMock = new HostClientMock.Builder()
+
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
+          .build();
+
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
+
+      HostClientMock hostClientMock = new HostClientMock.Builder()
           .agentStatusCode(AgentStatusCode.OK)
           .getConfigResultCode(GetConfigResultCode.OK)
           .hostConfig(hostConfig)

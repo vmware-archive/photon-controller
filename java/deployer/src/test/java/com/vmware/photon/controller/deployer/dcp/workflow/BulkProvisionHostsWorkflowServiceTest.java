@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
@@ -23,6 +24,7 @@ import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.dcp.mock.AgentControlClientMock;
 import com.vmware.photon.controller.deployer.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
@@ -426,6 +428,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
     private final File vibDirectory = new File("/tmp/deployAgent/vibs");
 
     private DeployerConfig deployerConfig;
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
@@ -457,6 +460,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
       destinationDirectory.mkdirs();
       scriptDirectory.mkdirs();
       scriptLogDirectory.mkdirs();
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
     }
@@ -466,6 +470,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
       testEnvironment = new TestEnvironment.Builder()
           .containersConfig(deployerConfig.getContainersConfig())
           .deployerContext(deployerConfig.getDeployerContext())
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
@@ -475,8 +480,13 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
       startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
 
-      HostClientMock hostClientMock = new HostClientMock.Builder()
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
+          .build();
+
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
+
+      HostClientMock hostClientMock = new HostClientMock.Builder()
           .getConfigResultCode(GetConfigResultCode.OK)
           .agentStatusCode(AgentStatusCode.OK)
           .hostConfig(new HostConfig())
@@ -580,7 +590,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
     public void testEndToEndFailNoMgmtHost() throws Throwable {
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
-      MockHelper.mockProvisionAgent(hostClientFactory, true);
+      MockHelper.mockProvisionAgent(agentControlClientFactory, hostClientFactory, true);
       createTestEnvironment(1);
       createHostEntities(0, 2, 0);
 
