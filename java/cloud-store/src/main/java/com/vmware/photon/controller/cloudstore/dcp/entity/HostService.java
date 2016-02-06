@@ -18,6 +18,8 @@ import com.vmware.photon.controller.agent.gen.PingRequest;
 import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -30,12 +32,22 @@ import com.vmware.photon.controller.common.dcp.validation.NotEmpty;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
 import com.vmware.photon.controller.common.dcp.validation.Range;
+import com.vmware.photon.controller.host.gen.GetConfigResponse;
+import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.photon.controller.host.gen.HostConfig;
+import com.vmware.photon.controller.resource.gen.Datastore;
+import com.vmware.photon.controller.resource.gen.Network;
+import com.vmware.photon.controller.resource.gen.NetworkType;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import org.apache.thrift.TException;
+import org.apache.thrift.async.AsyncMethodCallback;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
 import org.apache.thrift.protocol.TProtocol;
@@ -46,6 +58,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -95,6 +110,21 @@ public class HostService extends StatefulService {
    */
   public static final int MAX_SCHEDULING_CONSTANT = 10000;
 
+  /**
+   * This determines when the host datastores and networks should be checked and updated through
+   * a polling interval (10 minutes). This is set to 10 minutes because the datastores and networks
+   * attached to a host do not change very often. Also the agent detects the datastores attached to
+   * it by periodically polling vsphere SDK every 10 minutes. So even if we set an interval less
+   * than that we will not get any new data.
+   */
+  public static final long UPDATE_HOST_METADATA_INTERVAL = TimeUnit.MINUTES.toMillis(10);
+
+  /**
+   * This represents the soft state that maintains the last maintenance time of the host metadata (datastores and
+   * networks) update.
+   */
+  private long lastHostMetadataUpdateTime;
+
   public HostService() {
     super(State.class);
     super.toggleOption(ServiceOption.ENFORCE_QUORUM, true);
@@ -103,6 +133,7 @@ public class HostService extends StatefulService {
     super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.PERIODIC_MAINTENANCE, true);
     super.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(DEFAULT_MAINTENANCE_INTERVAL_MILLIS));
+    this.lastHostMetadataUpdateTime = System.currentTimeMillis();
   }
 
   @Override
@@ -200,7 +231,14 @@ public class HostService extends StatefulService {
 
       PingRequest request = new PingRequest();
       client.ping(request);
-      updateHostState(maintenance, hostState, AgentState.ACTIVE);
+
+      // Get the host metadata if we have reached the UPDATE_HOST_METADATA_INTERVAL
+      if (System.currentTimeMillis() - this.lastHostMetadataUpdateTime >= UPDATE_HOST_METADATA_INTERVAL) {
+        this.lastHostMetadataUpdateTime = System.currentTimeMillis();
+        getHostConfig(maintenance, hostState);
+      } else {
+        updateHostState(maintenance, hostState, AgentState.ACTIVE);
+      }
     } catch (TException ex) {
       ServiceUtils.logInfo(this, "Failed to ping " + hostState.hostAddress + ", will be marked as missing:" +
           ex.getMessage());
@@ -212,6 +250,138 @@ public class HostService extends StatefulService {
     } finally {
       if (transport != null && transport.isOpen()) {
         transport.close();
+      }
+    }
+  }
+
+  /**
+   * This method gets the host config (datastores, networks, etc.) from agent.
+   * @param hostState
+   */
+  private void getHostConfig(Operation maintenance, State hostState) {
+    try {
+      final Service service = this;
+      HostClient hostClient = ((HostClientProvider) getHost()).getHostClient();
+      hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+      hostClient.getHostConfig(new AsyncMethodCallback<Host.AsyncClient.get_host_config_call>() {
+        @Override
+        public void onComplete(Host.AsyncClient.get_host_config_call getHostConfigCall) {
+          try {
+            GetConfigResponse response = getHostConfigCall.getResult();
+            HostClient.ResponseValidator.checkGetConfigResponse(response);
+            processHostConfig(maintenance, hostState, response.getHostConfig());
+          } catch (Throwable t) {
+            ServiceUtils.logWarning(service, "Get host config failed, host metadata will not be updated" +
+                t.getMessage());
+            updateHostState(maintenance, hostState, AgentState.ACTIVE);
+          }
+        }
+
+        @Override
+        public void onError(Exception e) {
+          ServiceUtils.logWarning(service, "Get host config failed, host metadata will not be updated" +
+              e.getMessage());
+          updateHostState(maintenance, hostState, AgentState.ACTIVE);
+        }
+      });
+    } catch (Exception e) {
+      ServiceUtils.logWarning(this, "Get host config failed, host metadata will not be updated" +
+          e.getMessage());
+      updateHostState(maintenance, hostState, AgentState.ACTIVE);
+    }
+  }
+
+  /**
+   * This method updates the host state with the received host config.
+   * @param maintenance
+   * @param hostState
+   * @param hostConfig
+   */
+  private void processHostConfig(Operation maintenance, State hostState, HostConfig hostConfig) {
+    try {
+      State patchState = new State();
+      patchState.agentState = AgentState.ACTIVE;
+
+      List<Datastore> datastores = hostConfig.getDatastores();
+      if (datastores != null && datastores.size() > 0) {
+        patchState.reportedDatastores = new HashSet<>();
+        patchState.datastoreServiceLinks = new HashMap<>();
+        for (Datastore datastore : datastores) {
+          patchState.reportedDatastores.add(datastore.getId());
+          patchState.datastoreServiceLinks
+              .put(datastore.getName(), DatastoreServiceFactory.getDocumentLink(datastore.getId()));
+        }
+      }
+
+      List<Network> networks = hostConfig.getNetworks();
+      if (networks != null && networks.size() > 0) {
+        patchState.reportedNetworks = new HashSet<>();
+        for (Network network : networks) {
+          if (network.getTypes() != null && network.getTypes().contains(NetworkType.VM)) {
+            // TEMPORARY WORKAROUND: Currently the portgroup document doesn't
+            // contain the network type information, so we are filtering them
+            // here so that cloudstore has VM networks for the scheduler
+            patchState.reportedNetworks.add(network.getId());
+          }
+        }
+      }
+
+      Set<String> imageDatastores = hostConfig.getImage_datastore_ids();
+      if (imageDatastores != null && imageDatastores.size() > 0) {
+        patchState.reportedImageDatastores = new HashSet<>();
+        for (String datastoreId : imageDatastores) {
+          patchState.reportedImageDatastores.add(datastoreId);
+        }
+      }
+
+      TaskUtils.sendSelfPatch(this, patchState);
+
+      // Update datastore state
+      setDatastoreState(datastores, imageDatastores, maintenance);
+    } catch (Throwable ex) {
+      ServiceUtils.logWarning(this, "Failed to update " + hostState.hostAddress + " with state: " +
+          Utils.toJson(hostState) + " " + ex.getMessage());
+      updateHostState(maintenance, hostState, AgentState.ACTIVE);
+    }
+  }
+
+  /**
+   * This method creates or updates datastore state that was sent as a part of host config.
+   * @param datastores
+   * @param imageDatastores
+   * @param maintenance
+   */
+  private void setDatastoreState(List<Datastore> datastores, Set<String> imageDatastores, Operation maintenance) {
+    if (datastores != null) {
+      // Create datastore documents.
+      for (Datastore datastore : datastores) {
+        DatastoreService.State datastoreState = new DatastoreService.State();
+        datastoreState.documentSelfLink = datastore.getId();
+        datastoreState.id = datastore.getId();
+        datastoreState.name = datastore.getName();
+        datastoreState.type = datastore.getType().toString();
+        datastoreState.tags = datastore.getTags();
+        if (imageDatastores.contains(datastore.getId())) {
+          datastoreState.isImageDatastore = true;
+        } else {
+          datastoreState.isImageDatastore = false;
+        }
+
+        try {
+          Operation post = Operation
+              .createPost(UriUtils.buildUri(getHost(), DatastoreServiceFactory.SELF_LINK))
+              .setBody(datastoreState)
+              .setCompletion((op, ex) -> {
+                if (ex != null) {
+                  ServiceUtils.logWarning(this, "Set datastore state failed " + ex.getMessage());
+                }
+                maintenance.complete();
+              });
+          sendRequest(post);
+        } catch (Throwable t) {
+          ServiceUtils.logWarning(this, "Set datastore state failed " + t.getMessage());
+          maintenance.complete();
+        }
       }
     }
   }

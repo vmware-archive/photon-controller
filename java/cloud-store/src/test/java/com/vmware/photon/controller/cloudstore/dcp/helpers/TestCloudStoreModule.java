@@ -17,6 +17,8 @@ import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.CloudStoreServerSetChangeListener;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
@@ -24,6 +26,7 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 import static org.mockito.Mockito.spy;
 
 /**
@@ -44,6 +47,10 @@ public class TestCloudStoreModule extends AbstractModule {
     bindConstant().annotatedWith(CloudStoreConfig.Port.class).to(cloudStoreConfig.getPort());
     bindConstant().annotatedWith(CloudStoreConfig.StoragePath.class).to(cloudStoreConfig.getStoragePath());
     bind(BuildInfo.class).toInstance(BuildInfo.get(TestCloudStoreModule.class));
+
+    install(new FactoryModuleBuilder()
+        .implement(HostClient.class, HostClient.class)
+        .build(HostClientFactory.class));
   }
 
   @Provides
@@ -51,8 +58,9 @@ public class TestCloudStoreModule extends AbstractModule {
   public CloudStoreDcpHost createServer(@CloudStoreConfig.Bind String bind,
                                         @CloudStoreConfig.Port int port,
                                         @CloudStoreConfig.StoragePath String storagePath,
+                                        HostClientFactory hostClientFactory,
                                         BuildInfo buildInfo) throws Throwable {
-    return spy(new CloudStoreDcpHost(bind, port, storagePath, buildInfo));
+    return spy(new CloudStoreDcpHost(bind, port, storagePath, hostClientFactory, buildInfo));
   }
 
   @Provides

@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.cloudstore;
 
 import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
@@ -21,6 +23,7 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 
 /**
  * This class implements a Guice module for the deployer service.
@@ -41,6 +44,10 @@ public class CloudStoreModule extends AbstractModule {
     bindConstant().annotatedWith(CloudStoreConfig.Port.class).to(cloudStoreConfig.getPort());
     bindConstant().annotatedWith(CloudStoreConfig.StoragePath.class).to(cloudStoreConfig.getStoragePath());
     bind(BuildInfo.class).toInstance(BuildInfo.get(CloudStoreModule.class));
+
+    install(new FactoryModuleBuilder()
+        .implement(HostClient.class, HostClient.class)
+        .build(HostClientFactory.class));
   }
 
   @Provides

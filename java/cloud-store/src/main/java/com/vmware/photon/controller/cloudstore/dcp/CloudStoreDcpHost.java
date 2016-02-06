@@ -41,6 +41,9 @@ import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryS
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.TombstoneCleanerTriggerBuilder;
+import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.HostClientFactory;
+import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
@@ -64,7 +67,7 @@ import java.nio.file.Paths;
  */
 @Singleton
 public class CloudStoreDcpHost
-    extends ServiceHost implements DcpHostInfoProvider {
+    extends ServiceHost implements DcpHostInfoProvider, HostClientProvider{
 
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreDcpHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
@@ -116,13 +119,17 @@ public class CloudStoreDcpHost
   };
 
   private BuildInfo buildInfo;
+  private final HostClientFactory hostClientFactory;
 
   @Inject
   public CloudStoreDcpHost(
       @CloudStoreConfig.Bind String bindAddress,
       @CloudStoreConfig.Port int port,
       @CloudStoreConfig.StoragePath String storagePath,
+      HostClientFactory hostClientFactory,
       BuildInfo buildInfo) throws Throwable {
+
+    this.hostClientFactory = hostClientFactory;
 
     logger.info("Initializing DcpServer on port: {} path: {}", port, storagePath);
     ServiceHost.Arguments arguments = new ServiceHost.Arguments();
@@ -132,6 +139,17 @@ public class CloudStoreDcpHost
     this.initialize(arguments);
     this.buildInfo = buildInfo;
   }
+
+  /**
+   * This method gets a host client from the local host client pool.
+   *
+   * @return
+   */
+  @Override
+  public HostClient getHostClient() {
+    return hostClientFactory.create();
+  }
+
 
   @Override
   public ServiceHost start() throws Throwable {
