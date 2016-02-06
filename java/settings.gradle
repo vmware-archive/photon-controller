@@ -1,3 +1,4 @@
+include 'agent'
 include 'api'
 include 'api-client'
 include 'api-frontend:api-frontend-common'

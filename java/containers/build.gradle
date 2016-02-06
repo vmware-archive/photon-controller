@@ -1,18 +1,5 @@
-apply plugin: 'com.bmuschko.docker-remote-api'
-
 import com.bmuschko.gradle.docker.tasks.container.*
 import com.bmuschko.gradle.docker.tasks.image.*
-
-def getDockerUrl() {
-  // TODO: docker-machine is Docker Toolbox only, make work on Linux
-  def result = "docker-machine url default".execute().text.trim().replaceAll("tcp", "https")
-  return result
-}
-
-docker {
-  // Default for Docker Toolbox
-  url = getDockerUrl()
-}
 
 task servicebase(type: DockerBuildImage) {
   inputDir = file("servicebase")
@@ -31,10 +18,6 @@ task zookeeper(type: DockerBuildImage) {
   tag = "photon/zookeeper"
 }
 
-task all() {
-  dependsOn zookeeper, haproxy
-}
-
 task removeZookeeper(type: DockerRemoveImage) {
   targetImageId { zookeeper.tag }
 }
@@ -47,20 +30,23 @@ task removeServicebase(type: DockerRemoveImage) {
   targetImageId { servicebase.tag }
 }
 
-task removeAllContainers(type: Exec) {
-  commandLine './docker-rm-all.sh'
-  ignoreExitValue = true
-}
+build.dependsOn(
+  zookeeper,
+  haproxy,
+  ":chairman:container",
+  ":cloud-store:container",
+  ":deployer:container",
+  ":housekeeper:container",
+  ":root-scheduler:container"
+)
 
-task removeAllImages(type: Exec) {
-  commandLine './docker-rmi-all.sh'
-  ignoreExitValue = true
-}
-
-task clean() {
-  dependsOn removeZookeeper, removeHaproxy, removeServicebase
-}
-
-task cleanAll() {
-  dependsOn removeAllContainers, removeAllImages
-}
+clean.dependsOn(
+  ":chairman:removeContainer",
+  ":cloud-store:removeContainer",
+  ":deployer:removeContainer",
+  ":housekeeper:removeContainer",
+  ":root-scheduler:removeContainer",
+  removeZookeeper,
+  removeHaproxy,
+  removeServicebase
+)

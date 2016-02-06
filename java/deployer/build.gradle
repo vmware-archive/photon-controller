@@ -1,23 +1,11 @@
 apply plugin: 'application'
 apply plugin: 'thrift'
-apply plugin: 'com.bmuschko.docker-remote-api'
 
 import com.bmuschko.gradle.docker.tasks.container.*
 import com.bmuschko.gradle.docker.tasks.image.*
 
 mainClassName = 'com.vmware.photon.controller.deployer.Main'
 
-// TODO: move this into some common part of the build
-def getDockerUrl() {
-  // TODO: docker-machine is Docker Toolbox only, make work on Linux
-  def result = "docker-machine url default".execute().text.trim().replaceAll("tcp", "https")
-  return result
-}
-
-docker {
-  // Default for Docker Toolbox
-  url = getDockerUrl()
-}
 
 dependencies {
   compile project(':api-client')
@@ -78,16 +66,32 @@ tasks.withType(Test) {
   exclude "**/helpers/*.class"
 }
 
+task extractRelease(type: Copy) {
+  // Extract deployer tar
+  def tar = fileTree(dir: 'build/distributions', include: 'deployer-*.tar').getSingleFile()
+  from tarTree(tar)
+  into file('build/container/')
+}
+
+task dockerfile(type: Dockerfile) {
+  dependsOn extractRelease
+  def releaseDir = extractRelease.destinationDir.listFiles().find{it.isDirectory() && it.getName().startsWith("deployer-")}.name
+  destFile = file("build/container/Dockerfile")
+  from "photon/servicebase"
+  copyFile("$releaseDir/", "/usr/lib/esxcloud/deployer/")
+  def esxcliURL="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/external/esxcli_lin64/esxcli_lin64-esxcli_lin64.tgz"
+  runCommand("curl -s $esxcliURL | tar xz -C /opt")
+  environmentVariable("PATH", '$PATH:/opt/esxcli')
+}
+
 task container(type: DockerBuildImage) {
-  dependsOn "build", ":containers:servicebase"
-  inputDir = file("src/dist/container")
+  dependsOn dockerfile, ":containers:servicebase"
+  inputDir = dockerfile.destFile.parentFile
   tag = "photon/deployer"
 }
 
-task cleanContainer(type: DockerRemoveImage) {
+task removeContainer(type: DockerRemoveImage) {
   targetImageId { container.tag }
 }
 
-task clean() {
-  dependsOn cleanContainer
-}
+clean.dependsOn removeContainer

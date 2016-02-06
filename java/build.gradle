@@ -1,4 +1,5 @@
 apply plugin: 'idea'
+import org.apache.tools.ant.taskdefs.condition.Os
 
 ext {
   versions = [
@@ -24,13 +25,30 @@ buildscript {
   repositories {
     mavenLocal()
     mavenCentral()
+    jcenter()
+    maven { url 'http://dl.bintray.com/vermeulen-mp/gradle-plugins' }
+  }
+  dependencies {
+    classpath 'com.bmuschko:gradle-docker-plugin:2.6.1'
+    classpath 'com.wiredforcode:gradle-spawn-plugin:0.6.0'
+    classpath 'com.bmuschko:gradle-vagrant-plugin:2.0'
   }
 }
+
+System.setProperty("https.protocols", "TLSv1.1");
+
+def dockerUrl() {
+  def url = System.getenv("DOCKER_URL")
+  return url ?: "http://127.0.0.1:3375"
+}
+
 
 subprojects {
   apply plugin: 'checkstyle'
   apply plugin: 'idea'
   apply plugin: 'java'
+  apply plugin: 'com.bmuschko.docker-remote-api'
+  apply plugin: 'com.bmuschko.vagrant-base'
 
   sourceCompatibility = 1.8
   targetCompatibility = 1.8
@@ -45,6 +63,10 @@ subprojects {
     dependencies {
       classpath 'com.bmuschko:gradle-docker-plugin:2.6.1'
     }
+  }
+
+  docker {
+    url = dockerUrl()
   }
 
   repositories {

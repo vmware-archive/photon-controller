@@ -6,6 +6,7 @@
   "isReplicated": true,
   "isPrivileged": false,
   "containerImage": "esxcloud/zookeeper",
+  "containerName": "photon/zookeeper",
   "portBindings": {
     "2181": 2181,
     "2888": 2888,

@@ -1,1 +1,1 @@
-../../../../dist/container/config/run.sh
+../../../../dist/configuration/run.sh

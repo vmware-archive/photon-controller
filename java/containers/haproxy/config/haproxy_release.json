@@ -6,6 +6,7 @@
   "isReplicated": false,
   "isPrivileged": true,
   "containerImage": "esxcloud/haproxy",
+  "containerName": "photon/haproxy",
   "portBindings": {
     "8080": 8080,
     "443": 443

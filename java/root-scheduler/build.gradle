@@ -1,5 +1,9 @@
 apply plugin: 'application'
 apply plugin: 'thrift'
+apply plugin: 'com.bmuschko.docker-remote-api'
+
+import com.bmuschko.gradle.docker.tasks.container.*
+import com.bmuschko.gradle.docker.tasks.image.*
 
 mainClassName = 'com.vmware.photon.controller.rootscheduler.Main'
 
@@ -54,3 +58,15 @@ run {
     args Eval.me(appArgs)
   }
 }
+
+task container(type: DockerBuildImage) {
+  dependsOn "build", ":containers:servicebase"
+  inputDir = file("src/dist/container")
+  tag = "photon/root-scheduler"
+}
+
+task removeContainer(type: DockerRemoveImage) {
+  targetImageId { container.tag }
+}
+
+clean.dependsOn removeContainer
