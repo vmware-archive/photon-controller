@@ -1,6 +1,8 @@
 apply plugin: 'idea'
 import org.apache.tools.ant.taskdefs.condition.Os
 
+apply from: 'buildSrc/src/main/groovy/com/vmware/photon/controller/gradle/utils.gradle'
+
 ext {
   versions = [
       curator     : '2.6.0',
@@ -34,14 +36,6 @@ buildscript {
     classpath 'com.bmuschko:gradle-vagrant-plugin:2.0'
   }
 }
-
-System.setProperty("https.protocols", "TLSv1.1");
-
-def dockerUrl() {
-  def url = System.getenv("DOCKER_URL")
-  return url ?: "http://127.0.0.1:3375"
-}
-
 
 subprojects {
   apply plugin: 'checkstyle'

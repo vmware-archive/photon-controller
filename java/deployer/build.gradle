@@ -67,18 +67,20 @@ tasks.withType(Test) {
 }
 
 task extractRelease(type: Copy) {
+  dependsOn distTar
   // Extract deployer tar
-  def tar = fileTree(dir: 'build/distributions', include: 'deployer-*.tar').getSingleFile()
+  def tar = file('build/distributions').findFile(~/deployer-.*.tar/)
   from tarTree(tar)
   into file('build/container/')
 }
 
 task dockerfile(type: Dockerfile) {
   dependsOn extractRelease
-  def releaseDir = extractRelease.destinationDir.listFiles().find{it.isDirectory() && it.getName().startsWith("deployer-")}.name
+  def releaseDir = extractRelease.destinationDir.findDirectory(~/deployer-.*/)?.name
   destFile = file("build/container/Dockerfile")
   from "photon/servicebase"
   copyFile("$releaseDir/", "/usr/lib/esxcloud/deployer/")
+
   def esxcliURL="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/external/esxcli_lin64/esxcli_lin64-esxcli_lin64.tgz"
   runCommand("curl -s $esxcliURL | tar xz -C /opt")
   environmentVariable("PATH", '$PATH:/opt/esxcli')

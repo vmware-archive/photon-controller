@@ -1,0 +1,49 @@
+// Misc extensions and utils
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.Path
+import java.nio.file.FileVisitResult
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.attribute.BasicFileAttributes
+import java.util.regex.Pattern
+
+// Mixin for File that provides file and directory find functions
+class FileFindCategory {
+  static def findFile(File f, Pattern pattern) {
+    if(f == null || !f.exists()) { return null }
+    return Files.walk(Paths.get(f.path))
+      .filter{it.fileName ==~ pattern && it.toFile().isFile()}
+      .findFirst().orElse(null)?.toFile()
+  }
+
+  static def findDirectory(File f, Pattern pattern) {
+    if(f == null || !f.exists()) { return null }
+    return Files.walk(Paths.get(f.path))
+      .filter{it.fileName ==~ pattern && it.toFile().isDirectory()}
+      .findFirst().orElse(null)?.toFile()
+  }
+
+  static def deleteRecursive(File f) {
+    if(!f.exists()) return;
+    Files.walkFileTree(f.toPath(), new SimpleFileVisitor<Path>() {
+      @Override
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        Files.delete(file);
+        return FileVisitResult.CONTINUE;
+      }
+      @Override
+      public FileVisitResult postVisitDirectory(Path dir, IOException ex) throws IOException {
+        Files.delete(dir);
+        return FileVisitResult.CONTINUE;
+      }
+    });
+  }
+}
+
+File.metaClass.mixin(FileFindCategory)
+
+// Resolves Docker remote API URL
+ext.dockerUrl = {
+  def url = System.getenv("DOCKER_URL")
+  return url ?: "http://127.0.0.1:3375"
+}

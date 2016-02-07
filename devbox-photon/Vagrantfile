@@ -11,7 +11,6 @@
 # under the License is distributed on an "AS IS" BASIS, without warranties or
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
-require 'tempfile'
 
 Vagrant.configure("2") do |config|
   # ================ VARIABLES ================
@@ -19,481 +18,499 @@ Vagrant.configure("2") do |config|
   ESXCLOUD_DIR="/var/esxcloud"
   DATASTORE_DIR="/tmp/devbox_datastore"
   API_SHARED_SECRET="#{SecureRandom.uuid}"
-  DEPLOYMENT_ID=ENV["RANDOM_GENERATED_DEPLOYMENT_ID"]
+  DEPLOYMENT_ID=ENV["RANDOM_GENERATED_DEPLOYMENT_ID"] || 10
   # Default docker port is 2375, keep that open to avoid colloding with any host Docker
   DOCKER_PORT=ENV["DOCKER_PORT"] || "3375"
 
-    SERVICE_PORT_MAP = {
-        :management_api => "-p 9000:9000",
-        :chairman       => "-p 13000:13000",
-        :root_scheduler => "-p 13010:13010",
-        :housekeeper    => "-p 16000:16000 -p 16001:16001",
-        :cloud_store    => "-p 19000:19000",
-        :deployer       => "-p 18000:18000 -p 18001:18001",
+  SERVICE_PORT_MAP = {
+    :management_api => "-p 9000:9000",
+    :chairman       => "-p 13000:13000",
+    :root_scheduler => "-p 13010:13010",
+    :housekeeper    => "-p 16000:16000 -p 16001:16001",
+    :cloud_store    => "-p 19000:19000",
+    :deployer       => "-p 18000:18000 -p 18001:18001",
 
-    }
+  }
 
-    SERVICE_NAME_MAP = {
-        :management_api => "management-api",
-        :chairman       => "chairman",
-        :root_scheduler => "root-scheduler",
-        :housekeeper    => "housekeeper",
-        :deployer       => "deployer",
-        :cloud_store    => "cloud-store"
-    }
+  SERVICE_NAME_MAP = {
+    :management_api => "management-api",
+    :chairman       => "chairman",
+    :root_scheduler => "root-scheduler",
+    :housekeeper    => "housekeeper",
+    :deployer       => "deployer",
+    :cloud_store    => "cloud-store"
+  }
 
-    SERVICE_CONFIG_MAP = {
-        :management_api => "api-frontend/management",
-        :chairman       => "chairman",
-        :root_scheduler => "root-scheduler",
-        :housekeeper    => "housekeeper",
-        :deployer       => "deployer",
-        :cloud_store    => "cloud-store"
-    }
+  SERVICE_CONFIG_MAP = {
+    :management_api => "api-frontend/management",
+    :chairman       => "chairman",
+    :root_scheduler => "root-scheduler",
+    :housekeeper    => "housekeeper",
+    :deployer       => "deployer",
+    :cloud_store    => "cloud-store"
+  }
 
-    BASE_SERVICE_PORT_MAP = {
-        :zookeeper      => "-p 2181:2181 -p 2188:2188 -p 3188:3188",
-        :haproxy        => "-p 443:443 -p 8080:8080 -p 8088:8088"
-    }
+  BASE_SERVICE_PORT_MAP = {
+    :zookeeper      => "-p 2181:2181 -p 2188:2188 -p 3188:3188",
+    :haproxy        => "-p 443:443 -p 8080:8080 -p 8088:8088"
+  }
 
-    # ================ VM DEFINITIONS ================
+  # ================ VM DEFINITIONS ================
 
-    #
-    # photon devbox supports virtualbox only for now
-    #
-    config.vm.provider "virtualbox"
+  #
+  # photon devbox supports virtualbox only for now
+  #
+  config.vm.provider "virtualbox"
 
-    #
-    # VM definition for photon
-    #
-    config.vm.define "photon" do |photon|
-      photon.vm.guest = :photon
-      photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-35"
-      photon.vm.box_url = ENV['DEVBOX_URL'] ||
-          "https://bintray.com/artifact/download/photon-controller/public/35/resource/photon-devbox.box"
+  #
+  # VM definition for photon
+  #
+  config.vm.define "photon" do |photon|
+    photon.vm.guest = :photon
+    photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-35"
+    photon.vm.box_url = ENV['DEVBOX_URL'] ||
+      "https://bintray.com/artifact/download/photon-controller/public/35/resource/photon-devbox.box"
 
-      unless ENV["NO_PORT_FORWARDING"]
-        # Load Balancer
-        photon.vm.network :forwarded_port, guest: 8080, host: 9180,
-            auto_correct: true
-        # APIFE
-        photon.vm.network :forwarded_port, guest: 9000, host: 9080,
-            auto_correct: true
-        # Graphite
-        photon.vm.network :forwarded_port, guest: 8082, host: 9082,
-            auto_correct: true
-        # Carbon (graphite db backend)
-        photon.vm.network :forwarded_port, guest: 2003, host: 9083,
-            auto_correct: true
-        photon.vm.network :forwarded_port, guest: 2004, host: 9084,
-            auto_correct: true
-        # Zookeeper
-        photon.vm.network :forwarded_port, guest: 2181, host: 9085,
-            auto_correct: true
-        # Chairman
-        photon.vm.network :forwarded_port, guest: 13000, host: 9086,
-            auto_correct: true
-        # Deployer
-        photon.vm.network :forwarded_port, guest: 18000, host: 9088,
-            auto_correct: true
-        photon.vm.network :forwarded_port, guest: 18001, host: 9089,
-            auto_correct: true
-        # Load Balancer
-        photon.vm.network :forwarded_port, guest: 443, host: 9089,
-            auto_correct: true
-        photon.vm.network :forwarded_port, guest: 8080, host: 9090,
-            auto_correct: true
-      end
-      # Expose Docker for the Gradle build on the host
-      photon.vm.network :forwarded_port, guest: 2375, host: DOCKER_PORT
+    unless ENV["NO_PORT_FORWARDING"]
+      # Load Balancer
+      photon.vm.network :forwarded_port, guest: 8080, host: 9180,
+        auto_correct: true
+      # APIFE
+      photon.vm.network :forwarded_port, guest: 9000, host: 9080,
+        auto_correct: true
+      # Graphite
+      photon.vm.network :forwarded_port, guest: 8082, host: 9082,
+        auto_correct: true
+      # Carbon (graphite db backend)
+      photon.vm.network :forwarded_port, guest: 2003, host: 9083,
+        auto_correct: true
+      photon.vm.network :forwarded_port, guest: 2004, host: 9084,
+        auto_correct: true
+      # Zookeeper
+      photon.vm.network :forwarded_port, guest: 2181, host: 9085,
+        auto_correct: true
+      # Chairman
+      photon.vm.network :forwarded_port, guest: 13000, host: 9086,
+        auto_correct: true
+      # Deployer
+      photon.vm.network :forwarded_port, guest: 18000, host: 9088,
+        auto_correct: true
+      photon.vm.network :forwarded_port, guest: 18001, host: 9089,
+        auto_correct: true
+      # Load Balancer
+      photon.vm.network :forwarded_port, guest: 443, host: 9089,
+        auto_correct: true
+      photon.vm.network :forwarded_port, guest: 8080, host: 9090,
+        auto_correct: true
     end
+    # Expose Docker for the Gradle build on the host
+    photon.vm.network :forwarded_port, guest: 2375, host: DOCKER_PORT
+  end
 
-    restart_always = "--restart=always"
-    if ENV["NO_RESTART_ALWAYS"]
-      restart_always = ""
-    end
+  restart_always = "--restart=always"
+  if ENV["NO_RESTART_ALWAYS"]
+    restart_always = ""
+  end
 
-    # Prepare build directory
-    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-      set -ex
-      mkdir -p #{BUILD_DIR}
-      rm -rf #{DATASTORE_DIR}/*
-      mkdir -p #{DATASTORE_DIR}
-      cp -r /vagrant/agent #{BUILD_DIR}/
-      cp /vagrant/compile_java.sh #{BUILD_DIR}/
-    EOS
+  # Prepare build directory
+  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    set -ex
+    mkdir -p #{BUILD_DIR}
+    sudo rm -rf #{DATASTORE_DIR}/*
+    sudo mkdir -p #{DATASTORE_DIR}
+    cp -r /vagrant/agent #{BUILD_DIR}/
+    cp /vagrant/compile_java.sh #{BUILD_DIR}/
+    sudo chown -R vagrant:vagrant $HOME
+  EOS
 
-    # ================ NETWORK CONFIGURATION ================
+  # ================ NETWORK CONFIGURATION ================
 
-    #
-    # Configure network
-    #
-    if ENV["PUBLIC_NETWORK_IP"]
-      public_network_ip = ENV["PUBLIC_NETWORK_IP"]
-      network_ip = public_network_ip
-      bridge_network = ENV["BRIDGE_NETWORK"]
-      public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"] || "255.255.255.128"
-      public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"]
-      config.vm.network :public_network, bridge: bridge_network, ip: public_network_ip, netmask: public_network_netmask
+  #
+  # Configure network
+  #
+  if ENV["PUBLIC_NETWORK_IP"]
+    public_network_ip = ENV["PUBLIC_NETWORK_IP"]
+    network_ip = public_network_ip
+    bridge_network = ENV["BRIDGE_NETWORK"]
+    public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"] || "255.255.255.128"
+    public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"]
+    config.vm.network :public_network, bridge: bridge_network, ip: public_network_ip, netmask: public_network_netmask
 
-      public_network_gateway = ENV["PUBLIC_NETWORK_GATEWAY"]
-      # Assign correct default gateway to public network
-      config.vm.provision :shell, :inline => <<-EOS
+    public_network_gateway = ENV["PUBLIC_NETWORK_GATEWAY"]
+    # Assign correct default gateway to public network
+    config.vm.provision :shell, :inline => <<-EOS
         set -ex
         ip route del default
         ip route add default via #{public_network_gateway} dev enp0s8
-      EOS
-    else
-      private_network_ip = ENV["PRIVATE_NETWORK_IP"] || "172.31.253.66"
-      network_ip = private_network_ip
-      config.vm.network :private_network, ip: private_network_ip
-    end
+    EOS
+  else
+    private_network_ip = ENV["PRIVATE_NETWORK_IP"] || "172.31.253.66"
+    network_ip = private_network_ip
+    config.vm.network :private_network, ip: private_network_ip
+  end
 
-    #
-    # Configure hostname
-    #
-    config.vm.hostname = "devbox"
+  #
+  # Configure hostname
+  #
+  config.vm.hostname = "devbox"
 
-    # ================ PARAMETERS AND SYNC DIRECTORIES ================
+  # ================ PARAMETERS AND SYNC DIRECTORIES ================
 
-    #
-    # Configure memory and nat dns
-    #
-    config.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--memory", ENV["DEVBOX_PHOTON_MEMORY"] || "3072"]
-      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-      v.customize ["modifyvm", :id, "--cpus", ENV["DEVBOX_PHOTON_CPUS"] || "4"]
-    end
+  #
+  # Configure memory and nat dns
+  #
+  config.vm.provider "virtualbox" do |v|
+    v.customize ["modifyvm", :id, "--memory", ENV["DEVBOX_PHOTON_MEMORY"] || "3072"]
+    v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    v.customize ["modifyvm", :id, "--cpus", ENV["DEVBOX_PHOTON_CPUS"] || "4"]
+  end
 
-    #
-    # Configure sync-ed directories
-    #
-    config.vm.synced_folder "..", "/devbox_data"
-    config.vm.synced_folder "..", "/esxcloud", type: "rsync", rsync__args: ["--verbose", "--archive", "-z"]
-    config.vm.synced_folder ".", "/vagrant", :mount_options => ["dmode=777", "fmode=666"]
-    config.vm.synced_folder "#{Dir.home}/.gradle/#{ENV["JOB_NAME"] || "devbox-local"}", "/gradle", create: true
+  #
+  # Configure sync-ed directories
+  #
+  config.vm.synced_folder "..", "/devbox_data"
+  config.vm.synced_folder "..", "/esxcloud", type: "rsync", rsync__args: ["--verbose", "--archive", "-z"]
+  config.vm.synced_folder ".", "/vagrant", :mount_options => ["dmode=777", "fmode=666"]
+  config.vm.synced_folder "#{Dir.home}/.gradle/#{ENV["JOB_NAME"] || "devbox-local"}", "/gradle", create: true
 
-    #
-    # Provided for convenience only; don't take a strong dependency on it
-    #
-    config.vm.synced_folder Dir.home, "/home_data"
+  #
+  # Provided for convenience only; don't take a strong dependency on it
+  #
+  config.vm.synced_folder Dir.home, "/home_data"
 
-    # ================ PROXY CONFIGURATION ================
+  # ================ PROXY CONFIGURATION ================
 
-    #
-    # Our environments need proxies to be set explicitly, we do it by
-    # adding /etc/profile.d/proxy.sh script. Vagrant VMs don't pick up
-    # those automatically, so we need to copy it to Vagrant VM.
-    #
-    if ENV["PROXY_PROFILE"]
-      proxy_script = "/etc/profile.d/proxy.sh"
-      if File.exists?(proxy_script)
-        FileUtils.cp(proxy_script, ".")
-        config.vm.provision :shell, :inline => <<-EOS
+  #
+  # Our environments need proxies to be set explicitly, we do it by
+  # adding /etc/profile.d/proxy.sh script. Vagrant VMs don't pick up
+  # those automatically, so we need to copy it to Vagrant VM.
+  #
+  if ENV["PROXY_PROFILE"]
+    proxy_script = "/etc/profile.d/proxy.sh"
+    if File.exists?(proxy_script)
+      FileUtils.cp(proxy_script, ".")
+      config.vm.provision :shell, :inline => <<-EOS
             set -ex
             cp /vagrant/proxy.sh /etc/profile.d
             echo "\nexport no_proxy=#{network_ip},.sock,\\$no_proxy" >> /etc/profile.d/proxy.sh
-        EOS
-      else
-        abort("PROXY_PROFILE is set but '#{proxy_script}' doesn't exist")
-      end
-    end
-
-    # ================ CONFIGURATION PARAMETERS ================
-
-    dynamic_params = "{"
-
-    #
-    # Service-specific
-    #
-    dynamic_params += "     \"DEPLOYER_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
-    dynamic_params += "\n,  \"CHAIRMAN_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
-    dynamic_params += "\n,  \"CLOUD-STORE_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
-    dynamic_params += "\n,  \"ROOT-SCHEDULER_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
-    dynamic_params += "\n,  \"HOUSEKEEPER_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
-    dynamic_params += "\n,  \"MANAGEMENT-API_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
-    dynamic_params += "\n,  \"TASK_EXPIRATION_THRESHOLD\" : \"3 minutes\""
-    dynamic_params += "\n,  \"TASK_EXPIRATION_SCAN_INTERVAL\" : \"3 minutes\""
-
-    #
-    # Auth parameters for management API
-    #
-    dynamic_params += "\n, \"SHARED_SECRET\" : \"#{API_SHARED_SECRET}\""
-    if ENV["ENABLE_AUTH"] && ENV["ENABLE_AUTH"] == "true"
-      dynamic_params += "\n,  \"ENABLE_AUTH\" : true"
-
-      if ENV["PHOTON_AUTH_LS_ENDPOINT"]
-        dynamic_params += "\n,  \"AUTH_SERVER_ADDRESS\" : \"#{ENV["PHOTON_AUTH_LS_ENDPOINT"]}\""
-      else
-        abort("auth is enabled, but server address is not set")
-      end
-
-      if ENV["PHOTON_AUTH_SERVER_PORT"]
-        dynamic_params += "\n,  \"AUTH_SERVER_PORT\" : \"#{ENV["PHOTON_AUTH_SERVER_PORT"]}\""
-      else
-        abort("auth is enabled, but auth server port is not set")
-      end
-
-      if ENV["PHOTON_AUTH_SERVER_TENANT"]
-        dynamic_params += "\n,  \"AUTH_SERVER_TENANT\" : \"#{ENV["PHOTON_AUTH_SERVER_TENANT"]}\""
-      else
-        abort("auth is enabled, but auth tenant is not set")
-      end
-
-      if ENV["PHOTON_SWAGGER_LOGIN_URL"]
-        dynamic_params += "\n,  \"SWAGGER_LOGIN_URL\" : \"#{ENV["PHOTON_SWAGGER_LOGIN_URL"]}\""
-      else
-        abort("auth is enabled, but swagger login url is not set")
-      end
-
-      if ENV["PHOTON_SWAGGER_LOGOUT_URL"]
-        dynamic_params += "\n,  \"SWAGGER_LOGOUT_URL\" : \"#{ENV["PHOTON_SWAGGER_LOGOUT_URL"]}\""
-      else
-        abort("auth is enabled, but swagger logout url is not set")
-      end
+      EOS
     else
-      dynamic_params += "\n,  \"ENABLE_AUTH\" : false"
+      abort("PROXY_PROFILE is set but '#{proxy_script}' doesn't exist")
     end
+  end
 
-    #
-    # Postgresql database settings for management API connectivity
-    #
-    dynamic_params += "\n,  \"DB_HOST\" : \"#{network_ip}\""
+  # ================ CONFIGURATION PARAMETERS ================
 
-    #
-    # Real agent vs. fake agent settings
-    #
-    if ENV["REAL_AGENT"]
-      dynamic_params += "\n,  \"USE_ESX_STORE\" : true"
+  dynamic_params = "{"
 
-      if ENV["ESX_IP"] && ENV["ESX_DATASTORE"]
-        dynamic_params += "\n,  \"ESX_HOST\" : \"#{ENV["ESX_IP"]}\""
-        dynamic_params += "\n,  \"DATASTORE\" : \"#{ENV["ESX_DATASTORE"]}\""
-      else
-        abort("ESX_IP or ESX_DATASTORE not set")
-      end
+  #
+  # Service-specific
+  #
+  dynamic_params += "     \"DEPLOYER_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
+  dynamic_params += "\n,  \"CHAIRMAN_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
+  dynamic_params += "\n,  \"CLOUD-STORE_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
+  dynamic_params += "\n,  \"ROOT-SCHEDULER_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
+  dynamic_params += "\n,  \"HOUSEKEEPER_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
+  dynamic_params += "\n,  \"MANAGEMENT-API_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
+  dynamic_params += "\n,  \"TASK_EXPIRATION_THRESHOLD\" : \"3 minutes\""
+  dynamic_params += "\n,  \"TASK_EXPIRATION_SCAN_INTERVAL\" : \"3 minutes\""
+
+  #
+  # Auth parameters for management API
+  #
+  dynamic_params += "\n, \"SHARED_SECRET\" : \"#{API_SHARED_SECRET}\""
+  if ENV["ENABLE_AUTH"] && ENV["ENABLE_AUTH"] == "true"
+    dynamic_params += "\n,  \"ENABLE_AUTH\" : true"
+
+    if ENV["PHOTON_AUTH_LS_ENDPOINT"]
+      dynamic_params += "\n,  \"AUTH_SERVER_ADDRESS\" : \"#{ENV["PHOTON_AUTH_LS_ENDPOINT"]}\""
     else
-      dynamic_params += "\n,  \"USE_ESX_STORE\" : false"
-      dynamic_params += "\n,  \"DATASTORE\" : \"devbox_datastore\""
+      abort("auth is enabled, but server address is not set")
     end
 
-    #
-    # Setting up fixed deployment id so the chairman configuration can pick it up
-    #
-    dynamic_params += "\n, \"DEPLOYMENT_ID\" : \"#{DEPLOYMENT_ID}\""
-
-    #
-    # HAProxy
-    #
-    dynamic_params += "\n,  \"LOAD_BALANCER_SERVERS\": [ { \"serverName\": \"devbox-management-api\", \"serverAddress\": \"#{network_ip}:9000\" } ]"
-
-    #
-    # Zookeeper
-    #
-    dynamic_params += "\n,  \"ZOOKEEPER_INSTANCES\": [ { \"zookeeperInstance\": \"server.1=#{network_ip}:2888:3888\" } ]"
-
-    #
-    # Common
-    #
-    dynamic_params += "\n,  \"APIFE_IP\" : \"#{network_ip}\""
-    dynamic_params += "\n,  \"ZOOKEEPER_QUORUM\" : \"#{network_ip}:2181\""
-
-    if ENV["ENABLE_SYSLOG"] && ENV["ENABLE_SYSLOG"] == "true"
-      if ENV["SYSLOG_ENDPOINT"]
-        dynamic_params += "\n,  \"SYSLOG_ENDPOINT\" : \"#{ENV["SYSLOG_ENDPOINT"]}\""
-        dynamic_params += "\n,  \"ENABLE_SYSLOG\" : true"
-      else
-        abort("ENABLE_SYSLOG is set, but SYSLOG_ENDPOINT is not")
-      end
+    if ENV["PHOTON_AUTH_SERVER_PORT"]
+      dynamic_params += "\n,  \"AUTH_SERVER_PORT\" : \"#{ENV["PHOTON_AUTH_SERVER_PORT"]}\""
     else
-      dynamic_params += "\n,  \"ENABLE_SYSLOG\" : false"
+      abort("auth is enabled, but auth server port is not set")
     end
 
-    dynamic_params += "\n}"
+    if ENV["PHOTON_AUTH_SERVER_TENANT"]
+      dynamic_params += "\n,  \"AUTH_SERVER_TENANT\" : \"#{ENV["PHOTON_AUTH_SERVER_TENANT"]}\""
+    else
+      abort("auth is enabled, but auth tenant is not set")
+    end
 
-    # ================ DOCKER PREPARATION ================
-    config.vm.provision :shell, :inline => <<-EOS
-      set -xe
-      # Enable Docker Remote API
-      if [ ! -f /etc/default/docker ]; then
-        echo "DOCKER_OPTS='-s overlay -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock'" > /etc/default/docker
-        systemctl restart docker
-      fi
-    EOS
+    if ENV["PHOTON_SWAGGER_LOGIN_URL"]
+      dynamic_params += "\n,  \"SWAGGER_LOGIN_URL\" : \"#{ENV["PHOTON_SWAGGER_LOGIN_URL"]}\""
+    else
+      abort("auth is enabled, but swagger login url is not set")
+    end
 
-    # ================ PROVISIONING ================
+    if ENV["PHOTON_SWAGGER_LOGOUT_URL"]
+      dynamic_params += "\n,  \"SWAGGER_LOGOUT_URL\" : \"#{ENV["PHOTON_SWAGGER_LOGOUT_URL"]}\""
+    else
+      abort("auth is enabled, but swagger logout url is not set")
+    end
+  else
+    dynamic_params += "\n,  \"ENABLE_AUTH\" : false"
+  end
 
-    #
-    # Give access to zookeeper user inside container to write to log directory in host
-    #
-    config.vm.provision :shell, :inline => <<-EOS
+  #
+  # Postgresql database settings for management API connectivity
+  #
+  dynamic_params += "\n,  \"DB_HOST\" : \"#{network_ip}\""
+
+  #
+  # Real agent vs. fake agent settings
+  #
+  if ENV["REAL_AGENT"]
+    dynamic_params += "\n,  \"USE_ESX_STORE\" : true"
+
+    if ENV["ESX_IP"] && ENV["ESX_DATASTORE"]
+      dynamic_params += "\n,  \"ESX_HOST\" : \"#{ENV["ESX_IP"]}\""
+      dynamic_params += "\n,  \"DATASTORE\" : \"#{ENV["ESX_DATASTORE"]}\""
+    else
+      abort("ESX_IP or ESX_DATASTORE not set")
+    end
+  else
+    dynamic_params += "\n,  \"USE_ESX_STORE\" : false"
+    dynamic_params += "\n,  \"DATASTORE\" : \"devbox_datastore\""
+  end
+
+  #
+  # Setting up fixed deployment id so the chairman configuration can pick it up
+  #
+  dynamic_params += "\n, \"DEPLOYMENT_ID\" : \"#{DEPLOYMENT_ID}\""
+
+  #
+  # HAProxy
+  #
+  dynamic_params += "\n,  \"LOAD_BALANCER_SERVERS\": [ { \"serverName\": \"devbox-management-api\", \"serverAddress\": \"#{network_ip}:9000\" } ]"
+
+  #
+  # Zookeeper
+  #
+  dynamic_params += "\n,  \"ZOOKEEPER_INSTANCES\": [ { \"zookeeperInstance\": \"server.1=#{network_ip}:2888:3888\" } ]"
+
+  #
+  # Common
+  #
+  dynamic_params += "\n,  \"APIFE_IP\" : \"#{network_ip}\""
+  dynamic_params += "\n,  \"ZOOKEEPER_QUORUM\" : \"#{network_ip}:2181\""
+
+  if ENV["ENABLE_SYSLOG"] && ENV["ENABLE_SYSLOG"] == "true"
+    if ENV["SYSLOG_ENDPOINT"]
+      dynamic_params += "\n,  \"SYSLOG_ENDPOINT\" : \"#{ENV["SYSLOG_ENDPOINT"]}\""
+      dynamic_params += "\n,  \"ENABLE_SYSLOG\" : true"
+    else
+      abort("ENABLE_SYSLOG is set, but SYSLOG_ENDPOINT is not")
+    end
+  else
+    dynamic_params += "\n,  \"ENABLE_SYSLOG\" : false"
+  end
+
+  dynamic_params += "\n}"
+
+  # ================ DOCKER PREPARATION ================
+  config.vm.provision :shell, :inline => <<-EOS
+    set -xe
+    # Enable Docker remote API if not already enabled
+    if ! grep -q tcp /etc/default/docker; then
+      echo "DOCKER_OPTS='-s overlay -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock'" > /etc/default/docker
+      systemctl restart docker
+    fi
+  EOS
+
+  # ================ PROVISIONING ================
+
+  #
+  # Give access to zookeeper user inside container to write to log directory in host
+  #
+  config.vm.provision :shell, :inline => <<-EOS
       set -ex
       chmod -R 777 /var/log/
-    EOS
+  EOS
 
-    #
-    # Script for building agent VIB
-    #
-    datastore_mapped_dir_setting = ""
-    datastore_mapped_dir_setting = "-v #{DATASTORE_DIR}:/tmp"
-    agent_config_dir=File.join(BUILD_DIR, "agent")
+  #
+  # Script for building agent VIB
+  #
+  datastore_mapped_dir_setting = ""
+  datastore_mapped_dir_setting = "-v #{DATASTORE_DIR}:/tmp"
+  agent_config_dir=File.join(BUILD_DIR, "agent")
 
-    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-  out="/home/vagrant/build-agent-vib.sh"
-  cat > $out <<-'EOM'
+  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+out="/home/vagrant/build-agent-vib.sh"
+cat > $out <<-'EOM'
+#!/bin/bash -xe
+#
+# Build Agent vib
+#
+sudo chmod a+x #{File.join(agent_config_dir, "agent_compile_install.sh")}
+container=$(docker run -d \
+  -v /esxcloud:/esxcloud \
+  -v #{agent_config_dir}:/etc/esxcloud/agent \
+  photon/compileservices /etc/esxcloud/agent/agent_compile_install.sh)
+docker attach $container
+docker commit $container devbox/agent
+
+#
+# Copy for use by integration test
+#
+sudo mkdir -p /var/esxcloud/packages
+sudo rm -f /var/esxcloud/packages/*.vib
+sudo cp /esxcloud/python/dist/*.vib /var/esxcloud/packages/
+EOM
+chmod +x $out
+  EOS
+
+  if !(ENV["PUBLIC_NETWORK_IP"] || ENV["REAL_AGENT"])
+    agent_parameters = "{\n"
+    agent_parameters += "  \"AGENT_BIND_ADDRESS\": \"#{network_ip}\",\n"
+    agent_parameters += "  \"AGENT_LOG_PATH\": \"/vagrant/log\",\n"
+    agent_parameters += "  \"AGENT_ZOOKEEPER\": \"#{network_ip}:2181\",\n"
+    agent_parameters += "  \"AGENT_CHAIRMAN\": \"#{network_ip}:13000\",\n"
+    if ENV["ESX_AGENT_COUNT"]
+      agent_parameters += ",  \"AGENT_COUNT\": \"#{ENV["ESX_AGENT_COUNT"]}\"\n"
+    end
+    agent_parameters += "}"
+  end
+
+  agent_container_id_file='$HOME/agent-container.id'
+
+  #
+  # Start agent script
+  #
+  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+set -ex
+out=/home/vagrant/start-agent.sh
+cat > $out <<-'EOM'
+#!/bin/bash -xe
+#
+# Create configuration with mustache
+#
+echo 'Agent parameters file contents:\n#{agent_parameters}'
+echo '#{agent_parameters}' > "#{File.join(agent_config_dir, "agent_parameters.json")}"
+sudo mustache #{File.join(agent_config_dir, "agent_parameters.json")} \
+  #{File.join(agent_config_dir, "config.json.template")} | sudo tee #{File.join(agent_config_dir, "config.json")}
+sudo mustache #{File.join(agent_config_dir, "agent_parameters.json")} \
+  #{File.join(agent_config_dir, "run.sh.template")} | sudo tee #{File.join(agent_config_dir, "run.sh")}
+chmod a+x #{File.join(agent_config_dir, "run.sh")}
+mkdir -p /vagrant/log/agent
+
+# Stop any old running agent container
+if [ -f #{agent_container_id_file} ]; then
+  id=$(< #{agent_container_id_file})
+  docker stop $id || true &> /dev/null
+  rm -f #{agent_container_id_file}
+fi
+
+#
+# Start fake agent
+#
+agent_container_id=$(docker run -d -p 8835:8835 \
+  --net=host #{restart_always} \
+  -v /vagrant/log/agent:/vagrant/log \
+  -v /devbox_data/tmp:/devbox_data/tmp \
+  -v #{ESXCLOUD_DIR}:#{ESXCLOUD_DIR} #{datastore_mapped_dir_setting} \
+  -v #{agent_config_dir}:/etc/esxcloud/agent \
+  devbox/agent /etc/esxcloud/agent/run.sh)
+echo "Agent running in container $agent_container_id"
+echo $agent_container_id > #{agent_container_id_file}
+EOM
+chmod +x $out
+  EOS
+
+  #
+  # Stop agent script
+  #
+  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+set -ex
+out=/home/vagrant/stop-agent.sh
+cat > $out <<-'EOM'
+#!/bin/bash -x
+docker stop $(< #{agent_container_id_file})
+if [[ $? == 0 ]]; then
+  rm -f #{agent_container_id_file}
+fi
+EOM
+chmod +x $out
+  EOS
+
+  # TODO: deployer /etc/esxcloud-deployer config
+
+  # ================ BASE SERVICES ================
+
+  #
+  # Create log directories for mounting
+  #
+  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
     set -ex
-    #
-    # Build Agent vib
-    #
-    sudo chmod a+x #{File.join(agent_config_dir, "agent_compile_install.sh")}
-    container=$(docker run -d \
-      -v /esxcloud:/esxcloud \
-      -v #{agent_config_dir}:/etc/esxcloud/agent \
-      photon/compileservices /etc/esxcloud/agent/agent_compile_install.sh)
-    docker attach $container
-    docker commit $container devbox/agent
+    mkdir -p /vagrant/log/zookeeper
+    mkdir -p /vagrant/log/haproxy
+  EOS
 
-    #
-    # Copy for use by integration test
-    #
-    sudo mkdir -p /var/esxcloud/packages
-    sudo rm -f /var/esxcloud/packages/*.vib
-    sudo cp /esxcloud/python/dist/*.vib /var/esxcloud/packages/
-  EOM
-  chmod +x $out
-    EOS
-
-    if !(ENV["PUBLIC_NETWORK_IP"] || ENV["REAL_AGENT"])
-      agent_parameters = "{\n"
-      agent_parameters += "  \"AGENT_BIND_ADDRESS\": \"#{network_ip}\",\n"
-      agent_parameters += "  \"AGENT_LOG_PATH\": \"/vagrant/log\",\n"
-      agent_parameters += "  \"AGENT_ZOOKEEPER\": \"#{network_ip}:2181\",\n"
-      agent_parameters += "  \"AGENT_CHAIRMAN\": \"#{network_ip}:13000\",\n"
-      if ENV["ESX_AGENT_COUNT"]
-        agent_parameters += ",  \"AGENT_COUNT\": \"#{ENV["ESX_AGENT_COUNT"]}\"\n"
-      end
-      agent_parameters += "}"
-
-      agent_container="fake-agent"
-
-      #
-      # Start agent script
-      #
-      config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-  set -ex
-  out=/home/vagrant/start-agent.sh
-  cat > $out <<-'EOM'
-    #
-    # Create configuration with mustache
-    #
-    echo 'Agent parameters file contents:\n#{agent_parameters}'
-    echo '#{agent_parameters}' > "#{File.join(agent_config_dir, "agent_parameters.json")}"
-    mustache #{File.join(agent_config_dir, "agent_parameters.json")} \
-      #{File.join(agent_config_dir, "config.json.template")} > #{File.join(agent_config_dir, "config.json")}
-    mustache #{File.join(agent_config_dir, "agent_parameters.json")} \
-      #{File.join(agent_config_dir, "run.sh.template")} > #{File.join(agent_config_dir, "run.sh")}
-    chmod a+x #{File.join(agent_config_dir, "run.sh")}
-    mkdir -p /vagrant/log/agent
-
-    #
-    # Start fake agent
-    #
-    docker run -d -p 8835:8835 --net=host --name #{agent_container} #{restart_always} \
-      -v /vagrant/log/agent:/vagrant/log \
-      -v /devbox_data/tmp:/devbox_data/tmp \
-      -v #{ESXCLOUD_DIR}:#{ESXCLOUD_DIR} #{datastore_mapped_dir_setting} \
-      -v #{agent_config_dir}:/etc/esxcloud/agent \
-      devbox/agent /etc/esxcloud/agent/run.sh
-  EOM
-  chmod +x $out
-      EOS
-
-      #
-      # Stop agent script
-      #
-      config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-  set -ex
-  out=/home/vagrant/stop-agent.sh
-  cat > $out <<-'EOM'
-    docker stop #{agent_container} || true
-  EOM
-  chmod +x $out
-      EOS
-    end
-
-    # TODO: deployer /etc/esxcloud-deployer config
-
-    # ================ BASE SERVICES ================
-
-    #
-    # Create log directories for mounting
-    #
-    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  #
+  # Clean log directories if selected
+  #
+  if !(ENV["DEVBOX_NO_CLEAN_LOGS"])
+    config.vm.provision :shell, :inline => <<-EOS
       set -ex
-      mkdir -p /vagrant/log/zookeeper
-      mkdir -p /vagrant/log/haproxy
+      rm -rf /vagrant/log/zookeeper/*
+      rm -rf /vagrant/log/haproxy/*
     EOS
+  end
 
-    #
-    # Clean log directories if selected
-    #
-    if !(ENV["DEVBOX_NO_CLEAN_LOGS"])
-      config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-        set -ex
-        rm -rf /vagrant/log/zookeeper/*
-        rm -rf /vagrant/log/haproxy/*
-      EOS
-    end
+  #
+  # Prepare services configurations
+  #
+  SERVICE_CONFIG_MAP.each do | key, servicePath |
+    service = SERVICE_NAME_MAP[key]
+    config_build_dir = "/esxcloud/java/#{service}/build/configuration"
+    dynamic_params_file = "#{config_build_dir}/#{service}-dynamic_params.json"
 
-    #
-    # Prepare services configurations
-    #
-    SERVICE_CONFIG_MAP.each do | key, servicePath |
-      service = SERVICE_NAME_MAP[key]
-      config_build_dir = "/esxcloud/java/#{service}/build/configuration"
-      dynamic_params_file = "#{config_build_dir}/#{service}-dynamic_params.json"
-
-      # Write dynamic_params file
-      config.vm.provision :shell, :inline => <<-EOS
-  mkdir -p #{config_build_dir}
-  cat > #{dynamic_params_file} <<'EOM'
+    # Write dynamic_params file
+    config.vm.provision :shell, :inline => <<-EOS
+mkdir -p #{config_build_dir}
+cat > #{dynamic_params_file} <<'EOM'
   #{dynamic_params}
-  EOM
+EOM
     EOS
 
+    #
     # Write service start script
+    #
     config.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="/home/vagrant/start-#{service}.sh"
-cat > $out <<'EOM'
-set -ex
+cat > $out <<-'EOM'
+  set -ex
 
-config_dir="/esxcloud/java/#{servicePath}/src/dist/configuration"
+  config_dir="/devbox_data/java/#{servicePath}/src/dist/configuration"
+  mkdir -p #{config_build_dir}
 
-# Process config with mustache
-cd $config_dir
-sudo jq -s '.[0] * .[1]' #{dynamic_params_file} #{service}_test.json > #{service}_params.json
+  # Process config with mustache
+  cd $config_dir
+  combined_params=$(jq -s '.[0] * .[1]' #{dynamic_params_file} #{service}_test.json)
 
-shopt -s nullglob
-for file in $config_dir/*.{yml,config,js,sh,sql,cfg}
-do
-  sudo mustache #{service}_params.json $file | sudo tee "#{config_build_dir}/$(basename $file)" > /dev/null
-done
+  shopt -s nullglob
+  for file in $config_dir/*.{yml,config,js,sh,sql,cfg}
+  do
+    sudo mustache - $file <<< "$combined_params" | sudo tee "#{config_build_dir}/$(basename $file)" > /dev/null
+  done
 
-mkdir -p /vagrant/log/#{service}
+  mkdir -p /vagrant/log/#{service}
 
-container_name="#{service}"
-image_name="photon/#{service}"
+  container_name="#{service}"
+  image_name="photon/#{service}"
 
-# Start the container with the service
-docker run -d #{SERVICE_PORT_MAP[service]} --net=host --name $container_name #{restart_always} \
-  -v /vagrant/log/#{service}:/vagrant/log \
-  -v /devbox_data/tmp:/devbox_data/tmp \
-  -v /vagrant/log/#{service}/script_logs:/vagrant/log/script_logs \
-  -v #{ESXCLOUD_DIR}:#{ESXCLOUD_DIR} #{datastore_mapped_dir_setting} \
-  -v #{config_build_dir}:/etc/esxcloud \
-  --entrypoint /bin/bash $image_name /etc/esxcloud/run.sh
+  # Start the container with the service
+  docker run -d #{SERVICE_PORT_MAP[service]} --net=host --name $container_name #{restart_always} \
+    -v /vagrant/log/#{service}:/vagrant/log \
+    -v /devbox_data/tmp:/devbox_data/tmp \
+    -v /vagrant/log/#{service}/script_logs:/vagrant/log/script_logs \
+    -v #{ESXCLOUD_DIR}:#{ESXCLOUD_DIR} #{datastore_mapped_dir_setting} \
+    -v #{config_build_dir}:/etc/esxcloud \
+    --entrypoint /bin/bash $image_name /etc/esxcloud/run.sh
 EOM
-
 chmod +x $out
     EOS
 
@@ -508,62 +525,62 @@ chmod +x $out
       EOS
     end
   end
-#
-#  #
-#  # Zookeeper
-#  #
-#  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-#    set -ex
-#    docker run -d #{BASE_SERVICE_PORT_MAP[:zookeeper]} #{restart_always} \
-#      --net=host -v /vagrant/log/zookeeper:/var/log/zookeeper \
-#      -v /esxcloud/java/distributions/configurations/configuration-zookeeper:/var/esxcloud/data/zookeeper \
-#      -v /esxcloud/java/distributions/configurations/configuration-zookeeper:/usr/lib/zookeeper/conf \
-#      --name devbox_zookeeper_container --entrypoint /bin/bash devbox/zookeeper /usr/lib/zookeeper/conf/run.sh
-#  EOS
-#
-#  #
-#  # HAProxy.
-#  #
-#  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-#    set -ex
-#    docker run -d #{BASE_SERVICE_PORT_MAP[:haproxy]} --net=host #{restart_always} \
-#    -v /esxcloud/java/distributions/configurations/configuration-haproxy:/etc/haproxy \
-#    -v /vagrant/log/haproxy:/var/log --privileged --name devbox_haproxy_container \
-#    -e HAPROXY_IP="#{network_ip}" --entrypoint /bin/bash devbox/haproxy /etc/haproxy/run.sh
-#  EOS
-#
-#  # ================ ESXCLOUD SERVICES ================
-#
-#  #
-#  # Build container for each service and start it
-#  #
-#  SERVICE_NAME_MAP.each do | service, service_name |
-#    EOS
-#  end
-#
-#  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-#    set +e
-#    echo "Containers:"
-#    docker ps
-#    MAX_RETRIES=300
-#    SLEEP_BETWEEN_RETRIES_SEC=1
-#    success=-1
-#    echo "Checking status of services"
-#    i="0"
-#    while [ $i -lt $MAX_RETRIES ]
-#    do
-#      status=$(curl -s --connect-timeout 60 --max-time 60 --header "Authorization: Bearer #{API_SHARED_SECRET}" http://127.0.0.1:9000/status/)
-#      if [ '"READY"' == "$(echo $status | jq-linux64 '.status')" ]
-#      then
-#        echo "Services started successfully"
-#        success=0
-#        break
-#      fi
-#      echo "Services not started yet. Status: $status. Retry count: $i"
-#      sleep $SLEEP_BETWEEN_RETRIES_SEC
-#      i=$[$i+1]
-#    done
-#    exit $success
-#  EOS
+  #
+  #  #
+  #  # Zookeeper
+  #  #
+  #  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  #    set -ex
+  #    docker run -d #{BASE_SERVICE_PORT_MAP[:zookeeper]} #{restart_always} \
+  #      --net=host -v /vagrant/log/zookeeper:/var/log/zookeeper \
+  #      -v /esxcloud/java/distributions/configurations/configuration-zookeeper:/var/esxcloud/data/zookeeper \
+  #      -v /esxcloud/java/distributions/configurations/configuration-zookeeper:/usr/lib/zookeeper/conf \
+  #      --name devbox_zookeeper_container --entrypoint /bin/bash devbox/zookeeper /usr/lib/zookeeper/conf/run.sh
+  #  EOS
+  #
+  #  #
+  #  # HAProxy.
+  #  #
+  #  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  #    set -ex
+  #    docker run -d #{BASE_SERVICE_PORT_MAP[:haproxy]} --net=host #{restart_always} \
+  #    -v /esxcloud/java/distributions/configurations/configuration-haproxy:/etc/haproxy \
+  #    -v /vagrant/log/haproxy:/var/log --privileged --name devbox_haproxy_container \
+  #    -e HAPROXY_IP="#{network_ip}" --entrypoint /bin/bash devbox/haproxy /etc/haproxy/run.sh
+  #  EOS
+  #
+  #  # ================ ESXCLOUD SERVICES ================
+  #
+  #  #
+  #  # Build container for each service and start it
+  #  #
+  #  SERVICE_NAME_MAP.each do | service, service_name |
+  #    EOS
+  #  end
+  #
+  #  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  #    set +e
+  #    echo "Containers:"
+  #    docker ps
+  #    MAX_RETRIES=300
+  #    SLEEP_BETWEEN_RETRIES_SEC=1
+  #    success=-1
+  #    echo "Checking status of services"
+  #    i="0"
+  #    while [ $i -lt $MAX_RETRIES ]
+  #    do
+  #      status=$(curl -s --connect-timeout 60 --max-time 60 --header "Authorization: Bearer #{API_SHARED_SECRET}" http://127.0.0.1:9000/status/)
+  #      if [ '"READY"' == "$(echo $status | jq-linux64 '.status')" ]
+  #      then
+  #        echo "Services started successfully"
+  #        success=0
+  #        break
+  #      fi
+  #      echo "Services not started yet. Status: $status. Retry count: $i"
+  #      sleep $SLEEP_BETWEEN_RETRIES_SEC
+  #      i=$[$i+1]
+  #    done
+  #    exit $success
+  #  EOS
 
 end
