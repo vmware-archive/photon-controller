@@ -2,6 +2,7 @@
 // for building the agent inside of a running devbox via Vagrant plugin.
 import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
 
+// TODO: change from being agent to being all devbox tasks
 ext {
   virtualBoxDir = file('../../devbox-photon')
 }

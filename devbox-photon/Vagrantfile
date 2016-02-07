@@ -123,6 +123,13 @@ Vagrant.configure("2") do |config|
     sudo chown -R vagrant:vagrant $HOME
   EOS
 
+  # Clean utility scripts (file provision fails to do this)
+  config.vm.provision :shell, :inline => "rm -rf /home/vagrant/bin"
+  # Copy utility scripts
+  config.vm.provision "file", source: "scripts/bin/", destination: "bin/"
+  # Copy profile scripts
+  config.vm.provision :shell, :inline => "cp -fa /vagrant/scripts/profile/* /etc/profile.d/"
+
   # ================ NETWORK CONFIGURATION ================
 
   #
@@ -436,8 +443,6 @@ EOM
 chmod +x $out
   EOS
 
-  # TODO: deployer /etc/esxcloud-deployer config
-
   # ================ BASE SERVICES ================
 
   #
@@ -472,44 +477,46 @@ chmod +x $out
     config.vm.provision :shell, :inline => <<-EOS
 mkdir -p #{config_build_dir}
 cat > #{dynamic_params_file} <<'EOM'
-  #{dynamic_params}
+#{dynamic_params}
 EOM
     EOS
 
+    config_dir = "/devbox_data/java/#{servicePath}/src/dist/configuration"
     #
     # Write service start script
     #
     config.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="/home/vagrant/start-#{service}.sh"
 cat > $out <<-'EOM'
-  set -ex
+  #!/bin/bash -ex
 
-  config_dir="/devbox_data/java/#{servicePath}/src/dist/configuration"
-  mkdir -p #{config_build_dir}
-
-  # Process config with mustache
-  cd $config_dir
-  combined_params=$(jq -s '.[0] * .[1]' #{dynamic_params_file} #{service}_test.json)
+  # Combine Vagrant dynamic params with test config
+  combined_params=$(jq -s '.[0] * .[1].dynamicParameters' #{dynamic_params_file} #{config_dir}/#{service}_test.json)
 
   shopt -s nullglob
-  for file in $config_dir/*.{yml,config,js,sh,sql,cfg}
+  for file in #{config_dir}/*.{yml,config,js,sh,sql,cfg}
   do
     sudo mustache - $file <<< "$combined_params" | sudo tee "#{config_build_dir}/$(basename $file)" > /dev/null
   done
 
   mkdir -p /vagrant/log/#{service}
 
-  container_name="#{service}"
-  image_name="photon/#{service}"
+EOM
 
-  # Start the container with the service
-  docker run -d #{SERVICE_PORT_MAP[service]} --net=host --name $container_name #{restart_always} \
-    -v /vagrant/log/#{service}:/vagrant/log \
-    -v /devbox_data/tmp:/devbox_data/tmp \
-    -v /vagrant/log/#{service}/script_logs:/vagrant/log/script_logs \
-    -v #{ESXCLOUD_DIR}:#{ESXCLOUD_DIR} #{datastore_mapped_dir_setting} \
-    -v #{config_build_dir}:/etc/esxcloud \
-    --entrypoint /bin/bash $image_name /etc/esxcloud/run.sh
+cat >> $out <<-EOM
+#{service == "deployer" ? "copy-deployer-config.sh" : ""}
+
+$(gen-docker-run.sh #{config_dir}/#{service}_test.json /bin/bash /etc/esxcloud/run.sh "-v #{config_build_dir}:/etc/esxcloud")
+EOM
+chmod +x $out
+    EOS
+
+    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+out="/home/vagrant/bin/copy-deployer-config.sh"
+cat >> $out <<-'EOM'
+  dir="/etc/esxcloud-deployer/configurations/#{service}/"
+  sudo mkdir -p $dir
+  sudo cp -a #{config_dir}/* $dir
 EOM
 chmod +x $out
     EOS

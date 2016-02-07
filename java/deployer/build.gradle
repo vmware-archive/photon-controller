@@ -3,6 +3,7 @@ apply plugin: 'thrift'
 
 import com.bmuschko.gradle.docker.tasks.container.*
 import com.bmuschko.gradle.docker.tasks.image.*
+import java.nio.file.Files
 
 mainClassName = 'com.vmware.photon.controller.deployer.Main'
 
@@ -66,20 +67,24 @@ tasks.withType(Test) {
   exclude "**/helpers/*.class"
 }
 
-task extractRelease(type: Copy) {
-  dependsOn distTar
-  // Extract deployer tar
+task extractRelease(dependsOn: distTar) << {
   def tar = file('build/distributions').findFile(~/deployer-.*.tar/)
-  from tarTree(tar)
-  into file('build/container/')
+  def dest = file('build/container/')
+  copy {
+    from tarTree(tar)
+    into dest
+  }
+  def tarOutput = dest.findDirectory(~/deployer-.*/).toPath()
+  def releaseDir = tarOutput.resolveSibling('release')
+  releaseDir.toFile().deleteRecursive()
+  Files.move(tarOutput, releaseDir)
 }
 
 task dockerfile(type: Dockerfile) {
   dependsOn extractRelease
-  def releaseDir = extractRelease.destinationDir.findDirectory(~/deployer-.*/)?.name
   destFile = file("build/container/Dockerfile")
   from "photon/servicebase"
-  copyFile("$releaseDir/", "/usr/lib/esxcloud/deployer/")
+  copyFile("release/", "/usr/lib/esxcloud/deployer/")
 
   def esxcliURL="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/external/esxcli_lin64/esxcli_lin64-esxcli_lin64.tgz"
   runCommand("curl -s $esxcliURL | tar xz -C /opt")
@@ -95,5 +100,3 @@ task container(type: DockerBuildImage) {
 task removeContainer(type: DockerRemoveImage) {
   targetImageId { container.tag }
 }
-
-clean.dependsOn removeContainer

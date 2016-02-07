@@ -5,7 +5,6 @@ apply plugin: 'com.bmuschko.docker-remote-api'
 import com.bmuschko.gradle.docker.tasks.container.*
 import com.bmuschko.gradle.docker.tasks.image.*
 import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 
 mainClassName = 'com.vmware.photon.controller.chairman.Main'
 
@@ -77,8 +76,8 @@ task extractRelease(dependsOn: distTar) << {
 
 task dockerfile(type: Dockerfile) {
   dependsOn extractRelease
-  from 'photon/servicebase'
   destFile = file('build/container/Dockerfile')
+  from 'photon/servicebase'
   copyFile('release/', '/usr/lib/esxcloud/chairman/')
 }
 

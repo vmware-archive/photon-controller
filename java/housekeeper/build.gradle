@@ -4,6 +4,7 @@ apply plugin: 'com.bmuschko.docker-remote-api'
 
 import com.bmuschko.gradle.docker.tasks.container.*
 import com.bmuschko.gradle.docker.tasks.image.*
+import java.nio.file.Files
 
 mainClassName = 'com.vmware.photon.controller.housekeeper.Main'
 
@@ -63,10 +64,32 @@ tasks.withType(Test) {
   exclude "**/helpers/*.class"
 }
 
+task extractRelease(dependsOn: distTar) << {
+  // Extract housekeeper tar
+  def tar = file('build/distributions').findFile(~/housekeeper-.*.tar/)
+  def dest = file('build/container/')
+  copy {
+    from tarTree(tar)
+    into dest
+  }
+  // Rename extracted release directory to make it easy to find from Dockerfile
+  def tarOutput = dest.findDirectory(~/housekeeper-.*/).toPath()
+  def releaseDir = tarOutput.resolveSibling('release')
+  releaseDir.toFile().deleteRecursive()
+  Files.move(tarOutput, releaseDir)
+}
+
+task dockerfile(type: Dockerfile) {
+  dependsOn extractRelease
+  destFile = file('build/container/Dockerfile')
+  from 'photon/servicebase'
+  copyFile('release/', '/usr/lib/esxcloud/housekeeper/')
+}
+
 task container(type: DockerBuildImage) {
-  dependsOn "build", ":containers:servicebase"
-  inputDir = file("src/dist/container")
-  tag = "photon/housekeeper"
+  dependsOn dockerfile, ':containers:servicebase'
+  inputDir = dockerfile.destFile.parentFile
+  tag = 'photon/housekeeper'
 }
 
 task removeContainer(type: DockerRemoveImage) {
