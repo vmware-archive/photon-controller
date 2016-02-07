@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,9 +43,9 @@ import java.util.function.Consumer;
 /**
  * The HostCache is used by the scheduler to track information on what hosts
  * are available to be used for scheduling decisions.
- *
+ * <p>
  * It can answer a query for "give me N random hosts that match a set of constraints".
- *
+ * <p>
  * It has methods used for introspection (mostly for testing) to tell us about the
  * state of the cache.
  */
@@ -54,9 +55,8 @@ public class HostCache {
    * The ConcurrentMultiMap lets us store a map from a key to a set of values. It's a ConcurrentHashMap, where each
    * value is a ConcurrentHashMap. It's similar to Guava's Multimap, but thread-safe. It provides a limited
    * set of operations to support just the host cache.
-   *
+   * <p>
    * We use this, for example, to keep track of all the hosts that have a given datastore.
-   *
    */
   private static class ConcurrentMultiMap<K, V> {
     private ConcurrentHashMap<K, Set<V>> map;
@@ -71,7 +71,7 @@ public class HostCache {
     private void addOrUpdate(K key, V value) {
       if (!this.map.contains(key)) {
         Set<V> set = Collections.newSetFromMap(new ConcurrentHashMap<V, Boolean>());
-        map.putIfAbsent(key,  set);
+        map.putIfAbsent(key, set);
       }
       Set<V> set = map.get(key);
       set.add(value);
@@ -97,6 +97,7 @@ public class HostCache {
 
     /**
      * For each key, remove the given value from its set of values.
+     * If there is a key that has no values, remove the key.
      * Obviously, this may be an expensive operation: use it judiciously.
      */
     private void removeFromAll(V value) {
@@ -107,7 +108,7 @@ public class HostCache {
 
     /**
      * Get the set of values associated with a key.
-     *
+     * <p>
      * This should be used for introspection only: to add or delete values, user other methods.
      */
     private Set<V> getValues(K key) {
@@ -139,12 +140,11 @@ public class HostCache {
   // Map from datastore ID to set of host IDs
   protected ConcurrentMultiMap<String, String> datastoresToHosts;
 
-  // Map from datastore ID to datastore tags
-  protected ConcurrentMultiMap<String, String> datastoresToTags;
+  // Set of datastore IDs
+  protected Set<String> datastoreIds;
 
-  // Set of management host IDs; based on ConcurrentHashMap for thread-safety
-  // Map from datastore tag to set of host IDs
-  protected ConcurrentMultiMap<String, String> datastoreTagsToHosts;
+  // Map from datastore tags to datastore Ids
+  protected ConcurrentMultiMap<String, String> datastoreTagsToDatastores;
 
   // Map from availability zone to set of host IDs
   protected ConcurrentMultiMap<String, String> availabilityZonesToHosts;
@@ -186,7 +186,7 @@ public class HostCache {
    * Intended for testing
    */
   public int getDatastoreCount() {
-    return this.datastoresToTags.size();
+    return this.datastoreIds.size();
   }
 
   /**
@@ -202,7 +202,11 @@ public class HostCache {
    * Intended for testing.
    */
   public Set<String> getHostsWithDatastoreTag(String datastoreTag) {
-    return this.datastoreTagsToHosts.getValues(datastoreTag);
+    Set<String> hosts = new HashSet<>();
+    for (String datastoreId : this.datastoreTagsToDatastores.getValues(datastoreTag)) {
+      hosts.addAll(this.datastoresToHosts.getValues(datastoreId));
+    }
+    return hosts;
   }
 
   /**
@@ -229,9 +233,9 @@ public class HostCache {
     managementHostIds = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     networksToHosts = new ConcurrentMultiMap<>();
     datastoresToHosts = new ConcurrentMultiMap<>();
-    datastoreTagsToHosts = new ConcurrentMultiMap<>();
-    datastoresToTags = new ConcurrentMultiMap<>();
     availabilityZonesToHosts = new ConcurrentMultiMap<>();
+    datastoreIds = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    datastoreTagsToDatastores = new ConcurrentMultiMap<>();
   }
 
   /**
@@ -241,33 +245,33 @@ public class HostCache {
    */
   private Consumer<Operation> createHostNotificationTarget() {
     Consumer<Operation> notificationTarget = (queryUpdate) -> {
-        queryUpdate.complete();
+      queryUpdate.complete();
 
-        if (!queryUpdate.hasBody() && queryUpdate.getAction() == Service.Action.DELETE) {
-            // TODO(alainr): recreate query when someone deletes it
+      if (!queryUpdate.hasBody() && queryUpdate.getAction() == Service.Action.DELETE) {
+        // TODO(alainr): recreate query when someone deletes it
         logger.warn("Continuous query was deleted, no further updates to host cache will happen");
-            return;
-        }
+        return;
+      }
 
-        Map<String, Object> documents = extractDocumentsFromQueryUpdate(queryUpdate, "host");
-        if (documents == null) {
-          // Log message happened in extractDocumentsFromQueryUpdate
-          return;
+      Map<String, Object> documents = extractDocumentsFromQueryUpdate(queryUpdate, "host");
+      if (documents == null) {
+        // Log message happened in extractDocumentsFromQueryUpdate
+        return;
+      }
+      for (Object document : documents.values()) {
+        HostService.State host = Utils.fromJson(document, HostService.State.class);
+        if (host == null) {
+          logger.warn("Host query had invalid host, ignoring");
+          continue;
         }
-        for (Object document : documents.values()) {
-          HostService.State host = Utils.fromJson(document, HostService.State.class);
-          if (host == null) {
-            logger.warn("Host query had invalid host, ignoring");
-            continue;
-          }
-          if (host.documentUpdateAction.equals(Service.Action.POST.toString())
-              || host.documentUpdateAction.equals(Service.Action.PUT.toString())
-              || host.documentUpdateAction.equals(Service.Action.PATCH.toString())) {
-            addOrUpdateHost(host);
-          } else if (host.documentUpdateAction.equals(Service.Action.DELETE.toString())) {
-            deleteHost(host);
-          }
+        if (host.documentUpdateAction.equals(Service.Action.POST.toString())
+            || host.documentUpdateAction.equals(Service.Action.PUT.toString())
+            || host.documentUpdateAction.equals(Service.Action.PATCH.toString())) {
+          addOrUpdateHost(host);
+        } else if (host.documentUpdateAction.equals(Service.Action.DELETE.toString())) {
+          deleteHost(host);
         }
+      }
     };
     return notificationTarget;
   }
@@ -282,9 +286,9 @@ public class HostCache {
       queryUpdate.complete();
 
       if (!queryUpdate.hasBody() && queryUpdate.getAction() == Service.Action.DELETE) {
-          // TODO(alainr): recreate query when someone deletes it
-          logger.info("Continuous query was deleted, no further updates to datastore cache will happen");
-          return;
+        // TODO(alainr): recreate query when someone deletes it
+        logger.info("Continuous query was deleted, no further updates to datastore cache will happen");
+        return;
       }
 
       Map<String, Object> documents = extractDocumentsFromQueryUpdate(queryUpdate, "datastore");
@@ -293,17 +297,17 @@ public class HostCache {
         return;
       }
       for (Object document : documents.values()) {
-        DatastoreService.State host = Utils.fromJson(document, DatastoreService.State.class);
-        if (host == null) {
+        DatastoreService.State datastore = Utils.fromJson(document, DatastoreService.State.class);
+        if (datastore == null) {
           logger.warn("Datastore query had invalid datastore, ignoring");
           continue;
         }
-        if (host.documentUpdateAction.equals(Service.Action.POST.toString())
-            || host.documentUpdateAction.equals(Service.Action.PUT.toString())
-            || host.documentUpdateAction.equals(Service.Action.PATCH.toString())) {
-          addOrUpdateDatastore(host);
-        } else if (host.documentUpdateAction.equals(Service.Action.DELETE.toString())) {
-          deleteDatastore(host);
+        if (datastore.documentUpdateAction.equals(Service.Action.POST.toString())
+            || datastore.documentUpdateAction.equals(Service.Action.PUT.toString())
+            || datastore.documentUpdateAction.equals(Service.Action.PATCH.toString())) {
+          addOrUpdateDatastore(datastore);
+        } else if (datastore.documentUpdateAction.equals(Service.Action.DELETE.toString())) {
+          deleteDatastore(datastore);
         }
       }
     };
@@ -312,7 +316,7 @@ public class HostCache {
 
   /**
    * Used by the notification targets to extract the "documents" from the QueryTask.
-   *
+   * <p>
    * Returns null if the documents can't be extracted.
    */
   private Map<String, Object> extractDocumentsFromQueryUpdate(Operation queryUpdate, String entityType) {
@@ -434,7 +438,7 @@ public class HostCache {
     }
 
     if (host.reportedNetworks != null) {
-      for (String networkId: host.reportedNetworks) {
+      for (String networkId : host.reportedNetworks) {
         if (networkId != null) {
           this.networksToHosts.addOrUpdate(networkId, hostId);
         }
@@ -444,12 +448,6 @@ public class HostCache {
     if (host.reportedDatastores != null) {
       for (String datastoreId : host.reportedDatastores) {
         datastoresToHosts.addOrUpdate(datastoreId, hostId);
-        Set<String> datastoreTags = this.datastoresToTags.getValues(datastoreId);
-        if (datastoreTags != null) {
-          for (String datastoreTag : datastoreTags) {
-            this.datastoreTagsToHosts.addOrUpdate(datastoreTag, hostId);
-          }
-        }
       }
     }
 
@@ -465,9 +463,12 @@ public class HostCache {
   private void addOrUpdateDatastore(DatastoreService.State datastore) {
     String datastoreId = ServiceUtils.getIDFromDocumentSelfLink(datastore.documentSelfLink);
 
-    this.datastoresToTags.setAll(datastoreId, datastore.tags);
-
-    // TODO(alainr): Update datastoreTagsToHosts
+    this.datastoreIds.add(datastoreId);
+    if (datastore.tags != null) {
+      for (String tag : datastore.tags) {
+        this.datastoreTagsToDatastores.addOrUpdate(tag, datastoreId);
+      }
+    }
   }
 
   /**
@@ -488,7 +489,6 @@ public class HostCache {
     // to do it correctly.
     this.networksToHosts.removeFromAll(hostId);
     this.datastoresToHosts.removeFromAll(hostId);
-    this.datastoreTagsToHosts.removeFromAll(hostId);
     this.availabilityZonesToHosts.removeFromAll(hostId);
   }
 
@@ -499,7 +499,9 @@ public class HostCache {
   private void deleteDatastore(DatastoreService.State datastore) {
     String datastoreId = ServiceUtils.getIDFromDocumentSelfLink(datastore.documentSelfLink);
 
-    this.datastoresToTags.remove(datastoreId);
+    this.datastoreIds.remove(datastoreId);
+    this.datastoreTagsToDatastores.removeFromAll(datastoreId);
+
     // TODO(alainr): Update datastoreTagsToHosts
   }
 
