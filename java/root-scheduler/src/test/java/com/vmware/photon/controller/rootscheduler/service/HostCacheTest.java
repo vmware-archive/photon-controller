@@ -31,14 +31,11 @@ import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.net.InetAddresses;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -52,6 +49,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
+import java.util.function.BooleanSupplier;
 
 /**
  * Tests the HostCache.
@@ -325,11 +323,27 @@ public class HostCacheTest {
     assertThat(String.format("Expected %d hosts, found %d hosts", totalHostCount, hostCache.getHostCount()),
         hostCache.getHostCount(), equalTo(totalHostCount));
     assertThat(String.format("Expected %d management hosts, found %d management hosts", this.numManagementHosts,
-        hostCache.getManagementHostCount()),
+            hostCache.getManagementHostCount()),
         hostCache.getManagementHostCount(), equalTo(mgmtHostCount));
     assertThat(String.format("Expected %d datastores, found %d datastores", this.numDatastores,
-        hostCache.getDatastoreCount()),
+            hostCache.getDatastoreCount()),
         hostCache.getDatastoreCount(), equalTo(datastoreCount));
+  }
+
+  /**
+   * Helper method that verifies a predicate by retrying a few times in case the predicate returns false.
+   */
+  private void pollForState(BooleanSupplier predicate) {
+    for (int i = 0; i < 10; i++) {
+      if (predicate.getAsBoolean()) {
+        break;
+      }
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException ex) {
+        ; // Don't care
+      }
+    }
   }
 
   /**
@@ -339,6 +353,7 @@ public class HostCacheTest {
     for (HostService.State host : hosts) {
       String hostId = ServiceUtils.getIDFromDocumentSelfLink(host.documentSelfLink);
       for (String datastoreId : host.reportedDatastores) {
+        pollForState(() -> hostCache.getHostsWithDatastore(datastoreId).contains(hostId));
         assertThat(
             String.format("Host %s with datastore %s not in datastore map", hostId, datastoreId),
             hostCache.getHostsWithDatastore(datastoreId),
@@ -363,6 +378,7 @@ public class HostCacheTest {
             // Validate all tags in this datastore are associated with this host
             foundDatastore = true;
             for (String datastoreTag : datastore.tags) {
+              pollForState(() -> hostCache.getHostsWithDatastoreTag(datastoreTag).contains(hostId));
               assertThat(hostCache.getHostsWithDatastoreTag(datastoreTag), hasItem(hostId));
             }
           }
@@ -379,6 +395,7 @@ public class HostCacheTest {
     for (HostService.State host : hosts) {
       String hostId = ServiceUtils.getIDFromDocumentSelfLink(host.documentSelfLink);
       for (String networkId : host.reportedNetworks) {
+        pollForState(() -> hostCache.getHostsOnNetwork(networkId).contains(hostId));
         assertThat(
             String.format("Host %s with network %s not in network map", hostId, networkId),
             hostCache.getHostsOnNetwork(networkId),
@@ -394,6 +411,7 @@ public class HostCacheTest {
   private void validateZones(HostCache hostCache, List<HostService.State> hosts) {
     for (HostService.State host : hosts) {
       String hostId = ServiceUtils.getIDFromDocumentSelfLink(host.documentSelfLink);
+      pollForState(() -> hostCache.getHostsInZone(host.availabilityZoneId).contains(hostId));
       assertThat(
           String.format("Host %s with zone %s not in zone map", hostId, host.availabilityZoneId),
           hostCache.getHostsInZone(host.availabilityZoneId),
@@ -406,8 +424,10 @@ public class HostCacheTest {
    */
   private void validateCleanHosts(HostCache hostCache, List<HostService.State> hosts) {
     for (HostService.State host : hosts) {
+      pollForState(() -> hostCache.getHostsInZone(host.availabilityZoneId).isEmpty());
       assertThat(hostCache.getHostsInZone(host.availabilityZoneId), empty());
       for (String networkId : host.reportedNetworks) {
+        pollForState(() -> hostCache.getHostsOnNetwork(networkId).isEmpty());
         assertThat(hostCache.getHostsOnNetwork(networkId), empty());
       }
     }
@@ -418,14 +438,15 @@ public class HostCacheTest {
    */
   private void validateCleanDatastores(HostCache hostCache, List<DatastoreService.State> datastores) {
     for (DatastoreService.State datastore : datastores) {
+      pollForState(() -> hostCache.getHostsWithDatastore(datastore.id).isEmpty());
       assertThat(hostCache.getHostsWithDatastore(datastore.id), empty());
       if (datastore.tags == null) {
         continue;
       }
       for (String tag : datastore.tags) {
+        pollForState(() -> hostCache.getHostsWithDatastoreTag(tag).isEmpty());
         assertThat(hostCache.getHostsWithDatastoreTag(tag), empty());
       }
     }
   }
-
 }
