@@ -488,6 +488,7 @@ Vagrant.configure("2") do |config|
       #
       cd #{config_dir}
       echo '#{dynamic_params}' > dynamic_params.json
+
       /usr/bin/jq-linux64 -s '.[0] * .[1]' dynamic_params.json #{service}_test.json > #{service}_params.json
       for config_file in #{config_dir}/*.{yml,config,js,sh,sql,cfg}
       do
@@ -585,7 +586,12 @@ Vagrant.configure("2") do |config|
       #
       cd #{config_dir}
       echo '#{dynamic_params}' > dynamic_params.json
-      /usr/bin/jq-linux64 -s '.[0] * .[1]' dynamic_params.json #{service_name}_test.json > #{service_name}_params.json
+
+      #
+      # Removing the DEPLOYMENT_ID param from <service>_test.json so that it does override the value from env var
+      #
+      grep -v DEPLOYMENT_ID #{service}_test.json > #{service}_test_tmp.json
+      /usr/bin/jq-linux64 -s '.[0] * .[1]' dynamic_params.json #{service_name}_test_tmp.json > #{service_name}_params.json
       for config_file in #{config_dir}/*.{yml,config,js,sh,sql}
       do
         if [ -f $config_file ]
