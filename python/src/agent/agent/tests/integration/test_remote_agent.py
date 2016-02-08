@@ -153,7 +153,8 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
 
     def provision_hosts(self, mem_overcommit=2.0,
                         vm_networks=None, datastores=None, used_for_vms=True,
-                        image_ds=None, host_id=None, deployment_id=None):
+                        image_ds=None, host_id=None,
+                        deployment_id="test-deployment"):
         """ Provisions the agents on the remote hosts """
         if datastores is None:
             datastores = self.get_all_datastores()
@@ -308,7 +309,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
     @classmethod
     def setUpClass(cls):
         cls.host_id = str(uuid.uuid4())
-        cls.deployment_id = str(uuid.uuid4())
+        cls.deployment_id = "test-deployment"
 
     def _close_agent_connections(self):
         self.host_client.close()
