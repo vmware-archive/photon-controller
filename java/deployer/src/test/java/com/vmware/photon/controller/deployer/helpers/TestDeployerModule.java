@@ -16,6 +16,8 @@ package com.vmware.photon.controller.deployer.helpers;
 import com.vmware.photon.controller.client.SharedSecret;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.clients.AgentControlClient;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
@@ -92,6 +94,10 @@ public class TestDeployerModule extends AbstractModule {
 
     bind(ListeningExecutorService.class)
         .toInstance(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1)));
+
+    install(new FactoryModuleBuilder()
+        .implement(AgentControlClient.class, AgentControlClient.class)
+        .build(AgentControlClientFactory.class));
 
     install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)
@@ -188,6 +194,7 @@ public class TestDeployerModule extends AbstractModule {
       @DcpConfig.StoragePath String storagePath,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
+      AgentControlClientFactory agentControlClientFactory,
       HostClientFactory hostClientFactory,
       HttpFileServiceClientFactory httpFileServiceClientFactory,
       ListeningExecutorService listeningExecutorService,
@@ -210,6 +217,7 @@ public class TestDeployerModule extends AbstractModule {
             null,
             deployerContext,
             containersConfig,
+            agentControlClientFactory,
             hostClientFactory,
             httpFileServiceClientFactory,
             listeningExecutorService,
