@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.helpers.dcp;
 
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceStateBuilder;
@@ -51,6 +52,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerDcpServiceHost
    *
    * @param deployerContext          Supplies the deployer context object.
    * @param containersConfig         Supplies the containers config object.
+   * @param agentControlClientFactory Supplies the AgentControlClient factory object.
    * @param hostClientFactory        Supplies the HostClient factory object.
    * @param listeningExecutorService Supplies the listening executor service object.
    * @param apiClientFactory         Supplies the API factory object.
@@ -64,6 +66,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerDcpServiceHost
   private TestEnvironment(
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
+      AgentControlClientFactory agentControlClientFactory,
       HostClientFactory hostClientFactory,
       HttpFileServiceClientFactory httpFileServiceClientFactory,
       ListeningExecutorService listeningExecutorService,
@@ -94,6 +97,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerDcpServiceHost
           cloudServerSet,
           deployerContext,
           containersConfig,
+          agentControlClientFactory,
           hostClientFactory,
           httpFileServiceClientFactory,
           listeningExecutorService,
@@ -126,6 +130,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerDcpServiceHost
     private ContainersConfig containersConfig;
     private DeployerContext deployerContext;
     private DockerProvisionerFactory dockerProvisionerFactory;
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private ServiceConfiguratorFactory serviceConfiguratorFactory;
@@ -171,6 +176,11 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerDcpServiceHost
 
     public Builder hostClientFactory(HostClientFactory hostClientFactory) {
       this.hostClientFactory = hostClientFactory;
+      return this;
+    }
+
+    public Builder agentControlClientFactory(AgentControlClientFactory agentControlClientFactory) {
+      this.agentControlClientFactory = agentControlClientFactory;
       return this;
     }
 
@@ -234,6 +244,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerDcpServiceHost
       TestEnvironment testEnvironment = new TestEnvironment(
           this.deployerContext,
           this.containersConfig,
+          this.agentControlClientFactory,
           this.hostClientFactory,
           this.httpFileServiceClientFactory,
           this.listeningExecutorService,

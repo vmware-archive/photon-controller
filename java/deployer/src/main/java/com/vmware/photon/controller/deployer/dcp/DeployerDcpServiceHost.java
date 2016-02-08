@@ -16,6 +16,9 @@ package com.vmware.photon.controller.deployer.dcp;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.clients.AgentControlClient;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
+import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
@@ -120,6 +123,7 @@ public class DeployerDcpServiceHost
     DockerProvisionerFactoryProvider,
     ApiClientFactoryProvider,
     ContainersConfigProvider,
+    AgentControlClientProvider,
     HostClientProvider,
     ListeningExecutorServiceProvider,
     HttpFileServiceClientFactoryProvider,
@@ -217,6 +221,7 @@ public class DeployerDcpServiceHost
   private final DockerProvisionerFactory dockerProvisionerFactory;
   private final ApiClientFactory apiClientFactory;
   private final ContainersConfig containersConfig;
+  private final AgentControlClientFactory agentControlClientFactory;
   private final HostClientFactory hostClientFactory;
   private final ListeningExecutorService listeningExecutorService;
   private final HttpFileServiceClientFactory httpFileServiceClientFactory;
@@ -239,6 +244,7 @@ public class DeployerDcpServiceHost
       @CloudStoreServerSet ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
+      AgentControlClientFactory agentControlClientFactory,
       HostClientFactory hostClientFactory,
       HttpFileServiceClientFactory httpFileServiceClientFactory,
       ListeningExecutorService listeningExecutorService,
@@ -260,6 +266,7 @@ public class DeployerDcpServiceHost
         cloudStoreServerSet,
         deployerContext,
         containersConfig,
+        agentControlClientFactory,
         hostClientFactory,
         httpFileServiceClientFactory,
         listeningExecutorService,
@@ -282,6 +289,7 @@ public class DeployerDcpServiceHost
       ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
+      AgentControlClientFactory agentControlClientFactory,
       HostClientFactory hostClientFactory,
       HttpFileServiceClientFactory httpFileServiceClientFactory,
       ListeningExecutorService listeningExecutorService,
@@ -299,6 +307,7 @@ public class DeployerDcpServiceHost
     this.cloudStoreServerSet = cloudStoreServerSet;
     this.deployerContext = deployerContext;
     this.containersConfig = containersConfig;
+    this.agentControlClientFactory = agentControlClientFactory;
     this.hostClientFactory = hostClientFactory;
     this.httpFileServiceClientFactory = httpFileServiceClientFactory;
     this.listeningExecutorService = listeningExecutorService;
@@ -396,6 +405,16 @@ public class DeployerDcpServiceHost
   @Override
   public ApiClientFactory getApiClientFactory() {
     return apiClientFactory;
+  }
+
+  /**
+   * This method gets an agent control client from the local agent control client pool.
+   *
+   * @return
+   */
+  @Override
+  public AgentControlClient getAgentControlClient() {
+    return agentControlClientFactory.create();
   }
 
   /**

@@ -116,6 +116,21 @@ public class ChangeHostModeTaskServiceTest {
   }
 
   /**
+   * This class implements tests for the AgentControlClientProvider.
+   */
+  public class AgentControlClientProviderTest {
+
+    private ChangeHostModeTaskService changeHostModeTaskService;
+
+    @Test(expectedExceptions = ClassCastException.class)
+    public void testClassCastError() {
+      changeHostModeTaskService = spy(new ChangeHostModeTaskService());
+      doReturn(mock(ServiceHost.class)).when(changeHostModeTaskService).getHost();
+      HostUtils.getAgentControlClient(changeHostModeTaskService);
+    }
+  }
+
+  /**
    * This class implements tests for the HostClientProvider.
    */
   public class HostClientProviderTest {
