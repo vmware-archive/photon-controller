@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.helpers;
 
+import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.api.HostState;
@@ -93,6 +94,10 @@ public class TestHelper {
     return Guice.createInjector(
         new ZookeeperModule(),
         new ThriftModule(),
+        new ThriftServiceModule<>(
+            new TypeLiteral<AgentControl.AsyncClient>() {
+            }
+        ),
         new ThriftServiceModule<>(
             new TypeLiteral<Host.AsyncClient>() {
             }

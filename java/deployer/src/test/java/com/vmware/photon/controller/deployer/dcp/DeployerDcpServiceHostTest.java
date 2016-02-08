@@ -270,6 +270,7 @@ public class DeployerDcpServiceHostTest {
           injector.getInstance(DeployerContext.class),
           null /* containersConfig */,
           () -> null,
+          () -> null,
           injector.getInstance(HttpFileServiceClientFactory.class),
           injector.getInstance(ListeningExecutorService.class),
           injector.getInstance(ApiClientFactory.class),
@@ -289,6 +290,7 @@ public class DeployerDcpServiceHostTest {
           null, /*cloudStoreServers*/
           injector.getInstance(DeployerContext.class),
           null /* containersConfig */,
+          () -> null,
           () -> null,
           injector.getInstance(HttpFileServiceClientFactory.class),
           injector.getInstance(ListeningExecutorService.class),
