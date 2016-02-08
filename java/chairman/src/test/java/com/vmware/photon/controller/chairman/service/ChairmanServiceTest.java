@@ -261,6 +261,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
   public void testSimpleRegistration() throws Throwable {
     // Set up initial host state in cloudstore.
     String hostId = "host1";
+    String deploymentId = "test-deployment";
     String link = service.getHostDocumentLink(hostId);
     DatastoreService.State ds1 = new DatastoreService.State();
     ds1.id = "ds1";
@@ -281,6 +282,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     Operation result = mock(Operation.class);
     when(result.getBody(HostService.State.class)).thenReturn(hostState);
     when(dcpRestClient.get(link)).thenReturn(result);
+    when(config.getDeploymentId()).thenReturn(deploymentId);
 
     datastores.add(new Datastore(ds1.id, DatastoreType.SHARED_VMFS));
     datastores.add(new Datastore(ds2.id, DatastoreType.SHARED_VMFS));
@@ -292,6 +294,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     RegisterHostRequest request = createRegReq(datastores, networks, new LinkedHashSet<>(Arrays.asList("ds1", "ds2")));
     request.setId(hostId);
     request.getConfig().setAgent_id(hostId);
+    request.getConfig().setDeployment_id(deploymentId);
     RegisterHostResponse response = service.register_host(request);
     assertThat(response.getResult(), Matchers.is(RegisterHostResultCode.OK));
 
@@ -356,10 +359,13 @@ public class ChairmanServiceTest extends PowerMockTestCase {
 
   @Test
   public void testSimpleRegistrationFail() throws Exception {
+    String deploymentId = "test-deployment";
     datastores.add(new Datastore("ds1", DatastoreType.SHARED_VMFS));
     RegisterHostRequest request = createRegReq(datastores, networks, new LinkedHashSet<>(Arrays.asList("ds1")));
     request.setId("host1");
     request.getConfig().setAgent_id("host1");
+    request.getConfig().setDeployment_id(deploymentId);
+    when(config.getDeploymentId()).thenReturn(deploymentId);
 
     doThrow(new Exception()).when(configDict).write("host1", serialize(request.getConfig()));
     RegisterHostResponse response = service.register_host(request);
