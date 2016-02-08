@@ -3,6 +3,6 @@
   "ZOOKEEPER_QUORUM": "localhost:2181",
   "LOG_DIRECTORY": "/vagrant/log",
   "CHAIRMAN_INSTALL_DIRECTORY": "/usr/lib/esxcloud/chairman",
-  "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=23000,suspend=n",
-  "DEPLOYMENT_ID": "test-deployment"
+  "DEPLOYMENT_ID": "test-deployment",
+  "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=23000,suspend=n"
 }
