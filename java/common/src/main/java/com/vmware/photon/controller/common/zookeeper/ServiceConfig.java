@@ -72,6 +72,15 @@ public class ServiceConfig implements PathChildrenCacheListener {
   }
 
   /**
+   * Pause the target service's background processing.
+   *
+   * @throws Exception
+   */
+  public void pauseBackground() throws Exception {
+    logger.info("Service {} background processing is paused", serviceName);
+  }
+
+  /**
    * Resume the target service by deleting entry in /config/[serviceName]/status.
    *
    * @throws Exception
@@ -90,6 +99,16 @@ public class ServiceConfig implements PathChildrenCacheListener {
   public boolean isPaused() throws Exception {
     return null !=
         this.configCache.getCurrentData(this.serviceStatusZKPath);
+  }
+
+  /**
+   * Return true if the target service's background processing is paused.
+   *
+   * @return
+   * @throws Exception
+   */
+  public boolean isBackgroundPaused() throws Exception {
+    return false;
   }
 
   @Override
