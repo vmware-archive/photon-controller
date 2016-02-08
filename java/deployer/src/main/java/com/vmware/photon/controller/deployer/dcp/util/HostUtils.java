@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.deployer.dcp.util;
 
 import com.vmware.photon.controller.client.ApiClient;
+import com.vmware.photon.controller.common.clients.AgentControlClient;
+import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
@@ -101,6 +103,16 @@ public class HostUtils {
    */
   public static ApiClientFactory getApiClientFactory(Service service) {
     return ((ApiClientFactoryProvider) service.getHost()).getApiClientFactory();
+  }
+
+  /**
+   * This function gets the agent control client from the Xenon host associated with the specified service.
+   *
+   * @param service Supplies a Xenon service instance.
+   * @return The agent control client provided by the Xenon host associated with the service.
+   */
+  public static AgentControlClient getAgentControlClient(Service service) {
+    return ((AgentControlClientProvider) service.getHost()).getAgentControlClient();
   }
 
   /**

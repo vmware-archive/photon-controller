@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer;
 
 
+import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
@@ -70,6 +71,10 @@ public class Main {
           new DeployerModule(deployerConfig),
           new ZookeeperModule(deployerConfig.getZookeeper()),
           new ThriftModule(),
+          new ThriftServiceModule<>(
+              new TypeLiteral<AgentControl.AsyncClient>() {
+              }
+          ),
           new ThriftServiceModule<>(
               new TypeLiteral<Host.AsyncClient>() {
               }
