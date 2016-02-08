@@ -43,6 +43,7 @@ import com.vmware.photon.controller.common.dcp.exceptions.DcpException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.zookeeper.DataDictionary;
+import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.photon.controller.resource.gen.NetworkType;
@@ -281,9 +282,20 @@ public class ChairmanService implements Chairman.Iface {
   public synchronized RegisterHostResponse register_host(RegisterHostRequest request) throws TException {
     RegisterHostResponse response = new RegisterHostResponse();
 
+    /* Checking whether the deployment id for agent matches to current config deployment */
+    HostConfig hostConfig = request.getConfig();
+    String deploymentId = hostConfig.getDeployment_id();
+    if (!deploymentId.equals(config.getDeploymentId())) {
+      logger.warn("The deployment id {} for agent {} does not matches the current deployment id {}.", deploymentId,
+          request.getId(), config.getDeploymentId());
+      response.setResult(RegisterHostResultCode.SYSTEM_ERROR);
+      return response;
+    }
+
     /* Serialize the hostconfig and persist it to the data dictionary. */
     byte[] serializedHostConfig;
-    serializedHostConfig = serializer.serialize(request.getConfig());
+    serializedHostConfig = serializer.serialize(hostConfig);
+
     try {
       configDictionary.write(request.getId(), serializedHostConfig);
       // Delete the host id from /missing if it exists
