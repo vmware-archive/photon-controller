@@ -35,6 +35,13 @@ cd $DEVBOX
 vagrant destroy -f
 rm -rf $DEVBOX/log/*
 
+# Exporting deployment id generated randomly used to create deployment document in cloudstore:seed
+if [ "$(uname)" == "Darwin" ]; then
+  export RANDOM_GENERATED_DEPLOYMENT_ID=fixed-test-deployemnt-id
+else
+  export RANDOM_GENERATED_DEPLOYMENT_ID=$(shuf -i 1000000000-10000000000 -n 1)
+fi
+
 if [ "$DEPLOYER_TEST" ]
 then
   ./prepare-devbox-deployment.sh
