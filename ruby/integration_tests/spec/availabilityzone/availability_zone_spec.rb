@@ -40,7 +40,7 @@ describe "Availability Zone", availabilityzone: true do
     expect(host.address).to_not be_nil
 
     # Let agent reboot after config update
-    sleep_time = 10
+    sleep_time = 30
     sleep(sleep_time)
 
     # create VMs in specific availability zone
