@@ -87,7 +87,7 @@ public interface VmBackend {
 
   void detachIso(VmEntity vmEntity) throws ExternalException;
 
-  List<Vm> getAllVmsOnHost(String hostId) throws ExternalException;
+  ResourceList<Vm> getAllVmsOnHost(String hostId, Optional<Integer> pageSize) throws ExternalException;
 
   int countVmsOnHost(HostEntity hostEntity) throws ExternalException;
 
