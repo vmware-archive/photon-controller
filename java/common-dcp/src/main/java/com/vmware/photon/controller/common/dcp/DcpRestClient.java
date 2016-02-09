@@ -477,9 +477,12 @@ public class DcpRestClient implements DcpClient {
   @VisibleForTesting
   protected void handleInterruptedException(OperationJoin operationJoin, InterruptedException interruptedException)
       throws InterruptedException {
-    logger.warn("send: INTERRUPTED {}, Exception={}",
-        createLogMessageWithStatusAndBody(operationJoin.getOperations()),
-        interruptedException);
+    for (Operation operation : operationJoin.getOperations()) {
+      logger.warn("send: multiple operations INTERRUPTED with Exception={}",
+          interruptedException);
+      logger.warn("send: INTERRUPTED Operation={}",
+          createLogMessageWithStatusAndBody(operation));
+    }
     throw interruptedException;
   }
 
@@ -520,7 +523,11 @@ public class DcpRestClient implements DcpClient {
                                         Map<Long, String> sourceLinks,
                                         int batchSize)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    logger.info("send: STARTED {}", createLogMessageWithBody(requestedOperations.values()));
+
+    for (Operation requestedOperation : requestedOperations.values()) {
+      logger.info("send: STARTED {}", createLogMessageWithBody(requestedOperation));
+    }
+
     OperationJoin operationJoin = OperationJoin.create(requestedOperations.values());
     OperationJoinLatch operationJoinLatch = createOperationJoinLatch(operationJoin);
     operationJoin.sendWith(client, batchSize);
@@ -531,7 +538,9 @@ public class DcpRestClient implements DcpClient {
       int batchCount = 1 + (requestedOperations.size() - 1) / batchSize;
       operationJoinLatch.await(batchCount * DEFAULT_OPERATION_LATCH_TIMEOUT_MICROS, TimeUnit.MICROSECONDS);
       Collection<Operation> completedOperations = operationJoin.getOperations();
-      logCompletedOperations(completedOperations);
+      for (Operation completedOperation : completedOperations) {
+        logCompletedOperation(completedOperation);
+      }
       handleOperationResults(requestedOperations, completedOperations);
       result = new HashMap<>(completedOperations.size());
       for (Operation operation : completedOperations) {
@@ -649,12 +658,6 @@ public class DcpRestClient implements DcpClient {
     }
   }
 
-  private void logCompletedOperations(Collection<Operation> operations) {
-    for (Operation completedOp : operations) {
-      logCompletedOperation(completedOp);
-    }
-  }
-
   private String createLogMessageWithoutStatusAndBody(Operation operation) {
     return String.format(
         "Action={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={NOT LOGGED}",
@@ -662,14 +665,6 @@ public class DcpRestClient implements DcpClient {
         operation.getId(),
         operation.getUri(),
         operation.getReferer());
-  }
-
-  private String createLogMessageWithoutStatusAndBody(Collection<Operation> operations) {
-    StringBuilder stringBuilder = new StringBuilder();
-    for (Operation operation : operations) {
-      stringBuilder.append(createLogMessageWithoutStatusAndBody(operation)).append("\n");
-    }
-    return stringBuilder.toString();
   }
 
   private String createLogMessageWithBody(Operation operation) {
@@ -682,14 +677,6 @@ public class DcpRestClient implements DcpClient {
         Utils.toJson(operation.getBodyRaw()));
   }
 
-  private String createLogMessageWithBody(Collection<Operation> operations) {
-    StringBuilder stringBuilder = new StringBuilder();
-    for (Operation operation : operations) {
-      stringBuilder.append(createLogMessageWithBody(operation)).append("\n");
-    }
-    return stringBuilder.toString();
-  }
-
   private String createLogMessageWithStatus(Operation operation) {
     return String.format(
         "Action={%s}, StatusCode={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={NOT LOGGED}",
@@ -698,14 +685,6 @@ public class DcpRestClient implements DcpClient {
         operation.getId(),
         operation.getUri(),
         operation.getReferer());
-  }
-
-  private String createLogMessageWithStatus(Collection<Operation> operations) {
-    StringBuilder stringBuilder = new StringBuilder();
-    for (Operation operation : operations) {
-      stringBuilder.append(createLogMessageWithStatus(operation)).append("\n");
-    }
-    return stringBuilder.toString();
   }
 
   private String createLogMessageWithStatusAndBody(Operation operation) {
