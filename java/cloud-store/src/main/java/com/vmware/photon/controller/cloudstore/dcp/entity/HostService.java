@@ -89,6 +89,12 @@ public class HostService extends StatefulService {
    */
   public static final int DEFAULT_MAX_PING_WAIT_TIME_MILLIS = 50 * 1000;
 
+  /**
+   * The scheduling constant is a random number in (0, MAX_SCHEDULING_CONSTANT] assigned to each HostService.State. The
+   * CloudStoreContraintChecker uses it to randomly select hosts.
+   */
+  public static final int MAX_SCHEDULING_CONSTANT = 10000;
+
   public HostService() {
     super(State.class);
     super.toggleOption(ServiceOption.ENFORCE_QUORUM, true);
@@ -107,7 +113,7 @@ public class HostService extends StatefulService {
       InitializationUtils.initialize(startState);
 
       if (null == startState.schedulingConstant) {
-        startState.schedulingConstant = (long) random.nextInt(10 * 1000);
+        startState.schedulingConstant = (long) random.nextInt(MAX_SCHEDULING_CONSTANT);
       }
 
       validateState(startState);

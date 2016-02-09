@@ -61,7 +61,6 @@ public class TaskUtilsTest {
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       when(service.getHost()).thenReturn(host);
       operation = mock(Operation.class);
-      System.out.println("URI: " + host.getUri());
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
