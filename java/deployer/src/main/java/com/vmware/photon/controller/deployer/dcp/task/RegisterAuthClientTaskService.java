@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -26,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
@@ -78,6 +78,20 @@ public class RegisterAuthClientTaskService extends StatefulService {
     @NotNull
     @Immutable
     public String deploymentServiceLink;
+
+    @NotNull
+    @Immutable
+    public String loginRedirectUrlTemplate;
+
+    @NotNull
+    @Immutable
+    public String logoutRedirectUrlTemplate;
+
+    @WriteOnce
+    public String loginUrl;
+
+    @WriteOnce
+    public String logoutUrl;
   }
 
   public RegisterAuthClientTaskService() {
@@ -389,7 +403,7 @@ public class RegisterAuthClientTaskService extends StatefulService {
 
                   try {
                     DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
-                    registerAuthClient(deploymentState, currentState.deploymentServiceLink, lbIpAddress);
+                    registerAuthClient(currentState, deploymentState, lbIpAddress);
                   } catch (Throwable t) {
                     failTask(t);
                   }
@@ -400,12 +414,12 @@ public class RegisterAuthClientTaskService extends StatefulService {
   /**
    * Register a client to Lotus, and then produce the URL to access it.
    *
+   * @param currentState          Current State.
    * @param deploymentState       State of deployment.
-   * @param deploymentServiceLink Link to the deployment service instance.
    * @param lbIpAddress           IP address of the load balancer.
    */
-  private void registerAuthClient(final DeploymentService.State deploymentState,
-                                  final String deploymentServiceLink,
+  private void registerAuthClient(final State currentState,
+                                  final DeploymentService.State deploymentState,
                                   final String lbIpAddress) throws Throwable {
     AuthHelperFactory authHelperFactory = ((AuthHelperFactoryProvider) getHost()).getAuthHelperFactory();
     final AuthHelper authHelper = authHelperFactory.create();
@@ -429,8 +443,8 @@ public class RegisterAuthClientTaskService extends StatefulService {
             deploymentState.oAuthPassword,
             deploymentState.oAuthServerAddress,
             deploymentState.oAuthServerPort,
-            Constants.getSwaggerUiLoginRedirectPage(lbIpAddress),
-            Constants.getSwaggerUiLogoutRedirectPage(lbIpAddress));
+            String.format(currentState.loginRedirectUrlTemplate, lbIpAddress),
+            String.format(currentState.logoutRedirectUrlTemplate, lbIpAddress));
       }
     });
 
@@ -440,10 +454,10 @@ public class RegisterAuthClientTaskService extends StatefulService {
         new FutureCallback<AuthClientHandler.ImplicitClient>() {
           @Override
           public void onSuccess(AuthClientHandler.ImplicitClient result) {
-            DeploymentService.State patchState = new DeploymentService.State();
-            patchState.oAuthResourceLoginEndpoint = result.loginURI;
-            patchState.oAuthLogoutEndpoint = result.logoutURI;
-            sendDeploymentPatch(patchState, deploymentServiceLink);
+            State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+            patchState.loginUrl = result.loginURI;
+            patchState.logoutUrl = result.logoutURI;
+            TaskUtils.sendSelfPatch(RegisterAuthClientTaskService.this, patchState);
           }
 
           @Override
@@ -453,27 +467,5 @@ public class RegisterAuthClientTaskService extends StatefulService {
         };
 
     Futures.addCallback(futureTask, futureCallback);
-  }
-
-  /**
-   * Sends a patch operation to the given deployment service instance.
-   *
-   * @param deploymentPatchState  Deployment state.
-   * @param deploymentServicelink Link to the deployment service.
-   */
-  private void sendDeploymentPatch(DeploymentService.State deploymentPatchState, String deploymentServicelink) {
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createPatch(deploymentServicelink)
-            .setBody(deploymentPatchState)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                  } else {
-                    sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-                  }
-                }
-            ));
   }
 }

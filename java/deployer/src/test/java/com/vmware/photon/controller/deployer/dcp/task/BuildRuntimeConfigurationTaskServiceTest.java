@@ -678,8 +678,10 @@ public class BuildRuntimeConfigurationTaskServiceTest {
     private void setupDeploymentServiceDocument(AuthClientHandler.ImplicitClient implicitClient) throws Throwable {
       DeploymentService.State deploymentStartState = TestHelper.getDeploymentServiceStartState(false);
       if (implicitClient != null) {
-        deploymentStartState.oAuthResourceLoginEndpoint = implicitClient.loginURI;
-        deploymentStartState.oAuthLogoutEndpoint = implicitClient.logoutURI;
+        deploymentStartState.oAuthSwaggerLoginEndpoint = implicitClient.loginURI;
+        deploymentStartState.oAuthSwaggerLogoutEndpoint = implicitClient.logoutURI;
+        deploymentStartState.oAuthMgmtUiLoginEndpoint = implicitClient.loginURI;
+        deploymentStartState.oAuthMgmtUiLogoutEndpoint = implicitClient.logoutURI;
       }
       deploymentStartState.oAuthServerAddress = "https://lookupService";
       deploymentStartState.oAuthServerPort = 433;

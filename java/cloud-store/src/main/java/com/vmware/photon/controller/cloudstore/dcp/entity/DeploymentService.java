@@ -288,16 +288,28 @@ public class DeploymentService extends StatefulService {
     public Integer oAuthServerPort;
 
     /**
-     * Endpoint to the lotus authentication service.
+     * Endpoint to the oAuth login service for Swagger.
      */
     @WriteOnce
-    public String oAuthResourceLoginEndpoint;
+    public String oAuthSwaggerLoginEndpoint;
 
     /**
-     * Endpoint to the lotus logout service.
+     * Endpoint to the oAuth logout service for Swagger.
      */
     @WriteOnce
-    public String oAuthLogoutEndpoint;
+    public String oAuthSwaggerLogoutEndpoint;
+
+    /**
+     * Endpoint to the oAuth login service for Mgmt UI.
+     */
+    @WriteOnce
+    public String oAuthMgmtUiLoginEndpoint;
+
+    /**
+     * Endpoint to the oAuth logout service for Mgmt UI.
+     */
+    @WriteOnce
+    public String oAuthMgmtUiLogoutEndpoint;
 
     /**
      * This value represents the syslog endpoint for the deployment.

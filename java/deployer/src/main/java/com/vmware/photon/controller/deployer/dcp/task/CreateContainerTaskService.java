@@ -420,9 +420,13 @@ public class CreateContainerTaskService extends StatefulService {
             environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_ENABLE_AUTH, "true");
           }
           environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_SWAGGER_LOGIN_URL,
-              deploymentState.oAuthResourceLoginEndpoint);
+              deploymentState.oAuthSwaggerLoginEndpoint);
           environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_SWAGGER_LOGOUT_URL,
-              deploymentState.oAuthLogoutEndpoint);
+              deploymentState.oAuthSwaggerLogoutEndpoint);
+          environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_LOGIN_URL,
+              deploymentState.oAuthMgmtUiLoginEndpoint);
+          environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_LOGOUT_URL,
+              deploymentState.oAuthSwaggerLogoutEndpoint);
         } else {
           environmentVariables = containerTemplateState.environmentVariables;
         }
