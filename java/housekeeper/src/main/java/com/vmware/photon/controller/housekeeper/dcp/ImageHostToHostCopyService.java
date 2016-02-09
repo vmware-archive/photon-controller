@@ -289,6 +289,7 @@ public class ImageHostToHostCopyService extends StatefulService {
           ServiceUtils.logInfo(ImageHostToHostCopyService.this, "TransferImageResponse %s", r);
           switch (r.getResult()) {
             case OK:
+            case DESTINATION_ALREADY_EXIST:
               sendStageProgressPatch(current, TaskState.TaskStage.STARTED,
                   TaskState.SubStage.UPDATE_IMAGE_REPLICATION_DOCUMENT);
               break;
@@ -320,13 +321,19 @@ public class ImageHostToHostCopyService extends StatefulService {
     }
   }
 
-  private Operation buildDatastoreCountRequest(final State current, int adjustCount) {
+  private ImageService.DatastoreCountRequest buildAdjustSeedingAndReplicationCountRequest(final State current,
+                                                                                          int adjustCount) {
     ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
     requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
     requestBody.amount = adjustCount;
-    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
-        .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
-        .setBody(requestBody);
+    return requestBody;
+  }
+
+  private ImageService.DatastoreCountRequest buildAdjustSeedingCountRequest(final State current, int adjustCount) {
+    ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
+    requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
+    requestBody.amount = adjustCount;
+    return requestBody;
   }
 
   /**
@@ -399,6 +406,7 @@ public class ImageHostToHostCopyService extends StatefulService {
     ImageReplicationService.State imageReplicationService = new ImageReplicationService.State();
     imageReplicationService.imageId = imageId;
     imageReplicationService.imageDatastoreId = imageDatastoreId;
+    imageReplicationService.documentSelfLink = imageId + "_" + imageDatastoreId;
 
     return imageReplicationService;
   }
@@ -417,7 +425,6 @@ public class ImageHostToHostCopyService extends StatefulService {
 
     return imageReplicatorService;
   }
-
 
   /**
    * Check if image is eager copy.
@@ -438,7 +445,6 @@ public class ImageHostToHostCopyService extends StatefulService {
     sendRequest(imageQuery);
   }
 
-
   /**
    * Sends post request to ImageReplicationService to create a document with imageId and destination datastore.
    *
@@ -457,14 +463,24 @@ public class ImageHostToHostCopyService extends StatefulService {
         .createPost(UriUtils.buildUri(getHost(), ImageReplicatorServiceFactory.SELF_LINK))
         .setBody(replicatorServiceState);
 
-    Operation adjustReplicationCountPatch = buildDatastoreCountRequest(current, 1);
+    Operation adjustReplicationCountPatch = ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+        .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image);
+    ImageService.DatastoreCountRequest adjustSeedingAndReplicationCountRequest =
+        buildAdjustSeedingAndReplicationCountRequest(current, 1);
+    ImageService.DatastoreCountRequest adjustSeedingCountRequest =
+        buildAdjustSeedingCountRequest(current, 1);
 
     try {
-
       OperationSequence operationSequence = OperationSequence
           .create(createImageReplicationPatch)
           .setCompletion(
               (operation, throwable) -> {
+                //re-throw any exception other than a conflict which indicated the lock already exists
+                if (operation.values().iterator().next().getStatusCode() == Operation.STATUS_CODE_CONFLICT) {
+                  adjustReplicationCountPatch.setBody(adjustSeedingCountRequest);
+                } else {
+                  adjustReplicationCountPatch.setBody(adjustSeedingAndReplicationCountRequest);
+                }
                 if (throwable != null) {
                   failTask(throwable.values().iterator().next());
                 }
@@ -509,6 +525,7 @@ public class ImageHostToHostCopyService extends StatefulService {
    * @param current
    * @return
    */
+
   private HostClient getHostClient(final State current) throws IOException {
     HostClient client = ((HostClientProvider) getHost()).getHostClient();
     client.setHostIp(current.host);
@@ -574,7 +591,10 @@ public class ImageHostToHostCopyService extends StatefulService {
    */
   private void sendPatchToIncrementImageReplicatedCount(final State current) {
     try {
-      Operation adjustReplicationCountPatch = buildDatastoreCountRequest(current, 1);
+      Operation adjustReplicationCountPatch = ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+          .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
+          .setBody(buildAdjustSeedingAndReplicationCountRequest(current, 1));
+
       sendRequest(
           adjustReplicationCountPatch
               .setCompletion(

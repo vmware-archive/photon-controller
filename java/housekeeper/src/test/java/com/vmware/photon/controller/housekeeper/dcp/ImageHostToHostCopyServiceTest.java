@@ -736,9 +736,9 @@ public class ImageHostToHostCopyServiceTest {
     @DataProvider(name = "transferImageSuccessCode")
     public Object[][] getTransferImageSuccessCode() {
       return new Object[][]{
-          {1, TransferImageResultCode.OK, ImageReplicationType.EAGER, 2},
+          {1, TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.EAGER, 2},
           {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK, ImageReplicationType.EAGER, 2},
-          {1, TransferImageResultCode.OK, ImageReplicationType.ON_DEMAND, 1},
+          {1, TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.ON_DEMAND, 1},
           {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK, ImageReplicationType.ON_DEMAND, 1},
       };
     }
@@ -801,6 +801,161 @@ public class ImageHostToHostCopyServiceTest {
       //Check Image Service replicatedDatastore counts
       createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
       assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedImageDatastoreCount + 1));
+
+      // Check response.
+      assertThat(response.image, is(copyTask.image));
+      assertThat(response.sourceDatastore, is(copyTask.sourceDatastore));
+      assertThat(response.destinationDatastore, is(copyTask.destinationDatastore));
+      assertThat(response.host, notNullValue());
+      assertThat(response.destinationHost, notNullValue());
+
+      QueryTask afterQuery = QueryTask.create(querySpec).setDirect(true);
+      assertThat(machine.sendQueryAndWait(afterQuery).results.documentLinks.size(), is(1));
+
+      // Check stats.
+      ServiceStats stats = machine.getOwnerServiceStats(response);
+      assertThat(
+          stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
+          greaterThanOrEqualTo(
+              1.0 + // Create Patch
+                  1.0 + // Scheduler start patch
+                  1.0   // FINISHED
+          ));
+    }
+
+    /**
+     * Tests copy success scenarios with destination already exists exception from agent.
+     *
+     * @param code Result code return from HostClient.
+     * @throws Throwable
+     */
+    @Test(dataProvider = "transferImageSuccessCode")
+    public void testSuccessWithDestinationAlreadyExists(int hostCount, TransferImageResultCode code,
+                                                        ImageReplicationType type,
+                                                        int addedReplicatedImageDatastore) throws Throwable {
+      HostClientMock hostClient = new HostClientMock();
+
+      hostClient.setTransferImageResultCode(code);
+      hostClient.setCopyImageResultCode(CopyImageResultCode.OK);
+      doReturn(hostClient).when(hostClientFactory).create();
+
+      cloudStoreHelper = new CloudStoreHelper();
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
+
+      ImageService.State createdImageState = createNewImageEntity(type);
+      int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
+      int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
+      copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+      createHostService("datastore0-id");
+      createHostService("datastore1-id");
+      createDatastoreService("datastore0-id", "datastore0", true);
+      createDatastoreService("datastore1-id", "datastore1", true);
+      createDatastoreService("local-datastore-id", "local-datastore", false);
+
+      machine.startFactoryServiceSynchronously(ImageReplicationServiceFactory.class,
+          ImageReplicationServiceFactory.SELF_LINK);
+
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put("imageId", copyTask.image);
+      termsBuilder.put("imageDatastoreId", copyTask.destinationDatastore);
+
+      QueryTask.QuerySpecification querySpec = QueryTaskUtils.buildQuerySpec(ImageReplicationService.State.class,
+          termsBuilder.build());
+      querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+      QueryTask beforeQuery = QueryTask.create(querySpec).setDirect(true);
+
+      assertThat(machine.sendQueryAndWait(beforeQuery).results.documentLinks.size(), is(0));
+
+      // Call Service.
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
+          copyTask,
+          ImageHostToHostCopyService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
+
+      machine.waitForServiceState(
+          ImageService.State.class,
+          createdImageState.documentSelfLink,
+          (state) ->
+              state.replicatedDatastore == initialReplicatedDatastoreCount + addedReplicatedImageDatastore);
+
+      //Check Image Service replicatedDatastore counts
+      createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
+      assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedImageDatastoreCount + 1));
+
+      // Check response.
+      assertThat(response.image, is(copyTask.image));
+      assertThat(response.sourceDatastore, is(copyTask.sourceDatastore));
+      assertThat(response.destinationDatastore, is(copyTask.destinationDatastore));
+      assertThat(response.host, notNullValue());
+      assertThat(response.destinationHost, notNullValue());
+
+      QueryTask afterQuery = QueryTask.create(querySpec).setDirect(true);
+      assertThat(machine.sendQueryAndWait(afterQuery).results.documentLinks.size(), is(1));
+
+      // Check stats.
+      ServiceStats stats = machine.getOwnerServiceStats(response);
+      assertThat(
+          stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
+          greaterThanOrEqualTo(
+              1.0 + // Create Patch
+                  1.0 + // Scheduler start patch
+                  1.0   // FINISHED
+          ));
+    }
+
+    /**
+     * Tests copy success scenarios with ImageReplication document already exists.
+     *
+     * @param code Result code return from HostClient.
+     * @throws Throwable
+     */
+    @Test(dataProvider = "transferImageSuccessCode")
+    public void testSuccessWithImageReplicationDocumentExists(int hostCount, TransferImageResultCode code,
+                                                              ImageReplicationType type,
+                                                              int addedReplicatedImageDatastore) throws Throwable {
+      HostClientMock hostClient = new HostClientMock();
+
+      hostClient.setTransferImageResultCode(code);
+      hostClient.setCopyImageResultCode(CopyImageResultCode.OK);
+      doReturn(hostClient).when(hostClientFactory).create();
+
+      cloudStoreHelper = new CloudStoreHelper();
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
+
+      ImageService.State createdImageState = createNewImageEntity(type);
+      int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
+      int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
+      copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+      createHostService("datastore0-id");
+      createHostService("datastore1-id");
+      createDatastoreService("datastore0-id", "datastore0", true);
+      createDatastoreService("datastore1-id", "datastore1", true);
+      createDatastoreService("local-datastore-id", "local-datastore", false);
+      createImageReplicationEntity();
+
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put("imageId", copyTask.image);
+      termsBuilder.put("imageDatastoreId", copyTask.destinationDatastore);
+
+      QueryTask.QuerySpecification querySpec = QueryTaskUtils.buildQuerySpec(ImageReplicationService.State.class,
+          termsBuilder.build());
+      querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+      QueryTask beforeQuery = QueryTask.create(querySpec).setDirect(true);
+
+      assertThat(machine.sendQueryAndWait(beforeQuery).results.documentLinks.size(), is(0));
+
+      // Call Service.
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
+          copyTask,
+          ImageHostToHostCopyService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
+
+      //Check Image Service replicatedDatastore counts
+      createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
+      assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedImageDatastoreCount + 1));
+      assertThat(createdImageState.replicatedDatastore, is(initialReplicatedDatastoreCount + 1));
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
@@ -1083,6 +1238,34 @@ public class ImageHostToHostCopyServiceTest {
           });
       Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
       return result.getBody(DatastoreService.State.class);
+    }
+
+    private ImageReplicationService.State createImageReplicationEntity()
+        throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
+
+      machine.startFactoryServiceSynchronously(
+          ImageReplicationServiceFactory.class,
+          ImageReplicationServiceFactory.SELF_LINK);
+
+      ImageReplicationService.State state
+          = new ImageReplicationService.State();
+      state.imageId = "image-1";
+      state.imageDatastoreId = "datastore1-id";
+
+      Operation op = cloudStoreHelper
+          .createPost(ImageReplicationServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a image in cloud store.");
+            }
+          });
+      Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      return result.getBody(ImageReplicationService.State.class);
     }
   }
 }

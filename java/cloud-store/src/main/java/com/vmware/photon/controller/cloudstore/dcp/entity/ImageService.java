@@ -64,6 +64,12 @@ public class ImageService extends StatefulService {
             DatastoreCountRequest.class, "kind",
             DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT),
         this::handlePatchAdjustDatastoreReplicationCount, "AdjustImageReplicationCount");
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<>(
+            DatastoreCountRequest.class, "kind",
+            DatastoreCountRequest.Kind.ADJUST_SEEDING_COUNT),
+        this::handlePatchAdjustDatastoreReplicationCount, "AdjustImageSeedingCount");
 
     OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
     opProcessingChain.add(myRouter);
@@ -157,6 +163,9 @@ public class ImageService extends StatefulService {
         case ADJUST_REPLICATION_COUNT:
           currentState.replicatedDatastore += patchState.amount;
           break;
+        case ADJUST_SEEDING_COUNT:
+          currentState.replicatedImageDatastore += patchState.amount;
+          break;
       }
       validateState(currentState);
 
@@ -181,6 +190,7 @@ public class ImageService extends StatefulService {
      */
     public enum Kind {
       ADJUST_REPLICATION_COUNT,
+      ADJUST_SEEDING_COUNT,
       ADJUST_SEEDING_AND_REPLICATION_COUNT
     }
 
