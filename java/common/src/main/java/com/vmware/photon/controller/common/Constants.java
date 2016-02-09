@@ -27,12 +27,4 @@ public class Constants {
 
   private Constants() {
   }
-
-  public static String getSwaggerUiLoginRedirectPage(String loadBalanceIp) {
-    return String.format("https://%s/api/login-redirect.html", loadBalanceIp);
-  }
-
-  public static String getSwaggerUiLogoutRedirectPage(String loadBalanceIp) {
-    return String.format("https://%s/api/login-redirect.html", loadBalanceIp);
-  }
 }

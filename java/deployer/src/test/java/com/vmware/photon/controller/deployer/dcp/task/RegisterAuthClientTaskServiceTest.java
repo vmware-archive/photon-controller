@@ -79,6 +79,8 @@ public class RegisterAuthClientTaskServiceTest {
     RegisterAuthClientTaskService.State startState = new RegisterAuthClientTaskService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
     startState.deploymentServiceLink = "DEPLOYMENT_SERVICE";
+    startState.loginRedirectUrlTemplate = "LOGIN_REDIRECT_URL_TEMPLATE %s";
+    startState.logoutRedirectUrlTemplate = "LOGOUT_REDIRECT_URL_TEMPLATE %s";
 
     if (null != startStage) {
       startState.taskState = new TaskState();
