@@ -286,7 +286,8 @@ public class ChairmanService implements Chairman.Iface {
     HostConfig hostConfig = request.getConfig();
     String deploymentId = hostConfig.getDeployment_id();
     if (!deploymentId.equals(config.getDeploymentId())) {
-      logger.warn("The deployment id for agent {} does not matches the current deployment id.", request.getId());
+      logger.warn("The deployment id {} for agent {} does not matches the current deployment id {}.", deploymentId,
+          request.getId(), config.getDeploymentId());
       response.setResult(RegisterHostResultCode.SYSTEM_ERROR);
       return response;
     }
