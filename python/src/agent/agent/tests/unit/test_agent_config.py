@@ -41,6 +41,7 @@ class TestUnitAgent(unittest.TestCase):
         self.agent_conf_dir = mkdtemp(delete=True)
         state = State(os.path.join(self.agent_conf_dir, "state.json"))
         common.services.register(ServiceName.MODE, Mode(state))
+        common.services.register(ServiceName.REGISTRANT, mock.MagicMock())
         self.agent = AgentConfig(["--config-path", self.agent_conf_dir])
 
     def tearDown(self):
