@@ -21,6 +21,7 @@ from optparse import OptionParser
 from common.file_util import atomic_write_file
 from common.lock import locked
 from common.lock import lock_with
+from common.service_name import ServiceName
 from gen.common.ttypes import ServerAddress
 
 
@@ -251,12 +252,8 @@ class AgentConfig(object):
 
         # For simplicity mark for reboot when any configuration changes.
         if (config_changed):
-            # Notify for reboot.
-            self._logger.info("Agent configuration updated reboot required")
-            if not self.bootstrap_ready:
-                self._logger.warning("Agent not fully configured %s" %
-                                     str(self._options))
-            self._reboot_required = True
+            registrant = common.services.get(ServiceName.REGISTRANT)
+            registrant.trigger_chairman_update()
 
     @property
     @locked
