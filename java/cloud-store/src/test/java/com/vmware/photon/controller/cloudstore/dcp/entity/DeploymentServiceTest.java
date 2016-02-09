@@ -152,8 +152,10 @@ public class DeploymentServiceTest {
       assertThat(startOperation.getStatusCode(), is(200));
 
       DeploymentService.State patchState = new DeploymentService.State();
-      patchState.oAuthResourceLoginEndpoint = lotusLoginEndpoint;
-      patchState.oAuthLogoutEndpoint = lotusLogoutEndpoint;
+      patchState.oAuthSwaggerLoginEndpoint = lotusLoginEndpoint;
+      patchState.oAuthSwaggerLogoutEndpoint = lotusLogoutEndpoint;
+      patchState.oAuthMgmtUiLoginEndpoint = lotusLoginEndpoint;
+      patchState.oAuthMgmtUiLogoutEndpoint = lotusLogoutEndpoint;
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
@@ -162,8 +164,10 @@ public class DeploymentServiceTest {
       testHost.sendRequestAndWait(patchOperation);
 
       DeploymentService.State currentState = testHost.getServiceState(DeploymentService.State.class);
-      assertThat(currentState.oAuthResourceLoginEndpoint, is(lotusLoginEndpoint));
-      assertThat(currentState.oAuthLogoutEndpoint, is(lotusLogoutEndpoint));
+      assertThat(currentState.oAuthSwaggerLoginEndpoint, is(lotusLoginEndpoint));
+      assertThat(currentState.oAuthSwaggerLogoutEndpoint, is(lotusLogoutEndpoint));
+      assertThat(currentState.oAuthMgmtUiLoginEndpoint, is(lotusLoginEndpoint));
+      assertThat(currentState.oAuthMgmtUiLogoutEndpoint, is(lotusLogoutEndpoint));
     }
 
     @Test(expectedExceptions = BadRequestException.class)

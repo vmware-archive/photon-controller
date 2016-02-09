@@ -92,6 +92,8 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   public static final String ENV_ENABLE_AUTH = "ENABLE_AUTH";
   public static final String ENV_SWAGGER_LOGIN_URL = "SWAGGER_LOGIN_URL";
   public static final String ENV_SWAGGER_LOGOUT_URL = "SWAGGER_LOGOUT_URL";
+  public static final String ENV_MGMT_UI_LOGIN_URL = "MGMT_UI_LOGIN_URL";
+  public static final String ENV_MGMT_UI_LOGOUT_URL = "MGMT_UI_LOGOUT_URL";
   public static final String ENV_SHARED_SECRET = "SHARED_SECRET";
   public static final String ENV_AUTH_SERVER_ADDRESS = "AUTH_SERVER_ADDRESS";
   public static final String ENV_AUTH_SERVER_TENANT = "AUTH_SERVER_TENANT";
@@ -356,8 +358,10 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     containerState.dynamicParameters.put(ENV_ENABLE_AUTH, deploymentState.oAuthEnabled.toString());
 
     if (deploymentState.oAuthEnabled) {
-      containerState.dynamicParameters.put(ENV_SWAGGER_LOGIN_URL, deploymentState.oAuthResourceLoginEndpoint);
-      containerState.dynamicParameters.put(ENV_SWAGGER_LOGOUT_URL, deploymentState.oAuthLogoutEndpoint);
+      containerState.dynamicParameters.put(ENV_SWAGGER_LOGIN_URL, deploymentState.oAuthSwaggerLoginEndpoint);
+      containerState.dynamicParameters.put(ENV_SWAGGER_LOGOUT_URL, deploymentState.oAuthSwaggerLogoutEndpoint);
+      containerState.dynamicParameters.put(ENV_MGMT_UI_LOGIN_URL, deploymentState.oAuthMgmtUiLoginEndpoint);
+      containerState.dynamicParameters.put(ENV_MGMT_UI_LOGOUT_URL, deploymentState.oAuthMgmtUiLogoutEndpoint);
       containerState.dynamicParameters.put(ENV_AUTH_SERVER_TENANT, deploymentState.oAuthTenantName);
       containerState.dynamicParameters.put(ENV_AUTH_SERVER_PORT,
           String.valueOf(ServicePortConstants.LIGHTWAVE_PORT));

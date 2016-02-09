@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.InitializationUtils;
 import com.vmware.photon.controller.common.dcp.PatchUtils;
@@ -60,6 +61,19 @@ import java.util.logging.Level;
 public class CreateContainersWorkflowService extends StatefulService {
 
   /**
+   * This enum represents the services which require authentication.
+   */
+  public enum ServiceRequireAuth {
+    SWAGGER,
+    MGMT_UI
+  }
+
+  private static final String SWAGGER_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
+  private static final String SWAGGER_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
+  private static final String MGMT_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s:4343/oauth_callback.html";
+  private static final String MGMT_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s:4343/logout_callback";
+
+  /**
    * This class defines the state of a {@link CreateContainersWorkflowService} task.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
@@ -75,7 +89,8 @@ public class CreateContainersWorkflowService extends StatefulService {
     public enum SubStage {
       CREATE_ZOOKEEPER_AND_DB_CONTAINERS,
       CREATE_LIGHTWAVE_CONTAINER,
-      REGISTER_AUTH_CLIENT,
+      REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
+      REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
       CREATE_SERVICE_CONTAINERS,
       CREATE_LOAD_BALANCER_CONTAINER
     }
@@ -219,7 +234,8 @@ public class CreateContainersWorkflowService extends StatefulService {
       switch (currentState.taskState.subStage) {
         case CREATE_ZOOKEEPER_AND_DB_CONTAINERS:
         case CREATE_LIGHTWAVE_CONTAINER:
-        case REGISTER_AUTH_CLIENT:
+        case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
+        case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
         case CREATE_SERVICE_CONTAINERS:
         case CREATE_LOAD_BALANCER_CONTAINER:
           break;
@@ -280,10 +296,17 @@ public class CreateContainersWorkflowService extends StatefulService {
       case CREATE_LIGHTWAVE_CONTAINER:
         createLightwaveContainer(currentState,
             TaskState.TaskStage.STARTED,
-            TaskState.SubStage.REGISTER_AUTH_CLIENT);
+            TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
         break;
-      case REGISTER_AUTH_CLIENT:
+      case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
         processRegisterAuthClient(currentState,
+            ServiceRequireAuth.SWAGGER,
+            TaskState.TaskStage.STARTED,
+            TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_MGMT_UI);
+        break;
+      case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
+        processRegisterAuthClient(currentState,
+            ServiceRequireAuth.MGMT_UI,
             TaskState.TaskStage.STARTED,
             TaskState.SubStage.CREATE_SERVICE_CONTAINERS);
         break;
@@ -393,6 +416,7 @@ public class CreateContainersWorkflowService extends StatefulService {
    * @throws Throwable
    */
   private void processRegisterAuthClient(final State currentState,
+                                         ServiceRequireAuth serviceRequireAuth,
                                          TaskState.TaskStage nextStage,
                                          TaskState.SubStage nextSubStage) throws Throwable {
     log(Level.INFO, "Registering authentication client with Lightwave");
@@ -401,7 +425,7 @@ public class CreateContainersWorkflowService extends StatefulService {
     if (!currentState.isAuthEnabled || !currentState.isNewDeployment) {
       log(Level.INFO, "Stage %s finished, no need to register as auth is disabled = " + currentState.isAuthEnabled +
               " or this is not a new deployment",
-          TaskState.SubStage.REGISTER_AUTH_CLIENT);
+          currentState.taskState.subStage);
       TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
       return;
     }
@@ -412,8 +436,31 @@ public class CreateContainersWorkflowService extends StatefulService {
       public void onSuccess(@Nullable RegisterAuthClientTaskService.State result) {
         switch (result.taskState.stage) {
           case FINISHED:
-            log(Level.INFO, "Stage %s finished successfully", TaskState.SubStage.REGISTER_AUTH_CLIENT);
-            TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
+            log(Level.INFO, "Stage %s finished successfully", currentState.taskState.subStage);
+
+            DeploymentService.State deploymentPatch = new DeploymentService.State();
+            switch (serviceRequireAuth) {
+              case SWAGGER:
+                deploymentPatch.oAuthSwaggerLoginEndpoint = result.loginUrl;
+                deploymentPatch.oAuthSwaggerLogoutEndpoint = result.logoutUrl;
+                break;
+              case MGMT_UI:
+                deploymentPatch.oAuthMgmtUiLoginEndpoint = result.loginUrl;
+                deploymentPatch.oAuthSwaggerLogoutEndpoint = result.logoutUrl;
+                break;
+            }
+
+            sendRequest(HostUtils.getCloudStoreHelper(CreateContainersWorkflowService.this)
+                .createPatch(currentState.deploymentServiceLink)
+                .setBody(deploymentPatch)
+                .setCompletion((deploymentPatchOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
+
+                  TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
+                }));
             break;
           case FAILED:
             State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
@@ -438,6 +485,17 @@ public class CreateContainersWorkflowService extends StatefulService {
 
     RegisterAuthClientTaskService.State startState = new RegisterAuthClientTaskService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
+
+    switch (serviceRequireAuth) {
+      case SWAGGER:
+        startState.loginRedirectUrlTemplate = SWAGGER_UI_LOGIN_REDIRECT_URL_TEMPLATE;
+        startState.logoutRedirectUrlTemplate = SWAGGER_UI_LOGOUT_REDIRECT_URL_TEMPLATE;
+        break;
+      case MGMT_UI:
+        startState.loginRedirectUrlTemplate = MGMT_UI_LOGIN_REDIRECT_URL_TEMPLATE;
+        startState.logoutRedirectUrlTemplate = MGMT_UI_LOGOUT_REDIRECT_URL_TEMPLATE;
+        break;
+    }
 
     TaskUtils.startTaskAsync(
         this,
