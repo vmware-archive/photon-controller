@@ -36,6 +36,8 @@ public class ServiceConfig implements PathChildrenCacheListener {
   private static final Logger logger = LoggerFactory.getLogger(ServiceConfig.class);
   private static final String PAUSED_STRING = "PAUSED";
   private static final byte[] PAUSED_BYTES = PAUSED_STRING.getBytes();
+  private static final String PAUSED_BACKGROUND_STRING = "PAUSED_BACKGROUND";
+  private static final byte[] PAUSED_BACKGROUND_BYTES = PAUSED_BACKGROUND_STRING.getBytes();
   private static final String STATUS_ZK_PATH = "status";
   private final String serviceName;
   private final DataDictionary serviceConfig;
@@ -72,11 +74,12 @@ public class ServiceConfig implements PathChildrenCacheListener {
   }
 
   /**
-   * Pause the target service's background processing.
+   * Pause the target service by adding entry in /config/[serviceName]/status/PAUSED_BACKGROUND.
    *
    * @throws Exception
    */
   public void pauseBackground() throws Exception {
+    this.serviceConfig.write(STATUS_ZK_PATH, PAUSED_BACKGROUND_BYTES);
     logger.info("Service {} background processing is paused", serviceName);
   }
 
@@ -91,14 +94,26 @@ public class ServiceConfig implements PathChildrenCacheListener {
   }
 
   /**
+   * Return true if the target service is fully functional.
+   *
+   * @return
+   * @throws Exception
+   */
+  private boolean isServiceFullyFunctional() {
+    return null == this.configCache.getCurrentData(this.serviceStatusZKPath);
+  }
+
+  /**
    * Return if the target service is paused.
    *
    * @return
    * @throws Exception
    */
   public boolean isPaused() throws Exception {
-    return null !=
-        this.configCache.getCurrentData(this.serviceStatusZKPath);
+    if (!isServiceFullyFunctional()) {
+      return PAUSED_STRING.equals(new String(this.configCache.getCurrentData(this.serviceStatusZKPath).getData()));
+    }
+    return false;
   }
 
   /**
@@ -108,6 +123,10 @@ public class ServiceConfig implements PathChildrenCacheListener {
    * @throws Exception
    */
   public boolean isBackgroundPaused() throws Exception {
+    if (!isServiceFullyFunctional()) {
+      return isPaused() || PAUSED_BACKGROUND_STRING.equals(
+          new String(this.configCache.getCurrentData(this.serviceStatusZKPath).getData()));
+    }
     return false;
   }
 

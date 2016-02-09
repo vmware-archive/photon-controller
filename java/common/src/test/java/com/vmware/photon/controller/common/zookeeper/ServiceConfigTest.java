@@ -54,4 +54,48 @@ public class ServiceConfigTest extends BaseTestWithRealZookeeper {
 
     assertThat(serviceConfig.isPaused(), is(isPaused));
   }
+
+  /**
+   * Tests {@link ServiceConfig#pauseBackground()}.
+   */
+  @Test
+  public void testPauseBackground() throws Throwable {
+    zkClient.start();
+
+    try {
+      ServiceConfig serviceConfig = new ServiceConfig(zkClient, new PathChildrenCacheFactory(zkClient, null), "apife");
+      assertThat(serviceConfig.isPaused(), is(false));
+      assertThat(serviceConfig.isBackgroundPaused(), is(false));
+
+      serviceConfig.pauseBackground();
+      waitForIsBackgroundPaused(serviceConfig, true);
+      assertThat(serviceConfig.isPaused(), is(false));
+
+      serviceConfig.resume();
+      waitForIsBackgroundPaused(serviceConfig, false);
+      assertThat(serviceConfig.isPaused(), is(false));
+
+      serviceConfig.pause();
+      waitForIsPaused(serviceConfig, true);
+      assertThat(serviceConfig.isBackgroundPaused(), is(true));
+
+      serviceConfig.resume();
+      waitForIsPaused(serviceConfig, false);
+      assertThat(serviceConfig.isBackgroundPaused(), is(false));
+    } finally {
+      zkClient.close();
+    }
+  }
+
+  private void waitForIsBackgroundPaused(ServiceConfig serviceConfig, boolean isBackgroundPaused)
+      throws Throwable {
+    for (int i = 0; i < 50; i++) {
+      Thread.sleep(2);
+      if (isBackgroundPaused == serviceConfig.isBackgroundPaused()) {
+        return;
+      }
+    }
+
+    assertThat(serviceConfig.isBackgroundPaused(), is(isBackgroundPaused));
+  }
 }
