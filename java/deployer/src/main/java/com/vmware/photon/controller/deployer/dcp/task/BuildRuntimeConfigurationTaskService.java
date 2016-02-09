@@ -102,8 +102,13 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   public static final String ENV_LIGHTWAVE_PASSWORD = "LIGHTWAVE_PASSWORD";
   public static final String ENV_LIGHTWAVE_ADDRESS = "LIGHTWAVE_ADDRESS";
 
+  public static final String ENV_MGMT_UI_HTTP_SERVERS = "MGMT_UI_HTTP_SERVERS";
+  public static final String ENV_MGMT_UI_HTTPS_SERVERS = "MGMT_UI_HTTPS_SERVERS";
+
   private static final String ZOOKEEPER_PORT = "2181";
   private static final String API_FE_PORT = "9000";
+  private static final String MGMT_UI_HTTP_PORT = "80";
+  private static final String MGMT_UI_HTTPS_PORT = "4343";
 
   /**
    * This class defines the document state associated with a single
@@ -705,8 +710,15 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         break;
 
       case LoadBalancer:
-        List<LoadBalancerServer> serverList = generateServerList(ipList, API_FE_PORT);
-        containerState.dynamicParameters.put(ENV_LOADBALANCER_SERVERS, new Gson().toJson(serverList));
+        Map<String, String> serverPortMap = new HashMap<>();
+        serverPortMap.put(ENV_LOADBALANCER_SERVERS, API_FE_PORT);
+        serverPortMap.put(ENV_MGMT_UI_HTTP_SERVERS, MGMT_UI_HTTP_PORT);
+        serverPortMap.put(ENV_MGMT_UI_HTTPS_SERVERS, MGMT_UI_HTTPS_PORT);
+
+        for (Map.Entry<String, String> entry : serverPortMap.entrySet()) {
+          List<LoadBalancerServer> serverList = generateServerList(ipList, entry.getValue());
+          containerState.dynamicParameters.put(entry.getKey(), new Gson().toJson(serverList));
+        }
         break;
 
       case Zookeeper:
