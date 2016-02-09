@@ -17,24 +17,29 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.HostFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.when;
 
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -52,45 +57,97 @@ public class HostVmsResourceTest extends ResourceTest {
   @Mock
   private HostFeClient hostFeClient;
 
+  private PaginationConfig paginationConfig = new PaginationConfig();
+
+  private Vm vm1 = new Vm();
+  private Vm vm2 = new Vm();
+
   @Override
   protected void setUpResources() {
-    addResource(new HostVmsResource(hostFeClient));
-  }
-
-  @Test
-  public void testListVmsOnHost() throws ExternalException, URISyntaxException {
-    Vm vm1 = new Vm();
+    vm1 = new Vm();
     vm1.setId("vm1");
     vm1.setName("vm1name");
 
-    Vm vm2 = new Vm();
+    vm2 = new Vm();
     vm2.setId("vm2");
     vm2.setName("vm1name");
 
-    List<Vm> vmList = new ArrayList<Vm>();
-    vmList.add(vm1);
-    vmList.add(vm2);
-    ResourceList<Vm> resourceList = new ResourceList<>(new ArrayList<>(vmList));
-    doReturn(resourceList).when(hostFeClient).listAllVms(hostId);
+    paginationConfig.setDefaultPageSize(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE);
+    paginationConfig.setMaxPageSize(PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
 
-    Response clientResponse = client()
-        .target(vmsRoute)
-        .request("application/json")
-        .get();
+    addResource(new HostVmsResource(hostFeClient, paginationConfig));
+  }
 
-    assertThat(clientResponse.getStatus(), is(200));
+  @Test
+  public void testListVmPageOnHost() throws ExternalException {
+    when(hostFeClient.getVmsPage(anyString()))
+        .thenReturn(new ResourceList<>(ImmutableList.of(vm1, vm2)));
 
-    ResourceList<Vm> retrievedResources = clientResponse.readEntity(new GenericType<ResourceList<Vm>>() {
-    });
-    assertThat(retrievedResources.getItems().size(), is(2));
-    List<Vm> retrievedVmList = retrievedResources.getItems();
-    for (int i = 0; i < retrievedVmList.size(); i++) {
-      Vm retrievedVm = retrievedVmList.get(i);
-      assertThat(retrievedVm, is(vmList.get(i)));
+    ResourceList<Vm> vms = getVms(Optional.absent(), Optional.of("randomPageLink"));
 
-      String vmRoutePath = UriBuilder.fromPath(VmResourceRoutes.VM_PATH).build(vmList.get(i).getId()).toString();
+    assertThat(vms.getItems().size(), is(2));
+    assertThat(vms.getItems().get(0).getId(), is(vm1.getId()));
+    assertThat(vms.getItems().get(1).getId(), is(vm2.getId()));
+  }
+
+  @Test(dataProvider = "hostVmsPageSizes")
+  public void testListVmsOnHost(Optional<Integer> pageSize, List<Vm> expectedVms)
+      throws ExternalException, URISyntaxException {
+
+    when(hostFeClient.listAllVms(hostId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(vm1, vm2)));
+    when(hostFeClient.listAllVms(hostId, Optional.of(1)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(vm1)));
+    when(hostFeClient.listAllVms(hostId, Optional.of(2)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(vm1, vm2)));
+    when(hostFeClient.listAllVms(hostId, Optional.of(3)))
+        .thenReturn(new ResourceList<>(Collections.emptyList()));
+
+    ResourceList<Vm> vms = getVms(pageSize, Optional.absent());
+    assertThat(vms.getItems().size(), is(expectedVms.size()));
+
+    for (int i = 0; i < vms.getItems().size(); i++) {
+      Vm retrievedVm = vms.getItems().get(i);
+
+      String vmRoutePath = UriBuilder.fromPath(VmResourceRoutes.VM_PATH).build(expectedVms.get(i).getId()).toString();
       assertThat(new URI(retrievedVm.getSelfLink()).isAbsolute(), is(true));
       assertThat(retrievedVm.getSelfLink().endsWith(vmRoutePath), is(true));
     }
+  }
+
+  private ResourceList<Vm> getVms(Optional<Integer> pageSize, Optional<String> pageLink) {
+    WebTarget resource = client().target(vmsRoute);
+
+    if (pageSize.isPresent()) {
+      resource = resource.queryParam("pageSize", pageSize.get());
+    }
+
+    if (pageLink.isPresent()) {
+      resource = resource.queryParam("pageLink", pageLink.get());
+    }
+
+    return resource.request().get(new GenericType<ResourceList<Vm>>() {});
+  }
+
+  @DataProvider(name = "hostVmsPageSizes")
+  private Object[][] getHostVmsPageSizes() {
+    return new Object[][] {
+        {
+            Optional.absent(),
+            ImmutableList.of(vm1, vm2)
+        },
+        {
+            Optional.of(1),
+            ImmutableList.of(vm1)
+        },
+        {
+            Optional.of(2),
+            ImmutableList.of(vm1, vm2)
+        },
+        {
+            Optional.of(3),
+            Collections.emptyList()
+        }
+    };
   }
 }

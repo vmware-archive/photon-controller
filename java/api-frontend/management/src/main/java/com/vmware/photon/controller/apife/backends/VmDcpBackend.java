@@ -562,7 +562,7 @@ public class VmDcpBackend implements VmBackend {
   }
 
   @Override
-  public List<Vm> getAllVmsOnHost(String hostId) throws ExternalException {
+  public ResourceList<Vm> getAllVmsOnHost(String hostId, Optional<Integer> pageSize) throws ExternalException {
     HostEntity hostEntity = hostBackend.findById(hostId);
 
     ResourceList<VmEntity> vmEntities = filterVmEntities(
@@ -573,21 +573,16 @@ public class VmDcpBackend implements VmBackend {
         Optional.<String>absent(),
         Optional.<String>absent(),
         Optional.<String>absent(),
-        Optional.<Integer>absent());
+        pageSize);
 
-    List<Vm> result = new ArrayList<>();
-    for (VmEntity vmEntity : vmEntities.getItems()) {
-      result.add(toApiRepresentation(vmEntity));
-    }
-
-    return result;
+    return toApiRepresentation(vmEntities);
   }
 
   @Override
   public int countVmsOnHost(HostEntity hostEntity) throws ExternalException {
-    List<Vm> vms = getAllVmsOnHost(hostEntity.getId());
-    if (vms != null) {
-      return vms.size();
+    ResourceList<Vm> vms = getAllVmsOnHost(hostEntity.getId(), Optional.<Integer>absent());
+    if (vms.getItems() != null) {
+      return vms.getItems().size();
     }
     return 0;
   }

@@ -490,7 +490,7 @@ public class VmDcpBackendTest {
 
     @Test
     public void testGetAllVmsOnHost() throws Throwable {
-      List<Vm> foundVms = vmDcpBackend.getAllVmsOnHost(hostId);
+      List<Vm> foundVms = vmDcpBackend.getAllVmsOnHost(hostId, Optional.<Integer>absent()).getItems();
       assertThat(foundVms, is(notNullValue()));
       assertThat(foundVms.size(), is(1));
       assertThat(foundVms.get(0).getName(), is(vm.name));

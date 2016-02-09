@@ -28,6 +28,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
@@ -129,11 +130,15 @@ public class HostFeClient {
     return task;
   }
 
-  public ResourceList<Vm> listAllVms(String id) throws ExternalException {
-    return new ResourceList<>(vmBackend.getAllVmsOnHost(id));
+  public ResourceList<Vm> listAllVms(String id, Optional<Integer> pageSize) throws ExternalException {
+    return vmBackend.getAllVmsOnHost(id, pageSize);
   }
 
   public Host getHost(String id) throws ExternalException {
     return hostBackend.toApiRepresentation(id);
+  }
+
+  public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
+    return vmBackend.getVmsPage(pageLink);
   }
 }
