@@ -433,6 +433,10 @@ public class CreateIsoTaskService extends StatefulService {
       }.getType();
       dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_LOADBALANCER_SERVERS,
           (k, v) -> new Gson().fromJson(v.toString(), lbType));
+      dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_HTTP_SERVERS,
+          (k, v) -> new Gson().fromJson(v.toString(), lbType));
+      dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_HTTPS_SERVERS,
+          (k, v) -> new Gson().fromJson(v.toString(), lbType));
       Type zkType = new TypeToken<ArrayList<ZookeeperServer>>() {
       }.getType();
       dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM,

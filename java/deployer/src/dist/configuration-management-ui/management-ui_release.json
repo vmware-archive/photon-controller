@@ -8,8 +8,8 @@
   "useHostNetwork": false,
   "containerImage": "esxcloud/management_ui",
   "portBindings": {
-    "20000": 80,
-    "20001": 4343
+    "80": 20000,
+    "4343": 20001
   },
   "volumeBindings": {
   },
