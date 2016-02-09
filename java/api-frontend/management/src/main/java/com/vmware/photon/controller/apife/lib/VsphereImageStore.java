@@ -274,7 +274,7 @@ public class VsphereImageStore implements ImageStore {
     ensureHost(hostIp);
 
     HostClient hostClient = this.hostClientFactory.create();
-    hostClient.setHostIp(hostIp);
+    hostClient.setHostIp(this.host.getAddress());
     return hostClient;
   }
 

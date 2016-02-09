@@ -138,6 +138,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
       Image imageFolder = spy(imageStore.createImage(imageId));
       assertThat(imageFolder, notNullValue());
+      verify(hostClient).setHostIp(HOST_ADDRESS);
     }
 
     @Test(expectedExceptions = RuntimeException.class)
