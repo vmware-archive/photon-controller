@@ -43,6 +43,8 @@ public interface DeploymentBackend {
 
   TaskEntity pauseSystem(String deploymentId) throws ExternalException;
 
+  TaskEntity pauseBackgroundTasks(String deploymentId) throws ExternalException;
+
   TaskEntity resumeSystem(String deploymentId) throws ExternalException;
 
   TaskEntity prepareInitializeMigrateDeployment(String sourceLoadbalancerAddress, String destinationDeploymentId)

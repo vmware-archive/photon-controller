@@ -183,6 +183,7 @@ public class StepCommandFactoryTest {
         {Operation.SET_TENANT_SECURITY_GROUPS, TenantSetSecurityGroupsStepCmd.class},
         {Operation.PUSH_TENANT_SECURITY_GROUPS, TenantPushSecurityGroupsStepCmd.class},
         {Operation.PAUSE_SYSTEM, SystemPauseStepCmd.class},
+        {Operation.PAUSE_BACKGROUND_TASKS, SystemPauseBackgroundTasksStepCmd.class},
         {Operation.RESUME_SYSTEM, SystemResumeStepCmd.class}
     };
   }

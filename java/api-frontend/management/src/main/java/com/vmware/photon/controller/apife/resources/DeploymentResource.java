@@ -171,6 +171,21 @@ public class DeploymentResource {
   }
 
   @POST
+  @Path(DeploymentResourceRoutes.PAUSE_BACKGROUND_TASKS_ACTION)
+  @ApiOperation(value = "Pause background tasks under the deployment", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 201, message = "Task created, pause background tasks process can be fetched via the task")
+  })
+  public Response pauseBackgroundTasks(@Context Request request, @PathParam("id") String id)
+      throws ExternalException {
+    return generateCustomResponse(
+        Response.Status.CREATED,
+        client.pauseBackgroundTasks(id),
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
+  }
+
+  @POST
   @Path(DeploymentResourceRoutes.RESUME_SYSTEM_ACTION)
   @ApiOperation(value = "Resume system under the deployment", response = Task.class)
   @ApiResponses(value = {

@@ -28,6 +28,8 @@ public class DeploymentResourceRoutes {
 
   public static final String PAUSE_SYSTEM_ACTION = "/pause_system";
 
+  public static final String PAUSE_BACKGROUND_TASKS_ACTION = "/pause_background_tasks";
+
   public static final String RESUME_SYSTEM_ACTION = "/resume_system";
 
   public static final String INITIALIZE_MIGRATION_ACTION = "/initialize_migration";

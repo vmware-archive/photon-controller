@@ -198,6 +198,28 @@ public class DeploymentResourceTest extends ResourceTest {
   }
 
   @Test
+  public void testPauseBackgroundTasks() throws Throwable {
+    Task task = new Task();
+    task.setId(taskId);
+    when(feClient.pauseBackgroundTasks(deploymentId)).thenReturn(task);
+
+    String uri = UriBuilder
+        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.PAUSE_BACKGROUND_TASKS_ACTION)
+        .build(deploymentId)
+        .toString();
+    Response response = client()
+        .target(uri)
+        .request()
+        .post(Entity.json(null));
+
+    assertThat(response.getStatus(), Matchers.is(201));
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, Matchers.is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
+  }
+
+  @Test
   public void testResumeSystem() throws Throwable {
     Task task = new Task();
     task.setId(taskId);
