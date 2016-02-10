@@ -55,7 +55,22 @@ describe "migrate finalize", upgrade: true do
           "/esxcloud/cloudstore/resource-tickets" => "/photon/cloudstore/resource-tickets",
           "/esxcloud/cloudstore/vms" => "/photon/cloudstore/vms",
           "/esxcloud/cloudstore/disks" => "/photon/cloudstore/disks",
-          "/esxcloud/cloudstore/clusters" => "/photon/cloudstore/clusters"}
+          "/esxcloud/cloudstore/clusters" => "/photon/cloudstore/clusters",
+          "/photon/cloudstore/datastores" => "/photon/cloudstore/datastores",
+          "/photon/cloudstore/hosts" => "/photon/cloudstore/hosts",
+          "/photon/cloudstore/entity-locks" => "/photon/cloudstore/entity-locks",
+          "/photon/cloudstore/attached-disks" => "/photon/cloudstore/attached-disks",
+          "/photon/cloudstore/tombstones" => "/photon/cloudstore/tombstones",
+          "/photon/cloudstore/flavors" => "/photon/cloudstore/flavors",
+          "/photon/cloudstore/images" => "/photon/cloudstore/images",
+          "/photon/cloudstore/networks" => "/photon/cloudstore/networks",
+          "/photon/cloudstore/portgroups" => "/photon/cloudstore/portgroups",
+          "/photon/cloudstore/projects" => "/photon/cloudstore/projects",
+          "/photon/cloudstore/tenants" => "/photon/cloudstore/tenants",
+          "/photon/cloudstore/resource-tickets" => "/photon/cloudstore/resource-tickets",
+          "/photon/cloudstore/vms" => "/photon/cloudstore/vms",
+          "/photon/cloudstore/disks" => "/photon/cloudstore/disks",
+          "/photon/cloudstore/clusters" => "/photon/cloudstore/clusters"}
       uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
       source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
 
