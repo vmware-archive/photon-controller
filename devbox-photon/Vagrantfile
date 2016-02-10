@@ -20,7 +20,7 @@ Vagrant.configure("2") do |config|
   ESXCLOUD_DIR="/var/esxcloud"
   DATASTORE_DIR="/tmp/devbox_datastore"
   API_SHARED_SECRET="#{SecureRandom.uuid}"
-  DEPLOYMENT_ID=ENV["RANDOM_GENERATED_DEPLOYMENT_ID"]
+  DEPLOYMENT_ID=ENV["RANDOM_GENERATED_DEPLOYMENT_ID"] || "test-deployment"
 
 
   SERVICE_PORT_MAP = {
