@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
@@ -40,6 +41,8 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreDcpHost> {
 
       hosts[i] = new CloudStoreDcpHost(BIND_ADDRESS, 0, sandbox, mock(HostClientFactory.class), buildInfo);
     }
+    // Disable host ping: we have fake hosts and don't want them to be marked as missing
+    HostService.setInUnitTests(true);
   }
 
   /**

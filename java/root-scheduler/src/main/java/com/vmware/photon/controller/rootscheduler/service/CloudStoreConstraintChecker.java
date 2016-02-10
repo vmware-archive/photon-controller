@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
+import com.vmware.photon.controller.api.AgentState;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
@@ -21,29 +23,34 @@ import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
+import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.QueryTask.Query.Occurance;
 import com.vmware.xenon.services.common.QueryTask.QuerySpecification.SortOrder;
 
 import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 /**
  * This class implements a {@link ConstraintChecker} using Xenon queries against cloud store nodes.
  */
 public class CloudStoreConstraintChecker implements ConstraintChecker {
+
+  private static final String HOST_SELF_LINK_PREFIX = HostServiceFactory.SELF_LINK + "/";
+  private static final List<String> managementTagValues = Arrays.asList(UsageTag.MGMT.name());
 
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreConstraintChecker.class);
 
@@ -69,26 +76,46 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
    * 0.....random midpoint.....10,000
    *
    * We first look for results in the second half (random to 10,000), sorting them in ascending order. If we don't find
-   * enough hosts, we query from the first half (0 to random), and we sort them in descending order.
+   * enough hosts, we query from the first half (0 to random), and we sort them in descending order. (50% of the time,
+   * we do it in the reverse order, to reduce bias against hosts with a low scheduling constant.) Note that empirical
+   * results shows we still have some bias because we're not making a truly random selection.
    *
+   * We're searching querying approximately 50% of the hosts at a time, which means that when we have a lot of hosts,
+   * Lucene has to do a big sort. If we find that this is a performance hit, we can search smaller intervals, but that
+   * also may mean more queries to Lucene when we don't have a lot of hosts.
    */
   @Override
   public Map<String, ServerAddress> getCandidates(List<ResourceConstraint> resourceConstraints, int numCandidates) {
+
+    if (numCandidates <= 0) {
+      throw new IllegalArgumentException("getCandidates called with invalid numCandidates: " + numCandidates);
+    }
 
     Map<String, ServerAddress> result = new HashMap<>(numCandidates);
 
     // Divide the hosts into two groups, based on a random midpoint
     int randomMidpoint = 1 + random.nextInt(HostService.MAX_SCHEDULING_CONSTANT - 1);
 
-    // First try the hosts in [randomMidpoint, 10000]
-    QueryTask.Query query =
-        buildQuery(resourceConstraints, randomMidpoint, HostService.MAX_SCHEDULING_CONSTANT);
-    getCandidates(query, numCandidates, SortOrder.ASC, result);
+    if (random.nextBoolean()) {
+      // Case 1: first try [randomMidpoint, 10000], then [0, randomMidpoint]
+      QueryTask.Query query =
+          buildQuery(resourceConstraints, randomMidpoint, HostService.MAX_SCHEDULING_CONSTANT);
+      getCandidates(query, numCandidates, SortOrder.ASC, result);
 
-    // If needed, try the hosts in [0, randomMidpoint]
-    if (result.size() < numCandidates) {
-      updateQueryRange(query, 0, randomMidpoint);
+      if (result.size() < numCandidates) {
+        updateQueryRange(query, 0, randomMidpoint);
+        getCandidates(query, numCandidates, SortOrder.DESC, result);
+      }
+    } else {
+      // Case 2: first try [0, randomMidpoint] then [randomMidpoint, 10000]
+      QueryTask.Query query =
+          buildQuery(resourceConstraints, 0, randomMidpoint);
       getCandidates(query, numCandidates, SortOrder.DESC, result);
+
+      if (result.size() < numCandidates) {
+        updateQueryRange(query, randomMidpoint, HostService.MAX_SCHEDULING_CONSTANT);
+        getCandidates(query, numCandidates, SortOrder.ASC, result);
+      }
     }
 
     return result;
@@ -106,32 +133,47 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
         .addRangeClause(HostService.State.FIELD_NAME_SCHEDULING_CONSTANT,
             QueryTask.NumericRange.createLongRange(lowerBound, upperBound, true, false));
 
-    for (ResourceConstraint constraint : resourceConstraints) {
+    // Ensure that we only look for hosts that are ready (not, for example, suspended)
+    queryBuilder.addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.READY);
 
-      switch (constraint.getType()) {
-        case AVAILABILITY_ZONE:
-          addFieldClause(queryBuilder, HostService.State.FIELD_NAME_AVAILABILITY_ZONE_ID, null, constraint);
-          break;
-        case DATASTORE:
-          addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_REPORTED_DATASTORES, constraint);
-          break;
-        case DATASTORE_TAG:
-          queryBuilder.addClause(getDatastoreTagClause(constraint.getValues().get(0)));
-          break;
-        case HOST:
-          addFieldClause(queryBuilder, HostService.State.FIELD_NAME_SELF_LINK, HostServiceFactory.SELF_LINK + "/",
-              constraint);
-          break;
-        case MANAGEMENT_ONLY:
-          queryBuilder.addCollectionItemClause(HostService.State.FIELD_NAME_USAGE_TAGS, UsageTag.MGMT.name());
-          break;
-        case NETWORK:
-          addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_REPORTED_NETWORKS, constraint);
-          break;
-        default:
-          throw new IllegalStateException("Invalid resource constraint: " + constraint);
+    // Ensure that we only look for hosts that are responsive. Those are hosts with agents that respond
+    // to pings and are marked as active.
+    queryBuilder.addFieldClause(HostService.State.FIELD_NAME_AGENT_STATE, AgentState.ACTIVE);
+
+    if (resourceConstraints != null) {
+      for (ResourceConstraint constraint : resourceConstraints) {
+
+        if (constraint == null) {
+          continue;
+        }
+
+        switch (constraint.getType()) {
+          case AVAILABILITY_ZONE:
+            addFieldClause(queryBuilder, HostService.State.FIELD_NAME_AVAILABILITY_ZONE_ID, null, constraint);
+            break;
+          case DATASTORE:
+            addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_REPORTED_DATASTORES, constraint);
+            break;
+          case DATASTORE_TAG:
+            addDatastoreTagClause(queryBuilder, constraint);
+            break;
+          case HOST:
+            addFieldClause(queryBuilder, HostService.State.FIELD_NAME_SELF_LINK, HOST_SELF_LINK_PREFIX, constraint);
+            break;
+          case MANAGEMENT_ONLY:
+            // This constraint doesn't come in with values, but we want to reuse our code, so we set them
+            constraint.setValues(managementTagValues);
+            addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_USAGE_TAGS, constraint);
+            break;
+          case NETWORK:
+            addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_REPORTED_NETWORKS, constraint);
+            break;
+          default:
+            throw new IllegalStateException("Invalid resource constraint: " + constraint);
+        }
       }
     }
+
     return queryBuilder.build();
   }
 
@@ -155,7 +197,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
       return;
     }
 
-    // The simple case: there is only one value in the constraint
+    // If there is just one value, we add a simple clause
     if (values.size() == 1) {
       String value;
       if (valuePrefix != null) {
@@ -167,16 +209,16 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
       return;
     }
 
-    throw new UnsupportedOperationException("Multiple value constraints not yet supported");
-
     // If there are multiple values, we make a new OR clause
-    // A partial, untested implementation: will be completed in next checkin
-
-    // QueryTask.Query.Builder innerBuilder = QueryTask.Query.Builder.create(Occurance.SHOULD_OCCUR);
-    // for (String value : values) {
-    // innerBuilder.addFieldClause(fieldName, value, occurance);
-    // }
-    // builder.addClause(innerBuilder.build());
+    // We could use Builder.addInClause() here, but we need to prefix each value
+    QueryTask.Query.Builder innerBuilder = QueryTask.Query.Builder.create(occurance);
+    for (String value : values) {
+      if (valuePrefix != null) {
+        value = valuePrefix + value;
+      }
+      innerBuilder.addFieldClause(fieldName, value, Occurance.SHOULD_OCCUR);
+    }
+    builder.addClause(innerBuilder.build());
   }
 
   /**
@@ -204,7 +246,8 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
       return;
     }
 
-    throw new UnsupportedOperationException("Multiple value constraints not yet supported");
+    // If there are multiple values, we make a new OR clause
+    builder.addInCollectionItemClause(fieldName, values, occurance);
   }
 
   /**
@@ -212,13 +255,18 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
    */
   private void updateQueryRange(QueryTask.Query query, long lowerBound, long upperBound) {
     for (QueryTask.Query queryTerm : query.booleanClauses) {
-      if (queryTerm.term.propertyName.equals(HostService.State.FIELD_NAME_SCHEDULING_CONSTANT)) {
-        queryTerm.term.range = QueryTask.NumericRange.createLongRange(lowerBound, upperBound, true, false);
-        break;
+      if (queryTerm != null && queryTerm.term != null && queryTerm.term.propertyName != null) {
+        if (queryTerm.term.propertyName.equals(HostService.State.FIELD_NAME_SCHEDULING_CONSTANT)) {
+          queryTerm.term.range = QueryTask.NumericRange.createLongRange(lowerBound, upperBound, true, false);
+          break;
+        }
       }
     }
   }
 
+  /**
+   * Submit the query to CloudStore.
+   */
   private void getCandidates(
       QueryTask.Query query,
       int numCandidates,
@@ -258,6 +306,12 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
         }
         result.put(ServiceUtils.getIDFromDocumentSelfLink(host.documentSelfLink),
             new ServerAddress(host.hostAddress, host.agentPort));
+
+        if (result.size() >= numCandidates) {
+          // If we're searching the second half of the search space, we need to make sure not to add too many
+          // candidates.
+          break;
+        }
       }
     } catch (Throwable t) {
       logger.warn("Failed to query Cloudstore for hosts matching {}, exception: {}",
@@ -265,6 +319,12 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
     }
   }
 
+  /**
+   * Helper for getCandidates() to extract the set of documents (full host records) from the query.
+   *
+   * @param queryResponse
+   * @return
+   */
   private Map<String, Object> extractDocumentsFromQuery(Operation queryResponse) {
     if (!queryResponse.hasBody()) {
       logger.info("Got host query response without a body");
@@ -290,40 +350,53 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
   }
 
 
-  private QueryTask.Query getDatastoreTagClause(String tag) {
+  private void addDatastoreTagClause(QueryTask.Query.Builder builder, ResourceConstraint constraint) {
+
+    List<String> tags = constraint.getValues();
+    if (tags == null || tags.size() == 0) {
+      return;
+    }
+
+    // Build a query task for the datastores that have the tags we want
+    QueryTask.Query.Builder tagBuilder = QueryTask.Query.Builder.create(QueryTask.Query.Occurance.MUST_OCCUR);
+    for (String tag : tags) {
+      tagBuilder.addCollectionItemClause(
+          DatastoreService.State.FIELD_NAME_TAGS, tag, QueryTask.Query.Occurance.SHOULD_OCCUR);
+    }
 
     QueryTask queryTask = QueryTask.Builder.createDirectTask()
         .setQuery(QueryTask.Query.Builder.create()
             .addKindFieldClause(DatastoreService.State.class)
-            .addCollectionItemClause(DatastoreService.State.FIELD_NAME_TAGS, tag)
+            .addClause(tagBuilder.build())
             .build())
         .setResultLimit(1000)
         .build();
 
     try {
+      // Query for the datastores that have the tags we want
       Operation completedOp = xenonRestClient.query(queryTask);
       ServiceDocumentQueryResult queryResult = completedOp.getBody(QueryTask.class).results;
-      Set<String> documentLinks = new HashSet<>();
+      List<String> documentLinks = new ArrayList<>();
 
-      // N.B. This is a temporary workaround until we can pick up Xenon 0.3.1.
       if (queryResult.nextPageLink != null) {
         queryResult.nextPageLink = Base64.getEncoder().encodeToString(queryResult.nextPageLink.getBytes());
       }
 
       while (queryResult.nextPageLink != null) {
         queryResult = xenonRestClient.queryDocumentPage(queryResult.nextPageLink);
-        documentLinks.addAll(queryResult.documentLinks);
+        for (String documentLink : queryResult.documentLinks) {
+          documentLinks.add(ServiceUtils.getIDFromDocumentSelfLink(documentLink));
+        }
+
+        // Based on the datastores we got, build a new clause to select the datastores.
+        ResourceConstraint datastoreConstraint = new ResourceConstraint(
+            ResourceConstraintType.DATASTORE,
+            documentLinks);
+        if (constraint.isSetNegative() && constraint.isNegative()) {
+          datastoreConstraint.setNegative(true);
+        }
+        addCollectionItemClause(builder, HostService.State.FIELD_NAME_REPORTED_DATASTORES, datastoreConstraint);
       }
-
-      QueryTask.Query.Builder builder = QueryTask.Query.Builder.create();
-      for (String documentLink : documentLinks) {
-        builder.addCollectionItemClause(HostService.State.FIELD_NAME_REPORTED_DATASTORES,
-            ServiceUtils.getIDFromDocumentSelfLink(documentLink),
-            QueryTask.Query.Occurance.SHOULD_OCCUR);
-      }
-
-      return builder.build();
-
     } catch (Throwable t) {
       throw new RuntimeException(t);
     }
