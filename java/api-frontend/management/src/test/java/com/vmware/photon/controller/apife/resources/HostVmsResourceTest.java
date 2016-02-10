@@ -64,11 +64,9 @@ public class HostVmsResourceTest extends ResourceTest {
 
   @Override
   protected void setUpResources() {
-    vm1 = new Vm();
     vm1.setId("vm1");
     vm1.setName("vm1name");
 
-    vm2 = new Vm();
     vm2.setId("vm2");
     vm2.setName("vm1name");
 
