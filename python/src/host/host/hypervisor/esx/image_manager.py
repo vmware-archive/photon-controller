@@ -836,10 +836,11 @@ class EsxImageManager(ImageManager):
             f.write(manifest)
 
         # Save raw metadata
-        metadata_path = os_metadata_path(datastore_id, image_id,
-                                         IMAGE_FOLDER_NAME)
-        with open(metadata_path, 'w') as f:
-            f.write(metadata)
+        if metadata:
+            metadata_path = os_metadata_path(datastore_id, image_id,
+                                             IMAGE_FOLDER_NAME)
+            with open(metadata_path, 'w') as f:
+                f.write(metadata)
 
         self._create_image_timestamp_file_from_ids(datastore_id, image_id)
 

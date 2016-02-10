@@ -388,8 +388,10 @@ class HttpNfcTransferer(HttpTransferer):
             # Transfer raw metadata
             metadata_path = os_metadata_path(image_datastore, image_id,
                                              IMAGE_FOLDER_NAME)
-            with open(metadata_path, 'r') as f:
-                metadata = f.read()
+            metadata = None
+            if os.path.exists(metadata_path):
+                with open(metadata_path, 'r') as f:
+                    metadata = f.read()
 
             return manifest, metadata
         except:
