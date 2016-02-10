@@ -41,6 +41,7 @@ import com.vmware.photon.controller.resource.gen.NetworkType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceMaintenanceRequest;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -190,6 +191,13 @@ public class HostService extends StatefulService {
   @Override
   public void handleMaintenance(Operation maintenance) {
     try {
+      // Return if the maintenance call is not the periodically scheduled one
+      ServiceMaintenanceRequest request = maintenance.getBody(ServiceMaintenanceRequest.class);
+      if (!request.reasons.contains(ServiceMaintenanceRequest.MaintenanceReason.PERIODIC_SCHEDULE)) {
+        maintenance.complete();
+        return;
+      }
+      
       getHost().schedule(() -> {
         Operation getOperation = Operation.createGet(this, maintenance.getUri().getPath())
             .setCompletion((op, ex) -> {
