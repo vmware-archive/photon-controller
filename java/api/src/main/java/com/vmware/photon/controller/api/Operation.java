@@ -106,6 +106,7 @@ public enum Operation {
   UPDATE_DEPLOYMENT_SECURITY_GROUPS("UpdateDeploymentSecurityGroups"),
   PUSH_DEPLOYMENT_SECURITY_GROUPS("PushDeploymentSecurityGroups"),
   PAUSE_SYSTEM("PauseSystem"),
+  PAUSE_BACKGROUND_TASKS("PauseBackgroundTasks"),
   RESUME_SYSTEM("ResumeSystem"),
   DELETE_CLUSTER_CONFIGURATION("DeleteClusterConfiguration"),
   UPDATE_IMAGE_DATASTORES("UpdateImageDatastores"),

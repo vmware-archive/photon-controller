@@ -113,6 +113,15 @@ public class DeploymentFeClient {
     return task;
   }
 
+  public Task pauseBackgroundTasks(String deploymentId) throws ExternalException {
+    TaskEntity taskEntity = deploymentBackend.pauseBackgroundTasks(deploymentId);
+    Task task = taskBackend.getApiRepresentation(taskEntity);
+
+    TaskCommand command = commandFactory.create(taskEntity);
+    executor.submit(command);
+    return task;
+  }
+
   public Task resumeSystem(String deploymentId) throws ExternalException {
     TaskEntity taskEntity = deploymentBackend.resumeSystem(deploymentId);
     Task task = taskBackend.getApiRepresentation(taskEntity);

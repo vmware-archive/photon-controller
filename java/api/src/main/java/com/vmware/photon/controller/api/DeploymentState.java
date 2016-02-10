@@ -43,6 +43,8 @@ public enum DeploymentState {
               Sets.immutableEnumSet(NOT_DEPLOYED, READY, ERROR))
           .put(Operation.PAUSE_SYSTEM,
               Sets.immutableEnumSet(READY))
+          .put(Operation.PAUSE_BACKGROUND_TASKS,
+              Sets.immutableEnumSet(READY))
           .put(Operation.RESUME_SYSTEM,
               Sets.immutableEnumSet(READY))
           .build();

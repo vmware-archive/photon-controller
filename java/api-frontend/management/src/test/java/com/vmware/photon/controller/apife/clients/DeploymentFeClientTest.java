@@ -141,6 +141,33 @@ public class DeploymentFeClientTest {
   }
 
   /**
+   * Tests the pauseBackgroundTasks method.
+   */
+  public class PauseBackgroundTasksTest {
+    @BeforeMethod
+    public void setUp() {
+      setUpCommon();
+    }
+
+    @Test
+    public void testTaskIsCreated() throws Throwable {
+      String deploymentId = "deployment-id";
+      TaskEntity taskEntity = new TaskEntity();
+      doReturn(taskEntity).when(deploymentBackend).pauseBackgroundTasks(deploymentId);
+
+      Task task = new Task();
+      doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
+
+      TaskCommand command = mock(TaskCommand.class);
+      doReturn(command).when(commandFactory).create(taskEntity);
+
+      Task resp = feClient.pauseBackgroundTasks("deployment-id");
+      assertThat(resp, is(task));
+      verify(executorService).submit(command);
+    }
+  }
+
+  /**
    * Tests the delete and destroy methods.
    */
   public class DeleteTest {

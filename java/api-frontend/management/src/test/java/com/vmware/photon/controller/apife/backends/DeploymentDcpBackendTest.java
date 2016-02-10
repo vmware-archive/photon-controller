@@ -562,6 +562,70 @@ public class DeploymentDcpBackendTest {
   }
 
   /**
+   * Tests for pause resume system.
+   */
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class PauseBackgroundTasksTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeDcpRestClient apiFeDcpRestClient;
+
+    @Inject
+    private DeploymentBackend deploymentBackend;
+
+    private DeploymentEntity initialDeploymentEntity;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonDataSetup();
+
+      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
+      initialDeploymentEntity = deploymentBackend.findById(task.getEntityId());
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testPauseBackgroundTasksFail() throws Throwable {
+      try {
+        deploymentBackend.pauseBackgroundTasks(initialDeploymentEntity.getId());
+        fail("Should have failed since the deployment is not in READY state.");
+      } catch (InvalidOperationStateException e) {
+        assertThat(e.getMessage(), startsWith("Invalid operation PAUSE_BACKGROUND_TASKS for deployment"));
+      }
+    }
+
+    @Test
+    public void testPauseBackgroundTasks() throws Throwable {
+      DeploymentService.State patch = new DeploymentService.State();
+      patch.state = DeploymentState.READY;
+      dcpClient.patch(DeploymentServiceFactory.SELF_LINK + "/" + initialDeploymentEntity.getId(), patch);
+
+      TaskEntity taskEntity = deploymentBackend.pauseBackgroundTasks(initialDeploymentEntity.getId());
+      assertThat(taskEntity.getOperation(), is(Operation.PAUSE_BACKGROUND_TASKS));
+      assertThat(taskEntity.getEntityId(), is(initialDeploymentEntity.getId()));
+      assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
+      assertThat(taskEntity.getSteps().size(), is(1));
+
+      StepEntity stepEntity = taskEntity.getSteps().get(0);
+      assertThat(stepEntity.getOperation(), is(Operation.PAUSE_BACKGROUND_TASKS));
+      assertThat(stepEntity.getResources().isEmpty(), is(true));
+    }
+  }
+
+  /**
    * Tests {@link DeploymentDcpBackend#toApiRepresentation(String)}.
    */
   @Guice(modules = {DcpBackendTestModule.class, TestModule.class})

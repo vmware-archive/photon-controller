@@ -230,6 +230,8 @@ public class StepCommandFactory {
             tenantBackend, projectBackend);
       case PAUSE_SYSTEM:
         return new SystemPauseStepCmd(taskCommand, stepBackend, stepEntity, serviceConfig);
+      case PAUSE_BACKGROUND_TASKS:
+        return new SystemPauseBackgroundTasksStepCmd(taskCommand, stepBackend, stepEntity, serviceConfig);
       case RESUME_SYSTEM:
         return new SystemResumeStepCmd(taskCommand, stepBackend, stepEntity, serviceConfig);
       default:
