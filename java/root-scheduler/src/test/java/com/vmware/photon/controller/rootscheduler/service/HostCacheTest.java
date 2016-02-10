@@ -389,7 +389,7 @@ public class HostCacheTest {
   }
 
   /**
-   * . Validate that the cache properly associates network IDs with the hosts
+   * Validate that the cache properly associates network IDs with the hosts.
    */
   private void validateNetworks(HostCache hostCache, List<HostService.State> hosts) {
     for (HostService.State host : hosts) {

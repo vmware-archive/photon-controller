@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
+import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
@@ -26,10 +27,15 @@ import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.xenon.common.Operation;
 
+import ch.qos.logback.classic.Level;
+
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -47,17 +53,27 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
 /**
- * Test Constraint Checker.
+ * Test the Constraint Checkers.
+ *
+ * These are tests that are common to both kinds of constraint checkers. Since the CloudStoreConstraintChecker has more
+ * functionality, there are tests specific to it in a separate class: CloudStoreConstraintCheckerTest.
  */
 public class ConstraintCheckerTest {
+
+  private static final Logger logger = LoggerFactory.getLogger(ConstraintCheckerTest.class);
 
   private TestEnvironment cloudStoreTestEnvironment;
 
   private Map<String, HostService.State> expectedHosts = new HashMap<>();
+
+  private boolean testAllSelected = false;
+
+  private static final String TEST_ALL_SELECTED_PROPERTY = "test.testAllSelected";
 
   /**
    * Default host data.
@@ -72,6 +88,19 @@ public class ConstraintCheckerTest {
    */
   @BeforeClass
   public void setUpClass() throws Throwable {
+    // Disable host ping: we have fake hosts and don't want them to be marked as missing
+    HostService.setInUnitTests(true);
+    parseProperties();
+
+    // Decrease logging level level. This test does 60,000+ operations, causing tons
+    // of log spam. Not that we will still see warnings and errors when there are problems.
+    Logger xenonLogger = LoggerFactory.getLogger(DcpRestClient.class);
+    ((ch.qos.logback.classic.Logger) xenonLogger).setLevel(Level.WARN);
+    Logger datastoreLogger = LoggerFactory.getLogger(DatastoreService.class);
+    ((ch.qos.logback.classic.Logger) datastoreLogger).setLevel(Level.WARN);
+    Logger hostLogger = LoggerFactory.getLogger(HostService.class);
+    ((ch.qos.logback.classic.Logger) hostLogger).setLevel(Level.WARN);
+
     cloudStoreTestEnvironment = TestEnvironment.create(1);
     Map<String, DatastoreService.State> datastores = new HashMap<>();
     for (int i = 0; i < 10; i++) {
@@ -88,10 +117,15 @@ public class ConstraintCheckerTest {
       host.userName = "username";
       host.password = "password";
       host.state = HostState.READY;
+      host.agentState = AgentState.ACTIVE;
       host.reportedDatastores = new HashSet<>(Arrays.asList(dsName));
       host.reportedNetworks = new HashSet<>(Arrays.asList(nwName));
       host.availabilityZoneId = azName;
       host.metadata = new HashMap<>();
+      // We dramatically increase the delay before we ping
+      // We don't want pings to fail (since these are fake hosts) and break
+      // our test since we only use valid hosts.
+      host.triggerIntervalMillis = new Long(1024 * 1000);
       if (i % 2 == 0) {
         host.usageTags = new HashSet<>(Arrays.asList(UsageTag.MGMT.name()));
         host.metadata.put("MANAGEMENT_DATASTORE", "ds1");
@@ -113,6 +147,7 @@ public class ConstraintCheckerTest {
       datastores.put(dsName, datastore);
     }
 
+    logger.info("Creating datastores...");
     for (Map.Entry<String, DatastoreService.State> entry : datastores.entrySet()) {
       DatastoreService.State initialState = entry.getValue();
       initialState.documentSelfLink = entry.getKey();
@@ -120,11 +155,24 @@ public class ConstraintCheckerTest {
       assertThat(result.getStatusCode(), is(200));
     }
 
+    logger.info("Creating hosts...");
     for (Map.Entry<String, HostService.State> entry : expectedHosts.entrySet()) {
       HostService.State initialState = entry.getValue();
       initialState.documentSelfLink = entry.getKey();
       Operation result = cloudStoreTestEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK, initialState);
       assertThat(result.getStatusCode(), is(200));
+    }
+  }
+
+  /**
+   * Looks for well-known properties to configure the tests.
+   */
+  private void parseProperties() {
+    Properties properties = System.getProperties();
+    for (String name : properties.stringPropertyNames()) {
+      if (name.equals(TEST_ALL_SELECTED_PROPERTY)) {
+        this.testAllSelected = Boolean.parseBoolean(properties.getProperty(TEST_ALL_SELECTED_PROPERTY));
+      }
     }
   }
 
@@ -140,6 +188,7 @@ public class ConstraintCheckerTest {
   public Object[][] createDefault() {
     DcpRestClient dcpRestClient = new DcpRestClient(
         cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
+    // This tests does tens of thousands of operation. We only log failures, so we can see what's happening.
     dcpRestClient.start();
     return new Object[][]{
         {new InMemoryConstraintChecker(dcpRestClient)},
@@ -149,6 +198,7 @@ public class ConstraintCheckerTest {
 
   @Test(dataProvider = "default")
   public void testDefault(ConstraintChecker checker) {
+    logger.info("Testing that {} can find hosts...", checker.getClass().getSimpleName());
     Set<String> hosts = getManagementHosts(checker, 5);
     assertThat(hosts, containsInAnyOrder("host0", "host2", "host4", "host6", "host8"));
 
@@ -183,6 +233,7 @@ public class ConstraintCheckerTest {
   }
   @Test(dataProvider = "default")
   public void testSingleConstraint(ConstraintChecker checker) {
+    logger.info("Testing that {} can find candidates for single constraints...", checker.getClass().getSimpleName());
     Map<String, ServerAddress> allHosts = checker.getCandidates(Collections.emptyList(), expectedHosts.size());
     assertEquals(allHosts.keySet(), expectedHosts.keySet());
     for (Map.Entry<String, ServerAddress> entry: allHosts.entrySet()) {
@@ -265,21 +316,47 @@ public class ConstraintCheckerTest {
   @Test(dataProvider = "default")
   public void testNoConstraint(ConstraintChecker checker) {
     // expect to get all the hosts without any constraint.
+    logger.info("Testing that {} can find all candidates...", checker.getClass().getSimpleName());
     Map<String, ServerAddress> allHosts = checker.getCandidates(Collections.emptyList(), expectedHosts.size());
+    logger.info("Testing that {} can find 10 candidates...", checker.getClass().getSimpleName());
     List<ResourceConstraint> constraints = new LinkedList<>();
     Map<String, ServerAddress> candidates = checker.getCandidates(constraints, 10);
     assertEquals(candidates, allHosts);
 
     // verify that the candidates get picked randomly by picking a single candidate many
-    // times and verifying that eveybody gets picked. This is not deterministic.
-    for (int i = 0; i < 10000; i++) {
-      Map<String, ServerAddress> candidate = checker.getCandidates(constraints, 1);
-      assertThat(candidate.size(), is(1));
+    // times and verifying that everybody gets picked. This is not deterministic, so we only
+    // run this test when requested
+    if (this.testAllSelected) {
+      logger.info("Testing {} that all hosts are selected (non-deterministic)", checker.getClass().getSimpleName());
+
+      Boolean[] selectedHost = new Boolean[10];
+      boolean foundAll = false;
+      int numAttempts = 0;
+      Arrays.fill(selectedHost,  false);
+      for (int i = 0; i < 10000; i++) {
+        Map<String, ServerAddress> candidate = checker.getCandidates(constraints, 1);
+        assertThat(candidate.size(), is(1));
+        // Extract the host index from the name, which is the string "hostN", where N is the number of the host.
+        for (String hostname : candidate.keySet()) {
+          int hostIndex = Integer.parseInt(hostname.substring(4));
+          selectedHost[hostIndex] = true;
+        }
+        if (Arrays.stream(selectedHost).allMatch(selected -> selected == true)) {
+          foundAll = true;
+          numAttempts = i + 1;
+          break;
+        }
+      }
+      assertEquals(foundAll, true);
+      if (foundAll) {
+        logger.info("Took {} attempts to select all hosts", numAttempts);
+      }
     }
   }
 
   @Test(dataProvider = "default")
   public void testNoMatch(ConstraintChecker checker) {
+    logger.info("Testing that {} won't find a match when there isn't one...", checker.getClass().getSimpleName());
     // non-existent datastore
     List<ResourceConstraint> constraints = new LinkedList<>();
     ResourceConstraint constraint = new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList("invalid"));
