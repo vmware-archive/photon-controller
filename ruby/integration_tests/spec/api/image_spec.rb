@@ -61,9 +61,6 @@ describe "image", management: true, image: true do
 
         image_upload.settings[0]['defaultValue'].should == "lsilogic"
 
-        # image can be found by id
-        expect(EsxCloud::Image.find_by_id(image_upload.id)).to eq image_upload
-
         # image shows up in the list
         image_list = EsxCloud::Image.find_all
         expect(image_list.items).to_not be_empty
