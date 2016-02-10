@@ -213,6 +213,17 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   }
 
   @Override
+  public TaskEntity pauseBackgroundTasks(String deploymentId) throws ExternalException {
+    DeploymentEntity deployment = findById(deploymentId);
+    EntityStateValidator.validateOperationState(deployment, deployment.getState(), Operation.PAUSE_BACKGROUND_TASKS,
+        DeploymentState.OPERATION_PREREQ_STATE);
+
+    TaskEntity taskEntity = this.taskBackend.createQueuedTask(deployment, Operation.PAUSE_BACKGROUND_TASKS);
+    this.taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.PAUSE_BACKGROUND_TASKS);
+    return taskEntity;
+  }
+
+  @Override
   public TaskEntity resumeSystem(String deploymentId) throws ExternalException {
     DeploymentEntity deployment = findById(deploymentId);
     EntityStateValidator.validateOperationState(deployment, deployment.getState(), Operation.RESUME_SYSTEM,
