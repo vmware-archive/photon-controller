@@ -125,6 +125,8 @@ public class HostService extends StatefulService {
    */
   private long lastHostMetadataUpdateTime;
 
+  private static boolean inUnitTests = false;
+
   public HostService() {
     super(State.class);
     super.toggleOption(ServiceOption.ENFORCE_QUORUM, true);
@@ -183,12 +185,27 @@ public class HostService extends StatefulService {
   }
 
   /**
-   * Handle periodic maintenance calls for all host service instances.
-   * We will be using this to ping all the hosts periodically to check if they are alive.
+   * When we are running in the unit tests, we want to disable the host ping because it will always fail (we have fake
+   * hosts) and mark the agentState as missing. This allows us to do so.
+   *
+   * @param inUnitTests
+   */
+  public static void setInUnitTests(boolean inUnitTests) {
+    HostService.inUnitTests = inUnitTests;
+  }
+
+  /**
+   * Handle periodic maintenance calls for all host service instances. We will be using this to ping all the hosts
+   * periodically to check if they are alive.
+   *
    * @param maintenance
    */
   @Override
   public void handleMaintenance(Operation maintenance) {
+    if (HostService.inUnitTests) {
+      return;
+    }
+
     try {
       getHost().schedule(() -> {
         Operation getOperation = Operation.createGet(this, maintenance.getUri().getPath())
@@ -475,6 +492,8 @@ public class HostService extends StatefulService {
    */
   public static class State extends ServiceDocument {
 
+    public static final String FIELD_NAME_STATE = "state";
+    public static final String FIELD_NAME_AGENT_STATE = "agentState";
     public static final String FIELD_NAME_AVAILABILITY_ZONE_ID = "availabilityZoneId";
     public static final String FIELD_NAME_HOST_ADDRESS = "hostAddress";
     public static final String FIELD_NAME_REPORTED_DATASTORES = "reportedDatastores";
