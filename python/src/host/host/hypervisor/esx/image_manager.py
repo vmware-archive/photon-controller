@@ -819,7 +819,10 @@ class EsxImageManager(ImageManager):
         image transfer.
         """
 
+        self._vim_client.wait_for_vm_create(imported_vm_name)
         vm = self._vim_client.get_vm_obj_in_cache(imported_vm_name)
+        self._logger.warning("receive_image found vm %s, %s" %
+                             (imported_vm_name, vm))
         vmx_os_path = datastore_to_os_path(vm.config.files.vmPathName)
         vm_dir = os.path.dirname(vmx_os_path)
 
@@ -836,10 +839,11 @@ class EsxImageManager(ImageManager):
             f.write(manifest)
 
         # Save raw metadata
-        metadata_path = os_metadata_path(datastore_id, image_id,
-                                         IMAGE_FOLDER_NAME)
-        with open(metadata_path, 'w') as f:
-            f.write(metadata)
+        if metadata:
+            metadata_path = os_metadata_path(datastore_id, image_id,
+                                             IMAGE_FOLDER_NAME)
+            with open(metadata_path, 'w') as f:
+                f.write(metadata)
 
         self._create_image_timestamp_file_from_ids(datastore_id, image_id)
 

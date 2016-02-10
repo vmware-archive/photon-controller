@@ -42,7 +42,6 @@ class EsxHypervisor(object):
         self._uuid = self.vim_client.host_uuid
         self.set_memory_overcommit(agent_config.memory_overcommit)
 
-        image_datastores = [ds["name"] for ds in agent_config.image_datastores]
         self.datastore_manager = EsxDatastoreManager(
             self, agent_config.datastores, agent_config.image_datastores)
         # datastore manager needs to update the cache when there is a change.
@@ -56,8 +55,9 @@ class EsxHypervisor(object):
                                                  agent_config.networks)
         self.system = EsxSystem(self.vim_client)
         self.image_manager.monitor_for_cleanup()
-        self.image_transferer = HttpNfcTransferer(self.vim_client,
-                                                  image_datastores)
+        self.image_transferer = HttpNfcTransferer(
+                self.vim_client,
+                self.datastore_manager.image_datastores())
         atexit.register(self.image_manager.cleanup)
 
     @property

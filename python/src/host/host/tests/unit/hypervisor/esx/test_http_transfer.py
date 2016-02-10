@@ -235,9 +235,10 @@ class TestHttpTransfer(unittest.TestCase):
         self.assertEqual(lease, lease_mock)
         self.assertEqual(url, url_mock)
 
+    @patch("os.path.exists")
     @patch("__builtin__.open")
     @patch("os.unlink")
-    def test_send_image_to_host(self, mock_unlink, mock_open):
+    def test_send_image_to_host(self, mock_unlink, mock_open, mock_exists):
         host = "mock_host"
         port = 8835
         image_id = "fake_image_id"
@@ -255,6 +256,7 @@ class TestHttpTransfer(unittest.TestCase):
         def fake_read():
             return file_contents.pop()
         mock_open().__enter__().read.side_effect = fake_read
+        mock_exists.return_value = True
 
         xferer._get_image_stream_from_shadow_vm = MagicMock(
             return_value=(read_lease_mock, from_url_mock))
