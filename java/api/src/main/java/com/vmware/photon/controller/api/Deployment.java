@@ -47,6 +47,11 @@ public class Deployment extends Base {
   private String syslogEndpoint;
 
   @JsonProperty
+  @ApiModelProperty(value = "statsStoreEndpoint")
+  @NullableDomainOrIP
+  private String statsStoreEndpoint;
+
+  @JsonProperty
   @ApiModelProperty(value = "ntpEndpoint")
   @NullableDomainOrIP
   private String ntpEndpoint;
@@ -90,6 +95,14 @@ public class Deployment extends Base {
 
   public void setSyslogEndpoint(String syslogEndpoint) {
     this.syslogEndpoint = syslogEndpoint;
+  }
+
+  public void setStatsStoreEndpoint(String statsStoreEndpoint) {
+    this.statsStoreEndpoint = statsStoreEndpoint;
+  }
+
+  public String getStatsStoreEndpoint() {
+    return statsStoreEndpoint;
   }
 
   public String getNtpEndpoint() {
@@ -170,6 +183,7 @@ public class Deployment extends Base {
     Deployment other = (Deployment) o;
 
     return Objects.equals(this.getSyslogEndpoint(), other.getSyslogEndpoint())
+        && Objects.equals(this.getStatsStoreEndpoint(), other.getStatsStoreEndpoint())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms())
@@ -184,6 +198,7 @@ public class Deployment extends Base {
     return Objects.hash(
         super.hashCode(),
         this.getSyslogEndpoint(),
+        this.getStatsStoreEndpoint(),
         this.getNtpEndpoint(),
         this.getImageDatastores(),
         this.isUseImageDatastoreForVms(),
@@ -197,6 +212,7 @@ public class Deployment extends Base {
     return super.toStringHelper()
         .add("imageDatastores", StringUtils.join(imageDatastores, ','))
         .add("syslogEndpoint", syslogEndpoint)
+        .add("statsStoreEndpoint", statsStoreEndpoint)
         .add("ntpEndpoint", ntpEndpoint)
         .add("useImageDatastoreForVms", useImageDatastoreForVms)
         .add("auth", auth.toString())

@@ -96,6 +96,11 @@ public class DeployerContextTest {
     }
 
     @Test
+    public void testStatsStoreEndpoint() {
+      assertThat(deployerContext.getStatsStoreEndpoint(), is("statsStore endpoint"));
+    }
+
+    @Test
     public void testVibDirectory() {
       assertThat(deployerContext.getVibDirectory(), is("/tmp/deployAgent/vibs"));
     }
@@ -161,6 +166,11 @@ public class DeployerContextTest {
     @Test
     public void testSysLogEndpoint() {
       assertThat(deployerContext.getSyslogEndpoint(), nullValue());
+    }
+
+    @Test
+    public void testStatsStoreEndpoint() {
+      assertThat(deployerContext.getStatsStoreEndpoint(), nullValue());
     }
 
     @Test

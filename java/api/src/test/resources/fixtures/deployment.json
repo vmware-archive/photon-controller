@@ -2,6 +2,7 @@
     "id": "id",
     "kind": "deployment",
     "syslogEndpoint": "0.0.0.1",
+    "statsStoreEndpoint" : "0.0.0.3",
     "ntpEndpoint": "0.0.0.2",
     "imageDatastores": [
       "image-datastore"
