@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
+import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
@@ -93,29 +94,33 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
 
     Map<String, ServerAddress> result = new HashMap<>(numCandidates);
 
-    // Divide the hosts into two groups, based on a random midpoint
-    int randomMidpoint = 1 + random.nextInt(HostService.MAX_SCHEDULING_CONSTANT - 1);
+    try {
+      // Divide the hosts into two groups, based on a random midpoint
+      int randomMidpoint = 1 + random.nextInt(HostService.MAX_SCHEDULING_CONSTANT - 1);
 
-    if (random.nextBoolean()) {
-      // Case 1: first try [randomMidpoint, 10000], then [0, randomMidpoint]
-      QueryTask.Query query =
-          buildQuery(resourceConstraints, randomMidpoint, HostService.MAX_SCHEDULING_CONSTANT);
-      getCandidates(query, numCandidates, SortOrder.ASC, result);
-
-      if (result.size() < numCandidates) {
-        updateQueryRange(query, 0, randomMidpoint);
-        getCandidates(query, numCandidates, SortOrder.DESC, result);
-      }
-    } else {
-      // Case 2: first try [0, randomMidpoint] then [randomMidpoint, 10000]
-      QueryTask.Query query =
-          buildQuery(resourceConstraints, 0, randomMidpoint);
-      getCandidates(query, numCandidates, SortOrder.DESC, result);
-
-      if (result.size() < numCandidates) {
-        updateQueryRange(query, randomMidpoint, HostService.MAX_SCHEDULING_CONSTANT);
+      if (random.nextBoolean()) {
+        // Case 1: first try [randomMidpoint, 10000], then [0, randomMidpoint]
+        QueryTask.Query query =
+            buildQuery(resourceConstraints, randomMidpoint, HostService.MAX_SCHEDULING_CONSTANT);
         getCandidates(query, numCandidates, SortOrder.ASC, result);
+
+        if (result.size() < numCandidates) {
+          updateQueryRange(query, 0, randomMidpoint);
+          getCandidates(query, numCandidates, SortOrder.DESC, result);
+        }
+      } else {
+        // Case 2: first try [0, randomMidpoint] then [randomMidpoint, 10000]
+        QueryTask.Query query =
+            buildQuery(resourceConstraints, 0, randomMidpoint);
+        getCandidates(query, numCandidates, SortOrder.DESC, result);
+
+        if (result.size() < numCandidates) {
+          updateQueryRange(query, randomMidpoint, HostService.MAX_SCHEDULING_CONSTANT);
+          getCandidates(query, numCandidates, SortOrder.ASC, result);
+        }
       }
+    } catch (NoSuchResourceException e) {
+      logger.warn(e.getMessage());
     }
 
     return result;
@@ -127,7 +132,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
   private QueryTask.Query buildQuery(
       List<ResourceConstraint> resourceConstraints,
       long lowerBound,
-      long upperBound) {
+      long upperBound) throws NoSuchResourceException {
     QueryTask.Query.Builder queryBuilder = QueryTask.Query.Builder.create()
         .addKindFieldClause(HostService.State.class)
         .addRangeClause(HostService.State.FIELD_NAME_SCHEDULING_CONSTANT,
@@ -350,7 +355,8 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
   }
 
 
-  private void addDatastoreTagClause(QueryTask.Query.Builder builder, ResourceConstraint constraint) {
+  private void addDatastoreTagClause(QueryTask.Query.Builder builder, ResourceConstraint constraint) throws
+      NoSuchResourceException {
 
     List<String> tags = constraint.getValues();
     if (tags == null || tags.size() == 0) {
@@ -387,16 +393,24 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
         for (String documentLink : queryResult.documentLinks) {
           documentLinks.add(ServiceUtils.getIDFromDocumentSelfLink(documentLink));
         }
-
-        // Based on the datastores we got, build a new clause to select the datastores.
-        ResourceConstraint datastoreConstraint = new ResourceConstraint(
-            ResourceConstraintType.DATASTORE,
-            documentLinks);
-        if (constraint.isSetNegative() && constraint.isNegative()) {
-          datastoreConstraint.setNegative(true);
-        }
-        addCollectionItemClause(builder, HostService.State.FIELD_NAME_REPORTED_DATASTORES, datastoreConstraint);
       }
+
+      // No datastore which match the specified constraint is available
+      if (documentLinks.size() == 0) {
+        throw new NoSuchResourceException("Resource Constraint datastore_tag cannot be satisfied");
+      }
+
+      // Based on the datastores we got, build a new clause to select the datastores.
+      ResourceConstraint datastoreConstraint = new ResourceConstraint(
+          ResourceConstraintType.DATASTORE,
+          documentLinks);
+      if (constraint.isSetNegative() && constraint.isNegative()) {
+        datastoreConstraint.setNegative(true);
+      }
+      addCollectionItemClause(builder, HostService.State.FIELD_NAME_REPORTED_DATASTORES, datastoreConstraint);
+
+    } catch (NoSuchResourceException e) {
+      throw e;
     } catch (Throwable t) {
       throw new RuntimeException(t);
     }
