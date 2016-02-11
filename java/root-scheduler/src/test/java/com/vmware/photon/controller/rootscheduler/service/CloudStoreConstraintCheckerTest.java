@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -66,9 +67,18 @@ public class CloudStoreConstraintCheckerTest {
 
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreConstraintCheckerTest.class);
 
-  private TestEnvironment cloudStoreTestEnvironment;
-  private DcpRestClient cloudstoreClient;
-  private CloudStoreConstraintChecker checker;
+  // We test with two Cloudstore environments. This first one has a single Cloudstore host
+  private static final int SMALL_NUMBER_OF_CS_HOSTS = 1;
+  private TestEnvironment cloudStoreTestEnvironmentSmall;
+  private DcpRestClient cloudstoreClientSmall;
+  private CloudStoreConstraintChecker checkerSmall;
+
+  // The second Cloudstore environment has 3 Cloudstores and eventually, when we work well
+  // with clusters larger than our replication factor, it will increase.
+  private static final int LARGE_NUMBER_OF_CS_HOSTS = 3;
+  private TestEnvironment cloudStoreTestEnvironmentLarge;
+  private DcpRestClient cloudstoreClientLarge;
+  private CloudStoreConstraintChecker checkerLarge;
 
   @BeforeClass
   public void setUpClass() throws Throwable {
@@ -81,34 +91,52 @@ public class CloudStoreConstraintCheckerTest {
 
     // This test doesn't need to show all Xenon operations,
     // just the ones that fail. This keeps the test output manageable
-    Logger xenonLogger = LoggerFactory.getLogger(DcpRestClient.class);
-    ((ch.qos.logback.classic.Logger) xenonLogger).setLevel(Level.WARN);
+    Logger otherLogger = LoggerFactory.getLogger(DcpRestClient.class);
+    ((ch.qos.logback.classic.Logger) otherLogger).setLevel(Level.WARN);
 
     // We also don't need to see all the host and datastore services that are created
-    Logger hostLogger = LoggerFactory.getLogger(HostService.class);
-    ((ch.qos.logback.classic.Logger) hostLogger).setLevel(Level.WARN);
-    Logger datastoreLogger = LoggerFactory.getLogger(DatastoreService.class);
-    ((ch.qos.logback.classic.Logger) datastoreLogger).setLevel(Level.WARN);
+    otherLogger = LoggerFactory.getLogger(HostService.class);
+    ((ch.qos.logback.classic.Logger) otherLogger).setLevel(Level.WARN);
+    otherLogger = LoggerFactory.getLogger(DatastoreService.class);
+    ((ch.qos.logback.classic.Logger) otherLogger).setLevel(Level.WARN);
 
     // We also don't want to see the full state of Cloudstore at the completion of the test
-    Logger serviceHostUtilsLogger = LoggerFactory.getLogger(ServiceHostUtils.class);
-    ((ch.qos.logback.classic.Logger) serviceHostUtilsLogger).setLevel(Level.WARN);
+    otherLogger = LoggerFactory.getLogger(ServiceHostUtils.class);
+    ((ch.qos.logback.classic.Logger) otherLogger).setLevel(Level.WARN);
   }
 
   private void startCloudstore() throws Throwable {
-    this.cloudStoreTestEnvironment = TestEnvironment.create(1);
-    this.cloudstoreClient =
-        new DcpRestClient(cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
-    cloudstoreClient.start();
-    checker = new CloudStoreConstraintChecker(cloudstoreClient);
+    this.cloudStoreTestEnvironmentSmall = TestEnvironment.create(SMALL_NUMBER_OF_CS_HOSTS);
+    this.cloudstoreClientSmall =
+        new DcpRestClient(cloudStoreTestEnvironmentSmall.getServerSet(), Executors.newFixedThreadPool(1));
+    cloudstoreClientSmall.start();
+    this.checkerSmall = new CloudStoreConstraintChecker(cloudstoreClientSmall);
+
+    this.cloudStoreTestEnvironmentLarge = TestEnvironment.create(LARGE_NUMBER_OF_CS_HOSTS);
+    this.cloudstoreClientLarge =
+        new DcpRestClient(cloudStoreTestEnvironmentLarge.getServerSet(), Executors.newFixedThreadPool(1));
+    cloudstoreClientLarge.start();
+    this.checkerLarge = new CloudStoreConstraintChecker(cloudstoreClientLarge);
   }
 
   @AfterClass
   public void tearDownClass() throws Throwable {
-    if (cloudStoreTestEnvironment != null) {
-      this.cloudStoreTestEnvironment.stop();
-      this.cloudStoreTestEnvironment = null;
+    if (cloudStoreTestEnvironmentSmall != null) {
+      this.cloudStoreTestEnvironmentSmall.stop();
+      this.cloudStoreTestEnvironmentSmall = null;
     }
+    if (cloudStoreTestEnvironmentLarge != null) {
+      this.cloudStoreTestEnvironmentLarge.stop();
+      this.cloudStoreTestEnvironmentLarge = null;
+    }
+  }
+
+  @DataProvider(name = "environment")
+  public Object[][] createDefault() {
+    return new Object[][] {
+        { "fully replicated Cloudstore", this.cloudStoreTestEnvironmentSmall, this.checkerSmall },
+        { "asymmetic replication Cloudstore", this.cloudStoreTestEnvironmentLarge, this.checkerLarge },
+    };
   }
 
   /**
@@ -119,28 +147,34 @@ public class CloudStoreConstraintCheckerTest {
    *
    * @throws Throwable
    */
-  @Test
-  public void testSchedulingConstraintBoundaries() throws Throwable {
+  @Test(dataProvider = "environment")
+  public void testSchedulingConstraintBoundaries(
+      String environmentName,
+      TestEnvironment cloudStoreEnvironment,
+      CloudStoreConstraintChecker checker) throws Throwable {
+
+    logger.info("Testing constraint boundaries with {}", environmentName);
+
     // Part 1a: Ensure that we can find a host with scheduling constant 0
     List<HostService.State> hosts = createSimpleHostWithSchedulingConstant(0);
-    createHosts(hosts);
+    createHosts(cloudStoreEnvironment, hosts);
 
     Map<String, ServerAddress> selectedHosts = checker.getCandidates(null, 1);
     assertThat(selectedHosts.size(), equalTo(1));
 
     // Part 1b: Ensure that when we delete the host, we can no longer find it
-    deleteHosts(hosts);
+    deleteHosts(cloudStoreEnvironment, hosts);
     selectedHosts = checker.getCandidates(null, 1);
     assertThat(selectedHosts.size(), equalTo(0));
 
     // Part 2a: Ensure that we can find a host with the maximum scheduling constant (actually, 9999)
     hosts = createSimpleHostWithSchedulingConstant(HostService.MAX_SCHEDULING_CONSTANT - 1);
-    createHosts(hosts);
+    createHosts(cloudStoreEnvironment, hosts);
     selectedHosts = checker.getCandidates(null, 1);
     assertThat(selectedHosts.size(), equalTo(1));
 
     // Part 2b: Ensure that when we delete the host, we can no longer find it
-    deleteHosts(hosts);
+    deleteHosts(cloudStoreEnvironment, hosts);
     selectedHosts = checker.getCandidates(null, 1);
     assertThat(selectedHosts.size(), equalTo(0));
   }
@@ -166,20 +200,26 @@ public class CloudStoreConstraintCheckerTest {
     return hosts;
   }
 
-  @Test
-  private void testHostTypeQueries() throws Throwable {
+  @Test(dataProvider = "environment")
+  private void testHostTypeQueries(
+      String environmentName,
+      TestEnvironment cloudStoreEnvironment,
+      CloudStoreConstraintChecker checker) throws Throwable {
+
+    logger.info("Testing host type boundaries with {}", environmentName);
+
     List<DatastoreService.State> datastores = createDatastoreDescriptions(10);
     List<HostService.State> cloudHosts = createHostDescriptions(10, false, datastores);
     List<HostService.State> managementHosts = createHostDescriptions(10, true, datastores);
 
     logger.info("Making 10 datastores...");
-    createDatastores(datastores);
+    createDatastores(cloudStoreEnvironment, datastores);
 
     logger.info("Making 10 cloud hosts...");
-    createHosts(cloudHosts);
+    createHosts(cloudStoreEnvironment, cloudHosts);
 
     logger.info("Making 10 management hosts...");
-    createHosts(managementHosts);
+    createHosts(cloudStoreEnvironment, managementHosts);
 
     Map<String, ServerAddress> selectedHosts;
     ResourceConstraint constraint;
@@ -201,9 +241,9 @@ public class CloudStoreConstraintCheckerTest {
       assertThat(hostId, startsWith(CLOUD_HOST_PREFIX));
     }
 
-    deleteDatastores(datastores);
-    deleteHosts(cloudHosts);
-    deleteHosts(managementHosts);
+    deleteDatastores(cloudStoreEnvironment, datastores);
+    deleteHosts(cloudStoreEnvironment, cloudHosts);
+    deleteHosts(cloudStoreEnvironment, managementHosts);
   }
 
   /**
@@ -214,16 +254,22 @@ public class CloudStoreConstraintCheckerTest {
    *
    * For each of the constraints that can have multiple values, we validate they work
    */
-  @Test
-  private void testMultipleValues() throws Throwable {
+  @Test(dataProvider = "environment")
+  private void testMultipleValues(
+      String environmentName,
+      TestEnvironment cloudStoreEnvironment,
+      CloudStoreConstraintChecker checker) throws Throwable {
+
+    logger.info("Testing multiple values with {}", environmentName);
+
     List<DatastoreService.State> datastores = createDatastoreDescriptions(10);
     List<HostService.State> hosts = createHostDescriptions(10, false, datastores);
 
     logger.info("Making 10 datastores...");
-    createDatastores(datastores);
+    createDatastores(cloudStoreEnvironment, datastores);
 
     logger.info("Making 10 cloud hosts...");
-    createHosts(hosts);
+    createHosts(cloudStoreEnvironment, hosts);
 
     HostService.State host0 = hosts.get(0);
     HostService.State host1 = hosts.get(1);
@@ -336,8 +382,8 @@ public class CloudStoreConstraintCheckerTest {
     assertThat(selectedHosts.values(), not(hasItem(host1Address)));
     assertThat(selectedHosts.size(), equalTo(2));
 
-    deleteDatastores(datastores);
-    deleteHosts(hosts);
+    deleteDatastores(cloudStoreEnvironment, datastores);
+    deleteHosts(cloudStoreEnvironment, hosts);
   }
 
   /**
@@ -434,9 +480,9 @@ public class CloudStoreConstraintCheckerTest {
   /**
    * Given the host descriptions created by createHostDescriptions, post them to Cloudstore.
    */
-  private void createHosts(List<HostService.State> hosts) throws Throwable {
+  private void createHosts(TestEnvironment cloudStoreEnvironment, List<HostService.State> hosts) throws Throwable {
     for (HostService.State host : hosts) {
-      Operation result = cloudStoreTestEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK, host);
+      Operation result = cloudStoreEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK, host);
       assertThat(result.getStatusCode(), equalTo(200));
     }
   }
@@ -444,9 +490,10 @@ public class CloudStoreConstraintCheckerTest {
   /**
    * Given the datastore descriptions created by createDatastoreDescriptions, post them to Cloudstore.
    */
-  private void createDatastores(List<DatastoreService.State> datastores) throws Throwable {
+  private void createDatastores(TestEnvironment cloudStoreEnvironment, List<DatastoreService.State> datastores)
+      throws Throwable {
     for (DatastoreService.State datastore : datastores) {
-      Operation result = cloudStoreTestEnvironment.sendPostAndWait(DatastoreServiceFactory.SELF_LINK, datastore);
+      Operation result = cloudStoreEnvironment.sendPostAndWait(DatastoreServiceFactory.SELF_LINK, datastore);
       assertThat(result.getStatusCode(), equalTo(200));
     }
   }
@@ -454,10 +501,10 @@ public class CloudStoreConstraintCheckerTest {
   /**
    * Given the host descriptions created by createHostDescriptions, delete them to from Cloudstore.
    */
-  private void deleteHosts(List<HostService.State> hosts) throws Throwable {
+  private void deleteHosts(TestEnvironment cloudStoreEnvironment, List<HostService.State> hosts) throws Throwable {
     for (HostService.State host : hosts) {
       String hostUri = UriUtils.buildUriPath(HostServiceFactory.SELF_LINK, host.documentSelfLink);
-      Operation result = cloudStoreTestEnvironment.sendDeleteAndWait(hostUri);
+      Operation result = cloudStoreEnvironment.sendDeleteAndWait(hostUri);
       assertThat(result.getStatusCode(), equalTo(200));
     }
   }
@@ -465,10 +512,11 @@ public class CloudStoreConstraintCheckerTest {
   /**
    * Given the datastore descriptions created by createDatastoreDescriptions, delete them from Cloudstore.
    */
-  private void deleteDatastores(List<DatastoreService.State> datastores) throws Throwable {
+  private void deleteDatastores(TestEnvironment cloudStoreEnvironment, List<DatastoreService.State> datastores)
+      throws Throwable {
     for (DatastoreService.State datastore : datastores) {
       String hostUri = UriUtils.buildUriPath(DatastoreServiceFactory.SELF_LINK, datastore.documentSelfLink);
-      Operation result = cloudStoreTestEnvironment.sendDeleteAndWait(hostUri);
+      Operation result = cloudStoreEnvironment.sendDeleteAndWait(hostUri);
       assertThat(result.getStatusCode(), equalTo(200));
     }
   }
