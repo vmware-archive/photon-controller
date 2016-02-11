@@ -15,10 +15,10 @@ package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
@@ -396,19 +396,21 @@ public class ImageHostToHostCopyService extends StatefulService {
   }
 
   /**
-   * Build a state object for ImageReplicationService to submit a post request to the service.
+   * Build a state object for ImageToImageDatastoreMappingService to submit a post request to the service.
    *
    * @param imageId
    * @param imageDatastoreId
    * @return
    */
-  private ImageReplicationService.State buildImageReplicationServiceState(String imageId, String imageDatastoreId) {
-    ImageReplicationService.State imageReplicationService = new ImageReplicationService.State();
-    imageReplicationService.imageId = imageId;
-    imageReplicationService.imageDatastoreId = imageDatastoreId;
-    imageReplicationService.documentSelfLink = imageId + "_" + imageDatastoreId;
+  private ImageToImageDatastoreMappingService.State
+  buildImageToImageDatastoreMappingServiceState(String imageId, String imageDatastoreId) {
+    ImageToImageDatastoreMappingService.State imageToImageDatastoreMappingService
+        = new ImageToImageDatastoreMappingService.State();
+    imageToImageDatastoreMappingService.imageId = imageId;
+    imageToImageDatastoreMappingService.imageDatastoreId = imageDatastoreId;
+    imageToImageDatastoreMappingService.documentSelfLink = imageId + "_" + imageDatastoreId;
 
-    return imageReplicationService;
+    return imageToImageDatastoreMappingService;
   }
 
   /**
@@ -446,15 +448,17 @@ public class ImageHostToHostCopyService extends StatefulService {
   }
 
   /**
-   * Sends post request to ImageReplicationService to create a document with imageId and destination datastore.
+   * Sends post request to imageToImageDatastoreMappingService to
+   * create a document with imageId and destination datastore.
    *
    * @param current
    */
   private void updateDocumentsAndTriggerCopy(final State current, boolean isEagerCopy) {
-    ImageReplicationService.State postState =
-        buildImageReplicationServiceState(current.image, current.destinationDatastore);
-    Operation createImageReplicationPatch = ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper().createPost
-        (ImageReplicationServiceFactory.SELF_LINK)
+    ImageToImageDatastoreMappingService.State postState =
+        buildImageToImageDatastoreMappingServiceState(current.image, current.destinationDatastore);
+    Operation createimageToImageDatastoreMappingServicePatch =
+        ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper().createPost
+        (ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
         .setBody(postState);
 
     ImageReplicatorService.State replicatorServiceState =
@@ -472,7 +476,7 @@ public class ImageHostToHostCopyService extends StatefulService {
 
     try {
       OperationSequence operationSequence = OperationSequence
-          .create(createImageReplicationPatch)
+          .create(createimageToImageDatastoreMappingServicePatch)
           .setCompletion(
               (operation, throwable) -> {
                 //re-throw any exception other than a conflict which indicated the lock already exists

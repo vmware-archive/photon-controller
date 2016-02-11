@@ -30,10 +30,10 @@ import com.vmware.photon.controller.apife.exceptions.external.ImageUploadExcepti
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.DcpClient;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
@@ -165,13 +165,13 @@ public class ImageDcpBackendTest {
     return ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink);
   }
 
-  private static void createImageReplicationService(String imageId, String imageDatastoreId) {
-    ImageReplicationService.State state = new ImageReplicationService.State();
+  private static void createImageToImageDatastoreMappingService(String imageId, String imageDatastoreId) {
+    ImageToImageDatastoreMappingService.State state = new ImageToImageDatastoreMappingService.State();
     state.imageId = imageId;
     state.imageDatastoreId = imageDatastoreId;
     state.documentSelfLink = imageId + "-" + imageDatastoreId;
 
-    dcpClient.post(ImageReplicationServiceFactory.SELF_LINK, state);
+    dcpClient.post(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, state);
   }
 
   @Test
@@ -484,8 +484,9 @@ public class ImageDcpBackendTest {
 
       final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("imageId", imageEntity.getId());
-      List<ImageReplicationService.State> results = dcpClient.queryDocuments(ImageReplicationService.State.class,
-          termsBuilder.build());
+      List<ImageToImageDatastoreMappingService.State> results =
+          dcpClient.queryDocuments(ImageToImageDatastoreMappingService.State.class,
+              termsBuilder.build());
       assertThat(results.size(), is(1));
       assertThat(results.get(0).imageDatastoreId, is(imageDatastoreId));
     }
@@ -509,13 +510,14 @@ public class ImageDcpBackendTest {
 
       final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("imageId", imageEntity.getId());
-      List<ImageReplicationService.State> results = dcpClient.queryDocuments(ImageReplicationService.State.class,
-          termsBuilder.build());
+      List<ImageToImageDatastoreMappingService.State> results =
+          dcpClient.queryDocuments(ImageToImageDatastoreMappingService.State.class,
+              termsBuilder.build());
       assertThat(results.size(), is(1));
       assertThat(results.get(0).imageDatastoreId, is(imageDatastoreId));
 
       imageBackend.updateImageDatastore(imageEntity.getId(), "image-datastore-name");
-      results = dcpClient.queryDocuments(ImageReplicationService.State.class,
+      results = dcpClient.queryDocuments(ImageToImageDatastoreMappingService.State.class,
           termsBuilder.build());
       assertThat(results.size(), is(1));
       assertThat(results.get(0).imageDatastoreId, is(imageDatastoreId));
@@ -533,12 +535,12 @@ public class ImageDcpBackendTest {
 
       List<String> imageDatastores = Arrays.asList(new String[]{"datastore1", "datastore2"});
       for (String datastoreId : imageDatastores) {
-        createImageReplicationService(imageId, datastoreId);
+        createImageToImageDatastoreMappingService(imageId, datastoreId);
       }
 
       // An unrelated imagestore, and it should not be returned by
       // getSeededImageDatastores
-      createImageReplicationService("image2", "datastore3");
+      createImageToImageDatastoreMappingService("image2", "datastore3");
 
       boolean done = BackendHelpers.isImageSeedingDone(dcpClient, imageId);
       assertThat(done, is(false));

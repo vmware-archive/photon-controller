@@ -17,10 +17,10 @@ import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
@@ -101,12 +101,12 @@ public class BackendHelpersTest {
 
       List<String> imageDatastores = Arrays.asList(new String[]{"datastore1", "datastore2"});
       for (String datastoreId : imageDatastores) {
-        createImageReplicationService(imageId, datastoreId);
+        createImageToImageDatastoreMappingService(imageId, datastoreId);
       }
 
       // An unrelated imagestore, and it should not be returned by
       // getSeededImageDatastores
-      createImageReplicationService("image2", "datastore3");
+      createImageToImageDatastoreMappingService("image2", "datastore3");
 
       boolean done = BackendHelpers.isImageSeedingDone(dcpClient, imageId);
       assertThat(done, is(false));
@@ -129,13 +129,13 @@ public class BackendHelpersTest {
       return ServiceUtils.getIDFromDocumentSelfLink(op.getBody(ImageService.State.class).documentSelfLink);
     }
 
-    private void createImageReplicationService(String imageId, String imageDatastoreId) {
-      ImageReplicationService.State state = new ImageReplicationService.State();
+    private void createImageToImageDatastoreMappingService(String imageId, String imageDatastoreId) {
+      ImageToImageDatastoreMappingService.State state = new ImageToImageDatastoreMappingService.State();
       state.imageId = imageId;
       state.imageDatastoreId = imageDatastoreId;
       state.documentSelfLink = imageId + "-" + imageDatastoreId;
 
-      dcpClient.post(ImageReplicationServiceFactory.SELF_LINK, state);
+      dcpClient.post(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, state);
     }
   }
 }

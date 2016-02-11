@@ -18,19 +18,20 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
 /**
- * Class ImageReplicationServiceFactory is a factory to create a ImageReplicationService instances.
+ * Class ImageToImageDatastoreMappingServiceFactory is a factory to create a ImageToImageDatastoreMappingService
+ * instances.
  */
-public class ImageReplicationServiceFactory extends FactoryService {
+public class ImageToImageDatastoreMappingServiceFactory extends FactoryService {
 
   public static final String SELF_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/images-replication";
 
-  public ImageReplicationServiceFactory() {
-    super(ImageReplicationService.State.class);
+  public ImageToImageDatastoreMappingServiceFactory() {
+    super(ImageToImageDatastoreMappingService.State.class);
     super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
   }
 
   @Override
   public Service createServiceInstance() throws Throwable {
-    return new ImageReplicationService();
+    return new ImageToImageDatastoreMappingService();
   }
 }
