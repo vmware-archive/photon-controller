@@ -247,6 +247,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     deployment.setState(deploymentEntity.getState());
     deployment.setImageDatastores(deploymentEntity.getImageDatastores());
     deployment.setSyslogEndpoint(deploymentEntity.getSyslogEndpoint());
+    deployment.setStatsStoreEndpoint(deploymentEntity.getStatsStoreEndpoint());
     deployment.setNtpEndpoint(deploymentEntity.getNtpEndpoint());
     deployment.setUseImageDatastoreForVms(deploymentEntity.getUseImageDatastoreForVms());
     AuthInfo authInfo = new AuthInfo();
@@ -419,6 +420,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     deployment.imageDataStoreNames = spec.getImageDatastores();
     deployment.imageDataStoreUsedForVMs = spec.isUseImageDatastoreForVms();
     deployment.syslogEndpoint = spec.getSyslogEndpoint();
+    deployment.statsStoreEndpoint = spec.getStatsStoreEndpoint();
     deployment.ntpEndpoint = spec.getNtpEndpoint();
     if (spec.getAuth() != null) {
       deployment.oAuthEnabled = spec.getAuth().getEnabled();
@@ -451,6 +453,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     entity.setImageDatastores(deployment.imageDataStoreNames);
     entity.setUseImageDatastoreForVms(deployment.imageDataStoreUsedForVMs);
     entity.setSyslogEndpoint(deployment.syslogEndpoint);
+    entity.setStatsStoreEndpoint(deployment.statsStoreEndpoint);
     entity.setNtpEndpoint(deployment.ntpEndpoint);
     entity.setAuthEnabled(deployment.oAuthEnabled);
     entity.setOauthEndpoint(deployment.oAuthServerAddress);

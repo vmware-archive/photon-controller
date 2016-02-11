@@ -1595,6 +1595,7 @@ public class HostClient {
       double memoryOverCommit,
       String loggingEndpoint,
       String logLevel,
+      String statsStoreEndpoint,
       boolean managementOnly,
       String hostId,
       String deploymentId,
@@ -1666,6 +1667,7 @@ public class HostClient {
       double memoryOverCommit,
       String loggingEndpoint,
       String logLevel,
+      String statsStoreEndpoint,
       boolean managementOnly,
       String hostId,
       String deploymentId,
@@ -1673,8 +1675,8 @@ public class HostClient {
       throws InterruptedException, RpcException {
     SyncHandler<ProvisionResponse, Host.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
     provision(availabilityZone, dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
-        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, managementOnly, hostId, deploymentId,
-        ntpEndpoint, syncHandler);
+        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, statsStoreEndpoint, managementOnly,
+        hostId, deploymentId, ntpEndpoint, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkProvisionResponse(syncHandler.getResponse());
   }

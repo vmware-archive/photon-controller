@@ -959,7 +959,8 @@ public class DeployerServiceTest {
       deployment.setId(UUID.randomUUID().toString());
       deployment.setImageDatastore("imageDatastore");
       deployment.setNtpEndpoint("ntp");
-      deployment.setSyslogEnpoint("syslog");
+      deployment.setSyslogEndpoint("syslog");
+      deployment.setStatsStoreEndpoint("statsStore");
       deployment.setAuthEnabled(authEnabled);
       deployment.setOauthTenant(oauthTenant);
       deployment.setOauthUsername(oauthUsername);

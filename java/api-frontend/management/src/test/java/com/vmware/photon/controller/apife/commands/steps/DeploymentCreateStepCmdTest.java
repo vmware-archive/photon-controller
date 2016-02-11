@@ -107,7 +107,8 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
         assertTrue(deploymentEntity.getImageDatastores().contains(deployment.getImageDatastore()));
       }
       assertThat(deployment.getNtpEndpoint(), is(deploymentEntity.getNtpEndpoint()));
-      assertThat(deployment.getSyslogEnpoint(), is(deploymentEntity.getSyslogEndpoint()));
+      assertThat(deployment.getSyslogEndpoint(), is(deploymentEntity.getSyslogEndpoint()));
+      assertThat(deployment.getStatsStoreEndpoint(), is(deploymentEntity.getStatsStoreEndpoint()));
       assertThat(deployment.isAuthEnabled(), is(deploymentEntity.getAuthEnabled()));
       assertThat(deployment.getOauthEndpoint(), is(deploymentEntity.getOauthEndpoint()));
       assertThat(deployment.getOauthTenant(), is(deploymentEntity.getOauthTenant()));

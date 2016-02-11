@@ -35,6 +35,8 @@ public class DeploymentEntity extends BaseEntity {
 
   private String syslogEndpoint;
 
+  private String statsStoreEndpoint;
+
   private boolean authEnabled;
 
   private String oauthEndpoint;
@@ -101,6 +103,14 @@ public class DeploymentEntity extends BaseEntity {
 
   public void setSyslogEndpoint(String endpoint) {
     this.syslogEndpoint = endpoint;
+  }
+
+  public String getStatsStoreEndpoint() {
+    return this.statsStoreEndpoint;
+  }
+
+  public void setStatsStoreEndpoint(String endpoint) {
+    this.statsStoreEndpoint = endpoint;
   }
 
   public boolean getAuthEnabled() {
@@ -220,6 +230,7 @@ public class DeploymentEntity extends BaseEntity {
 
     DeploymentEntity other = (DeploymentEntity) o;
     return Objects.equals(this.getSyslogEndpoint(), other.getSyslogEndpoint())
+        && Objects.equals(this.getStatsStoreEndpoint(), other.getStatsStoreEndpoint())
         && Objects.equals(this.getAuthEnabled(), other.getAuthEnabled())
         && Objects.equals(this.getOauthEndpoint(), other.getOauthEndpoint())
         && Objects.equals(this.getOauthPort(), other.getOauthPort())
@@ -241,6 +252,7 @@ public class DeploymentEntity extends BaseEntity {
     return super.toStringHelper()
         .add("state", this.getState())
         .add("syslogEndpoint", this.getSyslogEndpoint())
+        .add("statsStoreEndpoint", this.getStatsStoreEndpoint())
         .add("authEnabled", this.getAuthEnabled())
         .add("oauthEndpoint", this.getOauthEndpoint())
         .add("oauthPort", this.getOauthPort())

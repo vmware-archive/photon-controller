@@ -323,6 +323,7 @@ public class ProvisionAgentTaskService extends StatefulService {
           0, // Overcommit ratio is not implemented,
           deploymentState.syslogEndpoint,
           DEFAULT_AGENT_LOG_LEVEL,
+          deploymentState.statsStoreEndpoint,
           (hostState.usageTags != null
               && hostState.usageTags.contains(UsageTag.MGMT.name())
               && !hostState.usageTags.contains(UsageTag.CLOUD.name())),

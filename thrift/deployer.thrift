@@ -99,7 +99,7 @@ struct Deployment {
 
   10: optional string ntpEndpoint
 
-  15: optional string syslogEnpoint
+  15: optional string syslogEndpoint
 
   20: required bool authEnabled
   21: optional string oauthEndpoint
@@ -109,6 +109,8 @@ struct Deployment {
   25: optional i32 oauthAuthServerPort
 
   30: optional bool loadBalancerEnabled
+
+  35: optional string statsStoreEndpoint
 }
 
 enum DeployResultCode {

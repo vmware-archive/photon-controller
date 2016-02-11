@@ -63,6 +63,7 @@ public class DeploymentsResourceTest extends ResourceTest {
     spec = new DeploymentCreateSpec();
     spec.setNtpEndpoint("0.0.0.0");
     spec.setSyslogEndpoint("0.0.0.1");
+    spec.setStatsStoreEndpoint("0.0.0.2");
     spec.setImageDatastores(Collections.singleton("imageDatastore"));
 
     addResource(new DeploymentsResource(deploymentFeClient));
@@ -200,6 +201,7 @@ public class DeploymentsResourceTest extends ResourceTest {
     deployment.setImageDatastores(Collections.singleton("imageDatastore"));
     deployment.setSyslogEndpoint("0.0.0.0");
     deployment.setNtpEndpoint("0.0.0.1");
+    deployment.setStatsStoreEndpoint("0.0.0.2");
     deployment.setAuth(new AuthInfoBuilder().build());
     deployment.setUseImageDatastoreForVms(true);
 

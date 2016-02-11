@@ -535,6 +535,12 @@ public class BuildRuntimeConfigurationTaskServiceTest {
           .ENV_SYSLOG_ENDPOINT);
       assertThat(syslogEndpoint, is("1.2.3.4:514"));
 
+      assertTrue(containerService.dynamicParameters.containsKey(BuildRuntimeConfigurationTaskService
+          .ENV_STATS_STORE_ENDPOINT));
+      String statsStoreEndpoint = containerService.dynamicParameters.get(BuildRuntimeConfigurationTaskService
+          .ENV_STATS_STORE_ENDPOINT);
+      assertThat(statsStoreEndpoint, is("2.3.4.5:678"));
+
       if (containerType == ContainersConfig.ContainerType.Deployer) {
         assertTrue(containerService.dynamicParameters.containsKey(BuildRuntimeConfigurationTaskService
             .ENV_LOADBALANCER_PORT));
@@ -682,6 +688,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
       deploymentStartState.oAuthPassword = "somepassword";
       deploymentStartState.oAuthTenantName = "esxcloud";
       deploymentStartState.syslogEndpoint = "1.2.3.4:514";
+      deploymentStartState.statsStoreEndpoint = "2.3.4.5:678";
       deploymentStartState.ntpEndpoint = "5.6.7.8";
       deploymentStartState.state = DeploymentState.CREATING;
 
