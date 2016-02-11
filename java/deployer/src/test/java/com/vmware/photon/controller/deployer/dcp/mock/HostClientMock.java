@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.mock;
 
-import com.vmware.photon.controller.agent.gen.ProvisionResponse;
-import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
@@ -36,9 +34,6 @@ import org.slf4j.LoggerFactory;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.List;
-import java.util.Set;
-
 /**
  * This class implements a mock {@link HostClient} object for use in testing.
  */
@@ -51,8 +46,6 @@ public class HostClientMock extends HostClient {
   private HostConfig hostConfig;
   private Exception getConfigFailure;
   private Exception getAgentStatusFailure;
-  private ProvisionResultCode provisionResultCode;
-  private Exception provisionFailure;
   private Exception setHostModeFailure;
   private SetHostModeResultCode setHostModeResultCode;
 
@@ -63,8 +56,6 @@ public class HostClientMock extends HostClient {
     this.getAgentStatusFailure = builder.getAgentStatusFailure;
     this.hostConfig = builder.hostConfig;
     this.getConfigFailure = builder.getConfigFailure;
-    this.provisionResultCode = builder.provisionResultCode;
-    this.provisionFailure = builder.provisionFailure;
     this.setHostModeFailure = builder.setHostModeFailure;
     this.setHostModeResultCode = builder.setHostModeResultCode;
   }
@@ -124,50 +115,6 @@ public class HostClientMock extends HostClient {
   }
 
   @Override
-  public void provision(
-      String availabilityZone,
-      List<String> datastores,
-      Set<String> imageDatastoreNames,
-      boolean usedForVMs,
-      List<String> networks,
-      String hostAddress,
-      int hostPort,
-      List<String> chairmanServerList,
-      double memoryOvercommit,
-      String loggingEndpoint,
-      String logLevel,
-      String statsStoreEndpoint,
-      boolean managementOnly,
-      String ntpEndpoint,
-      String hostId,
-      String deploymentId,
-      AsyncMethodCallback<Host.AsyncClient.provision_call> handler) {
-
-    logger.info("Host provision complete invocation");
-
-    if (null != provisionFailure) {
-      handler.onError(provisionFailure);
-
-    } else if (null != provisionResultCode) {
-      Host.AsyncClient.provision_call provisionCall = mock(Host.AsyncClient.provision_call.class);
-      ProvisionResponse provisionResponse = new ProvisionResponse();
-      provisionResponse.setResult(provisionResultCode);
-
-      try {
-        when(provisionCall.getResult()).thenReturn(provisionResponse);
-      } catch (TException e) {
-        throw new RuntimeException("Failed to mock provisionCall.getResult");
-      }
-
-      handler.onComplete(provisionCall);
-
-    } else {
-      throw new IllegalStateException("No result or failure specified for provision");
-    }
-  }
-
-
-  @Override
   public void setHostMode(HostMode hostMode, AsyncMethodCallback<Host.AsyncClient.set_host_mode_call> callback) {
     if (this.setHostModeFailure != null) {
       callback.onError(this.setHostModeFailure);
@@ -196,8 +143,6 @@ public class HostClientMock extends HostClient {
     private Exception getAgentStatusFailure;
     private HostConfig hostConfig;
     private Exception getConfigFailure;
-    private ProvisionResultCode provisionResultCode;
-    private Exception provisionFailure;
     private Exception setHostModeFailure;
     private SetHostModeResultCode setHostModeResultCode;
 
@@ -223,16 +168,6 @@ public class HostClientMock extends HostClient {
 
     public Builder getConfigFailure(Exception getConfigFailure) {
       this.getConfigFailure = getConfigFailure;
-      return this;
-    }
-
-    public Builder provisionResultCode(ProvisionResultCode provisionResultCode) {
-      this.provisionResultCode = provisionResultCode;
-      return this;
-    }
-
-    public Builder provisionFailure(Exception provisionFailure) {
-      this.provisionFailure = provisionFailure;
       return this;
     }
 

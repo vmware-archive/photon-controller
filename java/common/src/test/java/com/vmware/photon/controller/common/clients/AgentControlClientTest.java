@@ -212,6 +212,7 @@ public class AgentControlClientTest {
     private double memoryOverCommit = 1.0;
     private String loggingEndpoint = "loggingEndpoint";
     private String logLevel = "logLevel";
+    private String statsStoreEndpoint = "statsStore";
     private boolean managementOnly = false;
     private String hostId = "id1";
     private String deploymentId = "deploymentId";
@@ -253,7 +254,7 @@ public class AgentControlClientTest {
       assertThat(agentControlClient.provision(availabilityZone, dataStoreList,
               new HashSet<>(Arrays.asList(imageDataStore)),
               usedForVms, networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit,
-              loggingEndpoint, logLevel, managementOnly, hostId, deploymentId, ntpEndpoint),
+              loggingEndpoint, logLevel, statsStoreEndpoint, managementOnly, hostId, deploymentId, ntpEndpoint),
           is(provisionResponse));
       verify(clientProxy).provision(request.capture(), any(AsyncMethodCallback.class));
       // Verify that the image_datastores field is set.
@@ -265,7 +266,7 @@ public class AgentControlClientTest {
       try {
         agentControlClient.provision(availabilityZone, dataStoreList, Collections.singleton(imageDataStore), usedForVms,
             networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
+            logLevel, statsStoreEndpoint, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should throw with null async clientProxy");
       } catch (IllegalArgumentException e) {
         assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
@@ -283,7 +284,7 @@ public class AgentControlClientTest {
         agentControlClient.provision(availabilityZone, dataStoreList,
             new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
             networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
+            logLevel, statsStoreEndpoint, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should convert TException on call to RpcException");
       } catch (RpcException e) {
         assertThat(e.getMessage(), is("Thrift exception"));
@@ -303,7 +304,7 @@ public class AgentControlClientTest {
         agentControlClient.provision(availabilityZone, dataStoreList,
             new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
             networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
+            logLevel, statsStoreEndpoint, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should convert TException on call to RpcException");
       } catch (RpcException e) {
         assertThat(e.getMessage(), is("Thrift exception"));
@@ -328,7 +329,7 @@ public class AgentControlClientTest {
         agentControlClient.provision(availabilityZone, dataStoreList,
             new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
             networkList, hostAddress, hostPort, chairmanServerList, memoryOverCommit, loggingEndpoint,
-            logLevel, managementOnly, hostId, deploymentId, ntpEndpoint);
+            logLevel, statsStoreEndpoint, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should throw on failure result: " + resultCode.toString());
       } catch (Exception e) {
         assertTrue(e.getClass() == exceptionClass);

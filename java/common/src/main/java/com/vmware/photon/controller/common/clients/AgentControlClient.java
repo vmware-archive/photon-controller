@@ -48,7 +48,13 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Client for Agent's control service.
- * Note that this class is not thread safe.
+ *
+ * Note that this class is not thread safe, because thrift's TAsyncClient is not thread
+ * safe and only allows one method call at a time.
+ *
+ * Instances of AgentControlClient, HostClient, RootSchedulerClient and ChairmanClient
+ * reuses and shares global TAsyncClientManager and ClientProxyExecutor, so it is fairly
+ * cheap to create a new client instance for each use.
  */
 @RpcClient
 public class AgentControlClient {
@@ -211,6 +217,7 @@ public class AgentControlClient {
       double memoryOverCommit,
       String loggingEndpoint,
       String logLevel,
+      String statsStoreEndpoint,
       boolean managementOnly,
       String hostId,
       String deploymentId,
@@ -282,6 +289,7 @@ public class AgentControlClient {
       double memoryOverCommit,
       String loggingEndpoint,
       String logLevel,
+      String statsStoreEndpoint,
       boolean managementOnly,
       String hostId,
       String deploymentId,
@@ -289,8 +297,8 @@ public class AgentControlClient {
       throws InterruptedException, RpcException {
     SyncHandler<ProvisionResponse, AgentControl.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
     provision(availabilityZone, dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
-        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, managementOnly, hostId, deploymentId,
-        ntpEndpoint, syncHandler);
+        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, statsStoreEndpoint, managementOnly,
+        hostId, deploymentId, ntpEndpoint, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkProvisionResponse(syncHandler.getResponse());
   }

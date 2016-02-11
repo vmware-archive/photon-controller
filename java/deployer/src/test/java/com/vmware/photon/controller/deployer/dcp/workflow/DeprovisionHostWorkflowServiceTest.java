@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
@@ -425,6 +426,7 @@ public class DeprovisionHostWorkflowServiceTest {
     private DeployerContext deployerContext;
     private DeprovisionHostWorkflowService.State startState;
     private ListeningExecutorService listeningExecutorService;
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private ApiClientFactory apiClientFactory;
     private TestEnvironment testEnvironment;
@@ -451,6 +453,7 @@ public class DeprovisionHostWorkflowServiceTest {
       startState = buildValidStartState(null, null);
       startState.controlFlags = null;
       startState.taskPollDelay = 10;
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
     }
 
@@ -539,6 +542,7 @@ public class DeprovisionHostWorkflowServiceTest {
           .deployerContext(deployerContext)
           .listeningExecutorService(listeningExecutorService)
           .apiClientFactory(apiClientFactory)
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .cloudServerSet(cloudStoreMachine.getServerSet())
           .zookeeperServersetBuilderFactory(zkFactory)
@@ -554,7 +558,7 @@ public class DeprovisionHostWorkflowServiceTest {
       ApiClient apiClient = mock(ApiClient.class);
       doReturn(apiClient).when(apiClientFactory).create();
 
-      MockHelper.mockHostClient(hostClientFactory, true);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
 
       ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
       doReturn(zkBuilder).when(zkFactory).create();
