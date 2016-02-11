@@ -299,6 +299,13 @@ public class CloudStoreConstraintCheckerTest {
     assertThat(selectedHosts.values(), not(hasItem(host1Address)));
     assertThat(selectedHosts.size(), equalTo(2));
 
+    // Part 1c: Test cannot satisfy network constraint
+    constraint = new ResourceConstraint(
+        ResourceConstraintType.NETWORK,
+        Arrays.asList("non_existent_network"));
+    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    assertThat(selectedHosts.size(), equalTo(0));
+
     // Part 2a: Test multiple values for allowed availability zones
     logger.info("Testing multiple values for availability zones...");
     constraint = new ResourceConstraint(
@@ -318,6 +325,13 @@ public class CloudStoreConstraintCheckerTest {
     assertThat(selectedHosts.values(), not(hasItem(host0Address)));
     assertThat(selectedHosts.values(), not(hasItem(host1Address)));
     assertThat(selectedHosts.size(), equalTo(2));
+
+    // Part 2c: Test cannot satisfy availability zone constraint
+    constraint = new ResourceConstraint(
+        ResourceConstraintType.AVAILABILITY_ZONE,
+        Arrays.asList("non_existent_availability_zone"));
+    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    assertThat(selectedHosts.size(), equalTo(0));
 
     // Part 3a: Test multiple values for allowed hosts
     // Note that the selfLink is actually just the host id (which is what we want) because it's
@@ -342,6 +356,13 @@ public class CloudStoreConstraintCheckerTest {
     assertThat(selectedHosts.values(), not(hasItem(host1Address)));
     assertThat(selectedHosts.size(), equalTo(2));
 
+    // Part 3c: Test cannot satisfy host constraint
+    constraint = new ResourceConstraint(
+        ResourceConstraintType.HOST,
+        Arrays.asList("non_existent_host"));
+    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    assertThat(selectedHosts.size(), equalTo(0));
+
     // Part 4a: Test multiple values for allowed datastores
     logger.info("Testing multiple values for datastores...");
     constraint = new ResourceConstraint(
@@ -362,6 +383,13 @@ public class CloudStoreConstraintCheckerTest {
     assertThat(selectedHosts.values(), not(hasItem(host1Address)));
     assertThat(selectedHosts.size(), equalTo(2));
 
+    // Part 4c: Test cannot satisfy datastore constraint
+    constraint = new ResourceConstraint(
+        ResourceConstraintType.DATASTORE,
+        Arrays.asList("non_existent_datastore"));
+    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    assertThat(selectedHosts.size(), equalTo(0));
+
     // Part 5a: Test multiple values for allowed datastore tags
     logger.info("Testing multiple values for datastore tags...");
     constraint = new ResourceConstraint(
@@ -381,6 +409,13 @@ public class CloudStoreConstraintCheckerTest {
     assertThat(selectedHosts.values(), not(hasItem(host0Address)));
     assertThat(selectedHosts.values(), not(hasItem(host1Address)));
     assertThat(selectedHosts.size(), equalTo(2));
+
+    // Part 5c: Test cannot satisfy datastore tags
+    constraint = new ResourceConstraint(
+        ResourceConstraintType.DATASTORE_TAG,
+        Arrays.asList("non_existent_tag"));
+    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    assertThat(selectedHosts.size(), equalTo(0));
 
     deleteDatastores(cloudStoreEnvironment, datastores);
     deleteHosts(cloudStoreEnvironment, hosts);
