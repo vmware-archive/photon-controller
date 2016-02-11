@@ -30,7 +30,7 @@ class TestStatsPublisher(unittest.TestCase):
     def setUp(self):
         agent_config = MagicMock()
         agent_config.host_id = "fake-id"
-        agent_config.stats_server_address = "1.1.1.1"
+        agent_config.stats_store_address = "1.1.1.1"
         self._mock_db = MagicMock()
         common.services.register(ServiceName.AGENT_CONFIG, agent_config)
 

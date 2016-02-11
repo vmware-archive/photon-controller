@@ -56,7 +56,7 @@ class StatsPublisher(object):
         self._publishers.append(publisher)
 
     def configure_publishers(self):
-        host = self._agent_config.__dict__.get("stats_server_address")
+        host = self._agent_config.stats_store_address
         pm_publisher = GraphitePublisher(host_id=self._host_id,
                                          carbon_host=host)
         self.register_publisher(pm_publisher)
@@ -72,6 +72,6 @@ class StatsPublisher(object):
 
         self._last_seen_ts = latest_ts
         if retrieved_stats:
-            for c in self._publishers:
-                self._logger.debug("publish metrics with %s" % str(c))
-                c.publish(retrieved_stats)
+            for publisher in self._publishers:
+                self._logger.info("publish metrics with %s" % str(publisher))
+                publisher.publish(retrieved_stats)

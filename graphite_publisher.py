@@ -28,7 +28,7 @@ class GraphitePublisher(Publisher):
         self._carbon_host = carbon_host
         self._carbon_port = carbon_port
         self._use_pickle = use_pickle_format
-        self._host_metric_prefix = host_id
+        self._host_metric_prefix = "photon." + str(host_id)
 
         if not use_pickle_format:
             # Not supporting plain text format for now.
@@ -44,7 +44,7 @@ class GraphitePublisher(Publisher):
         for metric in stats.keys():
             metric_key = "%s.%s" % (self._host_metric_prefix, metric)
             metric_list += [(metric_key, tup) for tup in stats[metric]]
-        self._logger.info("metric list = %s" % str(metric_list))
+
         payload = pickle.dumps(metric_list, protocol=2)
         header = struct.pack("!L", len(payload))
         message = header + payload

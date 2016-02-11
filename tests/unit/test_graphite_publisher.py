@@ -41,8 +41,8 @@ class TestGraphitePublisher(unittest.TestCase):
             host_id=host_id, carbon_host="10.10.10.10", carbon_port=2004)
 
         result = pub._build_pickled_data_msg(stats)
-        expected_data = [('fake-id.key1', (1000000, 1)),
-                         ('fake-id.key1', (1000020, 2))]
+        expected_data = [('photon.fake-id.key1', (1000000, 1)),
+                         ('photon.fake-id.key1', (1000020, 2))]
         _dumps.assert_called_once_with(expected_data, protocol=2)
         _pack.assert_called_once_with("!L", len("picklemsg"))
         assert_that(result, is_("packed_header" + "picklemsg"))
