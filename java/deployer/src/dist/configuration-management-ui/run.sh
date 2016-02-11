@@ -13,4 +13,4 @@
 export API_PORT_9000_TCP_ADDR="{{{APIFE_ADDR}}}"
 export API_PORT_9000_TCP_PORT="{{{APIFE_PORT}}}"
 
-sh /etc/nginx/config.sh && nginx -g 'daemon off;'
+/bin/bash /etc/nginx/config.sh && nginx -g 'daemon off;'
