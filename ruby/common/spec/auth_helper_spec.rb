@@ -16,40 +16,31 @@ describe EsxCloud::AuthHelper do
   ["foo@esxcloud", "esxcloud\\foo"].each do |username|
     it "gets access token #{username}" do
       password = "bar"
-      service_locator_url = "http://blah"
-      auth_tool_path = "path_to_auth_tool"
-
-      escaped_username = Shellwords.escape(Shellwords.escape(username))
-      cmd = "-jar #{auth_tool_path} get-access-token -t esxcloud -a #{service_locator_url} -u #{escaped_username} -p #{password}"
+      service_locator_url = "127.0.0.1"
       token = "@wesom3"
+      path = "/openidconnect/token"
+      data = "username=#{username}&password=#{password}&grant_type=password&scope=openid offline_access id_groups at_groups rs_admin_server"
 
-      expect(File).to receive(:exists?).with(auth_tool_path).and_return(true)
-      expect(EsxCloud::CmdRunner).to receive(:run).with(/#{cmd}/, true, /.*Exception:.*/).and_return(token)
+      https =  double()
+      expect(https).to receive(:use_ssl=).with(true)
+      expect(https).to receive(:verify_mode=).with(OpenSSL::SSL::VERIFY_NONE)
+      expect(Net::HTTP).to receive(:new).with(service_locator_url, 443).and_return(https)
+      request = double()
+      expect(request).to receive(:body).and_return({"access_token" => token}.to_json)
+      expect(https).to receive(:post).with(path, data).and_return(request)
 
-      returnedToken = EsxCloud::AuthHelper.get_access_token(username, password, service_locator_url, auth_tool_path)
+      returnedToken = EsxCloud::AuthHelper.get_access_token(username, password, service_locator_url)
       expect(returnedToken).to eq(token)
     end
-  end
-
-  it "fails if auth tool is not found" do
-    username = "foo"
-    password = "bar"
-    service_locator_url = "http://blah"
-    auth_tool_path = "path_to_auth_tool"
-
-    expect {
-      EsxCloud::AuthHelper.get_access_token(username, password, service_locator_url, auth_tool_path)
-    }.to raise_error(EsxCloud::Error)
   end
 
   it "fails if tenant is not part of user name" do
     username = "foo"
     password = "bar"
-    service_locator_url = "http://blah"
-    auth_tool_path = "path_to_auth_tool"
+    service_locator_url = "127.0,0.1"
 
     expect {
-      EsxCloud::AuthHelper.get_access_token(username, password, service_locator_url, auth_tool_path)
+      EsxCloud::AuthHelper.get_access_token(username, password, service_locator_url)
     }.to raise_error(EsxCloud::Error)
   end
 end

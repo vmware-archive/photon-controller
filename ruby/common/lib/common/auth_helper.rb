@@ -11,36 +11,38 @@
 
 require "shellwords"
 
+require "net/http"
+require "uri"
+require "openssl"
+
 module EsxCloud
   class AuthHelper
 
     # @param [String] username
     # @param [String] password
     # @param [String] url of the authentication service
-    # @param [String] absolute path to the auth-token tool.
     # @return [String] access_token
-    def self.get_access_token(username, password, service_locator_url, auth_tool_path)
-      if !File.exists?(auth_tool_path)
-        raise EsxCloud::Error, "Could not find Auth-Token tool under #{auth_tool_path}"
-      end
+    def self.get_access_token(username, password, service_locator_url)
+      AuthHelper.verify_username username
+      uri = URI.parse("https://#{service_locator_url}:443/openidconnect/token")
+      https = Net::HTTP.new(uri.host, uri.port)
+      https.use_ssl = true
+      https.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      response = https.post(uri.path, "username=#{username}&password=#{password}&grant_type=password&scope=openid offline_access id_groups at_groups rs_admin_server")
 
-      tenant = extract_tenant username
-      command = "java -jar #{auth_tool_path} get-access-token -t #{tenant} -a #{service_locator_url} -u " +
-          Shellwords.escape(username) + " -p "  + Shellwords.escape(password)
-
-      EsxCloud::CmdRunner.run(command, true, /.*Exception:.*/)
+      JSON.parse(response.body)["access_token"]
     end
 
     private
 
-    def self.extract_tenant(username)
+    def self.verify_username(username)
       raise EsxCloud::Error, "User name not provided" if username.nil?
 
       tokens = username.split("\\")
-      return tokens[0] if tokens.size == 2
+      return if tokens.size == 2
 
       tokens = username.split("@")
-      return tokens[1] if tokens.size == 2
+      return if tokens.size == 2
 
       raise EsxCloud::Error, "User name should be provided as: 'tenant\\user' or 'user@tenant'"
     end
