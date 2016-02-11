@@ -27,6 +27,7 @@ import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
@@ -692,6 +693,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private ApiClientFactory apiClientFactory;
     private FinalizeDeploymentMigrationWorkflowService.State startState;
@@ -720,6 +722,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     public void setUpTest() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
     }
 
@@ -767,6 +770,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .cloudServerSet(sourceCloudStore.getServerSet())
           .zookeeperServersetBuilderFactory(sourceZKFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .hostCount(1)
           .build();
@@ -780,6 +784,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .cloudServerSet(destinationCloudStore.getServerSet())
           .zookeeperServersetBuilderFactory(destinationZKFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .dockerProvisionerFactory(dockerProvisionerFactory)
           .build();
@@ -925,7 +930,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       createTestEnvironment();
       mockApiClient(true);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockHostClient(hostClientFactory, true);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
 

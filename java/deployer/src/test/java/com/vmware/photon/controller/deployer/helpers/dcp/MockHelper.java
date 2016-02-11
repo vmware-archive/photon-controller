@@ -35,6 +35,8 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.auth.AuthException;
+import com.vmware.photon.controller.common.clients.AgentControlClient;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
@@ -45,6 +47,7 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.mock.AgentControlClientMock;
 import com.vmware.photon.controller.deployer.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
@@ -93,25 +96,35 @@ import java.util.Map;
  */
 public class MockHelper {
 
-  public static void mockHostClient(HostClientFactory hostClientFactory, boolean isSuccess) throws Throwable {
+  public static void mockHostClient(AgentControlClientFactory agentControlClientFactory,
+                                    HostClientFactory hostClientFactory,
+                                    boolean isSuccess)
+      throws Throwable {
 
+    AgentControlClient agentControlClient;
     HostClient hostClient;
     if (isSuccess) {
       HostConfig hostConfig = new HostConfig();
       hostConfig.setCpu_count(2);
       hostConfig.setMemory_mb(4096);
 
-      hostClient = new HostClientMock.Builder()
+      agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
+          .build();
+
+      hostClient = new HostClientMock.Builder()
           .getConfigResultCode(GetConfigResultCode.OK)
           .agentStatusCode(AgentStatusCode.OK)
           .setHostModeResultCode(SetHostModeResultCode.OK)
           .hostConfig(hostConfig)
           .build();
     } else {
-      hostClient = new HostClientMock.Builder()
+      agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.SYSTEM_ERROR)
           .provisionFailure(new Exception("ProvisionHost throws exception"))
+          .build();
+
+      hostClient = new HostClientMock.Builder()
           .getConfigResultCode(GetConfigResultCode.SYSTEM_ERROR)
           .getConfigFailure(new Exception("GetHost throws exception"))
           .agentStatusCode(AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED)
@@ -121,6 +134,7 @@ public class MockHelper {
           .build();
     }
 
+    doReturn(agentControlClient).when(agentControlClientFactory).create();
     doReturn(hostClient).when(hostClientFactory).create();
   }
 
@@ -203,20 +217,28 @@ public class MockHelper {
     }
   }
 
-  public static HostClient mockProvisionAgent(HostClientFactory hostClientFactory, boolean isSuccess) {
+  public static HostClient mockProvisionAgent(AgentControlClientFactory agentControlClientFactory,
+                                              HostClientFactory hostClientFactory,
+                                              boolean isSuccess) {
+    AgentControlClient agentControlClient;
     HostClient hostClient;
     if (isSuccess) {
-      hostClient = new HostClientMock.Builder()
+      agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
+          .build();
+      hostClient = new HostClientMock.Builder()
           .getConfigResultCode(GetConfigResultCode.OK)
           .agentStatusCode(AgentStatusCode.OK)
           .build();
     } else {
-      hostClient = new HostClientMock.Builder()
+      agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.SYSTEM_ERROR)
+          .build();
+      hostClient = new HostClientMock.Builder()
           .agentStatusCode(AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED)
           .build();
     }
+    doReturn(agentControlClient).when(agentControlClientFactory).create();
     doReturn(hostClient).when(hostClientFactory).create();
     return hostClient;
   }
