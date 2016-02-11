@@ -25,8 +25,8 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.PortGroupServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
@@ -89,7 +89,7 @@ public class CloudStoreDcpHostTest {
   private String[] serviceSelfLinks = new String[]{
       FlavorServiceFactory.SELF_LINK,
       ImageServiceFactory.SELF_LINK,
-      ImageReplicationServiceFactory.SELF_LINK,
+      ImageToImageDatastoreMappingServiceFactory.SELF_LINK,
       HostServiceFactory.SELF_LINK,
       NetworkServiceFactory.SELF_LINK,
       DatastoreServiceFactory.SELF_LINK,
