@@ -23,14 +23,7 @@ describe "migrate finalize", upgrade: true do
 
   DOCKER_PORT = 2375
 
-  before (:all) {
-    puts "Source Address:"
-    puts EsxCloud::TestHelpers.get_upgrade_source_address
-  }
-
   let(:source_api_client) {
-    puts "Source Address:"
-    puts EsxCloud::TestHelpers.get_upgrade_source_address
     uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
     ApiClientHelper.management(protocol: uri.scheme, address: uri.host, port: uri.port.to_s)
   }
@@ -85,7 +78,12 @@ describe "migrate finalize", upgrade: true do
 
       upgrade_cloudstore_map.each do |k, v|
         puts k
-        source_json = source_cloud_store.get k
+        begin
+          source_json = source_cloud_store.get k
+        rescue StandardError => e
+          next if e.message.include? "404"
+          raise e
+        end
         source_set = parse_id_set(source_json)
         destination_json = destination_cloud_store.get v
         destination_set = parse_id_set(destination_json)
@@ -95,14 +93,18 @@ describe "migrate finalize", upgrade: true do
   end
 
   describe "#old plane state" do
-    it "should not be running housekeeper" do
-      source_api_client.get_deployment_hosts(source_deployment.id).items.each do |host|
-        if host.usage_tags.include? "MGMT"
-          vm_ip = host.metadata["MANAGEMENT_NETWORK_IP"]
-          uri = URI("http://#{vm_ip}:#{DOCKER_PORT}/containers/json")
-          uri.query = URI.encode_www_form({ :all => false })
-          res = Net::HTTP.get(uri)
-          fail("HouseKeeper container on #{vm_ip} still running") unless JSON.parse(res)[0]["Names"].select { |name| name.downcase.include? "housekeeper" }.empty?
+    ["/esxcloud/cloudstore/hosts", "/photon/cloudstore/hosts"].each do |host_uri|
+      it "should not be running housekeeper [host_uri: #{host_uri}]" do
+        uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
+        source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
+        get_all_hosts(source_cloud_store, host_uri) do |host|
+          if host.usage_tags.include? "MGMT"
+            vm_ip = host.metadata["MANAGEMENT_NETWORK_IP"]
+            uri = URI("http://#{vm_ip}:#{DOCKER_PORT}/containers/json")
+            uri.query = URI.encode_www_form({ :all => false })
+            res = Net::HTTP.get(uri)
+            fail("HouseKeeper container on #{vm_ip} still running") unless JSON.parse(res)[0]["Names"].select { |name| name.downcase.include? "housekeeper" }.empty?
+          end
         end
       end
     end
@@ -119,5 +121,17 @@ describe "migrate finalize", upgrade: true do
         expect(res.version).to eq "0.1.2"
       end
     end
+  end
+
+  def get_all_hosts(cloud_store_client, uri)
+    hosts = []
+    begin
+      json = cloud_store_client.get uri
+      json["documentLinks"].map do |link|
+        hosts << cloud_store_client.get(link)
+      end
+    rescue StandardError => _
+    end
+    hosts
   end
 end
