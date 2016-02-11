@@ -34,14 +34,14 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 
 /**
- * Tests {@link com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService}.
+ * Tests {@link ImageToImageDatastoreMappingService}.
  */
-public class ImageReplicationServiceTest {
+public class ImageToImageDatastoreMappingServiceTest {
 
   private DcpRestClient dcpRestClient;
   private BasicServiceHost host;
-  private ImageReplicationService service;
-  private ImageReplicationService.State testState;
+  private ImageToImageDatastoreMappingService service;
+  private ImageToImageDatastoreMappingService.State testState;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -56,7 +56,7 @@ public class ImageReplicationServiceTest {
   public class InitializationTest {
     @BeforeMethod
     public void setUp() {
-      service = new ImageReplicationService();
+      service = new ImageToImageDatastoreMappingService();
     }
 
     /**
@@ -80,11 +80,11 @@ public class ImageReplicationServiceTest {
   public class HandleStartTest {
     @BeforeMethod
     public void setUp() throws Throwable {
-      service = new ImageReplicationService();
+      service = new ImageToImageDatastoreMappingService();
       host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
           BasicServiceHost.BIND_PORT,
           null,
-          ImageReplicationServiceFactory.SELF_LINK,
+          ImageToImageDatastoreMappingServiceFactory.SELF_LINK,
           10, 10);
 
       StaticServerSet serverSet = new StaticServerSet(
@@ -92,7 +92,7 @@ public class ImageReplicationServiceTest {
       dcpRestClient = new DcpRestClient(serverSet, Executors.newFixedThreadPool(1));
       dcpRestClient.start();
 
-      testState = new ImageReplicationService.State();
+      testState = new ImageToImageDatastoreMappingService.State();
       testState.imageId = UUID.randomUUID().toString();
       testState.imageDatastoreId = UUID.randomUUID().toString();
     }
@@ -114,16 +114,16 @@ public class ImageReplicationServiceTest {
      */
     @Test
     public void testStartState() throws Throwable {
-      host.startServiceSynchronously(new ImageReplicationServiceFactory(), null);
+      host.startServiceSynchronously(new ImageToImageDatastoreMappingServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(ImageReplicationServiceFactory.SELF_LINK, testState);
+      Operation result = dcpRestClient.post(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
-      ImageReplicationService.State createdState = result.getBody(ImageReplicationService.State.class);
+      ImageToImageDatastoreMappingService.State createdState = result.getBody(ImageToImageDatastoreMappingService.State.class);
       assertThat(createdState.imageId, is(equalTo(testState.imageId)));
       assertThat(createdState.imageDatastoreId, is(equalTo(testState.imageDatastoreId)));
-      ImageReplicationService.State savedState =
-          host.getServiceState(ImageReplicationService.State.class, createdState.documentSelfLink);
+      ImageToImageDatastoreMappingService.State savedState =
+          host.getServiceState(ImageToImageDatastoreMappingService.State.class, createdState.documentSelfLink);
       assertThat(savedState.imageId, is(equalTo(testState.imageId)));
       assertThat(savedState.imageDatastoreId, is(equalTo(testState.imageDatastoreId)));
     }
@@ -135,7 +135,7 @@ public class ImageReplicationServiceTest {
      */
     @Test
     public void testMissingImageId() throws Throwable {
-      ImageReplicationService.State startState = new ImageReplicationService.State();
+      ImageToImageDatastoreMappingService.State startState = new ImageToImageDatastoreMappingService.State();
       startState.imageDatastoreId = "image-datastore-id";
 
       try {
@@ -153,7 +153,7 @@ public class ImageReplicationServiceTest {
      */
     @Test
     public void testMissingImageDatastoreId() throws Throwable {
-      ImageReplicationService.State startState = new ImageReplicationService.State();
+      ImageToImageDatastoreMappingService.State startState = new ImageToImageDatastoreMappingService.State();
       startState.imageId = "image-id";
 
       try {

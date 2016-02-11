@@ -24,8 +24,8 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.PortGroupServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
@@ -91,7 +91,7 @@ public class CloudStoreDcpHost
   public static final Class[] FACTORY_SERVICES = {
       FlavorServiceFactory.class,
       ImageServiceFactory.class,
-      ImageReplicationServiceFactory.class,
+      ImageToImageDatastoreMappingServiceFactory.class,
       HostServiceFactory.class,
       NetworkServiceFactory.class,
       DatastoreServiceFactory.class,
@@ -189,43 +189,43 @@ public class CloudStoreDcpHost
     return
         checkServiceAvailable(RootNamespaceService.SELF_LINK)
 
-        // entities
-        && checkServiceAvailable(FlavorServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ImageServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ImageReplicationServiceFactory.SELF_LINK)
-        && checkServiceAvailable(HostServiceFactory.SELF_LINK)
-        && checkServiceAvailable(NetworkServiceFactory.SELF_LINK)
-        && checkServiceAvailable(DatastoreServiceFactory.SELF_LINK)
-        && checkServiceAvailable(DeploymentServiceFactory.SELF_LINK)
-        && checkServiceAvailable(PortGroupServiceFactory.SELF_LINK)
-        && checkServiceAvailable(TaskServiceFactory.SELF_LINK)
-        && checkServiceAvailable(FlavorDeleteServiceFactory.SELF_LINK)
-        && checkServiceAvailable(EntityLockServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ProjectServiceFactory.SELF_LINK)
-        && checkServiceAvailable(TenantServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ResourceTicketServiceFactory.SELF_LINK)
-        && checkServiceAvailable(StatusService.SELF_LINK)
-        && checkServiceAvailable(VmServiceFactory.SELF_LINK)
-        && checkServiceAvailable(DiskServiceFactory.SELF_LINK)
-        && checkServiceAvailable(AttachedDiskServiceFactory.SELF_LINK)
-        && checkServiceAvailable(TombstoneServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ClusterServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ClusterConfigurationServiceFactory.SELF_LINK)
-        && checkServiceAvailable(AvailabilityZoneServiceFactory.SELF_LINK)
+            // entities
+            && checkServiceAvailable(FlavorServiceFactory.SELF_LINK)
+            && checkServiceAvailable(ImageServiceFactory.SELF_LINK)
+            && checkServiceAvailable(ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
+            && checkServiceAvailable(HostServiceFactory.SELF_LINK)
+            && checkServiceAvailable(NetworkServiceFactory.SELF_LINK)
+            && checkServiceAvailable(DatastoreServiceFactory.SELF_LINK)
+            && checkServiceAvailable(DeploymentServiceFactory.SELF_LINK)
+            && checkServiceAvailable(PortGroupServiceFactory.SELF_LINK)
+            && checkServiceAvailable(TaskServiceFactory.SELF_LINK)
+            && checkServiceAvailable(FlavorDeleteServiceFactory.SELF_LINK)
+            && checkServiceAvailable(EntityLockServiceFactory.SELF_LINK)
+            && checkServiceAvailable(ProjectServiceFactory.SELF_LINK)
+            && checkServiceAvailable(TenantServiceFactory.SELF_LINK)
+            && checkServiceAvailable(ResourceTicketServiceFactory.SELF_LINK)
+            && checkServiceAvailable(StatusService.SELF_LINK)
+            && checkServiceAvailable(VmServiceFactory.SELF_LINK)
+            && checkServiceAvailable(DiskServiceFactory.SELF_LINK)
+            && checkServiceAvailable(AttachedDiskServiceFactory.SELF_LINK)
+            && checkServiceAvailable(TombstoneServiceFactory.SELF_LINK)
+            && checkServiceAvailable(ClusterServiceFactory.SELF_LINK)
+            && checkServiceAvailable(ClusterConfigurationServiceFactory.SELF_LINK)
+            && checkServiceAvailable(AvailabilityZoneServiceFactory.SELF_LINK)
 
-        //tasks
-        && checkServiceAvailable(EntityLockCleanerFactoryService.SELF_LINK)
-        && checkServiceAvailable(TombstoneCleanerFactoryService.SELF_LINK)
-        && checkServiceAvailable(AvailabilityZoneCleanerFactoryService.SELF_LINK)
+            //tasks
+            && checkServiceAvailable(EntityLockCleanerFactoryService.SELF_LINK)
+            && checkServiceAvailable(TombstoneCleanerFactoryService.SELF_LINK)
+            && checkServiceAvailable(AvailabilityZoneCleanerFactoryService.SELF_LINK)
 
-        // triggers
-        && checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
-        && checkServiceAvailable(
-        TaskTriggerFactoryService.SELF_LINK + EntityLockCleanerTriggerBuilder.TRIGGER_SELF_LINK)
-        && checkServiceAvailable(
-        TaskTriggerFactoryService.SELF_LINK + TombstoneCleanerTriggerBuilder.TRIGGER_SELF_LINK)
-        && checkServiceAvailable(
-        TaskTriggerFactoryService.SELF_LINK + AvailabilityZoneCleanerTriggerBuilder.TRIGGER_SELF_LINK);
+            // triggers
+            && checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
+            && checkServiceAvailable(
+            TaskTriggerFactoryService.SELF_LINK + EntityLockCleanerTriggerBuilder.TRIGGER_SELF_LINK)
+            && checkServiceAvailable(
+            TaskTriggerFactoryService.SELF_LINK + TombstoneCleanerTriggerBuilder.TRIGGER_SELF_LINK)
+            && checkServiceAvailable(
+            TaskTriggerFactoryService.SELF_LINK + AvailabilityZoneCleanerTriggerBuilder.TRIGGER_SELF_LINK);
   }
 
   @Override

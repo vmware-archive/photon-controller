@@ -21,8 +21,8 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -771,14 +771,14 @@ public class ImageHostToHostCopyServiceTest {
       createDatastoreService("datastore1-id", "datastore1", true);
       createDatastoreService("local-datastore-id", "local-datastore", false);
 
-      machine.startFactoryServiceSynchronously(ImageReplicationServiceFactory.class,
-          ImageReplicationServiceFactory.SELF_LINK);
+      machine.startFactoryServiceSynchronously(ImageToImageDatastoreMappingServiceFactory.class,
+          ImageToImageDatastoreMappingServiceFactory.SELF_LINK);
 
       ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("imageId", copyTask.image);
       termsBuilder.put("imageDatastoreId", copyTask.destinationDatastore);
 
-      QueryTask.QuerySpecification querySpec = QueryTaskUtils.buildQuerySpec(ImageReplicationService.State.class,
+      QueryTask.QuerySpecification querySpec = QueryTaskUtils.buildQuerySpec(ImageToImageDatastoreMappingService.State.class,
           termsBuilder.build());
       querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
       QueryTask beforeQuery = QueryTask.create(querySpec).setDirect(true);
@@ -852,14 +852,14 @@ public class ImageHostToHostCopyServiceTest {
       createDatastoreService("datastore1-id", "datastore1", true);
       createDatastoreService("local-datastore-id", "local-datastore", false);
 
-      machine.startFactoryServiceSynchronously(ImageReplicationServiceFactory.class,
-          ImageReplicationServiceFactory.SELF_LINK);
+      machine.startFactoryServiceSynchronously(ImageToImageDatastoreMappingServiceFactory.class,
+          ImageToImageDatastoreMappingServiceFactory.SELF_LINK);
 
       ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("imageId", copyTask.image);
       termsBuilder.put("imageDatastoreId", copyTask.destinationDatastore);
 
-      QueryTask.QuerySpecification querySpec = QueryTaskUtils.buildQuerySpec(ImageReplicationService.State.class,
+      QueryTask.QuerySpecification querySpec = QueryTaskUtils.buildQuerySpec(ImageToImageDatastoreMappingService.State.class,
           termsBuilder.build());
       querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
       QueryTask beforeQuery = QueryTask.create(querySpec).setDirect(true);
@@ -938,7 +938,7 @@ public class ImageHostToHostCopyServiceTest {
       termsBuilder.put("imageId", copyTask.image);
       termsBuilder.put("imageDatastoreId", copyTask.destinationDatastore);
 
-      QueryTask.QuerySpecification querySpec = QueryTaskUtils.buildQuerySpec(ImageReplicationService.State.class,
+      QueryTask.QuerySpecification querySpec = QueryTaskUtils.buildQuerySpec(ImageToImageDatastoreMappingService.State.class,
           termsBuilder.build());
       querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
       QueryTask beforeQuery = QueryTask.create(querySpec).setDirect(true);
@@ -1240,7 +1240,7 @@ public class ImageHostToHostCopyServiceTest {
       return result.getBody(DatastoreService.State.class);
     }
 
-    private ImageReplicationService.State createImageReplicationEntity()
+    private ImageToImageDatastoreMappingService.State createImageReplicationEntity()
         throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
@@ -1248,16 +1248,16 @@ public class ImageHostToHostCopyServiceTest {
       cloudStoreHelper.setServerSet(serverSet);
 
       machine.startFactoryServiceSynchronously(
-          ImageReplicationServiceFactory.class,
-          ImageReplicationServiceFactory.SELF_LINK);
+          ImageToImageDatastoreMappingServiceFactory.class,
+          ImageToImageDatastoreMappingServiceFactory.SELF_LINK);
 
-      ImageReplicationService.State state
-          = new ImageReplicationService.State();
+      ImageToImageDatastoreMappingService.State state
+          = new ImageToImageDatastoreMappingService.State();
       state.imageId = "image-1";
       state.imageDatastoreId = "datastore1-id";
 
       Operation op = cloudStoreHelper
-          .createPost(ImageReplicationServiceFactory.SELF_LINK)
+          .createPost(ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
           .setBody(state)
           .setCompletion((operation, throwable) -> {
             if (null != throwable) {
@@ -1265,7 +1265,7 @@ public class ImageHostToHostCopyServiceTest {
             }
           });
       Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
-      return result.getBody(ImageReplicationService.State.class);
+      return result.getBody(ImageToImageDatastoreMappingService.State.class);
     }
   }
 }
