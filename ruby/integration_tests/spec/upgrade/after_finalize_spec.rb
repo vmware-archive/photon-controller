@@ -19,7 +19,7 @@ require 'agent_control'
 
 require 'dcp/cloud_store/cloud_store_client'
 
-describe "migrate finalize", upgrade: true do
+describe "migrate finalize" do #, upgrade: true do
 
   DOCKER_PORT = 2375
 
@@ -85,7 +85,12 @@ describe "migrate finalize", upgrade: true do
 
       upgrade_cloudstore_map.each do |k, v|
         puts k
-        source_json = source_cloud_store.get k
+        begin
+          source_json = source_cloud_store.get k
+        rescue StandardError => e
+          next if e.message.include? "404"
+          raise e
+        end
         source_set = parse_id_set(source_json)
         destination_json = destination_cloud_store.get v
         destination_set = parse_id_set(destination_json)
