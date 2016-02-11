@@ -18,7 +18,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredEx
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
@@ -69,19 +69,19 @@ public class BackendHelpers {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     termsBuilder.put("imageId", imageId);
 
-    ServiceDocumentQueryResult queryResult = dcpRestClient.queryDocuments(ImageReplicationService.State.class,
+    ServiceDocumentQueryResult queryResult = dcpRestClient.queryDocuments(ImageToImageDatastoreMappingService.State.class,
         termsBuilder.build(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), true);
 
     List<String> seededImageDatastores = new ArrayList<>();
     queryResult.documents.values().forEach(item -> {
-      seededImageDatastores.add(Utils.fromJson(item, ImageReplicationService.State.class).imageDatastoreId);
+      seededImageDatastores.add(Utils.fromJson(item, ImageToImageDatastoreMappingService.State.class).imageDatastoreId);
     });
 
     try {
       while (StringUtils.isNotBlank(queryResult.nextPageLink)) {
         queryResult = dcpRestClient.queryDocumentPage(queryResult.nextPageLink);
         queryResult.documents.values().forEach(item -> {
-          seededImageDatastores.add(Utils.fromJson(item, ImageReplicationService.State.class).imageDatastoreId);
+          seededImageDatastores.add(Utils.fromJson(item, ImageToImageDatastoreMappingService.State.class).imageDatastoreId);
         });
       }
     } catch (DocumentNotFoundException e) {

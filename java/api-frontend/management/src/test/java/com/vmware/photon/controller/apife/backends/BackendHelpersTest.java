@@ -17,8 +17,8 @@ import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
@@ -130,12 +130,12 @@ public class BackendHelpersTest {
     }
 
     private void createImageReplicationService(String imageId, String imageDatastoreId) {
-      ImageReplicationService.State state = new ImageReplicationService.State();
+      ImageToImageDatastoreMappingService.State state = new ImageToImageDatastoreMappingService.State();
       state.imageId = imageId;
       state.imageDatastoreId = imageDatastoreId;
       state.documentSelfLink = imageId + "-" + imageDatastoreId;
 
-      dcpClient.post(ImageReplicationServiceFactory.SELF_LINK, state);
+      dcpClient.post(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, state);
     }
   }
 }

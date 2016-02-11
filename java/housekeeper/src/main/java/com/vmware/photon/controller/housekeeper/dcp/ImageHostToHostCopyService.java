@@ -15,8 +15,8 @@ package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -402,8 +402,8 @@ public class ImageHostToHostCopyService extends StatefulService {
    * @param imageDatastoreId
    * @return
    */
-  private ImageReplicationService.State buildImageReplicationServiceState(String imageId, String imageDatastoreId) {
-    ImageReplicationService.State imageReplicationService = new ImageReplicationService.State();
+  private ImageToImageDatastoreMappingService.State buildImageReplicationServiceState(String imageId, String imageDatastoreId) {
+    ImageToImageDatastoreMappingService.State imageReplicationService = new ImageToImageDatastoreMappingService.State();
     imageReplicationService.imageId = imageId;
     imageReplicationService.imageDatastoreId = imageDatastoreId;
     imageReplicationService.documentSelfLink = imageId + "_" + imageDatastoreId;
@@ -451,10 +451,10 @@ public class ImageHostToHostCopyService extends StatefulService {
    * @param current
    */
   private void updateDocumentsAndTriggerCopy(final State current, boolean isEagerCopy) {
-    ImageReplicationService.State postState =
+    ImageToImageDatastoreMappingService.State postState =
         buildImageReplicationServiceState(current.image, current.destinationDatastore);
     Operation createImageReplicationPatch = ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper().createPost
-        (ImageReplicationServiceFactory.SELF_LINK)
+        (ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
         .setBody(postState);
 
     ImageReplicatorService.State replicatorServiceState =

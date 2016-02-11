@@ -25,9 +25,9 @@ import com.vmware.xenon.common.StatefulService;
 /**
  * Class ImageReplicationService is used for data persistence of image replication information.
  */
-public class ImageReplicationService extends StatefulService {
+public class ImageToImageDatastoreMappingService extends StatefulService {
 
-  public ImageReplicationService() {
+  public ImageToImageDatastoreMappingService() {
     super(State.class);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
