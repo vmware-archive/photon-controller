@@ -23,7 +23,7 @@ describe "vm", management: true, image: true do
     @cleaner.delete_tenant(@seeder.tenant)
   end
 
-  it "should create one vm with two ephemeral disks successfully" do
+  it "should create one vm with two ephemeral disks successfully", disable_for_cli_test: true do
     vm_name = random_name("vm-")
     disks = create_ephemeral_disks(["#{vm_name}-disk1", "#{vm_name}-disk2"])
     vm = create_vm(@project, name: vm_name, disks: disks)
