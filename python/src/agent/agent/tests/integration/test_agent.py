@@ -119,19 +119,19 @@ class TestAgent(unittest.TestCase, AgentCommonTests):
                         for name in ["ds1", "ds2", "ds3", "ds4"]]
         assert_that(datastore_ids, equal_to(expected_ids))
 
-    def test_management_only_parse(self):
-        # Default option for management_only is False
+    def test_usage_tags_parse(self):
+        # By default no MGMG tag in usage_tags
         request = Host.GetConfigRequest()
         response = self.host_client.get_host_config(request)
 
         assert_that(response.result, equal_to(Host.GetConfigResultCode.OK))
-        assert_that(response.hostConfig.management_only, equal_to(False))
+        assert_that(response.hostConfig.usage_tags, equal_to(None))
 
-        # Restart agent with --management-only option, test the flag is set
-        # to True
+        # Restart agent with --usage_tags option, test it is set
+        # to "MGMT"
         self.runtime.stop_agent(self.proc)
         new_config = self.config.copy()
-        new_config["--management-only"] = None
+        new_config["--usage_tags"] = None
         res = self.runtime.start_agent(new_config)
         self.proc, self.host_client, self.control_client = res
 
@@ -139,7 +139,7 @@ class TestAgent(unittest.TestCase, AgentCommonTests):
         response = self.host_client.get_host_config(request)
 
         assert_that(response.result, equal_to(Host.GetConfigResultCode.OK))
-        assert_that(response.hostConfig.management_only, equal_to(True))
+        assert_that(response.hostConfig.usage_tags, equal_to("MGMT"))
 
     def test_create_vm_with_ephemeral_disks_ttylinux(self):
         self._test_create_vm_with_ephemeral_disks("ttylinux")

@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
-import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
@@ -42,6 +41,7 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import org.apache.thrift.async.AsyncMethodCallback;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -326,9 +326,7 @@ public class ProvisionAgentTaskService extends StatefulService {
           deploymentState.syslogEndpoint,
           DEFAULT_AGENT_LOG_LEVEL,
           deploymentState.statsStoreEndpoint,
-          (hostState.usageTags != null
-              && hostState.usageTags.contains(UsageTag.MGMT.name())
-              && !hostState.usageTags.contains(UsageTag.CLOUD.name())),
+          (hostState.usageTags != null ? Joiner.on(",").skipNulls().join(hostState.usageTags) : ""),
           ServiceUtils.getIDFromDocumentSelfLink(currentState.hostServiceLink),
           ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink),
           deploymentState.ntpEndpoint,

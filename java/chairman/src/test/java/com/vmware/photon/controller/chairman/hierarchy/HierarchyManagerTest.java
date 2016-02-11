@@ -198,7 +198,7 @@ public class HierarchyManagerTest extends PowerMockTestCase {
     Datastore datastore1 = new Datastore("test", DatastoreType.SHARED_VMFS);
     datastores.add(datastore1);
     RegisterHostRequest request = ChairmanServiceTest.createRegReq(datastores);
-    request.getConfig().setManagement_only(true);
+    request.getConfig().setUsage_tags("MGMT");
     when(hierarchyUtils.getDatastores(request.getConfig())).thenReturn(datastores);
     hierarchyManager.onHostAdded("host1", request.getConfig());
     Host res = hierarchy.getHosts().get("host1");

@@ -1507,13 +1507,13 @@ class TestRootScheduler(BaseKazooTestCase):
                                          datastores=[ds1],
                                          image_datastore=ds1.id,
                                          availability_zone="av1",
-                                         management_only=True)
+                                         usage_tags="MGMT")
         req2 = get_register_host_request(host, non_mgmt_port,
                                          agent_id="h1", networks=[net1],
                                          datastores=[ds1],
                                          image_datastore=ds1.id,
                                          availability_zone="av1",
-                                         management_only=False)
+                                         usage_tags="CLOUD")
 
         rc = self.chairman_client.register_host(req1)
         self.assertEqual(rc.result, RegisterHostResultCode.OK)

@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.chairman.hierarchy;
 
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.chairman.HierarchyConfig;
 import com.vmware.photon.controller.chairman.RootSchedulerServerSet;
 import com.vmware.photon.controller.chairman.service.AvailabilityZone;
@@ -298,8 +299,10 @@ public class HierarchyManager implements ServerSet.ChangeListener, HostChangeLis
 
     boolean managementOnly = false;
 
-    if (hostConfig.isSetManagement_only()) {
-      managementOnly = hostConfig.isManagement_only();
+    if (hostConfig.isSetUsage_tags()) {
+      String usageTags = hostConfig.getUsage_tags();
+      managementOnly = usageTags != null
+          && usageTags.contains(UsageTag.MGMT.name()) && !usageTags.contains(UsageTag.CLOUD.name());
     }
 
     Host host = hierarchy.addHost(id, availabilityZone, datastores,

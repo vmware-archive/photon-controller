@@ -64,7 +64,7 @@ class AgentConfig(object):
     MEMORY_OVERCOMMIT = "memory_overcommit"
     CPU_OVERCOMMIT = "cpu_overcommit"
     WAIT_TIMEOUT = "wait_timeout"
-    MANAGEMENT_ONLY = "management_only"
+    USAGE_TAGS = "usage_tags"
     HOST_ID = "host_id"
     DEPLOYMENT_ID = "deployment_id"
     IMAGE_DATASTORES = "image_datastores"
@@ -208,10 +208,10 @@ class AgentConfig(object):
             reboot |= self._check_and_set_attr(
                 self.IMAGE_DATASTORES, image_datastores)
 
-        if provision_req.management_only:
+        if provision_req.usage_tags:
             reboot |= self._check_and_set_attr(
-                self.MANAGEMENT_ONLY,
-                provision_req.management_only)
+                self.usage_tags,
+                provision_req.usage_tags)
 
         reboot |= self._check_and_set_attr(
             self.HOST_ID, provision_req.host_id)
@@ -404,8 +404,8 @@ class AgentConfig(object):
 
     @property
     @locked
-    def management_only(self):
-        return self._options.management_only
+    def usage_tags(self):
+        return self._options.usage_tags
 
     @property
     @locked
@@ -561,9 +561,9 @@ class AgentConfig(object):
                           default=9, help="Utilization to transfer ratio "
                                           "when calculating place score")
 
-        parser.add_option("--management-only", dest="management_only",
+        parser.add_option("--usage-tags", dest="usage_tags",
                           action="store_true",
-                          default=False, help="Management only host")
+                          default=None, help="Host usage tags")
 
         parser.add_option("--in-uwsim", dest="in_uwsim",
                           action="store_true",

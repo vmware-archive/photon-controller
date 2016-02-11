@@ -135,8 +135,8 @@ struct ProvisionRequest {
   // i.e. no overcommit
   11: optional double cpu_overcommit
 
-  // To specify whether a host is only used for management VMs.
-  12: optional bool management_only
+  // Comma separated string for host usage tags (i.e mgmt, cloud).
+  12: optional string usage_tags
 
   // Id of the host
   13: optional string host_id

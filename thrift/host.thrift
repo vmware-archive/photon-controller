@@ -59,8 +59,8 @@ struct HostConfig {
   4: required server_address.ServerAddress address
   5: optional list<resource.Network> networks
 
-  // Whether the host is management only. Default as False.
-  9: optional bool management_only
+  // Comma separated string for host usage tags (i.e mgmt, cloud).
+  9: optional string usage_tags
 
   10: optional set<string> image_datastore_ids
   11: optional i32 memory_mb
