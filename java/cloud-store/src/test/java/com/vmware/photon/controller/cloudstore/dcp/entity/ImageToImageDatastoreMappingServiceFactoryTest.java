@@ -27,15 +27,15 @@ import static org.hamcrest.Matchers.notNullValue;
 import java.util.EnumSet;
 
 /**
- * Tests {@link com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServiceFactory}.
+ * Tests {@link ImageToImageDatastoreMappingServiceFactory}.
  */
-public class ImageReplicationServiceFactoryTest {
+public class ImageToImageDatastoreMappingServiceFactoryTest {
 
-  private ImageReplicationServiceFactory factory;
+  private ImageToImageDatastoreMappingServiceFactory factory;
 
   @BeforeMethod
   public void setUp() throws Throwable {
-    factory = new ImageReplicationServiceFactory();
+    factory = new ImageToImageDatastoreMappingServiceFactory();
   }
 
   @Test
@@ -54,6 +54,6 @@ public class ImageReplicationServiceFactoryTest {
   public void testCreateServiceInstance() throws Throwable {
     Service service = factory.createServiceInstance();
     assertThat(service, is(notNullValue()));
-    assertThat(service, instanceOf(ImageReplicationService.class));
+    assertThat(service, instanceOf(ImageToImageDatastoreMappingService.class));
   }
 }
