@@ -16,6 +16,7 @@ deployer:
   scriptDirectory: "{{{DEPLOYER_INSTALL_DIRECTORY}}}/scripts"
   scriptLogDirectory: "{{{LOG_DIRECTORY}}}/script_logs"
   syslogEndpoint: "{{{SYSLOG_ENDPOINT}}}"
+  statsStoreEndpoint: "{{{STATS_STORE_ENDPOINT}}}"
   tenantName: "{{{TENANT_NAME}}}"
   vibDirectory: "{{{VIB_DIRECTORY}}}"
   sharedSecret: "{{{SHARED_SECRET}}}"

@@ -4,6 +4,7 @@
     ],
     "syslogEndpoint": "0.0.0.1",
     "ntpEndpoint": "0.0.0.2",
+    "statsStoreEndpoint" : "0.0.0.3",
     "useImageDatastoreForVms": false,
     "auth": {
         "enabled": false

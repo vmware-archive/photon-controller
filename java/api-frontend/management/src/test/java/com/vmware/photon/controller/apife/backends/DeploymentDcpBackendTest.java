@@ -126,6 +126,7 @@ public class DeploymentDcpBackendTest {
     deploymentCreateSpec.setImageDatastores(Collections.singleton("imageDatastore"));
     deploymentCreateSpec.setNtpEndpoint("ntp");
     deploymentCreateSpec.setSyslogEndpoint("syslog");
+    deploymentCreateSpec.setStatsStoreEndpoint("statsStore");
     deploymentCreateSpec.setUseImageDatastoreForVms(true);
     deploymentCreateSpec.setAuth(new AuthInfoBuilder()
         .enabled(true)
@@ -206,6 +207,7 @@ public class DeploymentDcpBackendTest {
       assertThat(deployment.getNtpEndpoint(), is("ntp"));
       assertThat(deployment.getOperationId(), nullValue());
       assertThat(deployment.getSyslogEndpoint(), is("syslog"));
+      assertThat(deployment.getStatsStoreEndpoint(), is("statsStore"));
       assertThat(deployment.getUseImageDatastoreForVms(), is(true));
       assertThat(deployment.getAuthEnabled(), is(true));
       assertThat(deployment.getOauthEndpoint(), is("10.146.64.236"));
@@ -668,6 +670,7 @@ public class DeploymentDcpBackendTest {
       assertThat(deployment.getState(), is(entity.getState()));
       assertThat(deployment.getNtpEndpoint(), is(entity.getNtpEndpoint()));
       assertThat(deployment.getSyslogEndpoint(), is(entity.getSyslogEndpoint()));
+      assertThat(deployment.getStatsStoreEndpoint(), is(entity.getStatsStoreEndpoint()));
       assertThat(CollectionUtils.isEqualCollection(
           deployment.getImageDatastores(), entity.getImageDatastores()), is(true));
       assertThat(deployment.isUseImageDatastoreForVms(), is(entity.getUseImageDatastoreForVms()));
@@ -1016,6 +1019,7 @@ public class DeploymentDcpBackendTest {
       deployment2.imageDataStoreNames = deploymentCreateSpec.getImageDatastores();
       deployment2.ntpEndpoint = deploymentCreateSpec.getNtpEndpoint();
       deployment2.syslogEndpoint = deploymentCreateSpec.getSyslogEndpoint();
+      deployment2.statsStoreEndpoint = deploymentCreateSpec.getStatsStoreEndpoint();
       deployment2.imageDataStoreUsedForVMs = deploymentCreateSpec.isUseImageDatastoreForVms();
       deployment2.oAuthEnabled = deploymentCreateSpec.getAuth().getEnabled();
       deployment2.oAuthServerAddress = deploymentCreateSpec.getAuth().getEndpoint();

@@ -81,6 +81,7 @@ public class DeploymentResourceTest extends ResourceTest {
     deployment.setImageDatastores(Collections.singleton("imageDatastore"));
     deployment.setSyslogEndpoint("0.0.0.0");
     deployment.setNtpEndpoint("0.0.0.1");
+    deployment.setStatsStoreEndpoint("0.0.0.2");
     deployment.setAuth(new AuthInfoBuilder().build());
     deployment.setUseImageDatastoreForVms(true);
 

@@ -306,6 +306,12 @@ public class DeploymentService extends StatefulService {
     public String syslogEndpoint;
 
     /**
+     * This value represents the stats store endpoint for the deployment.
+     */
+    @Immutable
+    public String statsStoreEndpoint;
+
+    /**
      * This value represents the list of chairman servers.
      */
     public Set<String> chairmanServerList;

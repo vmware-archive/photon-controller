@@ -24,6 +24,7 @@ deployer:
   scriptLogDirectory: "/tmp/deployAgent/logs"
   scriptTimeoutSec: 17
   syslogEndpoint: "syslog endpoint"
+  statsStoreEndpoint: "statsStore endpoint"
   taskPollDelay: 50
   tenantName: "mgmt-tenant"
   vibDirectory: "/tmp/deployAgent/vibs"

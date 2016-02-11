@@ -125,6 +125,7 @@ public class HostDcpBackendTest {
     deploymentCreateSpec.setImageDatastores(Collections.singleton("imageDatastore"));
     deploymentCreateSpec.setNtpEndpoint("ntp");
     deploymentCreateSpec.setSyslogEndpoint("syslog");
+    deploymentCreateSpec.setStatsStoreEndpoint("statsStore");
     deploymentCreateSpec.setUseImageDatastoreForVms(true);
     deploymentCreateSpec.setAuth(new AuthInfoBuilder()
         .enabled(true)

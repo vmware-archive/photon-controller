@@ -136,6 +136,7 @@ public class HostClientMock extends HostClient {
       double memoryOvercommit,
       String loggingEndpoint,
       String logLevel,
+      String statsStoreEndpoint,
       boolean managementOnly,
       String ntpEndpoint,
       String hostId,
