@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.common.clients;
 
-import com.vmware.photon.controller.agent.gen.ProvisionRequest;
-import com.vmware.photon.controller.agent.gen.ProvisionResponse;
 import com.vmware.photon.controller.common.clients.exceptions.DatastoreNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.DestinationAlreadyExistException;
 import com.vmware.photon.controller.common.clients.exceptions.DirectoryNotFoundException;
@@ -27,7 +25,6 @@ import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundExcep
 import com.vmware.photon.controller.common.clients.exceptions.ImageRefCountFileException;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentConfigurationException;
-import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidReservationException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
 import com.vmware.photon.controller.common.clients.exceptions.IsoNotAttachedException;
@@ -119,7 +116,6 @@ import com.vmware.photon.controller.host.gen.VmDisksOpResponse;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.DiskLocator;
 import com.vmware.photon.controller.resource.gen.Image;
-import com.vmware.photon.controller.resource.gen.ImageDatastore;
 import com.vmware.photon.controller.resource.gen.InactiveImageDescriptor;
 import com.vmware.photon.controller.resource.gen.Locator;
 import com.vmware.photon.controller.resource.gen.Resource;
@@ -142,8 +138,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -192,7 +186,6 @@ public class HostClient {
   private static final long GET_VM_NETWORK_TIMEOUT_MS = 60000;
   private static final long PLACE_TIMEOUT_MS = 60000;
   private static final long POWER_VM_OP_TIMEOUT_MS = 600000;
-  private static final long PROVISION_TIMEOUT_MS = 60000;
   private static final long SET_AVAILABILITY_ZONE_TIMEOUT_MS = 60000;
   private static final long RESERVE_TIMEOUT_MS = 60000;
   private final ClientProxyFactory<Host.AsyncClient> clientProxyFactory;
@@ -1562,124 +1555,6 @@ public class HostClient {
   }
 
   /**
-   * This method performs an asynchronous Thrift call to provision an agent. On
-   * completion, the specified handler is invoked.
-   *
-   * @param availabilityZone
-   * @param dataStoreList
-   * @param imageDataStores
-   * @param usedForVMs
-   * @param networkList
-   * @param hostAddress
-   * @param hostPort
-   * @param chairmanServerList
-   * @param memoryOverCommit
-   * @param loggingEndpoint
-   * @param logLevel
-   * @param managementOnly
-   * @param hostId
-   * @param ntpEndpoint
-   * @param handler            Supplies a handler object to be invoked on completion.
-   * @throws RpcException
-   */
-  @RpcMethod
-  public void provision(
-      String availabilityZone,
-      List<String> dataStoreList,
-      Set<String> imageDataStores,
-      boolean usedForVMs,
-      List<String> networkList,
-      String hostAddress,
-      int hostPort,
-      List<String> chairmanServerList,
-      double memoryOverCommit,
-      String loggingEndpoint,
-      String logLevel,
-      boolean managementOnly,
-      String hostId,
-      String deploymentId,
-      String ntpEndpoint,
-      AsyncMethodCallback<Host.AsyncClient.provision_call> handler)
-      throws RpcException {
-    ensureClient();
-
-    HashSet<ImageDatastore> imageDatastoreSet = new HashSet<>();
-    imageDataStores.forEach((imageDatastoreName) -> {
-      imageDatastoreSet.add(new ImageDatastore(imageDatastoreName, usedForVMs));
-    });
-
-    ProvisionRequest provisionRequest = new ProvisionRequest();
-    provisionRequest.setAvailability_zone(availabilityZone);
-    provisionRequest.setDatastores(dataStoreList);
-    provisionRequest.setNetworks(networkList);
-    provisionRequest.setAddress(new ServerAddress(hostAddress, hostPort));
-    provisionRequest.setChairman_server(Util.getServerAddressList(chairmanServerList));
-    provisionRequest.setMemory_overcommit(memoryOverCommit);
-    provisionRequest.setManagement_only(managementOnly);
-    provisionRequest.setHost_id(hostId);
-    provisionRequest.setDeployment_id(deploymentId);
-    provisionRequest.setNtp_endpoint(ntpEndpoint);
-    provisionRequest.setImage_datastores(imageDatastoreSet);
-
-    clientProxy.setTimeout(PROVISION_TIMEOUT_MS);
-    logger.info("provision target {}, request {}", getTarget(), provisionRequest);
-
-    try {
-      clientProxy.provision(provisionRequest, handler);
-    } catch (TException e) {
-      throw new RpcException(e.getMessage());
-    }
-  }
-
-  /**
-   * This method performs a synchronous Thrift call to provision an agent.
-   *
-   * @param availabilityZone
-   * @param dataStoreList
-   * @param imageDataStores
-   * @param usedForVMs
-   * @param networkList
-   * @param hostAddress
-   * @param hostPort
-   * @param chairmanServerList
-   * @param memoryOverCommit
-   * @param loggingEndpoint
-   * @param logLevel
-   * @param managementOnly
-   * @param hostId
-   * @param ntpEndpoint
-   * @return On success, the return code is the ProvisionResponse object
-   * generated by the Thrift call.
-   * @throws InterruptedException
-   * @throws RpcException
-   */
-  @RpcMethod
-  public ProvisionResponse provision(
-      String availabilityZone,
-      List<String> dataStoreList,
-      Set<String> imageDataStores,
-      boolean usedForVMs,
-      List<String> networkList,
-      String hostAddress,
-      int hostPort,
-      List<String> chairmanServerList,
-      double memoryOverCommit,
-      String loggingEndpoint,
-      String logLevel,
-      boolean managementOnly,
-      String hostId,
-      String deploymentId,
-      String ntpEndpoint)
-      throws InterruptedException, RpcException {
-    SyncHandler<ProvisionResponse, Host.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
-    provision(availabilityZone, dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
-        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, managementOnly, hostId, deploymentId,
-        ntpEndpoint, syncHandler);
-    syncHandler.await();
-    return ResponseValidator.checkProvisionResponse(syncHandler.getResponse());
-  }
-
-  /**
    * This method performs an asynchronous Thrift call to set availability zone of host. On
    * completion, the specified handler is invoked.
    *
@@ -1948,35 +1823,6 @@ public class HostClient {
       }
 
       return agentStatusResponse;
-    }
-
-    /**
-     * This method validates a ProvisionResponse object, raising an exception if
-     * the response reflects an operation failure.
-     *
-     * @param provisionResponse Supplies a ProvisionResponse object generated by
-     *                          a provision call.
-     * @return On success, the return value is the ProvisionResponse object
-     * specified as a parameter.
-     * @throws RpcException
-     */
-    public static ProvisionResponse checkProvisionResponse(ProvisionResponse provisionResponse)
-        throws RpcException {
-      logger.info("Checking {}", provisionResponse);
-      switch (provisionResponse.getResult()) {
-        case OK:
-          break;
-        case INVALID_CONFIG:
-          throw new InvalidAgentConfigurationException(provisionResponse.getError());
-        case INVALID_STATE:
-          throw new InvalidAgentStateException(provisionResponse.getError());
-        case SYSTEM_ERROR:
-          throw new SystemErrorException(provisionResponse.getError());
-        default:
-          throw new RpcException(String.format("Unknown result: %s", provisionResponse.getResult()));
-      }
-
-      return provisionResponse;
     }
 
     /**
@@ -2859,32 +2705,6 @@ public class HostClient {
    * Class for general utility functions.
    */
   private static class Util {
-
-    private static List<ServerAddress> getServerAddressList(List<String> chairmanServerList)
-        throws RpcException {
-      List<ServerAddress> result = new ArrayList<>();
-      for (String chairmanServer : chairmanServerList) {
-        String[] parts = chairmanServer.split(":");
-        if (parts.length != 2 || !isValidInteger(parts[1]) || 0 >= Integer.parseInt(parts[1])) {
-          logger.error("Invalid chairman entry for agent configuration: {}", chairmanServer);
-          throw new InvalidAgentConfigurationException("Invalid chairman entry for agent configuration: "
-              + chairmanServer);
-        }
-        result.add(new ServerAddress(parts[0], Integer.parseInt(parts[1])));
-      }
-      return result;
-    }
-
-    private static boolean isValidInteger(String integerString) {
-      boolean result = false;
-      try {
-        Integer.parseInt(integerString);
-        result = true;
-      } catch (Exception ex) {
-        // Empty
-      }
-      return result;
-    }
 
     private static Image constructImage(String datastoreId, String imageId) {
       Datastore datastore = new Datastore();

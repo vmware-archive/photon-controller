@@ -27,6 +27,7 @@ import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
@@ -42,8 +43,6 @@ import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
@@ -214,7 +213,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     public void testCapabilities() {
 
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
-          Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.OWNER_SELECTION,
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION);
@@ -692,6 +690,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private ApiClientFactory apiClientFactory;
     private FinalizeDeploymentMigrationWorkflowService.State startState;
@@ -720,6 +719,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     public void setUpTest() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
     }
 
@@ -767,11 +767,11 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .cloudServerSet(sourceCloudStore.getServerSet())
           .zookeeperServersetBuilderFactory(sourceZKFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .hostCount(1)
           .build();
 
-      DockerProvisionerFactory dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       destinationEnvironment = new TestEnvironment.Builder()
           .hostCount(1)
           .deployerContext(deployerContext)
@@ -780,11 +780,9 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .cloudServerSet(destinationCloudStore.getServerSet())
           .zookeeperServersetBuilderFactory(destinationZKFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .build();
-
-      when(dockerProvisionerFactory.create(anyString())).thenReturn(mock(DockerProvisioner.class));
 
       ZookeeperClient sourceZKBuilder = mock(ZookeeperClient.class);
       doReturn(sourceZKBuilder).when(sourceZKFactory).create();
@@ -925,7 +923,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       createTestEnvironment();
       mockApiClient(true);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockHostClient(hostClientFactory, true);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
 

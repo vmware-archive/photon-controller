@@ -47,7 +47,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Client for Agent's control service.
- * Note that this class is not thread safe.
+ * Note that this class is not thread safe. It is recommended that
+ * a new instance is created for each use.
  */
 @RpcClient
 public class AgentControlClient {

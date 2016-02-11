@@ -30,7 +30,6 @@ from common.lock import AlreadyLocked
 from common.lock_vm import lock_vm
 from common.mode import MODE
 from common.service_name import ServiceName
-from gen.agent import AgentControl
 from gen.common.ttypes import ServerAddress
 from gen.host import Host
 from gen.host.ttypes import AgentStatusCode, SetAvailabilityZoneResponse, \
@@ -1696,16 +1695,6 @@ class HostHandler(Host.Iface):
 
         response.result = DetachISOResultCode.OK
         return response
-
-    def provision(self, request):
-        """
-        Provision an agent for photon controller by providing its boostrapping
-        configuration.
-        :type request: ProvisionRequest
-        :rtype: ProvisionResponse
-        """
-        agent_control_handler = common.services.get(AgentControl.Iface)
-        return agent_control_handler.provision(request)
 
     @log_request
     @error_handler(SetAvailabilityZoneResponse, SetAvailabilityZoneResultCode)

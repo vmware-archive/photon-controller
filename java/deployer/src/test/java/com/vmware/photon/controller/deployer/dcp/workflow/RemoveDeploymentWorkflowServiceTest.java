@@ -35,6 +35,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
@@ -488,6 +489,7 @@ public class RemoveDeploymentWorkflowServiceTest {
     private final File scriptDirectory = new File("/tmp/deployAgent/scripts");
     private final File scriptLogDirectory = new File("/tmp/deployAgent/logs");
 
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private ListeningExecutorService listeningExecutorService;
     private ApiClientFactory apiClientFactory;
@@ -514,6 +516,7 @@ public class RemoveDeploymentWorkflowServiceTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
       cloudStoreTestEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       apiClientFactory = mock(ApiClientFactory.class);
     }
@@ -572,7 +575,7 @@ public class RemoveDeploymentWorkflowServiceTest {
     @Test(dataProvider = "HostCounts")
     public void testEndToEndSuccess(Integer hostCount) throws Throwable {
       MockHelper.mockCreateScriptFile(deployerContext, DeleteAgentTaskService.SCRIPT_NAME, true);
-      MockHelper.mockHostClient(hostClientFactory, true);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       mockApiClient(true);
       startTestEnvironment(hostCount);
 
@@ -611,7 +614,7 @@ public class RemoveDeploymentWorkflowServiceTest {
     @Test(dataProvider = "HostCounts")
     public void testEndToEndFailFromRemoveAPIFE(Integer hostCount) throws Throwable {
       MockHelper.mockCreateScriptFile(deployerContext, DeleteAgentTaskService.SCRIPT_NAME, true);
-      MockHelper.mockHostClient(hostClientFactory, true);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       mockApiClient(false);
       startTestEnvironment(hostCount);
 
@@ -638,7 +641,7 @@ public class RemoveDeploymentWorkflowServiceTest {
     @Test(dataProvider = "HostCounts")
     public void testEndToEndFailDeprovisionManagementHosts(Integer hostCount) throws Throwable {
       MockHelper.mockCreateScriptFile(deployerContext, DeleteAgentTaskService.SCRIPT_NAME, false);
-      MockHelper.mockHostClient(hostClientFactory, false);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, false);
       mockApiClient(true);
       startTestEnvironment(hostCount);
 
