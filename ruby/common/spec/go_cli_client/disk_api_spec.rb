@@ -51,7 +51,7 @@ describe EsxCloud::GoCliClient do
     expect(client).to receive(:find_project_by_id).with("foo").and_return(project)
     expect(client).to receive(:run_cli)
                       .with("disk create -t 't1' -p 'p1' -n 'disk1' -f 'core-100' -c '2' " +
-                            "-a 'vm vm-id1, vm vm-id2' -s 'tag1, tag2'")
+                            "-a 'vm:vm-id1, vm:vm-id2' -s 'tag1, tag2'")
                       .and_return(disk_id)
     expect(client).to receive(:find_disk_by_id).with(disk_id).and_return(disk)
     expect(client.create_disk("foo", spec)).to eq disk
