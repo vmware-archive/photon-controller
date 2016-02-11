@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
@@ -393,6 +394,7 @@ public class AddCloudHostWorkflowServiceTest {
 
     private AddCloudHostWorkflowService.State startState;
     private DeployerContext deployerContext;
+    private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
@@ -421,6 +423,7 @@ public class AddCloudHostWorkflowServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
     }
@@ -428,6 +431,7 @@ public class AddCloudHostWorkflowServiceTest {
     private void createTestEnvironment() throws Throwable {
       testEnvironment = new TestEnvironment.Builder()
           .deployerContext(deployerContext)
+          .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
@@ -443,6 +447,7 @@ public class AddCloudHostWorkflowServiceTest {
         testEnvironment = null;
       }
 
+      agentControlClientFactory = null;
       hostClientFactory = null;
       httpFileServiceClientFactory = null;
     }
@@ -460,7 +465,7 @@ public class AddCloudHostWorkflowServiceTest {
 
     @Test
     public void testSuccess() throws Throwable {
-      MockHelper.mockHostClient(hostClientFactory, true);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.SCRIPT_NAME, true);
       createTestEnvironment();

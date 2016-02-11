@@ -59,6 +59,7 @@ public class AgentControlClientMock extends AgentControlClient {
       double memoryOvercommit,
       String loggingEndpoint,
       String logLevel,
+      String statsStoreEndpoint,
       boolean managementOnly,
       String ntpEndpoint,
       String hostId,

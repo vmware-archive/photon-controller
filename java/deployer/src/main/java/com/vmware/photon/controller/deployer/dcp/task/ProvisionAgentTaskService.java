@@ -13,9 +13,11 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
+import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
@@ -307,9 +309,9 @@ public class ProvisionAgentTaskService extends StatefulService {
     }
 
     try {
-      HostClient hostClient = HostUtils.getHostClient(this);
-      hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
-      hostClient.provision(
+      AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
+      agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+      agentControlClient.provision(
           (hostState.availabilityZoneId != null) ?
               hostState.availabilityZoneId :
               DEFAULT_AVAILABILITY_ZONE,
@@ -330,11 +332,11 @@ public class ProvisionAgentTaskService extends StatefulService {
           ServiceUtils.getIDFromDocumentSelfLink(currentState.hostServiceLink),
           ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink),
           deploymentState.ntpEndpoint,
-          new AsyncMethodCallback<Host.AsyncClient.provision_call>() {
+          new AsyncMethodCallback<AgentControl.AsyncClient.provision_call>() {
             @Override
-            public void onComplete(Host.AsyncClient.provision_call provisionCall) {
+            public void onComplete(AgentControl.AsyncClient.provision_call provisionCall) {
               try {
-                HostClient.ResponseValidator.checkProvisionResponse(provisionCall.getResult());
+                AgentControlClient.ResponseValidator.checkProvisionResponse(provisionCall.getResult());
                 sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT);
               } catch (Throwable t) {
                 logProvisioningErrorAndFail(hostState, t);
