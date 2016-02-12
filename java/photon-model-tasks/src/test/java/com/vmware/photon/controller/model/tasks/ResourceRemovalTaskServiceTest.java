@@ -189,6 +189,21 @@ public class ResourceRemovalTaskServiceTest {
       // Clean up the compute and description documents
       host.deleteServiceSynchronously(cs.documentSelfLink);
       host.deleteServiceSynchronously(cs.descriptionLink);
+
+      // Stop factory service.
+      host.deleteServiceSynchronously(ResourceRemovalTaskFactoryService.SELF_LINK);
+
+      // stop the removal task
+      host.stopServiceSynchronously(returnState.documentSelfLink);
+
+      // restart and check service restart successfully.
+      host.startServiceAndWait(ResourceRemovalTaskFactoryService.class,
+              ResourceRemovalTaskFactoryService.SELF_LINK);
+
+      ResourceRemovalTaskService.ResourceRemovalTaskState stateAfterRestart =
+      host.getServiceSynchronously(returnState.documentSelfLink,
+              ResourceRemovalTaskService.ResourceRemovalTaskState.class);
+      assertThat(stateAfterRestart, notNullValue());
     }
 
     @Test
