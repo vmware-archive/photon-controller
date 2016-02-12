@@ -18,6 +18,7 @@ import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
@@ -41,7 +42,9 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperDcpServiceH
   private Injector injector = TestHelper.createInjector(configFilePath);
 
   public TestEnvironment(CloudStoreHelper cloudStoreHelper, HostClientFactory hostClientFactory,
-                         ZookeeperHostMonitor zookeeperHostMonitor, int hostCount) throws Throwable {
+                         ZookeeperHostMonitor zookeeperHostMonitor, ServiceConfigFactory serviceConfigFactory,
+                         int hostCount) throws
+      Throwable {
     assertTrue(hostCount > 0);
     hosts = new HousekeeperDcpServiceHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
@@ -53,7 +56,7 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperDcpServiceH
         zookeeperHostMonitor = injector.getInstance(ZookeeperHostMonitor.class);
       }
       hosts[i] = new HousekeeperDcpServiceHost(cloudStoreHelper, BIND_ADDRESS, -1,
-          sandbox, hostClientFactory, zookeeperHostMonitor);
+          sandbox, hostClientFactory, zookeeperHostMonitor, serviceConfigFactory);
     }
   }
 
@@ -78,9 +81,10 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperDcpServiceH
   public static TestEnvironment create(CloudStoreHelper cloudStoreHelper,
                                        HostClientFactory hostClientFactory,
                                        ZookeeperHostMonitor zookeeperHostMonitor,
+                                       ServiceConfigFactory serviceConfigFactory,
                                        int hostCount) throws Throwable {
     TestEnvironment testEnvironment = new TestEnvironment(cloudStoreHelper, hostClientFactory,
-        zookeeperHostMonitor, hostCount);
+        zookeeperHostMonitor, serviceConfigFactory, hostCount);
     testEnvironment.start();
     return testEnvironment;
   }

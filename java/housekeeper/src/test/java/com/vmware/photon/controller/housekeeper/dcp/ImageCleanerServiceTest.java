@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.StartImageOperationResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
@@ -1258,6 +1259,7 @@ public class ImageCleanerServiceTest {
   public class EndToEndTest {
     private TestEnvironment machine;
     private HostClientFactory hostClientFactory;
+    private ServiceConfigFactory serviceConfigFactory;
     private CloudStoreHelper cloudStoreHelper;
     private ZookeeperHostMonitor zookeeperHostMonitor;
     private ImageCleanerService.State request;
@@ -1270,6 +1272,7 @@ public class ImageCleanerServiceTest {
       dataStoreCount = 3;
       imageDataStoresCount = 1;
       hostClientFactory = mock(HostClientFactory.class);
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
       zookeeperHostMonitor = mock(ZookeeperHostMonitor.class);
       cloudStoreHelper = mock(CloudStoreHelper.class);
 
@@ -1310,7 +1313,8 @@ public class ImageCleanerServiceTest {
       hostClient.setImagesForGetImagesRequest(createReferenceImages(referenceImagesCount));
       doReturn(hostClient).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
+          serviceConfigFactory, hostCount);
 
       // Call Service.
       ImageCleanerService.State response = machine.callServiceAndWaitForState(ImageCleanerServiceFactory.SELF_LINK,
@@ -1371,7 +1375,8 @@ public class ImageCleanerServiceTest {
         Throwable {
       zookeeperHostMonitor = zkhostMonitor;
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
+          serviceConfigFactory, hostCount);
 
       // Call Service.
       ImageCleanerService.State response = machine.callServiceAndWaitForState(ImageCleanerServiceFactory.SELF_LINK,
@@ -1432,7 +1437,8 @@ public class ImageCleanerServiceTest {
     public void testZkHostMonitorGetHostsForImageDatastoreError(int hostCount) throws Throwable {
       zookeeperHostMonitor = new ZookeeperHostMonitorGetHostsForDatastoreErrorMock();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
+          serviceConfigFactory, hostCount);
 
       ImageCleanerService.State response = machine.callServiceAndWaitForState(
           ImageCleanerServiceFactory.SELF_LINK,
@@ -1488,7 +1494,8 @@ public class ImageCleanerServiceTest {
       );
       doReturn(hostClient).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
+          serviceConfigFactory, hostCount);
 
       // Call Service.
       ImageCleanerService.State response = machine.callServiceAndWaitForState(ImageCleanerServiceFactory.SELF_LINK,

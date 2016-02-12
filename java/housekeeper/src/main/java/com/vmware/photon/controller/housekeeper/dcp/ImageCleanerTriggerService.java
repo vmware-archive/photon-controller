@@ -15,6 +15,7 @@ package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.common.dcp.OperationUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.xenon.common.NodeSelectorService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -106,10 +107,28 @@ public class ImageCleanerTriggerService extends StatefulService {
   }
 
   /**
+   * Checks if service's background processing is in pause state.
+   */
+  private boolean isBackgroundPaused() {
+    ServiceConfig serviceConfig = ((HousekeeperDcpServiceHost) getHost()).getServiceConfig();
+    boolean backgroundPaused = true;
+    try {
+      backgroundPaused = serviceConfig.isBackgroundPaused();
+    } catch (Exception ex) {
+      ServiceUtils.logSevere(this, ex);
+    }
+    return backgroundPaused;
+  }
+
+  /**
    * Handle service periodic maintenance calls.
    */
   @Override
   public void handleMaintenance(Operation post) {
+    if (isBackgroundPaused()) {
+      return;
+    }
+
     post.complete();
 
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {

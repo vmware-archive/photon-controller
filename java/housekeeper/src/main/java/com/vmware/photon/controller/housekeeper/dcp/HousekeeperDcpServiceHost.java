@@ -23,6 +23,8 @@ import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceStateBuilder;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZkHostMonitor;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.Config;
@@ -83,6 +85,7 @@ public class HousekeeperDcpServiceHost
   private final HostClientFactory hostClientFactory;
   private final ZookeeperHostMonitor zookeeperHostMonitor;
   private final CloudStoreHelper cloudStoreHelper;
+  private final ServiceConfigFactory serviceConfigFactory;
 
   @Inject
   public HousekeeperDcpServiceHost(
@@ -91,10 +94,12 @@ public class HousekeeperDcpServiceHost
       @Config.Port int port,
       @DcpConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
-      @ZkHostMonitor ZookeeperHostMonitor zookeeperHostMonitor) throws Throwable {
+      @ZkHostMonitor ZookeeperHostMonitor zookeeperHostMonitor,
+      ServiceConfigFactory serviceConfigFactory) throws Throwable {
 
     this.hostClientFactory = checkNotNull(hostClientFactory);
     this.zookeeperHostMonitor = checkNotNull(zookeeperHostMonitor);
+    this.serviceConfigFactory =  checkNotNull(serviceConfigFactory);
     this.cloudStoreHelper = checkNotNull(cloudStoreHelper);
     ServiceHost.Arguments arguments = new ServiceHost.Arguments();
     arguments.port = port + 1;
@@ -107,6 +112,13 @@ public class HousekeeperDcpServiceHost
   @Override
   public CloudStoreHelper getCloudStoreHelper() {
     return cloudStoreHelper;
+  }
+
+  /**
+   * Returns service config.
+   */
+  public ServiceConfig getServiceConfig() {
+    return serviceConfigFactory.create("apife");
   }
 
   /**
