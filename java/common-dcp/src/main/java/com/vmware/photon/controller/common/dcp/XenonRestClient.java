@@ -14,8 +14,8 @@
 package com.vmware.photon.controller.common.dcp;
 
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.xenon.common.Operation;
@@ -56,9 +56,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * REST client to access DCP services.
+ * REST client to access Xenon services.
  */
-public class DcpRestClient implements DcpClient {
+public class XenonRestClient implements XenonClient {
 
   private static final long POST_OPERATION_EXPIRATION_MICROS = TimeUnit.SECONDS.toMicros(60);
   private long postOperationExpirationMicros = POST_OPERATION_EXPIRATION_MICROS;
@@ -73,21 +73,21 @@ public class DcpRestClient implements DcpClient {
   private static final long DEFAULT_OPERATION_LATCH_TIMEOUT_MICROS = TimeUnit.SECONDS.toMicros(90);
   private static final long SERVICE_DOCUMENT_STATUS_CHECK_INTERVAL_MILLIS = 100L;
   private long serviceDocumentStatusCheckIntervalMillis = SERVICE_DOCUMENT_STATUS_CHECK_INTERVAL_MILLIS;
-  private static final Logger logger = LoggerFactory.getLogger(DcpRestClient.class);
+  private static final Logger logger = LoggerFactory.getLogger(XenonRestClient.class);
   private NettyHttpServiceClient client;
   private ServerSet serverSet;
   private URI localHostUri;
   private InetAddress localHostInetAddress;
 
   @Inject
-  public DcpRestClient(ServerSet serverSet, ExecutorService executor) {
-    checkNotNull(serverSet, "Cannot construct DcpRestClient with null serverSet");
-    checkNotNull(executor, "Cannot construct DcpRestClient with null executor");
+  public XenonRestClient(ServerSet serverSet, ExecutorService executor) {
+    checkNotNull(serverSet, "Cannot construct XenonRestClient with null serverSet");
+    checkNotNull(executor, "Cannot construct XenonRestClient with null executor");
 
     this.serverSet = serverSet;
     try {
       client = (NettyHttpServiceClient) NettyHttpServiceClient.create(
-          DcpRestClient.class.getCanonicalName(),
+          XenonRestClient.class.getCanonicalName(),
           executor,
           Executors.newScheduledThreadPool(0));
     } catch (URISyntaxException uriSyntaxException) {
@@ -99,11 +99,13 @@ public class DcpRestClient implements DcpClient {
     this.localHostInetAddress = OperationUtils.getLocalHostInetAddress();
   }
 
+  @Override
   public void start() {
     client.start();
     logger.info("client started");
   }
 
+  @Override
   public void stop() {
     client.stop();
     logger.info("client stopped");
@@ -269,16 +271,15 @@ public class DcpRestClient implements DcpClient {
   }
 
   /**
-   * Executes a DCP query which will query for documents of type T.
-   * Any other filter clauses are optional.
-   * This allows for a query that returns all documents of type T.
-   * This also expands the content of the resulting documents.
+   * Executes a Xenon query which will query for documents of type T. Any other filter clauses are optional. This allows
+   * for a query that returns all documents of type T. This also expands the content of the resulting documents.
    *
    * @param documentType
    * @param terms
    * @param <T>
    * @return
-   * @throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException
+   * @throws BadRequestException,
+   *           DocumentNotFoundException, TimeoutException, InterruptedException
    */
   @Override
   public <T extends ServiceDocument> List<T> queryDocuments(Class<T> documentType,
@@ -294,9 +295,8 @@ public class DcpRestClient implements DcpClient {
   }
 
   /**
-   * Executes a DCP query which queries for documents of type T.
-   * The query terms are optional.
-   * The pageSize is also optional. If it is not provided, the complete document will be retrieved.
+   * Executes a Xenon query which queries for documents of type T. The query terms are optional. The pageSize is also
+   * optional. If it is not provided, the complete document will be retrieved.
    *
    * @param documentType
    * @param terms
@@ -330,7 +330,7 @@ public class DcpRestClient implements DcpClient {
       spec.resultLimit = pageSize.get();
     }
 
-    // Indirect call. DCP will not return the results. Instead the service URI
+    // Indirect call. Xenon will not return the results. Instead the service URI
     // established will be obtained here, and it will be used to get the results
     // after the query is in FINISHED stage.
     Operation result = query(spec, false);
@@ -379,16 +379,15 @@ public class DcpRestClient implements DcpClient {
   }
 
   /**
-   * Executes a DCP query which will query for documents of type T.
-   * Any other filter clauses are optional.
-   * This allows for a query that returns all documents of type T.
-   * This returns the links to the resulting documents.
+   * Executes a Xenon query which will query for documents of type T. Any other filter clauses are optional. This allows
+   * for a query that returns all documents of type T. This returns the links to the resulting documents.
    *
    * @param documentType
    * @param terms
    * @param <T>
    * @return
-   * @throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException
+   * @throws BadRequestException,
+   *           DocumentNotFoundException, TimeoutException, InterruptedException
    */
   @Override
   public <T extends ServiceDocument> List<String> queryDocumentsForLinks(Class<T> documentType,
@@ -408,8 +407,8 @@ public class DcpRestClient implements DcpClient {
   }
 
   /**
-   * This method sifts through errors from DCP operations into checked and unchecked(RuntimeExceptions)
-   * This is the default handling but it can be overridden by different clients based on their needs.
+   * This method sifts through errors from Xenon operations into checked and unchecked(RuntimeExceptions) This is the
+   * default handling but it can be overridden by different clients based on their needs.
    *
    * @param requestedOperation
    * @param completedOperation
@@ -590,7 +589,7 @@ public class DcpRestClient implements DcpClient {
   }
 
   private void handleUnknownError(Operation requestedOperation, Operation completedOperation) {
-    throw new DcpRuntimeException(requestedOperation, completedOperation);
+    throw new XenonRuntimeException(requestedOperation, completedOperation);
   }
 
   private InetSocketAddress getRandomInetSocketAddress() {
@@ -608,7 +607,7 @@ public class DcpRestClient implements DcpClient {
 
     InetSocketAddress selectedInetSocketAddress;
     if (localInetSocketAddress.isPresent()) {
-      // let the dcp host decide if a network hop across hosts is required for
+      // let the Xenon host decide if a network hop across hosts is required for
       // the requested operation.
       selectedInetSocketAddress = localInetSocketAddress.get();
     } else {

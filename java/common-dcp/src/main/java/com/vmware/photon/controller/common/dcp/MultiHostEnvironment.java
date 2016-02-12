@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.FactoryService;
@@ -45,7 +45,7 @@ import java.util.function.Supplier;
  *
  * @param <H> Subclass of ServiceHost as well as implementing DcpHostInfoProvider interface.
  */
-public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoProvider> {
+public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfoProvider> {
 
   public static final int WAIT_ITERATION_SLEEP = 1;
   public static final int WAIT_ITERATION_COUNT = 30000 / WAIT_ITERATION_SLEEP; // 30 seconds.
@@ -206,7 +206,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
 
     Operation result = sendRequestAndWait(postOperation, hosts[0]);
     if (result.getStatusCode() >= Operation.STATUS_CODE_FAILURE_THRESHOLD) {
-      throw new DcpRuntimeException("Operation failed with code " + result.getStatusCode());
+      throw new XenonRuntimeException("Operation failed with code " + result.getStatusCode());
     }
 
     return result.getBody(type);
@@ -228,7 +228,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & DcpHostInfoPr
         .setBody(parameters);
     Operation resultOp = sendRequestAndWait(op, hosts[0]);
     if (resultOp.getStatusCode() >= Operation.STATUS_CODE_FAILURE_THRESHOLD) {
-      throw new DcpRuntimeException("Operation failed with code " + resultOp.getStatusCode());
+      throw new XenonRuntimeException("Operation failed with code " + resultOp.getStatusCode());
     }
 
     // Verify result.

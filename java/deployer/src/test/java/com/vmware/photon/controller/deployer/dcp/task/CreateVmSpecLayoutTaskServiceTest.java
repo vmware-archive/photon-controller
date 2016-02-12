@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -251,7 +251,7 @@ public class CreateVmSpecLayoutTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
       startService(startStage);
@@ -292,7 +292,7 @@ public class CreateVmSpecLayoutTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidPatchStateAttributes", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidPatchStateAttributes", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchStateInvalidAttributeSet(String attributeName, Object value) throws Throwable {
       startService(TaskState.TaskStage.CREATED);
 

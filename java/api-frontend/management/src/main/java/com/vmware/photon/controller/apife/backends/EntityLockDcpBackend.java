@@ -18,8 +18,8 @@ import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 
 import com.google.inject.Inject;
@@ -61,7 +61,7 @@ public class EntityLockDcpBackend implements EntityLockBackend {
       dcpClient.post(EntityLockServiceFactory.SELF_LINK, state);
       task.getLockedEntityIds().add(entityId);
       logger.info("Entity Lock with entityId : {} and taskId: {} has been set", state.entityId, state.taskId);
-    } catch (DcpRuntimeException e) {
+    } catch (XenonRuntimeException e) {
       //re-throw any exception other than a conflict which indicated the lock already exists
       if (e.getCompletedOperation().getStatusCode() != Operation.STATUS_CODE_CONFLICT) {
         throw e;

@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.rootscheduler;
 
-import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.dcp.XenonHostInfoProvider;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
@@ -31,7 +31,7 @@ import java.nio.file.Paths;
  */
 @Singleton
 public class SchedulerDcpHost
-    extends ServiceHost implements DcpHostInfoProvider {
+    extends ServiceHost implements XenonHostInfoProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(SchedulerDcpHost.class);
   public static final String FACTORY_SERVICE_FIELD_NAME_SELF_LINK = "SELF_LINK";

@@ -16,9 +16,9 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -46,7 +46,7 @@ import java.util.concurrent.Executors;
  */
 public class ResourceTicketServiceTest {
 
-  private static DcpRestClient dcpRestClient;
+  private static XenonRestClient dcpRestClient;
   private static BasicServiceHost host;
   private static ResourceTicketService service;
   private static ResourceTicketService.State testState;
@@ -62,7 +62,7 @@ public class ResourceTicketServiceTest {
     StaticServerSet serverSet = new StaticServerSet(
         new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
 
-    dcpRestClient = new DcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+    dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
     dcpRestClient.start();
 
     testState = new ResourceTicketService.State();
@@ -319,7 +319,7 @@ public class ResourceTicketServiceTest {
 
       try {
         dcpRestClient.patch(createdState.documentSelfLink, patch);
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(),
             containsString("PatchType {NONE} in patchOperation"));
         return;

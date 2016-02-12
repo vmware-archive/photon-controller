@@ -23,7 +23,7 @@ import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
@@ -214,7 +214,7 @@ public class AllocateTenantResourcesTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStartStateMissingRequiredFieldName(String fieldName) throws Throwable {
       AllocateTenantResourcesTaskService.State startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -229,7 +229,7 @@ public class AllocateTenantResourcesTaskServiceTest {
               AllocateTenantResourcesTaskService.State.class, NotNull.class));
     }
 
-    @Test(dataProvider = "PositiveFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "PositiveFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStartStateRequiredFieldNegative(String fieldName) throws Throwable {
       AllocateTenantResourcesTaskService.State startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -376,7 +376,7 @@ public class AllocateTenantResourcesTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
                                            AllocateTenantResourcesTaskService.TaskState.SubStage startSubStage,
                                            TaskState.TaskStage patchStage,
@@ -515,7 +515,7 @@ public class AllocateTenantResourcesTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
       AllocateTenantResourcesTaskService.State startState = buildValidStartState(null, null);
       Operation op = testHost.startServiceSynchronously(allocateTenantResourcesTaskService, startState);
@@ -566,7 +566,7 @@ public class AllocateTenantResourcesTaskServiceTest {
             .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
             .setBody(patchState));
         fail("Overwriting a field with the WriteOnce annotation is expected to fail");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), containsString(fieldName));
       }
     }

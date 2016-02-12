@@ -29,7 +29,7 @@ import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -220,7 +220,7 @@ public class AllocateResourcesWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "fieldNamesWithMissingValue", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "fieldNamesWithMissingValue", expectedExceptions = XenonRuntimeException.class)
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       AllocateResourcesWorkflowService.State startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -386,7 +386,7 @@ public class AllocateResourcesWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(
         TaskState.TaskStage startStage,
         AllocateResourcesWorkflowService.TaskState.SubStage startSubStage,
@@ -500,7 +500,7 @@ public class AllocateResourcesWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidPatchStateAttributes", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidPatchStateAttributes", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchStateInvalidAttributeSet(String attributeName) throws Throwable {
       startService(TaskState.TaskStage.CREATED, null);
 

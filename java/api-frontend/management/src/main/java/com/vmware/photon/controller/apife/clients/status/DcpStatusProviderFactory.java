@@ -15,7 +15,7 @@ package com.vmware.photon.controller.apife.clients.status;
 
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.StatusProvider;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
@@ -48,7 +48,7 @@ public class DcpStatusProviderFactory implements StatusProviderFactory {
   @Override
   public StatusProvider create(InetSocketAddress server) throws InternalException {
     logger.info("Creating DcpRestClient as StatusProvider on {}", server);
-    DcpRestClient dcpRestClient = new DcpRestClient(new StaticServerSet(server), this.executor);
+    XenonRestClient dcpRestClient = new XenonRestClient(new StaticServerSet(server), this.executor);
     return new DcpStatusProvider(dcpRestClient);
   }
 }

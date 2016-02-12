@@ -20,7 +20,7 @@ import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.dcp.validation.Positive;
@@ -240,7 +240,7 @@ public class ChangeHostModeTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStartStateRequiredFieldMissing(String fieldName) throws Throwable {
       ChangeHostModeTaskService.State startState = buildValidStartState(null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -255,7 +255,7 @@ public class ChangeHostModeTaskServiceTest {
               ChangeHostModeTaskService.State.class, NotNull.class));
     }
 
-    @Test(dataProvider = "PositiveFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "PositiveFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStartStateRequiredFieldZeroOrNegative(String fieldName) throws Throwable {
       ChangeHostModeTaskService.State startState = buildValidStartState(null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -335,7 +335,7 @@ public class ChangeHostModeTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
       ChangeHostModeTaskService.State startState = buildValidStartState(startStage);
@@ -378,7 +378,7 @@ public class ChangeHostModeTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
       ChangeHostModeTaskService.State startState = buildValidStartState(null);
       Operation startOperation = testHost.startServiceSynchronously(changeHostModeTaskService, startState);

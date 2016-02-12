@@ -47,9 +47,9 @@ import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
-import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
+import com.vmware.photon.controller.common.dcp.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerFactoryService;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
@@ -70,7 +70,7 @@ import java.nio.file.Paths;
  */
 @Singleton
 public class CloudStoreDcpHost
-    extends ServiceHost implements DcpHostInfoProvider, HostClientProvider, AgentControlClientProvider {
+    extends ServiceHost implements XenonHostInfoProvider, HostClientProvider, AgentControlClientProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreDcpHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;

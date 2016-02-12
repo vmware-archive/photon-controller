@@ -39,7 +39,7 @@ import com.vmware.photon.controller.clustermanager.templates.KubernetesSlaveNode
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -187,7 +187,7 @@ public class ClusterMaintenanceTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "invalidStartStates")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "invalidStartStates")
     public void testInvalidStartState(TaskState.TaskStage stage) throws Throwable {
       ClusterMaintenanceTaskService.State startState = buildValidState(stage);
       host.startServiceSynchronously(taskService, startState);
@@ -283,7 +283,7 @@ public class ClusterMaintenanceTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = {DcpRuntimeException.class},
+    @Test(expectedExceptions = {XenonRuntimeException.class},
         dataProvider = "invalidSubStageUpdates")
     public void testInvalidSubStageUpdates(TaskState.TaskStage startStage,
                                            TaskState.TaskStage patchStage) throws Throwable {

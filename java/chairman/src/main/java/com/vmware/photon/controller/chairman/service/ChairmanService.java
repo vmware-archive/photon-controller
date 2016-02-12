@@ -38,9 +38,9 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.zookeeper.DataDictionary;
 import com.vmware.photon.controller.host.gen.HostConfig;
@@ -84,7 +84,7 @@ public class ChairmanService implements Chairman.Iface {
   private final HierarchyUtils hierarchyUtils;
   private final DataDictionary configDictionary;
   private final DataDictionary missingDictionary;
-  private final DcpRestClient dcpRestClient;
+  private final XenonRestClient dcpRestClient;
   private final BuildInfo buildInfo;
   private final Config config;
   private TSerializer serializer = new TSerializer();
@@ -93,7 +93,7 @@ public class ChairmanService implements Chairman.Iface {
   public ChairmanService(HierarchyUtils hierarchyUtils,
                          @HostConfigRegistry DataDictionary configDictionary,
                          @HostMissingRegistry DataDictionary missingDictionary,
-                         DcpRestClient dcpRestClient,
+                         XenonRestClient dcpRestClient,
                          BuildInfo buildInfo,
                          Config config) {
     this.hierarchyUtils = hierarchyUtils;
@@ -187,7 +187,7 @@ public class ChairmanService implements Chairman.Iface {
         datastoreState.isImageDatastore = false;
         try {
           dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, datastoreState);
-        } catch (DcpException | DcpRuntimeException ex) {
+        } catch (XenonException | XenonRuntimeException ex) {
           logger.debug("Ignoring datastore document creation failure", ex);
         }
       }
