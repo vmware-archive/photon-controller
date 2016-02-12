@@ -23,6 +23,8 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 
 import com.google.inject.AbstractModule;
@@ -57,6 +59,10 @@ public class TestCloudStoreModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(AgentControlClient.class, AgentControlClient.class)
         .build(AgentControlClientFactory.class));
+
+    install(new FactoryModuleBuilder()
+        .implement(ServiceConfig.class, ServiceConfig.class)
+        .build(ServiceConfigFactory.class));
   }
 
   @Provides
@@ -66,9 +72,10 @@ public class TestCloudStoreModule extends AbstractModule {
                                         @CloudStoreConfig.StoragePath String storagePath,
                                         HostClientFactory hostClientFactory,
                                         AgentControlClientFactory agentControlClientFactory,
+                                        ServiceConfigFactory serviceConfigFactory,
                                         BuildInfo buildInfo) throws Throwable {
     return spy(new CloudStoreXenonHost(bind, port, storagePath, hostClientFactory,
-        agentControlClientFactory, buildInfo));
+        agentControlClientFactory, serviceConfigFactory, buildInfo));
   }
 
   @Provides

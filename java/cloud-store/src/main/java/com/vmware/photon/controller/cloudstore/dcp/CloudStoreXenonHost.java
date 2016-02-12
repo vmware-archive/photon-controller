@@ -53,6 +53,9 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
@@ -70,8 +73,8 @@ import java.nio.file.Paths;
  */
 @Singleton
 public class CloudStoreXenonHost
-    extends ServiceHost implements XenonHostInfoProvider, HostClientProvider, AgentControlClientProvider {
-
+    extends ServiceHost implements XenonHostInfoProvider, HostClientProvider, AgentControlClientProvider,
+    ServiceConfigProvider {
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreXenonHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
 
@@ -123,6 +126,7 @@ public class CloudStoreXenonHost
 
   private BuildInfo buildInfo;
   private final HostClientFactory hostClientFactory;
+  private final ServiceConfigFactory serviceConfigFactory;
   private final AgentControlClientFactory agentControlClientFactory;
 
   @Inject
@@ -132,10 +136,12 @@ public class CloudStoreXenonHost
       @CloudStoreConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
       AgentControlClientFactory agentControlClientFactory,
+      ServiceConfigFactory serviceConfigFactory,
       BuildInfo buildInfo) throws Throwable {
 
     this.hostClientFactory = hostClientFactory;
     this.agentControlClientFactory = agentControlClientFactory;
+    this.serviceConfigFactory = serviceConfigFactory;
 
     logger.info("Initializing XenonServer on port: {} path: {}", port, storagePath);
     ServiceHost.Arguments arguments = new ServiceHost.Arguments();
@@ -154,6 +160,14 @@ public class CloudStoreXenonHost
   @Override
   public HostClient getHostClient() {
     return hostClientFactory.create();
+  }
+
+  /**
+   * This method gets apife's service config.
+   */
+  @Override
+  public ServiceConfig getServiceConfig() {
+    return serviceConfigFactory.create("apife");
   }
 
   /**

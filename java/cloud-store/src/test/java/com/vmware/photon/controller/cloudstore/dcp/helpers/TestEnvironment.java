@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 
 import org.apache.commons.io.FileUtils;
 import static org.mockito.Mockito.mock;
@@ -41,7 +42,7 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
       BuildInfo buildInfo = BuildInfo.get(TestCloudStoreModule.class);
 
       hosts[i] = new CloudStoreXenonHost(BIND_ADDRESS, 0, sandbox, mock(HostClientFactory.class),
-          mock(AgentControlClientFactory.class), buildInfo);
+          mock(AgentControlClientFactory.class), mock(ServiceConfigFactory.class), buildInfo);
     }
     // Disable host ping: we have fake hosts and don't want them to be marked as missing
     HostService.setInUnitTests(true);
