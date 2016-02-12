@@ -53,6 +53,9 @@ import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerFactoryService;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
@@ -70,7 +73,8 @@ import java.nio.file.Paths;
  */
 @Singleton
 public class CloudStoreDcpHost
-    extends ServiceHost implements DcpHostInfoProvider, HostClientProvider, AgentControlClientProvider {
+    extends ServiceHost implements DcpHostInfoProvider, HostClientProvider, AgentControlClientProvider,
+    ServiceConfigProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreDcpHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
@@ -123,6 +127,7 @@ public class CloudStoreDcpHost
 
   private BuildInfo buildInfo;
   private final HostClientFactory hostClientFactory;
+  private final ServiceConfigFactory serviceConfigFactory;
   private final AgentControlClientFactory agentControlClientFactory;
 
   @Inject
@@ -132,10 +137,12 @@ public class CloudStoreDcpHost
       @CloudStoreConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
       AgentControlClientFactory agentControlClientFactory,
+      ServiceConfigFactory serviceConfigFactory,
       BuildInfo buildInfo) throws Throwable {
 
     this.hostClientFactory = hostClientFactory;
     this.agentControlClientFactory = agentControlClientFactory;
+    this.serviceConfigFactory = serviceConfigFactory;
 
     logger.info("Initializing DcpServer on port: {} path: {}", port, storagePath);
     ServiceHost.Arguments arguments = new ServiceHost.Arguments();
@@ -154,6 +161,14 @@ public class CloudStoreDcpHost
   @Override
   public HostClient getHostClient() {
     return hostClientFactory.create();
+  }
+
+  /**
+   * This method gets apife's service config.
+   */
+  @Override
+  public ServiceConfig getServiceConfig() {
+    return serviceConfigFactory.create("apife");
   }
 
   /**
