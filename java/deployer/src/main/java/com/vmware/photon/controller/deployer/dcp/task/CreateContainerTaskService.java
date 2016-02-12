@@ -438,7 +438,9 @@ public class CreateContainerTaskService extends StatefulService {
             containerTemplateState.volumesFrom,
             containerTemplateState.isPrivileged,
             environmentVariables,
-            true, commandList.toArray(new String[commandList.size()]));
+            true,
+            containerTemplateState.useHostNetwork,
+            commandList.toArray(new String[commandList.size()]));
         return containerId;
       }
     });

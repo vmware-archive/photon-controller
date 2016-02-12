@@ -5,6 +5,7 @@
   "diskGb": 8,
   "isReplicated": false,
   "isPrivileged": true,
+  "useHostNetwork": true,
   "containerImage": "vmware/lightwave-sts",
   "portBindings": {
     "443":443

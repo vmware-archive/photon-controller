@@ -70,6 +70,9 @@ public class ContainersConfig {
     @DefaultBoolean(value = false)
     private Boolean isPrivileged;
 
+    @DefaultBoolean(value = true)
+    private Boolean useHostNetwork;
+
     @NotNull
     private String containerImage;
 
@@ -135,6 +138,14 @@ public class ContainersConfig {
 
     public void setIsPrivileged(Boolean isPrivileged) {
       this.isPrivileged = isPrivileged;
+    }
+
+    public Boolean getUseHostNetwork() {
+      return useHostNetwork;
+    }
+
+    public void setUseHostNetwork(Boolean useHostNetwork) {
+      this.useHostNetwork = useHostNetwork;
     }
 
     public String getContainerImage() {

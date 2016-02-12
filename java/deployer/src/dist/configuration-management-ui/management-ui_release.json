@@ -5,9 +5,11 @@
   "diskGb": 8,
   "isReplicated": true,
   "isPrivileged": false,
+  "useHostNetwork": false,
   "containerImage": "esxcloud/management_ui",
   "portBindings": {
-    "80":80
+    "20000": 80,
+    "20001": 4343
   },
   "volumeBindings": {
   },

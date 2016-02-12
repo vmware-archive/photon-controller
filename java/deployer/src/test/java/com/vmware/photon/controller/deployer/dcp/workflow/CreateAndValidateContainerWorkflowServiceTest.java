@@ -568,7 +568,8 @@ public class CreateAndValidateContainerWorkflowServiceTest {
     @Test
     public void testTaskSuccess() throws Throwable {
       when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
+          Matchers.<String>anyVararg())).thenReturn("id");
 
       HealthChecker healthChecker = new HealthChecker() {
         @Override
@@ -600,7 +601,8 @@ public class CreateAndValidateContainerWorkflowServiceTest {
     @Test
     public void testTaskFailureWhenServiceFailsToStart() throws Throwable {
       when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
+          Matchers.<String>anyVararg())).thenReturn("id");
 
       HealthChecker healthChecker = new HealthChecker() {
         @Override
@@ -632,8 +634,8 @@ public class CreateAndValidateContainerWorkflowServiceTest {
     @Test
     public void testTaskFailureInsideCreateContainer() throws Throwable {
       when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenThrow(new
-          DockerException("Start container " + "failed", 500));
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
+          Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " + "failed", 500));
 
       CreateAndValidateContainerWorkflowService.State finalState =
           machine.callServiceAndWaitForState(

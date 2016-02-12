@@ -5,6 +5,7 @@
   "diskGb": 1,
   "isReplicated": false,
   "isPrivileged": true,
+  "useHostNetwork": true,
   "containerImage": "esxcloud/haproxy",
   "portBindings": {
     "8080": 8080,

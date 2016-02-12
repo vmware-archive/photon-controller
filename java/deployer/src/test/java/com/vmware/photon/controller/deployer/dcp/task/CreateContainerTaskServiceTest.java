@@ -553,7 +553,8 @@ public class CreateContainerTaskServiceTest {
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
       when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenCallRealMethod();
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
+          Matchers.<String>anyVararg())).thenCallRealMethod();
 
       setupValidOtherServiceDocuments(ContainersConfig.ContainerType.Chairman);
 
@@ -587,8 +588,8 @@ public class CreateContainerTaskServiceTest {
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
       when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenThrow(new
-          DockerException("Start container " + "failed", 500));
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
+          Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " + "failed", 500));
 
       setupValidOtherServiceDocuments(ContainersConfig.ContainerType.Chairman);
 
@@ -621,7 +622,8 @@ public class CreateContainerTaskServiceTest {
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
       when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
+          Matchers.<String>anyVararg())).thenReturn("id");
 
       setupValidOtherServiceDocuments(containerType);
       setupDeploymentServiceDocument(implicitClient);
@@ -638,8 +640,8 @@ public class CreateContainerTaskServiceTest {
 
       ArgumentCaptor<Map> volumeBindingsArgument = ArgumentCaptor.forClass(Map.class);
       verify(dockerProvisioner, times(1)).launchContainer(anyString(), anyString(), anyInt(), anyLong(),
-          volumeBindingsArgument.capture(), anyMap(), anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers
-              .<String>anyVararg());
+          volumeBindingsArgument.capture(), anyMap(), anyString(), anyBoolean(), anyMap(), anyBoolean(),
+          anyBoolean(), Matchers.<String>anyVararg());
 
       String expectedKey = ServiceFileConstants.VM_MUSTACHE_DIRECTORY + ServiceFileConstants
           .CONTAINER_CONFIG_ROOT_DIRS.get(containerType);
@@ -688,7 +690,8 @@ public class CreateContainerTaskServiceTest {
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
       when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
       when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
+          Matchers.<String>anyVararg())).thenReturn("id");
 
       setupValidOtherServiceDocumentsWithContainerId(ContainersConfig.ContainerType.Chairman);
       setupDeploymentServiceDocument(implicitClient);

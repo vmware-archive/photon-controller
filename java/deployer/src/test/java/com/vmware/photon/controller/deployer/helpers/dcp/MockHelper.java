@@ -151,11 +151,12 @@ public class MockHelper {
     when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
     if (isSuccess) {
       when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenReturn("id");
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
+          Matchers.<String>anyVararg())).thenReturn("id");
     } else {
       when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), Matchers.<String>anyVararg())).thenThrow(new
-          DockerException("Start container " + "failed", 500));
+          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
+          Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " + "failed", 500));
     }
   }
 
