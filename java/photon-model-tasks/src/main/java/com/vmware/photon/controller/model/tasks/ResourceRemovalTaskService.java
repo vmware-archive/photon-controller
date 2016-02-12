@@ -108,6 +108,12 @@ public class ResourceRemovalTaskService extends StatefulService {
       ResourceRemovalTaskState state = start.getBody(ResourceRemovalTaskState.class);
       validateState(state);
 
+      if (TaskState.isCancelled(state.taskInfo) || TaskState.isFailed(state.taskInfo)
+              || TaskState.isFinished(state.taskInfo)) {
+          start.complete();
+          return;
+      }
+
       QueryTask q = new QueryTask();
       q.documentExpirationTimeMicros = state.documentExpirationTimeMicros;
       q.querySpec = state.resourceQuerySpec;
@@ -250,6 +256,7 @@ public class ResourceRemovalTaskService extends StatefulService {
             sendInstanceDelete(resourceLink, subTaskLink, o, currentState.isMockRequest);
           }));
     }
+    sendRequest(Operation.createDelete(this, currentState.resourceQueryLink));
   }
 
   /**
