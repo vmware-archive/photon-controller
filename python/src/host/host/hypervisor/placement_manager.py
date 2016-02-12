@@ -562,10 +562,15 @@ class PlacementManager(object):
 
     def _placeable_datastores(self):
         datastores = self._datastore_manager.vm_datastores()
+        available_image_datastores = self._datastore_manager.image_datastores()
         for image_ds in self._option.image_datastores:
             if image_ds["used_for_vms"]:
                 dsid = self._datastore_manager.normalize(image_ds["name"])
-                datastores.append(dsid)
+                # _option.image_datastores may contain datastores not
+                # accessible from this host. the following check filters
+                # them out.
+                if dsid in available_image_datastores:
+                    datastores.append(dsid)
         self._logger.debug("Placeable datastores: %s, image datastores: %s" %
                            (datastores, self._option.image_datastores))
         return datastores
