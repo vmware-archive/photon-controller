@@ -193,7 +193,6 @@ public class HostClient {
   private ZookeeperServerSetFactory serverSetFactory;
   /**
    * clientProxy acquires a new client from ClientPool for every thrift call.
-   * Reference: {@link ClientProxyImpl#createMethodHandler() createMethodHandler}.
    */
   private Host.AsyncClient clientProxy;
   private String hostIp;

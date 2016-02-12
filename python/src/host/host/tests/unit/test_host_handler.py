@@ -221,7 +221,7 @@ class HostHandlerTestCase(unittest.TestCase):
         self._config.datastores = [image_ds]
         self._config.image_datastores = [{"name": image_ds,
                                           "used_for_vms": True}]
-        self._config.management_only = True
+        self._config.usage_tags = "MGMT"
         self._config.esx_version = "X.X.X"
         self._config.reboot_required = False
         self._config.host_id = stable_uuid("host_id")

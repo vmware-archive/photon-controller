@@ -198,7 +198,7 @@ public class AgentControlClient {
    * @param memoryOverCommit
    * @param loggingEndpoint
    * @param logLevel
-   * @param managementOnly
+   * @param usageTags
    * @param hostId
    * @param ntpEndpoint
    * @param handler            Supplies a handler object to be invoked on completion.
@@ -218,7 +218,7 @@ public class AgentControlClient {
       String loggingEndpoint,
       String logLevel,
       String statsStoreEndpoint,
-      boolean managementOnly,
+      String usageTags,
       String hostId,
       String deploymentId,
       String ntpEndpoint,
@@ -238,7 +238,7 @@ public class AgentControlClient {
     provisionRequest.setAddress(new ServerAddress(hostAddress, hostPort));
     provisionRequest.setChairman_server(Util.getServerAddressList(chairmanServerList));
     provisionRequest.setMemory_overcommit(memoryOverCommit);
-    provisionRequest.setManagement_only(managementOnly);
+    provisionRequest.setUsage_tags(usageTags);
     provisionRequest.setHost_id(hostId);
     provisionRequest.setDeployment_id(deploymentId);
     provisionRequest.setNtp_endpoint(ntpEndpoint);
@@ -268,7 +268,7 @@ public class AgentControlClient {
    * @param memoryOverCommit
    * @param loggingEndpoint
    * @param logLevel
-   * @param managementOnly
+   * @param usageTags
    * @param hostId
    * @param ntpEndpoint
    * @return On success, the return code is the ProvisionResponse object
@@ -290,14 +290,14 @@ public class AgentControlClient {
       String loggingEndpoint,
       String logLevel,
       String statsStoreEndpoint,
-      boolean managementOnly,
+      String usageTags,
       String hostId,
       String deploymentId,
       String ntpEndpoint)
       throws InterruptedException, RpcException {
     SyncHandler<ProvisionResponse, AgentControl.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
     provision(availabilityZone, dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
-        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, statsStoreEndpoint, managementOnly,
+        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, statsStoreEndpoint, usageTags,
         hostId, deploymentId, ntpEndpoint, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkProvisionResponse(syncHandler.getResponse());

@@ -260,7 +260,7 @@ class HostHandler(Host.Iface):
         config.agent_id = agent_config.host_id
         config.deployment_id = agent_config.deployment_id
         config.availability_zone = agent_config.availability_zone
-        config.management_only = agent_config.management_only
+        config.usage_tags = agent_config.usage_tags
         config.address = ServerAddress(host=agent_config.hostname,
                                        port=agent_config.host_port)
         if not self._hypervisor:
