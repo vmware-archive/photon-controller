@@ -20,7 +20,7 @@ import com.vmware.photon.controller.common.auth.AuthException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowFactoryService;
@@ -267,7 +267,7 @@ public class RegisterAuthClientTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
 

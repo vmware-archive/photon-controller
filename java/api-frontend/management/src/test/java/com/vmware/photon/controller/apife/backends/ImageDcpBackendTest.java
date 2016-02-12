@@ -35,9 +35,9 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageReplicationServic
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.DcpClient;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.XenonClient;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -143,7 +143,7 @@ public class ImageDcpBackendTest {
     return imageEntity;
   }
 
-  private static String createImageDocument(DcpClient dcpClient,
+  private static String createImageDocument(XenonClient dcpClient,
                                             String imageName,
                                             ImageState imageState,
                                             Long imageSize,

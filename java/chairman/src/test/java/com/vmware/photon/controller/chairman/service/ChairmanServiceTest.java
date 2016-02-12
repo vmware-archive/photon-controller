@@ -29,7 +29,7 @@ import com.vmware.photon.controller.chairman.hierarchy.Scheduler;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.zookeeper.DataDictionary;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
@@ -101,7 +101,7 @@ public class ChairmanServiceTest extends PowerMockTestCase {
   private DataDictionary missingDict;
 
   @Mock
-  private DcpRestClient dcpRestClient;
+  private XenonRestClient dcpRestClient;
 
   @Mock
   private BuildInfo buildInfo;

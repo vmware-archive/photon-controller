@@ -15,7 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -204,7 +204,7 @@ public class WaitForDockerTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "NotNullAttributeFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "NotNullAttributeFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStartStateMissingNotNullField(String fieldName) throws Throwable {
       WaitForDockerTaskService.State startState = buildValidStartState(null, null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
@@ -298,7 +298,7 @@ public class WaitForDockerTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
                                            @Nullable WaitForDockerTaskService.TaskState.SubStage startSubStage,
                                            TaskState.TaskStage patchStage,
@@ -369,7 +369,7 @@ public class WaitForDockerTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableAttributeFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "ImmutableAttributeFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchSetsImmutableField(String fieldName) throws Throwable {
       WaitForDockerTaskService.State startState = buildValidStartState(null, null);
       Operation startOperation = testHost.startServiceSynchronously(waitForDockerTaskService, startState);

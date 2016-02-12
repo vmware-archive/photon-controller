@@ -22,7 +22,7 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -195,7 +195,7 @@ public class AddCloudHostWorkflowServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       AddCloudHostWorkflowService.State startState = buildValidStartState(TaskState.TaskStage.CREATED);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -237,7 +237,7 @@ public class AddCloudHostWorkflowServiceTest {
       try {
         testHost.startServiceSynchronously(addCloudHostWorkflowService, startState);
         fail("Service start should throw in response to illegal taskPollDelay values");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("taskPollDelay must be greater than zero"));
       }
     }
@@ -323,7 +323,7 @@ public class AddCloudHostWorkflowServiceTest {
       try {
         testHost.sendRequestAndWait(patchOperation);
         fail("Stage transition from " + startStage.toString() + " to " + patchStage.toString() + " should fail");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         // N.B. An assertion can be added here if an error message is added to
         //      the checkState calls in validatePatch.
       }
@@ -355,7 +355,7 @@ public class AddCloudHostWorkflowServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithInvalidValue")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "fieldNamesWithInvalidValue")
     public void testInvalidStateFieldValue(String fieldName) throws Throwable {
       AddCloudHostWorkflowService.State startState = buildValidStartState(TaskState.TaskStage.CREATED);
       Operation startOperation = testHost.startServiceSynchronously(addCloudHostWorkflowService, startState);

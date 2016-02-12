@@ -22,8 +22,8 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
+import com.vmware.photon.controller.common.dcp.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
@@ -88,13 +88,13 @@ public class TestHelper {
     return startState;
   }
 
-  public static <H extends ServiceHost & DcpHostInfoProvider> HostService.State createHostService(
+  public static <H extends ServiceHost & XenonHostInfoProvider> HostService.State createHostService(
       MultiHostEnvironment<H> testEnvironment,
       Set<String> usageTags) throws Throwable {
     return createHostService(testEnvironment, getHostServiceStartState(usageTags));
   }
 
-  public static <H extends ServiceHost & DcpHostInfoProvider> HostService.State createHostService(
+  public static <H extends ServiceHost & XenonHostInfoProvider> HostService.State createHostService(
       MultiHostEnvironment<H> testEnvironment,
       HostService.State startState)
       throws Throwable {

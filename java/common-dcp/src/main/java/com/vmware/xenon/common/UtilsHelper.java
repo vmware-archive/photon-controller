@@ -14,11 +14,10 @@
 package com.vmware.xenon.common;
 
 /**
- * Temporary hack to make a protected method in DCP accessible from our MicroServices.
+ * Temporary hack to make a protected method in Xenon accessible from our MicroServices.
  * <p>
- * The right solution is to expose Utils.getThreadContextId and Utils.setThreadContextId
- * publicly, that are currently marked as protected. Once that is done UtilsHelper will
- * be removed.
+ * The right solution is to expose Utils.getThreadContextId and Utils.setThreadContextId publicly, that are currently
+ * marked as protected. Once that is done UtilsHelper will be removed.
  */
 public final class UtilsHelper {
   public static String getThreadContextId() {

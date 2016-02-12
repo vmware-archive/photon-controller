@@ -14,8 +14,8 @@
 package com.vmware.photon.controller.common.dcp;
 
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
 
@@ -88,7 +88,7 @@ public class OperationUtils {
       case Operation.STATUS_CODE_BAD_REQUEST:
         throw new BadRequestException(requestedOperation, completedOperation);
       default:
-        throw new DcpRuntimeException(requestedOperation, completedOperation);
+        throw new XenonRuntimeException(requestedOperation, completedOperation);
     }
   }
 }

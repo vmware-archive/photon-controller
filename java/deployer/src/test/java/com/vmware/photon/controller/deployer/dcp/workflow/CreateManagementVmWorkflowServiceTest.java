@@ -29,7 +29,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.common.thrift.ServerSet;
@@ -247,7 +247,7 @@ public class CreateManagementVmWorkflowServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       CreateManagementVmWorkflowService.State startState = buildValidStartupState();
       startState.getClass().getDeclaredField(attributeName).set(startState, null);
@@ -364,7 +364,7 @@ public class CreateManagementVmWorkflowServiceTest {
      *
      * @throws Throwable Throws an exception if any error is encountered.
      */
-    @Test(expectedExceptions = DcpRuntimeException.class)
+    @Test(expectedExceptions = XenonRuntimeException.class)
     public void testIllegalStageUpdatesInvalidPatch() throws Throwable {
 
       CreateManagementVmWorkflowService.State startState = buildValidStartupState(TaskState.TaskStage.STARTED, null);
@@ -387,7 +387,7 @@ public class CreateManagementVmWorkflowServiceTest {
      * @param targetStage Supplies the stage of the target state.
      * @throws Throwable Throws an exception if any error is encountered.
      */
-    @Test(dataProvider = "illegalStageUpdatesInvalidStart", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "illegalStageUpdatesInvalidStart", expectedExceptions = XenonRuntimeException.class)
     public void testIllegalStageUpdatesInvalidStart(
         TaskState.TaskStage startStage,
         CreateManagementVmWorkflowService.TaskState.SubStage startSubStage,
@@ -460,7 +460,7 @@ public class CreateManagementVmWorkflowServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
     public void testInvalidPatchStateValue(String attributeName) throws Throwable {
       CreateManagementVmWorkflowService.State startState = buildValidStartupState();
       host.startServiceSynchronously(service, startState);

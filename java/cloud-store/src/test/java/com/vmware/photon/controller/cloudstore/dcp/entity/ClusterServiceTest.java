@@ -16,7 +16,7 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
@@ -37,7 +37,7 @@ import java.util.HashMap;
  */
 public class ClusterServiceTest {
 
-  private DcpRestClient dcpRestClient;
+  private XenonRestClient dcpRestClient;
   private BasicServiceHost host;
   private ClusterService service;
   private ClusterService.State testState;

@@ -15,9 +15,9 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -41,7 +41,7 @@ import java.util.concurrent.Executors;
  */
 public class FlavorServiceTest {
 
-  private DcpRestClient dcpRestClient;
+  private XenonRestClient dcpRestClient;
   private BasicServiceHost host;
   private FlavorService service;
   private FlavorService.State testFlavor;
@@ -92,7 +92,7 @@ public class FlavorServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new DcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
       dcpRestClient.start();
 
       testFlavor = new FlavorService.State();
@@ -242,7 +242,7 @@ public class FlavorServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("should have failed with NullPointerException");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
       }
     }
   }

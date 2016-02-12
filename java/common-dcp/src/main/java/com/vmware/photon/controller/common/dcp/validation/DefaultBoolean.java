@@ -19,7 +19,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation defines a default bool value for a DCP state attribute.
+ * This annotation defines a default bool value for a Xenon state attribute.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

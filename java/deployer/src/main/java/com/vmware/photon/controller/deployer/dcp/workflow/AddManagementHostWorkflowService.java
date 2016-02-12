@@ -24,7 +24,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
@@ -625,7 +625,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
   private void getChairmanContainerEntities(final State currentState, Collection<String> documentLinks) {
 
     if (documentLinks.isEmpty()) {
-      throw new DcpRuntimeException("Document links set is empty");
+      throw new XenonRuntimeException("Document links set is empty");
     }
 
     OperationJoin
@@ -651,7 +651,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
   private void getChairmanVmEntities(final State currentState, Set<String> vmServiceLinks) {
 
     if (vmServiceLinks.isEmpty()) {
-      throw new DcpRuntimeException("VM service links set is empty");
+      throw new XenonRuntimeException("VM service links set is empty");
     }
 
     OperationJoin

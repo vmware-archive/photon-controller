@@ -23,7 +23,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
@@ -409,7 +409,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   private void updateVmStates(State currentState, Set<String> documentLinks, String imageServiceLink) {
 
     if (documentLinks.isEmpty()) {
-      throw new DcpRuntimeException("Document links set is empty");
+      throw new XenonRuntimeException("Document links set is empty");
     }
 
     VmService.State patchState = new VmService.State();

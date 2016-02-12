@@ -17,7 +17,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
@@ -116,7 +116,7 @@ public class MigrationStatusUpdateTriggerServiceTest {
       TestHost.destroy(testHost);
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStartStateMissingRequiredField(String fieldName) throws Throwable {
       MigrationStatusUpdateTriggerService.State startState = buildValidStartState();
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -217,7 +217,7 @@ public class MigrationStatusUpdateTriggerServiceTest {
       assertThat(deploymentState.vibsUploading, is(1L));
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class)
+    @Test(expectedExceptions = XenonRuntimeException.class)
     public void failsWhenDeploymentDocumentNotFound() throws Throwable {
       startTestEnvironment();
       startState.deploymentServiceLink = "/fakeurl";

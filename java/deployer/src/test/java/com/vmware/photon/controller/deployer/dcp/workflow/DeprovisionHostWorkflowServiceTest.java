@@ -23,7 +23,7 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
@@ -230,7 +230,7 @@ public class DeprovisionHostWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testFailureRequiredFieldMissing(String fieldName) throws Throwable {
       DeprovisionHostWorkflowService.State startState = buildValidStartState(null, null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
@@ -338,7 +338,7 @@ public class DeprovisionHostWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(
         TaskState.TaskStage startStage,
         @Nullable DeprovisionHostWorkflowService.TaskState.SubStage startSubStage,

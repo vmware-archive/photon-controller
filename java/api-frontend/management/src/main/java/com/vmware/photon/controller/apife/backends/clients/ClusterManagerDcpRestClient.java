@@ -15,10 +15,10 @@ package com.vmware.photon.controller.apife.backends.clients;
 
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.DeployerServerSet;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -42,7 +42,7 @@ import java.util.concurrent.TimeoutException;
  * This class allows for injection of DeployerServerSet and executor specific to API-FE
  */
 @Singleton
-public class ClusterManagerDcpRestClient extends DcpRestClient {
+public class ClusterManagerDcpRestClient extends XenonRestClient {
   private static final Logger logger = LoggerFactory.getLogger(ClusterManagerDcpRestClient.class);
 
   @Inject
@@ -63,9 +63,9 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
     try {
       return super.post(serviceSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
+      throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
       throw new RuntimeException(timeoutException);
     } catch (InterruptedException interruptedException) {
@@ -78,7 +78,7 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
     try {
       return super.get(documentSelfLink);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
       throw new RuntimeException(timeoutException);
     } catch (InterruptedException interruptedException) {
@@ -91,9 +91,9 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
     try {
       return super.delete(documentSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
+      throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
       throw new RuntimeException(timeoutException);
     } catch (InterruptedException interruptedException) {
@@ -106,9 +106,9 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
     try {
       return super.postToBroadcastQueryService(spec);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
+      throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
       throw new RuntimeException(timeoutException);
     } catch (InterruptedException interruptedException) {
@@ -121,9 +121,9 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
     try {
       return super.patch(serviceSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
+      throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
       throw new RuntimeException(timeoutException);
     } catch (InterruptedException interruptedException) {
@@ -137,9 +137,9 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
     try {
       return super.queryDocuments(documentType, terms);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
+      throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException | InterruptedException exception) {
       throw new RuntimeException(exception);
     }
@@ -151,9 +151,9 @@ public class ClusterManagerDcpRestClient extends DcpRestClient {
     try {
       return super.queryDocumentsForLinks(documentType, terms);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
+      throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException | InterruptedException exception) {
       throw new RuntimeException(exception);
     }

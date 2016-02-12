@@ -15,9 +15,9 @@ package com.vmware.photon.controller.apife.clients.status;
 
 import com.vmware.photon.controller.cloudstore.dcp.StatusService;
 import com.vmware.photon.controller.common.clients.StatusProvider;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpException;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonException;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.xenon.common.Operation;
@@ -33,9 +33,9 @@ import java.util.concurrent.TimeoutException;
 public class DcpStatusProvider implements StatusProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(DcpStatusProvider.class);
-  private final DcpRestClient dcpRestClient;
+  private final XenonRestClient dcpRestClient;
 
-  public DcpStatusProvider(DcpRestClient dcpRestClient) {
+  public DcpStatusProvider(XenonRestClient dcpRestClient) {
     this.dcpRestClient = dcpRestClient;
   }
 
@@ -50,7 +50,7 @@ public class DcpStatusProvider implements StatusProvider {
       Status status = new Status(StatusType.UNREACHABLE);
       status.setMessage(ex.getMessage());
       return status;
-    } catch (DcpException | Exception ex) {
+    } catch (XenonException | Exception ex) {
       logger.error("DCP REST call error", ex);
       Status status = new Status(StatusType.ERROR);
       status.setMessage(ex.getMessage());

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp.entity;
 
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -133,7 +133,7 @@ public class VmServiceTest {
      * This test verfies that a service instance cannot be started with a
      * start state in which the vmId is null.
      */
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
     public void testMissingRequiredStateFieldValue(String attributeName) throws Throwable {
       VmService.State invalidState = TestHelper.getVmServiceStartState();
       Field declaredField = invalidState.getClass().getDeclaredField(attributeName);

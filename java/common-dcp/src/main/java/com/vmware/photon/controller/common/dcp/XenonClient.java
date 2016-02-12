@@ -30,9 +30,9 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
- * REST client API to access DCP services.
+ * REST client API to access Xenon services.
  */
-public interface DcpClient {
+public interface XenonClient {
   void start();
 
   void stop();

@@ -26,7 +26,7 @@ import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ClientPool;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
@@ -362,8 +362,8 @@ public class DeployerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public DcpRestClient getDcpRestClient(@CloudStoreServerSet ServerSet serverSet) {
-    DcpRestClient client = new DcpRestClient(serverSet, Executors.newFixedThreadPool(4));
+  public XenonRestClient getDcpRestClient(@CloudStoreServerSet ServerSet serverSet) {
+    XenonRestClient client = new XenonRestClient(serverSet, Executors.newFixedThreadPool(4));
     client.start();
     return client;
   }

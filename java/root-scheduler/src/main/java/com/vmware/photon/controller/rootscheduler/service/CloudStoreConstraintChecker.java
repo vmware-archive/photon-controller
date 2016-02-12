@@ -19,8 +19,8 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
@@ -57,10 +57,10 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
 
   private final Random random = new Random();
 
-  private final DcpRestClient xenonRestClient;
+  private final XenonRestClient xenonRestClient;
 
   @Inject
-  public CloudStoreConstraintChecker(DcpRestClient xenonRestClient) {
+  public CloudStoreConstraintChecker(XenonRestClient xenonRestClient) {
     this.xenonRestClient = xenonRestClient;
   }
 

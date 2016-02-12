@@ -16,8 +16,8 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.Operation;
@@ -46,7 +46,7 @@ import java.util.concurrent.Executors;
  */
 public class PortGroupServiceTest {
 
-  private DcpRestClient dcpRestClient;
+  private XenonRestClient dcpRestClient;
   private BasicServiceHost host;
   private PortGroupService service;
 
@@ -112,7 +112,7 @@ public class PortGroupServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new DcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
       dcpRestClient.start();
     }
 
@@ -181,7 +181,7 @@ public class PortGroupServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new DcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
       dcpRestClient.start();
     }
 
