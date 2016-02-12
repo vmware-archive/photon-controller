@@ -85,11 +85,13 @@ class TestUnitAgent(unittest.TestCase):
                                    "--datastore", ["datastore1"],
                                    "--in-uwsim",
                                    "--config-path", self.agent_conf_dir,
+                                   "--usage-tags", "MGMT,CLOUD,IMAGE",
                                    "--utilization-transfer-ratio", "0.5"])
 
         self.assertEqual(self.agent.chairman_list,
                          [ServerAddress("h1", 13000),
                           ServerAddress("h2", 13000)])
+        self.assertEqual(self.agent.usage_tags, "MGMT,CLOUD,IMAGE")
         self.assertEqual(self.agent.memory_overcommit, 1.5)
         self.assertEqual(self.agent.in_uwsim, True)
         self.assertEqual(self.agent.utilization_transfer_ratio, 0.5)

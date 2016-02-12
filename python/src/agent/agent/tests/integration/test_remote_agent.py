@@ -177,7 +177,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
             name=image_datastore,
             used_for_vms=used_for_vms)
         req.image_datastores = set([req.image_datastore_info])
-        req.management_only = True
+        req.usage_tags = "MGMT"
         if host_id:
             req.host_id = host_id
         else:
@@ -432,7 +432,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         self.assertTrue(self._vm_network in networks)
         self.assertEqual(hostConfig.address, ServerAddress(host=self.server,
                                                            port=8835))
-        self.assertTrue(hostConfig.management_only)
+        self.assertEqual(hostConfig.usage_tags, "MGMT")
         # get_host_config reports datastore id for image datastore  even if it
         # was provisioned with a datastore name.
         image_datastore_name = self.get_image_datastore()

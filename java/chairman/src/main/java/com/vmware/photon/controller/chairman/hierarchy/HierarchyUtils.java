@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.chairman.hierarchy;
 
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.chairman.HostConfigRegistry;
 import com.vmware.photon.controller.chairman.RolesRegistry;
 import com.vmware.photon.controller.chairman.service.AvailabilityZone;
@@ -197,8 +198,10 @@ public class HierarchyUtils {
           AvailabilityZone availabilityZone =
               new AvailabilityZone(reqAvailabilityZone);
           boolean managementOnly = false;
-          if (config.isSetManagement_only()) {
-            managementOnly = config.isManagement_only();
+          if (config.isSetUsage_tags()) {
+            String usageTags = config.getUsage_tags();
+            managementOnly = usageTags != null
+                && usageTags.contains(UsageTag.MGMT.name()) && !usageTags.contains(UsageTag.CLOUD.name());
           }
           Host tHost = new Host(key, availabilityZone, datastores,
               networks, managementOnly, hostname, port);

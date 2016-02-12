@@ -49,13 +49,13 @@ SLEEP_STEP = 3
 
 def get_register_host_request(host, port, agent_id, networks, datastores,
                               image_datastore, availability_zone,
-                              management_only=False):
+                              usage_tags=None):
     host_config = HostConfig(agent_id=agent_id, datastores=datastores,
                              address=ServerAddress(host, port=port),
                              networks=networks,
                              availability_zone=availability_zone,
                              image_datastore_ids=set([image_datastore]),
-                             management_only=management_only)
+                             usage_tags=usage_tags)
     return RegisterHostRequest(agent_id, host_config)
 
 
