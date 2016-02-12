@@ -16,6 +16,8 @@ import errno
 import gzip
 import json
 import logging
+from time import sleep
+
 import os.path
 import shutil
 import uuid
@@ -819,10 +821,21 @@ class EsxImageManager(ImageManager):
         image transfer.
         """
 
+        # Wait for the imported vm to show up in vim_client's cache
         self._vim_client.wait_for_vm_create(imported_vm_name)
-        vm = self._vim_client.get_vm_obj_in_cache(imported_vm_name)
+
+        # Wait for vm.config to be populated
+        # It may take some time for hostd to get config for newly
+        # created VMs. https://github.com/vmware/pyvmomi/blob
+        # /e26718fef6d9dbc8a4da1761b75d9da58bbc0daa/docs/vim/VirtualMachine.rst
+        for i in range(0, 30):
+            vm = self._vim_client.get_vm_obj_in_cache(imported_vm_name)
+            if vm.config is not None:
+                break
+            sleep(1)
         self._logger.warning("receive_image found vm %s, %s" %
-                             (imported_vm_name, vm))
+                             (imported_vm_name, str(vm)))
+
         vmx_os_path = datastore_to_os_path(vm.config.files.vmPathName)
         vm_dir = os.path.dirname(vmx_os_path)
 
