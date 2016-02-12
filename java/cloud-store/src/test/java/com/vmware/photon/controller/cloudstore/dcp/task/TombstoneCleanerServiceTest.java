@@ -22,7 +22,7 @@ import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
@@ -300,7 +300,7 @@ public class TombstoneCleanerServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "ImmutableFields",
-        expectedExceptions = DcpRuntimeException.class,
+        expectedExceptions = XenonRuntimeException.class,
         expectedExceptionsMessageRegExp = ".* is immutable")
     public void testImmutableFields(String fieldName, Object value) throws Throwable {
       TombstoneCleanerService.State patchState = new TombstoneCleanerService.State();

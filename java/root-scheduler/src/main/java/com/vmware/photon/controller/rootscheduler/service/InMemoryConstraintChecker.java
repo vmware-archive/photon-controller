@@ -17,7 +17,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
@@ -69,7 +69,7 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
   private final ImmutableSetMultimap<String, String> availabilityZones;
 
   @Inject
-  public InMemoryConstraintChecker(DcpRestClient client) {
+  public InMemoryConstraintChecker(XenonRestClient client) {
     Map<String, HostService.State> hosts = new HashMap<>();
     Map<String, DatastoreService.State> datastores = new HashMap<>();
 

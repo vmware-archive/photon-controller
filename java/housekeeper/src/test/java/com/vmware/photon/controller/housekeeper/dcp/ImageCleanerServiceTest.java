@@ -19,7 +19,7 @@ import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.StartImageOperationResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
@@ -282,7 +282,7 @@ public class ImageCleanerServiceTest {
       try {
         host.startServiceSynchronously(service, buildValidStartupState(stage, subStage));
         fail("service start did not fail when 'stage' was invalid");
-      } catch (DcpRuntimeException ex) {
+      } catch (XenonRuntimeException ex) {
         assertThat(ex.getMessage(), startsWith("Invalid stage update."));
       }
     }
@@ -390,7 +390,7 @@ public class ImageCleanerServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "PositiveFields",
-        expectedExceptions = DcpRuntimeException.class,
+        expectedExceptions = XenonRuntimeException.class,
         expectedExceptionsMessageRegExp = ".* must be greater than zero")
     public void testPositiveFields(String fieldName, Object value) throws Throwable {
       ImageCleanerService.State startState = buildValidStartupState();
@@ -615,7 +615,7 @@ public class ImageCleanerServiceTest {
       try {
         host.sendRequestAndWait(patchOp);
         fail("Transition from " + startStage + " to " + targetStage + "did not fail.");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), startsWith("Invalid stage update."));
       }
     }
@@ -839,7 +839,7 @@ public class ImageCleanerServiceTest {
         host.startServiceSynchronously(service, startState);
         fail("validation did not fail when host was 'null' " +
             "in STARTED:TRIGGER_DELETES stage");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("host cannot be null"));
       }
     }
@@ -860,7 +860,7 @@ public class ImageCleanerServiceTest {
         host.startServiceSynchronously(service, startState);
         fail("validation did not fail when dataStore was 'null' " +
             "in STARTED:TRIGGER_DELETES stage");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("dataStore cannot be null"));
       }
     }
@@ -884,7 +884,7 @@ public class ImageCleanerServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("validation did not fail when dataStoreCount was updated to a value < 0");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("dataStoreCount needs to be >= 0"));
       }
     }
@@ -903,7 +903,7 @@ public class ImageCleanerServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("validation did not fail when dataStoreCount was 'null' in STARTED:AWAIT_COMPLETION stage");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("dataStoreCount cannot be null"));
       }
     }
@@ -950,7 +950,7 @@ public class ImageCleanerServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("validation did not fail when finishedDeletes was updated to a value < 0");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("finishedDeletes needs to be >= 0"));
       }
     }
@@ -997,7 +997,7 @@ public class ImageCleanerServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("validation did not fail when failedOrCanceledDeletes was updated to a value < 0");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("failedOrCanceledDeletes needs to be >= 0"));
       }
     }

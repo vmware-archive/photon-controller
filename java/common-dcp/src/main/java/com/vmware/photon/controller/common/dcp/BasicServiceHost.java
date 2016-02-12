@@ -40,7 +40,7 @@ import java.util.logging.Level;
  */
 public class BasicServiceHost
     extends ServiceHost
-    implements DcpHostInfoProvider {
+    implements XenonHostInfoProvider {
   public static final String FIELD_NAME_SELF_LINK = "SELF_LINK";
   public static final String SERVICE_URI = "/TestService";
   public static final int WAIT_ITERATION_SLEEP = 500;

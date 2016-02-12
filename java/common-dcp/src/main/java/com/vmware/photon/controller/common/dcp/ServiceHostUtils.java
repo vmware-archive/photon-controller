@@ -544,7 +544,7 @@ public class ServiceHostUtils {
    * @param host
    * @throws Throwable
    */
-  public static <H extends ServiceHost & DcpHostInfoProvider> void dumpHost(
+  public static <H extends ServiceHost & XenonHostInfoProvider> void dumpHost(
       H host, String referrer) throws Throwable {
     logger.info(String.format("host: %s - %s", host.getId(), host.getPort()));
     for (Class factory : host.getFactoryServices()) {

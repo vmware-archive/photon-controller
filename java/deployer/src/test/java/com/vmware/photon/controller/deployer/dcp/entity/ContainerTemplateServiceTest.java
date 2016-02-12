@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.entity;
 
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -124,7 +124,7 @@ public class ContainerTemplateServiceTest {
       assertThat(savedState.diskGb, is(4));
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       ContainerTemplateService.State startState = TestHelper.getContainerTemplateServiceStartState();
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -139,7 +139,7 @@ public class ContainerTemplateServiceTest {
       return TestHelper.toDataProvidersList(notNullAttributes);
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "InvalidValueFieldNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "InvalidValueFieldNames")
     public void testInvalidStartStateInvalidField(String fieldName, Object fieldValue) throws Throwable {
       ContainerTemplateService.State startState = TestHelper.getContainerTemplateServiceStartState();
       Field declaredField = startState.getClass().getDeclaredField(fieldName);

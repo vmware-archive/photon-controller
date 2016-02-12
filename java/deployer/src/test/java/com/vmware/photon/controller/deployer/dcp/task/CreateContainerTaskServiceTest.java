@@ -20,7 +20,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -281,7 +281,7 @@ public class CreateContainerTaskServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       CreateContainerTaskService.State startState = buildValidStartupState();
       Field declaredField = startState.getClass().getDeclaredField(attributeName);
@@ -394,7 +394,7 @@ public class CreateContainerTaskServiceTest {
       try {
         host.sendRequestAndWait(patchOp);
         fail("Patch handling should throw in response to invalid start state");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
       }
     }
 
@@ -432,7 +432,7 @@ public class CreateContainerTaskServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
     public void testInvalidPatchStateValue(String attributeName) throws Throwable {
       CreateContainerTaskService.State startState = buildValidStartupState();
       host.startServiceSynchronously(service, startState);

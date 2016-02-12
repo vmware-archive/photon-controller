@@ -25,7 +25,7 @@ import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -279,7 +279,7 @@ public class AddManagementHostWorkflowServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       AddManagementHostWorkflowService.State startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -322,7 +322,7 @@ public class AddManagementHostWorkflowServiceTest {
       try {
         testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);
         fail("Service start should throw in response to illegal taskPollDelay values");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("taskPollDelay must be greater than zero"));
       }
     }
@@ -335,7 +335,7 @@ public class AddManagementHostWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidTaskSubStates", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidTaskSubStates", expectedExceptions = XenonRuntimeException.class)
     public void testFailureInvalidSubStateList(List<TaskState.TaskStage> taskSubStates) throws Throwable {
       AddManagementHostWorkflowService.State startState = buildValidStartState(TaskState.TaskStage.STARTED,
           AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT);
@@ -480,7 +480,7 @@ public class AddManagementHostWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageUpdates", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageUpdates", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageUpdates(
         TaskState.TaskStage startStage,
         @Nullable AddManagementHostWorkflowService.TaskState.SubStage startSubStage,
@@ -686,7 +686,7 @@ public class AddManagementHostWorkflowServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithInvalidValue")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "fieldNamesWithInvalidValue")
     public void testInvalidStateFieldValue(String fieldName) throws Throwable {
       AddManagementHostWorkflowService.State startState = buildValidStartState(null, null);
       Operation startOperation = testHost.startServiceSynchronously(addManagementHostWorkflowService, startState);

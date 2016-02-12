@@ -30,7 +30,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -296,7 +296,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
           { TaskState.TaskStage.CANCELLED, null }, };
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStartStateMissingRequiredField(String fieldName) throws Throwable {
       InitializeDeploymentMigrationWorkflowService.State startState = buildValidStartState(null, null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
@@ -409,7 +409,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
               TaskState.TaskStage.CANCELLED, null }, };
     }
 
-    @Test(dataProvider = "InvalidStageUpdates", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageUpdates", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(
         TaskState.TaskStage startStage,
         InitializeDeploymentMigrationWorkflowService.TaskState.SubStage startSubStage,
@@ -479,7 +479,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
           { TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CANCELLED, null }, };
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchImmutableFieldChanged(String fieldName) throws Throwable {
       InitializeDeploymentMigrationWorkflowService.State startState = buildValidStartState(null, null);
       Operation startOperation =

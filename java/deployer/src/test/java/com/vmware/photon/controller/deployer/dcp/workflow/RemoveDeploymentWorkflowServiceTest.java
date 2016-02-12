@@ -42,7 +42,7 @@ import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -263,7 +263,7 @@ public class RemoveDeploymentWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testFailureRequiredFieldMissing(String fieldName) throws Throwable {
       RemoveDeploymentWorkflowService.State startState = buildValidStartState(null, null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
@@ -369,7 +369,7 @@ public class RemoveDeploymentWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(
         TaskState.TaskStage startStage,
         @Nullable RemoveDeploymentWorkflowService.TaskState.SubStage startSubStage,
@@ -444,7 +444,7 @@ public class RemoveDeploymentWorkflowServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "ImmutableFieldNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "ImmutableFieldNames")
     public void testInvalidPatchStateValue(String fieldName) throws Throwable {
       RemoveDeploymentWorkflowService.State startState = buildValidStartState(null, null);
       Operation startOperation = testHost.startServiceSynchronously(removeDeploymentWorkflowService, startState);

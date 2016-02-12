@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -163,7 +163,7 @@ public class QueryTaskUtils {
   public static Set<String> getBroadcastQueryDocumentLinks(NodeGroupBroadcastResponse response) {
 
     if (!response.failures.isEmpty()) {
-      throw new DcpRuntimeException("Failures detected in query task response: " + Utils.toJsonHtml(response));
+      throw new XenonRuntimeException("Failures detected in query task response: " + Utils.toJsonHtml(response));
     }
 
     Set<String> documentLinks = new HashSet<>();
@@ -203,7 +203,7 @@ public class QueryTaskUtils {
       Class<T> documentType, NodeGroupBroadcastResponse response) {
 
     if (!response.failures.isEmpty()) {
-      throw new DcpRuntimeException("Failures detected in query task response: " + Utils.toJsonHtml(response));
+      throw new XenonRuntimeException("Failures detected in query task response: " + Utils.toJsonHtml(response));
     }
 
     List<T> documents = new ArrayList<>();

@@ -167,7 +167,7 @@ public class BasicServiceHostTest {
       assertThat(host.waitIterationSleep, is(BasicServiceHost.WAIT_ITERATION_SLEEP));
       assertThat(host.waitIterationCount, is(BasicServiceHost.WAIT_ITERATION_COUNT));
 
-      host.startWithCoreServices(); // need to start so that the non-default port gets assigned by dcp
+      host.startWithCoreServices(); // need to start so that the non-default port gets assigned by Xenon
 
       assertThat(host.getPort(), not(BasicServiceHost.BIND_PORT));
     }

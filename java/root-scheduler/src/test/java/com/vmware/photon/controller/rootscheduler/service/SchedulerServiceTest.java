@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.thrift.TAsyncClientFactory;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
@@ -69,7 +69,7 @@ public class SchedulerServiceTest {
   private ConstraintChecker checker;
 
   @Mock
-  private DcpRestClient dcpRestClient;
+  private XenonRestClient dcpRestClient;
 
   @Mock
   private TAsyncClientFactory<Scheduler.AsyncClient> clientFactory;

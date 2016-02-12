@@ -22,7 +22,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.xenon.common.Operation;
@@ -205,7 +205,7 @@ public class ClusterWaitTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "NotNullFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "NotNullFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStartStateMissingRequiredField(String fieldName) throws Throwable {
       ClusterWaitTaskService.State startState = buildValidStartState(null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
@@ -285,7 +285,7 @@ public class ClusterWaitTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
       startService(buildValidStartState(startStage));
@@ -324,7 +324,7 @@ public class ClusterWaitTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
       startService(buildValidStartState(null));
 

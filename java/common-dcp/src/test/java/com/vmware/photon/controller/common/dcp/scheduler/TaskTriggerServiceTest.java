@@ -15,7 +15,7 @@ package com.vmware.photon.controller.common.dcp.scheduler;
 
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.helpers.services.TestServiceWithStage;
 import com.vmware.photon.controller.common.dcp.helpers.services.TestServiceWithStageFactory;
 import com.vmware.xenon.common.Operation;
@@ -161,7 +161,7 @@ public class TaskTriggerServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "NotBlankFields",
-        expectedExceptions = DcpRuntimeException.class,
+        expectedExceptions = XenonRuntimeException.class,
         expectedExceptionsMessageRegExp = "(.* cannot be null|.* cannot be blank)")
     public void testNotBlankFields(String fieldName, Object value) throws Throwable {
       TaskTriggerService.State startState = buildValidStartupState();
@@ -265,7 +265,7 @@ public class TaskTriggerServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "NotBlankFields",
-        expectedExceptions = DcpRuntimeException.class,
+        expectedExceptions = XenonRuntimeException.class,
         expectedExceptionsMessageRegExp = ".* cannot be blank")
     public void testNotBlankFields(String fieldName, Object value) throws Throwable {
       TaskTriggerService.State patchState = new TaskTriggerService.State();
@@ -295,7 +295,7 @@ public class TaskTriggerServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "PositiveFields",
-        expectedExceptions = DcpRuntimeException.class,
+        expectedExceptions = XenonRuntimeException.class,
         expectedExceptionsMessageRegExp = ".* must be greater than zero")
     public void testPositiveFields(String fieldName, Object value) throws Throwable {
       TaskTriggerService.State patchState = new TaskTriggerService.State();

@@ -20,7 +20,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
@@ -231,7 +231,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
                     NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
                     Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
                     if (documentLinks.isEmpty()) {
-                      failTask(new DcpRuntimeException("No HostService.State documents found"));
+                      failTask(new XenonRuntimeException("No HostService.State documents found"));
                     } else {
                       retrieveManagementHosts(currentState, documentLinks);
                     }
@@ -287,7 +287,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
             Set<String> vmLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(vmQueryResponse);
             QueryTaskUtils.logQueryResults(CreateContainerSpecLayoutTaskService.this, vmLinks);
             if (vmLinks.isEmpty()) {
-              throw new DcpRuntimeException("Found 0 VmService entities representing docker vms");
+              throw new XenonRuntimeException("Found 0 VmService entities representing docker vms");
             }
 
             NodeGroupBroadcastResponse containerTemplateQueryResponse =
@@ -296,7 +296,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
                 QueryTaskUtils.getBroadcastQueryDocumentLinks(containerTemplateQueryResponse);
             QueryTaskUtils.logQueryResults(CreateContainerSpecLayoutTaskService.this, containerTemplateLinks);
             if (containerTemplateLinks.isEmpty()) {
-              throw new DcpRuntimeException(
+              throw new XenonRuntimeException(
                   String.format("Found 0 container templates"));
             }
             retrieveVms(currentState, managementHosts, vmLinks, containerTemplateLinks);
@@ -325,7 +325,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
       if (!containerTemplate.isReplicated) {
         String vmServiceLink = getAvailableVm(containerTemplate.name, vms, singletonServiceToVmMap);
         if (null == vmServiceLink) {
-          throw new DcpRuntimeException("Unable to find available VM for container " + containerTemplate.name);
+          throw new XenonRuntimeException("Unable to find available VM for container " + containerTemplate.name);
         }
         startState.singletonVmServiceLink = vmServiceLink;
         singletonServiceToVmMap.put(containerTemplate.name, vmServiceLink);

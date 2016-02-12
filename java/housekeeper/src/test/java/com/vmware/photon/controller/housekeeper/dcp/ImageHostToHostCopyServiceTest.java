@@ -33,7 +33,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
@@ -208,7 +208,7 @@ public class ImageHostToHostCopyServiceTest {
       state.parentLink = null;
       try {
         host.startServiceSynchronously(service, state);
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), CoreMatchers.containsString("parentLink not provided"));
       }
     }
@@ -249,7 +249,7 @@ public class ImageHostToHostCopyServiceTest {
         ImageHostToHostCopyService.State startState = new ImageHostToHostCopyService.State();
         startState.isSelfProgressionDisabled = true;
         host.startServiceSynchronously(service, startState);
-      } catch (DcpRuntimeException ex) {
+      } catch (XenonRuntimeException ex) {
         assertThat(ex.getMessage(), is("image not provided"));
       }
     }
@@ -261,12 +261,12 @@ public class ImageHostToHostCopyServiceTest {
         startState.isSelfProgressionDisabled = true;
         startState.image = "image1";
         host.startServiceSynchronously(service, startState);
-      } catch (DcpRuntimeException ex) {
+      } catch (XenonRuntimeException ex) {
         assertThat(ex.getMessage(), is("source datastore not provided"));
       }
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class,
+    @Test(expectedExceptions = XenonRuntimeException.class,
         expectedExceptionsMessageRegExp = "^destination datastore not provided$")
     public void testInvalidStartStateWithoutDestinationDataStore() throws Throwable {
       ImageHostToHostCopyService.State startState = new ImageHostToHostCopyService.State();
@@ -289,7 +289,7 @@ public class ImageHostToHostCopyServiceTest {
       try {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch missing substage");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), containsString("subStage cannot be null"));
       }
     }
@@ -389,7 +389,7 @@ public class ImageHostToHostCopyServiceTest {
       try {
         host.sendRequestAndWait(patchOp);
         fail("Expected IllegalStateException.");
-      } catch (DcpRuntimeException ex) {
+      } catch (XenonRuntimeException ex) {
         assertThat(ex.getMessage(), is("Service is not in CREATED stage, ignores patch from TaskSchedulerService"));
       }
 
@@ -429,7 +429,7 @@ public class ImageHostToHostCopyServiceTest {
 
       try {
         host.sendRequestAndWait(patchOp);
-      } catch (DcpRuntimeException ex) {
+      } catch (XenonRuntimeException ex) {
       }
 
       ImageHostToHostCopyService.State savedState = host.getServiceState(ImageHostToHostCopyService.State.class);
