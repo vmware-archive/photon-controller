@@ -127,7 +127,7 @@ public class ResourceReserveStepCmd extends StepCommand {
       infrastructureEntity = (InfrastructureEntity) entity;
     }
     Preconditions.checkArgument(infrastructureEntity != null,
-        "There should be at least one InfrastructureEntity refrenced by step %s", step.getId());
+        "There should be at least one InfrastructureEntity referenced by step %s", step.getId());
 
     Resource resource = createResource(infrastructureEntity);
     taskCommand.setResource(resource);
@@ -210,6 +210,8 @@ public class ResourceReserveStepCmd extends StepCommand {
       ResourceConstraintException {
     List<Disk> attachedDisks = new ArrayList<>();
 
+    List<ResourceConstraint> dataStoreResourceConstraintList = getDatastoreAffinityConstraintsFromVm(entity);
+
     for (AttachedDiskEntity attachedDisk : entity.getAttachedDisks()) {
       BaseDiskEntity underlyingDisk = attachedDisk.getUnderlyingTransientDisk();
       boolean newDisk = underlyingDisk.getState() == DiskState.CREATING;
@@ -224,9 +226,18 @@ public class ResourceReserveStepCmd extends StepCommand {
         logger.info("Use image {} as boot disk", entity.getImageId());
         disk.setImage(new DiskImage(entity.getImageId(), CloneType.COPY_ON_WRITE));
       }
-      List<ResourceConstraint> datastoreTagConstraints = createDatastoreConstraint(disk.getFlavor_info());
-      for (ResourceConstraint resourceConstraint : datastoreTagConstraints) {
-        disk.addToResource_constraints(resourceConstraint);
+
+      List<ResourceConstraint> datastoreTagConstraints = createDatastoreTagConstraint(disk.getFlavor_info());
+      if (datastoreTagConstraints != null && !datastoreTagConstraints.isEmpty()) {
+        for (ResourceConstraint resourceConstraint : datastoreTagConstraints) {
+          disk.addToResource_constraints(resourceConstraint);
+        }
+      }
+
+      if (dataStoreResourceConstraintList != null && !dataStoreResourceConstraintList.isEmpty()) {
+        for (ResourceConstraint resourceConstraint : dataStoreResourceConstraintList) {
+          disk.addToResource_constraints(resourceConstraint);
+        }
       }
 
       attachedDisks.add(disk);
@@ -323,7 +334,7 @@ public class ResourceReserveStepCmd extends StepCommand {
       }
 
       //For persistent disks we are adding datastore tag resource
-      resourceConstraints.addAll(createDatastoreConstraint(disk.getFlavor_info()));
+      resourceConstraints.addAll(createDatastoreTagConstraint(disk.getFlavor_info()));
     }
 
     if (!resourceConstraints.isEmpty()) {
@@ -337,7 +348,7 @@ public class ResourceReserveStepCmd extends StepCommand {
     return resource;
   }
 
-  private List<ResourceConstraint> createDatastoreConstraint(Flavor flavor) throws ResourceConstraintException {
+  private List<ResourceConstraint> createDatastoreTagConstraint(Flavor flavor) throws ResourceConstraintException {
     List<ResourceConstraint> resourceConstraints = new ArrayList<>();
 
     List<QuotaLineItem> quotaLineItems = flavor.getCost();
@@ -512,6 +523,25 @@ public class ResourceReserveStepCmd extends StepCommand {
         }
       }
     }
+  }
+
+  private List<ResourceConstraint> getDatastoreAffinityConstraintsFromVm(
+      VmEntity vmEntity)
+      throws DiskNotFoundException, InvalidLocalitySpecException {
+    List<ResourceConstraint> resourceConstraints = new ArrayList<>();
+    if (vmEntity.getAffinities() != null && !vmEntity.getAffinities().isEmpty()) {
+      for (LocalityEntity localityEntity : vmEntity.getAffinities()) {
+        if (localityEntity.getKind() == DATASTORE_KIND) {
+          ResourceConstraint resourceConstraint = new ResourceConstraint();
+          resourceConstraint.setType(ResourceConstraintType.DATASTORE);
+          resourceConstraint.setValues(ImmutableList.of(localityEntity.getResourceId()));
+          logger.info("Found datastore resource constraint for vm {}, with id {}, and type {}",
+              vmEntity.getId(), resourceConstraint.getValues(), resourceConstraint.getType());
+          resourceConstraints.add(resourceConstraint);
+        }
+      }
+    }
+    return resourceConstraints;
   }
 
   private void createNetworkConstraints(
