@@ -33,7 +33,6 @@ import com.vmware.photon.controller.rootscheduler.interceptors.RequestIdIntercep
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.InMemoryConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.service.RootSchedulerService;
 import com.vmware.photon.controller.rootscheduler.service.SchedulerManager;
 import com.vmware.photon.controller.rootscheduler.service.SchedulerService;
 import com.vmware.photon.controller.rootscheduler.strategy.RandomStrategy;
@@ -100,15 +99,11 @@ public class RootSchedulerModule extends AbstractModule {
         .implement(HostClient.class, HostClient.class)
         .build(HostClientFactory.class));
 
-    if (config.getMode().equals("flat")) {
-      bind(RootScheduler.Iface.class).to(SchedulerService.class);
-      if (config.getConstraintChecker().equals("dcp")) {
-        bind(ConstraintChecker.class).to(CloudStoreConstraintChecker.class);
-      } else {
-        bind(ConstraintChecker.class).to(InMemoryConstraintChecker.class);
-      }
+    bind(RootScheduler.Iface.class).to(SchedulerService.class);
+    if (config.getConstraintChecker().equals("dcp")) {
+      bind(ConstraintChecker.class).to(CloudStoreConstraintChecker.class);
     } else {
-      bind(RootScheduler.Iface.class).to(RootSchedulerService.class);
+      bind(ConstraintChecker.class).to(InMemoryConstraintChecker.class);
     }
   }
 

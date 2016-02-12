@@ -10,203 +10,157 @@
  * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-
 package com.vmware.photon.controller.rootscheduler.service;
 
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
-import com.vmware.photon.controller.common.thrift.TAsyncClientFactory;
-import com.vmware.photon.controller.common.thrift.ThriftFactory;
-import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
-import com.vmware.photon.controller.resource.gen.Resource;
-import com.vmware.photon.controller.resource.gen.ResourceConstraint;
+import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
-import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
-import com.vmware.photon.controller.scheduler.gen.PlaceParams;
+import com.vmware.photon.controller.scheduler.gen.ConfigureRequest;
+import com.vmware.photon.controller.scheduler.gen.ConfigureResponse;
+import com.vmware.photon.controller.scheduler.gen.FindRequest;
+import com.vmware.photon.controller.scheduler.gen.FindResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
-import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
-import com.vmware.photon.controller.scheduler.gen.Scheduler;
-import com.vmware.photon.controller.scheduler.gen.Score;
-import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
+import com.vmware.photon.controller.status.gen.GetStatusRequest;
+import com.vmware.photon.controller.status.gen.Status;
 
-import com.google.common.collect.ImmutableMap;
-import org.apache.thrift.async.AsyncMethodCallback;
+import org.apache.thrift.TException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.invocation.InvocationOnMock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
 
 /**
- * Test cases for SchedulerService.
+ * Test cases for SchedulerServiceTest.
  */
 public class SchedulerServiceTest {
-  Random random = new Random();
-
   @Mock
   private Config config;
 
   @Mock
-  private Scheduler.AsyncClient client;
+  private RootSchedulerService rootSchedulerService;
 
   @Mock
-  private ConstraintChecker checker;
+  private FlatSchedulerService flatSchedulerService;
 
-  @Mock
-  private DcpRestClient dcpRestClient;
-
-  @Mock
-  private TAsyncClientFactory<Scheduler.AsyncClient> clientFactory;
-
-  @Mock
-  private ThriftFactory thriftFactory;
-
-  private ScoreCalculator scoreCalculator;
+  private SchedulerService schedulerService;
 
   @BeforeMethod
-  public void setUp() throws Exception {
+  public void setUp() {
     MockitoAnnotations.initMocks(this);
-    PlaceParams rootPlaceParams = new PlaceParams();
-    rootPlaceParams.setMaxFanoutCount(4);
-    rootPlaceParams.setTimeout(20000);
-    SchedulerConfig schedulerConfig = new SchedulerConfig();
-    schedulerConfig.setUtilizationTransferRatio(0.5);
-    config.initRootPlaceParams();
-    doReturn(schedulerConfig).when(config).getRoot();
-    doReturn(rootPlaceParams).when(config).getRootPlaceParams();
-    scoreCalculator = new ScoreCalculator(config);
-    doReturn(client).when(clientFactory.create(any(), any()));
   }
 
-  /**
-   * No constraint match.
-   */
-  @DataProvider(name = "empty")
-  public Object[][] createEmpty() {
-      doReturn(ImmutableMap.of()).when(checker)
-          .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
-      return new Object[][]{
-        {new SchedulerService(config, checker, dcpRestClient, scoreCalculator, clientFactory, thriftFactory)},
+  @DataProvider(name = "schedulerMode")
+  public Object[][] getSchedulerModes() {
+    return new Object[][] {
+        {"flat"},
+        {"root"}
     };
   }
 
-  /**
-   * Test the case where there is no candidate that match all the constraints.
-   */
-  @Test(dataProvider = "empty")
-  public void testNoCandidate(RootScheduler.Iface scheduler) throws Exception {
-    PlaceRequest request = new PlaceRequest();
-    Resource resource = new Resource();
-    request.setResource(resource);
-    PlaceResponse response = scheduler.place(request);
-    assertThat(response.getResult(), is(PlaceResultCode.NO_SUCH_RESOURCE));
+  @Test(dataProvider = "schedulerMode")
+  public void testGetSchedulers(String schedulerMode) throws TException {
+    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
+    doReturn(schedulerMode).when(config).getMode();
+    doReturn(new GetSchedulersResponse()).when(flatSchedulerService).get_schedulers();
+    doReturn(new GetSchedulersResponse()).when(rootSchedulerService).get_schedulers();
+    schedulerService.get_schedulers();
+    if (schedulerMode.equals("flat")) {
+      verify(flatSchedulerService, times(1)).get_schedulers();
+    } else {
+      verify(rootSchedulerService, times(1)).get_schedulers();
+    }
   }
 
-  /**
-   * Four candidates.
-   */
-  @DataProvider(name = "four-candidates")
-  public Object[][] createFourCandidates() {
-    ImmutableMap<String, ServerAddress> matches = ImmutableMap.of(
-        "h1", new ServerAddress("h1", 1234),
-        "h2", new ServerAddress("h2", 1234),
-        "h3", new ServerAddress("h3", 1234),
-        "h4", new ServerAddress("h4", 1234));
-
-    doReturn(matches).when(checker)
-        .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
-    return new Object[][]{
-        {new SchedulerService(config, checker, dcpRestClient, scoreCalculator, clientFactory, thriftFactory)},
-    };
+  @Test(dataProvider = "schedulerMode")
+  public void testGetStatus(String schedulerMode) throws TException {
+    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
+    doReturn(schedulerMode).when(config).getMode();
+    GetStatusRequest request = new GetStatusRequest();
+    doReturn(new Status()).when(flatSchedulerService).get_status(request);
+    doReturn(new Status()).when(rootSchedulerService).get_status(request);
+    schedulerService.get_status(request);
+    if (schedulerMode.equals("flat")) {
+      verify(flatSchedulerService, times(1)).get_status(request);
+    } else {
+      verify(rootSchedulerService, times(1)).get_status(request);
+    }
   }
 
-  /**
-   * Test the case where the scheduler fails to sample any host.
-   */
-  @Test(dataProvider = "four-candidates")
-  public void testNoResponse(RootScheduler.Iface scheduler) throws Exception {
-    doAnswer((InvocationOnMock invocation) -> {
-      Object[] arguments = invocation.getArguments();
-      AsyncMethodCallback<Scheduler.AsyncClient.host_place_call> call =
-          (AsyncMethodCallback<Scheduler.AsyncClient.host_place_call>) arguments[1];
-      call.onError(new Exception());
-      return null;
-    }).when(client).host_place(any(), any());
-
-    PlaceRequest request = new PlaceRequest();
-    PlaceResponse response = scheduler.place(request);
-    assertThat(response.getResult(), is(PlaceResultCode.SYSTEM_ERROR));
-    verifyNoMoreInteractions(client);
+  @Test(dataProvider = "schedulerMode")
+  public void testConfigure(String schedulerMode) throws TException {
+    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
+    doReturn(schedulerMode).when(config).getMode();
+    ConfigureRequest request = new ConfigureRequest();
+    doReturn(new ConfigureResponse()).when(flatSchedulerService).configure(request);
+    doReturn(new ConfigureResponse()).when(rootSchedulerService).configure(request);
+    schedulerService.configure(request);
+    if (schedulerMode.equals("flat")) {
+      verify(flatSchedulerService, times(1)).configure(request);
+    } else {
+      verify(rootSchedulerService, times(1)).configure(request);
+    }
   }
 
-  /**
-   * Test the case where all the hosts respond successfully.
-   */
-  @Test(dataProvider = "four-candidates")
-  public void testSuccess(RootScheduler.Iface scheduler) throws Exception {
-    Set<PlaceResponse> responses = new HashSet<>();
-    doAnswer((InvocationOnMock invocation) -> {
-      Object[] arguments = invocation.getArguments();
-      AsyncMethodCallback<Scheduler.AsyncClient.host_place_call> call =
-          (AsyncMethodCallback<Scheduler.AsyncClient.host_place_call>) arguments[1];
-      PlaceResponse response = new PlaceResponse(PlaceResultCode.OK);
-      response.setScore(new Score(random.nextInt(), random.nextInt()));
-      responses.add(response);
-      Scheduler.AsyncClient.host_place_call placeResponse = mock(Scheduler.AsyncClient.host_place_call.class);
-      doReturn(response).when(placeResponse).getResult();
-      call.onComplete(placeResponse);
-      return null;
-    }).when(client).host_place(any(), any());
-
+  @Test(dataProvider = "schedulerMode")
+  public void testPlace(String schedulerMode) throws TException {
+    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
+    doReturn(schedulerMode).when(config).getMode();
     PlaceRequest request = new PlaceRequest();
-    PlaceResponse response = scheduler.place(request);
-    assertThat(response, is(scoreCalculator.pickBestResponse(responses)));
-    verify(client, times(4)).host_place(any(), any());
+    doReturn(new PlaceResponse()).when(flatSchedulerService).place(request);
+    doReturn(new PlaceResponse()).when(rootSchedulerService).place(request);
+    schedulerService.place(request);
+    if (schedulerMode.equals("flat")) {
+      verify(flatSchedulerService, times(1)).place(request);
+    } else {
+      verify(rootSchedulerService, times(1)).place(request);
+    }
   }
 
-  /**
-   * Test the case where two out of four candidates respond successfully.
-   */
-  @Test(dataProvider = "four-candidates")
-  public void testPartialSuccess(RootScheduler.Iface scheduler) throws Exception {
-    int numResponses = 2;
-    Set<PlaceResponse> responses = new HashSet<>();
-    doAnswer((InvocationOnMock invocation) -> {
-      Object[] arguments = invocation.getArguments();
-      AsyncMethodCallback<Scheduler.AsyncClient.host_place_call> call =
-          (AsyncMethodCallback<Scheduler.AsyncClient.host_place_call>) arguments[1];
-      if (responses.size() < numResponses) {
-        PlaceResponse response = new PlaceResponse(PlaceResultCode.OK);
-        response.setScore(new Score(random.nextInt(), random.nextInt()));
-        responses.add(response);
-        Scheduler.AsyncClient.host_place_call placeResponse = mock(Scheduler.AsyncClient.host_place_call.class);
-        doReturn(response).when(placeResponse).getResult();
-        call.onComplete(placeResponse);
-      } else {
-        call.onError(new Exception());
-      }
-      return null;
-    }).when(client).host_place(any(), any());
+  @Test(dataProvider = "schedulerMode")
+  public void testFind(String schedulerMode) throws TException {
+    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
+    doReturn(schedulerMode).when(config).getMode();
+    FindRequest request = new FindRequest();
+    doReturn(new FindResponse()).when(flatSchedulerService).find(request);
+    doReturn(new FindResponse()).when(rootSchedulerService).find(request);
+    schedulerService.find(request);
+    if (schedulerMode.equals("flat")) {
+      verify(flatSchedulerService, times(1)).find(request);
+    } else {
+      verify(rootSchedulerService, times(1)).find(request);
+    }
+  }
 
-    PlaceRequest request = new PlaceRequest();
-    PlaceResponse response = scheduler.place(request);
-    assertThat(response, is(scoreCalculator.pickBestResponse(responses)));
-    verify(client, times(4)).host_place(any(), any());
+  @Test(dataProvider = "schedulerMode")
+  public void testOnJoin(String schedulerMode) throws TException {
+    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
+    doReturn(schedulerMode).when(config).getMode();
+    doNothing().when(flatSchedulerService).onJoin();
+    doNothing().when(rootSchedulerService).onJoin();
+    schedulerService.onJoin();
+    if (schedulerMode.equals("flat")) {
+      verify(flatSchedulerService, times(1)).onJoin();
+    } else {
+      verify(rootSchedulerService, times(1)).onJoin();
+    }
+  }
+
+  @Test(dataProvider = "schedulerMode")
+  public void testOnLeave(String schedulerMode) throws TException {
+    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
+    doReturn(schedulerMode).when(config).getMode();
+    doNothing().when(flatSchedulerService).onLeave();
+    doNothing().when(rootSchedulerService).onLeave();
+    schedulerService.onLeave();
+    if (schedulerMode.equals("flat")) {
+      verify(flatSchedulerService, times(1)).onLeave();
+    } else {
+      verify(rootSchedulerService, times(1)).onLeave();
+    }
   }
 }
