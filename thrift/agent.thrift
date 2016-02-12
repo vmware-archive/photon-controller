@@ -154,7 +154,12 @@ struct ProvisionRequest {
   // Id of the deployment
   17: optional string deployment_id
 
+  // Usage tags of host
+  20: optional string usage_tags
+
   99: optional tracing.TracingInfo tracing_info
+
+
 }
 
 
