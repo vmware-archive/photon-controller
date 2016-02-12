@@ -18,6 +18,7 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
@@ -288,15 +289,18 @@ public class ImageCleanerTriggerServiceTest {
     private HostClientFactory hostClientFactory;
     private CloudStoreHelper cloudStoreHelper;
     private ZookeeperHostMonitor zookeeperHostMonitor;
+    private ServiceConfigFactory serviceConfigFactory;
 
     private ImageCleanerTriggerService.State request;
 
     @BeforeMethod
     public void setup() throws Throwable {
       hostClientFactory = mock(HostClientFactory.class);
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
       cloudStoreHelper = mock(CloudStoreHelper.class);
       doReturn(new HostClientMock()).when(hostClientFactory).create();
       zookeeperHostMonitor = mock(ZookeeperHostMonitor.class);
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
 
       // Build input.
       request = buildValidStartupState();
@@ -319,7 +323,8 @@ public class ImageCleanerTriggerServiceTest {
 
     @Test(dataProvider = "hostCount")
     public void testTriggerActivationSuccess(int hostCount) throws Throwable {
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
+          serviceConfigFactory, hostCount);
 
       //Call Service.
       ImageCleanerTriggerService.State response = machine.checkServiceIsResponding(
@@ -340,7 +345,8 @@ public class ImageCleanerTriggerServiceTest {
       request.executionState = ImageCleanerTriggerService.ExecutionState.RUNNING;
       request.pulse = true;
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
+          serviceConfigFactory, hostCount);
 
       // Send a patch to the trigger service to simulate a maintenance interval kicking in
       machine.sendPatchAndWait(machine.getTriggerCleanerServiceUri(), request);

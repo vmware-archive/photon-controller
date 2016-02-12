@@ -32,6 +32,7 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientCopyImageErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
@@ -1016,6 +1017,7 @@ public class ImageReplicatorServiceTest {
   public class EndToEndTest {
     private TestEnvironment machine;
     private HostClientFactory hostClientFactory;
+    private ServiceConfigFactory serviceConfigFactory;
     private CloudStoreHelper cloudStoreHelper;
 
     private ImageReplicatorService.State newImageReplicator;
@@ -1023,6 +1025,7 @@ public class ImageReplicatorServiceTest {
     @BeforeMethod
     public void setup() throws Throwable {
       hostClientFactory = mock(HostClientFactory.class);
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
       cloudStoreHelper = new CloudStoreHelper();
 
       // Build input.
@@ -1049,7 +1052,7 @@ public class ImageReplicatorServiceTest {
     public void testImageReplicatorSuccess(int hostCount) throws Throwable {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       createHostService(3, 3);
       createDatastoreService(3);
@@ -1086,7 +1089,7 @@ public class ImageReplicatorServiceTest {
     public void testNewImageReplicatorCopyImageFail(int hostCount) throws Throwable {
       doReturn(new HostClientCopyImageErrorMock()).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       newImageReplicator.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       createHostService(3, 3);

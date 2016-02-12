@@ -26,6 +26,7 @@ import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.GetMonitoredImagesResultCode;
 import com.vmware.photon.controller.host.gen.StartImageOperationResultCode;
@@ -898,6 +899,7 @@ public class ImageDatastoreSweeperServiceTest {
     private ImageDatastoreSweeperService.State request;
 
     private HostClientFactory hostClientFactory;
+    private ServiceConfigFactory serviceConfigFactory;
     private CloudStoreHelper cloudStoreHelper;
     private ZookeeperHostMonitor zookeeperHostMonitor;
 
@@ -906,6 +908,7 @@ public class ImageDatastoreSweeperServiceTest {
       hostClientFactory = mock(HostClientFactory.class);
       doReturn(new HostClientMock()).when(hostClientFactory).create();
 
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
       zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock();
       cloudStoreHelper = new CloudStoreHelper();
 
@@ -951,7 +954,8 @@ public class ImageDatastoreSweeperServiceTest {
                             int deletedImages) throws Throwable {
       zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
+          serviceConfigFactory, hostCount);
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
@@ -1080,7 +1084,8 @@ public class ImageDatastoreSweeperServiceTest {
     public void testZKMonGetHostsForDatastoreError(int hostCount, ZookeeperHostMonitor zkHostMonitor)
         throws Throwable {
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zkHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zkHostMonitor,
+          serviceConfigFactory, hostCount);
       ImageDatastoreSweeperService.State response = machine.callServiceAndWaitForState(
           ImageDatastoreSweeperServiceFactory.SELF_LINK,
           request,
@@ -1127,7 +1132,8 @@ public class ImageDatastoreSweeperServiceTest {
       hostClient.setInactiveImages(request.datastore, new ArrayList<>());
       doReturn(hostClient).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
+          serviceConfigFactory, hostCount);
       ImageDatastoreSweeperService.State response = machine.callServiceAndWaitForState(
           ImageDatastoreSweeperServiceFactory.SELF_LINK,
           request,

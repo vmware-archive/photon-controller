@@ -19,6 +19,8 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.HousekeeperServerSet;
@@ -64,6 +66,10 @@ public class TestHousekeeperModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)
         .build(HostClientFactory.class));
+
+    install(new FactoryModuleBuilder()
+        .implement(ServiceConfig.class, ServiceConfig.class)
+        .build(ServiceConfigFactory.class));
   }
 
   @Provides
@@ -74,9 +80,10 @@ public class TestHousekeeperModule extends AbstractModule {
       @Config.Port int port,
       @DcpConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
-      ZookeeperHostMonitor zookeeperHostMonitor) throws Throwable {
+      ZookeeperHostMonitor zookeeperHostMonitor,
+      ServiceConfigFactory serviceConfigFactory) throws Throwable {
     return spy(new HousekeeperDcpServiceHost(cloudStoreHelper, bind, port, storagePath, hostClientFactory,
-        zookeeperHostMonitor));
+        zookeeperHostMonitor, serviceConfigFactory));
   }
 
   @Provides

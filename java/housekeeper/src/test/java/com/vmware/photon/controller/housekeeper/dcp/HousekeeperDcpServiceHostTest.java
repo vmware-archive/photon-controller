@@ -18,6 +18,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.ConfigTest;
@@ -146,9 +147,14 @@ public class HousekeeperDcpServiceHostTest {
     public void testGetZookeeperHostMonitorNull() throws Throwable {
       CloudStoreHelper cloudStoreHelper = injector.getInstance(CloudStoreHelper.class);
       new HousekeeperDcpServiceHost(cloudStoreHelper, "localhost", 16001, storageDir.getPath(),
-          injector.getInstance(HostClientFactory.class), null);
+          injector.getInstance(HostClientFactory.class), null, null);
     }
 
+    @Test
+    public void testGetServiceConfig() {
+      HousekeeperDcpServiceHost host = injector.getInstance(HousekeeperDcpServiceHost.class);
+      assertThat(host.getServiceConfig(), notNullValue());
+    }
   }
 
   /**
@@ -245,7 +251,8 @@ public class HousekeeperDcpServiceHostTest {
           injector.getInstance(CloudStoreHelper.class),
           "0.0.0.0", 16000, storageDir.getPath(),
           injector.getInstance(HostClientFactory.class),
-          injector.getInstance(ZookeeperHostMonitor.class));
+          injector.getInstance(ZookeeperHostMonitor.class),
+          injector.getInstance(ServiceConfigFactory.class));
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
@@ -254,7 +261,8 @@ public class HousekeeperDcpServiceHostTest {
           injector.getInstance(CloudStoreHelper.class),
           "0.0.0.0", 16002, storageDir2.getPath(),
           injector.getInstance(HostClientFactory.class),
-          injector.getInstance(ZookeeperHostMonitor.class));
+          injector.getInstance(ZookeeperHostMonitor.class),
+          injector.getInstance(ServiceConfigFactory.class));
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
       ServiceHostUtils.waitForServiceAvailability(host2, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
