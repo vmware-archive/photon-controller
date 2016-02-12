@@ -41,7 +41,7 @@ import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.templates.SwarmMasterNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.SwarmSlaveNodeTemplate;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.xenon.common.Operation;
@@ -209,7 +209,7 @@ public class SwarmClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "invalidStartStates")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "invalidStartStates")
     public void testInvalidStartState(TaskState.TaskStage stage,
                                       SwarmClusterCreateTask.TaskState.SubStage subStage) throws Throwable {
 
@@ -251,7 +251,7 @@ public class SwarmClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       SwarmClusterCreateTask startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(attributeName);
@@ -354,7 +354,7 @@ public class SwarmClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = {DcpRuntimeException.class},
+    @Test(expectedExceptions = {XenonRuntimeException.class},
         dataProvider = "invalidSubStageUpdates")
     public void testInvalidSubStageUpdates(TaskState.TaskStage startStage,
                                            SwarmClusterCreateTask.TaskState.SubStage startSubStage,
@@ -443,7 +443,7 @@ public class SwarmClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "immutableFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "immutableFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchImmutableFieldChanged(String fieldName) throws Throwable {
       SwarmClusterCreateTask startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
       Operation startOperation = host.startServiceSynchronously(taskService, startState);

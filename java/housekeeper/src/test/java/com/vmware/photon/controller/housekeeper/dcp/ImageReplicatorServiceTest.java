@@ -30,7 +30,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientCopyImageErrorMock;
@@ -274,7 +274,7 @@ public class ImageReplicatorServiceTest {
 
       try {
         host.startServiceSynchronously(service, startState);
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("queryPollDelay needs to be >= 0"));
       }
     }
@@ -359,7 +359,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch invalid dataStoreCount");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), containsString("dataStoreCount needs to be >= 0"));
       }
     }
@@ -376,7 +376,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch missing substage");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), containsString("subStage cannot be null"));
       }
     }
@@ -589,7 +589,7 @@ public class ImageReplicatorServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("validation did not fail when dataStoreCount was updated to a value < 0");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("dataStoreCount needs to be >= 0"));
       }
     }
@@ -635,7 +635,7 @@ public class ImageReplicatorServiceTest {
 
       try {
         host.sendRequestAndWait(patch);
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("finishedCopies needs to be >= 0"));
       }
     }
@@ -681,7 +681,7 @@ public class ImageReplicatorServiceTest {
 
       try {
         host.sendRequestAndWait(patch);
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("failedOrCanceledCopies needs to be >= 0"));
       }
     }
@@ -844,7 +844,7 @@ public class ImageReplicatorServiceTest {
         host.sendRequestAndWait(patchOp);
         fail("Transition from " + startStage + ":" + startSubStage +
             " to " + targetStage + ":" + targetSubStage + " " + "did not fail.");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), startsWith("Invalid stage update."));
       }
     }

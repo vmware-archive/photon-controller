@@ -29,7 +29,7 @@ import com.vmware.photon.controller.clustermanager.helpers.TestHost;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -243,7 +243,7 @@ public class GarbageCollectionTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = {DcpRuntimeException.class},
+    @Test(expectedExceptions = {XenonRuntimeException.class},
         dataProvider = "invalidStageUpdates")
     public void testInvalidStageUpdates(TaskState.TaskStage startStage,
                                         TaskState.TaskStage patchStage) throws Throwable {

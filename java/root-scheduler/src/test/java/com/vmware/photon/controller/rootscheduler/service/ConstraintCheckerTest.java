@@ -21,7 +21,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactor
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
@@ -94,7 +94,7 @@ public class ConstraintCheckerTest {
 
     // Decrease logging level level. This test does 60,000+ operations, causing tons
     // of log spam. Not that we will still see warnings and errors when there are problems.
-    Logger xenonLogger = LoggerFactory.getLogger(DcpRestClient.class);
+    Logger xenonLogger = LoggerFactory.getLogger(XenonRestClient.class);
     ((ch.qos.logback.classic.Logger) xenonLogger).setLevel(Level.WARN);
     Logger datastoreLogger = LoggerFactory.getLogger(DatastoreService.class);
     ((ch.qos.logback.classic.Logger) datastoreLogger).setLevel(Level.WARN);
@@ -186,7 +186,7 @@ public class ConstraintCheckerTest {
 
   @DataProvider(name = "default")
   public Object[][] createDefault() {
-    DcpRestClient dcpRestClient = new DcpRestClient(
+    XenonRestClient dcpRestClient = new XenonRestClient(
         cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
     // This tests does tens of thousands of operation. We only log failures, so we can see what's happening.
     dcpRestClient.start();

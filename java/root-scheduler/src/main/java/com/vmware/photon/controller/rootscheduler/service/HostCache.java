@@ -15,8 +15,8 @@ package com.vmware.photon.controller.rootscheduler.service;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.xenon.common.Operation;
@@ -149,7 +149,7 @@ public class HostCache {
   protected ConcurrentMultiMap<String, String> availabilityZonesToHosts;
 
 
-  public HostCache(ServiceHost schedulerHost, DcpRestClient cloudstoreClient) {
+  public HostCache(ServiceHost schedulerHost, XenonRestClient cloudstoreClient) {
     this.schedulerHost = schedulerHost;
     initializeCache();
     subscribeToHosts(cloudstoreClient, createHostNotificationTarget());
@@ -345,7 +345,7 @@ public class HostCache {
   /**
    * Subscribe to the HostService, to receive notifications of changes to the hosts.
    */
-  private void subscribeToHosts(DcpRestClient cloudstoreClient, Consumer<Operation> notificationTarget) {
+  private void subscribeToHosts(XenonRestClient cloudstoreClient, Consumer<Operation> notificationTarget) {
     subscribeToCloudstoreEntities(
         cloudstoreClient,
         "host",
@@ -356,7 +356,7 @@ public class HostCache {
   /**
    * Subscribe to the DatastoreService, to receive notifications of changes to the datastore.
    */
-  private void subscribeToDatastores(DcpRestClient cloudstoreClient, Consumer<Operation> notificationTarget) {
+  private void subscribeToDatastores(XenonRestClient cloudstoreClient, Consumer<Operation> notificationTarget) {
     subscribeToCloudstoreEntities(
         cloudstoreClient,
         "datastore",
@@ -368,7 +368,7 @@ public class HostCache {
    * Helper used by subscribeToHosts and subscribeToDatastores to subscribe.
    */
   private void subscribeToCloudstoreEntities(
-      DcpRestClient cloudstoreClient,
+      XenonRestClient cloudstoreClient,
       String entityName,
       String entityType,
       Consumer<Operation> notificationTarget) {

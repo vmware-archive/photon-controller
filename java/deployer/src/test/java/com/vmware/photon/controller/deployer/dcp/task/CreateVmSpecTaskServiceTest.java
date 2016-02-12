@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -182,7 +182,7 @@ public class CreateVmSpecTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
     public void testMissingRequiredStateFieldValue(String attributeName) throws Throwable {
       CreateVmSpecTaskService.State startState = buildValidStartState();
       startState.getClass().getDeclaredField(attributeName).set(startState, null);
@@ -259,7 +259,7 @@ public class CreateVmSpecTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
       startService(startStage);
@@ -299,7 +299,7 @@ public class CreateVmSpecTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "fieldNamesWithIllegalValue", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "fieldNamesWithIllegalValue", expectedExceptions = XenonRuntimeException.class)
     public void testIllegalStateFieldValue(String attributeName) throws Throwable {
       startService(TaskState.TaskStage.CREATED);
 

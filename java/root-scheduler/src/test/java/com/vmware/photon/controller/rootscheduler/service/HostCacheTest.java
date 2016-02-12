@@ -21,8 +21,8 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.ConfigTest;
 import com.vmware.photon.controller.rootscheduler.SchedulerDcpHost;
@@ -73,7 +73,7 @@ public class HostCacheTest {
   private static final String NUM_CLOUD_HOSTS_PROPERTY = "test.numCloudHosts";
 
   private TestEnvironment cloudStoreTestEnvironment;
-  private DcpRestClient cloudstoreClient;
+  private XenonRestClient cloudstoreClient;
   private SchedulerDcpHost schedulerHost;
 
   @BeforeClass
@@ -102,7 +102,7 @@ public class HostCacheTest {
   private void startCloudstore() throws Throwable {
     this.cloudStoreTestEnvironment = TestEnvironment.create(1);
     this.cloudstoreClient =
-        new DcpRestClient(cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
+        new XenonRestClient(cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
     cloudstoreClient.start();
   }
 

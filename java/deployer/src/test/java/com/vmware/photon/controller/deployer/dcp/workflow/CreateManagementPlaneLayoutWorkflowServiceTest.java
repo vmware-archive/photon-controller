@@ -18,7 +18,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -202,7 +202,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
      * @param fieldName
      * @throws Throwable
      */
-    @Test(dataProvider = "fieldNamesWithMissingValue", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "fieldNamesWithMissingValue", expectedExceptions = XenonRuntimeException.class)
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       CreateManagementPlaneLayoutWorkflowService.State startState = buildValidStartState(TaskState.TaskStage.CREATED,
           null);
@@ -332,7 +332,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(
         TaskState.TaskStage startStage,
         CreateManagementPlaneLayoutWorkflowService.TaskState.SubStage startSubStage,
@@ -471,7 +471,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidPatchStateAttributes", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidPatchStateAttributes", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchStateInvalidAttributeSet(String attributeName, Object value) throws Throwable {
       startService(TaskState.TaskStage.CREATED, null);
 

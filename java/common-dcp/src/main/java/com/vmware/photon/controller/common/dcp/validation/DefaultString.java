@@ -19,7 +19,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This validation defines a default string value for a DCP state attribute.
+ * This validation defines a default string value for a Xenon state attribute.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

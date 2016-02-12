@@ -14,9 +14,9 @@
 package com.vmware.photon.controller.common.dcp;
 
 /**
- * Common methods for EsxCloudDcpServiceHost class.
+ * Common methods for Xenon service hosts.
  */
-public interface DcpHostInfoProvider {
+public interface XenonHostInfoProvider {
 
   boolean isReady();
 

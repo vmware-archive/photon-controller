@@ -23,8 +23,8 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
-import com.vmware.photon.controller.common.dcp.DcpHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.dcp.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceStateBuilder;
@@ -118,7 +118,7 @@ import java.util.Map;
 @Singleton
 public class DeployerDcpServiceHost
     extends ServiceHost
-    implements DcpHostInfoProvider,
+    implements XenonHostInfoProvider,
     DeployerContextProvider,
     DockerProvisionerFactoryProvider,
     ApiClientFactoryProvider,

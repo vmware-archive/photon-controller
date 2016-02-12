@@ -16,7 +16,7 @@ package com.vmware.photon.controller.cloudstore.dcp.task;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
@@ -247,7 +247,7 @@ public class FlavorDeleteServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = DcpRuntimeException.class,
+    @Test(expectedExceptions = XenonRuntimeException.class,
         expectedExceptionsMessageRegExp = "flavor is immutable")
     public void testPatchFail() throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState());
@@ -287,7 +287,7 @@ public class FlavorDeleteServiceTest {
 
       try {
         host.sendRequestAndWait(patchOp);
-      } catch (DcpRuntimeException ex) {
+      } catch (XenonRuntimeException ex) {
         assertThat(ex.getMessage(), is(errorMsg));
       }
 
@@ -372,7 +372,7 @@ public class FlavorDeleteServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("parentLink is immutable"));
       }
     }

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp.entity;
 
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -123,7 +123,7 @@ public class ContainerServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "fieldNamesWithMissingValue")
     public void testMissingRequiredStateFieldValue(String fieldName) throws Throwable {
       ContainerService.State startState = TestHelper.getContainerServiceStartState();
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -174,7 +174,7 @@ public class ContainerServiceTest {
       TestHost.destroy(testHost);
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class)
+    @Test(expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchStateContainerTemplateServiceLinkFieldSet() throws Throwable {
       createContainerService();
       ContainerService.State patchState = new ContainerService.State();
@@ -187,7 +187,7 @@ public class ContainerServiceTest {
       testHost.sendRequestAndWait(patchOperation);
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class)
+    @Test(expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchStateVmServiceLinkFieldSet() throws Throwable {
       createContainerService();
       ContainerService.State patchState = new ContainerService.State();
@@ -225,7 +225,7 @@ public class ContainerServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class)
+    @Test(expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchStateOverwriteExistingContainerId() throws Throwable {
       ContainerService.State startState = TestHelper.getContainerServiceStartState();
       startState.containerId = "CONTAINER_ID";

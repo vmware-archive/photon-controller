@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.common.dcp;
 
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -69,14 +69,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 /**
- * Tests {@link DcpRestClient}.
+ * Tests {@link XenonRestClient}.
  */
-public class DcpRestClientTest {
+public class XenonRestClientTest {
 
   private static final Integer MAX_ITERATIONS = 10;
 
   private BasicServiceHost host;
-  private DcpRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -94,16 +94,16 @@ public class DcpRestClientTest {
     StaticServerSet serverSet = new StaticServerSet(
         new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
 
-    dcpRestClient = spy(new DcpRestClient(serverSet, Executors.newFixedThreadPool(1)));
+    xenonRestClient = spy(new XenonRestClient(serverSet, Executors.newFixedThreadPool(1)));
   }
 
   private String createDocument(ExampleService.ExampleServiceState exampleServiceState) throws Throwable {
-    return createDocument(dcpRestClient, exampleServiceState);
+    return createDocument(xenonRestClient, exampleServiceState);
   }
 
-  private String createDocument(DcpRestClient dcpRestClient, ExampleService.ExampleServiceState exampleServiceState)
+  private String createDocument(XenonRestClient xenonRestClient, ExampleService.ExampleServiceState exampleServiceState)
       throws Throwable {
-    Operation result = dcpRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
+    Operation result = xenonRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
 
     assertThat(result.getStatusCode(), is(200));
     ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -139,22 +139,22 @@ public class DcpRestClientTest {
     }
 
     StaticServerSet serverSet = new StaticServerSet(servers);
-    dcpRestClient = spy(new DcpRestClient(serverSet, Executors.newFixedThreadPool(1)));
-    dcpRestClient.start();
+    xenonRestClient = spy(new XenonRestClient(serverSet, Executors.newFixedThreadPool(1)));
+    xenonRestClient.start();
     return hosts;
   }
 
-  private DcpRestClient[] setupDcpRestClients(BasicServiceHost[] hosts) {
-    DcpRestClient[] dcpRestClients = new DcpRestClient[hosts.length];
+  private XenonRestClient[] setupXenonRestClients(BasicServiceHost[] hosts) {
+    XenonRestClient[] xenonRestClients = new XenonRestClient[hosts.length];
 
     for (Integer i = 0; i < hosts.length; i++) {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(hosts[i].getPreferredAddress(), hosts[i].getPort()));
-      dcpRestClients[i] = spy(new DcpRestClient(serverSet, Executors.newFixedThreadPool(1)));
-      dcpRestClients[i].start();
+      xenonRestClients[i] = spy(new XenonRestClient(serverSet, Executors.newFixedThreadPool(1)));
+      xenonRestClients[i].start();
     }
 
-    return dcpRestClients;
+    return xenonRestClients;
   }
 
   /**
@@ -172,18 +172,18 @@ public class DcpRestClientTest {
         host.destroy();
       }
 
-      if (dcpRestClient != null) {
-        dcpRestClient.stop();
+      if (xenonRestClient != null) {
+        xenonRestClient.stop();
       }
     }
 
     @Test
     public void testWithStartedClient() throws Throwable {
-      dcpRestClient.start();
+      xenonRestClient.start();
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       exampleServiceState.name = UUID.randomUUID().toString();
 
-      Operation result = dcpRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      Operation result = xenonRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
 
       assertThat(result.getStatusCode(), is(200));
       ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -193,22 +193,22 @@ public class DcpRestClientTest {
       assertThat(savedState.name, is(equalTo(exampleServiceState.name)));
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class)
+    @Test(expectedExceptions = XenonRuntimeException.class)
     public void testWithoutStartingClient() throws Throwable {
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       exampleServiceState.name = UUID.randomUUID().toString();
 
-      dcpRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      xenonRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class)
+    @Test(expectedExceptions = XenonRuntimeException.class)
     public void testWithStoppedClient() throws Throwable {
-      dcpRestClient.start();
-      dcpRestClient.stop();
+      xenonRestClient.start();
+      xenonRestClient.stop();
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       exampleServiceState.name = UUID.randomUUID().toString();
 
-      dcpRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      xenonRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
     }
   }
 
@@ -220,7 +220,7 @@ public class DcpRestClientTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       setUpHostAndClient();
-      dcpRestClient.start();
+      xenonRestClient.start();
     }
 
     @AfterMethod
@@ -229,8 +229,8 @@ public class DcpRestClientTest {
         host.destroy();
       }
 
-      if (dcpRestClient != null) {
-        dcpRestClient.stop();
+      if (xenonRestClient != null) {
+        xenonRestClient.stop();
       }
     }
 
@@ -241,7 +241,7 @@ public class DcpRestClientTest {
 
       String documentSelfLink = createDocument(exampleServiceState);
 
-      Operation result = dcpRestClient.get(documentSelfLink);
+      Operation result = xenonRestClient.get(documentSelfLink);
       assertThat(result.getStatusCode(), is(200));
 
       ExampleService.ExampleServiceState savedState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -250,7 +250,7 @@ public class DcpRestClientTest {
 
     @Test(expectedExceptions = DocumentNotFoundException.class)
     public void testGetOfNonExistingDocument() throws Throwable {
-      dcpRestClient.get(ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString());
+      xenonRestClient.get(ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString());
     }
 
     @Test
@@ -267,7 +267,7 @@ public class DcpRestClientTest {
       exampleServiceState3.name = UUID.randomUUID().toString();
       String documentSelfLink3 = createDocument(exampleServiceState3);
 
-      Map<String, Operation> results = dcpRestClient.get(
+      Map<String, Operation> results = xenonRestClient.get(
           Arrays.asList(documentSelfLink1, documentSelfLink2, documentSelfLink3), 3);
 
       assertThat(results.size(), is(3));
@@ -294,7 +294,7 @@ public class DcpRestClientTest {
 
       String documentSelfLink3 = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
 
-      dcpRestClient.get(Arrays.asList(documentSelfLink1, documentSelfLink2, documentSelfLink3), 3);
+      xenonRestClient.get(Arrays.asList(documentSelfLink1, documentSelfLink2, documentSelfLink3), 3);
     }
 
     @Test(expectedExceptions = DocumentNotFoundException.class)
@@ -304,7 +304,7 @@ public class DcpRestClientTest {
       String documentSelfLink2 = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
       String documentSelfLink3 = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
 
-      dcpRestClient.get(Arrays.asList(documentSelfLink1, documentSelfLink2, documentSelfLink3), 3);
+      xenonRestClient.get(Arrays.asList(documentSelfLink1, documentSelfLink2, documentSelfLink3), 3);
     }
   }
 
@@ -316,7 +316,7 @@ public class DcpRestClientTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       setUpHostAndClient();
-      dcpRestClient.start();
+      xenonRestClient.start();
     }
 
     @AfterMethod
@@ -325,15 +325,15 @@ public class DcpRestClientTest {
         host.destroy();
       }
 
-      if (dcpRestClient != null) {
-        dcpRestClient.stop();
+      if (xenonRestClient != null) {
+        xenonRestClient.stop();
       }
     }
 
     @Test
     public void testTimeoutOfOperation() throws Throwable {
       String documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
-      URI uri = dcpRestClient.getServiceUri(documentSelfLink);
+      URI uri = xenonRestClient.getServiceUri(documentSelfLink);
       ServiceErrorResponse serviceErrorResponse = new ServiceErrorResponse();
       serviceErrorResponse.statusCode = Operation.STATUS_CODE_TIMEOUT;
       serviceErrorResponse.message = UUID.randomUUID().toString();
@@ -356,10 +356,10 @@ public class DcpRestClientTest {
 
       OperationLatch operationLatch = spy(new OperationLatch(getOperation));
       doReturn(completedOperation).when(operationLatch).getCompletedOperation();
-      doReturn(operationLatch).when(dcpRestClient).createOperationLatch(any(Operation.class));
+      doReturn(operationLatch).when(xenonRestClient).createOperationLatch(any(Operation.class));
 
       try {
-        dcpRestClient.send(getOperation);
+        xenonRestClient.send(getOperation);
         Assert.fail("send should have thrown TimeoutException");
       } catch (TimeoutException e) {
         assertThat(e.getMessage(), containsString(serviceErrorResponse.message));
@@ -375,7 +375,7 @@ public class DcpRestClientTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       setUpHostAndClient();
-      dcpRestClient.start();
+      xenonRestClient.start();
     }
 
     @AfterMethod
@@ -384,8 +384,8 @@ public class DcpRestClientTest {
         host.destroy();
       }
 
-      if (dcpRestClient != null) {
-        dcpRestClient.stop();
+      if (xenonRestClient != null) {
+        xenonRestClient.stop();
       }
     }
 
@@ -409,7 +409,7 @@ public class DcpRestClientTest {
       spec.query.addBooleanClause(nameClause);
       spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
-      Operation result = dcpRestClient.postToBroadcastQueryService(spec);
+      Operation result = xenonRestClient.postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
       Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(result);
@@ -434,7 +434,7 @@ public class DcpRestClientTest {
       spec.query = kindClause;
       spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
-      Operation result = dcpRestClient.postToBroadcastQueryService(spec);
+      Operation result = xenonRestClient.postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
       Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(result);
@@ -450,7 +450,7 @@ public class DcpRestClientTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       setUpHostAndClient();
-      dcpRestClient.start();
+      xenonRestClient.start();
     }
 
     @AfterMethod
@@ -459,8 +459,8 @@ public class DcpRestClientTest {
         host.destroy();
       }
 
-      if (dcpRestClient != null) {
-        dcpRestClient.stop();
+      if (xenonRestClient != null) {
+        xenonRestClient.stop();
       }
     }
 
@@ -476,7 +476,7 @@ public class DcpRestClientTest {
       ExampleService.ExampleServiceState patchExampleServiceState = new ExampleService.ExampleServiceState();
       patchExampleServiceState.name = UUID.randomUUID().toString();
 
-      Operation result = dcpRestClient.patch(documentSelfLink, patchExampleServiceState);
+      Operation result = xenonRestClient.patch(documentSelfLink, patchExampleServiceState);
 
       assertThat(result.getStatusCode(), is(200));
 
@@ -484,7 +484,7 @@ public class DcpRestClientTest {
       assertThat(savedState.name, is(equalTo(patchExampleServiceState.name)));
       assertThat(savedState.counter, is(exampleServiceState.counter));
 
-      result = dcpRestClient.get(documentSelfLink);
+      result = xenonRestClient.get(documentSelfLink);
       assertThat(result.getStatusCode(), is(200));
 
       savedState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -495,7 +495,7 @@ public class DcpRestClientTest {
       ExampleService.ExampleServiceState patchExampleServiceState2 = new ExampleService.ExampleServiceState();
       patchExampleServiceState2.counter = 1L;
 
-      result = dcpRestClient.patch(documentSelfLink, patchExampleServiceState2);
+      result = xenonRestClient.patch(documentSelfLink, patchExampleServiceState2);
 
       assertThat(result.getStatusCode(), is(200));
 
@@ -503,7 +503,7 @@ public class DcpRestClientTest {
       assertThat(savedState.name, is(equalTo(patchExampleServiceState.name)));
       assertThat(savedState.counter, is(patchExampleServiceState2.counter));
 
-      result = dcpRestClient.get(documentSelfLink);
+      result = xenonRestClient.get(documentSelfLink);
       assertThat(result.getStatusCode(), is(200));
 
       savedState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -517,7 +517,7 @@ public class DcpRestClientTest {
       exampleServiceState.name = UUID.randomUUID().toString();
       exampleServiceState.counter = 0L;
 
-      dcpRestClient.patch(
+      xenonRestClient.patch(
           ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString(),
           exampleServiceState);
     }
@@ -532,7 +532,7 @@ public class DcpRestClientTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       setUpHostAndClient();
-      dcpRestClient.start();
+      xenonRestClient.start();
     }
 
     @AfterMethod
@@ -541,8 +541,8 @@ public class DcpRestClientTest {
         host.destroy();
       }
 
-      if (dcpRestClient != null) {
-        dcpRestClient.stop();
+      if (xenonRestClient != null) {
+        xenonRestClient.stop();
       }
     }
 
@@ -553,14 +553,14 @@ public class DcpRestClientTest {
 
       String documentSelfLink = createDocument(exampleServiceState);
 
-      List<ExampleService.ExampleServiceState> documentList = dcpRestClient.queryDocuments(
+      List<ExampleService.ExampleServiceState> documentList = xenonRestClient.queryDocuments(
           ExampleService.ExampleServiceState.class, null);
 
       assertThat(documentList.size(), is(1));
       assertThat(documentList.get(0).name, is(equalTo(exampleServiceState.name)));
       assertThat(documentList.get(0).documentSelfLink, is(equalTo(documentSelfLink)));
 
-      List<String> documentLinks = dcpRestClient.queryDocumentsForLinks(
+      List<String> documentLinks = xenonRestClient.queryDocumentsForLinks(
           ExampleService.ExampleServiceState.class, null);
 
       assertThat(documentLinks.size(), is(1));
@@ -568,14 +568,14 @@ public class DcpRestClientTest {
 
       ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<String, String>();
 
-      documentList = dcpRestClient.queryDocuments(
+      documentList = xenonRestClient.queryDocuments(
           ExampleService.ExampleServiceState.class, termsBuilder.build());
 
       assertThat(documentList.size(), is(1));
       assertThat(documentList.get(0).name, is(equalTo(exampleServiceState.name)));
       assertThat(documentList.get(0).documentSelfLink, is(equalTo(documentSelfLink)));
 
-      dcpRestClient.queryDocumentsForLinks(
+      xenonRestClient.queryDocumentsForLinks(
           ExampleService.ExampleServiceState.class, null);
 
       assertThat(documentLinks.size(), is(1));
@@ -583,14 +583,14 @@ public class DcpRestClientTest {
 
       termsBuilder.put("name", exampleServiceState.name);
 
-      documentList = dcpRestClient.queryDocuments(
+      documentList = xenonRestClient.queryDocuments(
           ExampleService.ExampleServiceState.class, termsBuilder.build());
 
       assertThat(documentList.size(), is(1));
       assertThat(documentList.get(0).name, is(equalTo(exampleServiceState.name)));
       assertThat(documentList.get(0).documentSelfLink, is(equalTo(documentSelfLink)));
 
-      dcpRestClient.queryDocumentsForLinks(
+      xenonRestClient.queryDocumentsForLinks(
           ExampleService.ExampleServiceState.class, null);
 
       assertThat(documentLinks.size(), is(1));
@@ -608,24 +608,24 @@ public class DcpRestClientTest {
         exampleServiceStateMap.put(documentSelfLink, exampleServiceState);
       }
 
-      List<ExampleService.ExampleServiceState> documentList = dcpRestClient.queryDocuments(
+      List<ExampleService.ExampleServiceState> documentList = xenonRestClient.queryDocuments(
           ExampleService.ExampleServiceState.class, null);
 
       assertThat(documentList.size(), is(5));
 
-      List<String> documentLinks = dcpRestClient.queryDocumentsForLinks(
+      List<String> documentLinks = xenonRestClient.queryDocumentsForLinks(
           ExampleService.ExampleServiceState.class, null);
 
       assertThat(documentLinks.size(), is(5));
 
       ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<String, String>();
 
-      documentList = dcpRestClient.queryDocuments(
+      documentList = xenonRestClient.queryDocuments(
           ExampleService.ExampleServiceState.class, termsBuilder.build());
 
       assertThat(documentList.size(), is(5));
 
-      documentLinks = dcpRestClient.queryDocumentsForLinks(
+      documentLinks = xenonRestClient.queryDocumentsForLinks(
           ExampleService.ExampleServiceState.class, termsBuilder.build());
 
       assertThat(documentLinks.size(), is(5));
@@ -634,14 +634,14 @@ public class DcpRestClientTest {
         termsBuilder = new ImmutableMap.Builder<String, String>();
         termsBuilder.put("name", entry.getValue().name);
 
-        documentList = dcpRestClient.queryDocuments(
+        documentList = xenonRestClient.queryDocuments(
             ExampleService.ExampleServiceState.class, termsBuilder.build());
 
         assertThat(documentList.size(), is(1));
         assertThat(documentList.get(0).name, is(equalTo(entry.getValue().name)));
         assertThat(documentList.get(0).documentSelfLink, is(equalTo(entry.getKey())));
 
-        documentLinks = dcpRestClient.queryDocumentsForLinks(
+        documentLinks = xenonRestClient.queryDocumentsForLinks(
             ExampleService.ExampleServiceState.class, termsBuilder.build());
 
         assertThat(documentLinks.size(), is(1));
@@ -651,10 +651,10 @@ public class DcpRestClientTest {
 
     @Test
     public void testQueryWhenNoDocumentsExist() throws Throwable {
-      List<ExampleService.ExampleServiceState> documentList = dcpRestClient.queryDocuments(
+      List<ExampleService.ExampleServiceState> documentList = xenonRestClient.queryDocuments(
           ExampleService.ExampleServiceState.class, null);
       assertThat(documentList.size(), is(0));
-      Collection<String> documentLinks = dcpRestClient.queryDocumentsForLinks(
+      Collection<String> documentLinks = xenonRestClient.queryDocumentsForLinks(
           ExampleService.ExampleServiceState.class, null);
       assertThat(documentLinks.size(), is(0));
     }
@@ -664,7 +664,7 @@ public class DcpRestClientTest {
       final int numDocuments = 100;
       final int pageSize = 30;
 
-      doReturn(1L).when(dcpRestClient).getServiceDocumentStatusCheckIntervalMillis();
+      doReturn(1L).when(xenonRestClient).getServiceDocumentStatusCheckIntervalMillis();
 
       checkNoDocumentsRetrieved(Optional.<Integer>absent());
       checkNoDocumentsRetrieved(Optional.of(pageSize));
@@ -699,28 +699,28 @@ public class DcpRestClientTest {
 
     private void checkBroadcastQueryParams() throws Throwable {
       try {
-        dcpRestClient.queryDocuments(null, null, null, true);
+        xenonRestClient.queryDocuments(null, null, null, true);
         fail("Should have failed due to null DocumentType");
       } catch (NullPointerException e) {
         assertThat(e.getMessage(), is("Cannot query documents with null documentType"));
       }
 
       try {
-        dcpRestClient.queryDocuments(ExampleService.ExampleServiceState.class, null, Optional.of(0), true);
+        xenonRestClient.queryDocuments(ExampleService.ExampleServiceState.class, null, Optional.of(0), true);
         fail("Should have failed due to illegal document page size");
       } catch (IllegalArgumentException e) {
         assertThat(e.getMessage(), is("Cannot query documents with a page size less than 1"));
       }
 
       try {
-        dcpRestClient.queryDocumentPage(null);
+        xenonRestClient.queryDocumentPage(null);
         fail("Should have failed due to null page link");
       } catch (NullPointerException e) {
         assertThat(e.getMessage(), is("Cannot query documents with null pageLink"));
       }
 
       try {
-        dcpRestClient.queryDocumentPage("");
+        xenonRestClient.queryDocumentPage("");
         fail("Should have failed due to empty page link");
       } catch (IllegalArgumentException e) {
         assertThat(e.getMessage(), is("Cannot query documents with empty pageLink"));
@@ -733,11 +733,11 @@ public class DcpRestClientTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = spy(new DcpRestClient(serverSet, Executors.newFixedThreadPool(1)));
+      xenonRestClient = spy(new XenonRestClient(serverSet, Executors.newFixedThreadPool(1)));
     }
 
     private String createDocument(ExampleService.ExampleServiceState exampleServiceState) throws Throwable {
-      Operation result = dcpRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      Operation result = xenonRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
 
       assertThat(result.getStatusCode(), is(200));
       ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -753,14 +753,14 @@ public class DcpRestClientTest {
   public class MultiHostTest {
 
     private BasicServiceHost[] hosts;
-    private DcpRestClient[] dcpRestClients;
+    private XenonRestClient[] xenonRestClients;
 
     @BeforeMethod
     public void setUp() throws Throwable {
       hosts = setUpMultipleHosts(5);
-      dcpRestClients = setupDcpRestClients(hosts);
-      doReturn(TimeUnit.SECONDS.toMicros(5)).when(dcpRestClient).getGetOperationExpirationMicros();
-      doReturn(TimeUnit.SECONDS.toMicros(5)).when(dcpRestClient).getQueryOperationExpirationMicros();
+      xenonRestClients = setupXenonRestClients(hosts);
+      doReturn(TimeUnit.SECONDS.toMicros(5)).when(xenonRestClient).getGetOperationExpirationMicros();
+      doReturn(TimeUnit.SECONDS.toMicros(5)).when(xenonRestClient).getQueryOperationExpirationMicros();
     }
 
     @AfterMethod
@@ -771,13 +771,13 @@ public class DcpRestClientTest {
         }
       }
 
-      if (dcpRestClient != null) {
-        dcpRestClient.stop();
+      if (xenonRestClient != null) {
+        xenonRestClient.stop();
       }
 
-      if (dcpRestClients != null) {
-        for (DcpRestClient dcpRestClient : dcpRestClients) {
-          dcpRestClient.stop();
+      if (xenonRestClients != null) {
+        for (XenonRestClient xenonRestClient : xenonRestClients) {
+          xenonRestClient.stop();
         }
       }
     }
@@ -786,10 +786,10 @@ public class DcpRestClientTest {
     public void testGetOfNonExistingDocument() throws Throwable {
       String documentSelfLink = null;
       for (int i = 0; i < MAX_ITERATIONS; i++) {
-        for (DcpRestClient dcpRestClient : dcpRestClients) {
+        for (XenonRestClient xenonRestClient : xenonRestClients) {
           try {
             documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
-            dcpRestClient.get(documentSelfLink);
+            xenonRestClient.get(documentSelfLink);
             Assert.fail("get for a non-existing document should have failed");
           } catch (DocumentNotFoundException e) {
             assertThat(e.getMessage(), containsString(documentSelfLink));
@@ -803,11 +803,11 @@ public class DcpRestClientTest {
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       String documentSelfLink = null;
       for (int i = 0; i < MAX_ITERATIONS; i++) {
-        for (DcpRestClient dcpRestClient : dcpRestClients) {
+        for (XenonRestClient xenonRestClient : xenonRestClients) {
           try {
             exampleServiceState.name = UUID.randomUUID().toString();
             documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
-            dcpRestClient.patch(documentSelfLink, exampleServiceState);
+            xenonRestClient.patch(documentSelfLink, exampleServiceState);
             Assert.fail("patch for a non-existing document should have failed");
           } catch (DocumentNotFoundException e) {
             assertThat(e.getMessage(), containsString(documentSelfLink));
@@ -819,9 +819,9 @@ public class DcpRestClientTest {
     @Test
     public void testDeleteOfNonExistingDocument() throws Throwable {
       for (int i = 0; i < MAX_ITERATIONS; i++) {
-        for (DcpRestClient dcpRestClient : dcpRestClients) {
+        for (XenonRestClient xenonRestClient : xenonRestClients) {
           String documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
-          dcpRestClient.delete(documentSelfLink, null);
+          xenonRestClient.delete(documentSelfLink, null);
         }
       }
     }
@@ -829,22 +829,22 @@ public class DcpRestClientTest {
     @Test
     public void testGetOfCreatedDocument() throws Throwable {
       ExampleService.ExampleServiceState[] exampleServiceStates =
-          new ExampleService.ExampleServiceState[dcpRestClients.length];
-      String[] documentSelfLinks = new String[dcpRestClients.length];
+          new ExampleService.ExampleServiceState[xenonRestClients.length];
+      String[] documentSelfLinks = new String[xenonRestClients.length];
 
-      for (int j = 0; j < dcpRestClients.length; j++) {
+      for (int j = 0; j < xenonRestClients.length; j++) {
         exampleServiceStates[j] = new ExampleService.ExampleServiceState();
         exampleServiceStates[j].name = UUID.randomUUID().toString();
-        documentSelfLinks[j] = createDocument(dcpRestClients[j], exampleServiceStates[j]);
+        documentSelfLinks[j] = createDocument(xenonRestClients[j], exampleServiceStates[j]);
       }
 
       for (int i = 0; i < MAX_ITERATIONS; i++) {
-        for (int j = 0; j < dcpRestClients.length; j++) {
-          Operation result = dcpRestClient.get(documentSelfLinks[j]);
+        for (int j = 0; j < xenonRestClients.length; j++) {
+          Operation result = xenonRestClient.get(documentSelfLinks[j]);
           ExampleService.ExampleServiceState savedState = result.getBody(ExampleService.ExampleServiceState.class);
           assertThat(savedState.name, is(equalTo(exampleServiceStates[j].name)));
-          for (int k = 0; k < dcpRestClients.length; k++) {
-            result = dcpRestClients[k].get(documentSelfLinks[j]);
+          for (int k = 0; k < xenonRestClients.length; k++) {
+            result = xenonRestClients[k].get(documentSelfLinks[j]);
             savedState = result.getBody(ExampleService.ExampleServiceState.class);
             assertThat(savedState.name, is(equalTo(exampleServiceStates[j].name)));
           }
@@ -873,7 +873,7 @@ public class DcpRestClientTest {
 
       spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
-      Operation result = dcpRestClient.postToBroadcastQueryService(spec);
+      Operation result = xenonRestClient.postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
       Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(result);
@@ -887,7 +887,7 @@ public class DcpRestClientTest {
       assertThat(results.get(0).documentSelfLink, is(equalTo(documentSelfLink)));
       assertThat(results.get(0).name, is(equalTo(exampleServiceState.name)));
 
-      result = dcpRestClient.get(results.get(0).documentSelfLink);
+      result = xenonRestClient.get(results.get(0).documentSelfLink);
       ExampleService.ExampleServiceState document = result.getBody(ExampleService.ExampleServiceState.class);
       assertThat(results.get(0).documentSelfLink, is(equalTo(document.documentSelfLink)));
     }
@@ -898,7 +898,7 @@ public class DcpRestClientTest {
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       exampleServiceState.name = UUID.randomUUID().toString();
 
-      String documentSelfLink = createDocument(dcpRestClients[0], exampleServiceState);
+      String documentSelfLink = createDocument(xenonRestClients[0], exampleServiceState);
 
       QueryTask.Query kindClause = new QueryTask.Query()
           .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -912,7 +912,7 @@ public class DcpRestClientTest {
       spec.query.addBooleanClause(kindClause);
       spec.query.addBooleanClause(nameClause);
 
-      Operation result = dcpRestClients[1].postToBroadcastQueryService(spec);
+      Operation result = xenonRestClients[1].postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
       Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(result);
@@ -930,7 +930,7 @@ public class DcpRestClientTest {
       spec.query = kindClause;
       spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
-      Operation result = dcpRestClient.postToBroadcastQueryService(spec);
+      Operation result = xenonRestClient.postToBroadcastQueryService(spec);
       assertThat(result.getStatusCode(), is(200));
 
       QueryTask queryResult = result.getBody(QueryTask.class);
@@ -974,7 +974,7 @@ public class DcpRestClientTest {
   }
 
   private void checkNoDocumentsRetrieved(Optional<Integer> pageSize) throws Throwable {
-    ServiceDocumentQueryResult queryResult = dcpRestClient.queryDocuments(ExampleService.ExampleServiceState.class,
+    ServiceDocumentQueryResult queryResult = xenonRestClient.queryDocuments(ExampleService.ExampleServiceState.class,
         null, pageSize, false);
 
     assertThat(queryResult.documentCount, is(0L));
@@ -988,7 +988,7 @@ public class DcpRestClientTest {
                                             Collection<ExampleService.ExampleServiceState> expectedDocuments)
       throws Throwable {
 
-    ServiceDocumentQueryResult queryResult = dcpRestClient.queryDocuments
+    ServiceDocumentQueryResult queryResult = xenonRestClient.queryDocuments
         (ExampleService.ExampleServiceState.class, queryTerms, Optional.absent(), expandContent);
 
     Set<String> expectedDocumentNames = expectedDocuments.stream()
@@ -1012,7 +1012,7 @@ public class DcpRestClientTest {
                                                  Collection<ExampleService.ExampleServiceState> expectedDocuments)
       throws Throwable {
 
-    ServiceDocumentQueryResult queryResult = dcpRestClient.queryDocuments
+    ServiceDocumentQueryResult queryResult = xenonRestClient.queryDocuments
         (ExampleService.ExampleServiceState.class, queryTerms, Optional.of(pageSize), expandContent);
 
     assertNotNull(queryResult.documents);
@@ -1030,7 +1030,7 @@ public class DcpRestClientTest {
         .collect(Collectors.toSet());
 
     while (queryResult.nextPageLink != null) {
-      queryResult = dcpRestClient.queryDocumentPage(queryResult.nextPageLink);
+      queryResult = xenonRestClient.queryDocumentPage(queryResult.nextPageLink);
 
       actualDocumentNames.addAll(queryResult.documents.values().stream()
               .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
@@ -1043,7 +1043,7 @@ public class DcpRestClientTest {
   }
 
   /**
-   * Tests helper methods in DcpRestClient.
+   * Tests helper methods in XenonRestClient.
    */
   public class HelperMethodTest {
     @Test
@@ -1061,8 +1061,8 @@ public class DcpRestClientTest {
       servers1[1] = new InetSocketAddress("0.0.0.2", 2);
       servers1[2] = new InetSocketAddress("0.0.0.3", 3);
       StaticServerSet staticServerSet = new StaticServerSet(servers1);
-      DcpRestClient testDcpRestClient = new DcpRestClient(staticServerSet, Executors.newFixedThreadPool(1));
-      final URI result1 = testDcpRestClient.getServiceUri("/dummyPath");
+      XenonRestClient testXenonRestClient = new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1));
+      final URI result1 = testXenonRestClient.getServiceUri("/dummyPath");
 
       // the selected URI should be from the provided addresses
       assertThat(
@@ -1081,8 +1081,8 @@ public class DcpRestClientTest {
       servers2[2] = servers1[2];
       servers2[3] = new InetSocketAddress(OperationUtils.getLocalHostInetAddress(), 3);
       staticServerSet = new StaticServerSet(servers2);
-      testDcpRestClient = new DcpRestClient(staticServerSet, Executors.newFixedThreadPool(1));
-      final URI result2 = testDcpRestClient.getServiceUri("/dummyPath");
+      testXenonRestClient = new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1));
+      final URI result2 = testXenonRestClient.getServiceUri("/dummyPath");
 
       //the selected URI should not be from the servers1 list as they do not match local address and servers2 has
       //one that matches
@@ -1142,8 +1142,8 @@ public class DcpRestClientTest {
         }
       }
 
-      if (dcpRestClient != null) {
-        dcpRestClient.stop();
+      if (xenonRestClient != null) {
+        xenonRestClient.stop();
       }
     }
 
@@ -1154,7 +1154,7 @@ public class DcpRestClientTest {
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       exampleServiceState.name = exampleServiceStateName;
 
-      Operation result = dcpRestClient.post(LimitedReplicationExampleFactoryService.SELF_LINK, exampleServiceState);
+      Operation result = xenonRestClient.post(LimitedReplicationExampleFactoryService.SELF_LINK, exampleServiceState);
       assertThat(result.getStatusCode(), is(200));
       ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
       assertThat(createdState.name, is(equalTo(exampleServiceState.name)));
@@ -1204,7 +1204,7 @@ public class DcpRestClientTest {
       spec.query.addBooleanClause(kindClause);
       spec.query.addBooleanClause(nameClause);
 
-      Operation queryResult = dcpRestClient.postToBroadcastQueryService(spec);
+      Operation queryResult = xenonRestClient.postToBroadcastQueryService(spec);
       assertThat(queryResult.getStatusCode(), is(200));
 
       NodeGroupBroadcastResponse queryResponse = queryResult.getBody(NodeGroupBroadcastResponse.class);

@@ -16,7 +16,7 @@ package com.vmware.photon.controller.rootscheduler;
 import com.vmware.photon.controller.chairman.gen.Chairman;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ClientPool;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
@@ -149,9 +149,9 @@ public class RootSchedulerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public DcpRestClient getDcpRestClient(ZookeeperServerSetFactory serverSetFactory) {
+  public XenonRestClient getDcpRestClient(ZookeeperServerSetFactory serverSetFactory) {
     ServerSet serverSet = serverSetFactory.createServiceServerSet("cloudstore", true);
-    DcpRestClient client = new DcpRestClient(serverSet, Executors.newFixedThreadPool(4));
+    XenonRestClient client = new XenonRestClient(serverSet, Executors.newFixedThreadPool(4));
     client.start();
     return client;
   }

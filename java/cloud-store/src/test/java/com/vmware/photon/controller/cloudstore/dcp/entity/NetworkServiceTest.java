@@ -16,8 +16,8 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.Operation;
@@ -45,7 +45,7 @@ import java.util.concurrent.Executors;
  */
 public class NetworkServiceTest {
 
-  private DcpRestClient dcpRestClient;
+  private XenonRestClient dcpRestClient;
   private BasicServiceHost host;
   private NetworkService service;
   private NetworkService.State testNetwork;
@@ -96,7 +96,7 @@ public class NetworkServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new DcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
       dcpRestClient.start();
 
       testNetwork = new NetworkService.State();

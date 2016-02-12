@@ -15,10 +15,10 @@ package com.vmware.photon.controller.apife.backends.clients;
 
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -42,7 +42,7 @@ import java.util.concurrent.TimeoutException;
  * This class allows for injection of CloudStoreServerSet and executor specific to API-FE
  */
 @Singleton
-public class ApiFeDcpRestClient extends DcpRestClient {
+public class ApiFeDcpRestClient extends XenonRestClient {
 
   private static final Logger logger = LoggerFactory.getLogger(ApiFeDcpRestClient.class);
 
@@ -58,9 +58,9 @@ public class ApiFeDcpRestClient extends DcpRestClient {
     try {
       return super.post(serviceSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
+      throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
       throw new RuntimeException(timeoutException);
     } catch (InterruptedException interruptedException) {
@@ -73,7 +73,7 @@ public class ApiFeDcpRestClient extends DcpRestClient {
     try {
       return super.get(documentSelfLink);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
       throw new RuntimeException(timeoutException);
     } catch (InterruptedException interruptedException) {
@@ -86,9 +86,9 @@ public class ApiFeDcpRestClient extends DcpRestClient {
     try {
       return super.delete(documentSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
+      throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
       throw new RuntimeException(timeoutException);
     } catch (InterruptedException interruptedException) {
@@ -101,9 +101,9 @@ public class ApiFeDcpRestClient extends DcpRestClient {
     try {
       return super.postToBroadcastQueryService(spec);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
+      throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
       throw new RuntimeException(timeoutException);
     } catch (InterruptedException interruptedException) {
@@ -117,7 +117,7 @@ public class ApiFeDcpRestClient extends DcpRestClient {
     try {
       return super.patch(serviceSelfLink, body);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException timeoutException) {
       throw new RuntimeException(timeoutException);
     } catch (InterruptedException interruptedException) {
@@ -131,9 +131,9 @@ public class ApiFeDcpRestClient extends DcpRestClient {
     try {
       return super.queryDocuments(documentType, terms);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
+      throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException | InterruptedException exception) {
       throw new RuntimeException(exception);
     }
@@ -147,7 +147,7 @@ public class ApiFeDcpRestClient extends DcpRestClient {
     try {
       return super.queryDocuments(documentType, terms, pageSize, expandContent);
     } catch (DocumentNotFoundException | BadRequestException e) {
-      throw  new DcpRuntimeException(e);
+      throw  new XenonRuntimeException(e);
     } catch (TimeoutException | InterruptedException e) {
       throw new RuntimeException(e);
     }
@@ -159,7 +159,7 @@ public class ApiFeDcpRestClient extends DcpRestClient {
     try {
       return super.queryDocumentPage(pageLink);
     } catch (BadRequestException e) {
-      throw  new DcpRuntimeException(e);
+      throw  new XenonRuntimeException(e);
     } catch (TimeoutException | InterruptedException e) {
       throw new RuntimeException(e);
     }
@@ -171,9 +171,9 @@ public class ApiFeDcpRestClient extends DcpRestClient {
     try {
       return super.queryDocumentsForLinks(documentType, terms);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      throw new DcpRuntimeException(documentNotFoundException);
+      throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
-      throw new DcpRuntimeException(badRequestException);
+      throw new XenonRuntimeException(badRequestException);
     } catch (TimeoutException | InterruptedException exception) {
       throw new RuntimeException(exception);
     }

@@ -30,7 +30,7 @@ import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.host.gen.TransferImageResultCode;
@@ -215,7 +215,7 @@ public class ImageSeederServiceTest {
       try {
         host.startServiceSynchronously(service, startState);
         fail("Should have failed with DcpRuntimeException");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), containsString("failedOrCanceledCopies needs to be >= 0"));
       }
     }
@@ -288,7 +288,7 @@ public class ImageSeederServiceTest {
 
       try {
         host.startServiceSynchronously(service, startState);
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is("queryPollDelay needs to be >= 0"));
       }
     }
@@ -330,7 +330,7 @@ public class ImageSeederServiceTest {
       try {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch missing substage");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), containsString("subStage cannot be null"));
       }
     }
@@ -601,7 +601,7 @@ public class ImageSeederServiceTest {
         host.sendRequestAndWait(patchOp);
         fail("Transition from " + startStage + ":" + startSubStage +
             " to " + targetStage + ":" + targetSubStage + " " + "did not fail.");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), startsWith("Invalid stage update."));
       }
     }

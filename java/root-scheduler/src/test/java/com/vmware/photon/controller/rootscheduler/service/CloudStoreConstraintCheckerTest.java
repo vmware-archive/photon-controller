@@ -21,8 +21,8 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactor
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
@@ -70,14 +70,14 @@ public class CloudStoreConstraintCheckerTest {
   // We test with two Cloudstore environments. This first one has a single Cloudstore host
   private static final int SMALL_NUMBER_OF_CS_HOSTS = 1;
   private TestEnvironment cloudStoreTestEnvironmentSmall;
-  private DcpRestClient cloudstoreClientSmall;
+  private XenonRestClient cloudstoreClientSmall;
   private CloudStoreConstraintChecker checkerSmall;
 
   // The second Cloudstore environment has 3 Cloudstores and eventually, when we work well
   // with clusters larger than our replication factor, it will increase.
   private static final int LARGE_NUMBER_OF_CS_HOSTS = 3;
   private TestEnvironment cloudStoreTestEnvironmentLarge;
-  private DcpRestClient cloudstoreClientLarge;
+  private XenonRestClient cloudstoreClientLarge;
   private CloudStoreConstraintChecker checkerLarge;
 
   @BeforeClass
@@ -91,7 +91,7 @@ public class CloudStoreConstraintCheckerTest {
 
     // This test doesn't need to show all Xenon operations,
     // just the ones that fail. This keeps the test output manageable
-    Logger otherLogger = LoggerFactory.getLogger(DcpRestClient.class);
+    Logger otherLogger = LoggerFactory.getLogger(XenonRestClient.class);
     ((ch.qos.logback.classic.Logger) otherLogger).setLevel(Level.WARN);
 
     // We also don't need to see all the host and datastore services that are created
@@ -108,13 +108,13 @@ public class CloudStoreConstraintCheckerTest {
   private void startCloudstore() throws Throwable {
     this.cloudStoreTestEnvironmentSmall = TestEnvironment.create(SMALL_NUMBER_OF_CS_HOSTS);
     this.cloudstoreClientSmall =
-        new DcpRestClient(cloudStoreTestEnvironmentSmall.getServerSet(), Executors.newFixedThreadPool(1));
+        new XenonRestClient(cloudStoreTestEnvironmentSmall.getServerSet(), Executors.newFixedThreadPool(1));
     cloudstoreClientSmall.start();
     this.checkerSmall = new CloudStoreConstraintChecker(cloudstoreClientSmall);
 
     this.cloudStoreTestEnvironmentLarge = TestEnvironment.create(LARGE_NUMBER_OF_CS_HOSTS);
     this.cloudstoreClientLarge =
-        new DcpRestClient(cloudStoreTestEnvironmentLarge.getServerSet(), Executors.newFixedThreadPool(1));
+        new XenonRestClient(cloudStoreTestEnvironmentLarge.getServerSet(), Executors.newFixedThreadPool(1));
     cloudstoreClientLarge.start();
     this.checkerLarge = new CloudStoreConstraintChecker(cloudstoreClientLarge);
   }
