@@ -347,10 +347,66 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getVm().getDisks().size(), is(vm.getAttachedDisks().size()));
     assertThat(resource.getVm().getDisks().get(0).getId(), is("disk1"));
     assertThat(resource.getVm().getDisks().get(0).getFlavor_info(), is(expectedDiskFlavor));
+    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().size(), is(1));
     assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getType(), is(ResourceConstraintType
         .DATASTORE_TAG));
     assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getValues().equals(ImmutableList.of
         ("SHARED_VMFS")), is(true));
+
+    assertThat(resource.getPlacement_list().getPlacements().size(), is(1 + vm.getAttachedDisks().size()));
+    assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
+    assertThat(resource.getPlacement_list().getPlacements().get(1).getType(), is(ResourcePlacementType.DISK));
+  }
+
+  @Test
+  public void testSuccessfulVmExecutionWithEphemeralDiskAttachedAndDatastoreAffinity() throws Exception {
+    List<LocalityEntity> affinities = new ArrayList<>();
+    LocalityEntity localityEntity = new LocalityEntity();
+    localityEntity.setResourceId("datastore-id");
+    localityEntity.setKind("datastore");
+
+    affinities.add(localityEntity);
+    vm.setAffinities(affinities);
+
+    List<QuotaLineItem> quotaLineItems = new ArrayList<>();
+    quotaLineItems.add(new QuotaLineItem("ephemeral-disk.cost", "10000.0",
+        com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
+    quotaLineItems.add(new QuotaLineItem("ephemeral-disk.capacity", "0.0",
+        com.vmware.photon.controller.flavors.gen.QuotaUnit.GB));
+    quotaLineItems.add(new QuotaLineItem("storage.SHARED_VMFS", "1.0",
+        com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
+
+    Flavor expectedDiskFlavor = new Flavor();
+    expectedDiskFlavor.setName("ephemeral-disk-10000");
+    expectedDiskFlavor.setCost(quotaLineItems);
+
+    attachEphemeralDisk(vm);
+    ResourceReserveStepCmd command = getVmReservationCommand();
+
+    PlaceResponse placeResponse = generateResourcePlacementList();
+    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
+    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
+    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+
+    command.execute();
+
+    verify(rootSchedulerClient).place(resourceCaptor.capture());
+    Resource resource = resourceCaptor.getValue();
+
+    assertThat(resource.getVm().isSetResource_constraints(), is(true));
+    assertThat(resource.getVm().getDisks().size(), is(vm.getAttachedDisks().size()));
+    assertThat(resource.getVm().getDisks().get(0).getId(), is("disk1"));
+    assertThat(resource.getVm().getDisks().get(0).getFlavor_info(), is(expectedDiskFlavor));
+    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().size(), is(2));
+    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getType(), is(ResourceConstraintType
+        .DATASTORE_TAG));
+    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getValues().equals(ImmutableList.of
+        ("SHARED_VMFS")), is(true));
+    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(1).getType(), is(ResourceConstraintType
+        .DATASTORE));
+    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(1).getValues().equals(ImmutableList.of
+        ("datastore-id")), is(true));
 
     assertThat(resource.getPlacement_list().getPlacements().size(), is(1 + vm.getAttachedDisks().size()));
     assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
