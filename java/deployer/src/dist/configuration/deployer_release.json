@@ -5,6 +5,7 @@
   "diskGb": 8,
   "isReplicated": true,
   "isPrivileged": false,
+  "useHostNetwork": true,
   "containerImage": "esxcloud/deployer",
   "portBindings": {
     "18000": 18000,

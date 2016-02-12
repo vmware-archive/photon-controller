@@ -298,6 +298,7 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
     startState.memoryMb = spec.getMemoryMb();
     startState.diskGb = spec.getDiskGb();
     startState.isPrivileged = spec.getIsPrivileged();
+    startState.useHostNetwork = spec.getUseHostNetwork();
     startState.volumesFrom = spec.getVolumesFrom();
     startState.containerImage = spec.getContainerImage();
 

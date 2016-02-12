@@ -188,6 +188,7 @@ public class DockerProvisioner {
                                 Boolean isPrivileged,
                                 Map<String, String> environmentVariables,
                                 Boolean restart,
+                                Boolean useHostNetworkMode,
                                 String... command) {
     if (StringUtils.isBlank(containerImage)) {
       throw new IllegalArgumentException("containerImage field cannot be null or blank");
@@ -242,7 +243,12 @@ public class DockerProvisioner {
       createContainerCmd = createContainerCmd.withRestartPolicy(RestartPolicy.alwaysRestart());
     }
 
-    createContainerCmd = createContainerCmd.withNetworkMode("host");
+    // TODO(ysheng): this is a temporary solution to the port binding issue that Mgmt UI faces
+    // when trying to bind port 80 with load balancer. In the long term, we should use a different
+    // port for Mgmt UI other than 80.
+    if (useHostNetworkMode) {
+      createContainerCmd = createContainerCmd.withNetworkMode("host");
+    }
 
     if (containerName.equals(ContainersConfig.ContainerType.Lightwave.name())) {
       //
@@ -287,6 +293,7 @@ public class DockerProvisioner {
                                 Boolean isPrivileged,
                                 Map<String, String> environmentVariables,
                                 Boolean restart,
+                                Boolean useHostNetwork,
                                 String... command) {
     if (StringUtils.isBlank(containerImage)) {
       throw new IllegalArgumentException("containerImage field cannot be null or blank");
@@ -296,7 +303,7 @@ public class DockerProvisioner {
     }
 
     String containerId = createContainer(containerName, containerImage, cpuShares, memoryMb, volumeBindings,
-        portBindings, volumesFrom, isPrivileged, environmentVariables, restart, command);
+        portBindings, volumesFrom, isPrivileged, environmentVariables, restart, useHostNetwork, command);
     startContainer(containerId);
 
     return containerId;

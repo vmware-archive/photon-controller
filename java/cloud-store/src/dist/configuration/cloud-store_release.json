@@ -5,6 +5,7 @@
   "diskGb": 8,
   "isReplicated": true,
   "isPrivileged": false,
+  "useHostNetwork": true,
   "containerImage": "esxcloud/cloud-store",
   "portBindings": {
     "19000": 19000,

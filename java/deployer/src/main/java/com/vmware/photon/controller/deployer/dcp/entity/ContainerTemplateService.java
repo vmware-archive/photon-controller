@@ -95,6 +95,13 @@ public class ContainerTemplateService extends StatefulService {
     public Boolean isPrivileged;
 
     /**
+     * This value represents whether the container uses host network.
+     */
+    @Immutable
+    @DefaultBoolean(value = true)
+    public Boolean useHostNetwork;
+
+    /**
      * This value represents the host volumes that can be mounted on the container.
      * <Host Volume, Container Volume>
      */
