@@ -62,6 +62,7 @@ class TestDiskPlacementManager(unittest.TestCase):
         ds_mgr.get_datastore_ids.return_value = ds_map.keys()
         ds_mgr.vm_datastores.return_value = [ds for ds in ds_map.keys() if
                                              ds != image_ds]
+        ds_mgr.image_datastores.return_value = [image_ds]
         ds_mgr.normalize.side_effect = lambda x: x
 
         def fake_datastore_info(datastore_id):

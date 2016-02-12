@@ -813,8 +813,8 @@ class PMBuilder(object):
         hypervisor.datastore_manager.vm_datastores.return_value = \
             [ds for ds in self.ds_map.keys() if ds !=
              self.image_ds]
-        hypervisor.datastore_manager.image_datastore.return_value = \
-            self.image_ds
+        hypervisor.datastore_manager.image_datastores.return_value = \
+            [self.image_ds]
         hypervisor.datastore_manager.get_datastore_ids.return_value = \
             self.ds_map.keys()
         hypervisor.datastore_manager.datastore_info = self.datastore_info
