@@ -81,7 +81,7 @@ class Hypervisor(object):
 
         options = PlacementOption(agent_config.memory_overcommit,
                                   agent_config.cpu_overcommit,
-                                  agent_config.image_datastores)
+                                  self.datastore_manager.image_datastores())
         self.placement_manager = PlacementManager(self, options)
 
         self.image_monitor = ImageMonitor(self.datastore_manager,
