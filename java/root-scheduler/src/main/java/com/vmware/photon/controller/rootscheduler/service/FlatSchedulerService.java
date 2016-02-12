@@ -76,8 +76,8 @@ import java.util.concurrent.TimeUnit;
  *
  * (1) http://www.eecs.berkeley.edu/~keo/publications/sosp13-final17.pdf
  */
-public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHandler {
-  private static final Logger logger = LoggerFactory.getLogger(SchedulerService.class);
+public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEventHandler {
+  private static final Logger logger = LoggerFactory.getLogger(FlatSchedulerService.class);
   private final Config config;
   private ConstraintChecker checker;
   private final ScoreCalculator scoreCalculator;
@@ -85,12 +85,12 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
   private final TProtocolFactory protocolFactory;
 
   @Inject
-  public SchedulerService(Config config,
-                          ConstraintChecker checker,
-                          DcpRestClient dcpRestClient,
-                          ScoreCalculator scoreCalculator,
-                          TAsyncClientFactory<Scheduler.AsyncClient> clientFactory,
-                          ThriftFactory thriftFactory) {
+  public FlatSchedulerService(Config config,
+                              ConstraintChecker checker,
+                              DcpRestClient dcpRestClient,
+                              ScoreCalculator scoreCalculator,
+                              TAsyncClientFactory<Scheduler.AsyncClient> clientFactory,
+                              ThriftFactory thriftFactory) {
     this.config = config;
     this.checker = checker;
     this.clientFactory = clientFactory;

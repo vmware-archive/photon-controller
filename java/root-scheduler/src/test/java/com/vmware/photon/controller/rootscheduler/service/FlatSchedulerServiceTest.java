@@ -54,9 +54,9 @@ import java.util.Random;
 import java.util.Set;
 
 /**
- * Test cases for SchedulerService.
+ * Test cases for FlatSchedulerService.
  */
-public class SchedulerServiceTest {
+public class FlatSchedulerServiceTest {
   Random random = new Random();
 
   @Mock
@@ -102,7 +102,7 @@ public class SchedulerServiceTest {
       doReturn(ImmutableMap.of()).when(checker)
           .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
       return new Object[][]{
-        {new SchedulerService(config, checker, dcpRestClient, scoreCalculator, clientFactory, thriftFactory)},
+        {new FlatSchedulerService(config, checker, dcpRestClient, scoreCalculator, clientFactory, thriftFactory)},
     };
   }
 
@@ -132,7 +132,7 @@ public class SchedulerServiceTest {
     doReturn(matches).when(checker)
         .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
     return new Object[][]{
-        {new SchedulerService(config, checker, dcpRestClient, scoreCalculator, clientFactory, thriftFactory)},
+        {new FlatSchedulerService(config, checker, dcpRestClient, scoreCalculator, clientFactory, thriftFactory)},
     };
   }
 
