@@ -61,6 +61,7 @@ public class AgentControlClientMock extends AgentControlClient {
       String logLevel,
       String statsStoreEndpoint,
       boolean managementOnly,
+      String statsTags,
       String ntpEndpoint,
       String hostId,
       String deploymentId,

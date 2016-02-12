@@ -154,6 +154,9 @@ struct ProvisionRequest {
   // Id of the deployment
   17: optional string deployment_id
 
+  // Tags for stats
+  20: optional string stats_tags
+
   99: optional tracing.TracingInfo tracing_info
 }
 

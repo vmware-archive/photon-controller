@@ -42,6 +42,7 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import org.apache.thrift.async.AsyncMethodCallback;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -329,6 +330,7 @@ public class ProvisionAgentTaskService extends StatefulService {
           (hostState.usageTags != null
               && hostState.usageTags.contains(UsageTag.MGMT.name())
               && !hostState.usageTags.contains(UsageTag.CLOUD.name())),
+          hostState.usageTags != null ? Joiner.on(",").skipNulls().join(hostState.usageTags) : null,
           ServiceUtils.getIDFromDocumentSelfLink(currentState.hostServiceLink),
           ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink),
           deploymentState.ntpEndpoint,

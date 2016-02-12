@@ -219,6 +219,7 @@ public class AgentControlClient {
       String logLevel,
       String statsStoreEndpoint,
       boolean managementOnly,
+      String statsTags,
       String hostId,
       String deploymentId,
       String ntpEndpoint,
@@ -239,6 +240,7 @@ public class AgentControlClient {
     provisionRequest.setChairman_server(Util.getServerAddressList(chairmanServerList));
     provisionRequest.setMemory_overcommit(memoryOverCommit);
     provisionRequest.setManagement_only(managementOnly);
+    provisionRequest.setStats_tags(statsTags);
     provisionRequest.setHost_id(hostId);
     provisionRequest.setDeployment_id(deploymentId);
     provisionRequest.setNtp_endpoint(ntpEndpoint);
@@ -291,13 +293,14 @@ public class AgentControlClient {
       String logLevel,
       String statsStoreEndpoint,
       boolean managementOnly,
+      String statsTags,
       String hostId,
       String deploymentId,
       String ntpEndpoint)
       throws InterruptedException, RpcException {
     SyncHandler<ProvisionResponse, AgentControl.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
     provision(availabilityZone, dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
-        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, statsStoreEndpoint, managementOnly,
+        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, statsStoreEndpoint, managementOnly, statsTags,
         hostId, deploymentId, ntpEndpoint, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkProvisionResponse(syncHandler.getResponse());
