@@ -167,8 +167,8 @@ public class TestHost extends VerificationHost {
     return (T) responseBody;
   }
 
-  public <T extends ServiceDocument> void deleteServiceSynchronously(
-      String serviceUri) throws Throwable {
+  private <T extends ServiceDocument> void deleteServiceSynchronously(
+          String serviceUri, boolean stopOnly) throws Throwable {
     this.testStart(1);
     Operation deleteOperation = Operation
         .createDelete(UriUtils.buildUri(this, serviceUri))
@@ -181,8 +181,22 @@ public class TestHost extends VerificationHost {
           this.completeIteration();
         });
 
+    if (stopOnly) {
+      deleteOperation.addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_INDEX_UPDATE);
+    }
+
     this.sendRequest(deleteOperation);
     this.testWait();
+  }
+
+  public <T extends ServiceDocument> void stopServiceSynchronously(
+          String serviceUri) throws Throwable {
+    deleteServiceSynchronously(serviceUri, true);
+  }
+
+  public <T extends ServiceDocument> void deleteServiceSynchronously(
+          String serviceUri) throws Throwable {
+    deleteServiceSynchronously(serviceUri, false);
   }
 
   public <T extends ServiceDocument> T waitForServiceState(
