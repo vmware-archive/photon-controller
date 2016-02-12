@@ -33,8 +33,8 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
 import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -103,7 +103,7 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
 
     try {
       patchResourceTicketService(resourceTicketId, patch);
-    } catch (DcpRuntimeException e) {
+    } catch (XenonRuntimeException e) {
       if (e.getCause() instanceof BadRequestException) {
         ResourceTicketService.QuotaErrorResponse quotaErrorResponse =
             e.getCompletedOperation().getBody(ResourceTicketService.QuotaErrorResponse.class);
@@ -217,7 +217,7 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
       logger.warn("Subdivide of resource ticket id {} failed", resourceTicketId);
       // compensate by deleting the created ticket document
       delete(ServiceUtils.getIDFromDocumentSelfLink(createdResourceTicket.documentSelfLink));
-      throw new DcpRuntimeException(e);
+      throw new XenonRuntimeException(e);
     }
 
     return convertToResourceTicketEntity(createdResourceTicket);

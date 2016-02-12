@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.chairman;
 
 import com.vmware.photon.controller.chairman.hierarchy.FlowFactory;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ClientPool;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
@@ -120,9 +120,9 @@ public class ChairmanModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public DcpRestClient getDcpRestClient(ZookeeperServerSetFactory serverSetFactory) {
+  public XenonRestClient getDcpRestClient(ZookeeperServerSetFactory serverSetFactory) {
     ServerSet serverSet = serverSetFactory.createServiceServerSet("cloudstore", true);
-    DcpRestClient client = new DcpRestClient(serverSet, Executors.newFixedThreadPool(4));
+    XenonRestClient client = new XenonRestClient(serverSet, Executors.newFixedThreadPool(4));
     client.start();
     return client;
   }

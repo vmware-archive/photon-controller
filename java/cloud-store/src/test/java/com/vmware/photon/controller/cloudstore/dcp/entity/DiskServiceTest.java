@@ -19,7 +19,7 @@ import com.vmware.photon.controller.api.LocalitySpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.Operation;
@@ -51,7 +51,7 @@ import java.util.concurrent.Executors;
  */
 public class DiskServiceTest {
 
-  private DcpRestClient dcpRestClient;
+  private XenonRestClient dcpRestClient;
   private BasicServiceHost host;
   private DiskService service;
   private DiskService.State testState;
@@ -102,7 +102,7 @@ public class DiskServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new DcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
       dcpRestClient.start();
 
       testState = new DiskService.State();
@@ -284,7 +284,7 @@ public class DiskServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new DcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
       dcpRestClient.start();
 
       testState = new DiskService.State();

@@ -22,7 +22,7 @@ import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateE
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.mock.AgentControlClientMock;
@@ -219,7 +219,7 @@ public class ProvisionAgentTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStartStateRequiredFieldMissing(String fieldName) throws Throwable {
       ProvisionAgentTaskService.State startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -321,7 +321,7 @@ public class ProvisionAgentTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
                                            ProvisionAgentTaskService.TaskState.SubStage startSubStage,
                                            TaskState.TaskStage patchStage,
@@ -393,7 +393,7 @@ public class ProvisionAgentTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
       ProvisionAgentTaskService.State startState = buildValidStartState(null, null);
       Operation op = testHost.startServiceSynchronously(provisionAgentTaskService, startState);
@@ -486,7 +486,7 @@ public class ProvisionAgentTaskServiceTest {
     }
 
     @Test(dataProvider = "ProvisionFailureCodes")
-    public void testProvisionAgentFailureWithResult(ProvisionResultCode resultCode, Class<DcpRuntimeException> clazz)
+    public void testProvisionAgentFailureWithResult(ProvisionResultCode resultCode, Class<XenonRuntimeException> clazz)
         throws Throwable {
 
       AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()

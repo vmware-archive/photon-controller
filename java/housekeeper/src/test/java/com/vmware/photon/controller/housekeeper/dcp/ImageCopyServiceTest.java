@@ -30,7 +30,7 @@ import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
 import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
@@ -276,7 +276,7 @@ public class
         ImageCopyService.State startState = new ImageCopyService.State();
         startState.isSelfProgressionDisabled = true;
         host.startServiceSynchronously(service, startState);
-      } catch (DcpRuntimeException ex) {
+      } catch (XenonRuntimeException ex) {
         assertThat(ex.getMessage(), is("image not provided"));
       }
     }
@@ -288,12 +288,12 @@ public class
         startState.isSelfProgressionDisabled = true;
         startState.image = "image1";
         host.startServiceSynchronously(service, startState);
-      } catch (DcpRuntimeException ex) {
+      } catch (XenonRuntimeException ex) {
         assertThat(ex.getMessage(), is("source datastore not provided"));
       }
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class,
+    @Test(expectedExceptions = XenonRuntimeException.class,
         expectedExceptionsMessageRegExp = "^destination datastore not provided$")
     public void testInvalidStartStateWithoutDestinationDataStore() throws Throwable {
       ImageCopyService.State startState = new ImageCopyService.State();
@@ -315,7 +315,7 @@ public class
       try {
         host.startServiceSynchronously(service, state);
         fail("Fail to catch missing substage");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), containsString("subStage cannot be null"));
       }
     }
@@ -415,7 +415,7 @@ public class
       try {
         host.sendRequestAndWait(patchOp);
         fail("Expected IllegalStateException.");
-      } catch (DcpRuntimeException ex) {
+      } catch (XenonRuntimeException ex) {
         assertThat(ex.getMessage(), is("Service is not in CREATED stage, ignores patch from TaskSchedulerService"));
       }
 
@@ -538,7 +538,7 @@ public class
         host.sendRequestAndWait(patchOp);
         fail("Transition from " + startStage + ":" + startSubStage +
             " to " + targetStage + ":" + targetSubStage + " " + "did not fail.");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), startsWith("Invalid stage update."));
       }
     }

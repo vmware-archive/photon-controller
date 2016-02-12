@@ -30,7 +30,7 @@ import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
 import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
 import com.vmware.photon.controller.common.dcp.ValidationUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
 import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
@@ -482,7 +482,7 @@ public class CreateManagementVmTaskService extends StatefulService {
   private void loadNamesFromTemplates(final State currentState, Set<String> templateLinks) {
 
     if (templateLinks.isEmpty()) {
-      throw new DcpRuntimeException("Template links set is empty");
+      throw new XenonRuntimeException("Template links set is empty");
     }
 
     OperationJoin

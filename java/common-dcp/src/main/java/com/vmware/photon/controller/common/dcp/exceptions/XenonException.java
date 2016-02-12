@@ -17,32 +17,19 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
 
 /**
- * This is to capture all DCP exceptions that we would normally not handle.
- * Since we do not expect this exception to be handled we make it a RuntimeException.
+ * This is to capture all Xenon exceptions that we would normally want the clients to handle.
  */
-public class DcpRuntimeException extends RuntimeException {
+public class XenonException extends Throwable {
 
   private Operation requestedOperation;
   private Operation completedOperation;
 
-  public DcpRuntimeException(DcpException cause) {
-    super(cause);
-    this.requestedOperation = cause.getRequestedOperation();
-    this.completedOperation = cause.getCompletedOperation();
-  }
+  public XenonException(Operation requestedOperation, Operation completedOperation) {
+    super(completedOperation == null ?
+        null : completedOperation.getBody(ServiceErrorResponse.class).message);
 
-  public DcpRuntimeException(Operation requestedOperation, Operation completedOperation) {
-    super(completedOperation.getBody(ServiceErrorResponse.class).message);
     this.requestedOperation = requestedOperation;
     this.completedOperation = completedOperation;
-  }
-
-  public DcpRuntimeException(Throwable cause) {
-    super(cause);
-  }
-
-  public DcpRuntimeException(String message) {
-    super(message);
   }
 
   public Operation getRequestedOperation() {

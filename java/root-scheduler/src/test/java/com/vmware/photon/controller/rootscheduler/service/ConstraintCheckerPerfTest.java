@@ -20,7 +20,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactor
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.xenon.common.Operation;
@@ -127,7 +127,7 @@ public class ConstraintCheckerPerfTest {
 
   @DataProvider(name = "default")
   public Object[][] createDefault() throws Throwable {
-    DcpRestClient dcpRestClient = new DcpRestClient(
+    XenonRestClient dcpRestClient = new XenonRestClient(
         cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
     dcpRestClient.start();
 

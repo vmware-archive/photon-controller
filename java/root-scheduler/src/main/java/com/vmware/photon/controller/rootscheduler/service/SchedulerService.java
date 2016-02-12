@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.thrift.TAsyncClientFactory;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
@@ -87,7 +87,7 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
   @Inject
   public SchedulerService(Config config,
                           ConstraintChecker checker,
-                          DcpRestClient dcpRestClient,
+                          XenonRestClient dcpRestClient,
                           ScoreCalculator scoreCalculator,
                           TAsyncClientFactory<Scheduler.AsyncClient> clientFactory,
                           ThriftFactory thriftFactory) {

@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.DcpRestClient;
+import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -40,7 +40,7 @@ import java.util.concurrent.Executors;
  */
 public class TaskServiceTest {
 
-  private DcpRestClient dcpRestClient;
+  private XenonRestClient dcpRestClient;
   private BasicServiceHost host;
   private TaskService service;
   private TaskService.State testState;
@@ -91,7 +91,7 @@ public class TaskServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new DcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
       dcpRestClient.start();
 
       testState = new TaskService.State();

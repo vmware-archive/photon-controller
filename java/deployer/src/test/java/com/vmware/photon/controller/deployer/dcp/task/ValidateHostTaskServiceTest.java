@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidator;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
@@ -216,7 +216,7 @@ public class ValidateHostTaskServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       ValidateHostTaskService.State startState = buildValidStartupState();
       Field declaredField = startState.getClass().getDeclaredField(attributeName);
@@ -331,7 +331,7 @@ public class ValidateHostTaskServiceTest {
       try {
         host.sendRequestAndWait(patchOp);
         fail("Patch handling should throw in response to invalid start state");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
       }
     }
 
@@ -369,7 +369,7 @@ public class ValidateHostTaskServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
     public void testInvalidPatchStateValue(String attributeName) throws Throwable {
       ValidateHostTaskService.State startState = buildValidStartupState();
       host.startServiceSynchronously(service, startState);

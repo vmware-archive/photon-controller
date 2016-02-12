@@ -16,7 +16,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
 import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -225,7 +225,7 @@ public class WaitForServiceTaskServiceTest {
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       WaitForServiceTaskService.State startState = buildValidStartupState(TaskState.TaskStage.STARTED);
       Field declaredField = startState.getClass().getDeclaredField(attributeName);
@@ -354,7 +354,7 @@ public class WaitForServiceTaskServiceTest {
       try {
         host.sendRequestAndWait(patchOperation);
         fail("Transition from " + startStage + " to " + targetStage + " succeeded unexpectedly");
-      } catch (DcpRuntimeException e) {
+      } catch (XenonRuntimeException e) {
         // N.B. An assertion can be added here if an error message is added to
         //      the checkState calls in validatePatch.
       }
@@ -395,7 +395,7 @@ public class WaitForServiceTaskServiceTest {
      * @param attributeName Supplies the attribute name.
      * @throws Throwable
      */
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
     public void testInvalidPatchStateValue(String attributeName) throws Throwable {
       WaitForServiceTaskService.State startState = buildValidStartupState(TaskState.TaskStage.STARTED);
       host.startServiceSynchronously(service, startState);

@@ -42,7 +42,7 @@ import com.vmware.photon.controller.clustermanager.templates.MesosSlaveNodeTempl
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.templates.ZookeeperNodeTemplate;
 import com.vmware.photon.controller.common.dcp.ControlFlags;
-import com.vmware.photon.controller.common.dcp.exceptions.DcpRuntimeException;
+import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.dcp.validation.Immutable;
 import com.vmware.photon.controller.common.dcp.validation.NotNull;
 import com.vmware.xenon.common.Operation;
@@ -213,7 +213,7 @@ public class MesosClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "invalidStartStates")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "invalidStartStates")
     public void testInvalidStartState(TaskState.TaskStage stage,
                                       MesosClusterCreateTask.TaskState.SubStage subStage) throws Throwable {
 
@@ -263,7 +263,7 @@ public class MesosClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = DcpRuntimeException.class, dataProvider = "attributeNames")
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
     public void testMissingStateValue(String attributeName) throws Throwable {
       MesosClusterCreateTask startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(attributeName);
@@ -374,7 +374,7 @@ public class MesosClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(expectedExceptions = {DcpRuntimeException.class},
+    @Test(expectedExceptions = {XenonRuntimeException.class},
         dataProvider = "invalidSubStageUpdates")
     public void testInvalidSubStageUpdates(TaskState.TaskStage startStage,
                                            MesosClusterCreateTask.TaskState.SubStage startSubStage,
@@ -478,7 +478,7 @@ public class MesosClusterCreateTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "immutableFieldNames", expectedExceptions = DcpRuntimeException.class)
+    @Test(dataProvider = "immutableFieldNames", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidPatchImmutableFieldChanged(String fieldName) throws Throwable {
       MesosClusterCreateTask startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
       Operation startOperation = host.startServiceSynchronously(taskService, startState);

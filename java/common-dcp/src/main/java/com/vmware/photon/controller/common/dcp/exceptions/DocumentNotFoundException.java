@@ -18,7 +18,7 @@ import com.vmware.xenon.common.Operation;
 /**
  * This exception maps to HTTP status code 404.
  */
-public class DocumentNotFoundException extends DcpException {
+public class DocumentNotFoundException extends XenonException {
   public DocumentNotFoundException(Operation requestedOperation, Operation completedOperation) {
     super(requestedOperation, completedOperation);
   }

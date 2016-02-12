@@ -83,7 +83,7 @@ import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HousekeeperClientConfig;
-import com.vmware.photon.controller.common.dcp.DcpClient;
+import com.vmware.photon.controller.common.dcp.XenonClient;
 import com.vmware.photon.controller.common.metrics.DefaultMetricRegistry;
 import com.vmware.photon.controller.common.metrics.RpcMetricListener;
 import com.vmware.photon.controller.common.thrift.ClientPool;
@@ -383,7 +383,7 @@ public class ApiFeModule extends AbstractModule {
 
   private void bindBackends() {
     logger.info("Using cloud store DCP backend");
-    bind(DcpClient.class).to(ApiFeDcpRestClient.class);
+    bind(XenonClient.class).to(ApiFeDcpRestClient.class);
     bind(FlavorBackend.class).to(FlavorDcpBackend.class);
     bind(AvailabilityZoneBackend.class).to(AvailabilityZoneDcpBackend.class);
     bind(ImageBackend.class).to(ImageDcpBackend.class);
