@@ -19,6 +19,7 @@ from common.kind import Unit
 from common.log import log_duration
 from gen.resource.ttypes import ResourcePlacementType
 from gen.resource.ttypes import ResourceConstraintType
+from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.disk_placement_manager import BestEffortPlaceEngine
 from host.hypervisor.disk_placement_manager import DatastoreSelector
 from host.hypervisor.disk_placement_manager import DisksPlacement
@@ -564,8 +565,13 @@ class PlacementManager(object):
         datastores = self._datastore_manager.vm_datastores()
         for image_ds in self._option.image_datastores:
             if image_ds["used_for_vms"]:
-                dsid = self._datastore_manager.normalize(image_ds["name"])
-                datastores.append(dsid)
+                try:
+                    dsid = self._datastore_manager.normalize(image_ds["name"])
+                    datastores.append(dsid)
+                except DatastoreNotFoundException:
+                    self._logger.debug("skip unavailable datastore: %s" %
+                                       image_ds["name"])
+
         self._logger.debug("Placeable datastores: %s, image datastores: %s" %
                            (datastores, self._option.image_datastores))
         return datastores
