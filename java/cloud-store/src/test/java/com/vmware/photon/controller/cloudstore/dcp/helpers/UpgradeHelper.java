@@ -14,8 +14,8 @@
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
-import com.vmware.photon.controller.common.dcp.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.UpgradeUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;

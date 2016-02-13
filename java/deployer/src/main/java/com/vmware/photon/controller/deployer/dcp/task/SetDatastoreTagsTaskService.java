@@ -14,15 +14,15 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.common.dcp.ControlFlags;
-import com.vmware.photon.controller.common.dcp.InitializationUtils;
-import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.ValidationUtils;
-import com.vmware.photon.controller.common.dcp.validation.DefaultInteger;
-import com.vmware.photon.controller.common.dcp.validation.DefaultTaskState;
-import com.vmware.photon.controller.common.dcp.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.ControlFlags;
+import com.vmware.photon.controller.common.xenon.InitializationUtils;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.TaskUtils;
+import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
+import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
+import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;

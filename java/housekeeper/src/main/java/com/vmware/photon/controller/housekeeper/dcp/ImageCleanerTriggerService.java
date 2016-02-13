@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.photon.controller.common.dcp.OperationUtils;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.OperationUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.xenon.common.NodeSelectorService;
 import com.vmware.xenon.common.Operation;

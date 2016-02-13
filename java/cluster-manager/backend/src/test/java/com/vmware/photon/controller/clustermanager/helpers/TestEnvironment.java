@@ -20,9 +20,9 @@ import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
 import com.vmware.photon.controller.clustermanager.clients.MesosClient;
 import com.vmware.photon.controller.clustermanager.clients.SwarmClient;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
-import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import static org.mockito.Mockito.doReturn;

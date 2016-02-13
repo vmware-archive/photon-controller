@@ -33,8 +33,8 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DiskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
-import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;

@@ -40,8 +40,8 @@ import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundExcept
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAvailabilityZoneStateException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;

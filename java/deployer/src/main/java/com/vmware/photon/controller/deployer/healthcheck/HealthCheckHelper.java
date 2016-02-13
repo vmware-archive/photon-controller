@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;

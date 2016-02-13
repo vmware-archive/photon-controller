@@ -17,8 +17,8 @@ import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
+import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 
 import org.apache.commons.io.FileUtils;
 import static org.mockito.Mockito.mock;

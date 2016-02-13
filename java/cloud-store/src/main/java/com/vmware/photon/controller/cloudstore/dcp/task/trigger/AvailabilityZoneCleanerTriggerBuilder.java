@@ -15,8 +15,8 @@ package com.vmware.photon.controller.cloudstore.dcp.task.trigger;
 
 import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerService;
-import com.vmware.photon.controller.common.dcp.scheduler.TaskStateBuilder;
-import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerService;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskStateBuilder;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerService;
 import com.vmware.xenon.common.Utils;
 
 import java.util.concurrent.TimeUnit;

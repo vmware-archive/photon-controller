@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.ApiError;
 import com.vmware.photon.controller.api.Step;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.FutureCallback;

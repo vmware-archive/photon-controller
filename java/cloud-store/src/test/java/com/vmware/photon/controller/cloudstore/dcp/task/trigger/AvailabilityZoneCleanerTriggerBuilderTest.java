@@ -15,7 +15,7 @@ package com.vmware.photon.controller.cloudstore.dcp.task.trigger;
 
 import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerService;
-import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerService;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerService;
 
 import org.hamcrest.Matchers;
 import org.testng.annotations.BeforeMethod;

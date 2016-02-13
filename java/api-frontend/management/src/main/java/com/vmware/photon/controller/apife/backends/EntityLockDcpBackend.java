@@ -18,8 +18,8 @@ import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
-import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 
 import com.google.inject.Inject;

@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
-import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.thrift.TAsyncClientFactory;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
+import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;

@@ -15,7 +15,7 @@ package com.vmware.photon.controller.cloudstore.dcp.task.trigger;
 
 import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerService;
-import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerService;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerService;
 import com.vmware.xenon.common.Utils;
 
 import org.hamcrest.Matchers;

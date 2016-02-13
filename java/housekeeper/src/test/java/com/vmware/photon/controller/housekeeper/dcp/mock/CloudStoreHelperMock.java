@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.dcp.mock;
 
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 
 import java.net.URI;
 

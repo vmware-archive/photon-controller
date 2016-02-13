@@ -40,9 +40,9 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationSe
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
-import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;

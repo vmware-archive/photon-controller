@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.clustermanager.servicedocuments;
 
-import com.vmware.photon.controller.common.dcp.validation.Immutable;
-import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
 
 import java.util.Map;
 

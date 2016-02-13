@@ -31,10 +31,10 @@ import com.vmware.photon.controller.apife.exceptions.external.ResourceTicketNotF
 import com.vmware.photon.controller.apife.lib.QuotaCost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceFactory;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
