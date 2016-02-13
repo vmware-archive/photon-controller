@@ -15,9 +15,9 @@ package com.vmware.photon.controller.apife.clients.status;
 
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.StatusProvider;
-import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.xenon.XenonRestClient;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

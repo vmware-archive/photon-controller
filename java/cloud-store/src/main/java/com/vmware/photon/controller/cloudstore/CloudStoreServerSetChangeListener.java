@@ -14,8 +14,8 @@
 package com.vmware.photon.controller.cloudstore;
 
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

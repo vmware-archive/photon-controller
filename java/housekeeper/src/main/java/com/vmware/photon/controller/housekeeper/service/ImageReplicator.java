@@ -14,12 +14,12 @@
 package com.vmware.photon.controller.housekeeper.service;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelperProvider;
-import com.vmware.photon.controller.common.dcp.OperationLatch;
-import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
+import com.vmware.photon.controller.common.xenon.OperationLatch;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorServiceFactory;
 import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;

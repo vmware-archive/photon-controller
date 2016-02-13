@@ -17,7 +17,7 @@ import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.TombstoneEntity;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactory;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Utils;
 

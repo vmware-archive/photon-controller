@@ -24,7 +24,7 @@ import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AttachedDiskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AttachedDiskServiceFactory;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
