@@ -14,6 +14,7 @@ import unittest
 import uuid
 
 from hamcrest import *  # noqa
+from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from mock import MagicMock
 from nose.tools import raises
 from nose_parameterized import parameterized
@@ -547,8 +548,13 @@ class TestPlacementManager(unittest.TestCase):
         ds_map = {"datastore_id_1": (DatastoreInfo(7 * 1024, 0), set([])),
                   "datastore_id_2": (DatastoreInfo(8 * 1024, 0), set([])),
                   "image_datastore": (DatastoreInfo(16 * 1024, 0), set([]))}
+        ds_name_id_map = {"ds1": "datastore_id_1",
+                          "ds2": "datastore_id_2",
+                          "ids": "image_datastore"}
+        image_ds = ["inaccessible_image_datastore", "image_datastore"]
         manager = PMBuilder(im_ds_for_vm=use_image_ds,
-                            image_ds="image_datastore",
+                            ds_name_id_map=ds_name_id_map,
+                            image_ds=image_ds,
                             ds_map=ds_map).build()
 
         image = DiskImage("disk_image",
@@ -774,7 +780,7 @@ class PMBuilder(object):
     DEFAULT_DS_MAP = {"datastore_id_1": (DatastoreInfo(8 * 1024, 0), set([]))}
 
     def __init__(self, total_mem=64*1024, image_id='image_id',
-                 image_ds='image_datastore', mem_overcommit=1.0, ds_map=None,
+                 image_ds=['image_datastore'], mem_overcommit=1.0, ds_map=None,
                  ds_with_image=None, cpu_overcommit=None, im_ds_for_vm=False,
                  image_size=100*1024*1024, ds_name_id_map=None,
                  vm_networks=[], host_version="version1"):
@@ -797,24 +803,26 @@ class PMBuilder(object):
         self.image_size = image_size
         self._ds_name_id_map = ds_name_id_map
         self.vm_networks = vm_networks
-        self.image_datastores = [{"name": image_ds,
-                                  "used_for_vms": im_ds_for_vm}]
+        self.image_datastores = [{"name": ds, "used_for_vms": im_ds_for_vm}
+                                 for ds in image_ds]
 
     def normalize(self, ds_name_or_id):
-        if self._ds_name_id_map and \
-           ds_name_or_id in self._ds_name_id_map:
+        # if test does not set ds_name_id_map, simply return name as id
+        if not self._ds_name_id_map:
+            return ds_name_or_id
+
+        if ds_name_or_id in self._ds_name_id_map:
             return self._ds_name_id_map[ds_name_or_id]
-        return ds_name_or_id
+        if ds_name_or_id in self._ds_name_id_map.values():
+            return ds_name_or_id
+        raise DatastoreNotFoundException("%s not found" % ds_name_or_id)
 
     def build(self):
         hypervisor = MagicMock()
 
         hypervisor.datastore_manager = MagicMock()
         hypervisor.datastore_manager.vm_datastores.return_value = \
-            [ds for ds in self.ds_map.keys() if ds !=
-             self.image_ds]
-        hypervisor.datastore_manager.image_datastore.return_value = \
-            self.image_ds
+            [ds for ds in self.ds_map.keys() if ds not in self.image_ds]
         hypervisor.datastore_manager.get_datastore_ids.return_value = \
             self.ds_map.keys()
         hypervisor.datastore_manager.datastore_info = self.datastore_info
