@@ -161,8 +161,13 @@ class BaseDiskPlacementEngine(DiskPlaceEngine):
         datastores = self.datastore_manager.vm_datastores()
         for image_ds in self._option.image_datastores:
             if image_ds["used_for_vms"]:
-                dsid = self.datastore_manager.normalize(image_ds["name"])
-                datastores.append(dsid)
+                try:
+                    dsid = self.datastore_manager.normalize(image_ds["name"])
+                    datastores.append(dsid)
+                except DatastoreNotFoundException:
+                    self._logger.debug("skip unavailable datastore: %s" %
+                                       image_ds["name"])
+
         self._logger.debug("Placeable datastores: %s, image datastores: %s" %
                            (datastores, self._option.image_datastores))
         return datastores
