@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp;
 
-import com.vmware.photon.controller.common.dcp.validation.DefaultBoolean;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 
 import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.Range;

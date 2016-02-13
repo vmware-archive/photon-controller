@@ -35,9 +35,9 @@ import com.vmware.photon.controller.apife.exceptions.external.ProjectNotFoundExc
 import com.vmware.photon.controller.apife.exceptions.external.TenantNotFoundException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
-import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;

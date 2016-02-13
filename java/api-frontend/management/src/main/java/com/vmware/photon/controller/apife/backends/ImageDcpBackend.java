@@ -41,9 +41,9 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;
 

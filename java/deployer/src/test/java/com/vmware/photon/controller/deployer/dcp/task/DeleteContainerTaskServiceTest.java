@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.photon.controller.common.dcp.ControlFlags;
-import com.vmware.photon.controller.common.dcp.TaskUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
-import com.vmware.photon.controller.common.dcp.validation.Immutable;
-import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.ControlFlags;
+import com.vmware.photon.controller.common.xenon.TaskUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;

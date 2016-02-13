@@ -14,9 +14,9 @@
 package com.vmware.photon.controller.housekeeper.service;
 
 
-import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.zookeeper.PathChildrenCacheFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
 import com.vmware.photon.controller.common.zookeeper.SimpleServiceNode;

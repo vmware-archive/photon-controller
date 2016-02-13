@@ -14,10 +14,10 @@
 package com.vmware.photon.controller.housekeeper.helpers.dcp;
 
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
-import com.vmware.photon.controller.common.dcp.MultiHostEnvironment;
-import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;

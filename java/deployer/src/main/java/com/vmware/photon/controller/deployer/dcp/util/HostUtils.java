@@ -18,7 +18,7 @@ import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactoryProvider;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;

@@ -14,8 +14,8 @@ package com.vmware.photon.controller.clustermanager.helpers;
 
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
-import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 

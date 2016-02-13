@@ -33,8 +33,8 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidQueryParams
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.fasterxml.jackson.core.JsonProcessingException;

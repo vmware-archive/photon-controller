@@ -12,7 +12,7 @@
  */
 package com.vmware.photon.controller.deployer.dcp.entity;
 
-import com.vmware.photon.controller.common.dcp.validation.RenamedField;
+import com.vmware.photon.controller.common.xenon.validation.RenamedField;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;

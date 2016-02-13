@@ -24,9 +24,9 @@ import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNo
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneServiceFactory;
-import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.xenon.common.Operation;
 
 import com.google.inject.Inject;

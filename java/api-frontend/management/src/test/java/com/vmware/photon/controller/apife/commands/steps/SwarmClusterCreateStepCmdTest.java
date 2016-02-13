@@ -23,7 +23,7 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmClusterCreateTask;
-import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.xenon.common.TaskState;
 
 import com.google.common.collect.ImmutableList;

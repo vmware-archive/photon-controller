@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.deployer.dcp.entity;
 
-import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
-import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;

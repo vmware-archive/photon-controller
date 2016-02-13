@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.chairman;
 
 import com.vmware.photon.controller.chairman.hierarchy.FlowFactory;
-import com.vmware.photon.controller.common.dcp.XenonRestClient;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ClientPool;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
@@ -22,6 +21,7 @@ import com.vmware.photon.controller.common.thrift.ClientPoolOptions;
 import com.vmware.photon.controller.common.thrift.ClientProxy;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.DataDictionary;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;

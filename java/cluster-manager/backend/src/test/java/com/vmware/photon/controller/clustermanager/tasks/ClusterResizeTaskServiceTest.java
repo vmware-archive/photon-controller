@@ -39,11 +39,11 @@ import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelpe
 import com.vmware.photon.controller.clustermanager.templates.KubernetesSlaveNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
-import com.vmware.photon.controller.common.dcp.ControlFlags;
-import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.XenonRuntimeException;
-import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.ControlFlags;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;

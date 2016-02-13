@@ -15,11 +15,11 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
-import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.QueryTaskUtils;
-import com.vmware.photon.controller.common.dcp.XenonRestClient;
-import com.vmware.photon.controller.common.dcp.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.XenonRestClient;
+import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;

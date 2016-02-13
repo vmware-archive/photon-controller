@@ -26,7 +26,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManag
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.MesosClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmClusterCreateTask;
-import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;

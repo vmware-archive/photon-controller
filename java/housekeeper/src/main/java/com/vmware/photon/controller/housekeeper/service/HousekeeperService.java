@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.housekeeper.service;
 
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
 import com.vmware.photon.controller.housekeeper.HousekeeperServerSet;
 import com.vmware.photon.controller.housekeeper.dcp.DcpConfig;

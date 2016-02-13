@@ -15,9 +15,9 @@ package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
-import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.Config;

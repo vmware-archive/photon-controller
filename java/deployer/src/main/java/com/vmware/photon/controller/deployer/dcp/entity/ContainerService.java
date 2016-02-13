@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.deployer.dcp.entity;
 
-import com.vmware.photon.controller.common.dcp.InitializationUtils;
-import com.vmware.photon.controller.common.dcp.PatchUtils;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.ValidationUtils;
-import com.vmware.photon.controller.common.dcp.validation.Immutable;
-import com.vmware.photon.controller.common.dcp.validation.NotNull;
-import com.vmware.photon.controller.common.dcp.validation.Range;
-import com.vmware.photon.controller.common.dcp.validation.WriteOnce;
+import com.vmware.photon.controller.common.xenon.InitializationUtils;
+import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.Range;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;

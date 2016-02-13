@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.xenon.common.Operation;

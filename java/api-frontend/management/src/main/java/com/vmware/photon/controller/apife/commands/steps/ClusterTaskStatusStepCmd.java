@@ -21,7 +21,7 @@ import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.TaskState;
 
 import com.google.common.annotations.VisibleForTesting;

@@ -46,8 +46,8 @@ import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleane
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.TombstoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
-import com.vmware.photon.controller.common.dcp.scheduler.TaskTriggerFactoryService;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 import com.vmware.xenon.services.common.ServiceUriPaths;

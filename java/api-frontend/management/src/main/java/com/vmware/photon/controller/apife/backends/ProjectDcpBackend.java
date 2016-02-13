@@ -38,8 +38,8 @@ import com.vmware.photon.controller.apife.exceptions.external.SecurityGroupsAlre
 import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;

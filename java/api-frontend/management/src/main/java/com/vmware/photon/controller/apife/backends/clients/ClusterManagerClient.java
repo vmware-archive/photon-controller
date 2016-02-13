@@ -31,9 +31,9 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterResiz
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.MesosClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmClusterCreateTask;
-import com.vmware.photon.controller.common.dcp.ServiceUriPaths;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.Operation;
 
 import com.google.common.collect.ImmutableMap;

@@ -23,7 +23,7 @@ import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.clustermanager.utils.ExceptionUtils;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
-import com.vmware.photon.controller.common.dcp.TaskUtils;
+import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.xenon.common.Service;
 
 import com.google.common.base.Preconditions;

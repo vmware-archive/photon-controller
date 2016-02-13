@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.task;
 
-import com.vmware.photon.controller.common.dcp.OperationUtils;
-import com.vmware.photon.controller.common.dcp.PatchUtils;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.ValidationUtils;
-import com.vmware.photon.controller.common.dcp.scheduler.TaskSchedulerServiceFactory;
-import com.vmware.photon.controller.common.dcp.validation.Immutable;
-import com.vmware.photon.controller.common.dcp.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.OperationUtils;
+import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;

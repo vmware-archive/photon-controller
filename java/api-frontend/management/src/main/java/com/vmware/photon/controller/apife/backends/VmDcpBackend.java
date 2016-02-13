@@ -69,8 +69,8 @@ import com.vmware.photon.controller.apife.lib.QuotaCost;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
-import com.vmware.photon.controller.common.dcp.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.services.common.QueryTask;
 

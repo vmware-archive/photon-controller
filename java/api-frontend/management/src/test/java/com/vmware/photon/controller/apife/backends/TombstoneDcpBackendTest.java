@@ -15,8 +15,8 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.TombstoneEntity;
-import com.vmware.photon.controller.common.dcp.BasicServiceHost;
-import com.vmware.photon.controller.common.dcp.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 
 import com.google.inject.Inject;
 import org.junit.AfterClass;

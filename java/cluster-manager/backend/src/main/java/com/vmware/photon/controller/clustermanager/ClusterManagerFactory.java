@@ -33,9 +33,9 @@ import com.vmware.photon.controller.clustermanager.tasks.SwarmClusterCreateTaskF
 import com.vmware.photon.controller.clustermanager.tasks.VmDeprovisionTaskFactoryService;
 import com.vmware.photon.controller.clustermanager.tasks.VmProvisionTaskFactoryService;
 import com.vmware.photon.controller.clustermanager.tasks.WaitForNetworkTaskFactoryService;
-import com.vmware.photon.controller.common.dcp.CloudStoreHelper;
-import com.vmware.photon.controller.common.dcp.ServiceUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
