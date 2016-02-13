@@ -26,7 +26,6 @@ from gen.scheduler.ttypes import FindResponse
 from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import PlaceResponse
 from gen.scheduler.ttypes import PlaceResultCode
-from host.hypervisor.resources import ChildInfo
 from scheduler.base_scheduler import BaseScheduler
 from scheduler.base_scheduler import InvalidScheduler
 from scheduler.count_up_down_latch import CountUpDownLatch
@@ -87,15 +86,10 @@ class LeafScheduler(BaseScheduler):
         """Configure the leaf scheduler.
 
         :param hosts: list of child hosts
-        :type hosts: list of str
+        :type hosts: list of ChildInfo
         """
-        # Transfer children's constraints from list to set, so searching
-        # elements are more efficient.
-        self._hosts = []
-
-        for host in hosts:
-            self._hosts.append(ChildInfo.from_thrift(host))
-
+        # coalesce constraints, so searches are more efficient.
+        self._hosts = hosts
         self._coalesce_resources(self._hosts)
 
         if self._health_checker:

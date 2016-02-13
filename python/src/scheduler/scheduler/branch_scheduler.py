@@ -21,7 +21,6 @@ from gen.scheduler.ttypes import FindResponse
 from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import PlaceResponse
 from gen.scheduler.ttypes import PlaceResultCode
-from host.hypervisor.resources import ChildInfo
 from scheduler.base_scheduler import BaseScheduler
 from scheduler.scheduler_client import SchedulerClient
 from scheduler.strategy.default_scorer import DefaultScorer
@@ -79,12 +78,8 @@ class BranchScheduler(BaseScheduler):
         :param schedulers: list of child scheduler ids
         :type schedulers: list of ChildInfo
         """
-        # Transfer children's constraints from list to set, so searching
-        # elements are more efficient.
-        self._schedulers = []
-        for scheduler in schedulers:
-            self._schedulers.append(ChildInfo.from_thrift(scheduler))
-
+        # coalesce constraints, so searches are more efficient.
+        self._schedulers = schedulers
         self._coalesce_resources(self._schedulers)
 
     def find(self, request):
