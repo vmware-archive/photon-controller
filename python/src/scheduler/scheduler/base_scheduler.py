@@ -72,20 +72,38 @@ class BaseScheduler(object):
                 child_info.constraints.append(
                     ResourceConstraint(constraint_type, list(values)))
 
+    def _make_constraints_hashable(self, thrift_constraints):
+        """ Before adding constraints to set(), we need to convert
+            ResourceConstraint.values from unhashable list type to
+            hashable frozenset type. set() uses objects' hash to
+            compare them.
+        :param thrift_constraints:
+        :return: hashable_constraints
+        """
+        hashable_constraints = []
+        for thrift_constraint in thrift_constraints:
+            hashable_constraints.append(ResourceConstraint(
+                thrift_constraint.type,
+                frozenset(thrift_constraint.values),
+                thrift_constraint.negative))
+        return hashable_constraints
+
     def _collect_constraints(self, resource):
         """ Get resource constraints from placement request's resource
 
         :param resource: resource.Resource, the resource to be placed
         :return: set of ResourceConstraint
         """
-        thrift_constraints = set()
+        all_constraints = set()
         if resource:
             if resource.vm and resource.vm.resource_constraints:
-                thrift_constraints = thrift_constraints.union(
+                constraints = self._make_constraints_hashable(
                     resource.vm.resource_constraints)
+                all_constraints = all_constraints.union(constraints)
             if resource.disks:
                 for disk in resource.disks:
                     if disk.resource_constraints:
-                        thrift_constraints = thrift_constraints.union(
+                        constraints = self._make_constraints_hashable(
                             disk.resource_constraints)
-        return list(thrift_constraints)
+                        all_constraints = all_constraints.union(constraints)
+        return list(all_constraints)

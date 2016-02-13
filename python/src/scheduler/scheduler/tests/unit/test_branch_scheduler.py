@@ -248,14 +248,14 @@ class BranchSchedulerTestCase(unittest.TestCase):
         scheduler.configure([
             ChildInfo(id="bar", address="bar", constraints=[
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["1"]))]),
+                                   ["1"])]),
             ChildInfo(id="baz", address="baz", constraints=[
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["2"]))])])
+                                   ["2"])])])
 
         request = self._place_request()
         request.resource.vm.resource_constraints = [ResourceConstraint(
-            ResourceConstraintType.DATASTORE, frozenset(["1"]))]
+            ResourceConstraintType.DATASTORE, ["1"])]
         response = scheduler.place(request)
         assert_that(response.result, is_(PlaceResultCode.OK))
         assert_that(response.agent_id, is_("bar"))
@@ -265,14 +265,14 @@ class BranchSchedulerTestCase(unittest.TestCase):
         scheduler.configure([
             ChildInfo(id="bar", constraints=[
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["1"]))]),
+                                   ["1"])]),
             ChildInfo(id="baz", constraints=[
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["2"]))])])
+                                   ["2"])])])
 
         request = self._place_request()
         request.resource.vm.resource_constraints = [ResourceConstraint(
-            "datastore", frozenset(["never_found"]))]
+            "datastore", ["never_found"])]
         response = scheduler.place(request)
         assert_that(response.result, is_(PlaceResultCode.RESOURCE_CONSTRAINT))
 

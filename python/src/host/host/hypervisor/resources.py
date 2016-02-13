@@ -343,19 +343,6 @@ class ChildInfo(BaseResource):
         self.port = port
         self.constraints = constraints
 
-    @staticmethod
-    def from_thrift(thrift_object):
-        # List to Set
-        constraints = None
-        if thrift_object.constraints:
-            constraints = set(thrift_object.constraints)
-
-        # if thrift_object.constraints:
-        #    for constraint in thrift_object.constraints:
-        #        constraints.add(constraint)
-        return ChildInfo(thrift_object.id, thrift_object.address,
-                         thrift_object.port, constraints)
-
     def to_thrift(self):
         # Set to List
         constraints = None

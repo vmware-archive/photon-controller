@@ -275,7 +275,7 @@ class LeafSchedulerTestCase(unittest.TestCase):
         # Check OR among values, should succeed
         request = self._place_request()
         request.resource.vm.resource_constraints = [ResourceConstraint(
-            ResourceConstraintType.NETWORK, frozenset(["net_1", "net_17"]))]
+            ResourceConstraintType.NETWORK, ["net_1", "net_17"])]
         response = scheduler.place(request)
         assert_that(response.result, is_(PlaceResultCode.OK))
         assert_that(response.agent_id, is_("baz_1"))
@@ -284,9 +284,9 @@ class LeafSchedulerTestCase(unittest.TestCase):
         request = self._place_request()
         request.resource.vm.resource_constraints = [
             ResourceConstraint(
-                ResourceConstraintType.NETWORK, frozenset(["net_1"])),
+                ResourceConstraintType.NETWORK, ["net_1"]),
             ResourceConstraint(
-                ResourceConstraintType.NETWORK, frozenset(["net_4"]))]
+                ResourceConstraintType.NETWORK, ["net_4"])]
 
         response = scheduler.place(request)
         assert_that(response.result, is_(PlaceResultCode.NO_SUCH_RESOURCE))
@@ -295,9 +295,9 @@ class LeafSchedulerTestCase(unittest.TestCase):
         request = self._place_request()
         request.resource.vm.resource_constraints = [
             ResourceConstraint(
-                ResourceConstraintType.DATASTORE, frozenset(["ds_1"])),
+                ResourceConstraintType.DATASTORE, ["ds_1"]),
             ResourceConstraint(
-                ResourceConstraintType.NETWORK, frozenset(["net_2"]))]
+                ResourceConstraintType.NETWORK, ["net_2"])]
 
         response = scheduler.place(request)
         assert_that(response.result, is_(PlaceResultCode.OK))
@@ -308,10 +308,10 @@ class LeafSchedulerTestCase(unittest.TestCase):
         request.resource.vm.resource_constraints = [
             ResourceConstraint(
                 ResourceConstraintType.NETWORK,
-                frozenset(["net_1", "net_17"])),
+                ["net_1", "net_17"]),
             ResourceConstraint(
                 ResourceConstraintType.DATASTORE_TAG,
-                frozenset(["ds_tag_18", "ds_tag_1"]))]
+                ["ds_tag_18", "ds_tag_1"])]
 
         response = scheduler.place(request)
         assert_that(response.result, is_(PlaceResultCode.OK))
@@ -322,10 +322,10 @@ class LeafSchedulerTestCase(unittest.TestCase):
         request.resource.vm.resource_constraints = [
             ResourceConstraint(
                 ResourceConstraintType.NETWORK,
-                frozenset(["net_1", "net_17"])),
+                ["net_1", "net_17"]),
             ResourceConstraint(
                 ResourceConstraintType.DATASTORE_TAG,
-                frozenset(["ds_tag_18", "ds_tag_19"]))]
+                ["ds_tag_18", "ds_tag_19"])]
 
         response = scheduler.place(request)
         assert_that(response.result, is_(PlaceResultCode.NO_SUCH_RESOURCE))
@@ -463,61 +463,60 @@ class LeafSchedulerTestCase(unittest.TestCase):
             id="baz_1", address="baz_1", port=1024,
             constraints=[
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["ds_1"])),
+                                   ["ds_1"]),
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["ds_2"])),
+                                   ["ds_2"]),
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["ds_3"])),
+                                   ["ds_3"]),
                 ResourceConstraint(ResourceConstraintType.DATASTORE_TAG,
-                                   frozenset(["ds_tag_1"])),
+                                   ["ds_tag_1"]),
                 ResourceConstraint(ResourceConstraintType.DATASTORE_TAG,
-                                   frozenset(["ds_tag_2"])),
+                                   ["ds_tag_2"]),
                 ResourceConstraint(ResourceConstraintType.DATASTORE_TAG,
-                                   frozenset(["ds_tag_3"])),
+                                   ["ds_tag_3"]),
                 ResourceConstraint(ResourceConstraintType.NETWORK,
-                                   frozenset(["net_1"])),
+                                   ["net_1"]),
                 ResourceConstraint(ResourceConstraintType.NETWORK,
-                                   frozenset(["net_2"])),
+                                   ["net_2"]),
                 ResourceConstraint(ResourceConstraintType.NETWORK,
-                                   frozenset(["net_3"]))
+                                   ["net_3"])
                 ])
 
         child_2 = ChildInfo(
             id="baz_2", address="baz_2", port=1024,
             constraints=[
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["ds_4"])),
+                                   ["ds_4"]),
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["ds_5"])),
+                                   ["ds_5"]),
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["ds_6"])),
+                                   ["ds_6"]),
                 # duplicate on purpose
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["ds_6"])),
+                                   ["ds_6"]),
                 ResourceConstraint(ResourceConstraintType.DATASTORE_TAG,
-                                   frozenset(["ds_tag_4"])),
+                                   ["ds_tag_4"]),
                 ResourceConstraint(ResourceConstraintType.DATASTORE_TAG,
-                                   frozenset(["ds_tag_5"])),
+                                   ["ds_tag_5"]),
                 ResourceConstraint(ResourceConstraintType.DATASTORE_TAG,
-                                   frozenset(["ds_tag_6"])),
+                                   ["ds_tag_6"]),
                 ResourceConstraint(ResourceConstraintType.NETWORK,
-                                   frozenset(["net_4"])),
+                                   ["net_4"]),
                 ResourceConstraint(ResourceConstraintType.NETWORK,
-                                   frozenset(["net_5"])),
+                                   ["net_5"]),
                 ResourceConstraint(ResourceConstraintType.NETWORK,
-                                   frozenset(["net_6"]))
+                                   ["net_6"])
                 ])
 
         child_3 = ChildInfo(
             id="baz_3", address="baz_3", port=1024,
             constraints=[
                 ResourceConstraint(ResourceConstraintType.DATASTORE,
-                                   frozenset(["ds_7", "ds_8", "ds_9"])),
+                                   ["ds_7", "ds_8", "ds_9"]),
                 ResourceConstraint(ResourceConstraintType.DATASTORE_TAG,
-                                   frozenset(["ds_tag_7", "ds_tag_8",
-                                              "ds_tag_9"])),
+                                   ["ds_tag_7", "ds_tag_8", "ds_tag_9"]),
                 ResourceConstraint(ResourceConstraintType.NETWORK,
-                                   frozenset(["net_7", "net_8", "net_9"]))])
+                                   ["net_7", "net_8", "net_9"])])
         return [child_1, child_2, child_3]
 
     def test_configured(self):
