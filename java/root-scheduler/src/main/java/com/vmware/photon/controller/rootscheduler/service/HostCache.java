@@ -24,8 +24,10 @@ import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.ServiceSubscriptionState.ServiceSubscriber;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ReliableSubscriptionService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -414,10 +416,13 @@ public class HostCache {
     // Now subscribe to the continuous query so we learn about all changes
     // Note that we request that the subscription replays the state, so our first
     // notification will include all hosts that currently exist: this will
-    // ensure
-    // that we learn about all known hosts at startup.
-    Operation subscribe = Operation.createPost(taskUri).setReferer(this.schedulerHost.getPublicUri());
-    URI subscriptionUri = this.schedulerHost.startReliableSubscriptionService(subscribe, notificationTarget);
+    // ensure that we learn about all known hosts at startup.
+    Operation subscribeOp = Operation.createPost(taskUri).setReferer(this.schedulerHost.getPublicUri());
+    ServiceSubscriber subscriber = ServiceSubscriber.create(true).setUsePublicUri(true);
+    ReliableSubscriptionService subscriptionService = ReliableSubscriptionService.create(
+            subscribeOp, subscriber, notificationTarget);
+    URI subscriptionUri = this.schedulerHost.startSubscriptionService(subscribeOp, subscriptionService, subscriber);
+
     logger.info("Subscribed to {} query task at {}", entityName, taskUri);
     logger.info("SubscriptionUri: {}", subscriptionUri);
   }
