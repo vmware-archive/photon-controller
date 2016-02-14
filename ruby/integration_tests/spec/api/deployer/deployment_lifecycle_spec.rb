@@ -42,6 +42,7 @@ describe "deployment lifecycle", order: :defined, deployer: true do
         EsxCloud::AuthInfo.new(false),
         ENV["SYSLOG_ENDPOINT"],
         ENV["NTP_ENDPOINT"],
+        ENV["STATS_STORE_ENDPOINT"],
         true)
   end
 

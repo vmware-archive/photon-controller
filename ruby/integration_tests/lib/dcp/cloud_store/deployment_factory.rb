@@ -107,6 +107,12 @@ module EsxCloud
           }
         end
 
+        def stats_store_settings
+          {
+              statsStoreEndpoint: ENV["STATS_STORE_ENDPOINT"]
+          }
+        end
+
         def chairman_settings
           chairman_ip = ENV["ESXCLOUD_CHAIRMAN_IP"] || ip
           {

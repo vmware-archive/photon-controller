@@ -12,7 +12,7 @@
 module EsxCloud
   class Deployment
 
-    attr_accessor :id, :state, :image_datastores, :auth, :syslog_endpoint, :ntp_endpoint,
+    attr_accessor :id, :state, :image_datastores, :auth, :syslog_endpoint, :ntp_endpoint, :stats_store_endpoint,
                   :use_image_datastore_for_vms, :loadbalancer_enabled, :migration, :cluster_configurations
 
     # @param[DeploymentCreateSpec] spec
@@ -78,7 +78,8 @@ module EsxCloud
       end
 
       new(hash["id"], hash["state"], hash["imageDatastores"], AuthInfo.create_from_hash(hash["auth"]),
-          hash["syslogEndpoint"], hash["ntpEndpoint"], hash["useImageDatastoreForVms"], hash["loadBalancerEnabled"],
+          hash["syslogEndpoint"], hash["ntpEndpoint"], hash["stats_store_endpoint"], hash["useImageDatastoreForVms"],
+          hash["loadBalancerEnabled"],
           MigrationStatus.create_from_hash(hash["migrationStatus"]), cluster_configurations)
     end
 
@@ -104,11 +105,12 @@ module EsxCloud
     # @param [AuthInfo] auth
     # @param [String] syslog_endpoint
     # @param [String] ntp_endpoint
+    # @param [String] stats_store_endpoint
     # @param [Boolean] use_image_datastore_for_vms
     # @param [Boolean] loadbalancer_enabled
     # @param [MigrationStatus] migration_status
     def initialize(id, state, image_datastores, auth,
-      syslog_endpoint = nil, ntp_endpoint = nil, use_image_datastore_for_vms = false, loadbalancer_enabled = true,
+      syslog_endpoint = nil, ntp_endpoint = nil, stats_store_endpoint=nil, use_image_datastore_for_vms = false, loadbalancer_enabled = true,
       migration, cluster_configurations)
       @id = id
       @state = state
@@ -116,6 +118,7 @@ module EsxCloud
       @auth = auth
       @syslog_endpoint = syslog_endpoint
       @ntp_endpoint = ntp_endpoint
+      @stats_store_endpoint = stats_store_endpoint
       @use_image_datastore_for_vms = use_image_datastore_for_vms
       @loadbalancer_enabled = loadbalancer_enabled
       @migration = migration
@@ -134,6 +137,7 @@ module EsxCloud
         auth: @auth.to_hash,
         syslogEndpoint: @syslog_endpoint,
         ntpEndpoint: @ntp_endpoint,
+        statsStoreEndpoint: @stats_store_endpoint,
         useImageDatastoreForVms: @use_image_datastore_for_vms,
         loadbalancer_enabled: @loadbalancer_enabled,
         migrationStatus: @migration,
@@ -148,6 +152,7 @@ module EsxCloud
       @auth == other.auth &&
       @syslog_endpoint == other.syslog_endpoint &&
       @ntp_endpoint == other.ntp_endpoint &&
+      @stats_store_endpoint == other.stats_store_endpoint &&
       @use_image_datastore_for_vms == other.use_image_datastore_for_vms &&
       @migration == other.migration &&
       @cluster_configurations == other.cluster_configurations
