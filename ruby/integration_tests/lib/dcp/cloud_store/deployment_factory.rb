@@ -107,6 +107,22 @@ module EsxCloud
           }
         end
 
+        def stats_settings
+          stats_enabled = !ENV["ENABLE_STATS"].nil?
+          settings = {
+              statsEnabled: stats_enabled
+          }
+
+          if stats_enabled
+            settings.merge!(
+                statsStoreEndpoint: ENV["PHOTON_STATS_STORE_ENDPOINT"],
+                statsStorePort: ENV["PHOTON_STATS_STORE_PORT"]
+            )
+          end
+
+          settings
+        end
+
         def chairman_settings
           chairman_ip = ENV["ESXCLOUD_CHAIRMAN_IP"] || ip
           {
