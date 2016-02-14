@@ -739,10 +739,22 @@ public class ImageHostToHostCopyServiceTest {
     @DataProvider(name = "transferImageSuccessCode")
     public Object[][] getTransferImageSuccessCode() {
       return new Object[][]{
-          {1, TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.EAGER, 2},
+          {1, TransferImageResultCode.OK, ImageReplicationType.EAGER, 2},
           {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK, ImageReplicationType.EAGER, 2},
-          {1, TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.ON_DEMAND, 1},
+          {1, TransferImageResultCode.OK, ImageReplicationType.ON_DEMAND, 1},
           {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK, ImageReplicationType.ON_DEMAND, 1},
+      };
+    }
+
+    @DataProvider(name = "transferImageDestinationAlreadyExistsCode")
+    public Object[][] getTransferImageDestinationAlreadyExistsCode() {
+      return new Object[][]{
+          {1, TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.EAGER, 1},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT,
+              TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.EAGER, 1},
+          {1, TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.ON_DEMAND, 0},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT,
+              TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.ON_DEMAND, 0},
       };
     }
 
@@ -799,11 +811,8 @@ public class ImageHostToHostCopyServiceTest {
           ImageService.State.class,
           createdImageState.documentSelfLink,
           (state) ->
-              state.replicatedDatastore == initialReplicatedDatastoreCount + addedReplicatedImageDatastore);
-
-      //Check Image Service replicatedDatastore counts
-      createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
-      assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedImageDatastoreCount + 1));
+              (state.replicatedDatastore == initialReplicatedDatastoreCount + addedReplicatedImageDatastore)
+                  && (state.replicatedImageDatastore == initialReplicatedImageDatastoreCount + 1));
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
@@ -832,7 +841,7 @@ public class ImageHostToHostCopyServiceTest {
      * @param code Result code return from HostClient.
      * @throws Throwable
      */
-    @Test(dataProvider = "transferImageSuccessCode")
+    @Test(dataProvider = "transferImageDestinationAlreadyExistsCode")
     public void testSuccessWithDestinationAlreadyExists(int hostCount, TransferImageResultCode code,
                                                         ImageReplicationType type,
                                                         int addedReplicatedImageDatastore) throws Throwable {
@@ -880,11 +889,8 @@ public class ImageHostToHostCopyServiceTest {
           ImageService.State.class,
           createdImageState.documentSelfLink,
           (state) ->
-              state.replicatedDatastore == initialReplicatedDatastoreCount + addedReplicatedImageDatastore);
-
-      //Check Image Service replicatedDatastore counts
-      createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
-      assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedImageDatastoreCount + 1));
+              (state.replicatedImageDatastore == initialReplicatedImageDatastoreCount + 1)
+                  && (state.replicatedDatastore == initialReplicatedDatastoreCount + addedReplicatedImageDatastore));
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
@@ -908,15 +914,17 @@ public class ImageHostToHostCopyServiceTest {
     }
 
     /**
-     * Tests copy success scenarios with ImageReplication document already exists.
+     * Tests copy success scenarios with ImageToImageDatastoreMappingService document already exists.
      *
      * @param code Result code return from HostClient.
      * @throws Throwable
      */
     @Test(dataProvider = "transferImageSuccessCode")
-    public void testSuccessWithImageReplicationDocumentExists(int hostCount, TransferImageResultCode code,
-                                                              ImageReplicationType type,
-                                                              int addedReplicatedImageDatastore) throws Throwable {
+    public void testSuccessWithImageToImageDatastoreMappingServiceDocumentExists(int hostCount,
+                                                                                 TransferImageResultCode code,
+                                                                                 ImageReplicationType type,
+                                                                                 int addedReplicatedImageDatastore)
+        throws Throwable {
       HostClientMock hostClient = new HostClientMock();
 
       hostClient.setTransferImageResultCode(code);
@@ -935,18 +943,10 @@ public class ImageHostToHostCopyServiceTest {
       createDatastoreService("datastore0-id", "datastore0", true);
       createDatastoreService("datastore1-id", "datastore1", true);
       createDatastoreService("local-datastore-id", "local-datastore", false);
-      createImageToImageDatastoreMappingServiceState();
-
+      createImageToImageDatastoreMappingServiceState(copyTask.image);
       ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("imageId", copyTask.image);
       termsBuilder.put("imageDatastoreId", copyTask.destinationDatastore);
-
-      QueryTask.QuerySpecification querySpec =
-          QueryTaskUtils.buildQuerySpec(ImageToImageDatastoreMappingService.State.class, termsBuilder.build());
-      querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-      QueryTask beforeQuery = QueryTask.create(querySpec).setDirect(true);
-
-      assertThat(machine.sendQueryAndWait(beforeQuery).results.documentLinks.size(), is(0));
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -957,8 +957,8 @@ public class ImageHostToHostCopyServiceTest {
 
       //Check Image Service replicatedDatastore counts
       createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
-      assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedImageDatastoreCount + 1));
-      assertThat(createdImageState.replicatedDatastore, is(initialReplicatedDatastoreCount + 1));
+      assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedImageDatastoreCount));
+      assertThat(createdImageState.replicatedDatastore, is(initialReplicatedDatastoreCount));
 
       // Check response.
       assertThat(response.image, is(copyTask.image));
@@ -966,9 +966,6 @@ public class ImageHostToHostCopyServiceTest {
       assertThat(response.destinationDatastore, is(copyTask.destinationDatastore));
       assertThat(response.host, notNullValue());
       assertThat(response.destinationHost, notNullValue());
-
-      QueryTask afterQuery = QueryTask.create(querySpec).setDirect(true);
-      assertThat(machine.sendQueryAndWait(afterQuery).results.documentLinks.size(), is(1));
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
@@ -1161,8 +1158,8 @@ public class ImageHostToHostCopyServiceTest {
       state.name = "image-1";
       state.replicationType = type;
       state.state = ImageState.READY;
-      state.replicatedDatastore = 1;
-      state.replicatedImageDatastore = 1;
+      state.replicatedDatastore = 0;
+      state.replicatedImageDatastore = 0;
       state.totalDatastore = 5;
       state.totalImageDatastore = 2;
 
@@ -1243,7 +1240,7 @@ public class ImageHostToHostCopyServiceTest {
       return result.getBody(DatastoreService.State.class);
     }
 
-    private ImageToImageDatastoreMappingService.State createImageToImageDatastoreMappingServiceState()
+    private ImageToImageDatastoreMappingService.State createImageToImageDatastoreMappingServiceState(String imageId)
         throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
@@ -1256,8 +1253,9 @@ public class ImageHostToHostCopyServiceTest {
 
       ImageToImageDatastoreMappingService.State state
           = new ImageToImageDatastoreMappingService.State();
-      state.imageId = "image-1";
+      state.imageId = imageId;
       state.imageDatastoreId = "datastore1-id";
+      state.documentSelfLink = imageId + "_" + "datastore1-id";
 
       Operation op = cloudStoreHelper
           .createPost(ImageToImageDatastoreMappingServiceFactory.SELF_LINK)

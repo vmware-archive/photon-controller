@@ -162,7 +162,6 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     verify(imageStore).createImage(imageId);
     verify(imageStore).finalizeImage(imageId);
-    verify(imageStore).getDatastore();
     verify(image).addDisk(anyString(), inputStreamArgument.capture());
     InputStream capturedStream = inputStreamArgument.getAllValues().get(0);
     String capturedImage = OvaTestModule.readStringFromStream(capturedStream);
@@ -170,7 +169,6 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     verify(imageBackend).updateSettings(eq(imageEntity), any(Map.class));
     verify(imageBackend).updateSize(imageEntity, imageSize);
-    verify(imageBackend).updateImageDatastore(eq(imageEntity.getId()), anyString());
     verifyNoMoreInteractions(imageStore, imageBackend);
   }
 
@@ -187,7 +185,6 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     doNothing().when(imageBackend).updateSettings(imageEntity, imageSettings);
     doNothing().when(imageBackend).updateSize(imageEntity, imageSize);
-    doNothing().when(imageBackend).updateImageDatastore(imageEntity.getId(), datastoreName);
 
     command.execute();
     // Do it twice, it should work.
@@ -196,7 +193,6 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     verify(imageStore, times(2)).createImage(imageId);
     verify(imageStore, times(2)).finalizeImage(imageId);
-    verify(imageStore, times(2)).getDatastore();
     verify(image, times(2)).addDisk(anyString(), inputStreamArgument.capture());
     InputStream capturedStream = inputStreamArgument.getAllValues().get(0);
     String capturedImage = OvaTestModule.readStringFromStream(capturedStream);
@@ -204,7 +200,6 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     verify(imageBackend, times(2)).updateSettings(eq(imageEntity), any(Map.class));
     verify(imageBackend, times(2)).updateSize(imageEntity, imageSize);
-    verify(imageBackend, times(2)).updateImageDatastore(eq(imageEntity.getId()), anyString());
 
     verifyNoMoreInteractions(imageStore, imageBackend);
   }

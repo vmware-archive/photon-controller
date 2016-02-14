@@ -777,13 +777,18 @@ public class ImageSeederServiceTest {
 
     @Test(dataProvider = "hostCount")
     public void testNewImageSeederOneDatastore(int hostCount) throws Throwable {
-      doReturn(new HostClientMock()).when(hostClientFactory).create();
+      HostClientMock hostClient = new HostClientMock();
+      hostClient.setTransferImageResultCode(TransferImageResultCode.OK);
+      doReturn(hostClient).when(hostClientFactory).create();
 
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       Set<Datastore> imageDatastores = buildImageDatastoreSet(1);
       createHostService(imageDatastores);
       createDatastoreService(imageDatastores);
+      machine.startFactoryServiceSynchronously(ImageToImageDatastoreMappingServiceFactory.class,
+          ImageToImageDatastoreMappingServiceFactory.SELF_LINK);
+
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       newImageSeeder.sourceImageDatastore = imageDatastores.iterator().next().getId();
       //Call Service.
