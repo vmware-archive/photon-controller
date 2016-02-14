@@ -48,6 +48,7 @@ deployment:
   oauth_password: 'p'
   oauth_security_groups: ["sg1", "sg2"]
   syslog_endpoint: 0.0.0.1
+  stats_store_endpoint: 0.0.0.3
   ntp_endpoint: 0.0.0.2
   use_image_datastore_for_vms: true
 CONTENT
@@ -59,6 +60,7 @@ CONTENT
             EsxCloud::DeploymentCreateSpec.new(["image_datastore"],
                                                EsxCloud::AuthInfo.new(true, '0.0.0.0', '8080', 't', 'u', 'p', ['sg1', 'sg2']),
                                                "0.0.0.1",
+                                               "0.0.0.3",
                                                "0.0.0.2",
                                                true)
           end

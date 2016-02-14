@@ -16,6 +16,7 @@ module EsxCloud
       # @return [Deployment]
       def create_api_deployment(payload)
         syslog_endpoint = payload[:syslogEndpoint]
+        stats_store_endpoint = payload[:statsStoreEndpoint]
         ntp_endpoint = payload[:ntpEndpoint]
         image_datastores = payload[:imageDatastores]
         use_image_datastore_for_vms = payload[:useImageDatastoreForVms]
@@ -32,6 +33,7 @@ module EsxCloud
         cmd = "deployment create"
         cmd += " -i '#{image_datastores.join(",")}'" if image_datastores
         cmd += " -s '#{syslog_endpoint}'" if syslog_endpoint
+        cmd += " -m '#{stats_store_endpoint}'" if stats_store_endpoint
         cmd += " -n '#{ntp_endpoint}'" if ntp_endpoint
         cmd += " -v" if use_image_datastore_for_vms
         cmd += " -a" if auth_enabled

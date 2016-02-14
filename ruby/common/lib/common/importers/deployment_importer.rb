@@ -44,6 +44,7 @@ module EsxCloud
           deployment['oauth_password'],
           deployment['oauth_security_groups']),
         deployment['syslog_endpoint'],
+        deployment['stats_store_endpoint'],
         deployment['ntp_endpoint'],
         deployment['use_image_datastore_for_vms'])
     end

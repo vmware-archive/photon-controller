@@ -42,6 +42,7 @@ module EsxCloud::Cli
                   oauth_security_groups
               ),
               options[:syslog_endpoint],
+              options[:stats_store_endpoint],
               options[:ntp_endpoint],
               options[:use_image_datastore_for_vms],
               options[:loadbalancer_enabled])
@@ -160,6 +161,7 @@ g2)') do |g|
         puts "  Auth Security Groups:         #{deployment.auth.securityGroups || "-"}"
         puts
         puts "  Syslog Endpoint:              #{deployment.syslog_endpoint || "-"}"
+        puts "  Stats Store Endpoint:         #{deployment.stats_store_endpoint || "-"}"
         puts "  Ntp Endpoint:                 #{deployment.ntp_endpoint || "-"}"
         puts
         puts "  Loadbalancer Enabled:         #{deployment.loadbalancer_enabled}"
@@ -290,6 +292,7 @@ g2)') do |g|
             :oauth_password => nil,
             :oauth_security_groups => nil,
             :syslog_endpoint => nil,
+            :stats_store_endpoint => nil,
             :ntp_endpoint => nil,
             :use_image_datastore_for_vms => false,
             :loadbalancer_enabled => true,
@@ -327,6 +330,9 @@ g2)') do |g|
           opts.on('-s', '--syslog_endpoint ENDPOINT', 'Syslog Endpoint/IP') do |s|
             options[:syslog_endpoint] = s
           end
+          opts.on('-m', '--stats_store_endpoint ENDPOINT', 'Stats Store Endpoint/IP') do |m|
+            options[:stats_store_endpoint] = m
+          end
           opts.on('-n', '--ntp_endpoint ENDPOINT', 'Ntp Endpoint/IP') do |n|
             options[:ntp_endpoint] = n
           end
@@ -355,6 +361,11 @@ g2)') do |g|
         if options[:syslog_endpoint].nil?
           syslog_input = ask("Syslog Endpoint: ")
           options[:syslog_endpoint] = syslog_input.blank? ? nil : syslog_input
+        end
+
+        if options[:stats_store_endpoint].nil?
+          stats_store_input = ask("Stats Store Endpoint: ")
+          options[:stats_store_endpoint] = stats_store_input.blank? ? nil : stats_store_input
         end
 
         if options[:ntp_endpoint].nil?
