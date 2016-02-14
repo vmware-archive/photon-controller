@@ -41,6 +41,7 @@ describe "deployment", management: true, devbox: true do
       EsxCloud::DeploymentCreateSpec.new(
         ["image_datastore"],
         EsxCloud::AuthInfo.new(false),
+        EsxCloud::StatsInfo.new(false),
         "0.0.0.1",
         "0.0.0.2",
         true)
@@ -55,6 +56,7 @@ describe "deployment", management: true, devbox: true do
             EsxCloud::DeploymentCreateSpec.new(
               ["image_datastore"],
               EsxCloud::AuthInfo.new(true),
+              EsxCloud::StatsInfo.new(false),
               "0.0.0.1",
               "0.0.0.2",
               true)
@@ -71,9 +73,28 @@ describe "deployment", management: true, devbox: true do
             EsxCloud::DeploymentCreateSpec.new(
               ["image_datastore"],
               EsxCloud::AuthInfo.new(false, '0.0.0.0','8080', 't', 'u', 'p', ['t\\securityGroup1']),
+              EsxCloud::StatsInfo.new(false),
               "0.0.0.1",
               "0.0.0.2",
               true)
+          end
+        end
+      end
+    end
+
+    context "when stats config is invalid in deploy request" do
+      context "when stats is enabled but storeEndpoint/storePort are not specified" do
+        it_behaves_like "failed validation",
+                        ["Stats store endpoint cannot be nil when stats is enabled."],
+                        "InvalidStatsConfig" do
+          let(:deployment_create_spec) do
+            EsxCloud::DeploymentCreateSpec.new(
+                ["image_datastore"],
+                EsxCloud::AuthInfo.new(false),
+                EsxCloud::StatsInfo.new(true),
+                "0.0.0.1",
+                "0.0.0.2",
+                true)
           end
         end
       end

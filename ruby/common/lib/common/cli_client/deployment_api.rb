@@ -28,11 +28,17 @@ module EsxCloud
         oauth_password = auth_info[:password]
         oauth_security_groups = auth_info[:securityGroups]
         loadbalancer_enabled = payload["loadblanacerEnabled"]
+        stats_enabled = stats_info[:enabled]
+        stats_store_endpoint = stats_info[:storeEndpoint]
+        stats_store_port = stats_info[:storePort]
 
         cmd = "deployment create"
         cmd += " -i '#{image_datastores.join(",")}'" if image_datastores
         cmd += " -s '#{syslog_endpoint}'" if syslog_endpoint
         cmd += " -n '#{ntp_endpoint}'" if ntp_endpoint
+        cmd += " -d" if stats_enabled
+        cmd += " -e '#{stats_store_endpoint}'" if stats_store_endpoint
+        cmd += " -f '#{stats_store_port}'" if stats_store_port
         cmd += " -v" if use_image_datastore_for_vms
         cmd += " -a" if auth_enabled
         cmd += " -o '#{oauth_endpoint}'" if oauth_endpoint
