@@ -308,9 +308,7 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       end
 
       describe "add mgmt host", disable_for_uptime_tests: true do
-        it "add/remove cloud host as management host" do
-          skip "Management hosts need more metadata than we can currently provide here"
-
+        xit "add/remove cloud host as management host" do
           expect(EsxCloud::Host.enter_suspended_mode(@host.id).state).to eq("SUSPENDED")
           expect(EsxCloud::Host.enter_maintenance_mode(@host.id).state).to eq("MAINTENANCE")
           expect(EsxCloud::Host.delete(@host.id)).to eq(true)
