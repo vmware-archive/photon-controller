@@ -41,6 +41,11 @@ module EsxCloud::Cli
                   options[:oauth_password],
                   oauth_security_groups
               ),
+              EsxCloud::StatsInfo.new(
+                  options[:stats_enabled],
+                  options[:stats_store_endpoint],
+                  options[:stats_store_port]
+              ),
               options[:syslog_endpoint],
               options[:ntp_endpoint],
               options[:use_image_datastore_for_vms],
@@ -161,6 +166,9 @@ g2)') do |g|
         puts
         puts "  Syslog Endpoint:              #{deployment.syslog_endpoint || "-"}"
         puts "  Ntp Endpoint:                 #{deployment.ntp_endpoint || "-"}"
+        puts "  Stats Enabled:                #{deployment.stats.enabled}"
+        puts "  Stats Store Endpoint:         #{deployment.stats.storeEndpoint || "-"}"
+        puts "  Stats Store Port:             #{deployment.stats.storePort || "-"}"
         puts
         puts "  Loadbalancer Enabled:         #{deployment.loadbalancer_enabled}"
         puts
@@ -291,6 +299,9 @@ g2)') do |g|
             :oauth_security_groups => nil,
             :syslog_endpoint => nil,
             :ntp_endpoint => nil,
+            :stats_enabled => false,
+            :stats_store_endpoint => nil,
+            :stats_store_port => nil,
             :use_image_datastore_for_vms => false,
             :loadbalancer_enabled => true,
         }
@@ -330,6 +341,15 @@ g2)') do |g|
           opts.on('-n', '--ntp_endpoint ENDPOINT', 'Ntp Endpoint/IP') do |n|
             options[:ntp_endpoint] = n
           end
+          opts.on('-d', '--enable_stats', 'Enable Stats for deployment') do |_|
+            options[:stats_enabled] = true
+          end
+          opts.on('-e', '--stats_store_endpoint ENDPOINT', 'Stats Store Endpoint') do |e|
+            options[:stats_store_endpoint] = e
+          end
+          opts.on('-f', '--stats_store_port PORT', 'Stats Store Port') do |f|
+            options[:stats_store_port] = f
+          end
           opts.on('-l', '--disable_loadbalancer', 'Disable loadbalancer for deployment') do |o|
             options[:loadbalancer_enabled] = false
           end
@@ -362,6 +382,11 @@ g2)') do |g|
           options[:ntp_endpoint] = ntp_input.blank? ? nil : ntp_input
         end
 
+        if options[:stats_enabled]
+          options[:stats_store_endpoint] ||= ask("Stats Store Endpoint: ")
+          options[:stats_store_port] ||= ask("Stats Store Port: ")
+        end
+
         options
       end
 
@@ -390,6 +415,13 @@ g2)') do |g|
             usage_error("OAuth security groups cannot be nil when auth is enabled.")
           end
         end
+
+        if options[:stats_enabled]
+          if options[:stats_store_endpoint].blank?
+            usage_error("Stats store endpoint cannot be nil when stats is enabled.")
+          end
+        end
+
       end
     end
   end
