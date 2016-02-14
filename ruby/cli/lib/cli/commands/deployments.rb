@@ -42,6 +42,7 @@ module EsxCloud::Cli
                   oauth_security_groups
               ),
               options[:syslog_endpoint],
+              options[:stats_store_endpoint],
               options[:ntp_endpoint],
               options[:use_image_datastore_for_vms],
               options[:loadbalancer_enabled])
@@ -161,6 +162,7 @@ g2)') do |g|
         puts
         puts "  Syslog Endpoint:              #{deployment.syslog_endpoint || "-"}"
         puts "  Ntp Endpoint:                 #{deployment.ntp_endpoint || "-"}"
+        puts "  Stats Store Endpoint:         #{deployment.stats_store_endpoint || "-"}"
         puts
         puts "  Loadbalancer Enabled:         #{deployment.loadbalancer_enabled}"
         puts
@@ -291,6 +293,7 @@ g2)') do |g|
             :oauth_security_groups => nil,
             :syslog_endpoint => nil,
             :ntp_endpoint => nil,
+            :stats_store_endpoint => nil,
             :use_image_datastore_for_vms => false,
             :loadbalancer_enabled => true,
         }
@@ -330,6 +333,9 @@ g2)') do |g|
           opts.on('-n', '--ntp_endpoint ENDPOINT', 'Ntp Endpoint/IP') do |n|
             options[:ntp_endpoint] = n
           end
+          opts.on('-m', '--stats_store_endpoint ENDPOINT', 'Stats Store Endpoint/IP') do |m|
+            options[:stats_store_endpoint] = m
+          end
           opts.on('-l', '--disable_loadbalancer', 'Disable loadbalancer for deployment') do |o|
             options[:loadbalancer_enabled] = false
           end
@@ -360,6 +366,11 @@ g2)') do |g|
         if options[:ntp_endpoint].nil?
           ntp_input = ask("Ntp Endpoint: ")
           options[:ntp_endpoint] = ntp_input.blank? ? nil : ntp_input
+        end
+
+        if options[:stats_store_endpoint].nil?
+          stats_store_input = ask("Stats Store Endpoint: ")
+          options[:stats_store_endpoint] = stats_store_input.blank? ? nil : stats_store_input
         end
 
         options

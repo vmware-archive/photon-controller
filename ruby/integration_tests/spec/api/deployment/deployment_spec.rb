@@ -43,6 +43,7 @@ describe "deployment", management: true, devbox: true do
         EsxCloud::AuthInfo.new(false),
         "0.0.0.1",
         "0.0.0.2",
+        "0.0.0.3",
         true)
     end
 
@@ -57,6 +58,7 @@ describe "deployment", management: true, devbox: true do
               EsxCloud::AuthInfo.new(true),
               "0.0.0.1",
               "0.0.0.2",
+              "0.0.0.3",
               true)
           end
         end
@@ -73,6 +75,7 @@ describe "deployment", management: true, devbox: true do
               EsxCloud::AuthInfo.new(false, '0.0.0.0','8080', 't', 'u', 'p', ['t\\securityGroup1']),
               "0.0.0.1",
               "0.0.0.2",
+              "0.0.0.3",
               true)
           end
         end

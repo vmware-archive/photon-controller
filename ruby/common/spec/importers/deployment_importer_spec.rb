@@ -49,6 +49,7 @@ deployment:
   oauth_security_groups: ["sg1", "sg2"]
   syslog_endpoint: 0.0.0.1
   ntp_endpoint: 0.0.0.2
+  stats_store_endpoint: 0.0.0.3
   use_image_datastore_for_vms: true
 CONTENT
         end
@@ -60,6 +61,7 @@ CONTENT
                                                EsxCloud::AuthInfo.new(true, '0.0.0.0', '8080', 't', 'u', 'p', ['sg1', 'sg2']),
                                                "0.0.0.1",
                                                "0.0.0.2",
+                                               "0.0.0.3",
                                                true)
           end
         end
