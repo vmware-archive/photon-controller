@@ -308,33 +308,40 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       end
 
       describe "add mgmt host", disable_for_uptime_tests: true do
-        xit "add/remove cloud host as management host" do
-          expect(EsxCloud::Host.enter_suspended_mode(@host.id).state).to eq("SUSPENDED")
-          expect(EsxCloud::Host.enter_maintenance_mode(@host.id).state).to eq("MAINTENANCE")
-          expect(EsxCloud::Host.delete(@host.id)).to eq(true)
+        it "add cloud host as management host" do
+          mgmt_host_ip = EsxCloud::TestHelpers.get_mgmt_vm_ip_for_add_mgmt_host
+          unless mgmt_host_ip.nil? || mgmt_host_ip.empty?
+            mgmt_host = client.get_deployment_hosts(@deployment.id).items.select { |host| host.usage_tags.include? "MGMT"}.first
 
-          add_mgmt_host_spec = EsxCloud::HostCreateSpec.new(
-              @host.username,
-              @host.password,
-              ["MGMT"],
-              @host.address,
-              @host.metadata)
+            mgmt_host_metadata = mgmt_host.metadata.clone
+            mgmt_host_metadata["MANAGEMENT_NETWORK_IP"] = mgmt_host_ip
 
+            expect(EsxCloud::Host.enter_suspended_mode(@host.id).state).to eq("SUSPENDED")
+            expect(EsxCloud::Host.enter_maintenance_mode(@host.id).state).to eq("MAINTENANCE")
+            expect(EsxCloud::Host.delete(@host.id)).to eq(true)
 
-          host = EsxCloud::Host.create @deployment.id, add_mgmt_host_spec
-          expect(host.state).to eq("READY")
-          puts "Added mgmt host"
+            add_mgmt_host_spec = EsxCloud::HostCreateSpec.new(
+                @host.username,
+                @host.password,
+                ["MGMT"],
+                @host.address,
+                mgmt_host_metadata)
 
-          task_list = api_client.find_tasks(host.id, "host", "COMPLETED")
-          tasks = task_list.items
-          expect(tasks.size).to eq(1)
-          task = tasks.first
-          expect(task.errors).to be_empty
-          expect(task.warnings).to be_empty
+            host = EsxCloud::Host.create @deployment.id, add_mgmt_host_spec
+            expect(host.state).to eq("READY")
+            puts "Added mgmt host"
+
+            task_list = api_client.find_tasks(host.id, "host", "COMPLETED")
+            tasks = task_list.items
+            expect(tasks.size).to eq(1)
+            task = tasks.first
+            expect(task.errors).to be_empty
+            expect(task.warnings).to be_empty
+          end
         end
       end
     end
-  end
+ end
 end
 
 def resume(host)
