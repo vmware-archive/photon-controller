@@ -18,7 +18,7 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.DeployerContextTest;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowServiceTest;
@@ -74,14 +74,14 @@ public class DeploymentWorkFlowServiceClientTest {
   public class CreateDeployWorkflowEntity {
 
     private DeploymentWorkFlowServiceClient target;
-    private DeployerDcpServiceHost host;
+    private DeployerXenonServiceHost host;
     private DeploymentWorkflowService.State serviceDocument;
     private DeployerConfig deployerConfig;
     private ContainersConfig containerConfig;
 
     @BeforeMethod
     public void before() {
-      host = mock(DeployerDcpServiceHost.class);
+      host = mock(DeployerXenonServiceHost.class);
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       deployerConfig = mock(DeployerConfig.class);
       containerConfig = mock(ContainersConfig.class);
@@ -198,12 +198,12 @@ public class DeploymentWorkFlowServiceClientTest {
   public static class RemoveDeploymentWorkflowEntity {
 
     private DeploymentWorkFlowServiceClient target;
-    private DeployerDcpServiceHost host;
+    private DeployerXenonServiceHost host;
     private ServiceDocument serviceDocument;
 
     @BeforeMethod
     public void before() {
-      host = mock(DeployerDcpServiceHost.class);
+      host = mock(DeployerXenonServiceHost.class);
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new DeploymentWorkFlowServiceClient(mock(DeployerConfig.class), host);
       serviceDocument = new ServiceDocument();
@@ -249,13 +249,13 @@ public class DeploymentWorkFlowServiceClientTest {
   public class GetStatus {
 
     private DeploymentWorkFlowServiceClient target;
-    private DeployerDcpServiceHost host;
+    private DeployerXenonServiceHost host;
     private DeployerConfig deployerConfig;
     private ContainersConfig containerConfig;
 
     @BeforeMethod
     public void before() {
-      host = mock(DeployerDcpServiceHost.class);
+      host = mock(DeployerXenonServiceHost.class);
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       deployerConfig = mock(DeployerConfig.class);
       containerConfig = mock(ContainersConfig.class);
@@ -508,12 +508,12 @@ public class DeploymentWorkFlowServiceClientTest {
   public static class InitializeMigrateDeploymentTest {
 
     private DeploymentWorkFlowServiceClient target;
-    private DeployerDcpServiceHost host;
+    private DeployerXenonServiceHost host;
     private ServiceDocument serviceDocument;
 
     @BeforeMethod
     public void before() {
-      host = mock(DeployerDcpServiceHost.class);
+      host = mock(DeployerXenonServiceHost.class);
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new DeploymentWorkFlowServiceClient(mock(DeployerConfig.class), host);
       serviceDocument = new ServiceDocument();
@@ -559,12 +559,12 @@ public class DeploymentWorkFlowServiceClientTest {
   public static class FinalizeMigrateDeploymentTest {
 
     private DeploymentWorkFlowServiceClient target;
-    private DeployerDcpServiceHost host;
+    private DeployerXenonServiceHost host;
     private ServiceDocument serviceDocument;
 
     @BeforeMethod
     public void before() {
-      host = mock(DeployerDcpServiceHost.class);
+      host = mock(DeployerXenonServiceHost.class);
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new DeploymentWorkFlowServiceClient(mock(DeployerConfig.class), host);
       serviceDocument = new ServiceDocument();
@@ -610,7 +610,7 @@ public class DeploymentWorkFlowServiceClientTest {
       final Class<T> documentType,
       final Predicate<T> assertion,
       final T returnedDocument,
-      DeployerDcpServiceHost host) {
+      DeployerXenonServiceHost host) {
 
     ArgumentMatcher<Operation> opMatcher = new ArgumentMatcher<Operation>() {
       @Override

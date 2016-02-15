@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.cloudstore;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -77,7 +77,7 @@ public class Main {
         )
     );
 
-    final CloudStoreDcpHost cloudStoreDcpHost = injector.getInstance(CloudStoreDcpHost.class);
+    final CloudStoreXenonHost cloudStoreDcpHost = injector.getInstance(CloudStoreXenonHost.class);
     final ServiceNodeFactory serviceNodeFactory = injector.getInstance(ServiceNodeFactory.class);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {

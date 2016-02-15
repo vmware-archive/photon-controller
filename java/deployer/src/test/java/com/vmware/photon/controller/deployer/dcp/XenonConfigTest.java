@@ -23,11 +23,11 @@ import static org.hamcrest.Matchers.is;
 import static org.testng.Assert.fail;
 
 /**
- * This class implements tests for the {@link DcpConfig} class.
+ * This class implements tests for the {@link XenonConfig} class.
  */
-public class DcpConfigTest {
+public class XenonConfigTest {
 
-  private DcpConfig dcpConfig;
+  private XenonConfig xenonConfig;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -38,16 +38,16 @@ public class DcpConfigTest {
 
   @Test
   public void testStoragePath() throws BadConfigException {
-    dcpConfig = ConfigBuilder.build(DeployerConfig.class,
-        DcpConfigTest.class.getResource("/config.yml").getPath()).getDcp();
-    assertThat(dcpConfig.getStoragePath(), is("/tmp/dcp/deployer/"));
+    xenonConfig = ConfigBuilder.build(DeployerConfig.class,
+        XenonConfigTest.class.getResource("/config.yml").getPath()).getDcp();
+    assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/deployer/"));
   }
 
   @Test
   public void testInvalidBatchSize() {
     try {
-      dcpConfig = ConfigBuilder.build(DeployerConfig.class,
-          DcpConfigTest.class.getResource("/dcpConfig_invalid.yml").getPath()).getDcp();
+      xenonConfig = ConfigBuilder.build(DeployerConfig.class,
+          XenonConfigTest.class.getResource("/dcpConfig_invalid.yml").getPath()).getDcp();
       fail();
     } catch (BadConfigException e) {
     }

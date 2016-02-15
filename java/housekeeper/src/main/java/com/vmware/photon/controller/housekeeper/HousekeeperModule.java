@@ -24,8 +24,8 @@ import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZkHostMonitor;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
-import com.vmware.photon.controller.housekeeper.dcp.DcpConfig;
-import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;
+import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
+import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 import com.vmware.photon.controller.housekeeper.service.HousekeeperService;
 
 import com.google.inject.AbstractModule;
@@ -54,8 +54,8 @@ public class HousekeeperModule extends AbstractModule {
     bindConstant().annotatedWith(Config.Bind.class).to(config.getBind());
     bindConstant().annotatedWith(Config.RegistrationAddress.class).to(config.getRegistrationAddress());
     bindConstant().annotatedWith(Config.Port.class).to(config.getPort());
-    bind(DcpConfig.class).toInstance(config.getDcp());
-    bindConstant().annotatedWith(DcpConfig.StoragePath.class).to(config.getDcp().getStoragePath());
+    bind(XenonConfig.class).toInstance(config.getDcp());
+    bindConstant().annotatedWith(XenonConfig.StoragePath.class).to(config.getDcp().getStoragePath());
     bind(BuildInfo.class).toInstance(BuildInfo.get(HousekeeperModule.class));
 
     bind(ScheduledExecutorService.class)
@@ -82,8 +82,8 @@ public class HousekeeperModule extends AbstractModule {
   @Singleton
   public HousekeeperService getHousekeeperService(
       @HousekeeperServerSet ServerSet serverSet,
-      HousekeeperDcpServiceHost host,
-      DcpConfig dcpConfig,
+      HousekeeperXenonServiceHost host,
+      XenonConfig dcpConfig,
       BuildInfo buildInfo) {
     return new HousekeeperService(serverSet, host, dcpConfig, buildInfo);
   }
@@ -105,15 +105,15 @@ public class HousekeeperModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public HousekeeperDcpServiceHost getHousekeeperDcpServiceHost(
+  public HousekeeperXenonServiceHost getHousekeeperDcpServiceHost(
       CloudStoreHelper cloudStoreHelper,
       @Config.Bind String bind,
       @Config.Port int port,
-      @DcpConfig.StoragePath String storagePath,
+      @XenonConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
       @ZkHostMonitor ZookeeperHostMonitor zkHostMonitor,
       ServiceConfigFactory serviceConfigFactory) throws Throwable {
-    return new HousekeeperDcpServiceHost(cloudStoreHelper, bind, port, storagePath, hostClientFactory, zkHostMonitor,
+    return new HousekeeperXenonServiceHost(cloudStoreHelper, bind, port, storagePath, hostClientFactory, zkHostMonitor,
         serviceConfigFactory);
   }
 }

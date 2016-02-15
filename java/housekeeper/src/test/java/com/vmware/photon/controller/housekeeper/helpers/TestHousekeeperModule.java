@@ -24,8 +24,8 @@ import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.HousekeeperServerSet;
-import com.vmware.photon.controller.housekeeper.dcp.DcpConfig;
-import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;
+import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
+import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -56,8 +56,8 @@ public class TestHousekeeperModule extends AbstractModule {
     bindConstant().annotatedWith(Config.Bind.class).to(config.getBind());
     bindConstant().annotatedWith(Config.RegistrationAddress.class).to(config.getRegistrationAddress());
     bindConstant().annotatedWith(Config.Port.class).to(config.getPort());
-    bind(DcpConfig.class).toInstance(config.getDcp());
-    bindConstant().annotatedWith(DcpConfig.StoragePath.class).to(config.getDcp().getStoragePath());
+    bind(XenonConfig.class).toInstance(config.getDcp());
+    bindConstant().annotatedWith(XenonConfig.StoragePath.class).to(config.getDcp().getStoragePath());
     bind(BuildInfo.class).toInstance(BuildInfo.get(TestHousekeeperModule.class));
 
     bind(ScheduledExecutorService.class)
@@ -74,15 +74,15 @@ public class TestHousekeeperModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public HousekeeperDcpServiceHost getHousekeepDcpServiceHost(
+  public HousekeeperXenonServiceHost getHousekeepDcpServiceHost(
       CloudStoreHelper cloudStoreHelper,
       @Config.Bind String bind,
       @Config.Port int port,
-      @DcpConfig.StoragePath String storagePath,
+      @XenonConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
       ZookeeperHostMonitor zookeeperHostMonitor,
       ServiceConfigFactory serviceConfigFactory) throws Throwable {
-    return spy(new HousekeeperDcpServiceHost(cloudStoreHelper, bind, port, storagePath, hostClientFactory,
+    return spy(new HousekeeperXenonServiceHost(cloudStoreHelper, bind, port, storagePath, hostClientFactory,
         zookeeperHostMonitor, serviceConfigFactory));
   }
 

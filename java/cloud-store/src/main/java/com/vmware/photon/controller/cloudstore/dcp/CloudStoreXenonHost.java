@@ -66,13 +66,13 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Paths;
 
 /**
- * Class to initialize a DCP host for cloud-store.
+ * Class to initialize a Xenon host for cloud-store.
  */
 @Singleton
-public class CloudStoreDcpHost
+public class CloudStoreXenonHost
     extends ServiceHost implements XenonHostInfoProvider, HostClientProvider, AgentControlClientProvider {
 
-  private static final Logger logger = LoggerFactory.getLogger(CloudStoreDcpHost.class);
+  private static final Logger logger = LoggerFactory.getLogger(CloudStoreXenonHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
 
   private static final TaskStateBuilder[] TASK_TRIGGERS = new TaskStateBuilder[]{
@@ -126,7 +126,7 @@ public class CloudStoreDcpHost
   private final AgentControlClientFactory agentControlClientFactory;
 
   @Inject
-  public CloudStoreDcpHost(
+  public CloudStoreXenonHost(
       @CloudStoreConfig.Bind String bindAddress,
       @CloudStoreConfig.Port int port,
       @CloudStoreConfig.StoragePath String storagePath,
@@ -137,7 +137,7 @@ public class CloudStoreDcpHost
     this.hostClientFactory = hostClientFactory;
     this.agentControlClientFactory = agentControlClientFactory;
 
-    logger.info("Initializing DcpServer on port: {} path: {}", port, storagePath);
+    logger.info("Initializing XenonServer on port: {} path: {}", port, storagePath);
     ServiceHost.Arguments arguments = new ServiceHost.Arguments();
     arguments.port = port;
     arguments.bindAddress = bindAddress;

@@ -17,7 +17,7 @@ import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
-import com.vmware.photon.controller.housekeeper.dcp.DcpConfig;
+import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 
 import org.hamcrest.MatcherAssert;
 import org.testng.annotations.BeforeMethod;
@@ -59,7 +59,7 @@ public class ConfigTest {
 
   @Test
   public void testDcpConfig() {
-    MatcherAssert.assertThat(config.getDcp(), instanceOf(DcpConfig.class));
+    MatcherAssert.assertThat(config.getDcp(), instanceOf(XenonConfig.class));
   }
 
   @Test

@@ -46,8 +46,8 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.DeployerConfigTest;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.dcp.DcpConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.XenonConfig;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactoryService;
@@ -119,7 +119,7 @@ public class TestHelper {
         @DeployerConfig.Bind String bind,
         @DeployerConfig.RegistrationAddress String registrationAddress,
         @DeployerConfig.Port int port,
-        @DcpConfig.StoragePath String path) {
+        @XenonConfig.StoragePath String path) {
       this.bind = bind;
       this.registrationAddress = registrationAddress;
       this.port = port;

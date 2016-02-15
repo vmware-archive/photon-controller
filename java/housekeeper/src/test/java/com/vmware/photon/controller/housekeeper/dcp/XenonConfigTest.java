@@ -23,38 +23,38 @@ import static org.hamcrest.Matchers.is;
 import static org.testng.Assert.fail;
 
 /**
- * Tests {@link DcpConfig}.
+ * Tests {@link XenonConfig}.
  */
-public class DcpConfigTest {
+public class XenonConfigTest {
 
-  private DcpConfig dcpConfig;
+  private XenonConfig xenonConfig;
 
   @Test
   public void testBatchSize() throws BadConfigException {
-    dcpConfig = ConfigBuilder.build(Config.class,
-        DcpConfigTest.class.getResource("/config.yml").getPath()).getDcp();
-    assertThat(dcpConfig.getImageCopyBatchSize(), is(20));
+    xenonConfig = ConfigBuilder.build(Config.class,
+        XenonConfigTest.class.getResource("/config.yml").getPath()).getDcp();
+    assertThat(xenonConfig.getImageCopyBatchSize(), is(20));
   }
 
   @Test
   public void testDefaultBatchSize() throws BadConfigException {
-    dcpConfig = ConfigBuilder.build(Config.class,
-        DcpConfigTest.class.getResource("/config_min.yml").getPath()).getDcp();
-    assertThat(dcpConfig.getImageCopyBatchSize(), is(5));
+    xenonConfig = ConfigBuilder.build(Config.class,
+        XenonConfigTest.class.getResource("/config_min.yml").getPath()).getDcp();
+    assertThat(xenonConfig.getImageCopyBatchSize(), is(5));
   }
 
   @Test
   public void testDcpStoragePath() throws BadConfigException {
-    dcpConfig = ConfigBuilder.build(Config.class,
-        DcpConfigTest.class.getResource("/config.yml").getPath()).getDcp();
-    assertThat(dcpConfig.getStoragePath(), is("/tmp/dcp/housekeeper/"));
+    xenonConfig = ConfigBuilder.build(Config.class,
+        XenonConfigTest.class.getResource("/config.yml").getPath()).getDcp();
+    assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/housekeeper/"));
   }
 
   @Test
   public void testInvalidBatchSize() {
     try {
-      dcpConfig = ConfigBuilder.build(DcpConfig.class,
-          DcpConfigTest.class.getResource("/dcpConfig_invalid.yml").getPath());
+      xenonConfig = ConfigBuilder.build(XenonConfig.class,
+          XenonConfigTest.class.getResource("/dcpConfig_invalid.yml").getPath());
       fail();
     } catch (BadConfigException e) {
     }

@@ -20,7 +20,7 @@ import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 
@@ -88,7 +88,7 @@ public class Main {
       final DeployerServer thriftServer = injector.getInstance(DeployerServer.class);
 
       logger.info("Creating DCP host instance");
-      final DeployerDcpServiceHost deployerDcpServiceHost = injector.getInstance(DeployerDcpServiceHost.class);
+      final DeployerXenonServiceHost deployerDcpServiceHost = injector.getInstance(DeployerXenonServiceHost.class);
 
       logger.info("Adding shutdown hook");
       Runtime.getRuntime().addShutdownHook(new Thread() {

@@ -17,7 +17,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.OperationLatch;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
 import com.vmware.photon.controller.resource.gen.Host;
@@ -37,9 +37,9 @@ public class ValidateHostTaskServiceClient {
 
   private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
 
-  private DeployerDcpServiceHost dcpHost;
+  private DeployerXenonServiceHost dcpHost;
 
-  public ValidateHostTaskServiceClient(DeployerDcpServiceHost dcpHost) {
+  public ValidateHostTaskServiceClient(DeployerXenonServiceHost dcpHost) {
     this.dcpHost = dcpHost;
   }
 

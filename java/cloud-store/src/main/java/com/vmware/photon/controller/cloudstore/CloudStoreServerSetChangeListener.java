@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore;
 
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 
@@ -32,10 +32,10 @@ public class CloudStoreServerSetChangeListener implements ServerSet.ChangeListen
 
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreServerSetChangeListener.class);
 
-  private final CloudStoreDcpHost dcpHost;
+  private final CloudStoreXenonHost dcpHost;
 
   @Inject
-  public CloudStoreServerSetChangeListener(CloudStoreDcpHost dcpHost) {
+  public CloudStoreServerSetChangeListener(CloudStoreXenonHost dcpHost) {
     this.dcpHost = dcpHost;
   }
 

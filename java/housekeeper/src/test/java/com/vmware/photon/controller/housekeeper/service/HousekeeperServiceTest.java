@@ -23,8 +23,8 @@ import com.vmware.photon.controller.common.zookeeper.SimpleServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerReader;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServiceReader;
-import com.vmware.photon.controller.housekeeper.dcp.DcpConfig;
-import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;
+import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
+import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResult;
@@ -90,7 +90,8 @@ public class HousekeeperServiceTest {
 
     @Test
     public void testInvocation() throws Throwable {
-      ImageReplicator replicator = spy(new ImageReplicator(injector.getInstance(HousekeeperDcpServiceHost.class), 10));
+      ImageReplicator replicator = spy(new ImageReplicator(
+          injector.getInstance(HousekeeperXenonServiceHost.class), 10));
       doReturn(replicator).when(service).buildReplicator();
 
       ReplicateImageResponse response = new ReplicateImageResponse(new ReplicateImageResult(ReplicateImageResultCode
@@ -102,7 +103,8 @@ public class HousekeeperServiceTest {
 
     @Test
     public void testInvocationWithGivenRequestId() throws Throwable {
-      ImageReplicator replicator = spy(new ImageReplicator(injector.getInstance(HousekeeperDcpServiceHost.class), 10));
+      ImageReplicator replicator = spy(new ImageReplicator(
+          injector.getInstance(HousekeeperXenonServiceHost.class), 10));
       doReturn(replicator).when(service).buildReplicator();
 
       ReplicateImageResponse response = new ReplicateImageResponse(new ReplicateImageResult(ReplicateImageResultCode
@@ -143,7 +145,7 @@ public class HousekeeperServiceTest {
 
     @Test
     public void testReady() throws Throwable {
-      HousekeeperDcpServiceHost dcpHost = injector.getInstance(HousekeeperDcpServiceHost.class);
+      HousekeeperXenonServiceHost dcpHost = injector.getInstance(HousekeeperXenonServiceHost.class);
 
       doReturn(true).when(dcpHost).isReady();
       assertThat(service.get_status().getType(), is(StatusType.READY));
@@ -229,12 +231,12 @@ public class HousekeeperServiceTest {
       ServiceNode node =
           new SimpleServiceNode(zkClient, "housekeeper", new InetSocketAddress(hostname, port));
 
-      HousekeeperDcpServiceHost dcpHost = mock(HousekeeperDcpServiceHost.class);
+      HousekeeperXenonServiceHost dcpHost = mock(HousekeeperXenonServiceHost.class);
       when(dcpHost.checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP)).thenReturn(true);
       when(dcpHost.getUri()).thenReturn(UriUtils.buildUri(hostname, port + 1, "", null));
 
       TestHouseKeeperService housekeeperService =
-          new TestHouseKeeperService(serverSet, dcpHost, mock(DcpConfig.class), mock(BuildInfo.class));
+          new TestHouseKeeperService(serverSet, dcpHost, mock(XenonConfig.class), mock(BuildInfo.class));
       serverSet.addChangeListener(housekeeperService);
 
       return new TestGroup(node, dcpHost, housekeeperService);
@@ -242,11 +244,11 @@ public class HousekeeperServiceTest {
 
     private class TestGroup {
       private ServiceNode node; // zookeeper node
-      private HousekeeperDcpServiceHost dcpHost; // DcpHost
+      private HousekeeperXenonServiceHost dcpHost; // DcpHost
       private TestHouseKeeperService houseKeeperService;
 
       private TestGroup(ServiceNode node,
-                        HousekeeperDcpServiceHost dcpHost,
+                        HousekeeperXenonServiceHost dcpHost,
                         TestHouseKeeperService houseKeeperService) {
         this.node = node;
         this.dcpHost = dcpHost;
@@ -259,8 +261,8 @@ public class HousekeeperServiceTest {
       private CountDownLatch countDownLatch;
 
       public TestHouseKeeperService(ServerSet serverSet,
-                                    HousekeeperDcpServiceHost host,
-                                    DcpConfig dcpConfig,
+                                    HousekeeperXenonServiceHost host,
+                                    XenonConfig dcpConfig,
                                     BuildInfo buildInfo) {
         super(serverSet, host, dcpConfig, buildInfo);
       }

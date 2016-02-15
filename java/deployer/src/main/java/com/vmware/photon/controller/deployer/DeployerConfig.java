@@ -17,8 +17,8 @@ import com.vmware.photon.controller.chairman.HierarchyConfig;
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.dcp.DcpConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.XenonConfig;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -61,7 +61,7 @@ public class DeployerConfig {
 
   @Valid
   @NotNull
-  private DcpConfig dcp;
+  private XenonConfig dcp;
 
   @Valid
   @NotNull
@@ -110,7 +110,7 @@ public class DeployerConfig {
     return registrationAddress;
   }
 
-  public DcpConfig getDcp() {
+  public XenonConfig getDcp() {
     return dcp;
   }
 

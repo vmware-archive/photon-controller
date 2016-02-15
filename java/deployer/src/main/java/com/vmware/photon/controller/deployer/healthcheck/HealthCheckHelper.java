@@ -70,7 +70,7 @@ public class HealthCheckHelper {
         break;
 
       case CloudStore:
-        this.healthChecker = new DcpBasedHealthChecker(service, ipAddress, ServicePortConstants.CLOUD_STORE_PORT);
+        this.healthChecker = new XenonBasedHealthChecker(service, ipAddress, ServicePortConstants.CLOUD_STORE_PORT);
         break;
 
       case Lightwave:

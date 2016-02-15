@@ -28,9 +28,9 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * DCP configuration.
+ * Xenon configuration.
  */
-public class DcpConfig {
+public class XenonConfig {
   private static final int IMAGE_BATCHCOPY_SIZE = 5;
 
   @NotNull
@@ -43,7 +43,7 @@ public class DcpConfig {
   @JsonProperty("storage_path")
   private String storagePath;
 
-  public DcpConfig() {
+  public XenonConfig() {
     imageCopyBatchSize = IMAGE_BATCHCOPY_SIZE;
   }
 

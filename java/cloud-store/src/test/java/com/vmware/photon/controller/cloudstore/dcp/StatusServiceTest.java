@@ -65,7 +65,7 @@ public class StatusServiceTest {
 
     @Test
     public void testInitializing() throws Throwable {
-      CloudStoreDcpHost host = testEnvironment.getHosts()[0];
+      CloudStoreXenonHost host = testEnvironment.getHosts()[0];
       Operation delete = Operation
           .createDelete(UriUtils.buildUri(host, FlavorServiceFactory.SELF_LINK))
           .setBody("{}");

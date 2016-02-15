@@ -16,7 +16,7 @@ package com.vmware.photon.controller.apife.backends;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
@@ -60,7 +60,7 @@ public class BackendHelpersTest {
     @BeforeClass
     public void beforeClassSetup() throws Throwable {
       host = BasicServiceHost.create();
-      ServiceHostUtils.startServices(host, CloudStoreDcpHost.FACTORY_SERVICES);
+      ServiceHostUtils.startServices(host, CloudStoreXenonHost.FACTORY_SERVICES);
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));

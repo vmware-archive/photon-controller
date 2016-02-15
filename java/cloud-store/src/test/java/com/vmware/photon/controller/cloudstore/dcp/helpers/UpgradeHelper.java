@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.UpgradeUtils;
 import com.vmware.xenon.common.FactoryService;
@@ -73,7 +73,7 @@ public class UpgradeHelper {
         .map(entry -> entry.getValue())
         .collect(Collectors.toList());
 
-    for (Class service : CloudStoreDcpHost.FACTORY_SERVICES) {
+    for (Class service : CloudStoreXenonHost.FACTORY_SERVICES) {
       if (!factoriesToUpgrade.contains(ServiceHostUtils.getServiceSelfLink("SELF_LINK", service))) {
         // We are not interested in this entity
         continue;

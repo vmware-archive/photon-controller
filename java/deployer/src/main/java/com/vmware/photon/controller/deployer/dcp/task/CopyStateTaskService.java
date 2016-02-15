@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -359,7 +359,7 @@ public class CopyStateTaskService extends StatefulService {
   private String findDestinationServiceClassName(State currentState) {
     String destinationDocument = null;
     try {
-      for (Class<?> factoryService : CloudStoreDcpHost.FACTORY_SERVICES) {
+      for (Class<?> factoryService : CloudStoreXenonHost.FACTORY_SERVICES) {
         String factoryServiceLink = ServiceHostUtils.getServiceSelfLink("SELF_LINK", factoryService);
         if (!factoryServiceLink.endsWith("/")) {
           factoryServiceLink += "/";

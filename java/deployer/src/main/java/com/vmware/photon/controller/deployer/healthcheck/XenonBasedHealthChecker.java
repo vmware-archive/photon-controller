@@ -27,16 +27,16 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 
 /**
- * Implements Health check for dcp based components such as CloudStore.
+ * Implements Health check for Xenon based components such as CloudStore.
  */
-public class DcpBasedHealthChecker implements HealthChecker {
-  private static final Logger logger = LoggerFactory.getLogger(DcpBasedHealthChecker.class);
+public class XenonBasedHealthChecker implements HealthChecker {
+  private static final Logger logger = LoggerFactory.getLogger(XenonBasedHealthChecker.class);
 
   private final Service service;
   private final String address;
   private final int port;
 
-  public DcpBasedHealthChecker(Service service, String address, int port) {
+  public XenonBasedHealthChecker(Service service, String address, int port) {
     this.service = service;
     this.address = address;
     this.port = port;
@@ -54,7 +54,7 @@ public class DcpBasedHealthChecker implements HealthChecker {
       Status status = completedOperation.getBody(Status.class);
       return status.getType() == StatusType.READY;
     } catch (Throwable e) {
-      logger.error("GET to DCP service failed [{}:{}]: {}", address, port, e);
+      logger.error("GET to Xenon service failed [{}:{}]: {}", address, port, e);
       return false;
     }
   }

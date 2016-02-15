@@ -17,7 +17,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.OperationLatch;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
 import com.vmware.photon.controller.host.gen.HostMode;
@@ -32,9 +32,9 @@ import com.vmware.xenon.common.Utils;
 public class ChangeHostModeTaskServiceClient {
   private static final String REFERRER_PATH = "/thrift-endpoint/change-host-mode-client";
 
-  private DeployerDcpServiceHost dcpHost;
+  private DeployerXenonServiceHost dcpHost;
 
-  public ChangeHostModeTaskServiceClient(DeployerDcpServiceHost dcpHost) {
+  public ChangeHostModeTaskServiceClient(DeployerXenonServiceHost dcpHost) {
     this.dcpHost = dcpHost;
   }
 

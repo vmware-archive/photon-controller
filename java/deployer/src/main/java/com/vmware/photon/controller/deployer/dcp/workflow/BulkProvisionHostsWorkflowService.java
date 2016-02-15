@@ -354,8 +354,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
   }
 
   private void processUploadVibSubStage(State currentState, String hostServiceLink,
-                                        FutureCallback<ProvisionHostTaskService.State> provisionHostFutureCallback)
-  {
+                                        FutureCallback<ProvisionHostTaskService.State> provisionHostFutureCallback) {
     final Service service = this;
 
     FutureCallback<UploadVibTaskService.State> futureCallback = new FutureCallback<UploadVibTaskService.State>() {

@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.deployer.DeployerConfig;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 
 import com.google.inject.Inject;
 
@@ -29,7 +29,7 @@ public class DeploymentWorkflowServiceClientFactory {
     this.deployerConfig = deployerConfig;
   }
 
-  public DeploymentWorkFlowServiceClient getInstance(DeployerDcpServiceHost dcpHost) {
+  public DeploymentWorkFlowServiceClient getInstance(DeployerXenonServiceHost dcpHost) {
     return new DeploymentWorkFlowServiceClient(deployerConfig, dcpHost);
   }
 }

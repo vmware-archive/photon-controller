@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 
 /**
  * This class implements a factory for {@link HostServiceClient}.
@@ -26,7 +26,7 @@ public class HostServiceClientFactory {
     this.cloudStoreServerSet = cloudStoreServerSet;
   }
 
-  public HostServiceClient getInstance(DeployerDcpServiceHost dcpHost) {
+  public HostServiceClient getInstance(DeployerXenonServiceHost dcpHost) {
     return new HostServiceClient(dcpHost, this.cloudStoreServerSet);
   }
 }

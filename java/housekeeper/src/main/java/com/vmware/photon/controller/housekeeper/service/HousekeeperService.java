@@ -19,8 +19,8 @@ import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
 import com.vmware.photon.controller.housekeeper.HousekeeperServerSet;
-import com.vmware.photon.controller.housekeeper.dcp.DcpConfig;
-import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;
+import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
+import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
@@ -50,15 +50,15 @@ public class HousekeeperService implements Housekeeper.Iface, ServiceNodeEventHa
   private static final Logger logger = LoggerFactory.getLogger(HousekeeperService.class);
 
   private final ServerSet serverSet;
-  private final HousekeeperDcpServiceHost dcpHost;
-  private final DcpConfig dcpConfig;
+  private final HousekeeperXenonServiceHost dcpHost;
+  private final XenonConfig dcpConfig;
   private final BuildInfo buildInfo;
 
   @Inject
   public HousekeeperService(
       @HousekeeperServerSet ServerSet serverSet,
-      HousekeeperDcpServiceHost host,
-      DcpConfig dcpConfig,
+      HousekeeperXenonServiceHost host,
+      XenonConfig dcpConfig,
       BuildInfo buildInfo) {
     this.serverSet = serverSet;
     this.serverSet.addChangeListener(this);

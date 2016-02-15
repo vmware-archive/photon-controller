@@ -47,9 +47,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Tests {@link HousekeeperDcpServiceHost}.
+ * Tests {@link HousekeeperXenonServiceHost}.
  */
-public class HousekeeperDcpServiceHostTest {
+public class HousekeeperXenonServiceHostTest {
 
   private static File storageDir;
   private static final String configFilePath = "/config.yml";
@@ -60,7 +60,7 @@ public class HousekeeperDcpServiceHostTest {
   private static final long SERVICES_STARTUP_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
 
   private Injector injector;
-  private HousekeeperDcpServiceHost host;
+  private HousekeeperXenonServiceHost host;
 
   private String[] serviceSelfLinks = new String[]{
       RootNamespaceService.SELF_LINK,
@@ -71,8 +71,8 @@ public class HousekeeperDcpServiceHostTest {
       ImageCleanerServiceFactory.SELF_LINK,
       ImageCleanerTriggerServiceFactory.SELF_LINK,
       TaskSchedulerServiceFactory.SELF_LINK,
-      HousekeeperDcpServiceHost.getTriggerCleanerServiceUri(),
-      HousekeeperDcpServiceHost.IMAGE_COPY_SCHEDULER_SERVICE
+      HousekeeperXenonServiceHost.getTriggerCleanerServiceUri(),
+      HousekeeperXenonServiceHost.IMAGE_COPY_SCHEDULER_SERVICE
   };
 
   /**
@@ -108,7 +108,7 @@ public class HousekeeperDcpServiceHostTest {
       // make sure folder exists
       storageDir.mkdirs();
 
-      HousekeeperDcpServiceHost host = injector.getInstance(HousekeeperDcpServiceHost.class);
+      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
@@ -118,14 +118,14 @@ public class HousekeeperDcpServiceHostTest {
       // make sure folder does not exist
       FileUtils.deleteDirectory(storageDir);
 
-      HousekeeperDcpServiceHost host = injector.getInstance(HousekeeperDcpServiceHost.class);
+      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
 
     @Test
     public void testParams() {
-      HousekeeperDcpServiceHost host = injector.getInstance(HousekeeperDcpServiceHost.class);
+      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(host.getPort(), is(16001));
       Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(16001));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
@@ -133,26 +133,26 @@ public class HousekeeperDcpServiceHostTest {
 
     @Test
     public void testGetHostClientFactory() {
-      HousekeeperDcpServiceHost host = injector.getInstance(HousekeeperDcpServiceHost.class);
+      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(host.getHostClient(), notNullValue());
     }
 
     @Test
     public void testGetZookeeperHostMonitor() {
-      HousekeeperDcpServiceHost host = injector.getInstance(HousekeeperDcpServiceHost.class);
+      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(host.getZookeeperHostMonitor(), notNullValue());
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testGetZookeeperHostMonitorNull() throws Throwable {
       CloudStoreHelper cloudStoreHelper = injector.getInstance(CloudStoreHelper.class);
-      new HousekeeperDcpServiceHost(cloudStoreHelper, "localhost", 16001, storageDir.getPath(),
+      new HousekeeperXenonServiceHost(cloudStoreHelper, "localhost", 16001, storageDir.getPath(),
           injector.getInstance(HostClientFactory.class), null, null);
     }
 
     @Test
     public void testGetServiceConfig() {
-      HousekeeperDcpServiceHost host = injector.getInstance(HousekeeperDcpServiceHost.class);
+      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(host.getServiceConfig(), notNullValue());
     }
   }
@@ -165,7 +165,7 @@ public class HousekeeperDcpServiceHostTest {
     @BeforeMethod
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
-      host = injector.getInstance(HousekeeperDcpServiceHost.class);
+      host = injector.getInstance(HousekeeperXenonServiceHost.class);
     }
 
     @AfterMethod
@@ -209,7 +209,7 @@ public class HousekeeperDcpServiceHostTest {
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
 
-      host = injector.getInstance(HousekeeperDcpServiceHost.class);
+      host = injector.getInstance(HousekeeperXenonServiceHost.class);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
     }
@@ -241,13 +241,13 @@ public class HousekeeperDcpServiceHostTest {
 
     private final long maintenanceInterval = TimeUnit.MILLISECONDS.toMicros(500);
     private final File storageDir2 = new File("/tmp/dcp/16002/");
-    private HousekeeperDcpServiceHost host2;
+    private HousekeeperXenonServiceHost host2;
 
     @BeforeMethod
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
 
-      host = new HousekeeperDcpServiceHost(
+      host = new HousekeeperXenonServiceHost(
           injector.getInstance(CloudStoreHelper.class),
           "0.0.0.0", 16000, storageDir.getPath(),
           injector.getInstance(HostClientFactory.class),
@@ -257,7 +257,7 @@ public class HousekeeperDcpServiceHostTest {
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
 
-      host2 = new HousekeeperDcpServiceHost(
+      host2 = new HousekeeperXenonServiceHost(
           injector.getInstance(CloudStoreHelper.class),
           "0.0.0.0", 16002, storageDir2.getPath(),
           injector.getInstance(HostClientFactory.class),
@@ -286,7 +286,7 @@ public class HousekeeperDcpServiceHostTest {
       ServiceHostUtils.joinNodeGroup(host2, host.getUri().getHost(), host.getPort());
 
       ServiceHostUtils.waitForNodeGroupConvergence(
-          new HousekeeperDcpServiceHost[]{host, host2},
+          new HousekeeperXenonServiceHost[]{host, host2},
           ServiceUriPaths.DEFAULT_NODE_GROUP,
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_SLEEP);

@@ -22,7 +22,7 @@ import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
 import com.vmware.photon.controller.deployer.DeployerServerSet;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
 import com.vmware.photon.controller.deployer.gen.CreateHostRequest;
 import com.vmware.photon.controller.deployer.gen.CreateHostResponse;
@@ -146,7 +146,7 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
   private static final Logger logger = LoggerFactory.getLogger(DeployerService.class);
 
   private final ServerSet serverSet;
-  private final DeployerDcpServiceHost dcpHost;
+  private final DeployerXenonServiceHost dcpHost;
   private final BuildInfo buildInfo;
 
   private final AddHostWorkflowServiceClientFactory addHostWorkflowServiceClientFactory;
@@ -159,7 +159,7 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
   @Inject
   public DeployerService(
       @DeployerServerSet ServerSet serverSet,
-      DeployerDcpServiceHost host,
+      DeployerXenonServiceHost host,
       HostServiceClientFactory hostServiceClientFactory,
       ChangeHostModeTaskServiceClientFactory changeHostModeTaskServiceClientFactory,
       DeploymentWorkflowServiceClientFactory deploymentWorkflowServiceClientFactory,

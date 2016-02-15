@@ -32,7 +32,7 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -965,7 +965,7 @@ public class AddManagementHostWorkflowServiceTest {
         bindAddress) throws Throwable {
       HostService.State hostStartState = TestHelper.getHostServiceStartState(usageTags, HostState.CREATING);
       if (usageTags.contains(UsageTag.MGMT.name())) {
-        DeployerDcpServiceHost remoteHost = remoteDeployer.getHosts()[0];
+        DeployerXenonServiceHost remoteHost = remoteDeployer.getHosts()[0];
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP,
             bindAddress != null ? bindAddress : remoteHost.getState().bindAddress);
         hostStartState.hostAddress = bindAddress != null ? bindAddress : remoteHost.getState().bindAddress;

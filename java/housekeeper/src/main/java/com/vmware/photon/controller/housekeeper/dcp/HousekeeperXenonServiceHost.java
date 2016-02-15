@@ -46,10 +46,10 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 /**
- * Class to initialize a DCP host.
+ * Class to initialize a Xenon host.
  */
 @Singleton
-public class HousekeeperDcpServiceHost
+public class HousekeeperXenonServiceHost
     extends ServiceHost
     implements XenonHostInfoProvider,
     HostClientProvider, ZookeeperHostMonitorProvider, CloudStoreHelperProvider {
@@ -80,7 +80,7 @@ public class HousekeeperDcpServiceHost
       RootNamespaceService.class,
   };
 
-  private static final Logger logger = LoggerFactory.getLogger(HousekeeperDcpServiceHost.class);
+  private static final Logger logger = LoggerFactory.getLogger(HousekeeperXenonServiceHost.class);
 
   private final HostClientFactory hostClientFactory;
   private final ZookeeperHostMonitor zookeeperHostMonitor;
@@ -88,11 +88,11 @@ public class HousekeeperDcpServiceHost
   private final ServiceConfigFactory serviceConfigFactory;
 
   @Inject
-  public HousekeeperDcpServiceHost(
+  public HousekeeperXenonServiceHost(
       CloudStoreHelper cloudStoreHelper,
       @Config.Bind String bindAddress,
       @Config.Port int port,
-      @DcpConfig.StoragePath String storagePath,
+      @XenonConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
       @ZkHostMonitor ZookeeperHostMonitor zookeeperHostMonitor,
       ServiceConfigFactory serviceConfigFactory) throws Throwable {
@@ -105,7 +105,7 @@ public class HousekeeperDcpServiceHost
     arguments.port = port + 1;
     arguments.bindAddress = bindAddress;
     arguments.sandbox = Paths.get(storagePath);
-    logger.info("Initializing HousekeeperDcpServiceHost on port: {} path: {}", arguments.port, storagePath);
+    logger.info("Initializing HousekeeperXenonServiceHost on port: {} path: {}", arguments.port, storagePath);
     this.initialize(arguments);
   }
 
@@ -185,10 +185,10 @@ public class HousekeeperDcpServiceHost
           ImageCleanerTriggerService.State state = new ImageCleanerTriggerService.State();
           state.documentSelfLink = TRIGGER_CLEANER_SERVICE_SUFFIX;
 
-          URI uri = UriUtils.buildUri(HousekeeperDcpServiceHost.this,
+          URI uri = UriUtils.buildUri(HousekeeperXenonServiceHost.this,
               ImageCleanerTriggerServiceFactory.SELF_LINK, null);
           Operation post = Operation.createPost(uri).setBody(state);
-          post.setReferer(UriUtils.buildUri(HousekeeperDcpServiceHost.this, HOUSEKEEPER_URI));
+          post.setReferer(UriUtils.buildUri(HousekeeperXenonServiceHost.this, HOUSEKEEPER_URI));
           sendRequest(post);
         }, ImageCleanerTriggerServiceFactory.SELF_LINK);
   }
@@ -214,9 +214,9 @@ public class HousekeeperDcpServiceHost
     TaskSchedulerService.State state = builder.build();
     state.documentSelfLink = TaskSchedulerServiceStateBuilder.getSuffixFromSelfLink(selfLink);
 
-    URI uri = UriUtils.buildUri(HousekeeperDcpServiceHost.this, TaskSchedulerServiceFactory.SELF_LINK, null);
+    URI uri = UriUtils.buildUri(HousekeeperXenonServiceHost.this, TaskSchedulerServiceFactory.SELF_LINK, null);
     Operation post = Operation.createPost(uri).setBody(state);
-    post.setReferer(UriUtils.buildUri(HousekeeperDcpServiceHost.this, HOUSEKEEPER_URI));
+    post.setReferer(UriUtils.buildUri(HousekeeperXenonServiceHost.this, HOUSEKEEPER_URI));
     sendRequest(post);
   }
 }

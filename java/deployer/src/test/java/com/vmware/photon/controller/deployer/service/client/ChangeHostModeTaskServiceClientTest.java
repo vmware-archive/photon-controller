@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
 import com.vmware.photon.controller.deployer.gen.EnterMaintenanceModeRequest;
@@ -54,12 +54,12 @@ public class ChangeHostModeTaskServiceClientTest {
   public class CreateChangeHostModeTaskEntity {
 
     private ChangeHostModeTaskServiceClient target;
-    private DeployerDcpServiceHost host;
+    private DeployerXenonServiceHost host;
 
 
     @BeforeMethod
     public void before() {
-      host = mock(DeployerDcpServiceHost.class);
+      host = mock(DeployerXenonServiceHost.class);
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new ChangeHostModeTaskServiceClient(host);
     }
@@ -110,11 +110,11 @@ public class ChangeHostModeTaskServiceClientTest {
   public class GetChangeHostModeStatus {
 
     private ChangeHostModeTaskServiceClient target;
-    private DeployerDcpServiceHost host;
+    private DeployerXenonServiceHost host;
 
     @BeforeMethod
     public void before() {
-      host = mock(DeployerDcpServiceHost.class);
+      host = mock(DeployerXenonServiceHost.class);
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new ChangeHostModeTaskServiceClient(host);
     }
@@ -162,7 +162,7 @@ public class ChangeHostModeTaskServiceClientTest {
   }
 
   private <T extends ServiceDocument> void setupMock(
-      DeployerDcpServiceHost host,
+      DeployerXenonServiceHost host,
       boolean isSuccess,
       final String operationUri,
       final Class<T> documentType,

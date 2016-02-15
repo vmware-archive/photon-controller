@@ -20,7 +20,7 @@ import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.host.gen.Host;
-import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;
+import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -63,7 +63,8 @@ public class Main {
     );
 
     final HousekeeperServer thriftServer = injector.getInstance(HousekeeperServer.class);
-    final HousekeeperDcpServiceHost housekeeperDcpServiceHost = injector.getInstance(HousekeeperDcpServiceHost.class);
+    final HousekeeperXenonServiceHost housekeeperDcpServiceHost = injector.getInstance(
+        HousekeeperXenonServiceHost.class);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override

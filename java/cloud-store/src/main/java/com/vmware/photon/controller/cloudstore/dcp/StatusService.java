@@ -30,10 +30,10 @@ public class StatusService extends StatelessService {
   @Override
   public void handleGet(Operation get) {
     Status status = new Status(StatusType.INITIALIZING);
-    BuildInfo buildInfo = ((CloudStoreDcpHost) getHost()).getBuildInfo();
+    BuildInfo buildInfo = ((CloudStoreXenonHost) getHost()).getBuildInfo();
     status.setBuild_info(buildInfo.toString());
 
-    if (((CloudStoreDcpHost) getHost()).isReady()) {
+    if (((CloudStoreXenonHost) getHost()).isReady()) {
       status.setType(StatusType.READY);
     }
     get.setBody(status).complete();

@@ -29,21 +29,21 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 /**
- * Tests {@link DcpBasedHealthChecker}.
+ * Tests {@link XenonBasedHealthChecker}.
  */
-public class DcpBasedHealthCheckerTest {
+public class XenonBasedHealthCheckerTest {
 
   public static final String ADDRESS = "127.0.0.1";
   public static final int PORT = 666;
 
   private Service service;
 
-  private DcpBasedHealthChecker target;
+  private XenonBasedHealthChecker target;
 
   @BeforeMethod
   public void beforeMethod() {
     service = mock(Service.class);
-    target = new DcpBasedHealthChecker(service, ADDRESS, PORT);
+    target = new XenonBasedHealthChecker(service, ADDRESS, PORT);
   }
 
   @Test

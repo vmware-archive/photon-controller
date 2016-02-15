@@ -16,7 +16,7 @@ package com.vmware.photon.controller.deployer.service.client;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.gen.DeleteHostRequest;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
@@ -110,12 +110,12 @@ public class HostServiceClientTest {
   public class DeleteHostEntity {
 
     private HostServiceClient target;
-    private DeployerDcpServiceHost host;
+    private DeployerXenonServiceHost host;
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
 
     @BeforeMethod
     public void before() throws Throwable {
-      host = mock(DeployerDcpServiceHost.class);
+      host = mock(DeployerXenonServiceHost.class);
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       target = new HostServiceClient(host, cloudStoreMachine.getServerSet());
@@ -159,7 +159,7 @@ public class HostServiceClientTest {
   }
 
   private <T extends ServiceDocument> void setupMock(
-      DeployerDcpServiceHost host,
+      DeployerXenonServiceHost host,
       boolean isSuccess,
       final String operationUri,
       final Class<T> documentType,

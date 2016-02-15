@@ -39,9 +39,9 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.dcp.DcpConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
+import com.vmware.photon.controller.deployer.dcp.XenonConfig;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
@@ -125,13 +125,13 @@ public class DeployerModule extends AbstractModule {
     bindConstant().annotatedWith(DeployerConfig.Bind.class).to(deployerConfig.getBind());
     bindConstant().annotatedWith(DeployerConfig.RegistrationAddress.class).to(deployerConfig.getRegistrationAddress());
     bindConstant().annotatedWith(DeployerConfig.Port.class).to(deployerConfig.getPort());
-    bindConstant().annotatedWith(DcpConfig.StoragePath.class).to(deployerConfig.getDcp().getStoragePath());
+    bindConstant().annotatedWith(XenonConfig.StoragePath.class).to(deployerConfig.getDcp().getStoragePath());
     bindConstant().annotatedWith(SharedSecret.class).to(deployerConfig.getDeployerContext().getSharedSecret());
 
     bind(String.class).annotatedWith(ZookeeperNameSpace.class)
         .toProvider(Providers.of(deployerConfig.getZookeeper().getNamespace()));
 
-    bind(DcpConfig.class).toInstance(deployerConfig.getDcp());
+    bind(XenonConfig.class).toInstance(deployerConfig.getDcp());
     bind(DeployerContext.class).toInstance(deployerConfig.getDeployerContext());
     bind(ContainersConfig.class).toInstance(deployerConfig.getContainersConfig());
     bind(HierarchyConfig.class).toInstance(deployerConfig.getHierarchy());
@@ -206,11 +206,11 @@ public class DeployerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public DeployerDcpServiceHost getDeployerDcpServiceHost(
+  public DeployerXenonServiceHost getDeployerDcpServiceHost(
       @DeployerConfig.Bind String bind,
       @DeployerConfig.Port int port,
       @DeployerConfig.RegistrationAddress String registrationAddress,
-      @DcpConfig.StoragePath String storagePath,
+      @XenonConfig.StoragePath String storagePath,
       @CloudStoreServerSet ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
@@ -228,7 +228,7 @@ public class DeployerModule extends AbstractModule {
       ClusterManagerFactory clusterManagerFactory)
       throws Throwable {
 
-    return new DeployerDcpServiceHost(
+    return new DeployerXenonServiceHost(
         bind,
         port,
         registrationAddress,

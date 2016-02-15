@@ -20,7 +20,7 @@ import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
-import com.vmware.photon.controller.housekeeper.dcp.HousekeeperDcpServiceHost;
+import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
 import com.vmware.xenon.common.ServiceHost;
 
@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * TestMachine class hosting a DCP host.
  */
-public class TestEnvironment extends MultiHostEnvironment<HousekeeperDcpServiceHost> {
+public class TestEnvironment extends MultiHostEnvironment<HousekeeperXenonServiceHost> {
 
   private static final String configFilePath = "/config.yml";
 
@@ -46,7 +46,7 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperDcpServiceH
                          int hostCount) throws
       Throwable {
     assertTrue(hostCount > 0);
-    hosts = new HousekeeperDcpServiceHost[hostCount];
+    hosts = new HousekeeperXenonServiceHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
 
       String sandbox = generateStorageSandboxPath();
@@ -55,7 +55,7 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperDcpServiceH
       if (zookeeperHostMonitor == null) {
         zookeeperHostMonitor = injector.getInstance(ZookeeperHostMonitor.class);
       }
-      hosts[i] = new HousekeeperDcpServiceHost(cloudStoreHelper, BIND_ADDRESS, -1,
+      hosts[i] = new HousekeeperXenonServiceHost(cloudStoreHelper, BIND_ADDRESS, -1,
           sandbox, hostClientFactory, zookeeperHostMonitor, serviceConfigFactory);
     }
   }

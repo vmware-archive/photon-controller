@@ -20,7 +20,7 @@ import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowFactoryService;
@@ -50,9 +50,9 @@ public class AddHostWorkflowServiceClient {
 
   private static final String REFERRER_PATH = "/thrift-endpoint/provision-host-client";
 
-  private DeployerDcpServiceHost dcpHost;
+  private DeployerXenonServiceHost dcpHost;
 
-  public AddHostWorkflowServiceClient(DeployerDcpServiceHost dcpHost) {
+  public AddHostWorkflowServiceClient(DeployerXenonServiceHost dcpHost) {
     this.dcpHost = dcpHost;
   }
 

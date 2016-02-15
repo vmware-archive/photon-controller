@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
 import com.vmware.photon.controller.deployer.gen.CreateHostRequest;
@@ -57,12 +57,12 @@ public class ValidateHostTaskServiceClientTest {
   public class CreateValidateHostTaskEntity {
 
     private ValidateHostTaskServiceClient target;
-    private DeployerDcpServiceHost host;
+    private DeployerXenonServiceHost host;
 
 
     @BeforeMethod
     public void before() {
-      host = mock(DeployerDcpServiceHost.class);
+      host = mock(DeployerXenonServiceHost.class);
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new ValidateHostTaskServiceClient(host);
     }
@@ -112,11 +112,11 @@ public class ValidateHostTaskServiceClientTest {
   public class GetValidateHostStatus {
 
     private ValidateHostTaskServiceClient target;
-    private DeployerDcpServiceHost host;
+    private DeployerXenonServiceHost host;
 
     @BeforeMethod
     public void before() {
-      host = mock(DeployerDcpServiceHost.class);
+      host = mock(DeployerXenonServiceHost.class);
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
       target = new ValidateHostTaskServiceClient(host);
     }
@@ -163,7 +163,7 @@ public class ValidateHostTaskServiceClientTest {
   }
 
   private <T extends ServiceDocument> void setupMock(
-      DeployerDcpServiceHost host,
+      DeployerXenonServiceHost host,
       boolean isSuccess,
       final String operationUri,
       final Class<T> documentType,

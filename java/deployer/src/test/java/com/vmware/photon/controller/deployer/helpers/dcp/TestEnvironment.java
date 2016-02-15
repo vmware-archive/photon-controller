@@ -22,7 +22,7 @@ import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceS
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * This class implements a test host for DCP micro-services.
  */
-public class TestEnvironment extends MultiHostEnvironment<DeployerDcpServiceHost> {
+public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHost> {
 
   private static final Logger logger = LoggerFactory.getLogger(TestEnvironment.class);
   private static final String REGISTRATION_ADDRESS = "0.0.0.0";
@@ -85,11 +85,11 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerDcpServiceHost
 
     assertTrue(hostCount > 0);
 
-    hosts = new DeployerDcpServiceHost[hostCount];
+    hosts = new DeployerXenonServiceHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
       String sandbox = Files.createTempDirectory(STORAGE_PATH_PREFIX).toAbsolutePath().toString();
 
-      hosts[i] = new DeployerDcpServiceHost(
+      hosts[i] = new DeployerXenonServiceHost(
           BIND_ADDRESS,
           -1,
           REGISTRATION_ADDRESS,

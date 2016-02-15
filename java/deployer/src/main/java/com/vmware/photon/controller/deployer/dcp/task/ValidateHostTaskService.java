@@ -28,7 +28,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotEmpty;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidator;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
@@ -254,7 +254,7 @@ public class ValidateHostTaskService extends StatefulService {
     buildQuerySpecification(querySpecification, exclusionCriteria, true);
 
     QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-    CloudStoreHelper cloudStoreHelper = ((DeployerDcpServiceHost) getHost()).getCloudStoreHelper();
+    CloudStoreHelper cloudStoreHelper = ((DeployerXenonServiceHost) getHost()).getCloudStoreHelper();
     URI uri = cloudStoreHelper.getCloudStoreURI(null);
 
     Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {

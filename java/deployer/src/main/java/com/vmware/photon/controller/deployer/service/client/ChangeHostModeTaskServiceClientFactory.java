@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 
 /**
  * This class implements a factory for {@link ChangeHostModeTaskServiceClient}.
  */
 public class ChangeHostModeTaskServiceClientFactory {
 
-  public ChangeHostModeTaskServiceClient getInstance(DeployerDcpServiceHost dcpHost) {
+  public ChangeHostModeTaskServiceClient getInstance(DeployerXenonServiceHost dcpHost) {
     return new ChangeHostModeTaskServiceClient(dcpHost);
   }
 }

@@ -15,7 +15,7 @@ package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
 import com.vmware.photon.controller.deployer.gen.DeprovisionHostStatus;
@@ -36,9 +36,9 @@ public class DeprovisionHostWorkflowServiceClient {
 
   private static final String REFERRER_PATH = "/thrift-endpoint/deprovision-host-client";
 
-  private DeployerDcpServiceHost dcpHost;
+  private DeployerXenonServiceHost dcpHost;
 
-  public DeprovisionHostWorkflowServiceClient(DeployerDcpServiceHost dcpHost) {
+  public DeprovisionHostWorkflowServiceClient(DeployerXenonServiceHost dcpHost) {
     this.dcpHost = dcpHost;
   }
 

@@ -72,9 +72,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * This class implements tests for the {@link CloudStoreDcpHost} class.
+ * This class implements tests for the {@link CloudStoreXenonHost} class.
  */
-public class CloudStoreDcpHostTest {
+public class CloudStoreXenonHostTest {
 
   private static File storageDir;
 
@@ -85,7 +85,7 @@ public class CloudStoreDcpHostTest {
    */
   private static final long SERVICES_STARTUP_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
   private Injector injector;
-  private CloudStoreDcpHost host;
+  private CloudStoreXenonHost host;
   private String[] serviceSelfLinks = new String[]{
       FlavorServiceFactory.SELF_LINK,
       ImageServiceFactory.SELF_LINK,
@@ -160,7 +160,7 @@ public class CloudStoreDcpHostTest {
       // make sure folder exists
       storageDir.mkdirs();
 
-      CloudStoreDcpHost host = injector.getInstance(CloudStoreDcpHost.class);
+      CloudStoreXenonHost host = injector.getInstance(CloudStoreXenonHost.class);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
@@ -170,14 +170,14 @@ public class CloudStoreDcpHostTest {
       // make sure folder does not exist
       FileUtils.deleteDirectory(storageDir);
 
-      CloudStoreDcpHost host = injector.getInstance(CloudStoreDcpHost.class);
+      CloudStoreXenonHost host = injector.getInstance(CloudStoreXenonHost.class);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
 
     @Test
     public void testParams() {
-      CloudStoreDcpHost host = injector.getInstance(CloudStoreDcpHost.class);
+      CloudStoreXenonHost host = injector.getInstance(CloudStoreXenonHost.class);
       assertThat(host.getPort(), is(19000));
       Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(19000));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
@@ -197,7 +197,7 @@ public class CloudStoreDcpHostTest {
     @BeforeMethod
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
-      host = injector.getInstance(CloudStoreDcpHost.class);
+      host = injector.getInstance(CloudStoreXenonHost.class);
     }
 
     @AfterMethod
@@ -230,7 +230,8 @@ public class CloudStoreDcpHostTest {
             is(true));
       }
 
-      assertThat(host.getClient().getConnectionLimitPerHost(), is(CloudStoreDcpHost.DEFAULT_CONNECTION_LIMIT_PER_HOST));
+      assertThat(host.getClient().getConnectionLimitPerHost(),
+          is(CloudStoreXenonHost.DEFAULT_CONNECTION_LIMIT_PER_HOST));
     }
   }
 
@@ -243,7 +244,7 @@ public class CloudStoreDcpHostTest {
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
 
-      host = injector.getInstance(CloudStoreDcpHost.class);
+      host = injector.getInstance(CloudStoreXenonHost.class);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
     }

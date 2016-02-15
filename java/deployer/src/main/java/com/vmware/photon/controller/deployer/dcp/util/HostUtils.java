@@ -25,7 +25,7 @@ import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfigProvider;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.DeployerContextProvider;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.ListeningExecutorServiceProvider;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactoryProvider;
@@ -174,6 +174,6 @@ public class HostUtils {
    * @return The cloud store helper provided by the DCP host associated with the service.
    */
   public static CloudStoreHelper getCloudStoreHelper(Service service) {
-    return ((DeployerDcpServiceHost) service.getHost()).getCloudStoreHelper();
+    return ((DeployerXenonServiceHost) service.getHost()).getCloudStoreHelper();
   }
 }

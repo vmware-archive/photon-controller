@@ -15,7 +15,7 @@ package com.vmware.photon.controller.deployer;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.deployer.dcp.DcpConfig;
+import com.vmware.photon.controller.deployer.dcp.XenonConfig;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -56,7 +56,7 @@ public class DeployerConfigTest {
 
   @Test
   public void testDcpConfig() {
-    assertThat(deployerConfig.getDcp(), instanceOf(DcpConfig.class));
+    assertThat(deployerConfig.getDcp(), instanceOf(XenonConfig.class));
   }
 
   /**

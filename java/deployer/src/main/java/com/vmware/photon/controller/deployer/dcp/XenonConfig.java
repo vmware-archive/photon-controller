@@ -26,9 +26,9 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * This class implements basic configuration state for a DCP host.
+ * This class implements basic configuration state for a Xenon host.
  */
-public class DcpConfig {
+public class XenonConfig {
 
   @NotNull
   @NotEmpty
@@ -39,7 +39,7 @@ public class DcpConfig {
   }
 
   /**
-   * DCP storage path.
+   * Xenon storage path.
    */
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})

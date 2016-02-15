@@ -56,25 +56,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * This class implements tests for the {@link DeployerDcpServiceHost} class.
+ * This class implements tests for the {@link DeployerXenonServiceHost} class.
  */
-public class DeployerDcpServiceHostTest {
+public class DeployerXenonServiceHostTest {
 
   private static File storageDir;
 
   private static final String configFilePath = "/config.yml";
 
   private Injector injector;
-  private DeployerDcpServiceHost host;
+  private DeployerXenonServiceHost host;
   private Collection<String> serviceSelfLinks;
 
-  private void waitForServicesStartup(DeployerDcpServiceHost host)
+  private void waitForServicesStartup(DeployerXenonServiceHost host)
       throws TimeoutException, InterruptedException, NoSuchFieldException, IllegalAccessException {
 
     serviceSelfLinks = ServiceHostUtils.getServiceSelfLinks(
-        DeployerDcpServiceHost.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
-        DeployerDcpServiceHost.FACTORY_SERVICES);
-    serviceSelfLinks.add(DeployerDcpServiceHost.UPLOAD_VIB_SCHEDULER_SERVICE);
+        DeployerXenonServiceHost.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
+        DeployerXenonServiceHost.FACTORY_SERVICES);
+    serviceSelfLinks.add(DeployerXenonServiceHost.UPLOAD_VIB_SCHEDULER_SERVICE);
 
     final CountDownLatch latch = new CountDownLatch(serviceSelfLinks.size());
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {
@@ -127,7 +127,7 @@ public class DeployerDcpServiceHostTest {
       // make sure folder exists
       storageDir.mkdirs();
 
-      DeployerDcpServiceHost host = injector.getInstance(DeployerDcpServiceHost.class);
+      DeployerXenonServiceHost host = injector.getInstance(DeployerXenonServiceHost.class);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
@@ -137,14 +137,14 @@ public class DeployerDcpServiceHostTest {
       // make sure folder does not exist
       FileUtils.deleteDirectory(storageDir);
 
-      DeployerDcpServiceHost host = injector.getInstance(DeployerDcpServiceHost.class);
+      DeployerXenonServiceHost host = injector.getInstance(DeployerXenonServiceHost.class);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
 
     @Test
     public void testParams() {
-      DeployerDcpServiceHost host = injector.getInstance(DeployerDcpServiceHost.class);
+      DeployerXenonServiceHost host = injector.getInstance(DeployerXenonServiceHost.class);
       assertThat(host.getPort(), is(18001));
       Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(18001));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
@@ -164,7 +164,7 @@ public class DeployerDcpServiceHostTest {
     @BeforeMethod
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
-      host = injector.getInstance(DeployerDcpServiceHost.class);
+      host = injector.getInstance(DeployerXenonServiceHost.class);
     }
 
     @AfterMethod
@@ -213,7 +213,7 @@ public class DeployerDcpServiceHostTest {
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
 
-      host = injector.getInstance(DeployerDcpServiceHost.class);
+      host = injector.getInstance(DeployerXenonServiceHost.class);
       //host.start();
       //waitForServicesStartup(host);
     }
@@ -254,7 +254,7 @@ public class DeployerDcpServiceHostTest {
 
     private final File storageDir2 = new File("/tmp/dcp/18002/");
     private final long maintenanceInterval = TimeUnit.MILLISECONDS.toMicros(500);
-    private DeployerDcpServiceHost host2;
+    private DeployerXenonServiceHost host2;
 
     @BeforeClass
     private void setUpClass() throws IOException {
@@ -265,7 +265,7 @@ public class DeployerDcpServiceHostTest {
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
 
-      host = new DeployerDcpServiceHost("0.0.0.0", 18000, "0.0.0.0", storageDir.getPath(),
+      host = new DeployerXenonServiceHost("0.0.0.0", 18000, "0.0.0.0", storageDir.getPath(),
           null, /*cloudStoreServers*/
           injector.getInstance(DeployerContext.class),
           null /* containersConfig */,
@@ -286,7 +286,7 @@ public class DeployerDcpServiceHostTest {
       host.start();
       waitForServicesStartup(host);
 
-      host2 = new DeployerDcpServiceHost("0.0.0.0", 18002, "0.0.0.0", storageDir2.getPath(),
+      host2 = new DeployerXenonServiceHost("0.0.0.0", 18002, "0.0.0.0", storageDir2.getPath(),
           null, /*cloudStoreServers*/
           injector.getInstance(DeployerContext.class),
           null /* containersConfig */,
@@ -326,7 +326,7 @@ public class DeployerDcpServiceHostTest {
       ServiceHostUtils.joinNodeGroup(host2, host.getUri().getHost(), host.getPort());
 
       ServiceHostUtils.waitForNodeGroupConvergence(
-          new DeployerDcpServiceHost[]{host, host2},
+          new DeployerXenonServiceHost[]{host, host2},
           ServiceUriPaths.DEFAULT_NODE_GROUP,
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
           MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);

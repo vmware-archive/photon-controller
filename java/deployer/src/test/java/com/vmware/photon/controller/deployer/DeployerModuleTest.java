@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.deployer;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -60,7 +60,7 @@ public class DeployerModuleTest {
 
     @Test
     public void testZookeeperClientInjection() {
-      DeployerDcpServiceHost instance = injector.getInstance(DeployerDcpServiceHost.class);
+      DeployerXenonServiceHost instance = injector.getInstance(DeployerXenonServiceHost.class);
       ZookeeperClient zookeeperClient =
           ((ZookeeperClientFactoryProvider) instance).getZookeeperServerSetFactoryBuilder().create();
     }

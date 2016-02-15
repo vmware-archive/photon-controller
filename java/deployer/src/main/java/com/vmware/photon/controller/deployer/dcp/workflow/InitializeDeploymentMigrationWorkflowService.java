@@ -437,8 +437,8 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
           if (documentLinks.size() > 0) {
             Iterator<String> it = documentLinks.iterator();
             final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
-            FutureCallback<UploadVibTaskService.State> futureCallback = new FutureCallback<UploadVibTaskService.State>()
-            {
+            FutureCallback<UploadVibTaskService.State> futureCallback =
+                new FutureCallback<UploadVibTaskService.State>() {
               @Override
               public void onSuccess(@Nullable UploadVibTaskService.State result) {
                 switch (result.taskState.stage) {

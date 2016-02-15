@@ -113,10 +113,10 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 /**
- * This class implements the DCP service host object for the deployer service.
+ * This class implements the Xenon service host object for the deployer service.
  */
 @Singleton
-public class DeployerDcpServiceHost
+public class DeployerXenonServiceHost
     extends ServiceHost
     implements XenonHostInfoProvider,
     DeployerContextProvider,
@@ -134,7 +134,7 @@ public class DeployerDcpServiceHost
     HostManagementVmAddressValidatorFactoryProvider,
     ClusterManagerFactoryProvider {
 
-  private static final Logger logger = LoggerFactory.getLogger(DeployerDcpServiceHost.class);
+  private static final Logger logger = LoggerFactory.getLogger(DeployerXenonServiceHost.class);
 
   public static final String FACTORY_SERVICE_FIELD_NAME_SELF_LINK = "SELF_LINK";
 
@@ -236,11 +236,11 @@ public class DeployerDcpServiceHost
   private final ServerSet cloudStoreServerSet;
 
   @Inject
-  public DeployerDcpServiceHost(
+  public DeployerXenonServiceHost(
       @DeployerConfig.Bind String bind,
       @DeployerConfig.Port int port,
       @DeployerConfig.RegistrationAddress String registrationAddress,
-      @DcpConfig.StoragePath String storagePath,
+      @XenonConfig.StoragePath String storagePath,
       @CloudStoreServerSet ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
@@ -281,7 +281,7 @@ public class DeployerDcpServiceHost
         clusterManagerFactory);
   }
 
-  public DeployerDcpServiceHost(
+  public DeployerXenonServiceHost(
       String bindAddress,
       int port,
       String registrationAddress,
@@ -326,10 +326,10 @@ public class DeployerDcpServiceHost
     arguments.bindAddress = bindAddress;
     arguments.sandbox = Paths.get(storagePath);
 
-    logger.info("Initializing DcpServer on port: {} path: {}", arguments.port, storagePath);
+    logger.info("Initializing XenonServer on port: {} path: {}", arguments.port, storagePath);
 
     // Though we can manipulate hostId, we should never set it in production. This is only for
-    // testing purpose where a given hostId is easier to debug than random UUID assigned by DCP.
+    // testing purpose where a given hostId is easier to debug than random UUID assigned by Xenon.
     if (hostId != null) {
       arguments.id = "host-" + hostId;
     }
@@ -338,7 +338,7 @@ public class DeployerDcpServiceHost
   }
 
   /**
-   * This method starts the default DCP core services and deployer DCP service
+   * This method starts the default Xenon core services and deployer Xenon service
    * factories.
    *
    * @return
@@ -378,7 +378,7 @@ public class DeployerDcpServiceHost
   }
 
   /**
-   * This method gets the deployer context for the DCP service host.
+   * This method gets the deployer context for the Xenon service host.
    *
    * @return
    */
@@ -560,9 +560,9 @@ public class DeployerDcpServiceHost
     TaskSchedulerService.State state = builder.build();
     state.documentSelfLink = TaskSchedulerServiceStateBuilder.getSuffixFromSelfLink(selfLink);
 
-    URI uri = UriUtils.buildUri(DeployerDcpServiceHost.this, TaskSchedulerServiceFactory.SELF_LINK, null);
+    URI uri = UriUtils.buildUri(DeployerXenonServiceHost.this, TaskSchedulerServiceFactory.SELF_LINK, null);
     Operation post = Operation.createPost(uri).setBody(state);
-    post.setReferer(UriUtils.buildUri(DeployerDcpServiceHost.this, DEPLOYER_URI));
+    post.setReferer(UriUtils.buildUri(DeployerXenonServiceHost.this, DEPLOYER_URI));
     sendRequest(post);
   }
 

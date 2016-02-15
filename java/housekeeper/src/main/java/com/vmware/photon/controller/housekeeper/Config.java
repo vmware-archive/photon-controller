@@ -15,7 +15,7 @@ package com.vmware.photon.controller.housekeeper;
 
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
-import com.vmware.photon.controller.housekeeper.dcp.DcpConfig;
+import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 
 import com.google.inject.BindingAnnotation;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -53,7 +53,7 @@ public class Config {
 
   @Valid
   @NotNull
-  private DcpConfig dcp = new DcpConfig();
+  private XenonConfig dcp = new XenonConfig();
 
   @Valid
   @NotNull
@@ -92,7 +92,7 @@ public class Config {
     return zookeeper;
   }
 
-  public DcpConfig getDcp() {
+  public XenonConfig getDcp() {
     return dcp;
   }
 

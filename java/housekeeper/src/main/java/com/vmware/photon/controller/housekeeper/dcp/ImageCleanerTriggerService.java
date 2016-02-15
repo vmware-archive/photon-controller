@@ -110,7 +110,7 @@ public class ImageCleanerTriggerService extends StatefulService {
    * Checks if service's background processing is in pause state.
    */
   private boolean isBackgroundPaused() {
-    ServiceConfig serviceConfig = ((HousekeeperDcpServiceHost) getHost()).getServiceConfig();
+    ServiceConfig serviceConfig = ((HousekeeperXenonServiceHost) getHost()).getServiceConfig();
     boolean backgroundPaused = true;
     try {
       backgroundPaused = serviceConfig.isBackgroundPaused();

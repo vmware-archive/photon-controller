@@ -15,7 +15,7 @@ package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.CloudStoreServerSetChangeListener;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
@@ -61,13 +61,14 @@ public class TestCloudStoreModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public CloudStoreDcpHost createServer(@CloudStoreConfig.Bind String bind,
+  public CloudStoreXenonHost createServer(@CloudStoreConfig.Bind String bind,
                                         @CloudStoreConfig.Port int port,
                                         @CloudStoreConfig.StoragePath String storagePath,
                                         HostClientFactory hostClientFactory,
                                         AgentControlClientFactory agentControlClientFactory,
                                         BuildInfo buildInfo) throws Throwable {
-    return spy(new CloudStoreDcpHost(bind, port, storagePath, hostClientFactory, agentControlClientFactory, buildInfo));
+    return spy(new CloudStoreXenonHost(bind, port, storagePath, hostClientFactory,
+        agentControlClientFactory, buildInfo));
   }
 
   @Provides

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreDcpHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -29,10 +29,10 @@ import java.io.File;
 /**
  * TestMachine class hosting a DCP host.
  */
-public class TestEnvironment extends MultiHostEnvironment<CloudStoreDcpHost> {
+public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
   private TestEnvironment(int hostCount) throws Throwable {
     assertTrue(hostCount > 0);
-    hosts = new CloudStoreDcpHost[hostCount];
+    hosts = new CloudStoreXenonHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
 
       String sandbox = generateStorageSandboxPath();
@@ -40,7 +40,7 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreDcpHost> {
 
       BuildInfo buildInfo = BuildInfo.get(TestCloudStoreModule.class);
 
-      hosts[i] = new CloudStoreDcpHost(BIND_ADDRESS, 0, sandbox, mock(HostClientFactory.class),
+      hosts[i] = new CloudStoreXenonHost(BIND_ADDRESS, 0, sandbox, mock(HostClientFactory.class),
           mock(AgentControlClientFactory.class), buildInfo);
     }
     // Disable host ping: we have fake hosts and don't want them to be marked as missing

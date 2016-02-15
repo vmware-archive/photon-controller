@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 
 /**
  * Implements a factory for {@link DeprovisionHostWorkflowServiceClient}.
  */
 public class DeprovisionHostWorkflowServiceClientFactory {
 
-  public DeprovisionHostWorkflowServiceClient getInstance(DeployerDcpServiceHost dcpHost) {
+  public DeprovisionHostWorkflowServiceClient getInstance(DeployerXenonServiceHost dcpHost) {
     return new DeprovisionHostWorkflowServiceClient(dcpHost);
   }
 }

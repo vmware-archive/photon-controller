@@ -20,7 +20,7 @@ import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.gen.DeleteHostRequest;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -40,9 +40,9 @@ public class HostServiceClient {
   private static final String REFERRER_PATH = "/thrift-endpoint/host-client";
 
   private ServerSet cloudStoreServerSet;
-  private DeployerDcpServiceHost dcpHost;
+  private DeployerXenonServiceHost dcpHost;
 
-  public HostServiceClient(DeployerDcpServiceHost dcpHost, ServerSet cloudStoreServerSet) {
+  public HostServiceClient(DeployerXenonServiceHost dcpHost, ServerSet cloudStoreServerSet) {
     this.dcpHost = dcpHost;
     this.cloudStoreServerSet = cloudStoreServerSet;
   }

@@ -20,7 +20,7 @@ import com.vmware.photon.controller.common.xenon.OperationLatch;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.deployer.DeployerConfig;
-import com.vmware.photon.controller.deployer.dcp.DeployerDcpServiceHost;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowService;
 import com.vmware.photon.controller.deployer.dcp.workflow.FinalizeDeploymentMigrationWorkflowFactoryService;
@@ -66,10 +66,10 @@ public class DeploymentWorkFlowServiceClient {
   private static final String REFERRER_PATH = "/deployer-thrift-endpoint";
 
   private DeployerConfig deployerConfig;
-  private DeployerDcpServiceHost dcpHost;
+  private DeployerXenonServiceHost dcpHost;
   private long dcpOperationTimeoutMicros;
 
-  public DeploymentWorkFlowServiceClient(DeployerConfig config, DeployerDcpServiceHost dcpHost) {
+  public DeploymentWorkFlowServiceClient(DeployerConfig config, DeployerXenonServiceHost dcpHost) {
     this.deployerConfig = config;
     this.dcpHost = dcpHost;
     this.dcpOperationTimeoutMicros = OperationLatch.DEFAULT_OPERATION_TIMEOUT_MICROS;
