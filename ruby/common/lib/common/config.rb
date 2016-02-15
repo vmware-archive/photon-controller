@@ -33,7 +33,6 @@ module EsxCloud
       def debug?
         ENV["DEBUG"] && ENV["DEBUG"] != ""
       end
-
     end
   end
 end

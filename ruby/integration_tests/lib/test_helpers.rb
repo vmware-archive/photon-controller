@@ -127,6 +127,10 @@ module EsxCloud
       ENV["MGMT_VM_NETMASK"]
     end
 
+    def self.get_mgmt_vm_ip_for_add_mgmt_host
+      ENV["MGMT_VM_IP_FOR_ADD_MGMT_HOST"]
+    end
+
     def self.get_esx_username
       ENV["ESX_USERNAME"]
     end
