@@ -27,6 +27,13 @@ module EsxCloud
       def import_config(config)
         fail UnexpectedFormat, "No host defined." unless config.is_a?(Hash)
 
+        mgmt_host_metadata = config['add_mgmt_host_metadata']
+        unless mgmt_host_metadata.nil? || mgmt_host_metadata.empty?
+          EsxCloud::Seeder.set_add_mgmt_host_metadata(mgmt_host_metadata)
+        end
+
+        fail UnexpectedFormat, "No host defined." if hosts.nil? || hosts.empty?
+
         hosts = config['hosts']
         fail UnexpectedFormat, "No host defined." if hosts.nil? || hosts.empty?
 

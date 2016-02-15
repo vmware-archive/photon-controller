@@ -308,7 +308,10 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       end
 
       describe "add mgmt host", disable_for_uptime_tests: true do
-        xit "add/remove cloud host as management host" do
+        it "add cloud host as management host" do
+          mgmt_host_metadata = EsxCloud::Config.mgmt_host_metadata
+          return if mgmt_host_metadata.nil? || mgmt_host_metadata.empty?
+
           expect(EsxCloud::Host.enter_suspended_mode(@host.id).state).to eq("SUSPENDED")
           expect(EsxCloud::Host.enter_maintenance_mode(@host.id).state).to eq("MAINTENANCE")
           expect(EsxCloud::Host.delete(@host.id)).to eq(true)
@@ -318,8 +321,7 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
               @host.password,
               ["MGMT"],
               @host.address,
-              @host.metadata)
-
+              mgmt_host_metadata)
 
           host = EsxCloud::Host.create @deployment.id, add_mgmt_host_spec
           expect(host.state).to eq("READY")
