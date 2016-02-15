@@ -8,7 +8,6 @@
 # under the License is distributed on an "AS IS" BASIS, without warranties or
 # conditions of any kind, EITHER EXPRESS OR IMPLIED. See the License for the
 # specific language governing permissions and limitations under the License.
-
 module EsxCloud
   class HostsImporter
 
@@ -26,6 +25,11 @@ module EsxCloud
       # @return [Array<HostCreateSpec>]
       def import_config(config)
         fail UnexpectedFormat, "No host defined." unless config.is_a?(Hash)
+
+        mgmt_host_metadata = config['add_mgmt_host_metadata']
+        unless mgmt_host_metadata.nil? || mgmt_host_metadata.empty?
+          EsxCloud::Config.set_add_mgmt_host_metadata(mgmt_host_metadata)
+        end
 
         hosts = config['hosts']
         fail UnexpectedFormat, "No host defined." if hosts.nil? || hosts.empty?

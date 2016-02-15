@@ -34,6 +34,13 @@ module EsxCloud
         ENV["DEBUG"] && ENV["DEBUG"] != ""
       end
 
+      def set_add_mgmt_host_metadata(add_mgmt_host_metadata)
+        @mgmt_host_metadata = add_mgmt_host_metadata
+      end
+
+      def mgmt_host_metadata
+        @mgmt_host_metadata
+      end
     end
   end
 end
