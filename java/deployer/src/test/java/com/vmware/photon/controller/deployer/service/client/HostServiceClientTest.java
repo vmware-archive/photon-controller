@@ -14,8 +14,8 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.gen.DeleteHostRequest;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -59,11 +59,11 @@ public class HostServiceClientTest {
 
     private HostServiceClient client;
     private TestEnvironment testEnvironment;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       testEnvironment = new TestEnvironment.Builder().cloudServerSet(cloudStoreMachine.getServerSet())
           .hostCount(1).build();
       client = new HostServiceClient(testEnvironment.getHosts()[0], cloudStoreMachine.getServerSet());
@@ -111,13 +111,13 @@ public class HostServiceClientTest {
 
     private HostServiceClient target;
     private DeployerXenonServiceHost host;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
 
     @BeforeMethod
     public void before() throws Throwable {
       host = mock(DeployerXenonServiceHost.class);
       when(host.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       target = new HostServiceClient(host, cloudStoreMachine.getServerSet());
     }
 

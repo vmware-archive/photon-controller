@@ -25,8 +25,8 @@ import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.AvailabilityZoneService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.AvailabilityZoneServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 

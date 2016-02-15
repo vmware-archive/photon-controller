@@ -462,14 +462,14 @@ public class DeleteAgentTaskServiceTest {
     private final File scriptLogDirectory = new File("/tmp/deployAgent/logs");
 
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
     private DeleteAgentTaskService.State startState;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       FileUtils.deleteDirectory(storageDirectory);
 
       deployerContext = ConfigBuilder.build(DeployerConfig.class,

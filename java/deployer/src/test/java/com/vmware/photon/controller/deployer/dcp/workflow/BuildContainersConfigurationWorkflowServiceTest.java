@@ -383,11 +383,11 @@ public class BuildContainersConfigurationWorkflowServiceTest {
     private DeployerConfig deployerConfig;
     private ListeningExecutorService listeningExecutorService;
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       deployerConfig = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath());
       TestHelper.setContainersConfig(deployerConfig);

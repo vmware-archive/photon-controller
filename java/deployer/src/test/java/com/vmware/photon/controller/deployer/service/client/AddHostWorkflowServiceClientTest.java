@@ -14,8 +14,8 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowService;
@@ -69,12 +69,12 @@ public class AddHostWorkflowServiceClientTest {
     private AddHostWorkflowServiceClient target;
     private DeployerXenonServiceHost host;
     private TestEnvironment testEnvironment;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
 
 
     @BeforeMethod
     public void before() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       testEnvironment = new TestEnvironment.Builder().cloudServerSet(cloudStoreMachine.getServerSet())
           .hostCount(1).build();
       host = spy(testEnvironment.getHosts()[0]);

@@ -21,7 +21,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.RestClient;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 

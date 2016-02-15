@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore;
 
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.cloudstore.xenon.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 

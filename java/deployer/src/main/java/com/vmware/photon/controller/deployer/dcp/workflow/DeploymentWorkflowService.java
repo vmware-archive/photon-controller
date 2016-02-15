@@ -15,8 +15,8 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.CloudStoreXenonHost;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;

@@ -435,12 +435,12 @@ public class BulkProvisionHostsWorkflowServiceTest {
     private ListeningExecutorService listeningExecutorService;
     private BulkProvisionHostsWorkflowService.State startState;
     private TestEnvironment testEnvironment;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private File vibSourceFile;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       FileUtils.deleteDirectory(storageDirectory);
       vibDirectory.mkdirs();
       vibSourceFile = TestHelper.createSourceFile(null, vibDirectory);

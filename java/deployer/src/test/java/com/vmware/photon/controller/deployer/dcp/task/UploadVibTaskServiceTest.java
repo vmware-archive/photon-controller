@@ -353,7 +353,7 @@ public class UploadVibTaskServiceTest {
     private final File storageDirectory = new File("/tmp/deployAgent");
     private final File vibDirectory = new File("/tmp/deployAgent/vibs");
 
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
@@ -363,7 +363,7 @@ public class UploadVibTaskServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       FileUtils.deleteDirectory(storageDirectory);
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.clients.status;
 
-import com.vmware.photon.controller.cloudstore.dcp.StatusService;
+import com.vmware.photon.controller.cloudstore.xenon.StatusService;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;

@@ -22,9 +22,9 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.FlavorApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -544,7 +544,7 @@ public class AllocateResourcesWorkflowServiceTest {
     private static final String configFilePath = "/config.yml";
 
     private ApiClientFactory apiClientFactory;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
     private FlavorApi flavorApi;
     private AllocateResourcesWorkflowService.State startState;
@@ -556,7 +556,7 @@ public class AllocateResourcesWorkflowServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();

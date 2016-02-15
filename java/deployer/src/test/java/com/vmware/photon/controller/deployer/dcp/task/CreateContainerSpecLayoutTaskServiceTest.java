@@ -15,7 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -340,7 +340,7 @@ public class CreateContainerSpecLayoutTaskServiceTest {
     private ContainersConfig containersConfig;
     private CreateContainerSpecLayoutTaskService.State startState;
     private TestEnvironment testEnvironment;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStore;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStore;
 
     private Map<String, ContainerTemplateService.State> containerTypeStateMap = new HashMap<>();
 
@@ -363,7 +363,7 @@ public class CreateContainerSpecLayoutTaskServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      cloudStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStore = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       testEnvironment = new TestEnvironment.Builder()
           .containersConfig(containersConfig)

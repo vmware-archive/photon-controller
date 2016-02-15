@@ -15,8 +15,8 @@ package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
@@ -1202,7 +1202,7 @@ public class ImageDatastoreSweeperServiceTest {
         throws Throwable {
       List<ImageService.State> images = new ArrayList<>();
       for (int i = 0; i < count; i++) {
-        com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State state
+        com.vmware.photon.controller.cloudstore.xenon.entity.ImageService.State state
             = new ImageService.State();
         state.name = "image-" + i;
         state.replicationType = ImageReplicationType.EAGER;
