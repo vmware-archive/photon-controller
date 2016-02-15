@@ -329,7 +329,7 @@ public class CreateVmSpecLayoutTaskServiceTest {
 
     private CreateVmSpecLayoutTaskService.State startState;
     private TestEnvironment testEnvironment;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
 
     private ContainersConfig containersConfig;
 
@@ -344,7 +344,7 @@ public class CreateVmSpecLayoutTaskServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       testEnvironment = new TestEnvironment.Builder()
           .cloudServerSet(cloudStoreMachine.getServerSet())

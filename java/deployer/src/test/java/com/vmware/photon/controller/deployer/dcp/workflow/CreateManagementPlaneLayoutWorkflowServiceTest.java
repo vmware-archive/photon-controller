@@ -521,11 +521,11 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
     private ContainersConfig containersConfig;
     private CreateManagementPlaneLayoutWorkflowService.State startState;
     private TestEnvironment testEnvironment = null;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       deployerConfig = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath());
       TestHelper.setContainersConfig(deployerConfig);

@@ -19,8 +19,8 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ImagesApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -539,7 +539,7 @@ public class UploadImageTaskServiceTest {
   public class EndToEndTest {
 
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
     private ApiClientFactory apiClientFactory;
@@ -583,7 +583,7 @@ public class UploadImageTaskServiceTest {
       imageState.totalImageDatastore = 5;
       imageState.replicatedImageDatastore = 5;
 
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       machine = createTestEnvironment(
           deployerContext,
           listeningExecutorService,

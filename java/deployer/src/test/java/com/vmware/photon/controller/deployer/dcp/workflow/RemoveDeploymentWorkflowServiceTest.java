@@ -31,10 +31,10 @@ import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TenantService;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -496,7 +496,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
     private RemoveDeploymentWorkflowService.State startState;
     private TestEnvironment testEnvironment;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreTestEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreTestEnvironment;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
@@ -515,7 +515,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      cloudStoreTestEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreTestEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       apiClientFactory = mock(ApiClientFactory.class);

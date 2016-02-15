@@ -67,8 +67,8 @@ import com.vmware.photon.controller.apife.exceptions.external.PersistentDiskAtta
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.apife.lib.QuotaCost;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
-import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;

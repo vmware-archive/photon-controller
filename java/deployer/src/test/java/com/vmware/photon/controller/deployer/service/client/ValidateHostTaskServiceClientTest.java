@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;

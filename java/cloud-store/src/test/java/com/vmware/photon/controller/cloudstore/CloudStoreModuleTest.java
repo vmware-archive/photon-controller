@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore;
 
-import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
+import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.thrift.ServerSet;

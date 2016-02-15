@@ -16,8 +16,8 @@ package com.vmware.photon.controller.deployer.dcp.task;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -84,7 +84,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
 
   private TestHost host;
   private BuildRuntimeConfigurationTaskService service;
-  private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+  private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
 
   /**
    * Dummy function to make IntelliJ think that this is a test class.
@@ -129,7 +129,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
       ListeningExecutorService listeningExecutorService,
       int hostCount)
       throws Throwable {
-    cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+    cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
     return new TestEnvironment.Builder()
         .containersConfig(deployerConfig.getContainersConfig())

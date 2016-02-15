@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.housekeeper.service;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.tests.TestServiceIgnoresPosts;

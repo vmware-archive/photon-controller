@@ -23,8 +23,8 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ImagesApi;
 import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.clients.MesosClient;
 import com.vmware.photon.controller.clustermanager.helpers.ReflectionUtils;
@@ -528,7 +528,7 @@ public class MesosClusterCreateTaskServiceTest {
     private String leaderIp = "leaderIp";
 
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private MesosClusterCreateTask startState;
     private TestingServer zookeeperServer;
 
@@ -554,7 +554,7 @@ public class MesosClusterCreateTaskServiceTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
 
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       machine = new TestEnvironment.Builder()
           .apiClient(apiClient)

@@ -21,11 +21,11 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -483,7 +483,7 @@ public class CreateManagementVmTaskServiceTest {
     private static final String configFilePath = "/config.yml";
 
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private DeployerContext deployerContext;
     private ApiClientFactory apiClientFactory;
     private ProjectService.State projectServiceStartState;
@@ -501,7 +501,7 @@ public class CreateManagementVmTaskServiceTest {
 
     @BeforeMethod
     public void setUpClass() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           CreateManagementVmTaskServiceTest.class.getResource(configFilePath).getPath())
           .getDeployerContext();

@@ -34,10 +34,10 @@ import com.vmware.photon.controller.chairman.hierarchy.Hierarchy;
 import com.vmware.photon.controller.chairman.hierarchy.HierarchyUtils;
 import com.vmware.photon.controller.chairman.hierarchy.Host;
 import com.vmware.photon.controller.chairman.hierarchy.Scheduler;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonException;
@@ -171,7 +171,7 @@ public class ChairmanService implements Chairman.Iface {
    * datastores specified in <code>datastores</code>. It ignores all the errors
    * since the documents might have already been created. Then, it goes through
    * all the datastore IDs in <code>imageDatastores</code> and set
-   * {@link com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService.State#isImageDatastore}
+   * {@link com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService.State#isImageDatastore}
    * to true.
    */
   void setDatastoreState(List<Datastore> datastores, List<String> imageDatastores) throws Throwable {

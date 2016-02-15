@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.OperationJoinLatch;
 import com.vmware.photon.controller.common.xenon.OperationLatch;

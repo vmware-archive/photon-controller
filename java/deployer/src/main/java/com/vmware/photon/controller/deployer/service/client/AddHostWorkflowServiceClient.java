@@ -14,8 +14,8 @@
 package com.vmware.photon.controller.deployer.service.client;
 
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;

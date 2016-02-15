@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -509,7 +509,7 @@ public class CreateAndValidateContainerWorkflowServiceTest {
     private static final String configFilePath = "/config.yml";
 
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private ListeningExecutorService listeningExecutorService;
     private CreateAndValidateContainerWorkflowService.State startState;
 
@@ -522,7 +522,7 @@ public class CreateAndValidateContainerWorkflowServiceTest {
     private void setup() throws Throwable {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       deployerConfig = ConfigBuilder.build(DeployerConfig.class, this.getClass().getResource(configFilePath).getPath());
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
     }
 
     @AfterClass

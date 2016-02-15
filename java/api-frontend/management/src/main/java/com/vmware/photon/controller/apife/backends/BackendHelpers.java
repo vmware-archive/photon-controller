@@ -18,9 +18,9 @@ import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredEx
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;

@@ -16,9 +16,9 @@ package com.vmware.photon.controller.deployer.dcp.task;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -523,7 +523,7 @@ public class ProvisionHostTaskServiceTest {
     private final File scriptLogDirectory = new File("/tmp/deployAgent/logs");
     private final File storageDirectory = new File("/tmp/deployAgent");
 
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
     private ProvisionHostTaskService.State startState;
@@ -536,7 +536,7 @@ public class ProvisionHostTaskServiceTest {
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       testEnvironment = new TestEnvironment.Builder()
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
@@ -641,7 +641,7 @@ public class ProvisionHostTaskServiceTest {
    */
   public class WaitForAgentTest {
 
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
     private HostClientFactory hostClientFactory;
     private ProvisionHostTaskService.State startState;
@@ -649,7 +649,7 @@ public class ProvisionHostTaskServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
       hostClientFactory = mock(HostClientFactory.class);
@@ -789,7 +789,7 @@ public class ProvisionHostTaskServiceTest {
    */
   public class ProvisionAgentTest {
 
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
     private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
@@ -798,7 +798,7 @@ public class ProvisionHostTaskServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
       agentControlClientFactory = mock(AgentControlClientFactory.class);
@@ -892,7 +892,7 @@ public class ProvisionHostTaskServiceTest {
    */
   public class GetHostConfigTest {
 
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private List<Datastore> datastoreList;
     private DeployerContext deployerContext;
     private HostClientFactory hostClientFactory;
@@ -902,7 +902,7 @@ public class ProvisionHostTaskServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
       hostClientFactory = mock(HostClientFactory.class);
@@ -1084,7 +1084,7 @@ public class ProvisionHostTaskServiceTest {
     private final File scriptLogDirectory = new File("/tmp/deployAgent/logs");
     private final File storageDirectory = new File("/tmp/deployAgent");
 
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private List<Datastore> datastoreList;
     private DeployerContext deployerContext;
     private AgentControlClientFactory agentControlClientFactory;
@@ -1099,7 +1099,7 @@ public class ProvisionHostTaskServiceTest {
 
       FileUtils.deleteDirectory(storageDirectory);
 
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       datastoreList = buildDatastoreList(10);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();

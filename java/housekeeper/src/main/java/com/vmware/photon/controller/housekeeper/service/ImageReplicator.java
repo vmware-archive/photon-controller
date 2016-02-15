@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.service;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.OperationLatch;

@@ -22,10 +22,10 @@ import com.vmware.photon.controller.client.resource.ImagesApi;
 import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -495,7 +495,7 @@ public class CreateManagementVmWorkflowServiceTest {
     private final File storageDirectory = new File("/tmp/createIso");
 
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private ListeningExecutorService listeningExecutorService;
 
     private CreateManagementVmWorkflowService.State startState;
@@ -522,7 +522,7 @@ public class CreateManagementVmWorkflowServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       FileUtils.deleteDirectory(storageDirectory);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
     }

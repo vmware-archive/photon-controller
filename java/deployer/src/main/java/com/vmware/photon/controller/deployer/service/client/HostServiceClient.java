@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;

@@ -18,7 +18,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -469,7 +469,7 @@ public class CreateIsoTaskServiceTest {
     private ListeningExecutorService listeningExecutorService;
     private CreateIsoTaskService.State startState;
     private TestEnvironment testEnvironment;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
 
     private ApiClientFactory apiClientFactory;
     private ServiceConfiguratorFactory serviceConfiguratorFactory;
@@ -481,7 +481,7 @@ public class CreateIsoTaskServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       FileUtils.deleteDirectory(storageDirectory);
       deployerConfig = ConfigBuilder.build(DeployerConfig.class, this.getClass().getResource(configFilePath).getPath());
       TestHelper.setContainersConfig(deployerConfig);

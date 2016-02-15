@@ -14,8 +14,8 @@ package com.vmware.photon.controller.clustermanager.tasks;
 
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
 import com.vmware.photon.controller.clustermanager.entities.InactiveVmFactoryService;
 import com.vmware.photon.controller.clustermanager.entities.InactiveVmService;

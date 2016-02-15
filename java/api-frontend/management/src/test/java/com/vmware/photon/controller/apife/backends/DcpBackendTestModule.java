@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.cloudstore.xenon.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
