@@ -145,7 +145,8 @@ class Agent:
         protocol_factory = TCompactProtocol.TCompactProtocolFactory()
 
         server = TNonblockingServer.TNonblockingServer(
-            mux_processor, transport, protocol_factory, protocol_factory, 32)
+            mux_processor, transport, protocol_factory, protocol_factory,
+            self._config.host_service_threads)
         self._server = server
 
     def _start_thrift_service(self):
