@@ -35,6 +35,7 @@ describe "vm", management: true, image: true do
     vm.delete
   end
 
+  # Test disabled for cli as cli always creates the disk of kind "ephemeral-disk" while creating VM
   it "should fail to create one vm with one ephemeral disk and one persistent disk", disable_for_cli_test: true do
     vm_name = random_name("vm-")
     edisk_flavor = @seeder.ephemeral_disk_flavor!
@@ -56,6 +57,8 @@ describe "vm", management: true, image: true do
     end
   end
 
+  # Test disabled for cli as cli and api tests run in parallel and
+  # hardware resources required are not available to both at same time.
   it "should create a vm with multiple nics on different networks", disable_for_cli_test: true, single_vm_port_group: true  do
     begin
       network1 = EsxCloud::SystemSeeder.instance.network!
@@ -643,9 +646,14 @@ describe "vm", management: true, image: true do
 
   def validate_vm_tasks(task_list)
     tasks = task_list.items
-    tasks.size.should == 1
-    task = tasks.first
-    [task.entity_kind, task.operation].should == ["vm", "CREATE_VM"]
+    isCreateTask = false
+    tasks.each{ |task|
+      if task.entity_kind == "vm" and task.operation == "CREATE_VM"
+        isCreateTask = true
+        break
+      end
+    }
+    isCreateTask.should == true
   end
 
   def is_pingable?(addr)
