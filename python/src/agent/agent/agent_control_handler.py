@@ -20,6 +20,8 @@ from common.photon_thrift.decorators import error_handler
 from common.photon_thrift.decorators import log_request
 from common.service_name import ServiceName
 from gen.agent import AgentControl
+from gen.agent.ttypes import AgentStatusResponse
+from gen.agent.ttypes import AgentStatusCode
 from gen.agent.ttypes import ProvisionResponse
 from gen.agent.ttypes import ProvisionResultCode
 from gen.agent.ttypes import VersionResponse
@@ -60,6 +62,16 @@ class AgentControlHandler(AgentControl.Iface):
                                      str(e))
 
         return ProvisionResponse(ProvisionResultCode.OK)
+
+    @error_handler(AgentStatusResponse, AgentStatusCode)
+    def get_agent_status(self):
+        """
+        Get the current status of the agent
+        """
+        agent_config = common.services.get(ServiceName.AGENT_CONFIG)
+        if agent_config.reboot_required:
+            return AgentStatusResponse(AgentStatusCode.RESTARTING)
+        return AgentStatusResponse(AgentStatusCode.OK)
 
     @log_request
     @error_handler(VersionResponse, VersionResultCode)
