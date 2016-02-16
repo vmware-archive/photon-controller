@@ -24,8 +24,13 @@ from gen.common.ttypes import ServerAddress
 from gen.flavors.ttypes import Flavor
 from gen.flavors.ttypes import QuotaLineItem
 from gen.flavors.ttypes import QuotaUnit
+from gen.agent.ttypes import AgentStatusCode
+from gen.agent.ttypes import PingRequest
+from gen.agent.ttypes import ProvisionRequest
+from gen.agent.ttypes import ProvisionResultCode
+from gen.agent.ttypes import VersionRequest
+from gen.agent.ttypes import VersionResultCode
 from gen.host import Host
-from gen.host.ttypes import AgentStatusCode
 from gen.host.ttypes import CreateDiskResultCode
 from gen.host.ttypes import CopyImageResultCode
 from gen.host.ttypes import DeleteImageRequest
@@ -48,11 +53,6 @@ from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from gen.host.ttypes import SetHostModeRequest
 from gen.host.ttypes import SetHostModeResultCode
-from gen.agent.ttypes import PingRequest
-from gen.agent.ttypes import ProvisionRequest
-from gen.agent.ttypes import ProvisionResultCode
-from gen.agent.ttypes import VersionRequest
-from gen.agent.ttypes import VersionResultCode
 from gen.resource.constants import NEVER_UPDATED
 from gen.resource.ttypes import CloneType
 from gen.resource.ttypes import Disk
@@ -1049,7 +1049,7 @@ class AgentCommonTests(object):
         agent_restarted = False
         while 0 < remaining_sleep_time:
             try:
-                res = self.host_client.get_agent_status()
+                res = self.control_client.get_agent_status()
                 # Verify that the response is restarting
                 self.assertEqual(res.status, AgentStatusCode.RESTARTING)
                 time.sleep(sleep_time)
