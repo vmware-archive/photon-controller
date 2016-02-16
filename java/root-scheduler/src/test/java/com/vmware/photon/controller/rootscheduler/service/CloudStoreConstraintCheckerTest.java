@@ -41,14 +41,17 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
+import static org.testng.Assert.assertEquals;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -75,7 +78,7 @@ public class CloudStoreConstraintCheckerTest {
 
   // The second Cloudstore environment has 3 Cloudstores and eventually, when we work well
   // with clusters larger than our replication factor, it will increase.
-  private static final int LARGE_NUMBER_OF_CS_HOSTS = 3;
+  private static final int LARGE_NUMBER_OF_CS_HOSTS = 5;
   private TestEnvironment cloudStoreTestEnvironmentLarge;
   private XenonRestClient cloudstoreClientLarge;
   private CloudStoreConstraintChecker checkerLarge;
@@ -416,6 +419,51 @@ public class CloudStoreConstraintCheckerTest {
         Arrays.asList("non_existent_tag"));
     selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.size(), equalTo(0));
+
+    deleteDatastores(cloudStoreEnvironment, datastores);
+    deleteHosts(cloudStoreEnvironment, hosts);
+  }
+
+  @Test(dataProvider = "environment")
+  private void testAllHostsPicked(
+      String environmentName,
+      TestEnvironment cloudStoreEnvironment,
+      CloudStoreConstraintChecker checker) throws Throwable {
+    logger.info("Testing that all hosts are selected in ", environmentName);
+
+    List<DatastoreService.State> datastores = createDatastoreDescriptions(10);
+    List<HostService.State> hosts = createHostDescriptions(10, false, datastores);
+
+    logger.info("Making 10 datastores...");
+    createDatastores(cloudStoreEnvironment, datastores);
+
+    logger.info("Making 10 cloud hosts...");
+    createHosts(cloudStoreEnvironment, hosts);
+
+    List<ResourceConstraint> constraints = new LinkedList<>();
+    Boolean[] selectedHost = new Boolean[10];
+    boolean foundAll = false;
+    int numAttempts = 0;
+    Arrays.fill(selectedHost, false);
+
+    for (int i = 0; i < 10000; i++) {
+      Map<String, ServerAddress> candidate = checker.getCandidates(constraints, 1);
+      assertThat(candidate.size(), is(1));
+      // Extract the host index from the name, which is the string "hostN", where N is the number of the host.
+      for (String hostname : candidate.keySet()) {
+        int hostIndex = Integer.parseInt(hostname.substring(CLOUD_HOST_PREFIX.length()));
+        selectedHost[hostIndex] = true;
+      }
+      if (Arrays.stream(selectedHost).allMatch(selected -> selected == true)) {
+        foundAll = true;
+        numAttempts = i + 1;
+        break;
+      }
+    }
+    assertEquals(foundAll, true);
+    if (foundAll) {
+      logger.info("Took {} attempts to select all hosts", numAttempts);
+    }
 
     deleteDatastores(cloudStoreEnvironment, datastores);
     deleteHosts(cloudStoreEnvironment, hosts);

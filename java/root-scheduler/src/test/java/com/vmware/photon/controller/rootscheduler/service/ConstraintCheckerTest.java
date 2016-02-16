@@ -186,13 +186,13 @@ public class ConstraintCheckerTest {
 
   @DataProvider(name = "default")
   public Object[][] createDefault() {
-    XenonRestClient dcpRestClient = new XenonRestClient(
+    XenonRestClient xenonRestClient = new XenonRestClient(
         cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
     // This tests does tens of thousands of operation. We only log failures, so we can see what's happening.
-    dcpRestClient.start();
+    xenonRestClient.start();
     return new Object[][]{
-        {new InMemoryConstraintChecker(dcpRestClient)},
-        {new CloudStoreConstraintChecker(dcpRestClient)},
+        {new InMemoryConstraintChecker(xenonRestClient)},
+        {new CloudStoreConstraintChecker(xenonRestClient)},
     };
   }
 

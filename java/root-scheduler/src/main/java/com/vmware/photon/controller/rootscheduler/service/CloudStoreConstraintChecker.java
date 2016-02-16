@@ -29,26 +29,34 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.Query.Occurance;
 import com.vmware.xenon.services.common.QueryTask.QuerySpecification.SortOrder;
 
 import com.google.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * This class implements a {@link ConstraintChecker} using Xenon queries against cloud store nodes.
  */
 public class CloudStoreConstraintChecker implements ConstraintChecker {
+
+  private static final int REPLICATION_FACTOR = 3;
 
   private static final String HOST_SELF_LINK_PREFIX = HostServiceFactory.SELF_LINK + "/";
   private static final List<String> managementTagValues = Arrays.asList(UsageTag.MGMT.name());
@@ -295,32 +303,108 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
     QueryTask queryTask = queryTaskBuilder.build();
 
     try {
-      Operation completedOp = xenonRestClient.query(queryTask);
-      Map<String, Object> documents = extractDocumentsFromQuery(completedOp);
-
-      if (documents == null) {
-        // Logging happened in extractDocumentsFromQuery
-        return;
+      if (shouldUseBroadcastQuery()) {
+        doBroadcastQuery(queryTask, numCandidates, result);
+      } else {
+        doSimpleQuery(queryTask, numCandidates, result);
       }
 
-      for (Object document : documents.values()) {
-        HostService.State host = Utils.fromJson(document, HostService.State.class);
-        if (host == null) {
-          logger.warn("Host query had invalid host, ignoring");
-          continue;
-        }
-        result.put(ServiceUtils.getIDFromDocumentSelfLink(host.documentSelfLink),
-            new ServerAddress(host.hostAddress, host.agentPort));
-
-        if (result.size() >= numCandidates) {
-          // If we're searching the second half of the search space, we need to make sure not to add too many
-          // candidates.
-          break;
-        }
-      }
     } catch (Throwable t) {
       logger.warn("Failed to query Cloudstore for hosts matching {}, exception: {}",
           Utils.toJsonHtml(query), Utils.toString(t));
+    }
+  }
+
+  /**
+   * Do a simple query to one CloudStore host.
+   *
+   * In the case where we have PLICATION_FACTOR or fewer hosts (currently three), it suffices to query just one
+   * CloudStore host because all hosts have all data. That's what this does.
+   */
+  private void doSimpleQuery(QueryTask queryTask, int numCandidates, Map<String, ServerAddress> result)
+      throws Throwable {
+    Operation completedOp = xenonRestClient.query(queryTask);
+    Map<String, Object> documents = extractDocumentsFromQuery(completedOp);
+
+    if (documents == null) {
+      // Logging happened in extractDocumentsFromQuery
+      return;
+    }
+
+    for (Object document : documents.values()) {
+      HostService.State host = Utils.fromJson(document, HostService.State.class);
+      if (host == null) {
+        logger.warn("Host query had invalid host, ignoring");
+        continue;
+      }
+      result.put(ServiceUtils.getIDFromDocumentSelfLink(host.documentSelfLink),
+          new ServerAddress(host.hostAddress, host.agentPort));
+
+      if (result.size() >= numCandidates) {
+        // If we're searching the second half of the search space, we need to make sure not to add too many
+        // candidates.
+        break;
+      }
+    }
+  }
+
+  /**
+   * Do a broadcast query to all Cloudstore hosts.
+   *
+   * In the case where we have more than REPLICATION_FACTOR hosts (currently three), we need to do a broadcast query
+   * because a single host will not have all the data.
+   *
+   * There are two ways to do broadcast queries:
+   *
+   * 1) We could make a query task (/core/query-tasks) with the BROADCAST option. That doesn't work because Xenon
+   * doesn't sort the results on any field other than the self link.
+   *
+   * 2) We can ask Xenon to forward a single request (for us, a query with any options, including sorting) to all nodes.
+   * This is what we do. Photon Controller already does this elsewhere, so we're mostly leveraging that code, except for
+   * the code that collates the response.
+   *
+   * We collate the response differently because although we asked for a sorted response, we get a set of responses from
+   * each Cloudstore node. Individually they have been sorted, but the complete response is not. Same thing for the
+   * result limit: we may have more results than we requested, though each individual host limited its responses.
+   * Therefore we extract the responses from each host into a single list, sort iot, and extract the first numCandidate
+   * responses.
+   */
+  private void doBroadcastQuery(QueryTask queryTask, int numCandidates, Map<String, ServerAddress> result)
+      throws Throwable {
+    Operation completedOp = xenonRestClient.postToBroadcastQueryService(queryTask);
+
+    NodeGroupBroadcastResponse response = completedOp.getBody(NodeGroupBroadcastResponse.class);
+    List<HostService.State> hosts = new ArrayList<>();
+    Set<String> hostsSeen = new HashSet<>();
+
+    // Step 1: Extract the hosts into a list, removing duplicates as we go.
+    for (Map.Entry<URI, String> entry : response.jsonResponses.entrySet()) {
+      QueryTask queryTaskResponse = Utils.fromJson(entry.getValue(), QueryTask.class);
+      if (queryTaskResponse.results != null && queryTaskResponse.results.documents != null) {
+        for (Object value : queryTaskResponse.results.documents.values()) {
+          HostService.State host = Utils.fromJson(value, HostService.State.class);
+          if (!hostsSeen.contains(host.documentSelfLink)) {
+            hostsSeen.add(host.documentSelfLink);
+            hosts.add(host);
+          }
+        }
+      }
+    }
+
+    // Step 2: Sort the list
+    Collections.sort(
+        hosts,
+        (host1, host2) -> host1.schedulingConstant.compareTo(host2.schedulingConstant)
+    );
+
+    // Step 3: Select candidates
+    for (HostService.State host : hosts) {
+      result.put(
+          ServiceUtils.getIDFromDocumentSelfLink(host.documentSelfLink),
+          new ServerAddress(host.hostAddress, host.agentPort));
+      if (result.size() >= numCandidates) {
+        break;
+      }
     }
   }
 
@@ -354,7 +438,11 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
     return documents;
   }
 
-
+  /**
+   * Figure out the clause to add to our query to only pick hosts that have datastores with a given tag.
+   *
+   * Unfortunately, to do this correctly we need to do a query to find the datastores with the tag.
+   */
   private void addDatastoreTagClause(QueryTask.Query.Builder builder, ResourceConstraint constraint) throws
       NoSuchResourceException {
 
@@ -370,13 +458,22 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
           DatastoreService.State.FIELD_NAME_TAGS, tag, QueryTask.Query.Occurance.SHOULD_OCCUR);
     }
 
-    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+    QueryTask.Builder queryTaskBuilder = QueryTask.Builder.createDirectTask()
         .setQuery(QueryTask.Query.Builder.create()
             .addKindFieldClause(DatastoreService.State.class)
             .addClause(tagBuilder.build())
             .build())
-        .setResultLimit(1000)
-        .build();
+        .setResultLimit(1000);
+
+    if (shouldUseBroadcastQuery()) {
+      // Unlike the host query, we don't have to get fancy in making our broadcast
+      // query. We can just use the broadcast option because we our query isn't using
+      // sorting, so this will just work.
+      queryTaskBuilder.addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST);
+    }
+
+    QueryTask queryTask = queryTaskBuilder.build();
+
 
     try {
       // Query for the datastores that have the tags we want
@@ -415,5 +512,19 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
     } catch (Throwable t) {
       throw new RuntimeException(t);
     }
+  }
+
+  /**
+   * Returns true if we should use a broadcast query instead of a simple query.
+   *
+   * We base this on whether the current Cloudstore cluster is using symmetric replication (all nodes have all data,
+   * which we know because the number of nodes is <= REPLICATON_FACTOR) or asymmetric replication (we have more nodes
+   * than REPLICATION_FACTOR)
+   */
+  private boolean shouldUseBroadcastQuery() {
+    if (xenonRestClient.getServerSetSize() > REPLICATION_FACTOR) {
+      return true;
+    }
+    return false;
   }
 }

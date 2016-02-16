@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -109,6 +110,10 @@ public class XenonRestClient implements XenonClient {
   public void stop() {
     client.stop();
     logger.info("client stopped");
+  }
+
+  public int getServerSetSize() {
+    return this.serverSet.getServers().size();
   }
 
   @Override
@@ -212,12 +217,37 @@ public class XenonRestClient implements XenonClient {
   public Operation postToBroadcastQueryService(QueryTask.QuerySpecification spec)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
 
+    QueryTask query = QueryTask.create(spec);
+    return postToBroadcastQueryService(query);
+  }
+
+  /**
+   * Send a Xenon query that is broadcast to all nodes.
+   *
+   * There are two ways to do broadcast queries:
+   *
+   * 1) We could make a query task (/core/query-tasks) with the BROADCAST option. In theory we could us this, but Xenon
+   * has a single method for collating the results into a single list, and it doesn't match what we use. (See
+   * {@link QueryTaskUtils#getBroadcastQueryDocuments} for how we collate.)
+   *
+   * 2) We can ask Xenon to forward a single request (for us, a query with any options, including sorting) to all nodes.
+   * This is done by sending a query to /core/node-selectors/default/forwarding?path=/core/local-query-tasks&target=ALL
+   * This is the option we use because it allows us to collate the results as we want them.
+   */
+  public Operation postToBroadcastQueryService(QueryTask query)
+      throws BadRequestException,
+        DocumentNotFoundException,
+        TimeoutException,
+        InterruptedException {
+
+    // Build the URI that will broadcast. The base URI is something like /core-node-selectors/default/forwarding
+    // (which is the node selector's forwarder that will pick all nodes), and there is a query term to
+    // tell it where to forward the query to on each node (for us it's /core/local-query-tasks)
     URI serviceUri = UriUtils.buildBroadcastRequestUri(
         getServiceUri(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
         ServiceUriPaths.DEFAULT_NODE_SELECTOR);
 
-    QueryTask query = QueryTask.create(spec)
-        .setDirect(true);
+    query.setDirect(true);
 
     Operation queryOperation = Operation
         .createPost(serviceUri)
