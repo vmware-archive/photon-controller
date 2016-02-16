@@ -41,10 +41,10 @@ from agent_common_tests import rpc_call
 from agent_common_tests import VmWrapper
 from gen.common.ttypes import ServerAddress
 from gen.agent import AgentControl
+from gen.agent.ttypes import AgentStatusCode
 from gen.agent.ttypes import ProvisionRequest
 from gen.agent.ttypes import ProvisionResultCode
 from gen.host import Host
-from gen.host.ttypes import AgentStatusCode
 from gen.host.ttypes import CopyImageResultCode
 from gen.host.ttypes import CreateImageRequest
 from gen.host.ttypes import CreateImageResultCode
