@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.deployer.dcp.mock;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
+import com.vmware.photon.controller.agent.gen.AgentStatusCode;
+import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
 import com.vmware.photon.controller.agent.gen.ProvisionResponse;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
@@ -39,11 +41,15 @@ public class AgentControlClientMock extends AgentControlClient {
 
   private ProvisionResultCode provisionResultCode;
   private Exception provisionFailure;
+  private AgentStatusCode agentStatusCode;
+  private Exception getAgentStatusFailure;
 
   private AgentControlClientMock(Builder builder) {
     super(mock(ClientProxyFactory.class), mock(ClientPoolFactory.class));
     this.provisionResultCode = builder.provisionResultCode;
     this.provisionFailure = builder.provisionFailure;
+    this.agentStatusCode = builder.agentStatusCode;
+    this.getAgentStatusFailure = builder.getAgentStatusFailure;
   }
 
   @Override
@@ -89,6 +95,35 @@ public class AgentControlClientMock extends AgentControlClient {
     }
   }
 
+  @Override
+  public void getAgentStatus(AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call> handler) {
+
+    logger.info("Agent get status complete invocation");
+
+    if (null != getAgentStatusFailure) {
+      handler.onError(getAgentStatusFailure);
+
+    } else if (null != agentStatusCode) {
+      AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall =
+          mock(AgentControl.AsyncClient.get_agent_status_call.class);
+      AgentStatusResponse agentStatusResponse = new AgentStatusResponse();
+      agentStatusResponse.setStatus(agentStatusCode);
+      agentStatusResponse.setStatusIsSet(true);
+
+      try {
+        when(getAgentStatusCall.getResult()).thenReturn(agentStatusResponse);
+      } catch (TException e) {
+        throw new RuntimeException("Failed to mock getAgentStatusCall.getResult");
+      }
+
+      handler.onComplete(getAgentStatusCall);
+
+    } else {
+      throw new IllegalStateException("No result or failure specified for getAgentStatus");
+    }
+  }
+
+
   /**
    * This class implements a builder for {@link AgentControlClientMock} objects.
    */
@@ -96,6 +131,8 @@ public class AgentControlClientMock extends AgentControlClient {
 
     private ProvisionResultCode provisionResultCode;
     private Exception provisionFailure;
+    private AgentStatusCode agentStatusCode;
+    private Exception getAgentStatusFailure;
 
     public Builder provisionResultCode(ProvisionResultCode provisionResultCode) {
       this.provisionResultCode = provisionResultCode;
@@ -104,6 +141,16 @@ public class AgentControlClientMock extends AgentControlClient {
 
     public Builder provisionFailure(Exception provisionFailure) {
       this.provisionFailure = provisionFailure;
+      return this;
+    }
+
+    public Builder agentStatusCode(AgentStatusCode agentStatusCode) {
+      this.agentStatusCode = agentStatusCode;
+      return this;
+    }
+
+    public Builder getAgentStatusFailure(Exception getAgentStatusFailure) {
+      this.getAgentStatusFailure = getAgentStatusFailure;
       return this;
     }
 

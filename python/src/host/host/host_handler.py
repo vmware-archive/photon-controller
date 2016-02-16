@@ -22,7 +22,6 @@ import uuid
 
 from common.log import log_duration
 
-from common import services
 from common.photon_thrift.decorators import error_handler
 from common.photon_thrift.decorators import log_request
 from common.lock import lock_with
@@ -32,9 +31,6 @@ from common.mode import MODE
 from common.service_name import ServiceName
 from gen.common.ttypes import ServerAddress
 from gen.host import Host
-from gen.host.ttypes import AgentStatusCode, SetAvailabilityZoneResponse, \
-    SetAvailabilityZoneResultCode
-from gen.host.ttypes import AgentStatusResponse
 from gen.host.ttypes import AttachISOResponse
 from gen.host.ttypes import AttachISOResultCode
 from gen.host.ttypes import CreateDiskError
@@ -96,6 +92,8 @@ from gen.host.ttypes import ReserveResultCode
 from gen.host.ttypes import ServiceTicketResponse
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
+from gen.host.ttypes import SetAvailabilityZoneResponse
+from gen.host.ttypes import SetAvailabilityZoneResultCode
 from gen.host.ttypes import SetHostModeResponse
 from gen.host.ttypes import SetHostModeResultCode
 from gen.host.ttypes import StartImageOperationResultCode
@@ -1800,15 +1798,6 @@ class HostHandler(Host.Iface):
         :return: one entry in the placement_list
         """
         return None
-
-    def get_agent_status(self):
-        """
-        Get the current status of the agent
-        """
-        agent_config = services.get(ServiceName.AGENT_CONFIG)
-        if agent_config.reboot_required:
-            return AgentStatusResponse(AgentStatusCode.RESTARTING)
-        return AgentStatusResponse(AgentStatusCode.OK)
 
     @log_request
     @error_handler(GetDatastoresResponse, GetDatastoresResultCode)

@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.helpers.dcp;
 
+import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
@@ -60,7 +61,6 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
-import com.vmware.photon.controller.host.gen.AgentStatusCode;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.host.gen.SetHostModeResultCode;
@@ -110,11 +110,11 @@ public class MockHelper {
 
       agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
+          .agentStatusCode(AgentStatusCode.OK)
           .build();
 
       hostClient = new HostClientMock.Builder()
           .getConfigResultCode(GetConfigResultCode.OK)
-          .agentStatusCode(AgentStatusCode.OK)
           .setHostModeResultCode(SetHostModeResultCode.OK)
           .hostConfig(hostConfig)
           .build();
@@ -122,13 +122,13 @@ public class MockHelper {
       agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.SYSTEM_ERROR)
           .provisionFailure(new Exception("ProvisionHost throws exception"))
+          .agentStatusCode(AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED)
+          .getAgentStatusFailure(new Exception("GetAgentStatus throws Exception"))
           .build();
 
       hostClient = new HostClientMock.Builder()
           .getConfigResultCode(GetConfigResultCode.SYSTEM_ERROR)
           .getConfigFailure(new Exception("GetHost throws exception"))
-          .agentStatusCode(AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED)
-          .getAgentStatusFailure(new Exception("GetAgentStatus throws Exception"))
           .setHostModeResultCode(SetHostModeResultCode.SYSTEM_ERROR)
           .setHostModeFailure(new Exception("SetHostMode throws exception"))
           .build();
@@ -226,17 +226,18 @@ public class MockHelper {
     if (isSuccess) {
       agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
+          .agentStatusCode(AgentStatusCode.OK)
           .build();
       hostClient = new HostClientMock.Builder()
           .getConfigResultCode(GetConfigResultCode.OK)
-          .agentStatusCode(AgentStatusCode.OK)
           .build();
     } else {
       agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.SYSTEM_ERROR)
+          .agentStatusCode(AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED)
           .build();
       hostClient = new HostClientMock.Builder()
-          .agentStatusCode(AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED)
+          .getConfigResultCode(GetConfigResultCode.SYSTEM_ERROR)
           .build();
     }
     doReturn(agentControlClient).when(agentControlClientFactory).create();
