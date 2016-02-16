@@ -13,10 +13,19 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
@@ -25,10 +34,12 @@ import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.QueryTask;
 
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -42,6 +53,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.testng.Assert.fail;
 
+import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.function.Predicate;
 
@@ -173,7 +185,6 @@ public class ImageSeederSyncTriggerServiceTest {
     private TestEnvironment machine;
     private HostClientFactory hostClientFactory;
     private CloudStoreHelper cloudStoreHelper;
-    private ZookeeperHostMonitor zookeeperHostMonitor;
     private ServiceConfigFactory serviceConfigFactory;
 
     private ImageSeederSyncTriggerService.State request;
@@ -182,9 +193,8 @@ public class ImageSeederSyncTriggerServiceTest {
     public void setup() throws Throwable {
       hostClientFactory = mock(HostClientFactory.class);
       serviceConfigFactory = mock(ServiceConfigFactory.class);
-      cloudStoreHelper = mock(CloudStoreHelper.class);
+      cloudStoreHelper = new CloudStoreHelper();;
       doReturn(new HostClientMock()).when(hostClientFactory).create();
-      zookeeperHostMonitor = mock(ZookeeperHostMonitor.class);
       serviceConfigFactory = mock(ServiceConfigFactory.class);
 
       // Build input.
@@ -209,17 +219,24 @@ public class ImageSeederSyncTriggerServiceTest {
     @Test(dataProvider = "hostCount")
     public void testTriggerSuccess(int hostCount) throws Throwable {
       request.pulse = true;
-
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null,
           serviceConfigFactory, hostCount);
 
+      ServiceHost host = machine.getHosts()[0];
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
+      ImageService.State createdImageState = createNewImageEntity();
+      String newImageId = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+      createImageToImageDatastoreDocument(newImageId);
+
       // Send a patch to the trigger service to simulate a maintenance interval kicking in
-      machine.sendPatchAndWait(machine.getTriggerCleanerServiceUri(), request);
+      machine.sendPatchAndWait(machine.getImageSeederSyncServiceUri(), request);
 
       // Check that CleanerService was triggered.
       QueryTask.QuerySpecification spec =
           QueryTaskUtils.buildTaskStatusQuerySpec(
-              ImageCleanerService.State.class,
+              ImageSeederService.State.class,
               TaskState.TaskStage.STARTED,
               TaskState.TaskStage.FINISHED,
               TaskState.TaskStage.FAILED);
@@ -234,6 +251,49 @@ public class ImageSeederSyncTriggerServiceTest {
             }
           });
       assertThat(queryResponse.results.documentLinks.size(), greaterThanOrEqualTo(1));
+    }
+
+    private ImageService.State createNewImageEntity() throws Throwable {
+      machine.startFactoryServiceSynchronously(ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
+      ServiceHost host = machine.getHosts()[0];
+
+      ImageService.State state = new ImageService.State();
+      state.name = "image-1";
+      state.replicationType = ImageReplicationType.EAGER;
+      state.state = ImageState.READY;
+
+      Operation op = cloudStoreHelper
+          .createPost(ImageServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a reference image.");
+            }
+          });
+      Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      return result.getBody(ImageService.State.class);
+    }
+
+    private ImageToImageDatastoreMappingService.State createImageToImageDatastoreDocument(String imageId) throws
+        Throwable {
+      machine.startFactoryServiceSynchronously(ImageToImageDatastoreMappingServiceFactory.class,
+          ImageToImageDatastoreMappingServiceFactory.SELF_LINK);
+      ServiceHost host = machine.getHosts()[0];
+
+      ImageToImageDatastoreMappingService.State state = new ImageToImageDatastoreMappingService.State();
+      state.imageId = imageId;
+      state.imageDatastoreId = "image-datastore-id";
+
+      Operation op = cloudStoreHelper
+          .createPost(ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a reference image.");
+            }
+          });
+      Operation result = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      return result.getBody(ImageToImageDatastoreMappingService.State.class);
     }
   }
 }
