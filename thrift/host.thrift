@@ -21,23 +21,6 @@ include 'scheduler.thrift'
 include 'server_address.thrift'
 include 'tracing.thrift'
 
-// The current status of the agent
-enum AgentStatusCode {
-   // The agent is up and running and can accept thrift calls.
-   OK = 0
-
-   // The agent is in the process of restarting
-   RESTARTING = 1
-
-   // There is no image datastore connected to host.
-   IMAGE_DATASTORE_NOT_CONNECTED = 2
-}
-
-// Agent status response
-struct AgentStatusResponse {
-  1: required AgentStatusCode status
-}
-
 /**
  * Host configuration
  */
@@ -968,8 +951,6 @@ struct SetAvailabilityZoneResponse {
 
 // Host service
 service Host {
-  // Get the status of the agent.
-  AgentStatusResponse get_agent_status()
   scheduler.ConfigureResponse configure(1: scheduler.ConfigureRequest request)
   GetConfigResponse get_host_config(1: GetConfigRequest request)
 
