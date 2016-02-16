@@ -17,13 +17,49 @@ module EsxCloud
       # @param [Hash] payload
       # @return [Vm]
       def create_vm(project_id, payload)
-        @api_client.create_vm(project_id, payload)
+        project = find_project_by_id(project_id)
+        tenant = @project_to_tenant[project.id]
+
+        cmd = "vm create -t '#{tenant.name}' -p '#{project.name}' -n '#{payload[:name]}' -f '#{payload[:flavor]}' -i '#{payload[:sourceImageId]}'"
+
+        disks = payload[:attachedDisks].map do |disk|
+          disk_string = disk[:name] + " " + disk[:flavor]
+          disk_string += " boot=true" if disk[:bootDisk]
+          disk_string += " " + disk[:capacityGb].to_s if disk[:capacityGb]
+          disk_string
+        end.join(", ")
+
+        cmd += " -d '#{disks}'"
+
+        if payload[:environment]
+          env = payload[:environment].map do |(k, v)|
+            "#{k}:#{v}"
+          end.join(", ")
+
+          cmd += " -e '#{env}'"
+        end
+
+        if payload[:affinities] && !payload[:affinities].empty?
+          affinities = payload[:affinities].map do |affinities|
+            "#{affinities[:kind]}:#{affinities[:id]}"
+          end.join(", ")
+
+          cmd += " -a '#{affinities}'"
+        end
+
+        vm_id = run_cli(cmd)
+
+        vm = find_vm_by_id(vm_id)
+        @vm_to_project[vm.id] = project
+
+        vm
       end
 
       # @param [String] id
       # @return [Boolean]
       def delete_vm(id)
-        @api_client.delete_vm(id)
+        run_cli("vm delete '#{id}'")
+        true
       end
 
       # @param [String] project_id
@@ -35,7 +71,9 @@ module EsxCloud
       # @param [String] id
       # @return [Vm]
       def find_vm_by_id(id)
-        @api_client.find_vm_by_id(id)
+        cmd = "vm show #{id}"
+        result = run_cli(cmd)
+        get_vm_from_response(result)
       end
 
       # @param [String] project_id
@@ -67,31 +105,36 @@ module EsxCloud
       # @param [String] id
       # @return [Vm]
       def start_vm(id)
-        @api_client.start_vm(id)
+        vm_id = run_cli("vm start '#{id}'")
+        find_vm_by_id(vm_id)
       end
 
       # @param [String] id
       # @return [Vm]
       def stop_vm(id)
-        @api_client.stop_vm(id)
+        vm_id = run_cli("vm stop '#{id}'")
+        find_vm_by_id(vm_id)
       end
 
       # @param [String] id
       # @return [Vm]
       def restart_vm(id)
-        @api_client.restart_vm(id)
+        vm_id = run_cli("vm restart '#{id}'")
+        find_vm_by_id(vm_id)
       end
 
       # @param [String] id
       # @return [Vm]
       def resume_vm(id)
-        @api_client.resume_vm(id)
+        vm_id = run_cli("vm resume '#{id}'")
+        find_vm_by_id(vm_id)
       end
 
       # @param [String] id
       # @return [Vm]
       def suspend_vm(id)
-        @api_client.suspend_vm(id)
+        vm_id = run_cli("vm suspend '#{id}'")
+        find_vm_by_id(vm_id)
       end
 
       # @param [String] id
@@ -100,7 +143,9 @@ module EsxCloud
       # @param [Hash] _
       # @return [Vm]
       def perform_vm_disk_operation(id, operation, disk_id, _ = {})
-        @api_client.perform_vm_disk_operation(id, operation, disk_id)
+        operation_cmd = operation.downcase.sub('_','-')
+        vm_id = run_cli("vm #{operation_cmd} '#{id}' -d '#{disk_id}'")
+        find_vm_by_id(vm_id)
       end
 
       # @param [String] id
@@ -114,14 +159,109 @@ module EsxCloud
       # @param [String] id
       # @return [Vm]
       def perform_vm_iso_detach(id)
-        @api_client.perform_vm_iso_detach(id)
+        vm_id = run_cli("vm detach-iso '#{id}'")
+        find_vm_by_id(vm_id)
       end
 
       # @param [String] id
       # @param [Hash] payload
       # @return [Vm]
       def perform_vm_metadata_set(id, payload)
-        @api_client.perform_vm_metadata_set(id, payload)
+        vm_id = run_cli("vm set-metadata '#{id}' -m '#{payload[:metadata]}'")
+        find_vm_by_id(vm_id)
+      end
+
+      private
+
+      # @param [String] result
+      # @return [Vm]
+      def get_vm_from_response(result)
+        values = result.split("\n")
+        vm_attributes = values[0].split("\t")
+        vm_hash = Hash.new
+        vm_hash["id"]            = vm_attributes[0] unless vm_attributes[0] == ""
+        vm_hash["name"]          = vm_attributes[1] unless vm_attributes[1] == ""
+        vm_hash["state"]         = vm_attributes[2] unless vm_attributes[2] == ""
+        vm_hash["flavor"]        = vm_attributes[3] unless vm_attributes[3] == ""
+        vm_hash["sourceImageId"] = vm_attributes[4] unless vm_attributes[4] == ""
+        vm_hash["host"]          = vm_attributes[5] unless vm_attributes[5] == ""
+        vm_hash["datastore"]     = vm_attributes[6] unless vm_attributes[6] == ""
+        vm_hash["metadata"]      = metadata_to_hash(vm_attributes[7])
+        vm_hash["tags"]          = string_to_array(vm_attributes[8])
+        vm_hash["attachedDisks"] = getAttachedDisks(values[2])
+        vm_hash["attachedIsos"]  = getAttachedISOs(values[4])
+
+        Vm.create_from_hash(vm_hash)
+      end
+
+      def getAttachedDisks(result)
+        attachedDisks = Array.new
+        if result.to_s != ''
+          attachedDisks = result.split(",").map do |attachedDisk|
+           diskToHash(attachedDisk)
+          end
+        end
+
+        attachedDisks
+      end
+
+      def diskToHash(attachedDisk)
+        disk_attributes = attachedDisk.split
+        disk_hash = Hash.new
+        disk_hash["id"]         = disk_attributes[0] unless disk_attributes[0] == ""
+        disk_hash["name"]       = disk_attributes[1] unless disk_attributes[1] == ""
+        disk_hash["kind"]       = disk_attributes[2] unless disk_attributes[2] == ""
+        disk_hash["flavor"]     = disk_attributes[3] unless disk_attributes[3] == ""
+        disk_hash["capacityGb"] = disk_attributes[4].to_i unless disk_attributes[4] == ""
+        disk_hash["bootDisk"]   = to_boolean(disk_attributes[5])
+
+        disk_hash
+      end
+
+      def getAttachedISOs(result)
+        attachedISOs = Array.new
+        if result.to_s != ''
+         attachedISOs = result.split(",").map do |attachedISO|
+            isoToHash(attachedISO)
+          end
+        end
+
+        attachedISOs
+      end
+
+      def isoToHash(attachedISO)
+        iso_attributes = attachedISO.split
+        iso_hash = Hash.new
+        iso_hash["id"]   = iso_attributes[0] unless iso_attributes[0] == ""
+        iso_hash["name"] = iso_attributes[1] unless iso_attributes[1] == ""
+        iso_hash["kind"] = iso_attributes[2] unless iso_attributes[2] == ""
+        iso_hash["size"] = iso_attributes[3].to_i unless iso_attributes[3] == ""
+
+        iso_hash
+      end
+
+      def to_boolean(str)
+        str == "true"
+      end
+
+      # @param [String] metadata
+      # @return hash
+      def metadata_to_hash(metadata)
+        hash_new = Hash.new
+        if metadata.to_s != ''
+          metadata.split(',').each { |attribute|
+            values = attribute.split(':')
+            hash_new.merge!({ values[0] => values[1]})}
+        end
+        hash_new
+      end
+
+      def string_to_array(result)
+        values = Array.new
+        if result.to_s != ''
+          values = result.split(',')
+        end
+        values
       end
     end
   end
