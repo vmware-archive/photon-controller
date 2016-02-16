@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
+import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
@@ -34,7 +35,6 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
-import com.vmware.photon.controller.host.gen.AgentStatusCode;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.xenon.common.Operation;
@@ -483,13 +483,13 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
       AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
+          .agentStatusCode(AgentStatusCode.OK)
           .build();
 
       doReturn(agentControlClientMock).when(agentControlClientFactory).create();
 
       HostClientMock hostClientMock = new HostClientMock.Builder()
           .getConfigResultCode(GetConfigResultCode.OK)
-          .agentStatusCode(AgentStatusCode.OK)
           .hostConfig(new HostConfig())
           .build();
 
