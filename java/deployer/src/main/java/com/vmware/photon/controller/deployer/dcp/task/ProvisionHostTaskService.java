@@ -13,11 +13,15 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
+import com.vmware.photon.controller.agent.gen.AgentControl;
+import com.vmware.photon.controller.agent.gen.AgentStatusCode;
+import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -34,8 +38,6 @@ import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
-import com.vmware.photon.controller.host.gen.AgentStatusCode;
-import com.vmware.photon.controller.host.gen.AgentStatusResponse;
 import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostConfig;
@@ -421,14 +423,14 @@ public class ProvisionHostTaskService extends StatefulService {
 
   private void processWaitForAgentSubStage(State currentState, HostService.State hostState) {
     try {
-      HostClient hostClient = HostUtils.getHostClient(this);
-      hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
-      hostClient.getAgentStatus(new AsyncMethodCallback<Host.AsyncClient.get_agent_status_call>() {
+      AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
+      agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+      agentControlClient.getAgentStatus(new AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>() {
         @Override
-        public void onComplete(Host.AsyncClient.get_agent_status_call getAgentStatusCall) {
+        public void onComplete(AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall) {
           try {
             AgentStatusResponse agentStatusResponse = getAgentStatusCall.getResult();
-            HostClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse);
+            AgentControlClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse);
             if (agentStatusResponse.getStatus().equals(AgentStatusCode.RESTARTING)) {
               throw new IllegalStateException("Agent is restarting");
             } else {

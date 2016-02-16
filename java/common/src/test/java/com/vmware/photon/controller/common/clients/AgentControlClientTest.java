@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.common.clients;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
+import com.vmware.photon.controller.agent.gen.AgentStatusCode;
+import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
 import com.vmware.photon.controller.agent.gen.PingRequest;
 import com.vmware.photon.controller.agent.gen.ProvisionRequest;
 import com.vmware.photon.controller.agent.gen.ProvisionResponse;
@@ -348,6 +350,129 @@ public class AgentControlClientTest {
 
     @Test(enabled = false)
     public void testFailureUnknownResult() {
+    }
+  }
+
+  /**
+   * Tests for the getAgentStatus method.
+   */
+  public class GetAgentStatusTest {
+
+    @BeforeMethod
+    private void setUp() {
+      AgentControlClientTest.this.setUp();
+    }
+
+    @AfterMethod
+    private void tearDown() {
+      agentControlClient = null;
+    }
+
+    private Answer getAnswer(final AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall) {
+      return new Answer() {
+        @Override
+        public Object answer(InvocationOnMock invocation) throws Throwable {
+          Object[] args = invocation.getArguments();
+          AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call> handler = (AsyncMethodCallback) args[0];
+          handler.onComplete(getAgentStatusCall);
+          return null;
+        }
+      };
+    }
+
+    @Test
+    public void testSuccess() throws Exception {
+      AgentStatusResponse agentStatusResponse = new AgentStatusResponse();
+      agentStatusResponse.setStatus(AgentStatusCode.OK);
+
+      final AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall =
+          mock(AgentControl.AsyncClient.get_agent_status_call.class);
+
+      doReturn(agentStatusResponse).when(getAgentStatusCall).getResult();
+
+
+      doAnswer(getAnswer(getAgentStatusCall))
+          .when(clientProxy).get_agent_status(any(AsyncMethodCallback.class));
+
+      agentControlClient.setClientProxy(clientProxy);
+      assertThat(agentControlClient.getAgentStatus(), is(agentStatusResponse));
+    }
+
+    @Test
+    public void testFailureNullHostIp() throws Exception {
+      try {
+        agentControlClient.getAgentStatus();
+        fail("Synchronous getAgentStatus call should throw with null async clientProxy");
+      } catch (IllegalArgumentException e) {
+        assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
+      }
+    }
+
+    @Test
+    public void testFailureTExceptionOnCall() throws Exception {
+      doThrow(new TException("Thrift exception"))
+          .when(clientProxy).get_agent_status(any(AsyncMethodCallback.class));
+
+      agentControlClient.setClientProxy(clientProxy);
+
+      try {
+        agentControlClient.getAgentStatus();
+        fail("Synchronous getAgentStatus call should convert TException on call to RpcException");
+      } catch (RpcException e) {
+        assertThat(e.getMessage(), is("Thrift exception"));
+      }
+    }
+
+    @Test
+    public void testFailureTExceptionOnGetResult() throws Exception {
+
+      final AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall =
+          mock(AgentControl.AsyncClient.get_agent_status_call.class);
+
+      doThrow(new TException("Thrift exception")).when(getAgentStatusCall).getResult();
+
+
+      doAnswer(getAnswer(getAgentStatusCall))
+          .when(clientProxy).get_agent_status(any(AsyncMethodCallback.class));
+
+      agentControlClient.setClientProxy(clientProxy);
+
+      try {
+        agentControlClient.getAgentStatus();
+        fail("Synchronous getAgentStatus call should convert TException on call to RpcException");
+      } catch (RpcException e) {
+        assertThat(e.getMessage(), is("Thrift exception"));
+      }
+    }
+
+    @Test(dataProvider = "GetAgentStatusFailureResultCodes")
+    public void testFailureResult(AgentStatusCode resultCode,
+                                  Class<RuntimeException> exceptionClass) throws Exception {
+      AgentStatusResponse agentStatusResponse = new AgentStatusResponse();
+      agentStatusResponse.setStatus(resultCode);
+
+      final AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall =
+          mock(AgentControl.AsyncClient.get_agent_status_call.class);
+
+      doReturn(agentStatusResponse).when(getAgentStatusCall).getResult();
+      doAnswer(getAnswer(getAgentStatusCall))
+          .when(clientProxy).get_agent_status(any(AsyncMethodCallback.class));
+
+      agentControlClient.setClientProxy(clientProxy);
+
+      try {
+        agentControlClient.getAgentStatus();
+        fail("Synchronous getAgentStatus call should throw on failure result: " + resultCode.toString());
+      } catch (Exception e) {
+        assertTrue(e.getClass() == exceptionClass);
+      }
+    }
+
+    @DataProvider(name = "GetAgentStatusFailureResultCodes")
+    public Object[][] getAgentStatusFailureResultCodes() {
+      return new Object[][]{
+          {AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED, InvalidAgentConfigurationException.class},
+      };
     }
   }
 
