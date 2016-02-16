@@ -13,7 +13,12 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.xenon.common.NodeSelectorService;
 import com.vmware.xenon.common.Operation;
@@ -21,10 +26,14 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -138,29 +147,23 @@ public class ImageSeederSyncTriggerService extends StatefulService {
    * Process patch.
    */
   private void processPatch(Operation patch, final State currentState, final State patchState) {
-    // Trigger seeder service.
-    Operation.CompletionHandler handler = (operation, throwable) -> {
-      // Note this is a race with maintenance calls. Some statistics may be lost.
-      State newState = new State();
-      if (throwable == null) {
-        newState.triggersSuccess = currentState.triggersSuccess + 1;
-      } else {
-        ServiceUtils.logSevere(ImageSeederSyncTriggerService.this, throwable);
-        newState.triggersError = currentState.triggersError + 1;
-      }
-      sendSelfPatch(newState);
-    };
 
-    ImageSeederSyncTriggerService.State postState = new ImageSeederSyncTriggerService.State();
-    postState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
-        TimeUnit.MICROSECONDS.toMillis(EXPIRATION_TIME_MULTIPLIER * this.getMaintenanceIntervalMicros()));
-
-    Operation createImageOperation = Operation
-        .createPost(UriUtils.buildUri(getHost(), ImageSeederSyncTriggerServiceFactory.SELF_LINK))
-        .setBody(postState)
-        .setCompletion(handler);
-
-    this.sendRequest(createImageOperation);
+    sendRequest(buildGetAllImagesQuery()
+        .setCompletion(
+            (op, t) -> {
+              if (t != null) {
+                logFailure(t);
+                return;
+              }
+              NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
+              List<ImageService.State> documentLinks = QueryTaskUtils
+                  .getBroadcastQueryDocuments(ImageService.State.class, queryResponse);
+              for (ImageService.State image : documentLinks) {
+                triggerImageSeederServices(currentState,
+                    ServiceUtils.getIDFromDocumentSelfLink(image.documentSelfLink));
+              }
+            }
+        ));
   }
 
   /**
@@ -182,6 +185,54 @@ public class ImageSeederSyncTriggerService extends StatefulService {
   protected void applyPatch(State current, State patch) {
     current.triggersSuccess = updateLongWithMax(current.triggersSuccess, patch.triggersSuccess);
     current.triggersError = updateLongWithMax(current.triggersError, patch.triggersError);
+  }
+
+  private void triggerImageSeederServices(State current, String imageId) {
+    sendRequest(
+        buildImageToImageDatstoreQuery(imageId)
+            .setCompletion(
+                (op, t) -> {
+                  if (t != null) {
+                    logFailure(t);
+                    return;
+                  }
+                  NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
+                  List<ImageToImageDatastoreMappingService.State> documentLinks = QueryTaskUtils
+                      .getBroadcastQueryDocuments(ImageToImageDatastoreMappingService.State.class, queryResponse);
+                  if (documentLinks.isEmpty()) {
+                    logFailure(new IllegalArgumentException("No Image Datastore has image " + imageId));
+                  }
+
+                  triggerImageSeederService(current, imageId, documentLinks.get(0).imageDatastoreId);
+                }));
+  }
+
+  private void triggerImageSeederService(State currentState, String imageId, String datastoreId) {
+    // Trigger seeder service.
+    Operation.CompletionHandler handler = (operation, throwable) -> {
+      // Note this is a race with maintenance calls. Some statistics may be lost.
+      State newState = new State();
+      if (throwable == null) {
+        newState.triggersSuccess = currentState.triggersSuccess + 1;
+      } else {
+        ServiceUtils.logSevere(ImageSeederSyncTriggerService.this, throwable);
+        newState.triggersError = currentState.triggersError + 1;
+      }
+      sendSelfPatch(newState);
+    };
+
+    ImageSeederService.State postState = new ImageSeederService.State();
+    postState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
+        TimeUnit.MICROSECONDS.toMillis(EXPIRATION_TIME_MULTIPLIER * this.getMaintenanceIntervalMicros()));
+    postState.image = imageId;
+    postState.sourceImageDatastore = datastoreId;
+
+    Operation createImageOperation = Operation
+        .createPost(UriUtils.buildUri(getHost(), ImageSeederServiceFactory.SELF_LINK))
+        .setBody(postState)
+        .setCompletion(handler);
+
+    this.sendRequest(createImageOperation);
   }
 
   /**
@@ -224,6 +275,48 @@ public class ImageSeederSyncTriggerService extends StatefulService {
    */
   private void logFailure(Throwable e) {
     ServiceUtils.logSevere(this, e);
+  }
+
+  /**
+   * Build a QuerySpecification for querying all images.
+   *
+   * @return
+   */
+  private Operation buildGetAllImagesQuery() {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(ImageService.State.class));
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .setBody(QueryTask.create(querySpecification).setDirect(true));
+  }
+
+  /**
+   * Build a QuerySpecification for querying ImageToImageDatastoreMappingService.
+   *
+   * @return
+   */
+  private Operation buildImageToImageDatstoreQuery(String imageId) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(ImageToImageDatastoreMappingService.State.class));
+    QueryTask.Query imageIdClause = new QueryTask.Query()
+        .setTermPropertyName("imageId")
+        .setTermMatchValue(imageId);
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.query.addBooleanClause(imageIdClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 
   /**

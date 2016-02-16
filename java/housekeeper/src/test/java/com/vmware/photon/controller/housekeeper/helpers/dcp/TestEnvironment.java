@@ -108,4 +108,10 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperXenonServic
     return hosts[0].getTriggerCleanerServiceUri();
   }
 
+  /**
+   * Get ImageSeederService Sync trigger service uri.
+   */
+  public String getImageSeederSyncServiceUri() {
+    return hosts[0].getImageSeederSyncServiceUri();
+  }
 }

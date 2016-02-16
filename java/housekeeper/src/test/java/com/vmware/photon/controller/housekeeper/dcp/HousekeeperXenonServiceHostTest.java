@@ -70,8 +70,10 @@ public class HousekeeperXenonServiceHostTest {
       ImageDatastoreSweeperServiceFactory.SELF_LINK,
       ImageCleanerServiceFactory.SELF_LINK,
       ImageCleanerTriggerServiceFactory.SELF_LINK,
+      ImageSeederSyncTriggerServiceFactory.SELF_LINK,
       TaskSchedulerServiceFactory.SELF_LINK,
       HousekeeperXenonServiceHost.getTriggerCleanerServiceUri(),
+      HousekeeperXenonServiceHost.getImageSeederSyncServiceUri(),
       HousekeeperXenonServiceHost.IMAGE_COPY_SCHEDULER_SERVICE
   };
 
