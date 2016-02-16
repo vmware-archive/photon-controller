@@ -69,6 +69,7 @@ import static org.testng.Assert.fail;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -550,15 +551,19 @@ public class BuildRuntimeConfigurationTaskServiceTest {
       }
 
       if (containerType == ContainersConfig.ContainerType.LoadBalancer) {
-        assertTrue(containerService.dynamicParameters.containsKey(BuildRuntimeConfigurationTaskService
-            .ENV_LOADBALANCER_SERVERS));
-        String servers = containerService.dynamicParameters.get(BuildRuntimeConfigurationTaskService
-            .ENV_LOADBALANCER_SERVERS);
-        Type listType = new TypeToken<ArrayList<LoadBalancerServer>>() {
-        }.getType();
-        List<LoadBalancerServer> serverList = new Gson().fromJson(servers, listType);
-        assertThat(serverList.size(), is(3));
-        assertThat(serverList.get(0).getServerName(), is("server-1"));
+        for (String env : Arrays.asList(BuildRuntimeConfigurationTaskService.ENV_LOADBALANCER_SERVERS,
+            BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_HTTP_SERVERS,
+            BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_HTTPS_SERVERS)) {
+          assertTrue(containerService.dynamicParameters.containsKey(env));
+          String servers = containerService.dynamicParameters.get(env);
+          Type listType = new TypeToken<ArrayList<LoadBalancerServer>>() {
+          }.getType();
+          List<LoadBalancerServer> serverList = new Gson().fromJson(servers, listType);
+          assertThat(serverList.size(), is(3));
+          assertThat(serverList.get(0).getServerName(), is("server-1"));
+          assertThat(serverList.get(1).getServerName(), is("server-2"));
+          assertThat(serverList.get(2).getServerName(), is("server-3"));
+        }
       }
 
       if (containerType == ContainersConfig.ContainerType.Zookeeper) {
@@ -614,6 +619,8 @@ public class BuildRuntimeConfigurationTaskServiceTest {
 
       List<String> loadBalancerList = new ArrayList<String>();
       loadBalancerList.add(BuildRuntimeConfigurationTaskService.ENV_LOADBALANCER_SERVERS);
+      loadBalancerList.add(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_HTTP_SERVERS);
+      loadBalancerList.add(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_HTTPS_SERVERS);
 
       List<String> lightwaveList = new ArrayList<String>();
       lightwaveList.add(BuildRuntimeConfigurationTaskService.ENV_LIGHTWAVE_ADDRESS);
