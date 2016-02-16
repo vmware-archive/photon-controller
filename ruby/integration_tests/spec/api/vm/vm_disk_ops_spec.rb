@@ -72,7 +72,11 @@ describe "vm disk ops", management: true do
       step_error = e.errors.first.first
       step_error.code.should == "InternalError"
     rescue EsxCloud::CliError => e
-      e.message.should include("API error: DETACH_DISK failed")
+      if ENV["DRIVER"] == "gocli"
+        e.message.should match("InternalError")
+      else
+        e.message.should include("API error: DETACH_DISK failed")
+      end
     end
   end
 
@@ -220,7 +224,11 @@ describe "vm disk ops", management: true do
         step_error = e.errors.first.first
         step_error.code.should == "VmNotFound"
       rescue EsxCloud::CliError => e
-        e.message.should include("API error: ATTACH_DISK failed")
+        if ENV["DRIVER"] == "gocli"
+          e.message.should match("VmNotFound")
+        else
+          e.message.should include("API error: ATTACH_DISK failed")
+        end
       end
     end
   end
