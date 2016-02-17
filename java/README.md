@@ -57,8 +57,7 @@ sudo apt-get install oracle-java8-set-default
 
 Install [Thrift](https://thrift.apache.org) and its prerequisites using the [instructions](https://thrift.apache.org/docs/install/debian) for your distro.
 
-* **Note**: Thrift 0.9.2 and 0.9.3 have issues with Python code generation. Thrift 0.9.1 is required if you want to build the Python code locally outside of devbox.
-* **Note**: Thrift 0.9.1 has a packaging bug which will cause `make` to fail on Ubuntu 14.04 unless "--without-tests" is specified at configuration time: `./configure --without-tests`
+As of this writing, these steps caused Thrift 0.9.3 to be installed.
 
 #### 3. Maven
 
