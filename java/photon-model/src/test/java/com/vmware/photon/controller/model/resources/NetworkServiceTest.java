@@ -15,6 +15,7 @@ package com.vmware.photon.controller.model.resources;
 
 import com.vmware.photon.controller.model.ModelServices;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
+
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.UriUtils;
@@ -48,6 +49,15 @@ public class NetworkServiceTest {
     networkState.subnetCIDR = "10.0.0.0/10";
     networkState.tenantLinks = new ArrayList<>();
     networkState.tenantLinks.add("tenant-linkA");
+    networkState.regionID = "regionID";
+    networkState.authCredentialsLink = "http://authCredentialsLink";
+    networkState.resourcePoolLink = "http://resourcePoolLink";
+    try {
+        networkState.networkServiceAdapter = new URI("http://networkServiceAdapter");
+    } catch (Exception e) {
+        networkState.networkServiceAdapter = null;
+    }
+
     return networkState;
   }
 
@@ -99,6 +109,11 @@ public class NetworkServiceTest {
       assertThat(returnState.name, is(startState.name));
       assertThat(returnState.subnetCIDR, is(startState.subnetCIDR));
       assertThat(returnState.tenantLinks.get(0), is(startState.tenantLinks.get(0)));
+      assertThat(returnState.regionID, is(startState.regionID));
+      assertThat(returnState.authCredentialsLink, is(startState.authCredentialsLink));
+      assertThat(returnState.resourcePoolLink, is(startState.resourcePoolLink));
+      assertThat(returnState.networkServiceAdapter, is(startState.networkServiceAdapter));
+
     }
 
     @DataProvider(name = "createInvalidValues")
@@ -164,6 +179,15 @@ public class NetworkServiceTest {
       patchState.subnetCIDR = "152.151.150.222/22";
       patchState.customProperties = new HashMap<>();
       patchState.customProperties.put("patchKey", "patchValue");
+      patchState.regionID = "patchRregionID";
+      patchState.authCredentialsLink = "http://patchAuthCredentialsLink";
+      patchState.resourcePoolLink = "http://patchResourcePoolLink";
+      try {
+        patchState.networkServiceAdapter = new URI("http://patchNetworkServiceAdapter");
+      } catch (Exception e) {
+        patchState.networkServiceAdapter = null;
+      }
+
 
       host.patchServiceSynchronously(
           returnState.documentSelfLink,
@@ -176,6 +200,11 @@ public class NetworkServiceTest {
       assertThat(returnState.name, is(patchState.name));
       assertThat(returnState.subnetCIDR, is(patchState.subnetCIDR));
       assertThat(returnState.customProperties, is(patchState.customProperties));
+      assertThat(returnState.regionID, is(patchState.regionID));
+      assertThat(returnState.authCredentialsLink, is(patchState.authCredentialsLink));
+      assertThat(returnState.resourcePoolLink, is(patchState.resourcePoolLink));
+      assertThat(returnState.networkServiceAdapter, is(patchState.networkServiceAdapter));
+
     }
   }
 

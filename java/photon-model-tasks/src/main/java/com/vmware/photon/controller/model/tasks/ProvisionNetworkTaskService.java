@@ -15,6 +15,7 @@ package com.vmware.photon.controller.model.tasks;
 
 import com.vmware.photon.controller.model.adapterapi.NetworkInstanceRequest;
 import com.vmware.photon.controller.model.adapterapi.NetworkInstanceRequest.InstanceRequestType;
+import com.vmware.photon.controller.model.resources.NetworkService.NetworkState;
 
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -23,7 +24,6 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
-import java.net.URI;
 import java.util.List;
 
 /**
@@ -51,38 +51,11 @@ public class ProvisionNetworkTaskService extends StatefulService {
      */
     public InstanceRequestType requestType;
 
-    /**
-     *  RegionID -- this is needed for AWS auth -- currently
-     *  RegionID only exists in the ComputeDescription.
-     *
-     *  Including here, so that the provisioning of the network can
-     *  be completely isolated from provisioning compute
-     *
-     *  Long term all items required for authentication should
-     *  be encapsulated in the authentication service
-     *
-     */
-    public String regionID;
-
-    /**
-     * Link to secrets.  Required
-     */
-    public String authCredentialsLink;
-
-    /**
-     * The pool which this resource is a part of. Required
-     */
-    public String resourcePoolLink;
 
     /**
      * The description of the network instance being realized. Required
      */
     public String networkDescriptionLink;
-
-    /**
-     * The network adapter to use to create the network. Required
-     */
-    public URI networkServiceReference;
 
     /**
      * Tracks the task state. Set by run-time.
@@ -110,26 +83,9 @@ public class ProvisionNetworkTaskService extends StatefulService {
         throw new IllegalArgumentException("requestType required");
       }
 
-      if (this.authCredentialsLink == null || this.authCredentialsLink.isEmpty()) {
-        throw new IllegalArgumentException("authCredentialsLink required");
-      }
-
-      if (this.resourcePoolLink == null || this.resourcePoolLink.isEmpty()) {
-        throw new IllegalArgumentException("resourcePoolLink required");
-      }
-
       if (this.networkDescriptionLink == null || this.networkDescriptionLink.isEmpty()) {
         throw new IllegalArgumentException("networkDescriptionLink required");
       }
-
-      if (this.networkServiceReference == null) {
-        throw new IllegalArgumentException("networkServiceReference required");
-      }
-
-      if (this.regionID == null) {
-        throw new IllegalArgumentException("region id required");
-      }
-
     }
   }
 
@@ -246,28 +202,38 @@ public class ProvisionNetworkTaskService extends StatefulService {
     }
   }
 
-  private NetworkInstanceRequest toReq(ProvisionNetworkTaskState state) {
+  private NetworkInstanceRequest toReq(NetworkState networkState, ProvisionNetworkTaskState taskState) {
     NetworkInstanceRequest req = new NetworkInstanceRequest();
-    req.requestType = state.requestType;
-    req.authCredentialsLink = state.authCredentialsLink;
-    req.resourcePoolLink = state.resourcePoolLink;
-    req.networkReference = UriUtils.buildUri(this.getHost(), state.networkDescriptionLink);
+    req.requestType = taskState.requestType;
+    req.authCredentialsLink = networkState.authCredentialsLink;
+    req.resourcePoolLink = networkState.resourcePoolLink;
+    req.networkReference = UriUtils.buildUri(this.getHost(), taskState.networkDescriptionLink);
     req.provisioningTaskReference = this.getUri();
-    req.isMockRequest = state.isMockRequest;
+    req.isMockRequest = taskState.isMockRequest;
 
     return req;
   }
 
-  private void patchAdapter(ProvisionNetworkTaskState state) {
-    NetworkInstanceRequest req = toReq(state);
+  private void patchAdapter(ProvisionNetworkTaskState taskState) {
+      sendRequest(Operation
+              .createGet(UriUtils.buildUri(this.getHost(), taskState.networkDescriptionLink))
+              .setTargetReplicated(true)
+              .setCompletion((o, e) -> {
+                if (e != null) {
+                  sendSelfPatch(TaskState.TaskStage.FAILED, e);
+                  return;
+                }
+                NetworkState networkState = o.getBody(NetworkState.class);
+                NetworkInstanceRequest req = toReq(networkState, taskState);
 
-    sendRequest(Operation.createPatch(state.networkServiceReference)
-        .setBody(req)
-        .setCompletion((o, e) -> {
-          if (e != null) {
-            sendSelfPatch(TaskState.TaskStage.FAILED, e);
-          }
-        }));
+                sendRequest(Operation.createPatch(networkState.networkServiceAdapter)
+                    .setBody(req)
+                    .setCompletion((oo, ee) -> {
+                      if (ee != null) {
+                        sendSelfPatch(TaskState.TaskStage.FAILED, ee);
+                      }
+                    }));
+              }));
   }
 
   private void sendSelfPatch(TaskState.TaskStage stage, Throwable e) {

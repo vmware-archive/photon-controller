@@ -20,6 +20,8 @@ import com.vmware.xenon.common.StatefulService;
 
 import org.apache.commons.net.util.SubnetUtils;
 
+import java.net.URI;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -38,13 +40,33 @@ public class FirewallService extends StatefulService {
     public String id;
     public String name;
 
+    /**
+     * Region identifier of this firewall service instance.
+     */
+    public String regionID;
+
+    /**
+     * Link to secrets.  Required
+     */
+    public String authCredentialsLink;
+
+    /**
+     * The pool which this resource is a part of.
+     */
+    public String resourcePoolLink;
+
+    /**
+     * The adapter to use to create the firewall.
+     */
+    public URI firewallServiceAdapter;
+
     // network that FW will protect
     public String networkDescriptionLink;
 
     public Map<String, String> customProperties;
 
     /**
-     * A list of tenant links can access this disk resource.
+     * A list of tenant links can access this firewall resource.
      */
     public List<String> tenantLinks;
 
@@ -100,6 +122,22 @@ public class FirewallService extends StatefulService {
     }
     if (state.egress == null || state.egress.size() == 0) {
       throw new IllegalArgumentException("a minimum of one egress rule is required");
+    }
+
+    if (state.regionID == null || state.regionID.isEmpty()) {
+      throw new IllegalArgumentException("regionID required");
+    }
+
+    if (state.authCredentialsLink == null || state.authCredentialsLink.isEmpty()) {
+      throw new IllegalArgumentException("authCredentialsLink required");
+    }
+
+    if (state.resourcePoolLink == null || state.resourcePoolLink.isEmpty()) {
+      throw new IllegalArgumentException("resourcePoolLink required");
+    }
+
+    if (state.firewallServiceAdapter == null) {
+      throw new IllegalArgumentException("firewallServiceAdapter required");
     }
 
     validateRules(state.ingress);
@@ -196,6 +234,30 @@ public class FirewallService extends StatefulService {
       isChanged = true;
     }
 
+    if (patchBody.regionID != null && !patchBody.regionID.equalsIgnoreCase(currentState.regionID)) {
+      currentState.regionID = patchBody.regionID;
+      isChanged = true;
+    }
+
+    if (patchBody.authCredentialsLink != null
+            && !patchBody.authCredentialsLink.equalsIgnoreCase(currentState.authCredentialsLink)) {
+      currentState.authCredentialsLink = patchBody.authCredentialsLink;
+      isChanged = true;
+    }
+
+    if (patchBody.resourcePoolLink != null
+            && !patchBody.resourcePoolLink.equalsIgnoreCase(currentState.resourcePoolLink)) {
+      currentState.resourcePoolLink = patchBody.resourcePoolLink;
+      isChanged = true;
+    }
+
+    if (patchBody.firewallServiceAdapter != null
+            && !patchBody.firewallServiceAdapter.equals(
+                               currentState.firewallServiceAdapter)) {
+      currentState.firewallServiceAdapter = patchBody.firewallServiceAdapter;
+      isChanged = true;
+    }
+
     // allow rules are overwritten -- it's not a merge
     // will result in a new version of the service on every call
     // as ingress & egress are never null
@@ -235,7 +297,7 @@ public class FirewallService extends StatefulService {
     ServiceDocumentDescription.expandTenantLinks(td.documentDescription);
 
     template.id = UUID.randomUUID().toString();
-    template.name = "cell-firewall";
+    template.name = "firewall-one";
 
     return template;
   }

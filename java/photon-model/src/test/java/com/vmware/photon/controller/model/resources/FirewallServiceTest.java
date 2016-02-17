@@ -48,6 +48,14 @@ public class FirewallServiceTest {
     firewallState.tenantLinks.add("tenant-linkA");
     firewallState.ingress = getAllowIngressRules();
     firewallState.egress = getAllowEgressRules();
+    firewallState.regionID = "regionID";
+    firewallState.authCredentialsLink = "http://authCredentialsLink";
+    firewallState.resourcePoolLink = "http://resourcePoolLink";
+    try {
+      firewallState.firewallServiceAdapter = new URI("http://firewallServiceAdapter");
+    } catch (Exception e) {
+      firewallState.firewallServiceAdapter = null;
+    }
     return firewallState;
   }
 
@@ -122,6 +130,10 @@ public class FirewallServiceTest {
       assertNotNull(returnState);
       assertThat(returnState.id, is(startState.id));
       assertThat(returnState.networkDescriptionLink, is(startState.networkDescriptionLink));
+      assertThat(returnState.regionID, is(startState.regionID));
+      assertThat(returnState.authCredentialsLink, is(startState.authCredentialsLink));
+      assertThat(returnState.resourcePoolLink, is(startState.resourcePoolLink));
+      assertThat(returnState.firewallServiceAdapter, is(startState.firewallServiceAdapter));
       assertThat(returnState.ingress.get(0).name, is(getAllowIngressRules().get(0).name));
       assertThat(returnState.egress.get(0).name, is(getAllowEgressRules().get(0).name));
     }
@@ -272,6 +284,15 @@ public class FirewallServiceTest {
       patchState.customProperties = new HashMap<>();
       patchState.customProperties.put("customKey", "customValue");
 
+      patchState.regionID = "patchRregionID";
+      patchState.authCredentialsLink = "http://patchAuthCredentialsLink";
+      patchState.resourcePoolLink = "http://patchResourcePoolLink";
+      try {
+        patchState.firewallServiceAdapter = new URI("http://patchfirewallServiceAdapter");
+      } catch (Exception e) {
+        patchState.firewallServiceAdapter = null;
+      }
+
       host.patchServiceSynchronously(
           returnState.documentSelfLink,
           patchState);
@@ -279,6 +300,11 @@ public class FirewallServiceTest {
       returnState = host.getServiceSynchronously(
           returnState.documentSelfLink,
           FirewallService.FirewallState.class);
+
+      assertThat(returnState.regionID, is(patchState.regionID));
+      assertThat(returnState.authCredentialsLink, is(patchState.authCredentialsLink));
+      assertThat(returnState.resourcePoolLink, is(patchState.resourcePoolLink));
+      assertThat(returnState.firewallServiceAdapter, is(patchState.firewallServiceAdapter));
 
       assertThat(returnState.name, is(patchState.name));
       assertThat(returnState.ingress.get(0).name, is(patchState.ingress.get(0).name));

@@ -18,6 +18,10 @@ import com.vmware.photon.controller.model.TaskServices;
 import com.vmware.photon.controller.model.adapterapi.FirewallInstanceRequest;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 import com.vmware.photon.controller.model.helpers.TestHost;
+import com.vmware.photon.controller.model.resources.FirewallFactoryService;
+import com.vmware.photon.controller.model.resources.FirewallService;
+import com.vmware.photon.controller.model.resources.FirewallService.FirewallState;
+
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
@@ -25,6 +29,7 @@ import com.vmware.xenon.common.UriUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -32,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * This class implements tests for the {@link ProvisionFirewallTaskService} class.
@@ -40,18 +46,41 @@ public class ProvisionFirewallTaskServiceTest {
 
   private static ProvisionFirewallTaskService.ProvisionFirewallTaskState buildValidStartState(
       TestHost host,
-      FirewallInstanceRequest.InstanceRequestType requestType) {
+      FirewallInstanceRequest.InstanceRequestType requestType, boolean success) throws Throwable {
     ProvisionFirewallTaskService.ProvisionFirewallTaskState startState =
         new ProvisionFirewallTaskService.ProvisionFirewallTaskState();
 
+    FirewallState fState = new FirewallState();
+    fState.networkDescriptionLink = "http://networkDescriptionLink";
+    fState.authCredentialsLink = "authCredentialsLink";
+    fState.name = "firewall-name";
+    fState.regionID = "regionId";
+    fState.resourcePoolLink = "http://resourcePoolLink";
+    if (success) {
+      fState.firewallServiceAdapter = UriUtils.buildUri(
+        host, MockAdapter.MockFirewallInstanceSuccessAdapter.SELF_LINK);
+    } else {
+      fState.firewallServiceAdapter = UriUtils.buildUri(
+        host, MockAdapter.MockFirewallInstanceFailureAdapter.SELF_LINK);
+    }
+    fState.id = UUID.randomUUID().toString();
+    ArrayList<FirewallService.FirewallState.Allow> rules = new ArrayList<>();
+    FirewallService.FirewallState.Allow ssh = new FirewallService.FirewallState.Allow();
+    ssh.name = "ssh";
+    ssh.protocol = "tcp";
+    ssh.ipRange = "0.0.0.0/0";
+    ssh.ports = new ArrayList<>();
+    ssh.ports.add("22");
+    rules.add(ssh);
+    fState.ingress = rules;
+    fState.egress = rules;
+    FirewallState returnState = host.postServiceSynchronously(
+            FirewallFactoryService.SELF_LINK,
+            fState,
+            FirewallState.class);
     startState.requestType = requestType;
-    startState.authCredentialsLink = "http//authCredentialsLink";
-    startState.firewallDescriptionLink = "http://firewallDescriptionLink";
-    startState.resourcePoolLink = "http://resourcePoolLink";
-    startState.regionID = "region-id";
-    startState.firewallServiceReference = UriUtils.buildUri(
-        host,
-        MockAdapter.MockFirewallInstanceSuccessAdapter.SELF_LINK);
+    startState.firewallDescriptionLink = returnState.documentSelfLink;
+
     startState.isMockRequest = true;
 
     return startState;
@@ -121,43 +150,31 @@ public class ProvisionFirewallTaskServiceTest {
     @Test
     public void testValidateProvisionFirewallTaskService() throws Throwable {
       ProvisionFirewallTaskService.ProvisionFirewallTaskState startState =
-          buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE);
+          buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE, true);
       ProvisionFirewallTaskService.ProvisionFirewallTaskState completeState = postAndWaitForService(host, startState);
       assertThat(completeState.taskInfo.stage, is(TaskState.TaskStage.FINISHED));
     }
 
     @DataProvider(name = "createMissingValues")
-    public Object[][] createMissingValues() {
+    public Object[][] createMissingValues() throws Throwable {
       ProvisionFirewallTaskService.ProvisionFirewallTaskState
           invalidRequestType =
-          buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE),
-          invalidAuthCredentialsLink =
-              buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE),
-          invalidResourcePoolLink =
-              buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE),
+          buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE, true),
           invalidFirewallDescriptionLink =
-              buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE),
-          invalidFirewallServiceReference =
-              buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE);
+              buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE, true);
 
       invalidRequestType.requestType = null;
-      invalidAuthCredentialsLink.authCredentialsLink = null;
-      invalidResourcePoolLink.resourcePoolLink = null;
       invalidFirewallDescriptionLink.firewallDescriptionLink = null;
-      invalidFirewallServiceReference.firewallServiceReference = null;
 
       return new Object[][]{
           {invalidRequestType},
-          {invalidAuthCredentialsLink},
-          {invalidResourcePoolLink},
           {invalidFirewallDescriptionLink},
-          {invalidFirewallServiceReference},
       };
     }
 
     @Test(dataProvider = "createMissingValues")
     public void testMissingValue(ProvisionFirewallTaskService.ProvisionFirewallTaskState startState) throws Throwable {
-      ProvisionFirewallTaskService.ProvisionFirewallTaskState returnState = host.postServiceSynchronously(
+      host.postServiceSynchronously(
           ProvisionFirewallTaskFactoryService.SELF_LINK,
           startState,
           ProvisionFirewallTaskService.ProvisionFirewallTaskState.class, IllegalArgumentException.class);
@@ -177,7 +194,7 @@ public class ProvisionFirewallTaskServiceTest {
     @Test
     public void testCreateFirewallSuccess() throws Throwable{
       ProvisionFirewallTaskService.ProvisionFirewallTaskState startState =
-          buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE);
+          buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE, true);
 
       ProvisionFirewallTaskService.ProvisionFirewallTaskState completeState = postAndWaitForService(host, startState);
 
@@ -187,7 +204,7 @@ public class ProvisionFirewallTaskServiceTest {
     @Test
     public void testDeleteFirewallSuccess() throws Throwable{
       ProvisionFirewallTaskService.ProvisionFirewallTaskState startState =
-          buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.DELETE);
+          buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.DELETE, true);
 
       ProvisionFirewallTaskService.ProvisionFirewallTaskState completeState = postAndWaitForService(host, startState);
 
@@ -197,11 +214,7 @@ public class ProvisionFirewallTaskServiceTest {
     @Test
     public void testCreateFirewallServiceAdapterFailure() throws Throwable{
       ProvisionFirewallTaskService.ProvisionFirewallTaskState startState =
-          buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE);
-
-      startState.firewallServiceReference = UriUtils.buildUri(
-          host,
-          MockAdapter.MockFirewallInstanceFailureAdapter.SELF_LINK);
+          buildValidStartState(host, FirewallInstanceRequest.InstanceRequestType.CREATE, false);
 
       ProvisionFirewallTaskService.ProvisionFirewallTaskState completeState = postAndWaitForService(host, startState);
       assertThat(completeState.taskInfo.stage, is(TaskState.TaskStage.FAILED));
