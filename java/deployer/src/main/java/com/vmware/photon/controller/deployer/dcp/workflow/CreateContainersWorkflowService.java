@@ -27,16 +27,21 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
@@ -88,6 +93,7 @@ public class CreateContainersWorkflowService extends StatefulService {
      */
     public enum SubStage {
       CREATE_ZOOKEEPER_AND_DB_CONTAINERS,
+      PREEMPTIVE_PAUSE_BACKGROUND_TASKS,
       CREATE_LIGHTWAVE_CONTAINER,
       REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
       REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
@@ -233,6 +239,7 @@ public class CreateContainersWorkflowService extends StatefulService {
     if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
       switch (currentState.taskState.subStage) {
         case CREATE_ZOOKEEPER_AND_DB_CONTAINERS:
+        case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
         case CREATE_LIGHTWAVE_CONTAINER:
         case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
         case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
@@ -291,6 +298,10 @@ public class CreateContainersWorkflowService extends StatefulService {
                 ContainersConfig.ContainerType.Zookeeper,
                 ContainersConfig.ContainerType.CloudStore),
             TaskState.TaskStage.STARTED,
+            TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS);
+        break;
+      case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
+        pauseBackgroundTasks(currentState, TaskState.TaskStage.STARTED,
             TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
         break;
       case CREATE_LIGHTWAVE_CONTAINER:
@@ -325,6 +336,44 @@ public class CreateContainersWorkflowService extends StatefulService {
         createLoadBalancerContainer(currentState,
             TaskState.TaskStage.FINISHED, null);
         break;
+    }
+  }
+
+  private void pauseBackgroundTasks(final State currentState, final TaskState.TaskStage nextStage, final TaskState
+      .SubStage nextSubStage) {
+    if (currentState.isNewDeployment) {
+      sendRequest(
+          ((DeployerXenonServiceHost) getHost()).getCloudStoreHelper()
+              .createGet(currentState.deploymentServiceLink)
+              .setCompletion(
+                  (operation, throwable) -> {
+                    if (throwable != null) {
+                      failTask(throwable);
+                    }
+
+                    try {
+                      DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+                      ZookeeperClient zookeeperClient
+                          = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder()
+                          .create();
+
+                      ServiceConfig serviceConfig = zookeeperClient.getServiceConfig("apife", deploymentState
+                          .zookeeperQuorum);
+                      try {
+                        serviceConfig.pauseBackground();
+                        TaskUtils.sendSelfPatch(CreateContainersWorkflowService.this, buildPatch(nextStage,
+                            nextSubStage, null));
+                      } catch (Throwable t) {
+                        failTask(t);
+                      }
+                    } catch (Throwable t) {
+                      failTask(t);
+                    }
+                  }
+              )
+      );
+    } else {
+      TaskUtils.sendSelfPatch(CreateContainersWorkflowService.this, buildPatch(nextStage, nextSubStage, null));
     }
   }
 
