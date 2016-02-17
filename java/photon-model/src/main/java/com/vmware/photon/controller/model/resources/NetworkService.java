@@ -20,6 +20,7 @@ import com.vmware.xenon.common.StatefulService;
 
 import org.apache.commons.net.util.SubnetUtils;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,6 +37,27 @@ public class NetworkService extends StatefulService {
     public String id;
     public String name;
     public String subnetCIDR;
+
+    /**
+     * Region identifier of this description service instance.
+     */
+    public String regionID;
+
+    /**
+     * Link to secrets.  Required
+     */
+    public String authCredentialsLink;
+
+    /**
+     * The pool which this resource is a part of. Required
+     */
+    public String resourcePoolLink;
+
+    /**
+     * The network adapter to use to create the network. Required
+     */
+    public URI instanceAdapterReference;
+
 
     public Map<String, String> customProperties;
 
@@ -69,6 +91,21 @@ public class NetworkService extends StatefulService {
     if (state.subnetCIDR == null) {
       throw new IllegalArgumentException("subnet in CIDR notation is required");
     }
+    if (state.regionID == null || state.regionID.isEmpty()) {
+      throw new IllegalArgumentException("regionID required");
+    }
+
+    if (state.authCredentialsLink == null || state.authCredentialsLink.isEmpty()) {
+      throw new IllegalArgumentException("authCredentialsLink required");
+    }
+
+    if (state.resourcePoolLink == null || state.resourcePoolLink.isEmpty()) {
+      throw new IllegalArgumentException("resourcePoolLink required");
+    }
+
+    if (state.instanceAdapterReference == null) {
+      throw new IllegalArgumentException("networkServiceAdapter required");
+    }
     // do we have a subnet in CIDR notation
     // creating new SubnetUtils to validate
     SubnetUtils subnetUtils = new SubnetUtils(state.subnetCIDR);
@@ -99,6 +136,29 @@ public class NetworkService extends StatefulService {
           currentState.customProperties.put(e.getKey(), e.getValue());
         }
       }
+      isChanged = true;
+    }
+    if (patchBody.regionID != null && !patchBody.regionID.equalsIgnoreCase(currentState.regionID)) {
+      currentState.regionID = patchBody.regionID;
+      isChanged = true;
+    }
+
+    if (patchBody.authCredentialsLink != null
+              && !patchBody.authCredentialsLink.equalsIgnoreCase(currentState.authCredentialsLink)) {
+      currentState.authCredentialsLink = patchBody.authCredentialsLink;
+      isChanged = true;
+    }
+
+    if (patchBody.resourcePoolLink != null
+              && !patchBody.resourcePoolLink.equalsIgnoreCase(currentState.resourcePoolLink)) {
+      currentState.resourcePoolLink = patchBody.resourcePoolLink;
+      isChanged = true;
+    }
+
+    if (patchBody.instanceAdapterReference != null
+              && !patchBody.instanceAdapterReference.equals(
+                                 currentState.instanceAdapterReference)) {
+      currentState.instanceAdapterReference = patchBody.instanceAdapterReference;
       isChanged = true;
     }
 
