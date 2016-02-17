@@ -41,6 +41,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 /**
  * This resource is for vm networks related API.
@@ -78,9 +79,11 @@ public class HostVmsResource {
       resourceList = hostFeClient.listAllVms(id, adjustedPageSize);
     }
 
+    String apiRoute = UriBuilder.fromPath(HostResourceRoutes.HOST_VMS_PATH).build(id).toString();
+
     return generateResourceListResponse(
         Response.Status.OK,
-        resourceList,
+        PaginationUtils.formalizePageLinks(resourceList, apiRoute),
         (ContainerRequest) request,
         VmResourceRoutes.VM_PATH);
   }
