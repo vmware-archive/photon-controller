@@ -18,6 +18,9 @@ import com.vmware.photon.controller.model.TaskServices;
 import com.vmware.photon.controller.model.adapterapi.NetworkInstanceRequest;
 import com.vmware.photon.controller.model.helpers.BaseModelTest;
 import com.vmware.photon.controller.model.helpers.TestHost;
+import com.vmware.photon.controller.model.resources.NetworkFactoryService;
+import com.vmware.photon.controller.model.resources.NetworkService.NetworkState;
+
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
@@ -25,6 +28,7 @@ import com.vmware.xenon.common.UriUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -32,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * This class implements tests for the {@link ProvisionNetworkTaskService} class.
@@ -40,19 +45,33 @@ public class ProvisionNetworkTaskServiceTest {
 
   private static ProvisionNetworkTaskService.ProvisionNetworkTaskState buildValidStartState(
       TestHost host,
-      NetworkInstanceRequest.InstanceRequestType requestType) {
+      NetworkInstanceRequest.InstanceRequestType requestType, boolean success) throws Throwable {
+
+    NetworkState nState = new NetworkState();
+    nState.authCredentialsLink = "authCredentialsLink";
+    nState.name = "firewall-name";
+    nState.regionID = "regionId";
+    nState.resourcePoolLink = "http://resourcePoolLink";
+    nState.subnetCIDR = "152.151.150.222/22";
+    if (success) {
+      nState.instanceAdapterReference = UriUtils.buildUri(
+        host, MockAdapter.MockNetworkInstanceSuccessAdapter.SELF_LINK);
+    } else {
+      nState.instanceAdapterReference = UriUtils.buildUri(
+        host, MockAdapter.MockNetworkInstanceFailureAdapter.SELF_LINK);
+    }
+    nState.id = UUID.randomUUID().toString();
+
+    NetworkState returnState = host.postServiceSynchronously(
+            NetworkFactoryService.SELF_LINK,
+            nState,
+            NetworkState.class);
     ProvisionNetworkTaskService.ProvisionNetworkTaskState startState =
-        new ProvisionNetworkTaskService.ProvisionNetworkTaskState();
+      new ProvisionNetworkTaskService.ProvisionNetworkTaskState();
 
     startState.requestType = requestType;
-    startState.regionID = "some-region-ID";
-    startState.authCredentialsLink = "http://authCredentialsLink";
-    startState.resourcePoolLink = "http://resourcePoolLink";
-    startState.networkDescriptionLink = "http://networkDescriptionLink";
+    startState.networkDescriptionLink = returnState.documentSelfLink;
     startState.isMockRequest = true;
-    startState.networkServiceReference = UriUtils.buildUri(
-        host,
-        MockAdapter.MockNetworkInstanceSuccessAdapter.SELF_LINK);
     return startState;
   }
 
@@ -122,49 +141,31 @@ public class ProvisionNetworkTaskServiceTest {
     @Test
     public void testValidateNetworkService() throws Throwable {
       ProvisionNetworkTaskService.ProvisionNetworkTaskState startState = buildValidStartState(host,
-          NetworkInstanceRequest.InstanceRequestType.CREATE);
+          NetworkInstanceRequest.InstanceRequestType.CREATE, true);
       ProvisionNetworkTaskService.ProvisionNetworkTaskState completeState = postAndWaitForService(host, startState);
       assertThat(completeState.taskInfo.stage, is(TaskState.TaskStage.FINISHED));
     }
 
     @DataProvider(name = "createMissingValues")
-    public Object[][] createMissingValues() {
+    public Object[][] createMissingValues() throws Throwable {
       ProvisionNetworkTaskService.ProvisionNetworkTaskState
           invalidRequestType =
-          buildValidStartState(host, NetworkInstanceRequest.InstanceRequestType.CREATE),
-          invalidAuthCredentialsLink =
-              buildValidStartState(host, NetworkInstanceRequest.InstanceRequestType.CREATE),
-          invalidResourcePoolLink =
-              buildValidStartState(host, NetworkInstanceRequest.InstanceRequestType.CREATE),
+          buildValidStartState(host, NetworkInstanceRequest.InstanceRequestType.CREATE, true),
           invalidNetworkDescriptionLink =
-              buildValidStartState(host, NetworkInstanceRequest.InstanceRequestType.CREATE),
-          invalidNetworkServiceReference =
-              buildValidStartState(host, NetworkInstanceRequest.InstanceRequestType.CREATE),
-          invalidRegionId =
-              buildValidStartState(host, NetworkInstanceRequest.InstanceRequestType.CREATE);
+              buildValidStartState(host, NetworkInstanceRequest.InstanceRequestType.CREATE, true);
 
       invalidRequestType.requestType = null;
-      invalidRegionId.regionID = null;
-      invalidAuthCredentialsLink.authCredentialsLink = null;
-      invalidResourcePoolLink.resourcePoolLink = null;
       invalidNetworkDescriptionLink.networkDescriptionLink = null;
-      invalidNetworkServiceReference.networkServiceReference = null;
-
 
       return new Object[][]{
           {invalidRequestType},
-          {invalidRegionId},
-          {invalidAuthCredentialsLink},
-          {invalidResourcePoolLink},
           {invalidNetworkDescriptionLink},
-          {invalidNetworkServiceReference},
-
       };
     }
 
     @Test(dataProvider = "createMissingValues")
     public void testMissingValue(ProvisionNetworkTaskService.ProvisionNetworkTaskState startState) throws Throwable {
-      ProvisionNetworkTaskService.ProvisionNetworkTaskState returnState = host.postServiceSynchronously(
+      host.postServiceSynchronously(
           ProvisionNetworkTaskFactoryService.SELF_LINK,
           startState,
           ProvisionNetworkTaskService.ProvisionNetworkTaskState.class, IllegalArgumentException.class);
@@ -184,7 +185,7 @@ public class ProvisionNetworkTaskServiceTest {
     public void testCreateNetworkSuccess() throws Throwable {
 
       ProvisionNetworkTaskService.ProvisionNetworkTaskState startState = buildValidStartState(host,
-          NetworkInstanceRequest.InstanceRequestType.CREATE);
+          NetworkInstanceRequest.InstanceRequestType.CREATE, true);
 
       ProvisionNetworkTaskService.ProvisionNetworkTaskState completeState = postAndWaitForService(host, startState);
 
@@ -194,7 +195,7 @@ public class ProvisionNetworkTaskServiceTest {
     @Test
     public void testDeleteNetworkSuccess() throws Throwable {
       ProvisionNetworkTaskService.ProvisionNetworkTaskState startState = buildValidStartState(host,
-          NetworkInstanceRequest.InstanceRequestType.DELETE);
+          NetworkInstanceRequest.InstanceRequestType.DELETE, true);
 
       ProvisionNetworkTaskService.ProvisionNetworkTaskState completeState = postAndWaitForService(host, startState);
 
@@ -204,11 +205,7 @@ public class ProvisionNetworkTaskServiceTest {
     @Test
     public void testCreateNetworkServiceAdapterFailure() throws Throwable {
       ProvisionNetworkTaskService.ProvisionNetworkTaskState startState = buildValidStartState(host,
-          NetworkInstanceRequest.InstanceRequestType.CREATE);
-
-      startState.networkServiceReference = UriUtils.buildUri(
-          host,
-          MockAdapter.MockNetworkInstanceFailureAdapter.SELF_LINK);
+          NetworkInstanceRequest.InstanceRequestType.CREATE, false);
 
       ProvisionNetworkTaskService.ProvisionNetworkTaskState completeState = postAndWaitForService(host, startState);
 

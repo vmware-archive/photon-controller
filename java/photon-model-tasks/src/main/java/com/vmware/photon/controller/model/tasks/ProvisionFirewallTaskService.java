@@ -15,6 +15,9 @@ package com.vmware.photon.controller.model.tasks;
 
 import com.vmware.photon.controller.model.adapterapi.FirewallInstanceRequest;
 import com.vmware.photon.controller.model.adapterapi.FirewallInstanceRequest.InstanceRequestType;
+
+import com.vmware.photon.controller.model.resources.FirewallService.FirewallState;
+
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
@@ -22,7 +25,6 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
-import java.net.URI;
 import java.util.List;
 
 
@@ -48,36 +50,9 @@ public class ProvisionFirewallTaskService extends StatefulService {
     public InstanceRequestType requestType;
 
     /**
-     * RegionID -- this is needed for AWS auth -- currently
-     * RegionID only exists in the ComputeDescription.
-     * <p>
-     * Including here, so that the provisioning of the network can
-     * be completely isolated from provisioning compute
-     * <p>
-     * Long term all items required for authentication should
-     * be encapsulated in the authentication service
-     */
-    public String regionID;
-
-    /**
-     * Link to secrets.  Required
-     */
-    public String authCredentialsLink;
-
-    /**
-     * The pool which this resource is a part of.
-     */
-    public String resourcePoolLink;
-
-    /**
      * The description of the firewall instance being realized.
      */
     public String firewallDescriptionLink;
-
-    /**
-     * The adapter to use to create the firewall.
-     */
-    public URI firewallServiceReference;
 
     /**
      * Tracks the task state. Set by run-time.
@@ -105,22 +80,9 @@ public class ProvisionFirewallTaskService extends StatefulService {
         throw new IllegalArgumentException("requestType required");
       }
 
-      if (this.authCredentialsLink == null || this.authCredentialsLink.isEmpty()) {
-        throw new IllegalArgumentException("authCredentialsLink required");
-      }
-
-      if (this.resourcePoolLink == null || this.resourcePoolLink.isEmpty()) {
-        throw new IllegalArgumentException("resourcePoolLink required");
-      }
-
       if (this.firewallDescriptionLink == null || this.firewallDescriptionLink.isEmpty()) {
         throw new IllegalArgumentException("firewallDescriptionLink required");
       }
-
-      if (this.firewallServiceReference == null) {
-        throw new IllegalArgumentException("firewallServiceReference required");
-      }
-
     }
   }
 
@@ -143,6 +105,7 @@ public class ProvisionFirewallTaskService extends StatefulService {
       state.validate();
     } catch (Exception e) {
       start.fail(e);
+      return;
     }
 
     state.taskInfo.stage = TaskState.TaskStage.CREATED;
@@ -238,28 +201,39 @@ public class ProvisionFirewallTaskService extends StatefulService {
     }
   }
 
-  private FirewallInstanceRequest toReq(ProvisionFirewallTaskState state) {
+  private FirewallInstanceRequest toReq(FirewallState firewallState, ProvisionFirewallTaskState taskState) {
     FirewallInstanceRequest req = new FirewallInstanceRequest();
-    req.requestType = state.requestType;
-    req.authCredentialsLink = state.authCredentialsLink;
-    req.resourcePoolLink = state.resourcePoolLink;
-    req.firewallReference = UriUtils.buildUri(this.getHost(), state.firewallDescriptionLink);
+    req.requestType = taskState.requestType;
+    req.firewallReference = UriUtils.buildUri(this.getHost(), taskState.firewallDescriptionLink);
+    req.authCredentialsLink = firewallState.authCredentialsLink;
+    req.resourcePoolLink = firewallState.resourcePoolLink;
     req.provisioningTaskReference = this.getUri();
-    req.isMockRequest = state.isMockRequest;
+    req.isMockRequest = taskState.isMockRequest;
 
     return req;
   }
 
-  private void patchAdapter(ProvisionFirewallTaskState state) {
-    FirewallInstanceRequest req = toReq(state);
+  private void patchAdapter(ProvisionFirewallTaskState taskState) {
 
-    sendRequest(Operation.createPatch(state.firewallServiceReference)
-        .setBody(req)
-        .setCompletion((o, e) -> {
-          if (e != null) {
-            sendSelfPatch(TaskState.TaskStage.FAILED, e);
-          }
-        }));
+    sendRequest(Operation
+          .createGet(UriUtils.buildUri(this.getHost(), taskState.firewallDescriptionLink))
+          .setTargetReplicated(true)
+          .setCompletion((o, e) -> {
+            if (e != null) {
+              sendSelfPatch(TaskState.TaskStage.FAILED, e);
+              return;
+            }
+            FirewallState firewallState = o.getBody(FirewallState.class);
+            FirewallInstanceRequest req = toReq(firewallState, taskState);
+
+            sendRequest(Operation.createPatch(firewallState.instanceAdapterReference)
+                .setBody(req)
+                .setCompletion((oo, ee) -> {
+                  if (ee != null) {
+                    sendSelfPatch(TaskState.TaskStage.FAILED, ee);
+                  }
+                }));
+          }));
   }
 
   private void sendSelfPatch(TaskState.TaskStage stage, Throwable e) {

@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.model.helpers;
 
 import com.vmware.photon.controller.model.adapterapi.ComputeInstanceRequest;
+
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
@@ -24,6 +25,8 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.logging.LogManager;
@@ -36,7 +39,6 @@ public class TestHost extends VerificationHost {
   private static final int WAIT_ITERATION_SLEEP = 500;
   private static final int WAIT_ITERATION_COUNT = 30000 / WAIT_ITERATION_SLEEP; // 30 seconds.
 
-  private ServiceDocument responseBody;
   private Class[] factoryServices;
 
   /**
@@ -80,6 +82,7 @@ public class TestHost extends VerificationHost {
   public <T extends ServiceDocument> T postServiceSynchronously(
       String serviceUri, T body, Class<T> type, Class expectedException) throws Throwable {
 
+    List<T> responseBody = new ArrayList<T>();
     this.testStart(1);
     Operation postOperation = Operation
         .createPost(UriUtils.buildUri(this, serviceUri))
@@ -105,7 +108,7 @@ public class TestHost extends VerificationHost {
           }
 
           if (!failureExpected) {
-            responseBody = operation.getBody(type);
+            responseBody.add(operation.getBody(type));
           }
           this.completeIteration();
         });
@@ -113,7 +116,11 @@ public class TestHost extends VerificationHost {
     this.sendRequest(postOperation);
     this.testWait();
 
-    return (T) responseBody;
+    if (!responseBody.isEmpty()) {
+        return responseBody.get(0);
+    } else {
+        return null;
+    }
   }
 
   public <T extends ServiceDocument> void patchServiceSynchronously(
@@ -148,6 +155,8 @@ public class TestHost extends VerificationHost {
   public <T extends ServiceDocument> T getServiceSynchronously(
       String serviceUri, Class<T> type) throws Throwable {
 
+    List<T> responseBody = new ArrayList<T>();
+
     this.testStart(1);
     Operation getOperation = Operation
         .createGet(UriUtils.buildUri(this, serviceUri))
@@ -157,14 +166,18 @@ public class TestHost extends VerificationHost {
             this.failIteration(throwable);
           }
 
-          responseBody = operation.getBody(type);
+          responseBody.add(operation.getBody(type));
           this.completeIteration();
         });
 
     this.sendRequest(getOperation);
     this.testWait();
 
-    return (T) responseBody;
+    if (!responseBody.isEmpty()) {
+        return responseBody.get(0);
+    } else {
+        return null;
+    }
   }
 
   private <T extends ServiceDocument> void deleteServiceSynchronously(
