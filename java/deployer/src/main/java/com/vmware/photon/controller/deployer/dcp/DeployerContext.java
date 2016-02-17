@@ -210,10 +210,6 @@ public class DeployerContext {
     return syslogEndpoint;
   }
 
-  public String getStatsStoreEndpoint() {
-    return statsStoreEndpoint;
-  }
-
   public int getTaskPollDelay() {
     return taskPollDelay;
   }
