@@ -40,6 +40,7 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
@@ -49,6 +50,8 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -864,7 +867,12 @@ public class BatchCreateManagementWorkflowServiceTest {
         ContainersConfig containersConfig,
         int hostCount)
         throws Throwable {
-
+      ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);
+      ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
+      doReturn(zkBuilder).when(zkFactory).create();
+      doReturn(mock(ServiceConfig.class))
+          .when(zkBuilder)
+          .getServiceConfig(anyString(), anyString());
       return new TestEnvironment.Builder()
           .deployerContext(deployerContext)
           .dockerProvisionerFactory(dockerProvisionerFactory)
@@ -874,6 +882,7 @@ public class BatchCreateManagementWorkflowServiceTest {
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
           .cloudServerSet(cloudStoreMachine.getServerSet())
           .containersConfig(containersConfig)
+          .zookeeperServersetBuilderFactory(zkFactory)
           .hostCount(hostCount)
           .build();
     }
