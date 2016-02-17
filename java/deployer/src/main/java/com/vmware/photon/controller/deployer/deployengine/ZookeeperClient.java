@@ -13,7 +13,11 @@
 
 package com.vmware.photon.controller.deployer.deployengine;
 
+import com.vmware.photon.controller.common.zookeeper.PathChildrenCacheFactory;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServiceReader;
+import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.inject.Inject;
@@ -30,6 +34,7 @@ import javax.annotation.Nullable;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -119,6 +124,18 @@ public class ZookeeperClient {
 
     } catch (Exception e) {
       logger.error("Ignoring Zookeeper reconfig error ", e);
+      throw new RuntimeException(e);
+    }
+  }
+
+  public ServiceConfig getServiceConfig(String serviceName, String ... zookeeperIps) {
+    String zookeeperInstance = MiscUtils.generateReplicaList(Arrays.asList(zookeeperIps), Integer.toString(
+        ServicePortConstants.ZOOKEEPER_PORT));
+    CuratorFramework zkClient = connectToZookeeper(zookeeperInstance);
+    PathChildrenCacheFactory pathCache = new PathChildrenCacheFactory(zkClient, new ZookeeperServiceReader());
+    try {
+      return new ServiceConfig(zkClient, pathCache, serviceName);
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
