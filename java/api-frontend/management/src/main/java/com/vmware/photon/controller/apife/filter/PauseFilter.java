@@ -47,7 +47,8 @@ public class PauseFilter implements ContainerRequestFilter {
       new UriTemplate(VmResourceRoutes.VM_NETWORKS_PATH)
   );
   private static final List<UriTemplate> ALLOWABLE_URIS = ImmutableList.of(
-      new UriTemplate(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.RESUME_SYSTEM_ACTION)
+      new UriTemplate(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.RESUME_SYSTEM_ACTION),
+      new UriTemplate(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.PAUSE_BACKGROUND_TASKS_ACTION)
   );
   private final ServiceConfig serviceConfig;
 
