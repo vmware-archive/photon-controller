@@ -28,6 +28,7 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -846,6 +847,10 @@ public class AddManagementHostWorkflowServiceTest {
                  }
                }
       ).when(zkBuilder).addServer(anyString(), anyString(), anyString(), anyInt(), anyObject());
+
+      doReturn(mock(ServiceConfig.class))
+          .when(zkBuilder)
+          .getServiceConfig(anyString(), anyString());
     }
 
     @AfterMethod
