@@ -642,6 +642,7 @@ Vagrant.configure("2") do |config|
       sleep $SLEEP_BETWEEN_RETRIES_SEC
       i=$[$i+1]
     done
+    docker logs devbox_zookeeper_container
     exit $success
   EOS
 

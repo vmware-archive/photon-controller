@@ -1,4 +1,5 @@
 {
   "ZOOKEEPER_DATA_DIRECTORY": "/var/esxcloud/data/zookeeper",
-  "ZOOKEEPER_MYID": "1"
+  "ZOOKEEPER_MYID": "1",
+  "PAUSE_APIFE_BACKGROUND": "1"
 }
