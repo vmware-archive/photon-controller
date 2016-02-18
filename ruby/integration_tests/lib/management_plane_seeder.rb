@@ -32,6 +32,29 @@ module EsxCloud
       end
     end
 
+    def self.create_cluster
+      seeder = ManagementPlaneSeeder.new
+      tenant = create_random_tenant
+      resource_ticket = tenant.create_resource_ticket :name => random_name("rt-"), :limits => create_small_limits
+      project = tenant.create_project name: random_name("cluster-project-"), resource_ticket_name: resource_ticket.name, limits: [create_limit("vm", 10.0, "COUNT"), create_limit("vm.memory", 50.0, "GB")]
+
+      project.create_cluster(
+          name: random_name("kubernetes-"),
+          type: "KUBERNETES",
+          vm_flavor: seeder.create_vm_flavor.name,
+          disk_flavor: seeder.create_ephemeral_disk_flavor.name,
+          network_id: seeder.create_network([ENV["CLUSTER_NETWORK"]|| fail("CLUSTER_NETWORK not set")]).id,
+          slave_count: 2,
+          extended_properties: {
+              "dns" => ENV["CLUSTER_DNS"] || fail("CLUSTER_DNS not set"),
+              "gateway" => ENV["CLUSTER_GATEWAY"] || fail("CLUSTER_GATEWAY not set"),
+              "netmask" => ENV["CLUSTER_NETMASK"] || fail("CLUSTER_NETMASK not set"),
+              "master_ip" => ENV["CLUSTER_MASTER_IP"] || fail("CLUSTER_MASTER_IP not set"),
+              "container_network" => "10.2.0.0/16"
+          }
+      )
+    end
+
     def create_vm(project, vm_name, image_id)
       ephemeral_disk = create_ephemeral_disk random_name("#{vm_name}-disk-e-")
       persistent_disk = create_persistent_disk project, random_name("#{vm_name}-disk-")
@@ -87,6 +110,11 @@ module EsxCloud
 
       spec = EsxCloud::FlavorCreateSpec.new name, kind, cost
       EsxCloud::Flavor.create spec
+    end
+
+    def create_network(networks)
+      spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Cluster Network", networks)
+      EsxCloud::Config.client.create_network(spec.to_hash)
     end
   end
 end
