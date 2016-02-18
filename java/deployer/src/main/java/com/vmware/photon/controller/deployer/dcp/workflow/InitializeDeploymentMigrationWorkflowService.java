@@ -19,12 +19,14 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
+import com.vmware.photon.controller.common.xenon.UpgradeUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -34,6 +36,8 @@ import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
+import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskService.ExecutionState;
@@ -46,10 +50,12 @@ import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Operation.CompletionHandler;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState.TaskStage;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
@@ -57,20 +63,19 @@ import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -209,8 +214,34 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
+        if (currentState.sourceZookeeperQuorum == null) {
+          populateCurrentState(currentState);
+          return;
+        }
         processStartedState(currentState);
       }
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
+  private void populateCurrentState(State currentState) throws Throwable {
+    final InitializeDeploymentMigrationWorkflowService service = this;
+    try {
+      getDeployment(currentState, currentState.sourceLoadBalancerAddress,
+          new TaskFailingCallback<ResourceList<Deployment>>(service) {
+
+        @Override
+        public void onSuccess(ResourceList<Deployment> result) {
+          checkState(result != null && result.getItems().size() == 1);
+          final String sourceDeploymentId = result.getItems().get(0).getId();
+          try {
+            getZookeeperQuorumFromSourceSystem(currentState, sourceDeploymentId);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        }
+      });
     } catch (Throwable t) {
       failTask(t);
     }
@@ -227,7 +258,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         pauseDestinationSystem(currentState);
         break;
       case UPLOAD_VIBS:
-        uploadVibs(currentState);
+        migrateHostEntities(currentState);
         break;
       case CONTINOUS_MIGRATE_DATA:
         migrateDataContinously(currentState);
@@ -235,89 +266,10 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     }
   }
 
-  private void validateState(State currentState) {
-    ValidationUtils.validateState(currentState);
-    ValidationUtils.validateTaskStage(currentState.taskState);
-    validateTaskSubStage(currentState.taskState);
-
-    if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-      switch (currentState.taskState.subStage) {
-        case PAUSE_DESTINATION_SYSTEM:
-          break;
-        case CONTINOUS_MIGRATE_DATA:
-        case UPLOAD_VIBS:
-          checkState(null != currentState.sourceDeploymentId);
-          break;
-        default:
-          throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage);
-      }
-    }
-  }
-
-  private void validateTaskSubStage(TaskState taskState) {
-    switch (taskState.stage) {
-      case CREATED:
-        checkState(null == taskState.subStage);
-        break;
-      case STARTED:
-        checkState(null != taskState.subStage);
-        break;
-      case FINISHED:
-      case FAILED:
-      case CANCELLED:
-        checkState(null == taskState.subStage);
-        break;
-    }
-  }
-
-  private void validatePatchState(State currentState, State patchState) {
-    ValidationUtils.validatePatch(currentState, patchState);
-    ValidationUtils.validateTaskStage(patchState.taskState);
-    ValidationUtils.validateTaskStageProgression(currentState.taskState, patchState.taskState);
-
-    if (null != currentState.taskState.subStage && null != patchState.taskState.subStage) {
-      checkState(patchState.taskState.subStage.ordinal() >= currentState.taskState.subStage.ordinal());
-    }
-  }
-
-  private void getDeployment(final State currentState, String endpoint, FutureCallback<ResourceList<Deployment>>
-      callback)
-      throws IOException {
-    ApiClient client = null;
-    if (endpoint != null) {
-      client = HostUtils.getApiClient(this, endpoint);
-    } else {
-      client = HostUtils.getApiClient(this);
-    }
-    client.getDeploymentApi().listAllAsync(callback);
-  }
-
-  private void pauseDestinationSystem(State currentState) throws IOException {
-    getDeployment(currentState, null, new FutureCallback<ResourceList<Deployment>>() {
-      @Override
-      public void onSuccess(@Nullable final ResourceList<Deployment> result) {
-        // Will move this later
-        try {
-          checkState(result != null && result.getItems().size() == 1);
-
-          Deployment deployment = result.getItems().get(0);
-          querySourceAndPauseDestinationSystem(deployment.getId(), currentState);
-        } catch (Throwable throwable) {
-          failTask(throwable);
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable throwable) {
-        failTask(throwable);
-      }
-    });
-  }
-
-  private void querySourceAndPauseDestinationSystem(final String destinationDeploymentId, final State currentState)
-      throws Throwable {
+  private void pauseDestinationSystem(State currentState) throws Throwable {
+    final State currentState1 = currentState;
     final FutureCallback<ResourceList<Deployment>> querySourceDeploymentCallback = new
-        FutureCallback<ResourceList<Deployment>>() {
+        TaskFailingCallback<ResourceList<Deployment>>(this) {
           @Override
           public void onSuccess(@Nullable final ResourceList<Deployment> result) {
             try {
@@ -325,80 +277,33 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
               Deployment deployment = result.getItems().get(0);
               String sourceDeploymentId = deployment.getId();
-              pauseDestinationSystem(sourceDeploymentId, destinationDeploymentId, currentState);
+              pauseDestinationSystem(sourceDeploymentId, currentState.destinationDeploymentId, currentState1);
             } catch (Throwable throwable) {
               failTask(throwable);
             }
           }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            failTask(throwable);
-          }
         };
 
     // Get source deployment first, then pause destination deployment
-    getDeployment(currentState, currentState.sourceLoadBalancerAddress, querySourceDeploymentCallback);
+    getDeployment(currentState1, currentState1.sourceLoadBalancerAddress, querySourceDeploymentCallback);
   }
 
-  private void pauseDestinationSystem(final String sourceDeploymentId, final String destinationDeploymentId, final
-  State currentState) throws Throwable {
+  private void pauseDestinationSystem(final String sourceDeploymentId, final String destinationDeploymentId,
+      final State currentState) throws Throwable {
     ApiClient destinationClient = HostUtils.getApiClient(this);
 
-    FutureCallback<Task> pauseCallback = new FutureCallback<Task>() {
+    FutureCallback<Task> pauseCallback = new TaskFailingCallback<Task>(this) {
       @Override
       public void onSuccess(@Nullable Task result) {
         try {
-          State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS, null);
-          patchState.sourceDeploymentId = sourceDeploymentId;
-          TaskUtils.sendSelfPatch(InitializeDeploymentMigrationWorkflowService.this, patchState);
+          sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
         } catch (Throwable throwable) {
           failTask(throwable);
         }
       }
-
-      @Override
-      public void onFailure(Throwable throwable) {
-        failTask(throwable);
-      }
     };
+
     destinationClient.getDeploymentApi().pauseSystemAsync(destinationDeploymentId, pauseCallback);
-  }
-
-  private void getZookeeperQuorumFromSourceSystem(final State currentState)
-      throws Throwable {
-    MiscUtils.getZookeeperQuorumFromSourceSystem(this, currentState.sourceLoadBalancerAddress,
-        currentState.sourceDeploymentId, currentState.taskPollDelay, new FutureCallback<List<String>>() {
-          @Override
-          public void onSuccess(@Nullable List<String> result) {
-            setZookeeperQuorum(currentState, result);
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        });
-  }
-
-  private void setZookeeperQuorum(State currentState, List<String> ipAddresses) {
-    String zookeeperQuorum = MiscUtils.generateReplicaList(ipAddresses, Integer.toString(ServicePortConstants
-        .ZOOKEEPER_PORT));
-
-    ServiceUtils.logInfo(InitializeDeploymentMigrationWorkflowService.this, "Set Zookeeper quorum %s", zookeeperQuorum);
-    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS, null);
-    patchState.sourceZookeeperQuorum = zookeeperQuorum;
-    TaskUtils.sendSelfPatch(InitializeDeploymentMigrationWorkflowService.this, patchState);
-  }
-
-  private URI getRandomSourceCloudStoreURI(State currentState) throws URISyntaxException {
-    ZookeeperClient zookeeperClient
-        = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-
-    Set<InetSocketAddress> sourceCloudStoreServers
-        = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
-
-    return ServiceUtils.createUriFromServerSet(sourceCloudStoreServers, null);
   }
 
   private QueryTask.QuerySpecification buildHostQuerySpecification() {
@@ -411,15 +316,51 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     return querySpecification;
   }
 
-  private void getAllHostsFromSourceSystem(final State currentState, Operation.CompletionHandler callback) throws
-      URISyntaxException {
+  private void migrateHostEntities(State currentState) throws Throwable {
+    // run instances of copy state for host migration
+    Map<String, String> hostsUrls = UpgradeUtils.SOURCE_DESTINATION_MAP.entrySet().stream()
+        .filter(e -> e.getValue().equals(HostServiceFactory.SELF_LINK))
+        .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+    ZookeeperClient zookeeperClient
+      = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+    Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
+        HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+        DeployerModule.CLOUDSTORE_SERVICE_NAME);
+    Set<InetSocketAddress> sourceServers
+      = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
 
-    sendRequest(Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getRandomSourceCloudStoreURI(currentState), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(QueryTask.create(buildHostQuerySpecification()).setDirect(true))
-        .setCompletion(callback));
+    OperationJoin.create(
+        hostsUrls.entrySet().stream()
+        .map(entry -> {
+          String sourceFactory = entry.getKey();
+          if (!sourceFactory.endsWith("/")) {
+            sourceFactory += "/";
+          }
+          CopyStateTaskService.State startState
+            = MiscUtils.createCopyStateStartState(sourceServers, destinationServers, entry.getValue(), sourceFactory);
+          startState.performHostTransformation = Boolean.TRUE;
+          return Operation
+            .createPost(this, CopyStateTaskFactoryService.SELF_LINK)
+            .setBody(startState);
+        }).collect(Collectors.toList()))
+      .setCompletion((es, ts) -> {
+        if (ts != null && !ts.isEmpty()) {
+          failTask(ts.values());
+          return;
+        }
+        waitUntilCopyStateTasksFinished((operation, throwable) -> {
+          if (throwable != null) {
+            failTask(throwable);
+            return;
+          }
+          try {
+            uploadVibs(currentState);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        }, currentState);
+      })
+      .sendWith(this);
   }
 
   private void uploadVibs(State currentState) throws Throwable {
@@ -435,10 +376,9 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
           NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
           Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
           if (documentLinks.size() > 0) {
-            Iterator<String> it = documentLinks.iterator();
             final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
             FutureCallback<UploadVibTaskService.State> futureCallback =
-                new FutureCallback<UploadVibTaskService.State>() {
+                new TaskFailingCallback<UploadVibTaskService.State>(InitializeDeploymentMigrationWorkflowService.this) {
               @Override
               public void onSuccess(@Nullable UploadVibTaskService.State result) {
                 switch (result.taskState.stage) {
@@ -462,15 +402,9 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
                     break;
                 }
               }
-
-              @Override
-              public void onFailure(Throwable t) {
-                failTask(t);
-              }
             };
-
-            while (it.hasNext()) {
-              processUploadVibSubStage(currentState, it.next(), futureCallback);
+            for (String link : documentLinks) {
+              processUploadVibSubStage(currentState, link, futureCallback);
             }
           } else {
             sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONTINOUS_MIGRATE_DATA);
@@ -481,13 +415,12 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
       }
     };
 
-    if (currentState.sourceZookeeperQuorum == null) {
-      getZookeeperQuorumFromSourceSystem(currentState);
-    } else {
-      getAllHostsFromSourceSystem(currentState, getSourceHostsHandler);
+    HostUtils.getCloudStoreHelper(this)
+      .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+      .setBody(QueryTask.create(buildHostQuerySpecification()).setDirect(true))
+      .setCompletion(getSourceHostsHandler)
+      .sendWith(this);
     }
-
-  }
 
   private void processUploadVibSubStage(State currentState, String hostServiceLink,
                                         FutureCallback<UploadVibTaskService.State> futureCallback) {
@@ -565,6 +498,79 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
           }).collect(Collectors.toList()));
   }
 
+  private void waitUntilCopyStateTasksFinished(CompletionHandler handler, State currentState) {
+    // wait until all the copy-state services are done
+    generateQueryCopyStateTaskTriggerQuery()
+      .setCompletion((op, t) -> {
+        if (t != null) {
+          handler.handle(op, t);
+          return;
+        }
+        List<CopyStateTaskService.State> documents =
+            QueryTaskUtils.getBroadcastQueryDocuments(CopyStateTaskService.State.class, op);
+        List<CopyStateTaskService.State> runningServices = documents.stream()
+            .filter((d) -> d.taskState.stage == TaskStage.CREATED && d.taskState.stage == TaskStage.STARTED)
+            .collect(Collectors.toList());
+        if (runningServices.isEmpty()) {
+          handler.handle(op,  t);
+          return;
+        }
+        getHost().schedule(
+            () -> waitUntilCopyStateTasksFinished(handler, currentState),
+            currentState.taskPollDelay,
+            TimeUnit.SECONDS);
+      })
+      .sendWith(this);
+  }
+
+  private Operation generateQueryCopyStateTaskTriggerQuery() {
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(CopyStateTriggerTaskService.State.class)
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
+        .build();
+    return Operation
+        .createPost(UriUtils.buildBroadcastRequestUri(
+            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+        .setBody(queryTask);
+  }
+
+  private void getZookeeperQuorumFromSourceSystem(
+      State currentState,
+      String sourceDeploymentId)
+      throws Throwable {
+    MiscUtils.getZookeeperQuorumFromSourceSystem(this, currentState.sourceLoadBalancerAddress,
+        currentState.sourceDeploymentId, currentState.taskPollDelay, new TaskFailingCallback<List<String>>(this) {
+          @Override
+          public void onSuccess(@Nullable List<String> ipAddresses) {
+            String zookeeperQuorum = MiscUtils.generateReplicaList(ipAddresses, Integer.toString(ServicePortConstants
+                .ZOOKEEPER_PORT));
+
+            ServiceUtils.logInfo(InitializeDeploymentMigrationWorkflowService.this,
+                "Set Zookeeper quorum %s", zookeeperQuorum);
+            State patchState = buildPatch(currentState.taskState.stage, currentState.taskState.subStage, null);
+            patchState.sourceZookeeperQuorum = zookeeperQuorum;
+            patchState.sourceDeploymentId = sourceDeploymentId;
+            TaskUtils.sendSelfPatch(InitializeDeploymentMigrationWorkflowService.this, patchState);
+          }
+        });
+  }
+
+  private void getDeployment(final State currentState,
+      String endpoint,
+      FutureCallback<ResourceList<Deployment>> callback)
+      throws IOException {
+    ApiClient client = null;
+    if (endpoint != null) {
+      client = HostUtils.getApiClient(this, endpoint);
+    } else {
+      client = HostUtils.getApiClient(this);
+    }
+    client.getDeploymentApi().listAllAsync(callback);
+  }
+
   private State applyPatch(State currentState, State patchState) {
     if (patchState.taskState.stage != currentState.taskState.stage
         || patchState.taskState.subStage != currentState.taskState.subStage) {
@@ -581,6 +587,52 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     }
 
     return currentState;
+  }
+
+
+  private void validateState(State currentState) {
+    ValidationUtils.validateState(currentState);
+    ValidationUtils.validateTaskStage(currentState.taskState);
+    validateTaskSubStage(currentState.taskState);
+
+    if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
+      switch (currentState.taskState.subStage) {
+        case PAUSE_DESTINATION_SYSTEM:
+          break;
+        case CONTINOUS_MIGRATE_DATA:
+        case UPLOAD_VIBS:
+          checkState(null != currentState.sourceDeploymentId);
+          break;
+        default:
+          throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage);
+      }
+    }
+  }
+
+  private void validateTaskSubStage(TaskState taskState) {
+    switch (taskState.stage) {
+      case CREATED:
+        checkState(null == taskState.subStage);
+        break;
+      case STARTED:
+        checkState(null != taskState.subStage);
+        break;
+      case FINISHED:
+      case FAILED:
+      case CANCELLED:
+        checkState(null == taskState.subStage);
+        break;
+    }
+  }
+
+  private void validatePatchState(State currentState, State patchState) {
+    ValidationUtils.validatePatch(currentState, patchState);
+    ValidationUtils.validateTaskStage(patchState.taskState);
+    ValidationUtils.validateTaskStageProgression(currentState.taskState, patchState.taskState);
+
+    if (null != currentState.taskState.subStage && null != patchState.taskState.subStage) {
+      checkState(patchState.taskState.subStage.ordinal() >= currentState.taskState.subStage.ordinal());
+    }
   }
 
   private void failTask(Throwable t) {
@@ -614,5 +666,18 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     }
 
     return patchState;
+  }
+
+  private abstract static class TaskFailingCallback<T> implements FutureCallback<T> {
+    private InitializeDeploymentMigrationWorkflowService service;
+
+    public TaskFailingCallback(InitializeDeploymentMigrationWorkflowService service) {
+      this.service = service;
+    }
+
+    @Override
+    public void onFailure(Throwable t) {
+      service.failTask(t);
+    }
   }
 }
