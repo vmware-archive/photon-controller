@@ -174,7 +174,7 @@ public class ImageSeederServiceTest {
       ImageSeederService.State savedState = host.getServiceState(ImageSeederService.State.class);
       assertThat(savedState.taskInfo, notNullValue());
       assertThat(savedState.taskInfo.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(savedState.taskInfo.subStage, is(ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS));
+      assertThat(savedState.taskInfo.subStage, is(ImageSeederService.TaskState.SubStage.TRIGGER_COPIES));
       assertThat(savedState.queryPollDelay, is(10000));
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
           is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
@@ -196,7 +196,7 @@ public class ImageSeederServiceTest {
       ImageSeederService.State savedState = host.getServiceState(ImageSeederService.State.class);
       assertThat(savedState.taskInfo, notNullValue());
       assertThat(savedState.taskInfo.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(savedState.taskInfo.subStage, is(ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS));
+      assertThat(savedState.taskInfo.subStage, is(ImageSeederService.TaskState.SubStage.TRIGGER_COPIES));
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
           is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
@@ -526,16 +526,6 @@ public class ImageSeederServiceTest {
     public Object[][] getValidStageUpdatesData() throws Throwable {
       return new Object[][]{
           {ImageSeederService.TaskState.TaskStage.STARTED,
-              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
-              ImageSeederService.TaskState.TaskStage.STARTED,
-              ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
-          {ImageSeederService.TaskState.TaskStage.STARTED,
-              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
-              ImageSeederService.TaskState.TaskStage.FAILED, null},
-          {ImageSeederService.TaskState.TaskStage.STARTED,
-              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
-              ImageSeederService.TaskState.TaskStage.CANCELLED, null},
-          {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
               ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES},
@@ -609,15 +599,6 @@ public class ImageSeederServiceTest {
     @DataProvider(name = "IllegalStageUpdate")
     public Object[][] getIllegalStageUpdateData() throws Throwable {
       return new Object[][]{
-          {ImageSeederService.TaskState.TaskStage.STARTED,
-              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
-              ImageSeederService.TaskState.TaskStage.FINISHED,
-              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS},
-          {ImageSeederService.TaskState.TaskStage.STARTED,
-              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS,
-              null,
-              ImageSeederService.TaskState.SubStage.UPDATE_DATASTORE_COUNTS},
-
           {ImageSeederService.TaskState.TaskStage.STARTED,
               ImageSeederService.TaskState.SubStage.TRIGGER_COPIES,
               ImageSeederService.TaskState.TaskStage.FINISHED,
@@ -853,6 +834,10 @@ public class ImageSeederServiceTest {
       state.name = "image-1";
       state.replicationType = ImageReplicationType.EAGER;
       state.state = ImageState.READY;
+      state.replicatedDatastore = 1;
+      state.replicatedImageDatastore = 1;
+      state.totalDatastore = 3;
+      state.totalImageDatastore = 3;
 
       Operation op = cloudStoreHelper
           .createPost(ImageServiceFactory.SELF_LINK)
