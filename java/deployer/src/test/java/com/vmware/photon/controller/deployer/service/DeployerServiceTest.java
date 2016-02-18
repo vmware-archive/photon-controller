@@ -960,7 +960,6 @@ public class DeployerServiceTest {
       deployment.setImageDatastore("imageDatastore");
       deployment.setNtpEndpoint("ntp");
       deployment.setSyslogEndpoint("syslog");
-      deployment.setStatsStoreEndpoint("statsStore");
       deployment.setAuthEnabled(authEnabled);
       deployment.setOauthTenant(oauthTenant);
       deployment.setOauthUsername(oauthUsername);
