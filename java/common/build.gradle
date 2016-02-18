@@ -36,6 +36,7 @@ dependencies {
       '../../thrift/scheduler.thrift',
       '../../thrift/server_address.thrift',
       '../../thrift/status.thrift',
+      '../../thrift/stats_plugin.thrift',
       '../../thrift/tracing.thrift')
 
   testCompile("org.apache.curator:curator-test:${versions.curator}") {

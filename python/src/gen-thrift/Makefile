@@ -11,6 +11,7 @@ THRIFT_PY= \
   gen/scheduler/root/__init__.py \
   gen/test/echoer/__init__.py \
   gen/statsd/__init__.py \
+  gen/stats_plugin/__init__.py \
   gen/agent/__init__.py \
 
 CHECK_PRUNE='gen'
@@ -51,6 +52,9 @@ gen/flavors/__init__.py: $(THRIFT_SRC)
 
 gen/test/echoer/__init__.py: thrift/echo.thrift
 	$(call compile_thrift,thrift/echo.thrift)
+
+gen/stats_plugin/__init__.py: $(THRIFT_SRC)
+	$(call compile_thrift,../../../thrift/stats_plugin.thrift)
 
 gen/statsd/__init__.py: $(THRIFT_SRC)
 	$(call compile_thrift,../../../thrift/statsd/statsd.thrift)
