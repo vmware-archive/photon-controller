@@ -82,6 +82,11 @@ public class Deployment extends Base {
   private boolean loadBalancerEnabled = true;
 
   @JsonProperty
+  @ApiModelProperty(value = "IP address of the loadbalancer")
+  @NullableDomainOrIP
+  private String loadBalancerAddress;
+
+  @JsonProperty
   @ApiModelProperty(value = "Status of migration.")
   private MigrationStatus migrationStatus;
 
@@ -153,6 +158,14 @@ public class Deployment extends Base {
     this.loadBalancerEnabled = loadBalancerEnabled;
   }
 
+  public String getLoadBalancerAddress() {
+    return this.loadBalancerAddress;
+  }
+
+  public void setLoadBalancerAddress(String loadBalancerAddress) {
+    this.loadBalancerAddress = loadBalancerAddress;
+  }
+
   public MigrationStatus getMigrationStatus() {
     return this.migrationStatus;
   }
@@ -189,6 +202,7 @@ public class Deployment extends Base {
         && Objects.equals(this.isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms())
         && Objects.equals(this.getAuth(), other.getAuth())
         && Objects.equals(this.isLoadBalancerEnabled(), other.isLoadBalancerEnabled())
+        && Objects.equals(this.getLoadBalancerAddress(), other.getLoadBalancerAddress())
         && Objects.equals(this.getMigrationStatus(), other.getMigrationStatus())
         && Objects.equals(this.getClusterConfigurations(), other.getClusterConfigurations());
   }
@@ -204,6 +218,7 @@ public class Deployment extends Base {
         this.isUseImageDatastoreForVms(),
         this.getAuth(),
         this.isLoadBalancerEnabled(),
+        this.getLoadBalancerAddress(),
         this.getClusterConfigurations());
   }
 
@@ -217,6 +232,7 @@ public class Deployment extends Base {
         .add("useImageDatastoreForVms", useImageDatastoreForVms)
         .add("auth", auth.toString())
         .add("loadBalancerEnabled", loadBalancerEnabled)
+        .add("loadBalancerAddress", loadBalancerAddress)
         .add("migrationProgress", migrationStatus)
         .add("clusterConfigurations", getClusterConfigurations());
   }

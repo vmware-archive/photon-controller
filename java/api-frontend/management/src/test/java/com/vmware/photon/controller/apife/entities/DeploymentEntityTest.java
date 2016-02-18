@@ -62,6 +62,7 @@ public class DeploymentEntityTest {
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
       entity.setOperationId("opid");
+      entity.setLoadBalancerAddress("0.0.0.1");
 
       assertThat(entity.getState(), is(DeploymentState.READY));
       assertThat(entity.getSyslogEndpoint(), is("http://syslog"));
@@ -77,6 +78,7 @@ public class DeploymentEntityTest {
       Assert.assertTrue(entity.getImageDatastores().contains("datastore1"));
       assertThat(entity.getUseImageDatastoreForVms(), is(true));
       assertThat(entity.getOperationId(), is("opid"));
+      assertThat(entity.getLoadBalancerAddress(), is("0.0.0.1"));
     }
   }
 
@@ -99,6 +101,7 @@ public class DeploymentEntityTest {
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
+      entity.setLoadBalancerAddress("0.0.0.1");
     }
 
     @Test

@@ -352,6 +352,12 @@ public class DeploymentService extends StatefulService {
     public Boolean loadBalancerEnabled;
 
     /**
+     * This value represents the load balancer endpoint for the deployment.
+     */
+    @WriteOnce
+    public String loadBalancerAddress;
+
+    /**
      * This value represent the data migration progress for upgrade.
      */
     public Map<String, Integer> dataMigrationProgress;

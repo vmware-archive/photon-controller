@@ -21,5 +21,6 @@
             "adminGroup2"
         ]
     },
-    "loadBalancerEnabled": true
+    "loadBalancerEnabled": true,
+    "loadBalancerAddress": "0.0.0.4"
 }

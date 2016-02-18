@@ -43,7 +43,8 @@ public class DeploymentTest {
       Set<String> imageDatastores,
       String syslogEndpoint,
       String ntpEndpoint,
-      String statsStoreEndpoint) {
+      String statsStoreEndpoint,
+      String loadBalancerAddress) {
     Deployment deployment = new Deployment();
     deployment.setId("id");
     deployment.setImageDatastores(imageDatastores);
@@ -59,6 +60,8 @@ public class DeploymentTest {
         .password("p")
         .securityGroups(Arrays.asList(new String[] { "adminGroup1", "adminGroup2"}))
         .build());
+    deployment.setLoadBalancerEnabled(true);
+    deployment.setLoadBalancerAddress(loadBalancerAddress);
     return deployment;
   }
 
@@ -90,8 +93,8 @@ public class DeploymentTest {
     @DataProvider(name = "validDeployments")
     public Object[][] getValidDeployments() {
       return new Object[][]{
-          {createDeployment(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", "0.0.0.3")},
-          {createDeployment(Collections.singleton("i"), null, null, null)},
+          {createDeployment(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", "0.0.0.3", "0.0.0.4")},
+          {createDeployment(Collections.singleton("i"), null, null, null, null)},
       };
     }
 
@@ -104,16 +107,18 @@ public class DeploymentTest {
     @DataProvider(name = "invalidDeployments")
     public Object[][] getInvalidDeployments() {
       return new Object[][]{
-          {createDeployment(null, "0.0.0.1", "0.0.0.2", "0.0.0.3"),
+          {createDeployment(null, "0.0.0.1", "0.0.0.2", "0.0.0.3", "0.0.0.4"),
               "imageDatastores may not be null (was null)"},
-          {createDeployment(new HashSet<String>(), "0.0.0.1", "0.0.0.2", "0.0.0.3"),
+          {createDeployment(new HashSet<String>(), "0.0.0.1", "0.0.0.2", "0.0.0.3", "0.0.0.4"),
               "imageDatastores size must be between 1 and 2147483647 (was [])"},
-          {createDeployment(Collections.singleton("i"), "fake", "0.0.0.2", "0.0.0.3"),
+          {createDeployment(Collections.singleton("i"), "fake", "0.0.0.2", "0.0.0.3", "0.0.0.4"),
               "syslogEndpoint fake is invalid IP or Domain Address"},
-          {createDeployment(Collections.singleton("i"), "0.0.0.2", "fake", "0.0.0.3"),
+          {createDeployment(Collections.singleton("i"), "0.0.0.2", "fake", "0.0.0.3", "0.0.0.4"),
               "ntpEndpoint fake is invalid IP or Domain Address"},
-          {createDeployment(Collections.singleton("i"), "0.0.0.2", "0.0.0.1", "fake"),
+          {createDeployment(Collections.singleton("i"), "0.0.0.2", "0.0.0.1", "fake", "0.0.0.4"),
               "statsStoreEndpoint fake is invalid IP or Domain Address"},
+          {createDeployment(Collections.singleton("i"), "0.0.0.2", "0.0.0.1", "0.0.0.3", "fake"),
+              "loadBalancerAddress fake is invalid IP or Domain Address"},
       };
     }
 
@@ -140,12 +145,12 @@ public class DeploymentTest {
               "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, " +
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443," +
               " tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, loadBalancerEnabled=true," +
-              " migrationProgress=null, clusterConfigurations=null}";
+              " loadBalancerAddress=0.0.0.4, migrationProgress=null, clusterConfigurations=null}";
       HashSet<String> imageDatastores = new HashSet<String>();
       imageDatastores.add("image-datastore1");
       imageDatastores.add("image-datastore2");
       Deployment deployment = createDeployment(
-          imageDatastores, "0.0.0.1", "0.0.0.2", "0.0.0.3");
+          imageDatastores, "0.0.0.1", "0.0.0.2", "0.0.0.3", "0.0.0.4");
       assertThat(deployment.toString(), is(expectedString));
     }
   }
@@ -160,7 +165,7 @@ public class DeploymentTest {
     @Test
     public void testSerialization() throws Exception {
       Deployment deployment = createDeployment(
-          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2", "0.0.0.3");
+          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2", "0.0.0.3", "0.0.0.4");
       deployment.setState(DeploymentState.CREATING);
       String json = jsonFixture(JSON_FILE);
 
