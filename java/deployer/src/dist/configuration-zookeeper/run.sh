@@ -25,4 +25,27 @@ else
   echo "myid file does not exit"
 fi
 
+{{#PAUSE_APIFE_BACKGROUND}}
+if [[ -d "pauseBackground" ]]; then
+#fi
+#if [ ! -f "pauseset.ini" ]
+#then
+  echo "Pausing apife background"
+  exec /usr/bin/zkServer.sh start-foreground $CONFIG &
+  sleep 70
+  /usr/bin/zkCli.sh <<EOF
+    create /config
+    create /config/apife
+    create /config/apife/status PAUSED_BACKGROUND
+    quit
+EOF
+  echo "Creating Pause file"
+  #exec echo "pause" > pauseset.ini
+  mkdir "pauseBackground"
+  echo "Pause file created"
+  exec /usr/bin/zkServer.sh stop
+  echo "Zookeeper stopped"
+fi
+{{/PAUSE_APIFE_BACKGROUND}}
+echo "Starting zookeeper"
 exec /usr/bin/zkServer.sh start-foreground $CONFIG
