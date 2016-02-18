@@ -388,9 +388,9 @@ public class CreateContainerSpecLayoutTaskServiceTest {
 
     @Test
     public void testEndToEndSuccess() throws Throwable {
-      setupHosts(3);
+      setupHostsAndVms(null, 3);
       setupContainerTemplates();
-      setupDockerVms(3);
+      setupVms(3);
 
       CreateContainerSpecLayoutTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -410,10 +410,10 @@ public class CreateContainerSpecLayoutTaskServiceTest {
 
     @Test
     public void testEndToEndSuccessServicePlacement() throws Throwable {
-      setupHosts(2);
-      setupHost(ImmutableSet.of("ManagementApi"), 3);
+      setupHostsAndVms(null, 2);
+      setupHostAndVm(ImmutableSet.of("ManagementApi"), 3);
       setupContainerTemplates();
-      setupDockerVms(3);
+      setupVms(3);
 
       CreateContainerSpecLayoutTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -436,7 +436,8 @@ public class CreateContainerSpecLayoutTaskServiceTest {
 
     @Test
     public void testFailureDueToNoContainerTemplates() throws Throwable {
-      setupDockerVms(3);
+      setupHostsAndVms(null, 3);
+      setupVms(3);
 
       CreateContainerSpecLayoutTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -450,6 +451,7 @@ public class CreateContainerSpecLayoutTaskServiceTest {
 
     @Test
     public void testFailureDueToNoDockerVms() throws Throwable {
+      setupHosts(3);
       setupContainerTemplates();
 
       CreateContainerSpecLayoutTaskService.State finalState =
@@ -464,8 +466,8 @@ public class CreateContainerSpecLayoutTaskServiceTest {
 
     @Test
     public void testFailureDueToInsufficientDockerVms() throws Throwable {
+      setupHostsAndVms(null, 1);
       setupContainerTemplates();
-      setupDockerVms(1);
 
       CreateContainerSpecLayoutTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -531,41 +533,59 @@ public class CreateContainerSpecLayoutTaskServiceTest {
       assertThat(containerTemplateDocumentLinks.size(), is(0));
     }
 
-    private void setupHosts(int numberOfHosts) throws Throwable {
-      for (; numberOfHosts > 0; numberOfHosts--) {
-        setupHost(Collections.EMPTY_SET, numberOfHosts);
-      }
-    }
-
-    private void setupHost(Set<String> allowedService, int hostNumber) throws Throwable {
+    private HostService.State setupHost(Set<String> allowedService, int index) throws Throwable {
       HostService.State hostService =
           TestHelper.getHostServiceStartState(Collections.singleton(UsageTag.MGMT.name()), HostState.CREATING);
-      hostService.hostAddress = "1.2.3." + hostNumber;
-      hostService.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP, "3.2.1." + hostNumber);
+      hostService.hostAddress = "1.2.3." + index;
+      hostService.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP, "3.2.1." + index);
       if (allowedService != null && !allowedService.isEmpty()) {
         hostService.metadata
             .put(HostService.State.METADATA_KEY_NAME_ALLOWED_SERVICES, Joiner.on(",").join(allowedService));
       }
-      hostService = TestHelper.createHostService(cloudStore, hostService);
 
-      VmService.State vm = new VmService.State();
-      vm.hostServiceLink = hostService.documentSelfLink;
-      vm.name = "vm_name_" + hostNumber;
-      TestHelper.createVmService(testEnvironment, vm);
+      return TestHelper.createHostService(cloudStore, hostService);
+    }
+
+    private void setupHosts(int count) throws Throwable {
+      for (int i = 0; i < count; ++i) {
+        setupHost(Collections.EMPTY_SET, i);
+      }
+    }
+
+    private VmService.State setupVm(HostService.State hostService, int index) throws Throwable {
+      VmService.State vm = TestHelper.getVmServiceStartState();
+      vm.name = "vm_name_" + index;
+      if (hostService != null) {
+        vm.hostServiceLink = hostService.documentSelfLink;
+      }
+
+      return TestHelper.createVmService(testEnvironment, vm);
+    }
+
+    private void setupVms(int count) throws Throwable {
+      for (int i = 0; i < count; i++) {
+        setupVm(null, i);
+      }
+    }
+
+    private void setupHostAndVm(Set<String> allowedService, int index) throws Throwable {
+      HostService.State hostService = setupHost(
+          allowedService == null ? Collections.EMPTY_SET : allowedService,
+          index);
+      setupVm(hostService, index);
+
+    }
+
+    private void setupHostsAndVms(Set<String> allowedService, int count) throws Throwable {
+      for (; count > 0; count--) {
+        setupHostAndVm(allowedService, count);
+      }
     }
 
     private void setupContainerTemplates() throws Throwable {
       for (ContainersConfig.Spec spec : containersConfig.getContainerSpecs().values()) {
         ContainerTemplateService.State state = TestHelper.createContainerTemplateService(testEnvironment, spec);
         containerTypeStateMap.put(spec.getType(), state);
-      }
-    }
-
-    private void setupDockerVms(int count) throws Throwable {
-      for (int i = 0; i < count; i++) {
-        VmService.State vmServiceState = TestHelper.getVmServiceStartState();
-        vmServiceState.name = "VM_" + (i + 1);
-        TestHelper.createVmService(testEnvironment, vmServiceState);
       }
     }
   }

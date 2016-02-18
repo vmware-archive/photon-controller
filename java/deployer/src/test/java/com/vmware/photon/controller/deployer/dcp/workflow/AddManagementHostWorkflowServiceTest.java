@@ -889,15 +889,16 @@ public class AddManagementHostWorkflowServiceTest {
     @DataProvider(name = "HostWithTagWithAuthInfo")
     public Object[][] getHostsWithAuthInfo() {
       return new Object[][]{
-          {true, true, 1},
+          {true, true, 4},
           {true, false, 5},
-          {false, true, 1},
-          {false, false, 1},
+          {false, true, 4},
+          {false, false, 5},
       };
     }
 
     @Test(dataProvider = "HostWithTagWithAuthInfo")
     public void testSuccess(Boolean isOnlyMgmtHost, Boolean isAuthEnabled, int hostCount) throws Throwable {
+      int initialHostNum = isAuthEnabled ? 2 : 1;
       createCloudStore();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
@@ -910,7 +911,9 @@ public class AddManagementHostWorkflowServiceTest {
       createTestEnvironment(1);
 
       startState.deploymentServiceLink = createDeploymentServiceLink(localStore, isAuthEnabled);
-      HostService.State initialHost = createHostService(Collections.singleton(UsageTag.MGMT.name()), localStore, null);
+      for (int i = 0; i < initialHostNum; ++i) {
+        createHostService(Collections.singleton(UsageTag.MGMT.name()), localStore, null);
+      }
 
       DeploymentWorkflowService.State deploymentState = DeploymentWorkflowServiceTest.buildValidStartState(null, null);
       deploymentState.deploymentServiceLink = startState.deploymentServiceLink;
@@ -928,9 +931,8 @@ public class AddManagementHostWorkflowServiceTest {
       DeploymentService.State deploymentServiceRemoteOriginal = (queryForServiceStates(DeploymentService.State.class,
           remoteStore)).get(0);
 
-      // We have a deployment with 1 host
       assertThat(deploymentServiceRemoteOriginal.zookeeperIdToIpMap.size() == 1, is(true));
-      for (int i = 1; i <= hostCount; i++) {
+      for (int i = initialHostNum + 1; i <= hostCount; i++) {
         if (isOnlyMgmtHost) {
           HostService.State mgmtHost = createHostService(Collections.singleton(UsageTag.MGMT.name()), remoteStore,
               "0.0.0." + i);
@@ -953,10 +955,11 @@ public class AddManagementHostWorkflowServiceTest {
         DeploymentService.State deploymentServiceRemote = (queryForServiceStates(DeploymentService.State.class,
             remoteStore)).get(0);
 
-        assertThat(deploymentServiceRemote.zookeeperIdToIpMap.size() == 1 + i, is(true));
-        verifyZookeeperQuorumChange(deploymentServiceRemoteOriginal, deploymentServiceRemote, i);
-        verifyVmServiceStates(1 + i);
+        assertThat(deploymentServiceRemote.zookeeperIdToIpMap.size(), is(i - (initialHostNum - 1)));
+        verifyZookeeperQuorumChange(deploymentServiceRemoteOriginal, deploymentServiceRemote, i - initialHostNum);
+        verifyVmServiceStates(i);
       }
+
       verifyContainerTemplateServiceStates(isAuthEnabled);
       verifyContainerServiceStates(startState.hostServiceLink);
     }

@@ -353,7 +353,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
       log(Level.INFO, "Total VMs %d, VMs with incompatible containers %d", vms.size(),
           vmsWithIncompatibleContainers.size());
       for (VmService.State vm : vms) {
-        if (!vmsWithIncompatibleContainers.contains(vm)) {
+        if (!vmsWithIncompatibleContainers.contains(vm.documentSelfLink)) {
           log(Level.INFO, "Found VM without incompatible container for %s", containerName);
           vmLinkResult = vm.documentSelfLink;
           break;
@@ -456,7 +456,11 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
                 containerTemplates.add(template);
               }
 
-              createVmContainerAllocations(currentState, managementHosts, vms, containerTemplates);
+              try {
+                createVmContainerAllocations(currentState, managementHosts, vms, containerTemplates);
+              } catch (XenonRuntimeException e) {
+                failTask(e);
+              }
             })
         .sendWith(this);
   }

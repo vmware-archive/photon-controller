@@ -23,6 +23,7 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -489,7 +490,7 @@ public class AllocateHostResourceTaskServiceTest {
     public void testTaskSuccess() throws Throwable {
       machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
 
-      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(1, 3, 8, 8192, false);
+      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(2, 3, 8, 8192, false);
       startState.hostServiceLink = hostService.documentSelfLink;
 
       AllocateHostResourceTaskService.State finalState =
@@ -503,7 +504,7 @@ public class AllocateHostResourceTaskServiceTest {
 
       String vmServiceLink = getVmService(hostService.documentSelfLink);
       Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
-      assertThat(containerServices.size(), is(10));
+      assertThat(containerServices.size(), lessThanOrEqualTo(ContainersConfig.ContainerType.values().length));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).sum(),
           lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).max().getAsLong(),
@@ -521,7 +522,7 @@ public class AllocateHostResourceTaskServiceTest {
     public void testTaskSuccessWithMixedHostConfig() throws Throwable {
       machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
 
-      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(1, 3, 8, 8192, true);
+      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(2, 3, 8, 8192, true);
       startState.hostServiceLink = hostService.documentSelfLink;
 
       AllocateHostResourceTaskService.State finalState =
@@ -535,7 +536,7 @@ public class AllocateHostResourceTaskServiceTest {
 
       String vmServiceLink = getVmService(hostService.documentSelfLink);
       Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
-      assertThat(containerServices.size(), is(10));
+      assertThat(containerServices.size(), lessThanOrEqualTo(ContainersConfig.ContainerType.values().length));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).sum(),
           lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).max().getAsLong(),
@@ -553,7 +554,7 @@ public class AllocateHostResourceTaskServiceTest {
     public void testTaskSuccessWithoutHostConfig() throws Throwable {
       machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
 
-      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(1, 3, null, null, false);
+      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(2, 3, null, null, false);
       startState.hostServiceLink = hostService.documentSelfLink;
 
       AllocateHostResourceTaskService.State finalState =
