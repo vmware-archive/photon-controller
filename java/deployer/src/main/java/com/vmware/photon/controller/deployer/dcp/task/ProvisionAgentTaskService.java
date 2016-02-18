@@ -33,6 +33,7 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.stats.plugin.gen.StatsPluginConfig;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
@@ -306,6 +307,13 @@ public class ProvisionAgentTaskService extends StatefulService {
       Collections.addAll(networks, allowedNetworks);
     }
 
+    StatsPluginConfig statsPluginConfig = null;
+    if (deploymentState.statsEnabled) {
+      statsPluginConfig = new StatsPluginConfig();
+      statsPluginConfig.setStore_endpoint(deploymentState.statsStoreEndpoint);
+      statsPluginConfig.setStore_port(deploymentState.statsStorePort);
+    }
+
     try {
       AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
       agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
@@ -323,7 +331,7 @@ public class ProvisionAgentTaskService extends StatefulService {
           0, // Overcommit ratio is not implemented,
           deploymentState.syslogEndpoint,
           DEFAULT_AGENT_LOG_LEVEL,
-          deploymentState.statsStoreEndpoint,
+          statsPluginConfig,
           (hostState.usageTags != null
               && hostState.usageTags.contains(UsageTag.MGMT.name())
               && !hostState.usageTags.contains(UsageTag.CLOUD.name())),

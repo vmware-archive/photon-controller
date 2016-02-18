@@ -21,6 +21,7 @@ import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
+import com.vmware.photon.controller.stats.plugin.gen.StatsPluginConfig;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
@@ -65,7 +66,7 @@ public class AgentControlClientMock extends AgentControlClient {
       double memoryOvercommit,
       String loggingEndpoint,
       String logLevel,
-      String statsStoreEndpoint,
+      StatsPluginConfig statsPluginConfig,
       boolean managementOnly,
       String ntpEndpoint,
       String hostId,
