@@ -41,6 +41,8 @@ import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryServic
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
@@ -54,15 +56,20 @@ import com.vmware.xenon.common.TaskState.TaskStage;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.QueryTask.Query;
+import com.vmware.xenon.services.common.QueryTask.QuerySpecification.QueryOption;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -70,6 +77,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -555,16 +563,14 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
                 TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
                 break;
               case FAILED:
-                State failPatchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                failPatchState.taskState.failure = result.taskState.failure;
-                TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, failPatchState);
+                retryFailedProvisions(currentState);
                 break;
               case CANCELLED:
                 TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, buildPatch(TaskState.TaskStage
                     .CANCELLED, null, null));
                 break;
               default:
-                failPatchState = buildPatch(
+                State failPatchState = buildPatch(
                     TaskState.TaskStage.FAILED,
                     null,
                     new RuntimeException("Unexpected stage [" + result.taskState.stage + "]"));
@@ -597,6 +603,100 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         BulkProvisionHostsWorkflowService.State.class,
         currentState.taskPollDelay,
         provisionCallback);
+  }
+
+  private void retryFailedProvisions(State currentState) {
+    findFailedAgentInstalls().setCompletion((op, t) -> {
+      if (t != null) {
+        failTask(t);
+        return;
+      }
+      List<ProvisionHostTaskService.State> failedProvisionTasks =
+          QueryTaskUtils.getBroadcastQueryDocuments(ProvisionHostTaskService.State.class, op);
+      Set<String> failedHosts = failedProvisionTasks.stream()
+          .map(task -> task.hostServiceLink)
+          .collect(Collectors.toSet());
+      AtomicInteger counter = new AtomicInteger(failedHosts.size());
+      List<Throwable> exceptions = new ArrayList<>();
+
+      FutureCallback<ProvisionHostTaskService.State> provisionHostFutureCallback
+        = new FutureCallback<ProvisionHostTaskService.State>() {
+        @Override
+        public void onSuccess(@Nullable ProvisionHostTaskService.State result) {
+          switch (result.taskState.stage) {
+            case FINISHED:
+              break;
+            case FAILED:
+              exceptions.add(new Exception(result.taskState.failure.message));
+              break;
+            default:
+              exceptions.add(new Exception("Unexpected stage [" + result.taskState.stage + "]"));
+              break;
+          }
+          if (counter.decrementAndGet() > 0) {
+            return;
+          }
+          if (exceptions.isEmpty()) {
+            State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RESUME_DESTINATION_SYSTEM
+                , null);
+            TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
+          } else {
+            failTask(exceptions);
+          }
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+          exceptions.add(t);
+          if (counter.decrementAndGet() > 0) {
+            return;
+          }
+          failTask(exceptions);
+        }
+      };
+
+      for (String hostLink : failedHosts) {
+        provisionHost(currentState, hostLink, provisionHostFutureCallback);
+      }
+    }).sendWith(this);
+  }
+
+  private void provisionHost(State currentState,
+      String hostServiceLink,
+      FutureCallback<ProvisionHostTaskService.State> provisionHostFutureCallback) {
+
+    File sourceDirectory = new File(HostUtils.getDeployerContext(this).getVibDirectory());
+    File[] sourceFiles = sourceDirectory.listFiles((file) -> file.getName().toUpperCase().endsWith(".VIB"));
+    String vibPath = "/tmp/photon-controller-vibs/"
+        + currentState.destinationDeploymentId
+        + "/" + sourceFiles[0].getName();
+
+    ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
+    startState.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + currentState.destinationDeploymentId;
+    startState.hostServiceLink = hostServiceLink;
+    startState.vibPath = vibPath;
+
+    TaskUtils.startTaskAsync(
+        this,
+        ProvisionHostTaskFactoryService.SELF_LINK,
+        startState,
+        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+        ProvisionHostTaskService.State.class,
+        currentState.taskPollDelay,
+        provisionHostFutureCallback);
+  }
+
+  private Operation findFailedAgentInstalls() {
+    Query query = QueryTask.Query.Builder.create()
+        .addFieldClause(ServiceDocument.FIELD_NAME_KIND, Utils.buildKind(ProvisionHostTaskService.State.class))
+        .addFieldClause("taskState.stage", TaskStage.FAILED)
+        .build();
+    QueryTask task = QueryTask.Builder.createDirectTask().setQuery(query).addOption(QueryOption.EXPAND_CONTENT).build();
+    return Operation
+      .createPost(UriUtils.buildBroadcastRequestUri(
+          UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+          ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+      .setBody(task);
   }
 
   private void migrateFinal(State currentState) {
