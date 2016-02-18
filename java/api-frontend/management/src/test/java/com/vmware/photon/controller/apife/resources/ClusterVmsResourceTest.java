@@ -16,6 +16,9 @@ package com.vmware.photon.controller.apife.resources;
 import com.vmware.photon.controller.api.ApiError;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;
@@ -31,6 +34,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import javax.ws.rs.client.WebTarget;
@@ -102,6 +106,21 @@ public class ClusterVmsResourceTest extends ResourceTest {
   }
 
   @Test
+  public void testInvalidVmsPageLink() throws ExternalException {
+    String pageLink = "randomPageLink";
+    doThrow(new PageExpiredException(pageLink)).when(clusterFeClient).getVmsPage(pageLink);
+
+    Response response = getClusterVms(pageLink);
+    assertThat(response.getStatus(), Matchers.is(Response.Status.NOT_FOUND.getStatusCode()));
+
+    String expectedErrorMessage = "Page " + pageLink + " has expired";
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), Matchers.is(ErrorCode.PAGE_EXPIRED.getCode()));
+    assertThat(errors.getMessage(), Matchers.is(expectedErrorMessage));
+  }
+
+  @Test
   public void testInvalidPageSize() {
     Response response = getClusterVms(Optional.of(200));
     assertThat(response.getStatus(), is(400));
@@ -157,7 +176,7 @@ public class ClusterVmsResourceTest extends ResourceTest {
   }
 
   private void verifyPageLinks(ResourceList<Vm> resourceList) {
-    String expectedPrefix = ClusterResourceRoutes.API + "?pageLink=";
+    String expectedPrefix = clusterVmsRoute + "?pageLink=";
 
     if (resourceList.getNextPageLink() != null) {
       assertThat(resourceList.getNextPageLink().startsWith(expectedPrefix), Matchers.is(true));

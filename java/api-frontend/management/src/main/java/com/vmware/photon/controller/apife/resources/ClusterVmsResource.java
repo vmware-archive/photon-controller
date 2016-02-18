@@ -41,6 +41,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 /**
  * Resource APIs for Vms in a cluster.
@@ -76,9 +77,10 @@ public class ClusterVmsResource {
       resourceList = clusterFeClient.findVms(clusterId, adjustedPageSize);
     }
 
+    String apiRoute = UriBuilder.fromPath(ClusterResourceRoutes.CLUSTER_VMS_PATH).build(clusterId).toString();
     Response response = generateResourceListResponse(
         Response.Status.OK,
-        PaginationUtils.formalizePageLinks(resourceList, ClusterResourceRoutes.API),
+        PaginationUtils.formalizePageLinks(resourceList, apiRoute),
         (ContainerRequest) request,
         VmResourceRoutes.VM_PATH);
     return response;
