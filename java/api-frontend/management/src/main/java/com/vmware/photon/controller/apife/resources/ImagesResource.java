@@ -22,7 +22,6 @@ import com.vmware.photon.controller.apife.clients.ImageFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.ImageUploadException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
-import com.vmware.photon.controller.apife.resources.routes.FlavorsResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ImageResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
@@ -112,7 +111,7 @@ public class ImagesResource {
     }
     return generateResourceListResponse(
         Response.Status.OK,
-        PaginationUtils.formalizePageLinks(resourceList, FlavorsResourceRoutes.API),
+        PaginationUtils.formalizePageLinks(resourceList, ImageResourceRoutes.API),
         (ContainerRequest) request,
         ImageResourceRoutes.IMAGE_PATH);
   }
