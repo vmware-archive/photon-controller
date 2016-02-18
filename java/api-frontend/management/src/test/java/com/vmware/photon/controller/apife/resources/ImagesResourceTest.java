@@ -13,35 +13,35 @@
 
 package com.vmware.photon.controller.apife.resources;
 
+import com.vmware.photon.controller.api.ApiError;
 import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.ImageFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ImageResourceRoutes;
-import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import org.hamcrest.core.Is;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -51,57 +51,22 @@ import java.util.UUID;
  */
 public class ImagesResourceTest extends ResourceTest {
 
-  private String imageName = "imageName.vmdk";
-
-  private String imageId = "image1";
-
-  private String imageRoutePath =
-      UriBuilder.fromPath(ImageResourceRoutes.IMAGE_PATH).build(imageId).toString();
-
-  private String taskId = "task1";
-
-  private String taskRoutePath =
-      UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build(taskId).toString();
-
-
   @Mock
   private ImageFeClient imageFeClient;
 
-  private String image1Link = "";
-  private String image2Link = "";
   private PaginationConfig paginationConfig = new PaginationConfig();
   private Image image1 = new Image();
   private Image image2 = new Image();
 
-  @Mock
-  private HttpServletRequest httpServletRequest;
-
-  private Image testImage;
-
-  private List<Image> testList;
-
-  private ResourceList<Image> testImageList;
-
   @Override
   protected void setUpResources() throws Exception {
-    addProvider(httpServletRequest);
     addResource(new ImagesResource(imageFeClient, paginationConfig));
   }
 
   @BeforeMethod
   public void setUp() {
-    paginationConfig.setDefaultPageSize(10);
-    paginationConfig.setMaxPageSize(100);
-
-    testImage = new Image();
-    testImage.setId(imageId);
-    testImage.setName(imageName);
-    testImage.setSize(101L);
-
-    testList = new ArrayList<>();
-    testList.add(testImage);
-
-    testImageList = new ResourceList<>(testList);
+    paginationConfig.setDefaultPageSize(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE);
+    paginationConfig.setMaxPageSize(PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
 
     image1.setId("img1");
     image1.setName("img1Name.vmdk");
@@ -110,31 +75,6 @@ public class ImagesResourceTest extends ResourceTest {
     image2.setId("img2");
     image2.setName("img2Name.vmdk");
     image2.setSize(101L);
-
-    image1Link = UriBuilder.fromPath(ImageResourceRoutes.IMAGE_PATH).build(image1.getId()).toString();
-    image2Link = UriBuilder.fromPath(ImageResourceRoutes.IMAGE_PATH).build(image2.getId()).toString();
-    image1.setSelfLink(image1Link);
-    image2.setSelfLink(image2Link);
-
-  }
-
-  @Test
-  public void testGetAllImages() throws URISyntaxException, ExternalException {
-    when(imageFeClient.list(any(Optional.class))).thenReturn(testImageList);
-
-    Response response = client().target(ImageResourceRoutes.API).request().get();
-    assertThat(response.getStatus(), is(200));
-
-    ResourceList<Image> list = response.readEntity(
-        new GenericType<ResourceList<Image>>() {
-        }
-    );
-
-    assertThat(list.getItems().size(), is(1));
-    Image image = list.getItems().get(0);
-    assertThat(image, is(testImage));
-    assertThat(new URI(image.getSelfLink()).isAbsolute(), is(true));
-    assertThat(image.getSelfLink().endsWith(imageRoutePath), is(true));
   }
 
   @Test
@@ -142,8 +82,6 @@ public class ImagesResourceTest extends ResourceTest {
     ResourceList<Image> expectedImagesPage = new ResourceList<>(ImmutableList.of(image1, image2),
         null, null);
     when(imageFeClient.getImagesPage(anyString())).thenReturn(expectedImagesPage);
-
-    List<String> expectedSelfLinks = ImmutableList.of(image1Link, image2Link);
 
     Response response = getImages(UUID.randomUUID().toString());
     assertThat(response.getStatus(), is(200));
@@ -156,9 +94,13 @@ public class ImagesResourceTest extends ResourceTest {
     assertThat(images.getItems().size(), is(expectedImagesPage.getItems().size()));
 
     for (int i = 0; i < images.getItems().size(); i++) {
-      assertThat(new URI(images.getItems().get(i).getSelfLink()).isAbsolute(), is(true));
-      assertThat(images.getItems().get(i), is(expectedImagesPage.getItems().get(i)));
-      assertThat(images.getItems().get(i).getSelfLink().endsWith(expectedSelfLinks.get(i)), is(true));
+      Image retrievedImage = images.getItems().get(i);
+      assertThat(retrievedImage, is(expectedImagesPage.getItems().get(i)));
+      assertThat(new URI(retrievedImage.getSelfLink()).isAbsolute(), is(true));
+
+      String imageRoutePath = UriBuilder.fromPath(ImageResourceRoutes.IMAGE_PATH).build(retrievedImage.getId())
+          .toString();
+      assertThat(retrievedImage.getSelfLink().endsWith(imageRoutePath), is(true));
     }
 
     verifyPageLinks(images);
@@ -171,7 +113,7 @@ public class ImagesResourceTest extends ResourceTest {
     when(imageFeClient.list(Optional.absent()))
         .thenReturn(new ResourceList<>(ImmutableList.of(image1, image2), null, null));
     when(imageFeClient.list(Optional.of(1)))
-        .thenReturn(new ResourceList<>(ImmutableList.of(image1), null, null));
+        .thenReturn(new ResourceList<>(ImmutableList.of(image1), UUID.randomUUID().toString(), null));
     when(imageFeClient.list(Optional.of(2)))
         .thenReturn(new ResourceList<>(ImmutableList.of(image1, image2), null, null));
     when(imageFeClient.list(Optional.of(3)))
@@ -184,11 +126,45 @@ public class ImagesResourceTest extends ResourceTest {
     assertThat(result.getItems().size(), is(expectedImages.size()));
 
     for (int i = 0; i < result.getItems().size(); i++) {
-      assertThat(new URI(result.getItems().get(i).getSelfLink()).isAbsolute(), is(true));
-      assertThat(result.getItems().get(i), is(expectedImages.get(i)));
+      Image retrievedImage = result.getItems().get(i);
+      assertThat(retrievedImage, is(expectedImages.get(i)));
+      assertThat(new URI(retrievedImage.getSelfLink()).isAbsolute(), is(true));
+
+      String imageRoutePath = UriBuilder.fromPath(ImageResourceRoutes.IMAGE_PATH).build(retrievedImage.getId())
+          .toString();
+      assertThat(retrievedImage.getSelfLink().endsWith(imageRoutePath), is(true));
     }
 
     verifyPageLinks(result);
+  }
+
+  @Test
+  public void testInvalidPageSize() {
+    int pageSize = paginationConfig.getMaxPageSize() + 1;
+    Response response = getImages(Optional.of(pageSize));
+    assertThat(response.getStatus(), Is.is(400));
+
+    String expectedErrorMsg = String.format("The page size '%d' is not between '1' and '%d'",
+        pageSize, PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), Is.is(ErrorCode.INVALID_PAGE_SIZE.getCode()));
+    assertThat(errors.getMessage(), Is.is(expectedErrorMsg));
+  }
+
+  @Test
+  public void testInvalidPageLink() throws ExternalException {
+    String pageLink = "randomPageLink";
+    doThrow(new PageExpiredException(pageLink)).when(imageFeClient).getImagesPage(pageLink);
+
+    Response response = getImages(pageLink);
+    assertThat(response.getStatus(), Is.is(Response.Status.NOT_FOUND.getStatusCode()));
+
+    String expectedErrorMessage = "Page " + pageLink + " has expired";
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), Is.is(ErrorCode.PAGE_EXPIRED.getCode()));
+    assertThat(errors.getMessage(), Is.is(expectedErrorMessage));
   }
 
   private Response getImages(Optional<Integer> pageSize) {
@@ -221,6 +197,10 @@ public class ImagesResourceTest extends ResourceTest {
   @DataProvider(name = "pageSizes")
   private Object[][] getPageSize() {
     return new Object[][]{
+        {
+            Optional.absent(),
+            ImmutableList.of(image1, image2)
+        },
         {
             Optional.of(1),
             ImmutableList.of(image1)
