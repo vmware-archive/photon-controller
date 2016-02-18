@@ -70,7 +70,7 @@ public class StatsInfoTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "StatsInfo{enabled=true, storeEndpoint=10.146.64.236, port=2004}";
+          "StatsInfo{enabled=true, storeEndpoint=10.146.64.236, storePort=2004}";
       StatsInfo statsInfo = createStatsInfo();
       assertThat(statsInfo.toString(), is(expectedString));
     }
