@@ -525,6 +525,8 @@ Vagrant.configure("2") do |config|
       --name devbox_zookeeper_container --entrypoint /bin/bash devbox/zookeeper /usr/lib/zookeeper/conf/run.sh
   EOS
 
+  sleep 100
+
   #
   # HAProxy.
   #
