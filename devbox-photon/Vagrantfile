@@ -629,6 +629,7 @@ Vagrant.configure("2") do |config|
     success=-1
     echo "Checking status of services"
     i="0"
+    sleep 100
     while [ $i -lt $MAX_RETRIES ]
     do
       status=$(curl -s --connect-timeout 60 --max-time 60 --header "Authorization: Bearer #{API_SHARED_SECRET}" http://127.0.0.1:9000/status/)
