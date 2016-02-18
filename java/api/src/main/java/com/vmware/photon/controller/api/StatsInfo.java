@@ -99,6 +99,6 @@ public class StatsInfo {
     return com.google.common.base.Objects.toStringHelper(this)
         .add("enabled", this.getEnabled())
         .add("storeEndpoint", this.getStoreEndpoint())
-        .add("port", this.getStorePort());
+        .add("storePort", this.getStorePort());
   }
 }
