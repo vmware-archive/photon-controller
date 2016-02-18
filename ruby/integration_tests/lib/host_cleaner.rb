@@ -43,6 +43,13 @@ module EsxCloud
         end
       end
 
+      def reboot_host(server, user_name, password)
+        puts "rebooting host #{server}"
+        Net::SSH.start(server, user_name, password: password) do |ssh|
+          ssh.exec!("reboot")
+        end
+      end
+
       def uninstall_vib(server, user_name, password, vib_name)
         puts "deleting vib #{vib_name} from #{server}"
         Net::SSH.start(server, user_name, password: password) do |ssh|
