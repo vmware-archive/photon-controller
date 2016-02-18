@@ -167,6 +167,15 @@ task :clean_hosts, [:dc_yml] do |t, args|
   end
 end
 
+desc 'Reboot hosts'
+task :reboot_hosts, [:dc_yml] do |t, args|
+  host_specs = EsxCloud::HostsImporter.import_file  args[:dc_yml]
+  host_specs.each do |host|
+    EsxCloud::HostCleaner.reboot_host host.address, host.username, host.password
+  end
+  sleep(5 * 60)
+end
+
 desc 'Run integration test to check deployment'
 RSpec::Core::RakeTask.new(:check_deployment) do |task|
   task.pattern = FileList['spec/api/check_deployment/*_spec.rb']
