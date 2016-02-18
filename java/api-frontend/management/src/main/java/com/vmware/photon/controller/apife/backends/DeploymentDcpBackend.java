@@ -257,6 +257,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     authInfo.setSecurityGroups(deploymentEntity.getOauthSecurityGroups());
     deployment.setAuth(authInfo);
     deployment.setLoadBalancerEnabled(deploymentEntity.getLoadBalancerEnabled());
+    deployment.setLoadBalancerAddress(deploymentEntity.getLoadBalancerAddress());
     deployment.setMigrationStatus(generateMigrationStatus(deploymentEntity));
 
     return deployment;
@@ -463,6 +464,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     entity.setOauthPassword(deployment.oAuthPassword);
     entity.setOauthSecurityGroups(deployment.oAuthSecurityGroups);
     entity.setLoadBalancerEnabled(deployment.loadBalancerEnabled);
+    entity.setLoadBalancerAddress(deployment.loadBalancerAddress);
     entity.setMigrationProgress(deployment.dataMigrationProgress);
     entity.setVibsUploaded(toLong(deployment.vibsUploaded, 0));
     entity.setVibsUploading(toLong(deployment.vibsUploading, 0));

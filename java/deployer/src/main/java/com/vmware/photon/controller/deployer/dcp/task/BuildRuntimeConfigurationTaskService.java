@@ -423,13 +423,32 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         break;
 
       case LoadBalancer:
-        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-            deploymentState, Collections.singletonList(ContainersConfig.ContainerType.ManagementApi));
+
+        DeploymentService.State patchState = new DeploymentService.State();
+        patchState.loadBalancerAddress = vmIpAddress;
+
+        HostUtils.getCloudStoreHelper(this)
+            .createPatch(deploymentState.documentSelfLink)
+            .setBody(patchState)
+            .setCompletion((op, ex) -> {
+              if (null != ex) {
+                failTask(ex);
+                return;
+              }
+
+              try {
+                scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
+                  deploymentState, Collections.singletonList(ContainersConfig.ContainerType.ManagementApi));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+            .sendWith(this);
         break;
 
       case Lightwave:
 
-        DeploymentService.State patchState = new DeploymentService.State();
+        patchState = new DeploymentService.State();
         patchState.oAuthServerAddress = vmIpAddress;
         patchState.oAuthServerPort = ServicePortConstants.LIGHTWAVE_PORT;
         HostUtils.getCloudStoreHelper(this)

@@ -62,6 +62,8 @@ public class DeploymentEntity extends BaseEntity {
 
   private boolean loadBalancerEnabled;
 
+  private String loadBalancerAddress;
+
   private Map<String, Integer> migrationProgress;
 
   private long vibsUploaded;
@@ -209,6 +211,14 @@ public class DeploymentEntity extends BaseEntity {
     this.loadBalancerEnabled = loadBalancerEnabled;
   }
 
+  public String getLoadBalancerAddress() {
+    return this.loadBalancerAddress;
+  }
+
+  public void setLoadBalancerAddress(String loadBalancerAddress) {
+    this.loadBalancerAddress = loadBalancerAddress;
+  }
+
   public Map<String, Integer> getMigrationProgress() {
     return this.migrationProgress;
   }
@@ -242,6 +252,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.getUseImageDatastoreForVms(), other.getUseImageDatastoreForVms())
         && Objects.equals(this.getLoadBalancerEnabled(), other.getLoadBalancerEnabled())
+        && Objects.equals(this.getLoadBalancerAddress(), other.getLoadBalancerAddress())
         && Objects.equals(this.getMigrationProgress(), other.getMigrationProgress())
         && Objects.equals(this.getVibsUploaded(), other.getVibsUploaded())
         && Objects.equals(this.getVibsUploading(), other.getVibsUploading());
@@ -265,6 +276,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("useImageDatastoreForVms", this.getUseImageDatastoreForVms())
         .add("operationId", this.getOperationId())
         .add("loadBalancerEnabled", this.getLoadBalancerEnabled())
+        .add("loadBalancerAddress", this.getLoadBalancerAddress())
         .add("migrationProgress", this.getMigrationProgress())
         .add("vibsUploaded", this.getVibsUploaded())
         .add("vibsUploading", this.getVibsUploading());
