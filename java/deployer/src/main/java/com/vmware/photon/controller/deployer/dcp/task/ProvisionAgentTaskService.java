@@ -324,6 +324,7 @@ public class ProvisionAgentTaskService extends StatefulService {
           deploymentState.syslogEndpoint,
           DEFAULT_AGENT_LOG_LEVEL,
           deploymentState.statsStoreEndpoint,
+          deploymentState.statsStorePort,
           (hostState.usageTags != null
               && hostState.usageTags.contains(UsageTag.MGMT.name())
               && !hostState.usageTags.contains(UsageTag.CLOUD.name())),

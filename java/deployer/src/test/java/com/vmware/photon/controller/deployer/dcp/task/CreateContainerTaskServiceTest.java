@@ -747,7 +747,9 @@ public class CreateContainerTaskServiceTest {
       deploymentStartState.oAuthServerPort = 433;
       deploymentStartState.oAuthEnabled = true;
       deploymentStartState.syslogEndpoint = "1.2.3.4:514";
-      deploymentStartState.statsStoreEndpoint = "2.3.4.5:678";
+      deploymentStartState.statsEnabled = true;
+      deploymentStartState.statsStoreEndpoint = "2.3.4.5";
+      deploymentStartState.statsStorePort = 8081;
       deploymentStartState.ntpEndpoint = "5.6.7.8";
 
       startState.deploymentServiceLink =

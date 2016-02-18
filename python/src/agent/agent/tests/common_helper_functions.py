@@ -413,6 +413,7 @@ class RuntimeUtils(object):
             "--chairman": "localhost:12345",
             "--host-id": host_id,
             "--stats-store-address": "10.1.1.20",
+            "--stats-store-port": "8081",
             "--hypervisor": "fake",
             "--logging-level": "debug",
             "--no-syslog": None,

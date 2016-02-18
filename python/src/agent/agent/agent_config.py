@@ -68,7 +68,9 @@ class AgentConfig(object):
     HOST_ID = "host_id"
     DEPLOYMENT_ID = "deployment_id"
     IMAGE_DATASTORES = "image_datastores"
-    STATS_STORE_ADDRESS = "stats_store_address"
+
+    STATS_STORE_ENDPOINT = "stats_store_endpoint"
+    STATS_STORE_PORT = "stats_store_port"
 
     PROVISION_ARGS = [HOST_PORT]
     BOOTSTRAP_ARGS = PROVISION_ARGS + [AVAILABILITY_ZONE, HOSTNAME, CHAIRMAN,
@@ -189,8 +191,11 @@ class AgentConfig(object):
         reboot |= self._check_and_set_attr(
             self.HOST_PORT, port)
 
-        reboot |= self._check_and_set_attr(
-            self.STATS_STORE_ADDRESS, provision_req.stats_store_address)
+        if provision_req.stats_store_config:
+            reboot |= self._check_and_set_attr(
+                self.STATS_STORE_ENDPOINT, provision_req.stats_store_config.endpoint)
+            reboot |= self._check_and_set_attr(
+                self.STATS_STORE_PORT, provision_req.stats_store_config.port)
 
         chairman_str = \
             self._parse_chairman_server_address(provision_req.chairman_server)
@@ -290,8 +295,13 @@ class AgentConfig(object):
 
     @property
     @locked
-    def stats_store_address(self):
-        return getattr(self._options, self.STATS_STORE_ADDRESS)
+    def stats_store_endpoint(self):
+        return getattr(self._options, self.STATS_STORE_ENDPOINT)
+
+    @property
+    @locked
+    def stats_store_port(self):
+        return getattr(self._options, self.STATS_STORE_PORT)
 
     @property
     @locked
@@ -573,9 +583,12 @@ class AgentConfig(object):
                           type="string", default=None,
                           help="ID of this host")
 
-        parser.add_option("--stats-store-address", dest="stats_store_address",
+        parser.add_option("--stats-store-endpoint", dest="stats_store_endpoint",
                           type="string", default=None,
-                          help="Uri of this stats store (i.e. carbon)")
+                          help="Uri or IP Address of the stats store server (i.e. graphite)")
+        parser.add_option("--stats-store-port", dest="stats_store_port",
+                          type="string", default=None,
+                          help="Port number of the stats store server (i.e. graphite)")
 
         parser.add_option("--deployment-id", dest=self.DEPLOYMENT_ID,
                           type="string", default=None,
