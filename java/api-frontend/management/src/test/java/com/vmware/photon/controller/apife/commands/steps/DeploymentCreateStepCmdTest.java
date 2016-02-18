@@ -108,7 +108,6 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
       }
       assertThat(deployment.getNtpEndpoint(), is(deploymentEntity.getNtpEndpoint()));
       assertThat(deployment.getSyslogEndpoint(), is(deploymentEntity.getSyslogEndpoint()));
-      assertThat(deployment.getStatsStoreEndpoint(), is(deploymentEntity.getStatsStoreEndpoint()));
       assertThat(deployment.isAuthEnabled(), is(deploymentEntity.getAuthEnabled()));
       assertThat(deployment.getOauthEndpoint(), is(deploymentEntity.getOauthEndpoint()));
       assertThat(deployment.getOauthTenant(), is(deploymentEntity.getOauthTenant()));

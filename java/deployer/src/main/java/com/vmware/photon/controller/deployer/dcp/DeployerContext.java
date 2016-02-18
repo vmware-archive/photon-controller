@@ -91,8 +91,6 @@ public class DeployerContext {
   //      not sure how to validate this yet.
   private final String syslogEndpoint;
 
-  private final String statsStoreEndpoint;
-
   @Range(min = 1)
   private int taskPollDelay = DeployerDefaults.DEFAULT_TASK_POLL_DELAY;
 
@@ -137,7 +135,6 @@ public class DeployerContext {
     scriptLogDirectory = null;
     scriptTimeoutSec = DeployerDefaults.SCRIPT_TIMEOUT_IN_SECONDS;
     syslogEndpoint = null;
-    statsStoreEndpoint = null;
     taskPollDelay = DeployerDefaults.DEFAULT_TASK_POLL_DELAY;
     tenantName = null;
     vibDirectory = null;
