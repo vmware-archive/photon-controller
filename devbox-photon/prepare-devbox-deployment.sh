@@ -137,7 +137,7 @@ rm *.mf
 rm *.bak
 cd ..
 
-vagrant resume
+vagrant up --no-provision
 vagrant ssh -c "sudo mkdir -p /var/photon/images"
 vagrant ssh -c "sudo chown vagrant /var/photon/images"
 vagrant ssh -c "sudo cp /vagrant/$MANAGEMENT_VM_DIR/photon-management-vm-disk1.vmdk /var/photon/images/"
