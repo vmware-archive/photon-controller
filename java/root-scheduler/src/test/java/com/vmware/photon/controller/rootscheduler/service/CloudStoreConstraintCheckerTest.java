@@ -31,6 +31,7 @@ import com.vmware.xenon.common.UriUtils;
 
 import ch.qos.logback.classic.Level;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.net.InetAddresses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests the CloudStoreConstraintChecker.
@@ -82,6 +84,9 @@ public class CloudStoreConstraintCheckerTest {
   private TestEnvironment cloudStoreTestEnvironmentLarge;
   private XenonRestClient cloudstoreClientLarge;
   private CloudStoreConstraintChecker checkerLarge;
+
+  private static final int PERF_NUM_CANDIDATE_REQUESTS = 2000;
+  private static final int PERF_NUM_DESIRED_CANDIDATES = 4;
 
   @BeforeClass
   public void setUpClass() throws Throwable {
@@ -467,6 +472,134 @@ public class CloudStoreConstraintCheckerTest {
 
     deleteDatastores(cloudStoreEnvironment, datastores);
     deleteHosts(cloudStoreEnvironment, hosts);
+  }
+
+  private static class PerfResult {
+    int numHosts;
+    int numDatastores;
+    double throughputNoConstraint;
+    double throughputDatastoreConstraint;
+  }
+
+  /**
+   * This is for testing performance. It's disabled by default because it's a long-running test. Also, it reports
+   * numbers, and (mostly) doesn't fail.
+   *
+   * We currently run tests 10 times against 1000 - 10000 hosts, so we can compare results.
+   */
+  @Test(dataProvider = "environment", enabled = false)
+  private void testPerformance(
+      String environmentName,
+      TestEnvironment cloudStoreEnvironment,
+      CloudStoreConstraintChecker checker) throws Throwable {
+
+    List<PerfResult> perfResults = new ArrayList<>();
+    for (int numHosts = 1000; numHosts <= 10000; numHosts += 1000) {
+      int numDatastores = 100;
+      PerfResult perfResult = testPerformance(
+          environmentName, cloudStoreEnvironment, checker, numHosts, numDatastores);
+      perfResults.add(perfResult);
+    }
+
+    for (PerfResult perfResult : perfResults) {
+      logger.info("==================================================");
+      logger.info("Environment: {}", environmentName);
+      logger.info("Number of Hosts: {}", perfResult.numHosts);
+      logger.info("Number of Datastores: {}", perfResult.numDatastores);
+      logger.info("Throughput with no constraints: {}", perfResult.throughputNoConstraint);
+      logger.info("Throughput with datastore constraint: {}", perfResult.throughputDatastoreConstraint);
+    }
+  }
+
+  /**
+   * Helper for performance testing. Runs one test against a given number of hosts and datastores.
+   */
+  private PerfResult testPerformance(
+      String environmentName,
+      TestEnvironment cloudStoreEnvironment,
+      CloudStoreConstraintChecker checker,
+      int numHosts,
+      int numDatastores) throws Throwable {
+
+    PerfResult perfResult = new PerfResult();
+
+    perfResult.numHosts = numHosts;
+    perfResult.numDatastores = numDatastores;
+
+    logger.info("Setting up {} with {} cloud hosts and {} datastores", environmentName, numHosts, numDatastores);
+    List<DatastoreService.State> datastores = createDatastoreDescriptions(numDatastores);
+    List<HostService.State> hosts = createHostDescriptions(numHosts, false, datastores);
+    createDatastores(cloudStoreEnvironment, datastores);
+    createHosts(cloudStoreEnvironment, hosts);
+
+    logger.info("Running no-constraint perf test...");
+    perfResult.throughputNoConstraint = testPerformanceNoConstraint(environmentName, cloudStoreEnvironment, checker);
+    logger.info("Got {} requests/second", perfResult.throughputNoConstraint);
+
+    logger.info("Running datastore constraint perf test...");
+    perfResult.throughputDatastoreConstraint =
+        testPerformanceDatastoreConstraint(environmentName, cloudStoreEnvironment, checker, hosts);
+    logger.info("Got {} requests/second", perfResult.throughputNoConstraint);
+
+    logger.info("Cleaning up {}", environmentName);
+    deleteDatastores(cloudStoreEnvironment, datastores);
+    deleteHosts(cloudStoreEnvironment, hosts);
+
+    return perfResult;
+  }
+
+  /**
+   * Helper that tests an existing setup. It does PERF_NUM_CANDIDATE_REQUESTS requests, each with no constraints. That
+   * is, any hosts are okay.
+   */
+  private double testPerformanceNoConstraint(
+      String environmentName,
+      TestEnvironment cloudStoreEnvironment,
+      CloudStoreConstraintChecker checker) throws Throwable {
+
+    List<ResourceConstraint> constraints = new LinkedList<>();
+
+    Stopwatch stopwatch = Stopwatch.createStarted();
+    for (int i = 0; i < PERF_NUM_CANDIDATE_REQUESTS; i++) {
+      Map<String, ServerAddress> candidates = checker.getCandidates(constraints, PERF_NUM_DESIRED_CANDIDATES);
+      assertThat(candidates, not(equalTo(null)));
+
+    }
+    stopwatch.stop();
+    long elapsedMillis = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    double elapsedSeconds = (double) elapsedMillis / (double) 1000;
+    double throughput = PERF_NUM_CANDIDATE_REQUESTS / elapsedSeconds;
+    return throughput;
+  }
+
+  /**
+   * Helper that tests an existing setup. It does PERF_NUM_CANDIDATE_REQUESTS requests, each with a single constraint
+   * for a single datastore.
+   */
+  private double testPerformanceDatastoreConstraint(
+      String environmentName,
+      TestEnvironment cloudStoreEnvironment,
+      CloudStoreConstraintChecker checker,
+      List<HostService.State> hosts) throws Throwable {
+
+    int numHosts = hosts.size();
+    List<ResourceConstraint> constraints = new LinkedList<>();
+
+    Stopwatch stopwatch = Stopwatch.createStarted();
+    for (int i = 0; i < PERF_NUM_CANDIDATE_REQUESTS; i++) {
+      String value = getHostDatastore(hosts.get(i % numHosts));
+      ResourceConstraint constraint = new ResourceConstraint();
+      constraint.setType(ResourceConstraintType.DATASTORE);
+      constraint.setValues(Arrays.asList(value));
+      Map<String, ServerAddress> candidates = checker.getCandidates(constraints, PERF_NUM_DESIRED_CANDIDATES);
+      assertThat(candidates, not(equalTo(null)));
+
+    }
+    stopwatch.stop();
+    long elapsedMillis = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    double elapsedSeconds = (double) elapsedMillis / (double) 1000;
+    double throughput = PERF_NUM_CANDIDATE_REQUESTS / elapsedSeconds;
+    return throughput;
   }
 
   /**
