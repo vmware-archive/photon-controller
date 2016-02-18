@@ -22,7 +22,7 @@ import com.vmware.xenon.common.Service;
  */
 public class ProvisionHostTaskFactoryService extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "provision-host-tasks";
+  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/provision-host-tasks";
 
   public ProvisionHostTaskFactoryService() {
     super(ProvisionHostTaskService.State.class);
