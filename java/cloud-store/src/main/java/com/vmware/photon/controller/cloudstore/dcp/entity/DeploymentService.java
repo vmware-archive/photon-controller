@@ -318,10 +318,21 @@ public class DeploymentService extends StatefulService {
     public String syslogEndpoint;
 
     /**
-     * This value represents the stats store endpoint for the deployment.
+     * This value represents whether Stats collection is enabled for the deployment.
      */
     @Immutable
+    @DefaultBoolean(value = false)
+    public Boolean statsEnabled;
+
+    /**
+     * This value represents the stats store endpoint for the deployment.
+     */
     public String statsStoreEndpoint;
+
+    /**
+     * This value represents the port used by the Stats store endpoint.
+     */
+    public Integer statsStorePort;
 
     /**
      * This value represents the list of chairman servers.

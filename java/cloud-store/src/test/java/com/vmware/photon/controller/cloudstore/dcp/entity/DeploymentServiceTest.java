@@ -26,6 +26,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -40,6 +41,7 @@ public class DeploymentServiceTest {
     startState.imageDataStoreNames = Collections.singleton("datastore1");
     startState.imageDataStoreUsedForVMs = true;
     startState.state = DeploymentState.CREATING;
+    startState.statsEnabled = true;
     return startState;
   }
 
@@ -147,6 +149,9 @@ public class DeploymentServiceTest {
     public void testPatchStateSuccess() throws Throwable {
       final String lotusLoginEndpoint = "https://lotus";
       final String lotusLogoutEndpoint = "https://lotusLogout";
+      final String statsStoreEndpoint = "https://stats";
+      final Integer statsStorePort = 2000;
+
       DeploymentService.State startState = buildServiceStartState();
       Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
@@ -156,6 +161,9 @@ public class DeploymentServiceTest {
       patchState.oAuthSwaggerLogoutEndpoint = lotusLogoutEndpoint;
       patchState.oAuthMgmtUiLoginEndpoint = lotusLoginEndpoint;
       patchState.oAuthMgmtUiLogoutEndpoint = lotusLogoutEndpoint;
+
+      patchState.statsStoreEndpoint = statsStoreEndpoint;
+      patchState.statsStorePort = statsStorePort;
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
@@ -168,6 +176,10 @@ public class DeploymentServiceTest {
       assertThat(currentState.oAuthSwaggerLogoutEndpoint, is(lotusLogoutEndpoint));
       assertThat(currentState.oAuthMgmtUiLoginEndpoint, is(lotusLoginEndpoint));
       assertThat(currentState.oAuthMgmtUiLogoutEndpoint, is(lotusLogoutEndpoint));
+
+      assertTrue(currentState.statsEnabled);
+      assertThat(currentState.statsStoreEndpoint, is(statsStoreEndpoint));
+      assertThat(currentState.statsStorePort, is(statsStorePort));
     }
 
     @Test(expectedExceptions = BadRequestException.class)
