@@ -28,6 +28,7 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidVmNetworksS
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmSourceImageSpecException;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
@@ -55,6 +56,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -102,7 +104,8 @@ public class ProjectVmsResource {
   @ApiOperation(value = "Find VMs in a project",
       response = Vm.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of VMs in the project")})
-  public Response find(@PathParam("id") String projectId,
+  public Response find(@Context Request request,
+                       @PathParam("id") String projectId,
                        @QueryParam("name") Optional<String> name,
                        @QueryParam("pageSize") Optional<Integer> pageSize,
                        @QueryParam("pageLink") Optional<String> pageLink)
@@ -114,9 +117,14 @@ public class ProjectVmsResource {
       Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
       resourceList = vmFeClient.find(projectId, name, adjustedPageSize);
     }
+
+    String apiRoute = UriBuilder.fromPath(ProjectResourceRoutes.PROJECT_VMS_PATH).build(projectId).toString();
+
     return generateResourceListResponse(
         Response.Status.OK,
-        PaginationUtils.formalizePageLinks(resourceList, ProjectResourceRoutes.API));
+        PaginationUtils.formalizePageLinks(resourceList, apiRoute),
+        (ContainerRequest) request,
+        VmResourceRoutes.VM_PATH);
   }
 
   private void validate(VmCreateSpec spec) throws InvalidVmNetworksSpecException, InvalidVmDisksSpecException,
