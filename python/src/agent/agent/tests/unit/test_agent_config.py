@@ -30,6 +30,7 @@ from gen.common.ttypes import ServerAddress
 from gen.host.ttypes import SetAvailabilityZoneRequest
 from gen.resource.ttypes import ImageDatastore
 from host.hypervisor.fake.hypervisor import FakeHypervisor
+from gen.stats.plugin.ttypes import StatsPluginConfig
 
 
 class TestUnitAgent(unittest.TestCase):
@@ -111,11 +112,13 @@ class TestUnitAgent(unittest.TestCase):
                                    "--datastores", "ds1, ds2",
                                    "--vm-network", "VM Network",
                                    "--wait-timeout", "5",
-                                   "--stats-store-address", "10.10.10.10",
+                                   "--stats-store-endpoint", "10.10.10.10",
+                                   "--stats-store-port", "8081",
                                    "--chairman", "h1:1300, h2:1300"])
         assert_that(self.agent.availability_zone, equal_to("test"))
         assert_that(self.agent.hostname, equal_to("localhost"))
-        assert_that(self.agent.stats_store_address, equal_to("10.10.10.10"))
+        assert_that(self.agent.stats_store_endpoint, equal_to("10.10.10.10"))
+        assert_that(self.agent.stats_store_port, equal_to("8081"))
         assert_that(self.agent.host_port, equal_to(1234))
         assert_that(self.agent.datastores, equal_to(["ds1", "ds2"]))
         assert_that(self.agent.networks, equal_to(["VM Network"]))
@@ -153,19 +156,24 @@ class TestUnitAgent(unittest.TestCase):
         req.availability_zone = "test1"
         req.datastores = ["ds3", "ds4"]
         req.networks = ["Public"]
-        req.stats_store_address = "10.0.0.100"
         req.memory_overcommit = 1.5
         req.image_datastores = set([ImageDatastore("ds3", True)])
         addr = ServerAddress(host="localhost", port=2345)
         req.chairman_server = [ServerAddress("h1", 13000),
                                ServerAddress("h2", 13000)]
         req.address = addr
+
+        stats_plugin_config = StatsPluginConfig(
+            endpoint="10.0.0.100", port="8081")
+        req.stats_plugin_config = stats_plugin_config
+
         req.host_id = "host1"
         req.deployment_id = "deployment1"
         self.agent.update_config(req)
 
         assert_that(self.agent.availability_zone, equal_to("test1"))
-        assert_that(self.agent.stats_store_address, equal_to("10.0.0.100"))
+        assert_that(self.agent.stats_store_endpoint, equal_to("10.0.0.100"))
+        assert_that(self.agent.stats_store_port, equal_to("8081"))
         assert_that(self.agent.hostname, equal_to("localhost"))
         assert_that(self.agent.host_port, equal_to(2345))
         assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))

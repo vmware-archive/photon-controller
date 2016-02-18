@@ -513,7 +513,9 @@ public class AddCloudHostWorkflowServiceTest {
       state.oAuthServerAddress = "oAuthServerAddress";
       state.oAuthServerPort = 433;
       state.syslogEndpoint = "syslogEndpoint";
+      state.statsEnabled = false;
       state.statsStoreEndpoint = "statsStoreEndpoint";
+      state.statsStorePort = 8081;
       state.chairmanServerList = Collections.singleton("0.0.0.0:13000");
       state.state = DeploymentState.READY;
 
