@@ -14,12 +14,14 @@
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -55,9 +57,12 @@ import com.vmware.xenon.common.TaskState.TaskStage;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.QueryTask.Query;
+import com.vmware.xenon.services.common.QueryTask.Query.Occurance;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -550,6 +555,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         new FutureCallback<BulkProvisionHostsWorkflowService.State>() {
           @Override
           public void onSuccess(@Nullable BulkProvisionHostsWorkflowService.State result) {
+            State failPatchState = null;
             switch (result.taskState.stage) {
               case FINISHED:
                 State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RESUME_DESTINATION_SYSTEM
@@ -557,7 +563,10 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
                 TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
                 break;
               case FAILED:
-                State failPatchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                failPatchState = buildPatch(
+                    TaskState.TaskStage.FAILED,
+                    null,
+                    null);
                 failPatchState.taskState.failure = result.taskState.failure;
                 TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, failPatchState);
                 break;
@@ -588,7 +597,12 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     startState.deploymentServiceLink = deploymentState.documentSelfLink;
     startState.chairmanServerList = deploymentState.chairmanServerList;
     startState.usageTag = UsageTag.CLOUD.name();
-    startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, null);
+    startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.CLOUD.name());
+    startState.querySpecification.query.addBooleanClause(Query.Builder.create()
+        .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.DELETED.name(), Occurance.MUST_NOT_OCCUR)
+        .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.ERROR.name(), Occurance.MUST_NOT_OCCUR)
+        .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.NOT_PROVISIONED.name(), Occurance.MUST_NOT_OCCUR)
+        .build());
     startState.taskPollDelay = currentState.taskPollDelay;
 
     TaskUtils.startTaskAsync(

@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
@@ -61,6 +62,8 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.QueryTask.Query;
+import com.vmware.xenon.services.common.QueryTask.Query.Occurance;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -314,7 +317,15 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         .setTermMatchValue(Utils.buildKind(HostService.State.class));
 
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.query
+      .addBooleanClause(kindClause)
+      .addBooleanClause(
+          Query.Builder.create()
+            .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.DELETED.name(), Occurance.MUST_NOT_OCCUR)
+            .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.ERROR.name(), Occurance.MUST_NOT_OCCUR)
+            .addFieldClause(HostService.State.FIELD_NAME_STATE,
+                HostState.NOT_PROVISIONED.name(), Occurance.MUST_NOT_OCCUR)
+            .build());
     return querySpecification;
   }
 
@@ -423,7 +434,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
       .setBody(QueryTask.create(buildHostQuerySpecification()).setDirect(true))
       .setCompletion(getSourceHostsHandler)
       .sendWith(this);
-    }
+  }
 
   private void processUploadVibSubStage(State currentState, String hostServiceLink,
                                         FutureCallback<UploadVibTaskService.State> futureCallback) {
@@ -483,7 +494,6 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         .map(entry -> {
           String destinationFactoryLink = entry.getValue();
           String sourceFactoryLink = entry.getKey();
-          InetSocketAddress local = ServiceUtils.selectRandomItem(sourceServers);
           InetSocketAddress remote = ServiceUtils.selectRandomItem(destinationServers);
           CopyStateTriggerTaskService.State startState = new CopyStateTriggerTaskService.State();
           startState.sourceServers = new HashSet<>();
