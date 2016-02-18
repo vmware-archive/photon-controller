@@ -43,6 +43,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.NotImplemente
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.steps.ImageSeedingProgressCheckStepCmd;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
@@ -464,7 +465,8 @@ public class VmDcpBackendTest {
 
     @Test
     public void testFindByProjectId() throws Throwable {
-      ResourceList<Vm> foundVms = vmDcpBackend.filterByProject(vm.projectId);
+      ResourceList<Vm> foundVms = vmDcpBackend.filterByProject(vm.projectId,
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(foundVms, is(notNullValue()));
       assertThat(foundVms.getItems().size(), is(1));
       assertThat(foundVms.getItems().get(0).getName(), is(vm.name));
@@ -474,7 +476,7 @@ public class VmDcpBackendTest {
     public void testWithNonExistingProjectId() throws Throwable {
       String id = UUID.randomUUID().toString();
       try {
-        vmDcpBackend.filterByProject(id);
+        vmDcpBackend.filterByProject(id, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
         fail("vmDcpBackend.filterByProject for a non existing projectId should have failed");
       } catch (ProjectNotFoundException e) {
         assertThat(e.getMessage(), containsString(id));

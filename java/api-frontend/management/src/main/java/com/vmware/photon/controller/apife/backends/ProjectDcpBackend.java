@@ -23,6 +23,7 @@ import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
@@ -247,7 +248,8 @@ public class ProjectDcpBackend implements ProjectBackend {
   private ProjectEntity delete(String projectId) throws ExternalException {
     ProjectEntity projectEntity = findById(projectId);
 
-    if (!vmBackend.filterByProject(projectId).getItems().isEmpty()) {
+    if (!vmBackend.filterByProject(projectId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)).getItems()
+        .isEmpty()) {
       throw new ContainerNotEmptyException(projectEntity,
           String.format("Project '%s' VM list is non-empty", projectId));
     }

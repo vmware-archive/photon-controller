@@ -187,7 +187,7 @@ public class DeploymentFeClient {
     return task;
   }
 
-  public ResourceList<Vm> listVms(String id) throws ExternalException {
+  public ResourceList<Vm> listVms(String id, Optional<Integer> pageSize) throws ExternalException {
     deploymentBackend.findById(id);
     ResourceList<Tenant> tenantList = tenantBackend.filter(Optional.of(Constants.TENANT_NAME),
         Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
@@ -203,7 +203,7 @@ public class DeploymentFeClient {
       return new ResourceList<>(new ArrayList<Vm>());
     }
 
-    return vmBackend.filterByProject(projectList.get(0).getId());
+    return vmBackend.filterByProject(projectList.get(0).getId(), pageSize);
   }
 
   public ResourceList<Host> listHosts(String id, Optional<Integer> pageSize) throws ExternalException {
@@ -235,5 +235,9 @@ public class DeploymentFeClient {
     executor.submit(command);
 
     return task;
+  }
+
+  public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
+    return vmBackend.getVmsPage(pageLink);
   }
 }
