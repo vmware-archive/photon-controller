@@ -25,4 +25,17 @@ else
   echo "myid file does not exit"
 fi
 
-exec /usr/bin/zkServer.sh start-foreground $CONFIG
+if [ -n "$PAUSE_APIFE_BACKGROUND" -a ! -f "pauseset.ini" ]
+then
+  echo "Pausing apife background"
+  exec /usr/bin/zkServer.sh start-foreground $CONFIG &
+  sleep 50
+  /usr/bin/zkCli.sh  <<EOF
+
+    create /config/apife/status PAUSED_BACKGROUND
+    quit
+EOF
+  exec touch pauseset.ini
+else
+  exec /usr/bin/zkServer.sh start-foreground $CONFIG
+fi

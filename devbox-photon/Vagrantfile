@@ -522,6 +522,7 @@ Vagrant.configure("2") do |config|
       --net=host -v /vagrant/log/zookeeper:/var/log/zookeeper \
       -v /esxcloud/java/distributions/configurations/configuration-zookeeper:/var/esxcloud/data/zookeeper \
       -v /esxcloud/java/distributions/configurations/configuration-zookeeper:/usr/lib/zookeeper/conf \
+      -e PAUSE_APIFE_BACKGROUND=1 \
       --name devbox_zookeeper_container --entrypoint /bin/bash devbox/zookeeper /usr/lib/zookeeper/conf/run.sh
   EOS
 
