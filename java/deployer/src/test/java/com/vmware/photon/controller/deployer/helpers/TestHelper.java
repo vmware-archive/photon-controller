@@ -227,7 +227,9 @@ public class TestHelper {
     startState.state = DeploymentState.READY;
     startState.ntpEndpoint = "NTP_ENDPOINT";
     startState.syslogEndpoint = "SYSLOG_ENDPOINT";
+    startState.statsEnabled = true;
     startState.statsStoreEndpoint = "STATS_STORE_ENDPOINT";
+    startState.statsStorePort = 8081;
     startState.oAuthEnabled = authEnabled;
     startState.oAuthServerAddress = "OAUTH_ENDPOINT";
     startState.chairmanServerList = Collections.singleton("127.0.0.1:13000");

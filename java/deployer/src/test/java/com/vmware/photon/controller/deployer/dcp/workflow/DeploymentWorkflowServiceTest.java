@@ -930,7 +930,10 @@ public class DeploymentWorkflowServiceTest {
               assertThat(state.oAuthServerPort, is(500));
             }
             assertThat(state.syslogEndpoint, is("SYSLOG_ENDPOINT"));
+            assertThat(state.statsEnabled, is(true));
             assertThat(state.statsStoreEndpoint, is("STATS_STORE_ENDPOINT"));
+            assertThat(state.statsStorePort, is(8081));
+
             assertThat(state.chairmanServerList, is(notNullValue()));
 
             assertThat(state.zookeeperIdToIpMap.size() == mgmtHostCnt, is(true));
