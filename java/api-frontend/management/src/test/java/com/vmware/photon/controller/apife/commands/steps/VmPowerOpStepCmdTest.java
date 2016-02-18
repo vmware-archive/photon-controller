@@ -110,7 +110,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
   public void testStaleAgent() throws Exception {
     VmPowerOpStepCmd command = getVmPowerOpStepCmd();
     Operation operation = Operation.START_VM;
-    vm.setAgent("some-agent");
+    vm.setHost("some-host-ip");
     step.setOperation(operation);
 
     when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
@@ -120,7 +120,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(hostClient, rootSchedulerClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("some-agent");
+    inOrder.verify(hostClient).setHostIp("some-host-ip");
     inOrder.verify(hostClient).powerVmOp("vm-1", PowerVmOp.ON);
     inOrder.verify(rootSchedulerClient).findVm("vm-1");
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
@@ -149,7 +149,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     VmPowerOpStepCmd command = getVmPowerOpStepCmd();
     Operation operation = Operation.START_VM;
     step.setOperation(operation);
-    vm.setAgent("some-agent");
+    vm.setHost("0.0.0.0");
 
     when(hostClient.powerVmOp(anyString(), any(PowerVmOp.class))).thenThrow(
         new InvalidVmPowerStateException("Error"));
@@ -162,7 +162,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     VmPowerOpStepCmd command = getVmPowerOpStepCmd();
     Operation operation = Operation.DETACH_DISK;
     step.setOperation(operation);
-    vm.setAgent("some-agent");
+    vm.setHost("0.0.0.0");
 
     command.execute();
   }
@@ -176,7 +176,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
 
     VmPowerOpStepCmd command = getVmPowerOpStepCmd();
 
-    vm.setAgent("some-agent");
+    vm.setHost("some-host-ip");
     step.setOperation(operation);
 
     when(hostClient.findVm("vm-1")).thenReturn(true);
@@ -186,7 +186,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(hostClient, rootSchedulerClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("some-agent");
+    inOrder.verify(hostClient).setHostIp("some-host-ip");
     inOrder.verify(hostClient).powerVmOp("vm-1", expectedPowerOp);
     inOrder.verify(vmBackend).updateState(vm, expectedState);
     verifyNoMoreInteractions(hostClient, rootSchedulerClient, vmBackend);

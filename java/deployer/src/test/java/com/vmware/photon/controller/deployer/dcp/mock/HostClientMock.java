@@ -16,7 +16,6 @@ package com.vmware.photon.controller.deployer.dcp.mock;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
 import com.vmware.photon.controller.host.gen.Host;
@@ -46,7 +45,7 @@ public class HostClientMock extends HostClient {
   private SetHostModeResultCode setHostModeResultCode;
 
   private HostClientMock(Builder builder) {
-    super(mock(ClientProxyFactory.class), mock(ClientPoolFactory.class), mock(ZookeeperServerSetFactory.class));
+    super(mock(ClientProxyFactory.class), mock(ClientPoolFactory.class));
     this.getConfigResultCode = builder.getConfigResultCode;
     this.hostConfig = builder.hostConfig;
     this.getConfigFailure = builder.getConfigFailure;

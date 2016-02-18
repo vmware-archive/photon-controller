@@ -454,7 +454,7 @@ public class TaskCommandTest {
   }
 
   @Test
-  public void testFindVmHostWithNoAgentId() throws Exception {
+  public void testFindVmHostWithHostIp() throws Exception {
     TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
@@ -463,7 +463,6 @@ public class TaskCommandTest {
     vm.setId("vm-1");
     command.getHostClient(vm);
 
-    assertThat(vm.getAgent(), is("agent-id"));
     assertThat(vm.getDatastore(), is("datastore-id"));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
     inOrder.verify(rootSchedulerClient).findVm("vm-1");
@@ -494,23 +493,7 @@ public class TaskCommandTest {
   }
 
   @Test
-  public void testFindVmHostWithAgentId() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
-        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
-
-    when(hostClient.findVm("vm-1")).thenReturn(true);
-    VmEntity vm = new VmEntity();
-    vm.setId("vm-1");
-    vm.setAgent("agent-id");
-    command.getHostClient(vm);
-
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId("agent-id");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
-  }
-
-  @Test
-  public void testVmGetHostClientHostWithNoAgentIdOrHost() throws Exception {
+  public void testVmGetHostClientHostWithNoHost() throws Exception {
     TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
     when(rootSchedulerClient.findVm(anyString())).thenReturn(findResponse);
@@ -550,21 +533,6 @@ public class TaskCommandTest {
   }
 
   @Test
-  public void testVmGetHostclientWithAgentId() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
-        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
-
-    VmEntity vm = new VmEntity();
-    vm.setId("vm-1");
-    vm.setAgent("agent-id");
-    command.getHostClient(vm);
-
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId("agent-id");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
-  }
-
-  @Test
   public void testVmGetHostclientWithHostIp() throws Exception {
     TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
@@ -577,22 +545,6 @@ public class TaskCommandTest {
     assertThat(vm.getAgent(), is(nullValue()));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
     inOrder.verify(hostClient).setHostIp("1.1.1.1");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
-  }
-
-  @Test
-  public void testVmGetHostClientWithAgentIdAndHostIp() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
-        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
-
-    VmEntity vm = new VmEntity();
-    vm.setId("vm-1");
-    vm.setAgent("agentId");
-    vm.setHost("1.1.1.1");
-    command.getHostClient(vm);
-
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId("agentId");
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
   }
 
@@ -614,7 +566,6 @@ public class TaskCommandTest {
 
     assertThat(disk.getAgent(), is("agent-id"));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId(null);
     inOrder.verify(rootSchedulerClient).findDisk("disk-1");
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
@@ -637,7 +588,6 @@ public class TaskCommandTest {
 
     assertThat(disk.getAgent(), is(nullValue()));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId(null);
     inOrder.verify(rootSchedulerClient).findDisk("disk-1");
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
   }
@@ -655,7 +605,6 @@ public class TaskCommandTest {
 
     assertThat(disk.getAgent(), is("agent-id"));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId("stale-agent-id");
     inOrder.verify(hostClient).findDisk("disk-1");
     inOrder.verify(rootSchedulerClient).findDisk("disk-1");
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
@@ -672,7 +621,6 @@ public class TaskCommandTest {
     disk.setAgent("agent-id");
     command.findHost(disk);
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId("agent-id");
     inOrder.verify(hostClient).findDisk("disk-1");
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
   }

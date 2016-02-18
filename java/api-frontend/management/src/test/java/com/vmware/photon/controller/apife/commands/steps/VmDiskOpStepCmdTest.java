@@ -24,6 +24,7 @@ import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
@@ -136,6 +137,8 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   @Mock
   AttachedDiskBackend attachedDiskBackend;
   @Mock
+  private ApiFeDcpRestClient dcpClient;
+  @Mock
   private RootSchedulerClient rootSchedulerClient;
   @Mock
   private HostClient hostClient;
@@ -240,7 +243,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     when(diskBackend.find(PersistentDisk.KIND, diskId1)).thenReturn(disk1);
     when(diskBackend.find(PersistentDisk.KIND, diskId2)).thenReturn(disk2);
 
-    taskCommand = spy(new TaskCommand(
+    taskCommand = spy(new TaskCommand(dcpClient,
         rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
@@ -278,7 +281,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   }
 
   @Test
-  public void testStaleAgent() throws Exception {
+  public void testStaleHostIp() throws Exception {
     vm.setAgent("staled-agent");
     VmDiskOpStepCmd command = getVmDiskOpStepCmd(Operation.ATTACH_DISK);
 
@@ -289,7 +292,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(hostClient, rootSchedulerClient);
-    inOrder.verify(hostClient).setAgentId("staled-agent");
+    inOrder.verify(hostClient).setHostIp("staled-host-ip");
     inOrder.verify(hostClient).attachDisks(vmId, attachedDiskIds);
     inOrder.verify(rootSchedulerClient).findVm(vmId);
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);

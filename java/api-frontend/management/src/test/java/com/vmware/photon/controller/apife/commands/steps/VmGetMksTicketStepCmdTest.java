@@ -134,7 +134,7 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
 
   @Test
   public void testStaleAgent() throws Exception {
-    vm.setAgent("staled-agent");
+    vm.setHost("staled-host-ip");
     VmGetMksTicketStepCmd command = getCommand();
 
     when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
@@ -144,7 +144,7 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(hostClient, taskBackend, rootSchedulerClient);
-    inOrder.verify(hostClient).setAgentId("staled-agent");
+    inOrder.verify(hostClient).setHostIp("staled-host-ip");
     inOrder.verify(hostClient).getVmMksTicket(vmId);
     inOrder.verify(rootSchedulerClient).findVm(vmId);
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);

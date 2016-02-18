@@ -112,7 +112,7 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
     vm = new VmEntity();
     vm.setId(vmId);
     vm.setState(VmState.STARTED);
-    vm.setAgent("agent-id");
+    vm.setHost("0.0.0.0");
 
     VmNetworkInfo networkInfo = new VmNetworkInfo();
     networkInfo.setMac_address("00:50:56:02:00:3f");
@@ -202,7 +202,7 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
 
   @Test
   public void testStaleAgent() throws Exception {
-    vm.setAgent("staled-agent");
+    vm.setHost("staled-host-ip");
     VmGetNetworksStepCmd command = getCommand();
 
     when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
@@ -212,7 +212,7 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(hostClient, taskBackend, rootSchedulerClient);
-    inOrder.verify(hostClient).setAgentId("staled-agent");
+    inOrder.verify(hostClient).setHostIp("staled-host-ip");
     inOrder.verify(hostClient).getVmNetworks(vmId);
     inOrder.verify(rootSchedulerClient).findVm(vmId);
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);

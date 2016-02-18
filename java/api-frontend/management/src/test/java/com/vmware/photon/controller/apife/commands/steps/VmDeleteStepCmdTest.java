@@ -198,7 +198,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("vm-1-agent-id");
+    inOrder.verify(hostClient).setHostIp("vm-1-host-ip");
     inOrder.verify(hostClient).deleteVm("vm-1", null);
     inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
     inOrder.verify(vmBackend).isosAttached(vm);
@@ -219,7 +219,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("old-agent-id");
+    inOrder.verify(hostClient).setHostIp("old-host-ip");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
     inOrder.verify(rootSchedulerClient).findVm("vm-1");
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
@@ -243,7 +243,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
     inOrder.verify(rootSchedulerClient).findVm("vm-1");
     inOrder.verify(vmBackend).isosAttached(vm);
@@ -293,7 +293,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
-    inOrder.verify(hostClient).setAgentId("agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
     inOrder.verify(rootSchedulerClient).findVm(vm.getId());
     inOrder.verify(vmBackend).isosAttached(vm);
@@ -321,7 +321,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
-    inOrder.verify(hostClient).setAgentId("agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
     inOrder.verify(rootSchedulerClient).findVm("vm-1");
     inOrder.verify(vmBackend).isosAttached(vm);
