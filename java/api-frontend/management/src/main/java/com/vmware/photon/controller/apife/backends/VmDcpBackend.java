@@ -175,8 +175,8 @@ public class VmDcpBackend implements VmBackend {
   }
 
   @Override
-  public ResourceList<Vm> filterByProject(String projectId) throws ExternalException {
-    return filter(projectId, Optional.<String>absent(), Optional.<Integer>absent());
+  public ResourceList<Vm> filterByProject(String projectId, Optional<Integer> pageSize) throws ExternalException {
+    return filter(projectId, Optional.<String>absent(), pageSize);
   }
 
   @Override

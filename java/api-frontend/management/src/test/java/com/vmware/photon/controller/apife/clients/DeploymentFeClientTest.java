@@ -22,6 +22,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;
@@ -50,6 +51,7 @@ import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -218,6 +220,7 @@ public class DeploymentFeClientTest {
     Tenant tenant;
     Project project;
     Vm vm;
+    String pageLink;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -240,7 +243,12 @@ public class DeploymentFeClientTest {
 
       vm = new Vm();
       vm.setId("mgmt-vm-id");
-      doReturn(new ResourceList<>(ImmutableList.of(vm))).when(vmBackend).filterByProject(project.getId());
+      doReturn(new ResourceList<>(ImmutableList.of(vm)))
+          .when(vmBackend)
+          .filterByProject(project.getId(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+
+      pageLink = UUID.randomUUID().toString();
+      doReturn(new ResourceList<>(ImmutableList.of(vm))).when(vmBackend).getVmsPage(pageLink);
     }
 
     /**
@@ -250,9 +258,9 @@ public class DeploymentFeClientTest {
      */
     @Test
     public void testSuccess() throws Throwable {
-      ResourceList list = feClient.listVms(deploymentId);
+      ResourceList<Vm> list = feClient.listVms(deploymentId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(list.getItems().size(), is(1));
-      assertThat((Vm) list.getItems().get(0), is(vm));
+      assertThat(list.getItems().get(0), is(vm));
     }
 
     /**
@@ -267,7 +275,7 @@ public class DeploymentFeClientTest {
     public void testNotFoundTenant(String message, ResourceList<Tenant> tenantList) throws Throwable {
       doReturn(tenantList).when(tenantBackend).filter(Matchers.<Optional<String>>any(),
           Matchers.<Optional<Integer>>any());
-      ResourceList list = feClient.listVms(deploymentId);
+      ResourceList list = feClient.listVms(deploymentId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(list.getItems().size(), is(0));
     }
 
@@ -290,7 +298,7 @@ public class DeploymentFeClientTest {
     @Test(dataProvider = "NotFoundProjectData")
     public void testNotFoundProject(String message, List<Tenant> projectList) throws Throwable {
       doReturn(projectList).when(projectBackend).filter(tenant.getId(), Optional.of(Constants.PROJECT_NAME));
-      ResourceList list = feClient.listVms(deploymentId);
+      ResourceList list = feClient.listVms(deploymentId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(list.getItems().size(), is(0));
     }
 
@@ -300,6 +308,13 @@ public class DeploymentFeClientTest {
           {"No projects", ImmutableList.of()},
           {"Multiple projects", ImmutableList.of(new Project(), new Project())}
       };
+    }
+
+    @Test
+    public void testGetVmsPage() throws ExternalException {
+      ResourceList<Vm> resourceList = feClient.getVmsPage(pageLink);
+      assertThat(resourceList.getItems().size(), is(1));
+      assertThat(resourceList.getItems().get(0), is(vm));
     }
   }
 

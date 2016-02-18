@@ -40,7 +40,7 @@ import java.util.Map;
 public interface VmBackend {
   ResourceList<Vm> filter(String projectId, Optional<String> name, Optional<Integer> pageSize) throws ExternalException;
 
-  ResourceList<Vm> filterByProject(String projectId) throws ExternalException;
+  ResourceList<Vm> filterByProject(String projectId, Optional<Integer> pageSize) throws ExternalException;
 
   ResourceList<Vm> filterByTag(String projectId, Tag tag, Optional<Integer> pageSize) throws ExternalException;
 

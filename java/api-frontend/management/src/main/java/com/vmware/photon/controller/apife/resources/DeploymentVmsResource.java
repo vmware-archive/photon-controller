@@ -17,10 +17,13 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -31,10 +34,12 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 /**
  * This resource is for deployment vms related API.
@@ -46,20 +51,36 @@ import javax.ws.rs.core.Response;
 public class DeploymentVmsResource {
 
   private final DeploymentFeClient client;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public DeploymentVmsResource(DeploymentFeClient client) {
+  public DeploymentVmsResource(DeploymentFeClient client, PaginationConfig paginationConfig) {
     this.client = client;
+    this.paginationConfig = paginationConfig;
   }
 
   @GET
   @ApiOperation(value = "Find all Vms associated with the Deployment", response = Vm.class,
       responseContainer = ResourceList.CLASS_NAME)
-  public Response get(@Context Request request, @PathParam("id") String id)
+  public Response get(@Context Request request,
+                      @PathParam("id") String id,
+                      @QueryParam("pageSize") Optional<Integer> pageSize,
+                      @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
+
+    ResourceList<Vm> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = client.getVmsPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = client.listVms(id, adjustedPageSize);
+    }
+
+    String apiRoute = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_VMS_PATH).build(id).toString();
+
     return generateResourceListResponse(
         Response.Status.OK,
-        client.listVms(id),
+        PaginationUtils.formalizePageLinks(resourceList, apiRoute),
         (ContainerRequest) request,
         VmResourceRoutes.VM_PATH);
   }
