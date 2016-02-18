@@ -21,15 +21,20 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.builders.AttachedDiskCreateSpecBuilder;
+import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matchers;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -39,6 +44,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import javax.ws.rs.client.Entity;
@@ -52,6 +58,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Tests {@link ProjectVmsResource}.
@@ -389,8 +396,10 @@ public class ProjectVmsResourceTest extends ResourceTest {
     when(vmFeClient.getVmsPage(anyString()))
         .thenReturn(new ResourceList<>(ImmutableList.of(vm1, vm2)));
 
-    ResourceList<Vm> vms = getVms(Optional.<String>absent(), Optional.<Integer>absent(), Optional.of("randomPageLink"));
+    Response response = getVms(Optional.<String>absent(), Optional.<Integer>absent(), Optional.of("randomPageLink"));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
+    ResourceList<Vm> vms = response.readEntity(new GenericType<ResourceList<Vm>>(){});
     assertThat(vms.getItems().size(), is(2));
     assertThat(vms.getItems().get(0), is(vm1));
     assertThat(vms.getItems().get(1), is(vm2));
@@ -401,9 +410,18 @@ public class ProjectVmsResourceTest extends ResourceTest {
     when(vmFeClient.find(projectId, Optional.of("vm1name"), Optional.of(1)))
         .thenReturn(new ResourceList<>(ImmutableList.of(vm1)));
 
-    ResourceList<Vm> vms = getVms(Optional.of("vm1name"), Optional.of(1), Optional.<String>absent());
+    Response response = getVms(Optional.of("vm1name"), Optional.of(1), Optional.<String>absent());
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+
+    ResourceList<Vm> vms = response.readEntity(new GenericType<ResourceList<Vm>>(){});
     assertThat(vms.getItems().size(), is(1));
-    assertThat(vms.getItems().get(0), is(vm1));
+
+    Vm vm = vms.getItems().get(0);
+    assertThat(vm, is(vm1));
+
+    String vmRoutePath = UriBuilder.fromPath(VmResourceRoutes.VM_PATH).build(vm1.getId()).toString();
+    assertThat(vm.getSelfLink().endsWith(vmRoutePath), is(true));
+    assertThat(new URI(vm.getSelfLink()).isAbsolute(), is(true));
   }
 
   @Test(dataProvider = "projectVmsPageSizes")
@@ -411,18 +429,57 @@ public class ProjectVmsResourceTest extends ResourceTest {
     when(vmFeClient.find(projectId, Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
         .thenReturn(new ResourceList<>(ImmutableList.of(vm1, vm2), null, null));
     when(vmFeClient.find(projectId, Optional.<String>absent(), Optional.of(1)))
-        .thenReturn(new ResourceList<>(ImmutableList.of(vm1), null, null));
+        .thenReturn(new ResourceList<>(ImmutableList.of(vm1), UUID.randomUUID().toString(), null));
     when(vmFeClient.find(projectId, Optional.<String>absent(), Optional.of(2)))
         .thenReturn(new ResourceList<>(ImmutableList.of(vm1, vm2), null, null));
     when(vmFeClient.find(projectId, Optional.<String>absent(), Optional.of(3)))
         .thenReturn(new ResourceList<>(Collections.emptyList(), null, null));
 
-    ResourceList<Vm> vms = getVms(Optional.<String>absent(), pageSize, Optional.<String>absent());
+    Response response = getVms(Optional.<String>absent(), pageSize, Optional.<String>absent());
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+
+    ResourceList<Vm> vms = response.readEntity(new GenericType<ResourceList<Vm>>(){});
     assertThat(vms.getItems().size(), is(expectedVms.size()));
 
     for (int i = 0; i < vms.getItems().size(); ++i) {
-      assertThat(vms.getItems().get(i), is(expectedVms.get(i)));
+      Vm retrievedVm = vms.getItems().get(i);
+      assertThat(retrievedVm, is(expectedVms.get(i)));
+
+      String vmRoutePath = UriBuilder.fromPath(VmResourceRoutes.VM_PATH).build(expectedVms.get(i).getId()).toString();
+      assertThat(new URI(retrievedVm.getSelfLink()).isAbsolute(), is(true));
+      assertThat(retrievedVm.getSelfLink().endsWith(vmRoutePath), is(true));
     }
+
+    verifyPageLinks(vms);
+  }
+
+  @Test
+  public void testInvalidPageSize() {
+    int pageSize = paginationConfig.getMaxPageSize() + 1;
+    Response response = getVms(Optional.<String>absent(), Optional.of(pageSize), Optional.<String>absent());
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+
+    String expectedErrorMsg = String.format("The page size '%d' is not between '1' and '%d'",
+        pageSize, PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), is(ErrorCode.INVALID_PAGE_SIZE.getCode()));
+    assertThat(errors.getMessage(), is(expectedErrorMsg));
+  }
+
+  @Test
+  public void testInvalidPageLink() throws ExternalException {
+    String pageLink = "randomPageLink";
+    doThrow(new PageExpiredException(pageLink)).when(vmFeClient).getVmsPage(pageLink);
+
+    Response response = getVms(Optional.<String>absent(), Optional.<Integer>absent(), Optional.of("randomPageLink"));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+
+    String expectedErrorMessage = "Page " + pageLink + " has expired";
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), is(ErrorCode.PAGE_EXPIRED.getCode()));
+    assertThat(errors.getMessage(), is(expectedErrorMessage));
   }
 
   @DataProvider(name = "projectVmsPageSizes")
@@ -454,7 +511,7 @@ public class ProjectVmsResourceTest extends ResourceTest {
         .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
   }
 
-  private ResourceList<Vm> getVms(Optional<String> name, Optional<Integer> pageSize, Optional<String> pageLink) {
+  private Response getVms(Optional<String> name, Optional<Integer> pageSize, Optional<String> pageLink) {
     WebTarget resource = client().target(projectVmsRoutePath);
     if (name.isPresent()) {
       resource = resource.queryParam("name", name.get());
@@ -468,7 +525,17 @@ public class ProjectVmsResourceTest extends ResourceTest {
       resource = resource.queryParam("pageLink", pageLink.get());
     }
 
-    return resource.request().get(new GenericType<ResourceList<Vm>>() {
-    });
+    return resource.request().get();
+  }
+
+  private void verifyPageLinks(ResourceList<Vm> resourceList) {
+    String expectedPrefix = projectVmsRoutePath + "?pageLink=";
+
+    if (resourceList.getNextPageLink() != null) {
+      assertThat(resourceList.getNextPageLink().startsWith(expectedPrefix), Matchers.is(true));
+    }
+    if (resourceList.getPreviousPageLink() != null) {
+      assertThat(resourceList.getPreviousPageLink().startsWith(expectedPrefix), Matchers.is(true));
+    }
   }
 }
