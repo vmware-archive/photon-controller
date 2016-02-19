@@ -601,10 +601,10 @@ public class KubernetesClusterCreateTaskServiceTest {
       listeningExecutorService.shutdown();
     }
 
-    @Test
-    public void testEndToEndSuccess() throws Throwable {
+    @Test(dataProvider = "clusterSizes")
+    public void testEndToEndSuccess(int clusterSize, ClusterState expectedState) throws Throwable {
 
-      mockClusterEntity();
+      createClusterEntity(clusterSize);
       mockVmProvisioningTaskService(true);
       mockKubernetesClient();
 
@@ -616,12 +616,25 @@ public class KubernetesClusterCreateTaskServiceTest {
       );
 
       TestHelper.assertTaskStateFinished(savedState.taskState);
+      ClusterService.State cluster = cloudStoreMachine.getServiceState(
+          ClusterServiceFactory.SELF_LINK + "/" + savedState.clusterId,
+          ClusterService.State.class);
+
+      assertThat(cluster.clusterState, is(expectedState));
+    }
+
+    @DataProvider(name = "clusterSizes")
+    public Object[][] getClusterSizes() {
+      return new Object[][]{
+          {1, ClusterState.READY},
+          {3, ClusterState.CREATING},
+      };
     }
 
     @Test
     public void testEndToEndFailureProvisionVmFails() throws Throwable {
 
-      mockClusterEntity();
+      createClusterEntity(1);
       mockVmProvisioningTaskService(false);
       mockKubernetesClient();
 
@@ -662,7 +675,7 @@ public class KubernetesClusterCreateTaskServiceTest {
           .hostCount(1)
           .build();
 
-      mockClusterEntity();
+      createClusterEntity(1);
       mockVmProvisioningTaskService(true);
 
       KubernetesClusterCreateTask savedState = machine.callServiceAndWaitForState(
@@ -676,7 +689,7 @@ public class KubernetesClusterCreateTaskServiceTest {
       assertThat(savedState.taskState.failure.message, Matchers.containsString("wait cluster vm failed"));
     }
 
-    private void mockClusterEntity() throws Throwable {
+    private void createClusterEntity(int size) throws Throwable {
 
       ClusterService.State cluster = new ClusterService.State();
       cluster.clusterState = ClusterState.CREATING;
@@ -688,7 +701,7 @@ public class KubernetesClusterCreateTaskServiceTest {
       cluster.masterVmFlavorName = "masterVmFlavorName";
       cluster.otherVmFlavorName = "otherVmFlavorName";
       cluster.vmNetworkId = "vmNetworkId";
-      cluster.slaveCount = 3;
+      cluster.slaveCount = size;
       cluster.extendedProperties = new HashMap<>();
       cluster.extendedProperties.put(
           ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "1.1.1.1");

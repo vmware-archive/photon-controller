@@ -229,8 +229,8 @@ public class SwarmClusterCreateTaskService extends StatefulService {
   }
 
   /**
-   * This method roll-outs Swarm Slave nodes. On successful
-   * rollout, the methods moves the task FINISHED stage and updates the clusterState to READY.
+   * This method roll-outs the initial Swarm Slave Nodes. On successful roll-out,
+   * the method creates necessary tasks for cluster maintenance.
    *
    * @param currentState
    */
@@ -264,7 +264,7 @@ public class SwarmClusterCreateTaskService extends StatefulService {
           rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
             @Override
             public void onSuccess(@Nullable NodeRolloutResult result) {
-              setupRemainingSlaves(currentState);
+              setupRemainingSlaves(currentState, cluster);
             }
 
             @Override
@@ -275,14 +275,14 @@ public class SwarmClusterCreateTaskService extends StatefulService {
         }));
   }
 
-  private void setupRemainingSlaves(final SwarmClusterCreateTask currentState) {
+  private void setupRemainingSlaves(
+      final SwarmClusterCreateTask currentState,
+      final ClusterService.State cluster) {
     // Maintenance task should be singleton for any cluster.
     ClusterMaintenanceTaskService.State startState = new ClusterMaintenanceTaskService.State();
     startState.batchExpansionSize = currentState.slaveBatchExpansionSize;
     startState.documentSelfLink = currentState.clusterId;
 
-    // Start the maintenance task async without waiting for its completion so that the creation task
-    // can finish immediately.
     Operation postOperation = Operation
         .createPost(UriUtils.buildUri(getHost(), ClusterMaintenanceTaskFactoryService.SELF_LINK))
         .setBody(startState)
@@ -291,19 +291,29 @@ public class SwarmClusterCreateTaskService extends StatefulService {
             failTaskAndPatchDocument(currentState, NodeType.SwarmSlave, throwable);
             return;
           }
+          if (cluster.slaveCount == MINIMUM_INITIAL_SLAVE_COUNT) {
+            // We short circuit here and set the clusterState as READY, since the desired size has
+            // already been reached. Maintenance will kick-in when the maintenance interval elapses.
+            SwarmClusterCreateTask patchState = buildPatch(SwarmClusterCreateTask.TaskState.TaskStage.FINISHED, null);
 
-          // The handleStart method of the maintenance task does not push itself to STARTED automatically.
-          // We need to patch the maintenance task manually to start the task immediately. Otherwise
-          // the task will wait for one interval to start.
-          startMaintenance(currentState);
+            ClusterService.State clusterPatch = new ClusterService.State();
+            clusterPatch.clusterState = ClusterState.READY;
+
+            updateStates(currentState, patchState, clusterPatch);
+          } else {
+            // The handleStart method of the maintenance task does not push itself to STARTED automatically.
+            // We need to patch the maintenance task manually to start the task immediately. Otherwise
+            // the task will wait for one interval to start.
+            startMaintenance(currentState);
+          }
         });
     sendRequest(postOperation);
   }
 
   private void startMaintenance(final SwarmClusterCreateTask currentState) {
     ClusterMaintenanceTaskService.State patchState = new ClusterMaintenanceTaskService.State();
-    patchState.taskState = new TaskState();
-    patchState.taskState.stage = TaskState.TaskStage.STARTED;
+    patchState.taskState = new SwarmClusterCreateTask.TaskState();
+    patchState.taskState.stage = SwarmClusterCreateTask.TaskState.TaskStage.STARTED;
 
     // Start the maintenance task async without waiting for its completion so that the creation task
     // can finish immediately.
@@ -313,7 +323,7 @@ public class SwarmClusterCreateTaskService extends StatefulService {
         .setBody(patchState)
         .setCompletion((Operation operation, Throwable throwable) -> {
           // We ignore the failure here since maintenance task will kick in eventually.
-          TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
+          TaskUtils.sendSelfPatch(this, buildPatch(SwarmClusterCreateTask.TaskState.TaskStage.FINISHED, null));
         });
     sendRequest(patchOperation);
   }

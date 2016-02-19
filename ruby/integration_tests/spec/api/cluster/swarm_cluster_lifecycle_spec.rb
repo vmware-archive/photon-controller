@@ -69,9 +69,7 @@ describe "Swarm cluster-service lifecycle", cluster: true do
       expect(cluster.name).to start_with("swarm-")
       expect(cluster.type).to eq("SWARM")
       expect(cluster.slave_count).to eq 1
-
-      puts "Waiting for cluster to become READY after create"
-      EsxCloud::ClusterHelper.wait_for_cluster_state(cid, "READY", 5, 5, client)
+      expect(cluster.state).to eq "READY"
 
       N_SLAVES = (ENV["N_SLAVES"] || 2).to_i
 
