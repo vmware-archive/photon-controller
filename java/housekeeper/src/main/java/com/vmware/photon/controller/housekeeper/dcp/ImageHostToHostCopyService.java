@@ -25,11 +25,13 @@ import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInPro
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
+import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.TransferImageResponse;
@@ -88,6 +90,8 @@ public class ImageHostToHostCopyService extends StatefulService {
     try {
       // Initialize the task state.
       State s = start.getBody(State.class);
+      InitializationUtils.initialize(s);
+
       if (s.taskInfo == null || s.taskInfo.stage == null) {
         s.taskInfo = new TaskState();
         s.taskInfo.stage = TaskState.TaskStage.CREATED;
@@ -244,6 +248,10 @@ public class ImageHostToHostCopyService extends StatefulService {
     if (patchState.destinationHost != null) {
       currentState.destinationHost = patchState.destinationHost;
     }
+
+    if (patchState.imageExistsFlag != null) {
+      currentState.imageExistsFlag = patchState.imageExistsFlag;
+    }
   }
 
   /**
@@ -289,9 +297,16 @@ public class ImageHostToHostCopyService extends StatefulService {
           ServiceUtils.logInfo(ImageHostToHostCopyService.this, "TransferImageResponse %s", r);
           switch (r.getResult()) {
             case OK:
-            case DESTINATION_ALREADY_EXIST:
               sendStageProgressPatch(current, TaskState.TaskStage.STARTED,
                   TaskState.SubStage.UPDATE_IMAGE_REPLICATION_DOCUMENT);
+              break;
+            case DESTINATION_ALREADY_EXIST:
+              State s = new State();
+              s.taskInfo = new TaskState();
+              s.taskInfo.stage = TaskState.TaskStage.STARTED;
+              s.taskInfo.subStage = TaskState.SubStage.UPDATE_IMAGE_REPLICATION_DOCUMENT;
+              s.imageExistsFlag = true;
+              sendSelfPatch(s);
               break;
             case TRANSFER_IN_PROGRESS:
               throw new ImageTransferInProgressException(r.getError());
@@ -331,7 +346,7 @@ public class ImageHostToHostCopyService extends StatefulService {
 
   private ImageService.DatastoreCountRequest buildAdjustSeedingCountRequest(final State current, int adjustCount) {
     ImageService.DatastoreCountRequest requestBody = new ImageService.DatastoreCountRequest();
-    requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
+    requestBody.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_COUNT;
     requestBody.amount = adjustCount;
     return requestBody;
   }
@@ -458,8 +473,8 @@ public class ImageHostToHostCopyService extends StatefulService {
         buildImageToImageDatastoreMappingServiceState(current.image, current.destinationDatastore);
     Operation createimageToImageDatastoreMappingServicePatch =
         ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper().createPost
-        (ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
-        .setBody(postState);
+            (ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
+            .setBody(postState);
 
     ImageReplicatorService.State replicatorServiceState =
         buildImageReplicatorServiceState(current.image, current.destinationDatastore);
@@ -475,49 +490,56 @@ public class ImageHostToHostCopyService extends StatefulService {
         buildAdjustSeedingCountRequest(current, 1);
 
     try {
-      OperationSequence operationSequence = OperationSequence
-          .create(createimageToImageDatastoreMappingServicePatch)
-          .setCompletion(
-              (operation, throwable) -> {
-                //re-throw any exception other than a conflict which indicated the lock already exists
-                if (operation.values().iterator().next().getStatusCode() == Operation.STATUS_CODE_CONFLICT) {
-                  adjustReplicationCountPatch.setBody(adjustSeedingCountRequest);
-                } else {
-                  adjustReplicationCountPatch.setBody(adjustSeedingAndReplicationCountRequest);
-                }
-                if (throwable != null) {
-                  failTask(throwable.values().iterator().next());
-                }
-              })
-          .next(adjustReplicationCountPatch)
-          .setCompletion(
-              (operation, throwable) -> {
-                if (throwable != null) {
+      createimageToImageDatastoreMappingServicePatch.setCompletion(
+          (operation, throwable) -> {
+            if (operation.getStatusCode() != Operation.STATUS_CODE_CONFLICT) {
+              if (throwable != null) {
+                failTask(throwable);
+              }
+              // If image has been copied to image datastore via ImageCopyService, only adjust seeding count.
+              if (current.imageExistsFlag) {
+                adjustReplicationCountPatch.setBody(adjustSeedingCountRequest);
+              } else {
+                adjustReplicationCountPatch.setBody(adjustSeedingAndReplicationCountRequest);
+              }
+              adjustReplicationCountPatch.setCompletion((op, t) -> {
+                if (t != null) {
                   ServiceUtils.logWarning(this,
                       "Could not increment replicatedImageDatastore for image %s by %s: %s",
-                      current.image, 1, throwable);
+                      current.image, 1, t);
                 }
-              }
-          );
+              });
+              sendRequest(adjustReplicationCountPatch);
+            }
+          });
+      sendRequest(createimageToImageDatastoreMappingServicePatch);
+
+      OperationSequence operationSequence = null;
+      State s = this.buildPatch(TaskState.TaskStage.FINISHED, null, null);
+      Operation progress = Operation
+          .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
+          .setBody(s);
 
       if (isEagerCopy) {
-        operationSequence = operationSequence.next(createImageReplicatorServicePatch)
+        operationSequence = operationSequence
+            .create(createImageReplicatorServicePatch)
             .setCompletion((operation, throwable) -> {
               if (throwable != null) {
                 failTask(throwable.values().iterator().next());
               }
             });
+        if (!current.isSelfProgressionDisabled) {
+          // move to next stage
+          operationSequence.next(progress);
+        }
+      } else if (!current.isSelfProgressionDisabled) {
+        // move to next stage
+        operationSequence = operationSequence.create(progress);
       }
 
-      if (!current.isSelfProgressionDisabled) {
-        // move to next stage
-        State s = this.buildPatch(TaskState.TaskStage.FINISHED, null, null);
-        Operation progress = Operation
-            .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
-            .setBody(s);
-        operationSequence.next(progress);
+      if (operationSequence != null) {
+        operationSequence.sendWith(this);
       }
-      operationSequence.sendWith(this);
     } catch (Exception e) {
       failTask(e);
     }
@@ -727,6 +749,12 @@ public class ImageHostToHostCopyService extends StatefulService {
      * The host connecting to the destination image datastore.
      */
     public ServerAddress destinationHost;
+
+    /**
+     * The imageExistsFlag indicates if getting DESTINATION_ALREADY_EXISTS from agent.
+     */
+    @DefaultBoolean(value = false)
+    public Boolean imageExistsFlag;
 
     /**
      * URI of the sender of the copy, if not null notify of copy end.
