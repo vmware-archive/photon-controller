@@ -116,7 +116,7 @@ module EsxCloud
 
         def document_self_link
           {
-              documentSelfLink: ENV["RANDOM_GENERATED_DEPLOYMENT_ID"]
+              documentSelfLink: ENV["RANDOM_GENERATED_DEPLOYMENT_ID"] || "test-deployment"
           }
         end
       end
