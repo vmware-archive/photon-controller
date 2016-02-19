@@ -853,6 +853,10 @@ public class ImageSeederServiceTest {
       state.name = "image-1";
       state.replicationType = ImageReplicationType.EAGER;
       state.state = ImageState.READY;
+      state.replicatedImageDatastore = 1;
+      state.replicatedDatastore = 1;
+      state.totalImageDatastore = 3;
+      state.totalDatastore = 3;
 
       Operation op = cloudStoreHelper
           .createPost(ImageServiceFactory.SELF_LINK)
