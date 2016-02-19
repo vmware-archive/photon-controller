@@ -18,12 +18,14 @@ import com.vmware.photon.controller.api.ProjectCreateSpec;
 import com.vmware.photon.controller.api.ProjectTicket;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.ResourceTicketReservation;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
 import com.vmware.photon.controller.apife.entities.SecurityGroupEntity;
@@ -41,7 +43,9 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.ListUtils;
 import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -337,18 +341,30 @@ public class ProjectDcpBackendTest {
       assertThat(taskEntity.getEntityKind(), is("project"));
       projectBackend.createProject(tenantId, spec2);
 
-      List<Project> projectList = projectBackend.filter(tenantId, Optional.of(spec1.getName()));
-      assertThat(projectList.size(), is(1));
-      assertThat(projectList.get(0).getName(), is(spec1.getName()));
+      ResourceList<Project> projectList = projectBackend.filter(tenantId, Optional.of(spec1.getName()),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(projectList.getItems().size(), is(1));
+      assertThat(projectList.getItems().get(0).getName(), is(spec1.getName()));
 
-      List<Project> tenantProjectList = projectBackend.filter(tenantId, Optional.<String>absent());
-      assertThat(tenantProjectList.size(), is(2));
+      List<String> tenantProjectList = new ArrayList<>();
+
+      ResourceList<Project> resourceList = projectBackend.filter(tenantId, Optional.<String>absent(), Optional.of(1));
+      assertThat(resourceList.getItems().size(), is(1));
+      assertThat(resourceList.getNextPageLink(), notNullValue());
+      tenantProjectList.add(resourceList.getItems().get(0).getName());
+
+      resourceList = projectBackend.getProjectsPage(resourceList.getNextPageLink());
+      assertThat(resourceList.getItems().size(), is(1));
+      tenantProjectList.add(resourceList.getItems().get(0).getName());
+
+      assertThat(CollectionUtils.isEqualCollection(tenantProjectList, ImmutableSet.of("p1", "p2")), is(true));
     }
 
     @Test
     public void testFilterProjectNonExistingTenant() throws Exception {
       try {
-        projectBackend.filter("invalid-tenant", Optional.of(spec1.getName()));
+        projectBackend.filter("invalid-tenant", Optional.of(spec1.getName()),
+            Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
         fail("should have failed with TenantNotFoundException");
       } catch (TenantNotFoundException e) {
         assertThat(e.getMessage(), is("Tenant invalid-tenant not found"));

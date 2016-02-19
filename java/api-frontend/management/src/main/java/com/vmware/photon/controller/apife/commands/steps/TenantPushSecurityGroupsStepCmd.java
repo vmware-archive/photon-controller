@@ -14,23 +14,27 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Project;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TenantEntity;
 import com.vmware.photon.controller.apife.exceptions.external.SecurityGroupsAlreadyInheritedException;
 import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 
 import com.google.common.base.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,7 +69,16 @@ public class TenantPushSecurityGroupsStepCmd extends StepCommand {
       // we need to refresh the tenantEntity to make sure it has the latest security groups.
       tenantEntity = tenantBackend.findById(tenantEntity.getId());
 
-      List<Project> projects = projectBackend.filter(tenantEntity.getId(), Optional.<String>absent());
+      List<Project> projects = new ArrayList<>();
+      ResourceList<Project> resourceList = projectBackend.filter(tenantEntity.getId(), Optional.<String>absent(),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      projects.addAll(resourceList.getItems());
+
+      while (StringUtils.isNotBlank(resourceList.getNextPageLink())) {
+        resourceList = projectBackend.getProjectsPage(resourceList.getNextPageLink());
+        projects.addAll(resourceList.getItems());
+      }
+
       List<String> tenantSecurityGroups = tenantEntity.getSecurityGroups().stream()
           .map(g -> g.getName()).collect(Collectors.toList());
 

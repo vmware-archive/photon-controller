@@ -18,10 +18,12 @@ import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
 import com.vmware.photon.controller.api.ProjectTicket;
 import com.vmware.photon.controller.api.QuotaLineItem;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.ResourceTicketReservation;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
@@ -36,11 +38,13 @@ import com.vmware.photon.controller.apife.exceptions.external.NameTakenException
 import com.vmware.photon.controller.apife.exceptions.external.ProjectNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.ResourceTicketNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.SecurityGroupsAlreadyInheritedException;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -84,11 +88,11 @@ public class ProjectDcpBackend implements ProjectBackend {
   }
 
   @Override
-  public List<Project> filter(String tenantId, Optional<String> name) throws
+  public ResourceList<Project> filter(String tenantId, Optional<String> name, Optional<Integer> pageSize) throws
       ExternalException {
     tenantBackend.findById(tenantId);
 
-    List<ProjectService.State> projectDocuments = findByTenantIdAndName(tenantId, name);
+    ResourceList<ProjectService.State> projectDocuments = findByTenantIdAndName(tenantId, name, pageSize);
     return toProjectList(projectDocuments);
   }
 
@@ -157,6 +161,21 @@ public class ProjectDcpBackend implements ProjectBackend {
     } catch (DocumentNotFoundException e) {
       throw new ProjectNotFoundException(id);
     }
+  }
+
+  @Override
+  public ResourceList<Project> getProjectsPage(String pageLink) throws ExternalException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    ResourceList<ProjectService.State> projectStates = PaginationUtils.xenonQueryResultToResourceList(
+        ProjectService.State.class, queryResult);
+
+    return toProjectList(projectStates);
   }
 
   private ProjectEntity create(String tenantId, ProjectCreateSpec projectCreateSpec) throws ExternalException {
@@ -328,8 +347,11 @@ public class ProjectDcpBackend implements ProjectBackend {
     return ticket;
   }
 
-  private List<ProjectService.State> findByTenantIdAndName(String tenantId, Optional<String> name)
+  private ResourceList<ProjectService.State> findByTenantIdAndName(String tenantId,
+                                                                   Optional<String> name,
+                                                                   Optional<Integer> pageSize)
       throws ExternalException {
+
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
 
     termsBuilder.put("tenantId", tenantId);
@@ -337,16 +359,18 @@ public class ProjectDcpBackend implements ProjectBackend {
       termsBuilder.put("name", name.get());
     }
 
-    return dcpClient.queryDocuments(ProjectService.State.class, termsBuilder.build());
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(ProjectService.State.class,
+        termsBuilder.build(), pageSize, true);
+    return PaginationUtils.xenonQueryResultToResourceList(ProjectService.State.class, queryResult);
   }
 
-  private List<Project> toProjectList(List<ProjectService.State> projectDocuments) throws
+  private ResourceList<Project> toProjectList(ResourceList<ProjectService.State> projectDocuments) throws
       ResourceTicketNotFoundException {
     List<Project> projectList = new ArrayList<>();
-    for (ProjectService.State state : projectDocuments) {
+    for (ProjectService.State state : projectDocuments.getItems()) {
       projectList.add(toApiRepresentation(state));
     }
-    return projectList;
+    return new ResourceList<>(projectList, projectDocuments.getNextPageLink(), projectDocuments.getPreviousPageLink());
   }
 
   private List<String> getTenantSecurityGroupNames(List<SecurityGroupEntity> tenantSecurityGroups) {

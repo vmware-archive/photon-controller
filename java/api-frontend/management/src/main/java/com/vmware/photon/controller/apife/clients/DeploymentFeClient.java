@@ -196,14 +196,15 @@ public class DeploymentFeClient {
       return new ResourceList<>(new ArrayList<Vm>());
     }
 
-    List<Project> projectList = projectBackend.filter(
-        tenantList.getItems().get(0).getId(), Optional.of(Constants.PROJECT_NAME));
-    if (1 != projectList.size()) {
+    ResourceList<Project> projectList = projectBackend.filter(
+        tenantList.getItems().get(0).getId(), Optional.of(Constants.PROJECT_NAME),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+    if (projectList.getItems() == null || 1 != projectList.getItems().size()) {
       logger.info("Did not find the expected management projects {}", projectList);
       return new ResourceList<>(new ArrayList<Vm>());
     }
 
-    return vmBackend.filterByProject(projectList.get(0).getId(), pageSize);
+    return vmBackend.filterByProject(projectList.getItems().get(0).getId(), pageSize);
   }
 
   public ResourceList<Host> listHosts(String id, Optional<Integer> pageSize) throws ExternalException {

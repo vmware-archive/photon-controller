@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
@@ -29,7 +30,8 @@ import java.util.List;
  * Backend interface for project related operations.
  */
 public interface ProjectBackend {
-  List<Project> filter(String tenantId, Optional<String> name) throws ExternalException;
+  ResourceList<Project> filter(String tenantId, Optional<String> name, Optional<Integer> pageSize)
+      throws ExternalException;
 
   Project getApiRepresentation(String id) throws ExternalException;
 
@@ -42,4 +44,7 @@ public interface ProjectBackend {
   TaskEntity setSecurityGroups(String projectId, List<String> securityGroups) throws ExternalException;
 
   void replaceSecurityGroups(String id, List<SecurityGroup> securityGroups) throws ExternalException;
+
+  ResourceList<Project> getProjectsPage(String pageLink) throws ExternalException;
+
 }
