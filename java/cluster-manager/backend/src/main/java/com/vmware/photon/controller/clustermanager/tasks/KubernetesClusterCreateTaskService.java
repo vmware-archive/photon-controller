@@ -233,8 +233,8 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
   }
 
   /**
-   * This method roll-outs Kubernetes Slave Nodes. On successful roll-out,
-   * the method sets the task's state as Finished.
+   * This method roll-outs the initial Kubernetes Slave Nodes. On successful roll-out,
+   * the method creates necessary tasks for cluster maintenance.
    *
    * @param currentState
    */
@@ -271,7 +271,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
           rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
             @Override
             public void onSuccess(@Nullable NodeRolloutResult result) {
-              setupRemainingSlaves(currentState);
+              setupRemainingSlaves(currentState, cluster);
             }
 
             @Override
@@ -282,7 +282,9 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
         }));
   }
 
-  private void setupRemainingSlaves(final KubernetesClusterCreateTask currentState) {
+  private void setupRemainingSlaves(
+      final KubernetesClusterCreateTask currentState,
+      final ClusterService.State cluster) {
     // Maintenance task should be singleton for any cluster.
     ClusterMaintenanceTaskService.State startState = new ClusterMaintenanceTaskService.State();
     startState.batchExpansionSize = currentState.slaveBatchExpansionSize;
@@ -296,11 +298,21 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
             failTaskAndPatchDocument(currentState, NodeType.KubernetesSlave, throwable);
             return;
           }
+          if (cluster.slaveCount == MINIMUM_INITIAL_SLAVE_COUNT) {
+            // We short circuit here and set the clusterState as READY, since the desired size has
+            // already been reached. Maintenance will kick-in when the maintenance interval elapses.
+            KubernetesClusterCreateTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
 
-          // The handleStart method of the maintenance task does not push itself to STARTED automatically.
-          // We need to patch the maintenance task manually to start the task immediately. Otherwise
-          // the task will wait for one interval to start.
-          startMaintenance(currentState);
+            ClusterService.State clusterPatch = new ClusterService.State();
+            clusterPatch.clusterState = ClusterState.READY;
+
+            updateStates(currentState, patchState, clusterPatch);
+          } else {
+            // The handleStart method of the maintenance task does not push itself to STARTED automatically.
+            // We need to patch the maintenance task manually to start the task immediately. Otherwise
+            // the task will wait for one interval to start.
+            startMaintenance(currentState);
+          }
         });
     sendRequest(postOperation);
   }

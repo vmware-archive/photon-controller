@@ -642,10 +642,10 @@ public class MesosClusterCreateTaskServiceTest {
       listeningExecutorService.shutdown();
     }
 
-    @Test
-    public void testEndToEndSuccess() throws Throwable {
+    @Test(dataProvider = "clusterSizes")
+    public void testEndToEndSuccess(int clusterSize, ClusterState expectedState) throws Throwable {
 
-      mockClusterEntity();
+      createClusterEntity(clusterSize);
       mockVmProvisioningTaskService(true);
       mockMesosClient();
 
@@ -657,12 +657,25 @@ public class MesosClusterCreateTaskServiceTest {
               TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal());
 
       TestHelper.assertTaskStateFinished(savedState.taskState);
+      ClusterService.State cluster = cloudStoreMachine.getServiceState(
+          ClusterServiceFactory.SELF_LINK + "/" + savedState.clusterId,
+          ClusterService.State.class);
+
+      assertThat(cluster.clusterState, is(expectedState));
+    }
+
+    @DataProvider(name = "clusterSizes")
+    public Object[][] getClusterSizes() {
+      return new Object[][]{
+          {1, ClusterState.READY},
+          {3, ClusterState.CREATING},
+      };
     }
 
     @Test
     public void testEndToEndFailureProvisionVmFails() throws Throwable {
 
-      mockClusterEntity();
+      createClusterEntity(1);
       mockVmProvisioningTaskService(false);
       mockMesosClient();
 
@@ -706,7 +719,7 @@ public class MesosClusterCreateTaskServiceTest {
           .hostCount(1)
           .build();
 
-      mockClusterEntity();
+      createClusterEntity(1);
       mockVmProvisioningTaskService(true);
 
       MesosClusterCreateTask savedState = machine.callServiceAndWaitForState(
@@ -721,7 +734,7 @@ public class MesosClusterCreateTaskServiceTest {
           Matchers.containsString("Failed to rollout MesosZookeeper"));
     }
 
-    private void mockClusterEntity() throws Throwable {
+    private void createClusterEntity(int size) throws Throwable {
 
       ClusterService.State cluster = new ClusterService.State();
       cluster.clusterState = ClusterState.CREATING;
@@ -733,7 +746,7 @@ public class MesosClusterCreateTaskServiceTest {
       cluster.masterVmFlavorName = "masterVmFlavorName";
       cluster.otherVmFlavorName = "otherVmFlavorName";
       cluster.vmNetworkId = "vmNetworkId";
-      cluster.slaveCount = 3;
+      cluster.slaveCount = size;
       cluster.extendedProperties = new HashMap<>();
       cluster.extendedProperties.put(
           ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "2.2.2.2");
