@@ -50,7 +50,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
@@ -238,8 +237,8 @@ public class DeploymentFeClientTest {
       project = new Project();
       project.setId("mgmt-project-id");
       project.setName(Constants.PROJECT_NAME);
-      doReturn(ImmutableList.of(project)).when(projectBackend).filter(
-          tenant.getId(), Optional.of(Constants.PROJECT_NAME));
+      doReturn(new ResourceList<>(ImmutableList.of(project))).when(projectBackend).filter(tenant.getId(),
+          Optional.of(Constants.PROJECT_NAME), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
 
       vm = new Vm();
       vm.setId("mgmt-vm-id");
@@ -296,8 +295,9 @@ public class DeploymentFeClientTest {
      * @throws Throwable
      */
     @Test(dataProvider = "NotFoundProjectData")
-    public void testNotFoundProject(String message, List<Tenant> projectList) throws Throwable {
-      doReturn(projectList).when(projectBackend).filter(tenant.getId(), Optional.of(Constants.PROJECT_NAME));
+    public void testNotFoundProject(String message, ResourceList<Project> projectList) throws Throwable {
+      doReturn(projectList).when(projectBackend).filter(tenant.getId(), Optional.of(Constants.PROJECT_NAME),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       ResourceList list = feClient.listVms(deploymentId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(list.getItems().size(), is(0));
     }
@@ -305,8 +305,8 @@ public class DeploymentFeClientTest {
     @DataProvider(name = "NotFoundProjectData")
     Object[][] getNotFoundProjectData() {
       return new Object[][]{
-          {"No projects", ImmutableList.of()},
-          {"Multiple projects", ImmutableList.of(new Project(), new Project())}
+          {"No projects", new ResourceList<>(ImmutableList.of())},
+          {"Multiple projects", new ResourceList<>(ImmutableList.of(new Project(), new Project()))}
       };
     }
 

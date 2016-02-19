@@ -49,7 +49,7 @@ public class ProjectFeClient {
 
   public ResourceList<Project> find(String tenantId, Optional<String> name, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(projectBackend.filter(tenantId, name));
+    return projectBackend.filter(tenantId, name, pageSize);
   }
 
   public Task create(String tenantId, ProjectCreateSpec project) throws ExternalException {
@@ -74,6 +74,6 @@ public class ProjectFeClient {
   }
 
   public ResourceList<Project> getProjectsPage(String pageLink) throws ExternalException {
-    return new ResourceList<>();
+    return projectBackend.getProjectsPage(pageLink);
   }
 }

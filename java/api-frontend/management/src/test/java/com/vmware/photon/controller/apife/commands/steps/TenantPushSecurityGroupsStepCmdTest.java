@@ -14,12 +14,14 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Project;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.SecurityGroupEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TenantEntity;
@@ -39,6 +41,7 @@ import static org.mockito.Mockito.verify;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 
 /**
@@ -86,7 +89,12 @@ public class TenantPushSecurityGroupsStepCmdTest {
 
     doReturn(tenantEntityList).when(stepEntity).getTransientResourceEntities(null);
     doReturn(tenantEntity).when(tenantBackend).findById("tenant-id");
-    doReturn(projects).when(projectBackend).filter("tenant-id", Optional.<String>absent());
+
+    String fakePageLink = UUID.randomUUID().toString();
+    doReturn(new ResourceList<Project>(new ArrayList<>(), fakePageLink, null))
+        .when(projectBackend)
+        .filter("tenant-id", Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+    doReturn(new ResourceList<>(projects)).when(projectBackend).getProjectsPage(fakePageLink);
 
     TenantPushSecurityGroupsStepCmd cmd =
         new TenantPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend, projectBackend);
@@ -118,7 +126,7 @@ public class TenantPushSecurityGroupsStepCmdTest {
 
     doThrow(new ExternalException("Failed to list projects"))
         .when(projectBackend)
-        .filter("id", Optional.<String>absent());
+        .filter("id", Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
 
     TenantPushSecurityGroupsStepCmd cmd =
         new TenantPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend, projectBackend);
@@ -135,7 +143,8 @@ public class TenantPushSecurityGroupsStepCmdTest {
 
     doReturn(tenantEntityList).when(stepEntity).getTransientResourceEntities(null);
     doReturn(tenantEntity).when(tenantBackend).findById("id");
-    doReturn(new ArrayList<>()).when(projectBackend).filter("id", Optional.<String>absent());
+    doReturn(new ResourceList<>(new ArrayList<>())).when(projectBackend).filter("id", Optional.<String>absent(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
 
     TenantPushSecurityGroupsStepCmd cmd =
         new TenantPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend, projectBackend);
@@ -170,7 +179,13 @@ public class TenantPushSecurityGroupsStepCmdTest {
 
     doReturn(tenantEntityList).when(stepEntity).getTransientResourceEntities(null);
     doReturn(tenantEntity).when(tenantBackend).findById("tenant-id");
-    doReturn(projects).when(projectBackend).filter("tenant-id", Optional.<String>absent());
+
+    String fakePageLink = UUID.randomUUID().toString();
+    doReturn(new ResourceList<Project>(new ArrayList<>(), fakePageLink, null))
+        .when(projectBackend)
+        .filter("tenant-id", Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+    doReturn(new ResourceList<>(projects)).when(projectBackend).getProjectsPage(fakePageLink);
+
     doThrow(new ExternalException("Failed to update project"))
         .when(projectBackend)
         .replaceSecurityGroups(eq("project-id"), anyListOf(SecurityGroup.class));
