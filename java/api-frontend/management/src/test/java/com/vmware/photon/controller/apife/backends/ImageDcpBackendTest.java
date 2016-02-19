@@ -489,6 +489,16 @@ public class ImageDcpBackendTest {
               termsBuilder.build());
       assertThat(results.size(), is(1));
       assertThat(results.get(0).imageDatastoreId, is(imageDatastoreId));
+
+      final ImmutableMap.Builder<String, String> terms = new ImmutableMap.Builder<>();
+      terms.put("documentSelfLink", ImageServiceFactory.SELF_LINK + "/" + imageEntity.getId());
+      List<ImageService.State> images =
+          dcpClient.queryDocuments(ImageService.State.class, terms.build());
+      assertThat(images.size(), is(1));
+      assertThat(images.get(0).replicatedDatastore, is(1));
+      assertThat(images.get(0).replicatedImageDatastore, is(1));
+      assertThat(images.get(0).totalDatastore, is(1));
+      assertThat(images.get(0).totalImageDatastore, is(1));
     }
 
     @Test

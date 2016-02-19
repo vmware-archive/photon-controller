@@ -41,11 +41,14 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -59,6 +62,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -288,7 +292,7 @@ public class ImageDcpBackend implements ImageBackend {
       state.documentSelfLink = imageId + "-" + datastores.get(0).id;
 
       dcpClient.post(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, state);
-      logger.info("ImageReplicationServiceState created with imageId {}, ImageDatastore {}", imageId,
+      logger.info("ImageToImageDatastoreMappingServiceState created with imageId {}, ImageDatastore {}", imageId,
           datastores.get(0).id);
     } catch (XenonRuntimeException e) {
       if (e.getCompletedOperation().getStatusCode() ==
@@ -297,6 +301,7 @@ public class ImageDcpBackend implements ImageBackend {
       }
       throw e;
     }
+    updateImageCounts(imageId);
   }
 
   @Override
@@ -327,7 +332,7 @@ public class ImageDcpBackend implements ImageBackend {
         queryResult = dcpClient.queryDocumentPage(queryResult.nextPageLink);
         queryResult.documents.values().forEach(
             item -> seededImageDatastores
-              .add(Utils.fromJson(item, ImageToImageDatastoreMappingService.State.class).imageDatastoreId));
+                .add(Utils.fromJson(item, ImageToImageDatastoreMappingService.State.class).imageDatastoreId));
       }
     } catch (DocumentNotFoundException e) {
       throw new PageExpiredException(queryResult.nextPageLink);
@@ -479,5 +484,50 @@ public class ImageDcpBackend implements ImageBackend {
     }
 
     return imageSettings;
+  }
+
+  /**
+   * Gets image entity and sends patch to update total datastore and total image datastore field.
+   */
+  protected void updateImageCounts(String imageId) throws ExternalException {
+    try {
+      com.vmware.xenon.common.Operation result = dcpClient.postToBroadcastQueryService(buildDatastoreSetQuery());
+
+      // build the image entity update patch
+      ImageService.State patchState = new ImageService.State();
+      patchState.replicatedImageDatastore = 1;
+      patchState.replicatedDatastore = 1;
+
+      patchState.totalImageDatastore = 0;
+      patchState.totalDatastore = 0;
+      List<DatastoreService.State> documentLinks = QueryTaskUtils
+          .getBroadcastQueryDocuments(DatastoreService.State.class, result);
+      patchState.totalDatastore = documentLinks.size();
+      for (DatastoreService.State state : documentLinks) {
+        if (state.isImageDatastore) {
+          patchState.totalImageDatastore++;
+        }
+      }
+      dcpClient.patch(ImageServiceFactory.SELF_LINK + "/" + imageId, patchState);
+    } catch (DocumentNotFoundException e) {
+      throw new ImageNotFoundException(Type.ID, imageId);
+    }
+  }
+
+  /**
+   * Build a QuerySpecification for querying image data store.
+   *
+   * @return
+   */
+  private QueryTask.QuerySpecification buildDatastoreSetQuery() {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    return querySpecification;
   }
 }

@@ -276,7 +276,7 @@ public class ImageHostToHostCopyService extends StatefulService {
   private void copyImageHostToHost(final State current) {
     if (current.sourceDatastore.equals(current.destinationDatastore)) {
       ServiceUtils.logInfo(this, "Skip copying image to source itself");
-      sendPatchToIncrementImageReplicatedCount(current);
+      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
       return;
     }
 
@@ -586,35 +586,6 @@ public class ImageHostToHostCopyService extends StatefulService {
         .create(sourceHostOp, destinationHostOp)
         .setCompletion(handler)
         .sendWith(this);
-  }
-
-  /**
-   * Sends patch to update replicatedImageDatastore in image cloud store entity.
-   *
-   * @param current
-   */
-  private void sendPatchToIncrementImageReplicatedCount(final State current) {
-    try {
-      Operation adjustReplicationCountPatch = ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
-          .createPatch(ImageServiceFactory.SELF_LINK + "/" + current.image)
-          .setBody(buildAdjustSeedingAndReplicationCountRequest(current, 1));
-
-      sendRequest(
-          adjustReplicationCountPatch
-              .setCompletion(
-                  (op, t) -> {
-                    if (t != null) {
-                      ServiceUtils.logWarning(this,
-                          "Could not increment replicatedImageDatastore for image %s by %s: %s",
-                          current.image, 1, t);
-                    }
-                    sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
-                  }
-              ));
-    } catch (Exception e) {
-      ServiceUtils.logSevere(this, "Exception thrown while sending patch to image service to increment count: %s",
-          e);
-    }
   }
 
   private String getHostFromResponse(Operation operation) {

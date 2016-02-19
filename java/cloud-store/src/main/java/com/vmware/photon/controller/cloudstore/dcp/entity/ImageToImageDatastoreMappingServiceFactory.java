@@ -23,7 +23,7 @@ import com.vmware.xenon.common.Service;
  */
 public class ImageToImageDatastoreMappingServiceFactory extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/images-replication";
+  public static final String SELF_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/images-to-image-datastore-mapping";
 
   public ImageToImageDatastoreMappingServiceFactory() {
     super(ImageToImageDatastoreMappingService.State.class);
