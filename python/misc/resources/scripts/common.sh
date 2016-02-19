@@ -11,9 +11,17 @@
 # under the License.
 export SRVADMIN=/opt/dell/srvadmin
 
+if [ "$(uname)" == "Darwin" ]; then
+        # On OSX default BSD version of sed and readlink do not behave same as GNU versions.
+        # brew install coreutils gnu-sed
+        READLINK=greadlink
+else
+        READLINK=readlink
+fi
+
 # Use local wrappers where possible
 if [ -z "$tools" ]; then
-  tools=$(readlink -nf $(dirname $BASH_SOURCE))
+  tools=$($READLINK -nf $(dirname $BASH_SOURCE))
 fi
 
 export PATH=$tools:$tools/esxcli/lin32:$PATH

@@ -15,8 +15,16 @@
 # Run ssh/scp with the correct key, without host key checking.
 #
 
+if [ "$(uname)" == "Darwin" ]; then
+        # On OSX default BSD version of sed and readlink do not behave same as GNU versions.
+        # brew install coreutils gnu-sed
+        READLINK=greadlink
+else
+        READLINK=readlink
+fi
+
 basename=$(basename "$0")
-root=$(readlink -nf $(dirname "$0"))
+root=$($READLINK -nf $(dirname "$0"))
 
 # Format arguments to preserve special characters
 quoted_args=""
