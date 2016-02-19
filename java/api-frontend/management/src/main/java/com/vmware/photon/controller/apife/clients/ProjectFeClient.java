@@ -47,7 +47,7 @@ public class ProjectFeClient {
     return projectBackend.getApiRepresentation(id);
   }
 
-  public ResourceList<Project> find(String tenantId, Optional<String> name)
+  public ResourceList<Project> find(String tenantId, Optional<String> name, Optional<Integer> pageSize)
       throws ExternalException {
     return new ResourceList<>(projectBackend.filter(tenantId, name));
   }
@@ -73,4 +73,7 @@ public class ProjectFeClient {
     return task;
   }
 
+  public ResourceList<Project> getProjectsPage(String pageLink) throws ExternalException {
+    return new ResourceList<>();
+  }
 }
