@@ -19,9 +19,11 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.ProjectFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
@@ -46,6 +48,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 /**
  * This resource is for project related API under a tenant.
@@ -57,10 +60,12 @@ import javax.ws.rs.core.Response;
 public class TenantProjectsResource {
 
   private final ProjectFeClient projectFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public TenantProjectsResource(ProjectFeClient projectFeClient) {
+  public TenantProjectsResource(ProjectFeClient projectFeClient, PaginationConfig paginationConfig) {
     this.projectFeClient = projectFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @POST
@@ -85,11 +90,23 @@ public class TenantProjectsResource {
   @ApiResponses(value = {@ApiResponse(code = 200, message = "Success")})
   public Response find(@Context Request request,
                        @PathParam("id") String tenantId,
-                       @QueryParam("name") Optional<String> name)
+                       @QueryParam("name") Optional<String> name,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
+
+    ResourceList<Project> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = projectFeClient.getProjectsPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = projectFeClient.find(tenantId, name, adjustedPageSize);
+    }
+
+    String apiRoute = UriBuilder.fromPath(TenantResourceRoutes.TENANT_PROJECTS_PATH).build(tenantId).toString();
     return generateResourceListResponse(
         Response.Status.OK,
-        projectFeClient.find(tenantId, name),
+        PaginationUtils.formalizePageLinks(resourceList, apiRoute),
         (ContainerRequest) request,
         ProjectResourceRoutes.PROJECT_PATH);
   }
