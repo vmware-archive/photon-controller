@@ -47,9 +47,9 @@ public class DeploymentCreateSpec {
   private String syslogEndpoint;
 
   @JsonProperty
-  @ApiModelProperty(value = "End point of Stats Store")
-  @NullableDomainOrIP
-  private String statsStoreEndpoint;
+  @ApiModelProperty(value = "Stats information")
+  @NotNull
+  private StatsInfo statsInfo;
 
   @JsonProperty
   @ApiModelProperty(value = "End point of Ntp server")
@@ -85,12 +85,12 @@ public class DeploymentCreateSpec {
     this.syslogEndpoint = syslogEndpoint;
   }
 
-  public String getStatsStoreEndpoint() {
-    return statsStoreEndpoint;
+  public StatsInfo getStatsInfo() {
+    return statsInfo;
   }
 
-  public void setStatsStoreEndpoint(String statsStoreEndpoint) {
-    this.statsStoreEndpoint = statsStoreEndpoint;
+  public void setStatsInfo(StatsInfo statsInfo) {
+    this.statsInfo = statsInfo;
   }
 
   public String getNtpEndpoint() {
@@ -138,7 +138,7 @@ public class DeploymentCreateSpec {
 
     return Objects.equals(getImageDatastores(), other.getImageDatastores()) &&
         Objects.equals(getSyslogEndpoint(), other.getSyslogEndpoint()) &&
-        Objects.equals(getStatsStoreEndpoint(), other.getStatsStoreEndpoint()) &&
+        Objects.equals(getStatsInfo(), other.getStatsInfo()) &&
         Objects.equals(getNtpEndpoint(), other.getNtpEndpoint()) &&
         Objects.equals(isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms()) &&
         Objects.equals(getAuth(), other.getAuth()) &&
@@ -150,7 +150,7 @@ public class DeploymentCreateSpec {
     return java.util.Objects.hash(
         imageDatastores,
         syslogEndpoint,
-        statsStoreEndpoint,
+        statsInfo,
         ntpEndpoint,
         useImageDatastoreForVms,
         auth
@@ -162,7 +162,7 @@ public class DeploymentCreateSpec {
     return com.google.common.base.Objects.toStringHelper(this)
         .add("imageDatastores", StringUtils.join(imageDatastores, ','))
         .add("syslogEndpoint", syslogEndpoint)
-        .add("statsStoreEndpoint", statsStoreEndpoint)
+        .add("statsInfo", statsInfo)
         .add("ntpEndpoint", ntpEndpoint)
         .add("useImageDatastoreForVms", useImageDatastoreForVms)
         .add("auth", auth)

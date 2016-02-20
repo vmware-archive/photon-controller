@@ -50,7 +50,9 @@ public class DeploymentEntityTest {
     public void testAll() {
       entity.setState(DeploymentState.READY);
       entity.setSyslogEndpoint("http://syslog");
+      entity.setStatsEnabled(true);
       entity.setStatsStoreEndpoint("http://statsStore");
+      entity.setStatsStorePort(2004);
       entity.setAuthEnabled(true);
       entity.setOauthEndpoint("192.168.0.1");
       entity.setOauthPort(443);
@@ -88,7 +90,9 @@ public class DeploymentEntityTest {
     public void setUp() {
       entity = new DeploymentEntity();
       entity.setSyslogEndpoint("http://syslog");
+      entity.setStatsEnabled(true);
       entity.setStatsStoreEndpoint("http://statsStore");
+      entity.setStatsStorePort(2004);
       entity.setAuthEnabled(true);
       entity.setOauthEndpoint("192.168.0.1");
       entity.setOauthPort(443);

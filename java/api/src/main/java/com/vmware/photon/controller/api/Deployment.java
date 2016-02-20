@@ -47,9 +47,9 @@ public class Deployment extends Base {
   private String syslogEndpoint;
 
   @JsonProperty
-  @ApiModelProperty(value = "statsStoreEndpoint")
-  @NullableDomainOrIP
-  private String statsStoreEndpoint;
+  @ApiModelProperty(value = "Stats information")
+  @NotNull
+  private StatsInfo statsInfo;
 
   @JsonProperty
   @ApiModelProperty(value = "ntpEndpoint")
@@ -97,12 +97,12 @@ public class Deployment extends Base {
     this.syslogEndpoint = syslogEndpoint;
   }
 
-  public void setStatsStoreEndpoint(String statsStoreEndpoint) {
-    this.statsStoreEndpoint = statsStoreEndpoint;
+  public void setStatsInfo(StatsInfo statsInfo) {
+    this.statsInfo = statsInfo;
   }
 
-  public String getStatsStoreEndpoint() {
-    return statsStoreEndpoint;
+  public StatsInfo getStatsInfo() {
+    return statsInfo;
   }
 
   public String getNtpEndpoint() {
@@ -183,7 +183,7 @@ public class Deployment extends Base {
     Deployment other = (Deployment) o;
 
     return Objects.equals(this.getSyslogEndpoint(), other.getSyslogEndpoint())
-        && Objects.equals(this.getStatsStoreEndpoint(), other.getStatsStoreEndpoint())
+        && Objects.equals(this.getStatsInfo(), other.getStatsInfo())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms())
@@ -198,7 +198,7 @@ public class Deployment extends Base {
     return Objects.hash(
         super.hashCode(),
         this.getSyslogEndpoint(),
-        this.getStatsStoreEndpoint(),
+        this.getStatsInfo(),
         this.getNtpEndpoint(),
         this.getImageDatastores(),
         this.isUseImageDatastoreForVms(),
@@ -212,7 +212,7 @@ public class Deployment extends Base {
     return super.toStringHelper()
         .add("imageDatastores", StringUtils.join(imageDatastores, ','))
         .add("syslogEndpoint", syslogEndpoint)
-        .add("statsStoreEndpoint", statsStoreEndpoint)
+        .add("statsInfo", statsInfo)
         .add("ntpEndpoint", ntpEndpoint)
         .add("useImageDatastoreForVms", useImageDatastoreForVms)
         .add("auth", auth.toString())
@@ -220,5 +220,4 @@ public class Deployment extends Base {
         .add("migrationProgress", migrationStatus)
         .add("clusterConfigurations", getClusterConfigurations());
   }
-
 }

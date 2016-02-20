@@ -13,19 +13,24 @@
 
 package com.vmware.photon.controller.api;
 
-
+import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
+import com.vmware.photon.controller.api.constraints.StatsDisabled;
+import com.vmware.photon.controller.api.constraints.StatsEnabled;
 import com.vmware.photon.controller.api.helpers.Validator;
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.asJson;
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.fromJson;
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.jsonFixture;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.collections.CollectionUtils;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Tests {@link StatsInfo}.
@@ -47,20 +52,72 @@ public class StatsInfoTest {
   private void dummy() {
   }
 
+
   /**
    * Tests for validations.
    */
   public class ValidationTest {
 
+    private final String[] statsEnabledErrorMsgs = new String[]{
+        "storeEndpoint may not be null (was null)",
+        "storePort may not be null (was null)"
+    };
+
     private Validator validator = new Validator();
 
-    @Test
-    public void testValidStatsInfo() {
-      ImmutableList<String> violations = validator.validate(createStatsInfo());
+    @Test(dataProvider = "validStatsInfo")
+    public void testValidStatsInfo(StatsInfo statsInfo) {
+      ImmutableList<String> violations = validator.validate(statsInfo);
       assertThat(violations.isEmpty(), is(true));
     }
 
+    @DataProvider(name = "validStatsInfo")
+    public Object[][] getValidStatsInfo() {
+      return new Object[][]{
+          {
+            new StatsInfoBuilder()
+              .enabled(false)
+              .build(),
+          },
+          {
+            new StatsInfoBuilder()
+              .enabled(true).storeEndpoint("test").storePort(100)
+              .build(),
+          },
+          {
+            new StatsInfoBuilder()
+              .enabled(true).storeEndpoint("test")
+              .build()
+          },
+      };
+    }
+
+    @Test(dataProvider = "invalidStatsInfo")
+    public void testInvalidStatsInfo(StatsInfo statsInfo, String[] errorMsgs) {
+      ImmutableList<String> violations;
+      if (statsInfo.getEnabled()) {
+        violations = validator.validate(statsInfo, StatsEnabled.class);
+      } else {
+        violations = validator.validate(statsInfo, StatsDisabled.class);
+      }
+
+      assertThat(violations.size(), is(errorMsgs.length));
+      assertThat(CollectionUtils.isEqualCollection(violations, Arrays.asList(errorMsgs)), is(true));
+    }
+
+    @DataProvider(name = "invalidStatsInfo")
+    public Object[][] getInvalidStatsInfo() {
+      return new Object[][]{
+          {new StatsInfoBuilder()
+              .enabled(true)
+              .build(),
+              statsEnabledErrorMsgs},
+      };
+    }
   }
+
+
+
 
   /**
    * Tests {@link StatsInfo#toString()}.
