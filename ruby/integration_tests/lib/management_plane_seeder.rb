@@ -9,7 +9,7 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED. See the License for the
 # specific language governing permissions and limitations under the License.
 
-require_relative "../lib/test_helpers"
+require_relative 'test_helpers'
 
 module EsxCloud
   class ManagementPlaneSeeder
@@ -33,8 +33,8 @@ module EsxCloud
     end
 
     def create_vm(project, vm_name, image_id)
-      ephemeral_disk = create_ephemeral_disk random_name("#{vm_name}-disk-e-")
-      persistent_disk = create_persistent_disk project, random_name("#{vm_name}-disk-")
+      ephemeral_disk = create_ephemeral_disk(random_name("#{vm_name}-disk-e-"))
+      persistent_disk = create_persistent_disk(project, random_name("#{vm_name}-disk-"))
       create_vm_spec = { image_id: image_id,
                          name: vm_name,
                          flavor: create_vm_flavor.name,
@@ -87,6 +87,12 @@ module EsxCloud
 
       spec = EsxCloud::FlavorCreateSpec.new name, kind, cost
       EsxCloud::Flavor.create spec
+    end
+
+    private
+
+    def random_name(prefix = "rn")
+      prefix + SecureRandom.base64(12).tr("+/", "ab")
     end
   end
 end
