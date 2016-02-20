@@ -43,6 +43,7 @@ import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskServic
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
@@ -66,6 +67,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -412,23 +414,23 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         }
 
         List<CopyStateTriggerTaskService.State> documents = QueryTaskUtils
-          .getBroadcastQueryDocuments(CopyStateTriggerTaskService.State.class, op);
+            .getBroadcastQueryDocuments(CopyStateTriggerTaskService.State.class, op);
         List<Operation> operations = documents.stream()
-          .map((state) -> {
-            CopyStateTriggerTaskService.State patchState = new CopyStateTriggerTaskService.State();
-            patchState.executionState = CopyStateTriggerTaskService.ExecutionState.STOPPED;
-            Operation patch = Operation
-                .createPatch(UriUtils.buildUri(getHost(), state.documentSelfLink))
-                .setBody(patchState);
-            return patch;
-          })
-          .collect(Collectors.toList());
+            .map((state) -> {
+              CopyStateTriggerTaskService.State patchState = new CopyStateTriggerTaskService.State();
+              patchState.executionState = CopyStateTriggerTaskService.ExecutionState.STOPPED;
+              Operation patch = Operation
+                  .createPatch(UriUtils.buildUri(getHost(), state.documentSelfLink))
+                  .setBody(patchState);
+              return patch;
+            })
+            .collect(Collectors.toList());
 
         if (operations.isEmpty()) {
-            State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.MIGRATE_FINAL, null);
-            TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
+          State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.MIGRATE_FINAL, null);
+          TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
         } else {
-            OperationJoin.create(operations)
+          OperationJoin.create(operations)
               .setCompletion((ops, ts) -> {
                 if (ts != null && !ts.isEmpty()) {
                   failTask(ts.values());
@@ -610,20 +612,18 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
             QueryTaskUtils.getBroadcastQueryDocuments(CopyStateTaskService.State.class, o);
 
         Map<String, Long> lastUpdateTimes = new HashMap<>();
-        Map<String, String> factoryOrigin = new HashMap<>();
         queryDocuments.stream().forEach((state) -> {
           long currentLatestUpdateTime = lastUpdateTimes.getOrDefault(state.sourceFactoryLink, 0L);
           Long latestUpdateTime = Math.max(state.lastDocumentUpdateTimeEpoc, currentLatestUpdateTime);
           lastUpdateTimes.put(state.sourceFactoryLink, latestUpdateTime);
-          factoryOrigin.put(state.sourceFactoryLink, state.sourceIp);
         });
 
-        migrateFinal(currentState, lastUpdateTimes, factoryOrigin);
+        migrateFinal(currentState, lastUpdateTimes);
       })
       .sendWith(this);
   }
 
-  private void migrateFinal(State currentState, Map<String, Long> lastUpdateTimes, Map<String, String> factoryOrigin) {
+  private void migrateFinal(State currentState, Map<String, Long> lastUpdateTimes) {
     ZookeeperClient zookeeperClient
         = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
     Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
@@ -644,8 +644,10 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
           CopyStateTaskService.State startState
             = MiscUtils.createCopyStateStartState(sourceServers, destinationServers, entry.getValue(), sourceFactory);
           startState.queryDocumentsChangedSinceEpoc = lastUpdateTimes.getOrDefault(sourceFactory, 0L);
-          // keep the original source since the time stamp are local to the source server
-          startState.sourceIp = factoryOrigin.getOrDefault(sourceFactory, startState.sourceIp);
+          startState.sourceServers = new HashSet<>();
+          for (InetSocketAddress sourceServer : sourceServers) {
+            startState.sourceServers.add(new Pair<>(sourceServer.getHostName(), new Integer(sourceServer.getPort())));
+          }
           startState.performHostTransformation = Boolean.TRUE;
           return Operation
             .createPost(this, CopyStateTaskFactoryService.SELF_LINK)
