@@ -90,9 +90,14 @@ class TestEsxImageManager(unittest.TestCase):
         assert_that(mock_reap.call_count, greater_than(1))
         assert_that(retry, is_not(10), "reaper cleanup not called repeatedly")
 
+    @parameterized.expand([
+        (True, ),
+        (False, )
+    ])
     @patch("uuid.uuid4", return_value="fake_id")
     @patch("host.hypervisor.esx.vm_config.os_datastore_path")
-    def test_reap_tmp_images(self, _os_datastore_path, _uuid):
+    def test_reap_tmp_images(self, _allow_grace_period, _os_datastore_path,
+                             _uuid):
         """ Test that stray images are found and deleted by the reaper """
 
         def _fake_ds_folder(datastore, folder):
@@ -122,10 +127,17 @@ class TestEsxImageManager(unittest.TestCase):
         ds_manager = MagicMock()
         ds_manager.get_datastores.return_value = [ds]
         image_manager = EsxImageManager(self.vim_client, ds_manager)
+        if not _allow_grace_period:
+            image_manager.REAP_TMP_IMAGES_GRACE_PERIOD = 0.0
+            time.sleep(0.1)
         image_manager.reap_tmp_images()
 
-        # verify stray image is deleted
-        self.assertFalse(os.path.exists(path))
+        if _allow_grace_period:
+            # verify stray image is not deleted due to grace period
+            self.assertTrue(os.path.exists(path))
+        else:
+            # verify stray image is deleted
+            self.assertFalse(os.path.exists(path))
 
     @patch("os.path.isdir")
     @patch("os.makedirs")
