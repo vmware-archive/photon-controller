@@ -18,6 +18,8 @@ require 'net/http'
 require 'agent_control'
 
 require 'dcp/cloud_store/cloud_store_client'
+require_relative '../../lib/management_plane_seeder'
+require_relative '../../lib/test_helpers'
 
 describe "migrate finalize", upgrade: true do
 
@@ -119,6 +121,73 @@ describe "migrate finalize", upgrade: true do
         req = VersionRequest.new
         res = agent_client.get_version req
         expect(res.version).to eq "0.1.2"
+      end
+    end
+  end
+
+  describe "interaction with old entities" do
+    it "should created entities under existing entities" do
+      # find existing image to use for vm creation
+      image = client.find_all_images.items[0]
+      seeder = EsxCloud::ManagementPlaneSeeder.new
+      client.find_all_tenants.items.each do |tenant|
+        # ignoring the management tenant as it has tighter resource constraints
+        next if tenant.name == "mgmt-tenant"
+        client.find_all_projects(tenant.id).items.each do |project|
+          # create vm under each project
+          seeder.create_vm(project, random_name("vm-new-"), image.id)
+        end
+        client.find_all_resource_tickets(tenant.id).items.each do |ticket|
+          # create project under each resource ticket
+          tenant.create_project(name: random_name("project-new-"), resource_ticket_name: ticket.name, limits: [create_limit("vm", 1.0, "COUNT"), create_limit("vm.count", 1.0, "COUNT"), create_limit("vm.memory", 1.0, "GB")])
+        end
+        # create resource ticket under each tenant
+        tenant.create_resource_ticket(:name => random_name("rt-"), :limits => create_small_limits)
+      end
+    end
+
+    it "should be able to interact with created vms" do
+      client.find_all_tenants.items.each do |tenant|
+        # ignoring the management tenant to avoid shutting down the old plane
+        next if tenant.name == "mgmt-tenant"
+        client.find_all_projects(tenant.id).items.each do |project|
+          client.find_all_vms(project.id).items.each do |vm|
+            ignoring_all_errors { vm.stop! }
+            vm.start!
+            vm.stop!
+          end
+        end
+      end
+    end
+  end
+
+  describe "interaction with migrated cluster" do
+    it "should list all existing clusters" do
+      # find cluster project
+      project = find_cluster_project
+      expect(project).not_to be_nil
+      # list all clusters
+      clusters = client.get_project_clusters(project.id)
+      expect(clusters).not_to be_nil
+      # should contain exactly one cluster
+      expect(clusters.items.length).to equal(1)
+      # resize cluster / not working in beta1
+      # client.resize_cluster(clusters.items[0].id, 3)
+    end
+  end
+
+  describe "creating new entities" do
+    it "should be able to create new tenant with entities" do
+      EsxCloud::ManagementPlaneSeeder.populate
+    end
+  end
+
+  def find_cluster_project()
+    client.find_all_tenants.items.each do |tenant|
+      client.find_all_projects(tenant.id).items.each do |project|
+        if project.name.start_with?("cluster-project-")
+          return project
+        end
       end
     end
   end
