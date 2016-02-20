@@ -16,6 +16,9 @@ import errno
 import gzip
 import json
 import logging
+
+import time
+
 import os.path
 import shutil
 import uuid
@@ -67,6 +70,7 @@ GC_IMAGE_FOLDER = "deleted_images"
 class EsxImageManager(ImageManager):
     NUM_MAKEDIRS_ATTEMPTS = 10
     DEFAULT_TMP_IMAGES_CLEANUP_INTERVAL = 600.0
+    REAP_TMP_IMAGES_GRACE_PERIOD = 600.0
     IMAGE_TOMBSTONE_FILE_NAME = "image_tombstone.txt"
     IMAGE_MARKER_FILE_NAME = "unused_image_marker.txt"
     IMAGE_TIMESTAMP_FILE_NAME = "image_timestamp.txt"
@@ -513,6 +517,21 @@ class EsxImageManager(ImageManager):
                 path = os.path.join(images_dir, f)
                 if not os.path.isdir(path):
                     continue
+
+                create_time = os.stat(path).st_ctime
+                current_time = time.time()
+                if current_time - self.REAP_TMP_IMAGES_GRACE_PERIOD\
+                        < create_time:
+                    # Skip folders that are newly created in past x minutes
+                    # For example, during host-to-host transfer, hostd on
+                    # receiving end stores the uploaded file in temp images
+                    # folder but does not lock it with FileBackedLock, so we
+                    # need to allow a grace period before reaping it.
+                    self._logger.info(
+                        "Skip folder: %s, created: %s, now: %s" %
+                        (path, create_time, current_time))
+                    continue
+
                 try:
                     with FileBackedLock(path, ds.type):
                         if (os.path.exists(path)):

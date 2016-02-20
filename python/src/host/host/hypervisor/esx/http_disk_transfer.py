@@ -113,7 +113,7 @@ class HttpTransferer(object):
             yield data
             counter += 1
             if counter % 100 == 0:
-                self._logger.debug("Sent %d kB." % (
+                self._logger.debug("Received %d kB." % (
                     CHUNK_SIZE * counter / 1024))
             data = src.read(CHUNK_SIZE)
 
