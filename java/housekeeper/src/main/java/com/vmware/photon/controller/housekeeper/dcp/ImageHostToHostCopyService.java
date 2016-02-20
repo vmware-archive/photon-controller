@@ -21,6 +21,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreM
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
+import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
@@ -31,6 +32,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
+import com.vmware.photon.controller.host.gen.CopyImageResponse;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.TransferImageResponse;
 import com.vmware.xenon.common.Operation;
@@ -280,6 +282,68 @@ public class ImageHostToHostCopyService extends StatefulService {
       return;
     }
 
+    if (current.host.equals(current.destinationHost)) {
+      invokeCopyImage(current);
+    } else {
+      invokeTransferImage(current);
+    }
+  }
+
+  /**
+   * Calls agents to copy an image from a source image datastore to a destination image datastore when there is a host
+   * connecting two image datastores (copy image).
+   *
+   * @param current
+   */
+  private void invokeCopyImage(final State current) {
+    ServiceUtils.logInfo(this, "Calling agent to do image copy between image datastores using same host.");
+    AsyncMethodCallback callback = new AsyncMethodCallback() {
+      @Override
+      public void onComplete(Object o) {
+        try {
+          CopyImageResponse r = ((Host.AsyncClient.copy_image_call) o).getResult();
+          ServiceUtils.logInfo(ImageHostToHostCopyService.this, "TransferImageResponse %s", r);
+          switch (r.getResult()) {
+            case OK:
+            case DESTINATION_ALREADY_EXIST:
+              sendStageProgressPatch(current, TaskState.TaskStage.STARTED,
+                  TaskState.SubStage.UPDATE_IMAGE_REPLICATION_DOCUMENT);
+              break;
+            case IMAGE_NOT_FOUND:
+              throw new ImageNotFoundException(r.getError());
+            case SYSTEM_ERROR:
+              throw new SystemErrorException(r.getError());
+            default:
+              throw new UnknownError(
+                  String.format("Unknown result code %s", r.getResult()));
+          }
+        } catch (Exception e) {
+          onError(e);
+        }
+      }
+
+      @Override
+      public void onError(Exception e) {
+        failTask(e);
+      }
+    };
+
+    try {
+      getHostClient(current).copyImage(current.image, current.sourceDatastore, current.destinationDatastore,
+          callback);
+
+    } catch (RpcException | IOException e) {
+      failTask(e);
+    }
+  }
+
+  /**
+   * Calls agents to copy an image from a source image datastore to a destination image datastore when there is no host
+   * connecting two image datastores (transfer image).
+   *
+   * @param current
+   */
+  private void invokeTransferImage(final State current) {
     ServiceUtils.logInfo(this, "Calling agent to do host to host image copy.");
     AsyncMethodCallback callback = new AsyncMethodCallback() {
       @Override
@@ -458,8 +522,8 @@ public class ImageHostToHostCopyService extends StatefulService {
         buildImageToImageDatastoreMappingServiceState(current.image, current.destinationDatastore);
     Operation createimageToImageDatastoreMappingServicePatch =
         ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper().createPost
-        (ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
-        .setBody(postState);
+            (ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
+            .setBody(postState);
 
     ImageReplicatorService.State replicatorServiceState =
         buildImageReplicatorServiceState(current.image, current.destinationDatastore);
