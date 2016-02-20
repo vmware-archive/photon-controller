@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -85,11 +86,13 @@ public class MiscUtils {
       String destinationFactoryLink,
       String sourceFactoryLink,
       int portAdjustment) {
-    InetSocketAddress local = ServiceUtils.selectRandomItem(localServers);
     InetSocketAddress remote = ServiceUtils.selectRandomItem(remoteServers);
     CopyStateTaskService.State startState = new CopyStateTaskService.State();
-    startState.sourceIp = local.getAddress().getHostAddress();
-    startState.sourcePort = local.getPort() + portAdjustment;
+    startState.sourceServers = new HashSet<>();
+    for (InetSocketAddress localServer : localServers) {
+      startState.sourceServers.add(new Pair<>(localServer.getAddress().getHostAddress(),
+          new Integer(localServer.getPort())));
+    }
     startState.destinationIp = remote.getAddress().getHostAddress();
     startState.destinationPort = remote.getPort() + portAdjustment;
     startState.factoryLink = destinationFactoryLink;

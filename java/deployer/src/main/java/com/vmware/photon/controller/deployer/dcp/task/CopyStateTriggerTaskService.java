@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
 import com.vmware.photon.controller.common.xenon.validation.DefaultString;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.xenon.common.NodeSelectorService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationSequence;
@@ -42,6 +43,7 @@ import static com.google.common.base.Preconditions.checkState;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -70,11 +72,7 @@ public class CopyStateTriggerTaskService extends StatefulService {
 
     @Immutable
     @NotNull
-    public String sourceIp;
-
-    @Immutable
-    @NotNull
-    public Integer sourcePort;
+    public Set<Pair<String, Integer>> sourceServers;
 
     @Immutable
     @DefaultString(value = "http")
@@ -298,8 +296,7 @@ public class CopyStateTriggerTaskService extends StatefulService {
     state.queryDocumentsChangedSinceEpoc = lastestUpdateTime;
     state.queryResultLimit = currentState.queryResultLimit;
     state.sourceFactoryLink = currentState.sourceFactoryLink;
-    state.sourceIp = currentState.sourceIp;
-    state.sourcePort = currentState.sourcePort;
+    state.sourceServers = currentState.sourceServers;
     state.sourceProtocol = currentState.sourceProtocol;
     state.taskStateFieldName = currentState.taskStateFieldName;
     state.performHostTransformation = currentState.performHostTransformation;
