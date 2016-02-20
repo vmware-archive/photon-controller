@@ -836,6 +836,83 @@ public class ImageHostToHostCopyServiceTest {
     }
 
     /**
+     * Tests copy success scenarios with source and destination image datastore has an agent to connect.
+     *
+     * @throws Throwable
+     */
+    @Test(dataProvider = "hostCount")
+    public void testSuccessWithDestinationAndSourceSameHost(int hostCount) throws Throwable {
+      HostClientMock hostClient = new HostClientMock();
+
+      hostClient.setCopyImageResultCode(CopyImageResultCode.OK);
+      doReturn(hostClient).when(hostClientFactory).create();
+
+      cloudStoreHelper = new CloudStoreHelper();
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
+
+      ImageService.State createdImageState = createNewImageEntity(ImageReplicationType.EAGER);
+      int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
+      int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
+      copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+      createHostService("datastore0-id");
+      createHostService("datastore1-id");
+      createDatastoreService("datastore0-id", "datastore0", true);
+      createDatastoreService("datastore1-id", "datastore1", true);
+      createDatastoreService("local-datastore-id", "local-datastore", false);
+
+      machine.startFactoryServiceSynchronously(ImageToImageDatastoreMappingServiceFactory.class,
+          ImageToImageDatastoreMappingServiceFactory.SELF_LINK);
+
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put("imageId", copyTask.image);
+      termsBuilder.put("imageDatastoreId", copyTask.destinationDatastore);
+
+      QueryTask.QuerySpecification querySpec =
+          QueryTaskUtils.buildQuerySpec(ImageToImageDatastoreMappingService.State.class, termsBuilder.build());
+      querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+      QueryTask beforeQuery = QueryTask.create(querySpec).setDirect(true);
+
+      assertThat(machine.sendQueryAndWait(beforeQuery).results.documentLinks.size(), is(0));
+
+      // Call Service.
+      ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
+          ImageHostToHostCopyServiceFactory.SELF_LINK,
+          copyTask,
+          ImageHostToHostCopyService.State.class,
+          (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
+
+      machine.waitForServiceState(
+          ImageService.State.class,
+          createdImageState.documentSelfLink,
+          (state) ->
+              state.replicatedDatastore == initialReplicatedDatastoreCount + 2);
+
+      //Check Image Service replicatedDatastore counts
+      createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
+      assertThat(createdImageState.replicatedImageDatastore, is(initialReplicatedImageDatastoreCount + 1));
+
+      // Check response.
+      assertThat(response.image, is(copyTask.image));
+      assertThat(response.sourceDatastore, is(copyTask.sourceDatastore));
+      assertThat(response.destinationDatastore, is(copyTask.destinationDatastore));
+      assertThat(response.host, notNullValue());
+      assertThat(response.destinationHost, notNullValue());
+
+      QueryTask afterQuery = QueryTask.create(querySpec).setDirect(true);
+      assertThat(machine.sendQueryAndWait(afterQuery).results.documentLinks.size(), is(1));
+
+      // Check stats.
+      ServiceStats stats = machine.getOwnerServiceStats(response);
+      assertThat(
+          stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
+          greaterThanOrEqualTo(
+              1.0 + // Create Patch
+                  1.0 + // Scheduler start patch
+                  1.0   // FINISHED
+          ));
+    }
+
+    /**
      * Tests copy success scenarios with destination already exists exception from agent.
      *
      * @param code Result code return from HostClient.
