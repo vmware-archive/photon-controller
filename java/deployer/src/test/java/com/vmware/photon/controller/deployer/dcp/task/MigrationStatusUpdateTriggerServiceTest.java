@@ -24,6 +24,7 @@ import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.DeployerContextTest;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerService.State;
+import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
@@ -46,6 +47,7 @@ import static org.hamcrest.Matchers.is;
 
 import java.lang.reflect.Field;
 import java.util.EnumSet;
+import java.util.HashSet;
 
 /**
  * This class implements tests for the {@link MigrationStatusUpdateTriggerService}
@@ -263,10 +265,10 @@ public class MigrationStatusUpdateTriggerServiceTest {
       startState.taskState = new TaskState();
       startState.taskState.stage = stage;
       startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-      startState.sourcePort = 1234;
-      startState.sourceIp = "127.0.0.1";
       startState.destinationPort = 4321;
       startState.destinationIp = "127.0.0.1";
+      startState.sourceServers = new HashSet<>();
+      startState.sourceServers.add(new Pair<>("127.0.0.1", 1234));
       startState.factoryLink = ContainerTemplateFactoryService.SELF_LINK;
       startState.sourceFactoryLink = deployerContext.getFactoryLinkMapEntries().iterator().next().getKey();
       return startState;
