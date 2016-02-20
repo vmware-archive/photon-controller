@@ -31,6 +31,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactory
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.SampleService;
 import com.vmware.photon.controller.deployer.dcp.entity.SampleServiceFactory;
+import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowService;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -90,8 +91,8 @@ public class CopyStateTaskServiceTest {
     startState.taskState = new TaskState();
     startState.taskState.stage = stage;
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-    startState.sourcePort = 1234;
-    startState.sourceIp = "127.0.0.1";
+    startState.sourceServers = new HashSet<>();
+    startState.sourceServers.add(new Pair<>("127.0.0.1", new Integer(1234)));
     startState.destinationPort = 4321;
     startState.destinationIp = "127.0.0.1";
     startState.factoryLink = ContainerTemplateFactoryService.SELF_LINK;
@@ -522,7 +523,10 @@ public class CopyStateTaskServiceTest {
           .cloudServerSet(sourceCloudStore.getServerSet()).build();
       destinationCluster = new TestEnvironment.Builder().hostCount(destinationHostCount)
           .cloudServerSet(sourceCloudStore.getServerSet()).build();
-      copyStateTaskServiceState.sourcePort = sourceCloudStore.getHosts()[0].getPort();
+      copyStateTaskServiceState.sourceServers = new HashSet<>();
+      for (ServiceHost h : sourceCloudStore.getHosts()) {
+        copyStateTaskServiceState.sourceServers.add(new Pair<>(h.getPreferredAddress(), h.getPort()));
+      }
       copyStateTaskServiceState.destinationPort = destinationCloudStore.getHosts()[0].getPort();
       copyStateTaskServiceState.sourceFactoryLink = HostServiceFactory.SELF_LINK;
       copyStateTaskServiceState.factoryLink = SampleServiceFactory.SELF_LINK;
@@ -567,8 +571,11 @@ public class CopyStateTaskServiceTest {
     private void startClusters(Integer sourceHostCount, Integer destinationHostCount) throws Throwable {
       sourceCluster = new TestEnvironment.Builder().hostCount(sourceHostCount).build();
       destinationCluster = new TestEnvironment.Builder().hostCount(destinationHostCount).build();
-      copyStateTaskServiceState.sourcePort = sourceCluster.getHosts()[0].getPort();
       copyStateTaskServiceState.destinationPort = destinationCluster.getHosts()[0].getPort();
+      copyStateTaskServiceState.sourceServers = new HashSet<>();
+      for (ServiceHost h : sourceCluster.getHosts()) {
+        copyStateTaskServiceState.sourceServers.add(new Pair<>(h.getPreferredAddress(), h.getPort()));
+      }
     }
 
     private Set<String> getDocumentLinks(TestEnvironment cluster) throws Throwable {

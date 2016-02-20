@@ -34,6 +34,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
+import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.xenon.common.AuthenticationUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
@@ -49,13 +50,18 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.NumericRange;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
+import org.apache.http.concurrent.FutureCallback;
+
 import javax.annotation.Nullable;
 
 import java.net.URI;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class moves DCP state between two DCP clusters.
@@ -73,8 +79,6 @@ public class CopyStateTaskService extends StatefulService {
     public static final String FIELD_NAME_SOURCE_FACTORY_LINK = "sourceFactoryLink";
     public static final String FIELD_NAME_FACTORY_LINK = "factoryLink";
     public static final String FIELD_NAME_SOURCE_PROTOCOL = "sourceProtocol";
-    public static final String FIELD_NAME_SOURCE_PORT = "sourcePort";
-    public static final String FIELD_NAME_SOURCE_IP = "sourceIp";
     public static final String FIELD_NAME_DESTINATION_PROTOCOL = "destinationProtocol";
     public static final String FIELD_NAME_DESTINATION_PORT = "destinationPort";
     public static final String FIELD_NAME_DESTINATION_IP = "destinationIp";
@@ -84,11 +88,7 @@ public class CopyStateTaskService extends StatefulService {
 
     @Immutable
     @NotNull
-    public String sourceIp;
-
-    @Immutable
-    @NotNull
-    public Integer sourcePort;
+    public Set<Pair<String, Integer>> sourceServers;
 
     @Immutable
     @DefaultString(value = "http")
@@ -240,43 +240,79 @@ public class CopyStateTaskService extends StatefulService {
         .addBooleanClause(timeClause);
     querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
+    OperationJoin.JoinedCompletionHandler joinHandler = new OperationJoin.JoinedCompletionHandler() {
+
       @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (throwable != null) {
-          failTask(throwable);
+      public void handle(Map<Long, Operation> ops, Map<Long, Throwable> failures) {
+        if (failures != null && failures.size() > 0) {
+          failTask(failures.values().iterator().next());
           return;
         }
-        continueWithNextPage(
-            operation.getBody(QueryTask.class).results,
-            currentState,
-            currentState.queryDocumentsChangedSinceEpoc);
+
+        AtomicInteger remainingQueries = new AtomicInteger(ops.size());
+        Map<String, Long> mapOfLastChangedTimePerHost = new HashMap<>();
+        FutureCallback callback = new FutureCallback() {
+          @Override
+          public void completed(Object result) {
+            if (remainingQueries.decrementAndGet() == 0) {
+              State patch = new State();
+              patch.taskState = new TaskState();
+              patch.taskState.stage = TaskState.TaskStage.FINISHED;
+              // This is the min last updated time among all the servers
+              patch.lastDocumentUpdateTimeEpoc = mapOfLastChangedTimePerHost.entrySet().stream()
+                  .map(entry -> entry.getValue())
+                  .mapToLong(l -> l.longValue())
+                  .min()
+                  .orElse(0);
+              ;
+              TaskUtils.sendSelfPatch(CopyStateTaskService.this, patch);
+            }
+          }
+
+          @Override
+          public void failed(Exception ex) {
+            failTask(ex);
+          }
+
+          @Override
+          public void cancelled() {
+
+          }
+        };
+
+        for (Operation op : ops.values()) {
+          continueWithNextPage(
+              op.getBody(QueryTask.class).results,
+              currentState, op.getUri(),
+              currentState.queryDocumentsChangedSinceEpoc, mapOfLastChangedTimePerHost, callback);
+        }
       }
     };
 
-
-    Operation post = Operation
-        .createPost(buildQueryURI(currentState))
-        .setBody(QueryTask.create(querySpec).setDirect(true))
-        .setCompletion(handler);
-
-    AuthenticationUtils.addSystemUserAuthcontext(post, getSystemAuthorizationContext());
-    sendRequest(post);
+    OperationJoin
+        .create(currentState.sourceServers.stream().map(sourceServer -> {
+          Operation op = Operation
+              .createPost(buildQueryURI(currentState, sourceServer))
+              .setBody(QueryTask.create(querySpec).setDirect(true));
+          AuthenticationUtils.addSystemUserAuthcontext(op, getSystemAuthorizationContext());
+          return op;
+        }))
+        .setCompletion(joinHandler)
+        .sendWith(this);
   }
 
-  private void continueWithNextPage(ServiceDocumentQueryResult results, State currentState, long lastUpdateTime) {
+  private void continueWithNextPage(ServiceDocumentQueryResult results, State currentState, URI sourceServerURI, long
+      lastUpdateQueryTime, Map<String, Long> mapOfLastChangedTimePerHost, FutureCallback finishedCallback) {
     if (results.nextPageLink != null) {
-      retrieveNextPage(currentState, results.nextPageLink, lastUpdateTime);
+      retrieveNextPage(currentState, results.nextPageLink, sourceServerURI, lastUpdateQueryTime,
+          mapOfLastChangedTimePerHost, finishedCallback);
     } else {
-      State patch = new State();
-      patch.taskState = new TaskState();
-      patch.taskState.stage = TaskState.TaskStage.FINISHED;
-      patch.lastDocumentUpdateTimeEpoc = lastUpdateTime;
-      TaskUtils.sendSelfPatch(this, patch);
+      finishedCallback.completed(null);
     }
   }
 
-  private void retrieveNextPage(final State currentState, String nextPageLink, long lastUpdateTime) {
+  private void retrieveNextPage(final State currentState, String nextPageLink, URI sourceServerURI, long
+      lastUpdateQueryTime, Map<String, Long> mapOfLastChangedTimePerHost, FutureCallback finishedCallback) {
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {
       @Override
       public void handle(Operation operation, Throwable throwable) {
@@ -284,20 +320,24 @@ public class CopyStateTaskService extends StatefulService {
           failTask(throwable);
           return;
         }
-        storeDocuments(currentState, operation.getBody(QueryTask.class).results, lastUpdateTime);
+        storeDocuments(currentState, operation.getBody(QueryTask.class).results, sourceServerURI,
+            lastUpdateQueryTime, mapOfLastChangedTimePerHost, finishedCallback);
       }
     };
 
     Operation get = Operation
-        .createGet(UriUtils.buildUri(currentState.sourceIp, currentState.sourcePort, nextPageLink, null))
+        .createGet(UriUtils.buildUri(sourceServerURI.getHost(), sourceServerURI.getPort(), nextPageLink, null))
         .setCompletion(handler);
     AuthenticationUtils.addSystemUserAuthcontext(get, getSystemAuthorizationContext());
     sendRequest(get);
   }
 
-  private void storeDocuments(final State currentState, final ServiceDocumentQueryResult results, long lastUpdateTime) {
+  private void storeDocuments(final State currentState, final ServiceDocumentQueryResult results, URI sourceServerURI,
+                              long lastUpdateQueryTime,  Map<String, Long> mapOfLastChangedTimePerHost,
+                              FutureCallback finishedCallback) {
     if (results.documents.isEmpty() || results.documents.isEmpty() || results.documentCount == 0) {
-      continueWithNextPage(results, currentState, lastUpdateTime);
+      continueWithNextPage(results, currentState, sourceServerURI, lastUpdateQueryTime, mapOfLastChangedTimePerHost,
+          finishedCallback);
       return;
     }
 
@@ -309,7 +349,8 @@ public class CopyStateTaskService extends StatefulService {
         .mapToLong(l -> l.longValue())
         .max()
         .orElse(0);
-    final long newLastUpdateTime = Math.max(lastUpdateTime, lastUpdateTimeOnPage);
+    final long newLastUpdateTime = Math.max(lastUpdateQueryTime, lastUpdateTimeOnPage);
+    mapOfLastChangedTimePerHost.put(results.documentOwner, newLastUpdateTime);
 
     OperationJoin
         .create(results.documents.values().stream()
@@ -333,7 +374,8 @@ public class CopyStateTaskService extends StatefulService {
                   failTask(exs);
                   return;
                 }
-                continueWithNextPage(results, currentState, newLastUpdateTime);
+                continueWithNextPage(results, currentState, sourceServerURI, newLastUpdateTime,
+                    mapOfLastChangedTimePerHost, finishedCallback);
               })
               .sendWith(this);
         })
@@ -427,11 +469,11 @@ public class CopyStateTaskService extends StatefulService {
     return selfLink;
   }
 
-  private URI buildQueryURI(State currentState) {
+  private URI buildQueryURI(State currentState, Pair<String, Integer> sourceServer) {
     return UriUtils.buildUri(
         currentState.sourceProtocol,
-        currentState.sourceIp,
-        currentState.sourcePort,
+        sourceServer.getFirst(),
+        sourceServer.getSecond(),
         ServiceUriPaths.CORE_LOCAL_QUERY_TASKS,
         null);
   }
