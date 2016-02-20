@@ -47,6 +47,7 @@ import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryServic
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
@@ -71,6 +72,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -331,18 +333,19 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
     OperationJoin.create(
         hostsUrls.entrySet().stream()
-        .map(entry -> {
-          String sourceFactory = entry.getKey();
-          if (!sourceFactory.endsWith("/")) {
-            sourceFactory += "/";
-          }
-          CopyStateTaskService.State startState
-            = MiscUtils.createCopyStateStartState(sourceServers, destinationServers, entry.getValue(), sourceFactory);
-          startState.performHostTransformation = Boolean.TRUE;
-          return Operation
-            .createPost(this, CopyStateTaskFactoryService.SELF_LINK)
-            .setBody(startState);
-        }).collect(Collectors.toList()))
+            .map(entry -> {
+              String sourceFactory = entry.getKey();
+              if (!sourceFactory.endsWith("/")) {
+                sourceFactory += "/";
+              }
+              CopyStateTaskService.State startState
+                  = MiscUtils.createCopyStateStartState(sourceServers, destinationServers, entry.getValue(),
+                  sourceFactory);
+              startState.performHostTransformation = Boolean.TRUE;
+              return Operation
+                  .createPost(this, CopyStateTaskFactoryService.SELF_LINK)
+                  .setBody(startState);
+            }).collect(Collectors.toList()))
       .setCompletion((es, ts) -> {
         if (ts != null && !ts.isEmpty()) {
           failTask(ts.values());
@@ -478,24 +481,26 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     return OperationJoin.create(
         factoryMap.stream()
         .map(entry -> {
-            String destinationFactoryLink = entry.getValue();
-            String sourceFactoryLink = entry.getKey();
-            InetSocketAddress local = ServiceUtils.selectRandomItem(sourceServers);
-            InetSocketAddress remote = ServiceUtils.selectRandomItem(destinationServers);
-            CopyStateTriggerTaskService.State startState = new CopyStateTriggerTaskService.State();
-            startState.sourceIp = local.getAddress().getHostAddress();
-            startState.sourcePort = local.getPort();
-            startState.destinationIp = remote.getAddress().getHostAddress();
-            startState.destinationPort = remote.getPort();
-            startState.factoryLink = destinationFactoryLink;
-            startState.sourceFactoryLink = sourceFactoryLink;
-            startState.documentSelfLink = UUID.randomUUID().toString() + startState.factoryLink;
-            startState.executionState = ExecutionState.RUNNING;
-            startState.performHostTransformation = Boolean.TRUE;
-            return Operation
-                .createPost(this, CopyStateTriggerTaskFactoryService.SELF_LINK)
-                .setBody(startState);
-          }).collect(Collectors.toList()));
+          String destinationFactoryLink = entry.getValue();
+          String sourceFactoryLink = entry.getKey();
+          InetSocketAddress local = ServiceUtils.selectRandomItem(sourceServers);
+          InetSocketAddress remote = ServiceUtils.selectRandomItem(destinationServers);
+          CopyStateTriggerTaskService.State startState = new CopyStateTriggerTaskService.State();
+          startState.sourceServers = new HashSet<>();
+          for (InetSocketAddress sourceServer : sourceServers) {
+            startState.sourceServers.add(new Pair<>(sourceServer.getHostName(), sourceServer.getPort()));
+          }
+          startState.destinationIp = remote.getAddress().getHostAddress();
+          startState.destinationPort = remote.getPort();
+          startState.factoryLink = destinationFactoryLink;
+          startState.sourceFactoryLink = sourceFactoryLink;
+          startState.documentSelfLink = UUID.randomUUID().toString() + startState.factoryLink;
+          startState.executionState = ExecutionState.RUNNING;
+          startState.performHostTransformation = Boolean.TRUE;
+          return Operation
+              .createPost(this, CopyStateTriggerTaskFactoryService.SELF_LINK)
+              .setBody(startState);
+        }).collect(Collectors.toList()));
   }
 
   private void waitUntilCopyStateTasksFinished(CompletionHandler handler, State currentState) {
