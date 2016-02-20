@@ -51,8 +51,8 @@ module EsxCloud
           dirty_vms = ssh.exec!("for id in `vim-cmd vmsvc/getallvms | awk 'NF==6 {print $1, $2} '`;do echo $id;done")
           ssh.exec!("for id in `vim-cmd vmsvc/getallvms | awk 'NF==6 {print $1} '`;do vim-cmd vmsvc/power.off $id;done")
           ssh.exec!("for id in `vim-cmd vmsvc/getallvms | awk 'NF==6 {print $1} '`;do vim-cmd vmsvc/unregister $id;done")
+          dirty_vms
         end
-        dirty_vms
       end
 
       def reboot_host(server, user_name, password)
