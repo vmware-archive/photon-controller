@@ -67,7 +67,6 @@ module EsxCloud
         poll_response(response)
         true
       end
-
     end
   end
 end

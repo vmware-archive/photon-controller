@@ -26,7 +26,6 @@ module EsxCloud
       items = payload["items"].map do |item|
         Tenant.create_from_hash(item)
       end
-
       new(items)
     end
 
