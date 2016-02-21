@@ -239,8 +239,12 @@ public class DeployerContext {
     this.zookeeperQuorum = zookeeperQuorum;
   }
 
-  public Set<Map.Entry<String, String>> getFactoryLinkMapEntries(){
-    return UpgradeUtils.SOURCE_DESTINATION_MAP.entrySet();
+  public Set<Map.Entry<String, String>> getCloudStoreFactoryLinkMapEntries(){
+    return UpgradeUtils.SOURCE_DESTINATION_MAP_CLOUD_STORE.entrySet();
+  }
+
+  public Set<Map.Entry<String, String>> getDeployerFactoryLinkMapEntries(){
+    return UpgradeUtils.SOURCE_DESTINATION_MAP_DEPLOYER.entrySet();
   }
 
   public Collection<Class<?>> getMigrationExcludedServices() {

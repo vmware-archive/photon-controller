@@ -38,6 +38,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskService;
@@ -101,6 +102,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -803,6 +805,16 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           destinationCloudStore.getHosts()[0].getState().httpPort)))
           .when(destinationZKBuilder)
           .getServers(eq(quorum), eq("cloudstore"));
+
+      doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1",
+          sourceCloudStore.getHosts()[0].getState().httpPort)))
+          .when(destinationZKBuilder)
+          .getServers(eq("127.0.0.1:2181"), eq(DeployerModule.DEPLOYER_SERVICE_NAME));
+      doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1",
+          destinationCloudStore.getHosts()[0].getState().httpPort)))
+          .when(destinationZKBuilder)
+          .getServers(eq(quorum), eq(DeployerModule.DEPLOYER_SERVICE_NAME));
+
       ServiceHost sourceHost = sourceEnvironment.getHosts()[0];
       startState.sourceLoadBalancerAddress = sourceHost.getPublicUri().toString();
 
@@ -815,7 +827,8 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .put("/photon/cloudstore/tasks", "/photon/cloudstore/tasks")
           .build();
 
-      when(deployerContext.getFactoryLinkMapEntries()).thenReturn(factoryLinksMap.entrySet());
+      when(deployerContext.getCloudStoreFactoryLinkMapEntries()).thenReturn(factoryLinksMap.entrySet());
+      when(deployerContext.getDeployerFactoryLinkMapEntries()).thenReturn(new HashSet<>());
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -951,10 +964,10 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
       //Make sure that the host is in destination
       Set<String> hosts = getDocuments(HostService.State.class, destinationCloudStore);
-      assertThat((hosts.size() == 1), is(true));
+      assertThat(hosts.size(), is(1));
     }
 
-    private Set<String> getDocuments(Class kindClass,
+    private Set<String> getDocuments(Class<?> kindClass,
                                      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStore)
         throws Throwable {
 

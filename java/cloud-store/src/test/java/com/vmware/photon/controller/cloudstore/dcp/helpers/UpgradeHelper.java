@@ -69,7 +69,7 @@ public class UpgradeHelper {
     Map<String, HashMap> currentServices = new HashMap<>();
 
     List<String> factoriesToUpgrade = UpgradeUtils
-        .SOURCE_DESTINATION_MAP.entrySet().stream()
+        .SOURCE_DESTINATION_MAP_CLOUD_STORE.entrySet().stream()
         .map(entry -> entry.getValue())
         .collect(Collectors.toList());
 

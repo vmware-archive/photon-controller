@@ -111,9 +111,13 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
       Operation copyStateTaskQuery,
       Map<Long, Operation> op) {
     List<String> sourceFactories = HostUtils.getDeployerContext(this)
-        .getFactoryLinkMapEntries().stream()
+        .getCloudStoreFactoryLinkMapEntries().stream()
         .map(entry -> entry.getKey())
         .collect(Collectors.toList());
+    sourceFactories.addAll(HostUtils.getDeployerContext(this).getDeployerFactoryLinkMapEntries()
+        .stream()
+        .map(entry -> entry.getKey())
+        .collect(Collectors.toList()));
 
     List<CopyStateTaskService.State> copyStateTasks
         = extractDocuments(op.get(copyStateTaskQuery.getId()), CopyStateTaskService.State.class);
@@ -135,8 +139,6 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
       Map<String, Integer> finishedCopyStateCounts,
       long vibsUploaded,
       long vibsUploading) {
-
-    DeploymentService.State patch = buildPatch(finishedCopyStateCounts, vibsUploaded, vibsUploading);
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
             .createPatch(currentState.deploymentServiceLink)
