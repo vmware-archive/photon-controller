@@ -29,6 +29,7 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceMaintenanceRequest;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
@@ -225,12 +226,19 @@ public class ClusterMaintenanceTaskService extends StatefulService {
    * Handle service periodic maintenance calls.
    */
   @Override
-  public void handleMaintenance(Operation post) {
+  public void handleMaintenance(Operation maintenance) {
     ServiceUtils.logInfo(this, "Periodic maintenance triggered. %s", getSelfLink());
+
+    ServiceMaintenanceRequest request = maintenance.getBody(ServiceMaintenanceRequest.class);
+    if (!request.reasons.contains(ServiceMaintenanceRequest.MaintenanceReason.PERIODIC_SCHEDULE)) {
+      ServiceUtils.logInfo(this, "Skipping handleMaintenance. REASON: %s", request.reasons.toString());
+      maintenance.complete();
+      return;
+    }
 
     try {
       // Mark the current maintenance operation as completed.
-      post.complete();
+      maintenance.complete();
 
       // Send a self-patch to kick-off cluster maintenance.
       TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED, null));
