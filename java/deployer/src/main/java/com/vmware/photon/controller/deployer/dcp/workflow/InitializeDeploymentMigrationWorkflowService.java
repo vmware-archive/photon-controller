@@ -71,6 +71,7 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -320,7 +321,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
   private void migrateHostEntities(State currentState) throws Throwable {
     // run instances of copy state for host migration
-    Map<String, String> hostsUrls = UpgradeUtils.SOURCE_DESTINATION_MAP.entrySet().stream()
+    Map<String, String> hostsUrls = UpgradeUtils.SOURCE_DESTINATION_MAP_CLOUD_STORE.entrySet().stream()
         .filter(e -> e.getValue().equals(HostServiceFactory.SELF_LINK))
         .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
     ZookeeperClient zookeeperClient
@@ -470,24 +471,28 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
   private OperationJoin createStartMigrationOperations(State currentState) {
     ZookeeperClient zookeeperClient
         = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-    Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
+    Set<InetSocketAddress> cloudStoreDestinationServers = zookeeperClient.getServers(
         HostUtils.getDeployerContext(this).getZookeeperQuorum(),
         DeployerModule.CLOUDSTORE_SERVICE_NAME);
-    Set<InetSocketAddress> sourceServers
+    Set<InetSocketAddress> cloudStoreSourceServers
         = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
 
-    Set<Map.Entry<String, String>> factoryMap = HostUtils.getDeployerContext(this).getFactoryLinkMapEntries();
+    Set<InetSocketAddress> deployerDestinationServers = zookeeperClient.getServers(
+        HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+        DeployerModule.DEPLOYER_SERVICE_NAME);
+    Set<InetSocketAddress> deployerSourceServers
+        = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.DEPLOYER_SERVICE_NAME);
 
-    return OperationJoin.create(
-        factoryMap.stream()
+
+    List<Operation> cloudStoreOperations = HostUtils.getDeployerContext(this).getCloudStoreFactoryLinkMapEntries()
+        .stream()
         .map(entry -> {
           String destinationFactoryLink = entry.getValue();
           String sourceFactoryLink = entry.getKey();
-          InetSocketAddress local = ServiceUtils.selectRandomItem(sourceServers);
-          InetSocketAddress remote = ServiceUtils.selectRandomItem(destinationServers);
+          InetSocketAddress remote = ServiceUtils.selectRandomItem(cloudStoreDestinationServers);
           CopyStateTriggerTaskService.State startState = new CopyStateTriggerTaskService.State();
           startState.sourceServers = new HashSet<>();
-          for (InetSocketAddress sourceServer : sourceServers) {
+          for (InetSocketAddress sourceServer : cloudStoreSourceServers) {
             startState.sourceServers.add(new Pair<>(sourceServer.getHostName(), sourceServer.getPort()));
           }
           startState.destinationIp = remote.getAddress().getHostAddress();
@@ -500,7 +505,34 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
           return Operation
               .createPost(this, CopyStateTriggerTaskFactoryService.SELF_LINK)
               .setBody(startState);
-        }).collect(Collectors.toList()));
+        }).collect(Collectors.toList());
+
+    List<Operation> deployerOperations = HostUtils.getDeployerContext(this).getDeployerFactoryLinkMapEntries().stream()
+        .map(entry -> {
+          String destinationFactoryLink = entry.getValue();
+          String sourceFactoryLink = entry.getKey();
+          InetSocketAddress remote = ServiceUtils.selectRandomItem(deployerDestinationServers);
+          CopyStateTriggerTaskService.State startState = new CopyStateTriggerTaskService.State();
+          startState.sourceServers = new HashSet<>();
+          for (InetSocketAddress sourceServer : deployerSourceServers) {
+            startState.sourceServers.add(new Pair<>(sourceServer.getHostName(), sourceServer.getPort() + 1));
+          }
+          startState.destinationIp = remote.getAddress().getHostAddress();
+          startState.destinationPort = remote.getPort() + 1;
+          startState.factoryLink = destinationFactoryLink;
+          startState.sourceFactoryLink = sourceFactoryLink;
+          startState.documentSelfLink = UUID.randomUUID().toString() + startState.factoryLink;
+          startState.executionState = ExecutionState.RUNNING;
+          startState.performHostTransformation = Boolean.TRUE;
+          return Operation
+              .createPost(this, CopyStateTriggerTaskFactoryService.SELF_LINK)
+              .setBody(startState);
+        }).collect(Collectors.toList());
+
+    List<Operation> ops = new ArrayList<>(cloudStoreOperations);
+    ops.addAll(deployerOperations);
+
+    return OperationJoin.create(ops);
   }
 
   private void waitUntilCopyStateTasksFinished(CompletionHandler handler, State currentState) {

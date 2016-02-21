@@ -25,7 +25,7 @@ import java.util.Map;
  * This class implements common upgrade utils and map.
  */
 public class UpgradeUtils {
-  public static final Map<String, String> SOURCE_DESTINATION_MAP = ImmutableMap.<String, String>builder()
+  public static final Map<String, String> SOURCE_DESTINATION_MAP_CLOUD_STORE = ImmutableMap.<String, String>builder()
       // uris for beta 1
       .put("/esxcloud/cloudstore/flavors", "/photon/cloudstore/flavors")
       .put("/esxcloud/cloudstore/images", "/photon/cloudstore/images")
@@ -61,6 +61,13 @@ public class UpgradeUtils {
       .put("/photon/cloudstore/tombstones", "/photon/cloudstore/tombstones")
       .put("/photon/cloudstore/clusters", "/photon/cloudstore/clusters")
       .build();
+
+    public static final Map<String, String> SOURCE_DESTINATION_MAP_DEPLOYER = ImmutableMap.<String, String>builder()
+        .put("/esxcloud/clustermanager/cluster-maintenance-tasks",
+            ServiceUriPaths.CLUSTERMANAGER_ROOT + "/cluster-maintenance-tasks")
+        .put(ServiceUriPaths.CLUSTERMANAGER_ROOT + "/cluster-maintenance-tasks",
+            ServiceUriPaths.CLUSTERMANAGER_ROOT + "/cluster-maintenance-tasks")
+        .build();
 
     public static List<Field> handleRenamedField(Object source, ServiceDocument destination) {
         return RenamedFieldHandler.initialize(source, destination);

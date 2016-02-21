@@ -34,6 +34,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -622,6 +623,15 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
           destinationCloudStore.getHosts()[0].getState().httpPort)))
           .when(zkBuilder)
           .getServers(eq(quorum), eq("cloudstore"));
+
+      doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1",
+          sourceCloudStore.getHosts()[0].getState().httpPort)))
+          .when(zkBuilder)
+          .getServers(eq("127.0.0.1:2181"), eq(DeployerModule.DEPLOYER_SERVICE_NAME));
+      doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1",
+          destinationCloudStore.getHosts()[0].getState().httpPort)))
+          .when(zkBuilder)
+          .getServers(eq(quorum), eq(DeployerModule.DEPLOYER_SERVICE_NAME));
 
       ServiceHost sourceHost = sourceEnvironment.getHosts()[0];
       startState.sourceLoadBalancerAddress = sourceHost.getPublicUri().toString();

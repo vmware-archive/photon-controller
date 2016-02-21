@@ -190,10 +190,12 @@ public class MigrationStatusUpdateTriggerServiceTest {
 
       DeploymentService.State deploymentState = cloudStoreMachine
           .getServiceState(state.deploymentServiceLink, DeploymentService.State.class);
-      assertThat(deploymentState.dataMigrationProgress.size(), is(deployerContext.getFactoryLinkMapEntries().size()));
+      assertThat(deploymentState.dataMigrationProgress.size(),
+          is(deployerContext.getCloudStoreFactoryLinkMapEntries().size()
+              + deployerContext.getDeployerFactoryLinkMapEntries().size()));
       assertThat(
           deploymentState.dataMigrationProgress
-              .get(deployerContext.getFactoryLinkMapEntries().iterator().next().getKey() + "/"),
+              .get(deployerContext.getCloudStoreFactoryLinkMapEntries().iterator().next().getKey() + "/"),
           is(1));
       assertThat(deploymentState.vibsUploaded, is(1L));
       assertThat(deploymentState.vibsUploading, is(0L));
@@ -213,7 +215,9 @@ public class MigrationStatusUpdateTriggerServiceTest {
 
       DeploymentService.State deploymentState = cloudStoreMachine
           .getServiceState(state.deploymentServiceLink, DeploymentService.State.class);
-      assertThat(deploymentState.dataMigrationProgress.size(), is(deployerContext.getFactoryLinkMapEntries().size()));
+      assertThat(deploymentState.dataMigrationProgress.size(),
+          is(deployerContext.getCloudStoreFactoryLinkMapEntries().size()
+              + deployerContext.getDeployerFactoryLinkMapEntries().size()));
       assertThat(deploymentState.dataMigrationProgress.values().stream().mapToInt(value -> value).sum(), is(0));
       assertThat(deploymentState.vibsUploaded, is(0L));
       assertThat(deploymentState.vibsUploading, is(1L));
@@ -270,7 +274,7 @@ public class MigrationStatusUpdateTriggerServiceTest {
       startState.sourceServers = new HashSet<>();
       startState.sourceServers.add(new Pair<>("127.0.0.1", 1234));
       startState.factoryLink = ContainerTemplateFactoryService.SELF_LINK;
-      startState.sourceFactoryLink = deployerContext.getFactoryLinkMapEntries().iterator().next().getKey();
+      startState.sourceFactoryLink = deployerContext.getCloudStoreFactoryLinkMapEntries().iterator().next().getKey();
       return startState;
     }
 

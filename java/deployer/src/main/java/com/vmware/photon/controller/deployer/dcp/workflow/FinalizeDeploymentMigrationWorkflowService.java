@@ -64,6 +64,7 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -626,33 +627,71 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
   private void migrateFinal(State currentState, Map<String, Long> lastUpdateTimes) {
     ZookeeperClient zookeeperClient
         = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-    Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
+    Set<InetSocketAddress> cloudStoreDestinationServers = zookeeperClient.getServers(
         HostUtils.getDeployerContext(this).getZookeeperQuorum(),
         DeployerModule.CLOUDSTORE_SERVICE_NAME);
-    Set<InetSocketAddress> sourceServers
+    Set<InetSocketAddress> cloudStoreSourceServers
         = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
 
-    Set<Map.Entry<String, String>> factoryMap = HostUtils.getDeployerContext(this).getFactoryLinkMapEntries();
+    Set<InetSocketAddress> deployerDestinationServers = zookeeperClient.getServers(
+        HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+        DeployerModule.DEPLOYER_SERVICE_NAME);
+    Set<InetSocketAddress> deployerSourceServers
+        = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.DEPLOYER_SERVICE_NAME);
 
-    OperationJoin.create(
-        factoryMap.stream()
+    List<Operation> cloudStoreOps = HostUtils.getDeployerContext(this).getCloudStoreFactoryLinkMapEntries().stream()
         .map(entry -> {
           String sourceFactory = entry.getKey();
           if (!sourceFactory.endsWith("/")) {
             sourceFactory += "/";
           }
           CopyStateTaskService.State startState
-            = MiscUtils.createCopyStateStartState(sourceServers, destinationServers, entry.getValue(), sourceFactory);
+            = MiscUtils.createCopyStateStartState(
+                cloudStoreSourceServers,
+                cloudStoreDestinationServers,
+                entry.getValue(),
+                sourceFactory);
           startState.queryDocumentsChangedSinceEpoc = lastUpdateTimes.getOrDefault(sourceFactory, 0L);
+          // keep the original source since the time stamp are local to the source server
           startState.sourceServers = new HashSet<>();
-          for (InetSocketAddress sourceServer : sourceServers) {
-            startState.sourceServers.add(new Pair<>(sourceServer.getHostName(), new Integer(sourceServer.getPort())));
+          for (InetSocketAddress sourceServer : cloudStoreSourceServers) {
+            startState.sourceServers.add(new Pair<>(sourceServer.getHostName(), sourceServer.getPort()));
           }
           startState.performHostTransformation = Boolean.TRUE;
           return Operation
             .createPost(this, CopyStateTaskFactoryService.SELF_LINK)
             .setBody(startState);
-        }).collect(Collectors.toList()))
+        }).collect(Collectors.toList());
+
+    List<Operation> deployerOps = HostUtils.getDeployerContext(this).getDeployerFactoryLinkMapEntries().stream()
+        .map(entry -> {
+          String sourceFactory = entry.getKey();
+          if (!sourceFactory.endsWith("/")) {
+            sourceFactory += "/";
+          }
+          CopyStateTaskService.State startState
+            = MiscUtils.createCopyStateStartState(
+                deployerSourceServers,
+                deployerDestinationServers,
+                entry.getValue(),
+                sourceFactory,
+                1);
+          startState.queryDocumentsChangedSinceEpoc = lastUpdateTimes.getOrDefault(sourceFactory, 0L);
+          startState.sourceServers = new HashSet<>();
+          startState.sourceServers = new HashSet<>();
+          for (InetSocketAddress sourceServer : deployerSourceServers) {
+            startState.sourceServers.add(new Pair<>(sourceServer.getHostName(), sourceServer.getPort()));
+          }
+          startState.performHostTransformation = Boolean.TRUE;
+          return Operation
+            .createPost(this, CopyStateTaskFactoryService.SELF_LINK)
+            .setBody(startState);
+        }).collect(Collectors.toList());
+
+    List<Operation> ops = new ArrayList<>(cloudStoreOps);
+    ops.addAll(deployerOps);
+
+    OperationJoin.create(ops)
       .setCompletion((es, ts) -> {
         if (ts != null && !ts.isEmpty()) {
           failTask(ts.values());
