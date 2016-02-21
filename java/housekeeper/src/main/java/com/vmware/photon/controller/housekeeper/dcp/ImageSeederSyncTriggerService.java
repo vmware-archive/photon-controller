@@ -219,7 +219,7 @@ public class ImageSeederSyncTriggerService extends StatefulService {
         ServiceUtils.logSevere(ImageSeederSyncTriggerService.this, throwable);
         newState.triggersError = currentState.triggersError + 1;
       }
-      sendSelfPatch(newState);
+      // sendSelfPatch(newState);
     };
 
     ImageSeederService.State postState = new ImageSeederService.State();
