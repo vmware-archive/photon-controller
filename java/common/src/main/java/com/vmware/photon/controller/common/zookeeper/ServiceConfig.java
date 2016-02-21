@@ -99,7 +99,8 @@ public class ServiceConfig implements PathChildrenCacheListener {
    * @return
    * @throws Exception
    */
-  private boolean isServiceFullyFunctional() {
+  private boolean isServiceFullyFunctional() throws Exception {
+    this.configCache.rebuild();
     return null == this.configCache.getCurrentData(this.serviceStatusZKPath);
   }
 

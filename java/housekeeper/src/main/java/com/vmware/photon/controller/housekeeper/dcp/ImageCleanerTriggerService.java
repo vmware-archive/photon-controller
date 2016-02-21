@@ -16,6 +16,7 @@ package com.vmware.photon.controller.housekeeper.dcp;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
 import com.vmware.xenon.common.NodeSelectorService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -110,7 +111,7 @@ public class ImageCleanerTriggerService extends StatefulService {
    * Checks if service's background processing is in pause state.
    */
   private boolean isBackgroundPaused() {
-    ServiceConfig serviceConfig = ((HousekeeperXenonServiceHost) getHost()).getServiceConfig();
+    ServiceConfig serviceConfig = ((ServiceConfigProvider) getHost()).getServiceConfig();
     boolean backgroundPaused = true;
     try {
       backgroundPaused = serviceConfig.isBackgroundPaused();
@@ -125,11 +126,11 @@ public class ImageCleanerTriggerService extends StatefulService {
    */
   @Override
   public void handleMaintenance(Operation post) {
+    post.complete();
+
     if (isBackgroundPaused()) {
       return;
     }
-
-    post.complete();
 
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {
       @Override
