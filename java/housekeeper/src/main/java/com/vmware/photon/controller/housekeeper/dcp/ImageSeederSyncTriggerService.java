@@ -23,6 +23,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.xenon.common.NodeSelectorService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceMaintenanceRequest;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -115,6 +116,12 @@ public class ImageSeederSyncTriggerService extends StatefulService {
   @Override
   public void handleMaintenance(Operation post) {
     post.complete();
+
+    ServiceMaintenanceRequest request = post.getBody(ServiceMaintenanceRequest.class);
+    if (!request.reasons.contains(ServiceMaintenanceRequest.MaintenanceReason.PERIODIC_SCHEDULE)) {
+      ServiceUtils.logInfo(this, "Skipping handleMaintenance. MaintenanceReason: %s", request.reasons.toString());
+      return;
+    }
 
     Operation.CompletionHandler handler = (op, failure) -> {
       if (null != failure) {
