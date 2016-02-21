@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceF
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
 import com.vmware.photon.controller.common.zookeeper.ZkHostMonitor;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.Config;
@@ -52,7 +53,7 @@ import java.util.Map;
 public class HousekeeperXenonServiceHost
     extends ServiceHost
     implements XenonHostInfoProvider,
-    HostClientProvider, ZookeeperHostMonitorProvider, CloudStoreHelperProvider {
+    HostClientProvider, ZookeeperHostMonitorProvider, CloudStoreHelperProvider, ServiceConfigProvider {
 
   protected static final String IMAGE_COPY_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/image-copy";
@@ -118,6 +119,7 @@ public class HousekeeperXenonServiceHost
   /**
    * Returns service config.
    */
+  @Override
   public ServiceConfig getServiceConfig() {
     return serviceConfigFactory.create("apife");
   }

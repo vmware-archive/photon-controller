@@ -115,11 +115,12 @@ public class TaskTriggerService extends StatefulService {
    */
   @Override
   public void handleMaintenance(Operation post) {
+    post.complete();
+
     if (isBackgroundPaused()) {
       return;
     }
 
-    post.complete();
     Operation.CompletionHandler handler = (Operation op, Throwable failure) -> {
       if (null != failure) {
         // query failed so abort and retry next time
