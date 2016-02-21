@@ -91,6 +91,8 @@ public class ImageSeederSyncTriggerService extends StatefulService {
    */
   @Override
   public void handlePatch(Operation patch) {
+    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+
     try {
       State currentState = getState(patch);
       State patchState = patch.getBody(State.class);
@@ -114,6 +116,7 @@ public class ImageSeederSyncTriggerService extends StatefulService {
    */
   @Override
   public void handleMaintenance(Operation post) {
+    ServiceUtils.logInfo(this, "Maintain service %s", getSelfLink());
     post.complete();
 
     Operation.CompletionHandler handler = (op, failure) -> {
@@ -147,6 +150,7 @@ public class ImageSeederSyncTriggerService extends StatefulService {
    * Process patch.
    */
   private void processPatch(Operation patch, final State currentState, final State patchState) {
+    ServiceUtils.logInfo(this, "Process patch %s", getSelfLink());
 
     sendRequest(buildGetAllImagesQuery()
         .setCompletion(
@@ -158,6 +162,8 @@ public class ImageSeederSyncTriggerService extends StatefulService {
               NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
               List<ImageService.State> documentLinks = QueryTaskUtils
                   .getBroadcastQueryDocuments(ImageService.State.class, queryResponse);
+              ServiceUtils.logInfo(this, "buildGetAllImagesQuery returns %d results: %s",
+                  documentLinks.size(), getSelfLink());
               for (ImageService.State image : documentLinks) {
                 triggerImageSeederServices(currentState,
                     ServiceUtils.getIDFromDocumentSelfLink(image.documentSelfLink));
@@ -188,10 +194,12 @@ public class ImageSeederSyncTriggerService extends StatefulService {
   }
 
   private void triggerImageSeederServices(State current, String imageId) {
+    ServiceUtils.logInfo(this, "triggerImageSeederServices %s, %s", getSelfLink(), imageId);
     sendRequest(
         buildImageToImageDatstoreQuery(imageId)
             .setCompletion(
                 (op, t) -> {
+                  ServiceUtils.logInfo(this, "triggerImageSeederServices complete: %s, %s", getSelfLink(), imageId);
                   if (t != null) {
                     logFailure(t);
                     return;
@@ -209,6 +217,7 @@ public class ImageSeederSyncTriggerService extends StatefulService {
   }
 
   private void triggerImageSeederService(State currentState, String imageId, String datastoreId) {
+    ServiceUtils.logInfo(this, "triggerImageSeederService %s, %s, %s", getSelfLink(), imageId, datastoreId);
     // Trigger seeder service.
     Operation.CompletionHandler handler = (operation, throwable) -> {
       // Note this is a race with maintenance calls. Some statistics may be lost.
