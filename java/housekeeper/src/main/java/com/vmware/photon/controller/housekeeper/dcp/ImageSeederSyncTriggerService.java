@@ -201,6 +201,7 @@ public class ImageSeederSyncTriggerService extends StatefulService {
                       .getBroadcastQueryDocuments(ImageToImageDatastoreMappingService.State.class, queryResponse);
                   if (documentLinks.isEmpty()) {
                     logFailure(new IllegalArgumentException("No Image Datastore has image " + imageId));
+                    return;
                   }
 
                   triggerImageSeederService(current, imageId, documentLinks.get(0).imageDatastoreId);
