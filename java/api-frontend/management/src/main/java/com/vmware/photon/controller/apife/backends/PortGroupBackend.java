@@ -14,19 +14,21 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.PortGroup;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupNotFoundException;
 
 import com.google.common.base.Optional;
-
-import java.util.List;
 
 /**
  * Perform port group related operations.
  */
 public interface PortGroupBackend {
 
-  List<PortGroup> filter(Optional<String> name, Optional<UsageTag> usageTag);
+  ResourceList<PortGroup> filter(Optional<String> name, Optional<UsageTag> usageTag, Optional<Integer> pageSize);
 
   PortGroup toApiRepresentation(String id) throws PortGroupNotFoundException;
+
+  ResourceList<PortGroup> getPortGroupsPage(String pageLink) throws ExternalException;
 }
