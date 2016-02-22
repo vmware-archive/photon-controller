@@ -10,6 +10,7 @@
 # specific language governing permissions and limitations under the License.
 
 require_relative "../lib/test_helpers"
+require_relative "../spec/support/cluster_helper"
 
 module EsxCloud
   class ManagementPlaneSeeder
@@ -33,6 +34,10 @@ module EsxCloud
     end
 
     def self.create_cluster
+      deployment = client.find_all_api_deployments.items.first
+      kubernetes_image = EsxCloud::ClusterHelper.upload_kubernetes_image(client)
+      EsxCloud::ClusterHelper.enable_cluster_type(client, deployment, kubernetes_image, "KUBERNETES")
+
       seeder = ManagementPlaneSeeder.new
       tenant = create_random_tenant
       resource_ticket = tenant.create_resource_ticket :name => random_name("rt-"), :limits => create_small_limits
@@ -50,7 +55,8 @@ module EsxCloud
               "gateway" => ENV["CLUSTER_GATEWAY"] || fail("CLUSTER_GATEWAY not set"),
               "netmask" => ENV["CLUSTER_NETMASK"] || fail("CLUSTER_NETMASK not set"),
               "master_ip" => ENV["CLUSTER_MASTER_IP"] || fail("CLUSTER_MASTER_IP not set"),
-              "container_network" => "10.2.0.0/16"
+              "container_network" => "10.2.0.0/16",
+              "etcd_ip1" => ENV["CLUSTER_ETCD_IP"] || fail("CLUSTER_ETCD_IP not set")
           }
       )
     end
