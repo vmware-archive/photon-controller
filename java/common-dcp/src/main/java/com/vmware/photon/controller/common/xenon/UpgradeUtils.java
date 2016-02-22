@@ -42,7 +42,6 @@ public class UpgradeUtils {
       .put("/esxcloud/cloudstore/disks", "/photon/cloudstore/disks")
       .put("/esxcloud/cloudstore/attached-disks", "/photon/cloudstore/attached-disks")
       .put("/esxcloud/cloudstore/tombstones", "/photon/cloudstore/tombstones")
-      .put("/esxcloud/cloudstore/clusters", "/photon/cloudstore/clusters")
       // uris after beta1
       .put("/photon/cloudstore/flavors", "/photon/cloudstore/flavors")
       .put("/photon/cloudstore/images", "/photon/cloudstore/images")
@@ -59,7 +58,6 @@ public class UpgradeUtils {
       .put("/photon/cloudstore/disks", "/photon/cloudstore/disks")
       .put("/photon/cloudstore/attached-disks", "/photon/cloudstore/attached-disks")
       .put("/photon/cloudstore/tombstones", "/photon/cloudstore/tombstones")
-      .put("/photon/cloudstore/clusters", "/photon/cloudstore/clusters")
       .build();
 
     public static List<Field> handleRenamedField(Object source, ServiceDocument destination) {
