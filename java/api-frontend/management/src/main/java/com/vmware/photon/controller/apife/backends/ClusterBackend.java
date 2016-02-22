@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.URISyntaxException;
-import java.util.List;
 
 /**
  * Call cluster manager DCP services to fulfill cluster operations.
@@ -110,8 +109,8 @@ public class ClusterBackend {
     return clusterManagerClient.getCluster(clusterId);
   }
 
-  public List<Cluster> find(String projectId) throws ExternalException {
-    return clusterManagerClient.getClusters(projectId);
+  public ResourceList<Cluster> find(String projectId, Optional<Integer> pageSize) throws ExternalException {
+    return clusterManagerClient.getClusters(projectId, pageSize);
   }
 
   public TaskEntity delete(String clusterId) throws TaskNotFoundException, ClusterNotFoundException {
@@ -146,6 +145,10 @@ public class ClusterBackend {
 
   public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
     return vmBackend.getVmsPage(pageLink);
+  }
+
+  public ResourceList<Cluster> getClustersPage(String pageLink) throws ExternalException {
+    return clusterManagerClient.getClustersPages(pageLink);
   }
 
   private void checkClusterId(String clusterId) throws ClusterNotFoundException {

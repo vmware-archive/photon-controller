@@ -35,6 +35,7 @@ import com.vmware.photon.controller.apife.commands.CommandTestModule;
 import com.vmware.photon.controller.apife.commands.steps.ClusterDeleteStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.ClusterResizeStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.KubernetesClusterCreateStepCmd;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterNotFoundException;
@@ -475,26 +476,35 @@ public class ClusterBackendTest {
 
     @Test
     public void testSuccess() throws Throwable {
-      when(clusterManagerClient.getClusters(any(String.class)))
-          .thenReturn(Arrays.asList(buildCluster("clusterId")));
+      Cluster c1 = buildCluster("clusterId1");
+      Cluster c2 = buildCluster("clusterId2");
 
-      List<Cluster> clusters = clusterBackend.find("projectId");
-      assertEquals(clusters.size(), 1);
+      String projectId = "projectId";
+      String nextPageLink = UUID.randomUUID().toString();
+      when(clusterManagerClient.getClusters(projectId, Optional.of(1)))
+          .thenReturn(new ResourceList<Cluster>(Arrays.asList(c1), nextPageLink, null));
+      when(clusterManagerClient.getClustersPages(nextPageLink))
+          .thenReturn(new ResourceList<Cluster>(Arrays.asList(c2)));
 
-      Cluster cluster = clusters.iterator().next();
-      assertEquals(cluster.getId(), "clusterId");
-      assertEquals(cluster.getName(), "clusterName");
-      assertEquals(cluster.getType(), ClusterType.KUBERNETES);
-      assertEquals(cluster.getProjectId(), "projectId");
-      assertEquals(cluster.getSlaveCount(), 2);
-      assertEquals(cluster.getExtendedProperties().get(
-          ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK), "12.12.12.12");
+      ResourceList<Cluster> clusters = clusterBackend.find("projectId", Optional.of(1));
+      assertEquals(clusters.getItems().size(), 1);
+      assertEquals(clusters.getItems().get(0), c1);
+      assertEquals(clusters.getNextPageLink(), nextPageLink);
+
+      clusters = clusterBackend.getClustersPage(nextPageLink);
+      assertEquals(clusters.getItems().size(), 1);
+      assertEquals(clusters.getItems().get(0), c2);
     }
 
     @Test
     public void testNoClustersFound() throws Throwable {
-      List<Cluster> clusters = clusterBackend.find("projectId");
-      assertEquals(clusters.size(), 0);
+      String projectId = "projectId";
+      when(clusterManagerClient.getClusters(projectId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
+          .thenReturn(new ResourceList<>(new ArrayList<>()));
+
+      ResourceList<Cluster> clusters = clusterBackend.find("projectId",
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertEquals(clusters.getItems().size(), 0);
     }
   }
 

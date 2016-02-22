@@ -18,9 +18,12 @@ import com.vmware.photon.controller.api.ClusterCreateSpec;
 import com.vmware.photon.controller.api.ClusterResizeOperation;
 import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.api.ClusterType;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
@@ -35,7 +38,9 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -185,17 +190,27 @@ public class ClusterManagerClient {
     return operation.getBody(ClusterDeleteTask.class);
   }
 
-  public List<Cluster> getClusters(String projectId) throws ExternalException {
-    List<ClusterService.State> clusters = apiFeDcpClient.queryDocuments(
+  public ResourceList<Cluster> getClusters(String projectId, Optional<Integer> pageSize) throws ExternalException {
+    ServiceDocumentQueryResult queryResult = apiFeDcpClient.queryDocuments(
         ClusterService.State.class,
-        ImmutableMap.of("projectId", projectId));
+        ImmutableMap.of("projectId", projectId),
+        pageSize,
+        true);
 
-    List<Cluster> convertedClusters = new ArrayList<>();
-    for (ClusterService.State cluster : clusters) {
-      convertedClusters.add(toApiRepresentation(cluster));
+    return PaginationUtils.xenonQueryResultToResourceList(ClusterService.State.class, queryResult,
+        state -> toApiRepresentation(state));
+  }
+
+  public ResourceList<Cluster> getClustersPages(String pageLink) throws ExternalException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = apiFeDcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
     }
 
-    return convertedClusters;
+    return PaginationUtils.xenonQueryResultToResourceList(ClusterService.State.class, queryResult,
+        state -> toApiRepresentation(state));
   }
 
   private ClusterConfigurationService.State getClusterConfiguration(ClusterType clusterType)

@@ -17,7 +17,9 @@ import com.vmware.photon.controller.api.Cluster;
 import com.vmware.photon.controller.api.ClusterCreateSpec;
 import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.api.ClusterType;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
@@ -33,6 +35,7 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
@@ -44,6 +47,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.notNull;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -448,12 +452,57 @@ public class ClusterManagerClientTest {
           ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK,
           "10.10.10.10");
 
-      when(apiFeDcpRestClient.queryDocuments(anyObject(), anyObject()))
-          .thenReturn(Arrays.asList(clusterDocument));
+      ServiceDocumentQueryResult serviceDocumentQueryResult = new ServiceDocumentQueryResult();
+      serviceDocumentQueryResult.documentCount = 1L;
+      serviceDocumentQueryResult.documentLinks.add(clusterDocument.documentSelfLink);
+      serviceDocumentQueryResult.documents = new HashMap<>();
+      serviceDocumentQueryResult.documents.put(clusterDocument.documentSelfLink, clusterDocument);
 
-      List<Cluster> clusters = clusterManagerClient.getClusters("projectId");
-      assertEquals(clusters.size(), 1);
-      Cluster cluster = clusters.iterator().next();
+      when(apiFeDcpRestClient.queryDocuments(anyObject(), anyObject(),
+          eq(Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)), eq(true)))
+          .thenReturn(serviceDocumentQueryResult);
+
+      ResourceList<Cluster> clusters = clusterManagerClient.getClusters("projectId",
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertEquals(clusters.getItems().size(), 1);
+      Cluster cluster = clusters.getItems().iterator().next();
+      assertEquals(cluster.getId(), "de305d54-75b4-431b-adb2-eb6b9e546014");
+      assertEquals(cluster.getName(), "clusterName");
+      assertEquals(cluster.getType(), ClusterType.KUBERNETES);
+      assertEquals(cluster.getState(), ClusterState.READY);
+      assertEquals(cluster.getProjectId(), "projectId");
+      assertEquals(cluster.getSlaveCount(), 2);
+      assertEquals(cluster.getExtendedProperties().get(
+              ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK),
+          "10.10.10.10");
+    }
+
+    @Test
+    public void testGetClustersPage() throws Throwable {
+      ClusterService.State clusterDocument = new ClusterService.State();
+      clusterDocument.documentSelfLink = "/abc/de305d54-75b4-431b-adb2-eb6b9e546014";
+      clusterDocument.clusterName = "clusterName";
+      clusterDocument.projectId = "projectId";
+      clusterDocument.slaveCount = 2;
+      clusterDocument.clusterType = ClusterType.KUBERNETES;
+      clusterDocument.clusterState = ClusterState.READY;
+      clusterDocument.extendedProperties = new HashMap();
+      clusterDocument.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK,
+          "10.10.10.10");
+
+      ServiceDocumentQueryResult serviceDocumentQueryResult = new ServiceDocumentQueryResult();
+      serviceDocumentQueryResult.documentCount = 1L;
+      serviceDocumentQueryResult.documentLinks.add(clusterDocument.documentSelfLink);
+      serviceDocumentQueryResult.documents = new HashMap<>();
+      serviceDocumentQueryResult.documents.put(clusterDocument.documentSelfLink, clusterDocument);
+
+      String pageLink = UUID.randomUUID().toString();
+      doReturn(serviceDocumentQueryResult).when(apiFeDcpRestClient).queryDocumentPage(pageLink);
+
+      ResourceList<Cluster> clusters = clusterManagerClient.getClustersPages(pageLink);
+      assertEquals(clusters.getItems().size(), 1);
+      Cluster cluster = clusters.getItems().iterator().next();
       assertEquals(cluster.getId(), "de305d54-75b4-431b-adb2-eb6b9e546014");
       assertEquals(cluster.getName(), "clusterName");
       assertEquals(cluster.getType(), ClusterType.KUBERNETES);
