@@ -96,18 +96,6 @@ TenantService:
   tagIds: java.util.Set
   name: java.lang.String
   securityGroups: java.util.List
-ClusterService:
-  clusterType: com.vmware.esxcloud.api.ClusterType
-  extendedProperties: java.util.Map
-  imageId: java.lang.String
-  slaveCount: java.lang.Integer
-  otherVmFlavorName: java.lang.String
-  clusterName: java.lang.String
-  vmNetworkId: java.lang.String
-  diskFlavorName: java.lang.String
-  masterVmFlavorName: java.lang.String
-  clusterState: com.vmware.esxcloud.api.ClusterState
-  projectId: java.lang.String
 TombstoneService:
   entityKind: java.lang.String
   entityId: java.lang.String
