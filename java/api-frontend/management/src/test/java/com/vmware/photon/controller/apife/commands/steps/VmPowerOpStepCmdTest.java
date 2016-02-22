@@ -18,16 +18,20 @@ import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.PowerVmOp;
 import com.vmware.photon.controller.host.gen.PowerVmOpResponse;
@@ -36,6 +40,7 @@ import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
 import org.mockito.InOrder;
+import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
@@ -53,6 +58,9 @@ import static org.testng.AssertJUnit.fail;
  * Tests {@link VmPowerOpStepCmd}.
  */
 public class VmPowerOpStepCmdTest extends PowerMockTestCase {
+
+  @Mock
+  private ApiFeDcpRestClient dcpClient;
 
   @Mock
   private RootSchedulerClient rootSchedulerClient;
@@ -75,6 +83,9 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
   @Mock
   private EntityLockBackend entityLockBackend;
 
+  @Mock
+  private com.vmware.xenon.common.Operation hostServiceOp;
+
   private TaskCommand taskCommand;
 
   private String stepId = "step-1";
@@ -84,7 +95,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
   private FindResponse findResponse;
 
   @BeforeMethod
-  public void setUp() throws Exception {
+  public void setUp() throws Exception, DocumentNotFoundException {
     task = new TaskEntity();
     task.setId("task-1");
 
@@ -100,10 +111,14 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     serverAddress.setPort(0);
     findResponse.setAddress(serverAddress);
 
-    taskCommand = spy(new TaskCommand(
+    taskCommand = spy(new TaskCommand(dcpClient,
         rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
+    HostService.State hostServiceState = new HostService.State();
+    hostServiceState.hostAddress = "host-ip";
+    when(hostServiceOp.getBody(Matchers.<Class>any())).thenReturn(hostServiceState);
+    when(dcpClient.get(Matchers.startsWith(HostServiceFactory.SELF_LINK))).thenReturn(hostServiceOp);
   }
 
   @Test
@@ -120,7 +135,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(hostClient, rootSchedulerClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("some-agent");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).powerVmOp("vm-1", PowerVmOp.ON);
     inOrder.verify(rootSchedulerClient).findVm("vm-1");
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
@@ -186,7 +201,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(hostClient, rootSchedulerClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("some-agent");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).powerVmOp("vm-1", expectedPowerOp);
     inOrder.verify(vmBackend).updateState(vm, expectedState);
     verifyNoMoreInteractions(hostClient, rootSchedulerClient, vmBackend);
