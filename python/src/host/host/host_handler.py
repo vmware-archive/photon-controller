@@ -1899,7 +1899,7 @@ class HostHandler(Host.Iface):
                                           request.manifest)
         except DiskAlreadyExistException:
             return self._error_response(
-                ReceiveImageResultCode.IMAGE_ALREADY_EXIST,
+                ReceiveImageResultCode.DESTINATION_ALREADY_EXIST,
                 "Image disk already exists",
                 ReceiveImageResponse())
         except:
