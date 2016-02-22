@@ -21,10 +21,12 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DiskFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
 import com.vmware.photon.controller.apife.resources.routes.DiskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
@@ -51,6 +53,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,10 +69,12 @@ import java.util.Set;
 public class ProjectDisksResource {
 
   private final DiskFeClient feClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public ProjectDisksResource(DiskFeClient diskFeClient) {
+  public ProjectDisksResource(DiskFeClient diskFeClient, PaginationConfig paginationConfig) {
     this.feClient = diskFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @POST
@@ -96,11 +101,23 @@ public class ProjectDisksResource {
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of disks in the project")})
   public Response find(@Context Request request,
                        @PathParam("id") String projectId,
-                       @QueryParam("name") Optional<String> name)
+                       @QueryParam("name") Optional<String> name,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
+
+    ResourceList<PersistentDisk> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = feClient.getDisksPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = feClient.find(projectId, name, adjustedPageSize);
+    }
+
+    String apiRoute = UriBuilder.fromPath(ProjectResourceRoutes.PROJECT_DISKS_PATH).build(projectId).toString();
     return generateResourceListResponse(
         Response.Status.OK,
-        feClient.find(projectId, name),
+        PaginationUtils.formalizePageLinks(resourceList, apiRoute),
         (ContainerRequest) request,
         DiskResourceRoutes.DISK_PATH);
   }

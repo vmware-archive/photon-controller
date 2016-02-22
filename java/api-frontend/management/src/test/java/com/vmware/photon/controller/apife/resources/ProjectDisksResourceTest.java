@@ -21,9 +21,13 @@ import com.vmware.photon.controller.api.LocalitySpec;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.clients.DiskFeClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -35,6 +39,7 @@ import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matchers;
 import org.mockito.Mock;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -42,6 +47,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import javax.ws.rs.client.Entity;
@@ -52,6 +59,9 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Tests {@link ProjectVmsResource}.
@@ -79,19 +89,30 @@ public class ProjectDisksResourceTest extends ResourceTest {
   @Mock
   private DiskFeClient client;
 
+  private PaginationConfig paginationConfig = new PaginationConfig();
+
   @Mock
   private TaskCommandFactory taskCommandFactory;
 
   private DiskCreateSpec spec;
 
+  private PersistentDisk disk1 = new PersistentDisk();
+  private PersistentDisk disk2 = new PersistentDisk();
+
   @Override
   protected void setUpResources() throws Exception {
+    paginationConfig.setMaxPageSize(PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
+    paginationConfig.setDefaultPageSize(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE);
+
     spec = new DiskCreateSpec();
     spec.setName("diskName");
     spec.setCapacityGb(2);
     spec.setFlavor("good-disk-100");
 
-    addResource(new ProjectDisksResource(client));
+    addResource(new ProjectDisksResource(client, paginationConfig));
+
+    disk1 = setupPersistentDisk(disk1, "disk1", "disk1name", "core-100", 2, DiskState.DETACHED);
+    disk2 = setupPersistentDisk(disk2, "disk2", "disk2name", "core-200", 2, DiskState.ATTACHED);
   }
 
   @Test
@@ -243,40 +264,58 @@ public class ProjectDisksResourceTest extends ResourceTest {
     };
   }
 
-  @Test
-  public void testGetAllProjectDisks() throws Exception {
-    PersistentDisk disk1 = createPersistentDisk("disk1", "disk1name", "core-100", 2, DiskState.DETACHED);
-    PersistentDisk disk2 = createPersistentDisk("disk1", "disk1name", "core-200", 2, DiskState.ATTACHED);
-
-    when(client.find(projectId, Optional.<String>absent()))
+  @Test(dataProvider = "pageSizes")
+  public void testGetProjectDisks(Optional<Integer> pageSize, List<PersistentDisk> expectedDisks) throws Exception {
+    when(client.find(projectId, Optional.absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
         .thenReturn(new ResourceList<>(ImmutableList.of(disk1, disk2)));
+    when(client.find(projectId, Optional.absent(), Optional.of(1)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(disk1), UUID.randomUUID().toString(), null));
+    when(client.find(projectId, Optional.absent(), Optional.of(2)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(disk1, disk2)));
+    when(client.find(projectId, Optional.absent(), Optional.of(3)))
+        .thenReturn(new ResourceList<>(Collections.emptyList()));
 
-    Response response = getDisks(Optional.<String>absent());
-    assertThat(response.getStatus(), is(200));
+    Response response = getDisks(Optional.<String>absent(), pageSize, Optional.absent());
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     ResourceList<PersistentDisk> disks = response.readEntity(
         new GenericType<ResourceList<PersistentDisk>>() {
         }
     );
 
-    assertThat(disks.getItems().size(), is(2));
-    assertThat(disks.getItems().get(0), is(disk1));
-    assertThat(disks.getItems().get(1), is(disk2));
+    assertThat(disks.getItems().size(), is(expectedDisks.size()));
 
-    for (PersistentDisk disk : disks.getItems()) {
-      assertThat(new URI(disk.getSelfLink()).isAbsolute(), CoreMatchers.is(true));
-      assertThat(disk.getSelfLink().endsWith(diskRoutePath), CoreMatchers.is(true));
+    for (int i = 0; i < disks.getItems().size(); ++i) {
+      PersistentDisk disk = disks.getItems().get(i);
+      assertThat(disk, is(expectedDisks.get(i)));
+      assertThat(new URI(disk.getSelfLink()).isAbsolute(), is(true));
+      assertThat(disk.getSelfLink().endsWith(UriBuilder.fromPath(DiskResourceRoutes.DISK_PATH)
+          .build(expectedDisks.get(i).getId()).toString()), is(true));
     }
+
+    verifyPageLinks(disks);
   }
 
   @Test
-  public void testProjectDisksByName() throws Exception {
-    PersistentDisk disk1 = createPersistentDisk("disk1", "disk1name", "core-100", 3, DiskState.DETACHED);
+  public void testInvalidPageSize() throws Exception {
+    int pageSize = paginationConfig.getMaxPageSize() + 1;
+    Response response = getDisks(Optional.<String>absent(), Optional.of(pageSize), Optional.<String>absent());
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
 
-    when(client.find(projectId, Optional.of("disk1name")))
+    String expectedErrorMsg = String.format("The page size '%d' is not between '1' and '%d'",
+        pageSize, PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), is(ErrorCode.INVALID_PAGE_SIZE.getCode()));
+    assertThat(errors.getMessage(), is(expectedErrorMsg));
+  }
+
+  @Test
+  public void testGetProjectDisksPageByName() throws Exception {
+    when(client.find(projectId, Optional.of("disk1name"), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
         .thenReturn(new ResourceList<>(ImmutableList.of(disk1)));
 
-    Response response = getDisks(Optional.of("disk1name"));
+    Response response = getDisks(Optional.of("disk1name"), Optional.absent(), Optional.absent());
     assertThat(response.getStatus(), is(200));
 
     ResourceList<PersistentDisk> disks = response.readEntity(
@@ -291,6 +330,44 @@ public class ProjectDisksResourceTest extends ResourceTest {
     }
   }
 
+  @Test
+  public void testGetProjectDisksPage() throws Exception {
+    String pageLink = UUID.randomUUID().toString();
+    doReturn(new ResourceList<>(ImmutableList.of(disk1), UUID.randomUUID().toString(), UUID.randomUUID().toString()))
+        .when(client)
+        .getDisksPage(pageLink);
+
+    Response response = getDisks(Optional.<String>absent(), Optional.<Integer>absent(), Optional.of(pageLink));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+
+    ResourceList<PersistentDisk> disks = response.readEntity(new GenericType<ResourceList<PersistentDisk>>(){});
+    assertThat(disks.getItems().size(), is(1));
+
+    PersistentDisk disk = disks.getItems().get(0);
+    assertThat(disk, is(disk1));
+
+    String diskRoutePath = UriBuilder.fromPath(DiskResourceRoutes.DISK_PATH).build(disk1.getId()).toString();
+    assertThat(disk.getSelfLink().endsWith(diskRoutePath), is(true));
+    assertThat(new URI((disk.getSelfLink())).isAbsolute(), is(true));
+
+    verifyPageLinks(disks);
+  }
+
+  @Test
+  public void testInvalidProjectsPageLink() throws ExternalException {
+    String pageLink = UUID.randomUUID().toString();
+    doThrow(new PageExpiredException(pageLink)).when(client).getDisksPage(pageLink);
+
+    Response response = getDisks(Optional.<String>absent(), Optional.<Integer>absent(), Optional.of(pageLink));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+
+    String expectedErrorMessage = "Page " + pageLink + " has expired";
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), is(ErrorCode.PAGE_EXPIRED.getCode()));
+    assertThat(errors.getMessage(), is(expectedErrorMessage));
+  }
+
   private Response createDisk(String kind) {
     spec.setKind(kind);
     return client()
@@ -299,22 +376,65 @@ public class ProjectDisksResourceTest extends ResourceTest {
         .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
   }
 
-  private Response getDisks(Optional<String> name) {
+  private Response getDisks(Optional<String> name, Optional<Integer> pageSize, Optional<String> pageLink) {
     WebTarget resource = client().target(projectDisksRoutePath);
     if (name.isPresent()) {
       resource = resource.queryParam("name", name.get());
+    }
+    if (pageSize.isPresent()) {
+      resource = resource.queryParam("pageSize", pageSize.get());
+    }
+    if (pageLink.isPresent()) {
+      resource = resource.queryParam("pageLink", pageLink.get());
     }
 
     return resource.request().get();
   }
 
-  private PersistentDisk createPersistentDisk(String id, String name, String flavor, int capacityGb, DiskState state) {
-    PersistentDisk result = new PersistentDisk();
-    result.setId(id);
-    result.setName(name);
-    result.setFlavor(flavor);
-    result.setCapacityGb(capacityGb);
-    result.setState(state);
-    return result;
+  private PersistentDisk setupPersistentDisk(PersistentDisk disk,
+                                   String id,
+                                   String name,
+                                   String flavor,
+                                   int capacityGb,
+                                   DiskState state) {
+    disk.setId(id);
+    disk.setName(name);
+    disk.setFlavor(flavor);
+    disk.setCapacityGb(capacityGb);
+    disk.setState(state);
+    return disk;
+  }
+
+  private void verifyPageLinks(ResourceList<PersistentDisk> resourceList) {
+    String expectedPrefix = projectDisksRoutePath + "?pageLink=";
+
+    if (resourceList.getNextPageLink() != null) {
+      assertThat(resourceList.getNextPageLink().startsWith(expectedPrefix), Matchers.is(true));
+    }
+    if (resourceList.getPreviousPageLink() != null) {
+      assertThat(resourceList.getPreviousPageLink().startsWith(expectedPrefix), Matchers.is(true));
+    }
+  }
+
+  @DataProvider(name = "pageSizes")
+  private Object[][] getPageSizes() {
+    return new Object[][] {
+        {
+            Optional.absent(),
+            ImmutableList.of(disk1, disk2)
+        },
+        {
+            Optional.of(1),
+            ImmutableList.of(disk1)
+        },
+        {
+            Optional.of(2),
+            ImmutableList.of(disk1, disk2)
+        },
+        {
+            Optional.of(3),
+            Collections.emptyList()
+        }
+    };
   }
 }
