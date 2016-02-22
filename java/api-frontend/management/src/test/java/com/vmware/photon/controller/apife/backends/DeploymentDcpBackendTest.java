@@ -21,8 +21,10 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.StatsInfo;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
@@ -126,7 +128,11 @@ public class DeploymentDcpBackendTest {
     deploymentCreateSpec.setImageDatastores(Collections.singleton("imageDatastore"));
     deploymentCreateSpec.setNtpEndpoint("ntp");
     deploymentCreateSpec.setSyslogEndpoint("syslog");
-    deploymentCreateSpec.setStatsStoreEndpoint("statsStore");
+    deploymentCreateSpec.setStats(new StatsInfoBuilder()
+        .enabled(true)
+        .storeEndpoint("10.146.64.111")
+        .storePort(2004)
+        .build());
     deploymentCreateSpec.setUseImageDatastoreForVms(true);
     deploymentCreateSpec.setAuth(new AuthInfoBuilder()
         .enabled(true)
@@ -207,7 +213,9 @@ public class DeploymentDcpBackendTest {
       assertThat(deployment.getNtpEndpoint(), is("ntp"));
       assertThat(deployment.getOperationId(), nullValue());
       assertThat(deployment.getSyslogEndpoint(), is("syslog"));
-      assertThat(deployment.getStatsStoreEndpoint(), is("statsStore"));
+      assertThat(deployment.getStatsEnabled(), is(true));
+      assertThat(deployment.getStatsStoreEndpoint(), is("10.146.64.111"));
+      assertThat(deployment.getStatsStorePort(), is(2004));
       assertThat(deployment.getUseImageDatastoreForVms(), is(true));
       assertThat(deployment.getAuthEnabled(), is(true));
       assertThat(deployment.getOauthEndpoint(), is("10.146.64.236"));
@@ -670,7 +678,10 @@ public class DeploymentDcpBackendTest {
       assertThat(deployment.getState(), is(entity.getState()));
       assertThat(deployment.getNtpEndpoint(), is(entity.getNtpEndpoint()));
       assertThat(deployment.getSyslogEndpoint(), is(entity.getSyslogEndpoint()));
-      assertThat(deployment.getStatsStoreEndpoint(), is(entity.getStatsStoreEndpoint()));
+      StatsInfo stats = deployment.getStats();
+      assertThat(stats.getEnabled(), is(entity.getStatsEnabled()));
+      assertThat(stats.getStoreEndpoint(), is(entity.getStatsStoreEndpoint()));
+      assertThat(stats.getStorePort(), is(entity.getStatsStorePort()));
       assertThat(CollectionUtils.isEqualCollection(
           deployment.getImageDatastores(), entity.getImageDatastores()), is(true));
       assertThat(deployment.isUseImageDatastoreForVms(), is(entity.getUseImageDatastoreForVms()));
@@ -1019,7 +1030,12 @@ public class DeploymentDcpBackendTest {
       deployment2.imageDataStoreNames = deploymentCreateSpec.getImageDatastores();
       deployment2.ntpEndpoint = deploymentCreateSpec.getNtpEndpoint();
       deployment2.syslogEndpoint = deploymentCreateSpec.getSyslogEndpoint();
-      deployment2.statsStoreEndpoint = deploymentCreateSpec.getStatsStoreEndpoint();
+      StatsInfo stats = deploymentCreateSpec.getStats();
+      if (stats != null) {
+        deployment2.statsEnabled = stats.getEnabled();
+        deployment2.statsStoreEndpoint = stats.getStoreEndpoint();
+        deployment2.statsStorePort = stats.getStorePort();
+      }
       deployment2.imageDataStoreUsedForVMs = deploymentCreateSpec.isUseImageDatastoreForVms();
       deployment2.oAuthEnabled = deploymentCreateSpec.getAuth().getEnabled();
       deployment2.oAuthServerAddress = deploymentCreateSpec.getAuth().getEndpoint();

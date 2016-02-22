@@ -47,10 +47,10 @@ public class StatsInfoBuilder {
   }
 
   public StatsInfo build() {
-    StatsInfo statsInfo = new StatsInfo();
-    statsInfo.setEnabled(this.enabled);
-    statsInfo.setStoreEndpoint(this.storeEndpoint);
-    statsInfo.setStorePort(this.storePort);
-    return statsInfo;
+    StatsInfo stats = new StatsInfo();
+    stats.setEnabled(this.enabled);
+    stats.setStoreEndpoint(this.storeEndpoint);
+    stats.setStorePort(this.storePort);
+    return stats;
   }
 }
