@@ -83,7 +83,8 @@ module EsxCloud
       # @param [String] result
       # @return [Host]
       def get_disk_from_response(result)
-        values = result.split
+        result.slice! "\n"
+        values = result.split("\t")
         disk_hash = { "id" => values[0],
                       "name" => values[1],
                       "state" => values[2],
@@ -93,6 +94,7 @@ module EsxCloud
                       "datastore" => values[6],
                       "tags" => stringToArray(values[7]),
                       "vms" => stringToArray(values[8]) }
+
         Disk.create_from_hash(disk_hash)
       end
 
