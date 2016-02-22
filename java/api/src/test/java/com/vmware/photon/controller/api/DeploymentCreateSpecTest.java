@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.api;
 
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.helpers.JsonHelpers;
 import com.vmware.photon.controller.api.helpers.Validator;
 
@@ -51,21 +52,51 @@ public class DeploymentCreateSpecTest {
       .enabled(false)
       .build();
 
+  private StatsInfo enabledStatsInfo = new StatsInfoBuilder()
+      .enabled(true)
+      .storeEndpoint("10.146.64.111")
+      .storePort(2004)
+      .build();
+
+  private StatsInfo disabledStatsInfo = new StatsInfoBuilder()
+      .enabled(false)
+      .build();
+
   private DeploymentCreateSpec createDeploymentCreateSpec(
       Set<String> imageDatastores,
       String syslogEndpoint,
-      String ntpEndpoint,
-      String statsStoreEndpoint) {
+      String ntpEndpoint) {
 
       return createDeploymentCreateSpec(
-          imageDatastores, syslogEndpoint, ntpEndpoint, statsStoreEndpoint, new AuthInfoBuilder().build());
+          imageDatastores, syslogEndpoint, ntpEndpoint, new StatsInfoBuilder().build(), new AuthInfoBuilder().build());
   }
 
   private DeploymentCreateSpec createDeploymentCreateSpec(
       Set<String> imageDatastores,
       String syslogEndpoint,
       String ntpEndpoint,
-      String statsStoreEndpoint,
+      StatsInfo stats) {
+
+    return createDeploymentCreateSpec(
+        imageDatastores, syslogEndpoint, ntpEndpoint, stats, new AuthInfoBuilder().build());
+
+  }
+
+  private DeploymentCreateSpec createDeploymentCreateSpec(
+      Set<String> imageDatastores,
+      String syslogEndpoint,
+      String ntpEndpoint,
+      AuthInfo authInfo) {
+
+    return createDeploymentCreateSpec(
+        imageDatastores, syslogEndpoint, ntpEndpoint, new StatsInfoBuilder().build(), authInfo);
+  }
+
+  private DeploymentCreateSpec createDeploymentCreateSpec(
+      Set<String> imageDatastores,
+      String syslogEndpoint,
+      String ntpEndpoint,
+      StatsInfo stats,
       AuthInfo authInfo) {
 
     DeploymentCreateSpec spec = new DeploymentCreateSpec();
@@ -73,7 +104,7 @@ public class DeploymentCreateSpecTest {
     spec.setImageDatastores(imageDatastores);
     spec.setSyslogEndpoint(syslogEndpoint);
     spec.setNtpEndpoint(ntpEndpoint);
-    spec.setStatsStoreEndpoint(statsStoreEndpoint);
+    spec.setStatsInfo(stats);
     spec.setAuth(authInfo);
 
     return spec;
@@ -96,10 +127,12 @@ public class DeploymentCreateSpecTest {
     @DataProvider(name = "validDeployments")
     public Object[][] getValidDeployments() {
       return new Object[][]{
-          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", "0.0.0.3")},
-          {createDeploymentCreateSpec(Collections.singleton("i"), null, null, null)},
-          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", "0.0.0.3", enabledAuthInfo)},
-          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", "0.0.0.3", disabledAuthInfo)}
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2")},
+          {createDeploymentCreateSpec(Collections.singleton("i"), null, null)},
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", enabledAuthInfo)},
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", disabledAuthInfo)},
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", enabledStatsInfo)},
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", disabledStatsInfo)}
       };
     }
 
@@ -112,17 +145,17 @@ public class DeploymentCreateSpecTest {
     @DataProvider(name = "invalidDeployments")
     public Object[][] getInvalidDeployments() {
       return new Object[][]{
-          {createDeploymentCreateSpec(null, "0.0.0.1", "0.0.0.2", "0.0.0.3"),
+          {createDeploymentCreateSpec(null, "0.0.0.1", "0.0.0.2"),
               "imageDatastores may not be null (was null)"},
-          {createDeploymentCreateSpec(new HashSet<String>(), "0.0.0.1", "0.0.0.2", "0.0.0.3"),
+          {createDeploymentCreateSpec(new HashSet<String>(), "0.0.0.1", "0.0.0.2"),
               "imageDatastores size must be between 1 and 2147483647 (was [])"},
-          {createDeploymentCreateSpec(Collections.singleton("i"), "fake", "0.0.0.2", "0.0.0.3"),
+          {createDeploymentCreateSpec(Collections.singleton("i"), "fake", "0.0.0.2"),
               "syslogEndpoint fake is invalid IP or Domain Address"},
-          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.2", "fake", "0.0.0.3"),
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.2", "fake"),
               "ntpEndpoint fake is invalid IP or Domain Address"},
-          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.2", "0.0.0.1", "fake"),
-              "statsStoreEndpoint fake is invalid IP or Domain Address"},
-          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", "0.0.0.3", null),
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.2", "0.0.0.1", (StatsInfo) null),
+              "stats may not be null (was null)"},
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", (AuthInfo) null),
               "auth may not be null (was null)"}
       };
     }
@@ -149,11 +182,14 @@ public class DeploymentCreateSpecTest {
 
     private static final String JSON_FILE_WITH_AUTH = "fixtures/deployment-create-spec-with-auth.json";
     private static final String JSON_FILE_WITHOUT_AUTH = "fixtures/deployment-create-spec-without-auth.json";
+    private static final String JSON_FILE_WITH_STATSINFO = "fixtures/deployment-create-spec-with-stats.json";
+    private static final String JSON_FILE_WITHOUT_STATSINFO = "fixtures/deployment-create-spec-without-stats.json";
+
 
     @Test
     public void testSerializationWithAuth() throws Exception {
       DeploymentCreateSpec spec = createDeploymentCreateSpec(
-          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2", "0.0.0.3", enabledAuthInfo);
+          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2", enabledAuthInfo);
 
       String json = JsonHelpers.jsonFixture(JSON_FILE_WITH_AUTH);
 
@@ -164,9 +200,31 @@ public class DeploymentCreateSpecTest {
     @Test
     public void testSerializationWithoutAuth() throws Exception {
       DeploymentCreateSpec spec = createDeploymentCreateSpec(
-          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2", "0.0.0.3", disabledAuthInfo);
+          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2", disabledAuthInfo);
 
       String json = JsonHelpers.jsonFixture(JSON_FILE_WITHOUT_AUTH);
+
+      MatcherAssert.assertThat(JsonHelpers.asJson(spec), sameJSONAs(json).allowingAnyArrayOrdering());
+      MatcherAssert.assertThat(JsonHelpers.fromJson(json, DeploymentCreateSpec.class), is(spec));
+    }
+
+    @Test
+    public void testSerializationWithStatsInfo() throws Exception {
+      DeploymentCreateSpec spec = createDeploymentCreateSpec(
+          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2", enabledStatsInfo);
+
+      String json = JsonHelpers.jsonFixture(JSON_FILE_WITH_STATSINFO);
+
+      MatcherAssert.assertThat(JsonHelpers.asJson(spec), sameJSONAs(json).allowingAnyArrayOrdering());
+      MatcherAssert.assertThat(JsonHelpers.fromJson(json, DeploymentCreateSpec.class), is(spec));
+    }
+
+    @Test
+    public void testSerializationWithoutStatsInfo() throws Exception {
+      DeploymentCreateSpec spec = createDeploymentCreateSpec(
+          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2", disabledStatsInfo);
+
+      String json = JsonHelpers.jsonFixture(JSON_FILE_WITHOUT_STATSINFO);
 
       MatcherAssert.assertThat(JsonHelpers.asJson(spec), sameJSONAs(json).allowingAnyArrayOrdering());
       MatcherAssert.assertThat(JsonHelpers.fromJson(json, DeploymentCreateSpec.class), is(spec));

@@ -2,7 +2,11 @@
     "id": "id",
     "kind": "deployment",
     "syslogEndpoint": "0.0.0.1",
-    "statsStoreEndpoint" : "0.0.0.3",
+    "stats": {
+        "enabled": true,
+        "storeEndpoint": "10.146.64.111",
+        "storePort": 2004
+    },
     "ntpEndpoint": "0.0.0.2",
     "imageDatastores": [
       "image-datastore"
