@@ -77,8 +77,12 @@ public class DiskFeClient {
     return diskBackend.toApiRepresentation(id);
   }
 
-  public ResourceList<PersistentDisk> find(String projectId, Optional<String> name)
+  public ResourceList<PersistentDisk> find(String projectId, Optional<String> name, Optional<Integer> pageSize)
       throws ExternalException {
     return new ResourceList<>(diskBackend.filter(projectId, name));
+  }
+
+  public ResourceList<PersistentDisk> getDisksPage(String pageLink) throws ExternalException {
+    return new ResourceList<>();
   }
 }
