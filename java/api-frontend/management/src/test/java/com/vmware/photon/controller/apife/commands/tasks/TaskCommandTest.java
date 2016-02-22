@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.commands.tasks;
 
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
@@ -43,6 +44,8 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
@@ -84,6 +87,7 @@ import static org.powermock.api.mockito.PowerMockito.spy;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.UUID;
 
 /**
@@ -215,10 +219,20 @@ public class TaskCommandTest {
     vmState.vmState = VmState.CREATING;
     dcpClient.post(VmServiceFactory.SELF_LINK, vmState);
 
+    HostService.State hostState = new HostService.State();
+    hostState.documentSelfLink = "agent-id";
+    hostState.hostAddress = "host-ip";
+    hostState.userName = "root";
+    hostState.password = "password";
+    hostState.usageTags = new HashSet<>();
+    hostState.usageTags.add("VMFS");
+    hostState.state = HostState.READY;
+    dcpClient.post(HostServiceFactory.SELF_LINK, hostState);
+
     VmEntity vm = new VmEntity();
     task = taskBackend.createQueuedTask(vm, Operation.CREATE_VM);
     task.setSteps(new ArrayList<StepEntity>());
-    testTaskCommand = new TestTaskCommand(rootSchedulerClient, hostClient, housekeeperClient,
+    testTaskCommand = new TestTaskCommand(dcpClient, rootSchedulerClient, hostClient, housekeeperClient,
         taskBackend, stepCommandFactory, task, deployerClient);
 
     findResponse = new FindResponse();
@@ -274,7 +288,9 @@ public class TaskCommandTest {
       task2.setId(UUID.randomUUID().toString());
       task2.getToBeLockedEntityIds().add(lockId);
 
-      command1 = spy(new TaskCommand(mock(RootSchedulerClient.class),
+      command1 = spy(new TaskCommand(
+          mock(ApiFeDcpRestClient.class),
+          mock(RootSchedulerClient.class),
           mock(HostClient.class),
           mock(HousekeeperClient.class),
           mock(DeployerClient.class),
@@ -282,7 +298,9 @@ public class TaskCommandTest {
           task1));
       command1.setTaskBackend(taskBackend);
 
-      command2 = spy(new TaskCommand(mock(RootSchedulerClient.class),
+      command2 = spy(new TaskCommand(
+          mock(ApiFeDcpRestClient.class),
+          mock(RootSchedulerClient.class),
           mock(HostClient.class),
           mock(HousekeeperClient.class),
           mock(DeployerClient.class),
@@ -350,7 +368,7 @@ public class TaskCommandTest {
 
   @Test
   public void testMarkAsStarted() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     command.markAsStarted();
@@ -390,7 +408,7 @@ public class TaskCommandTest {
 
   @Test(dataProvider = "steps")
   public void testMarkAsDone(StepEntity[] steps, TaskEntity.State state) throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
     for (StepEntity step : steps) {
       task.addStep(step);
@@ -407,7 +425,7 @@ public class TaskCommandTest {
 
   @Test
   public void testMarkAsFailed() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     command.markAsFailed(new ApiFeException("Something happened"));
@@ -426,7 +444,7 @@ public class TaskCommandTest {
         createStep("step-3", StepEntity.State.QUEUED)
     };
     TestStepCommand[] stepCommands = new TestStepCommand[steps.length];
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     for (int i = 0; i < steps.length; i++) {
@@ -446,7 +464,7 @@ public class TaskCommandTest {
 
   @Test
   public void testCleanup() {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     command.cleanup();
@@ -455,7 +473,7 @@ public class TaskCommandTest {
 
   @Test
   public void testFindVmHostWithNoAgentId() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
@@ -473,7 +491,7 @@ public class TaskCommandTest {
 
   @Test
   public void testFindVmHostWithVmNotFoundException() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     when(rootSchedulerClient.findVm("vm-1"))
@@ -495,7 +513,7 @@ public class TaskCommandTest {
 
   @Test
   public void testFindVmHostWithAgentId() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     when(hostClient.findVm("vm-1")).thenReturn(true);
@@ -505,13 +523,13 @@ public class TaskCommandTest {
     command.getHostClient(vm);
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId("agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
   }
 
   @Test
   public void testVmGetHostClientHostWithNoAgentIdOrHost() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
     when(rootSchedulerClient.findVm(anyString())).thenReturn(findResponse);
 
@@ -529,7 +547,7 @@ public class TaskCommandTest {
 
   @Test
   public void testVmGetHostclientWithVmNotFoundException() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     when(rootSchedulerClient.findVm("vm-1"))
@@ -551,7 +569,7 @@ public class TaskCommandTest {
 
   @Test
   public void testVmGetHostclientWithAgentId() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     VmEntity vm = new VmEntity();
@@ -560,13 +578,13 @@ public class TaskCommandTest {
     command.getHostClient(vm);
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId("agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
   }
 
   @Test
   public void testVmGetHostclientWithHostIp() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     VmEntity vm = new VmEntity();
@@ -582,7 +600,7 @@ public class TaskCommandTest {
 
   @Test
   public void testVmGetHostClientWithAgentIdAndHostIp() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     VmEntity vm = new VmEntity();
@@ -592,7 +610,7 @@ public class TaskCommandTest {
     command.getHostClient(vm);
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId("agentId");
+    inOrder.verify(hostClient).setHostIp("1.1.1.1");
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
   }
 
@@ -605,7 +623,7 @@ public class TaskCommandTest {
 
   @Test(dataProvider = "getDiskEntitiesParam")
   public void testFindDiskHostWithNoAgentId(BaseDiskEntity disk) throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     when(rootSchedulerClient.findDisk("disk-1")).thenReturn(findResponse);
@@ -614,7 +632,6 @@ public class TaskCommandTest {
 
     assertThat(disk.getAgent(), is("agent-id"));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId(null);
     inOrder.verify(rootSchedulerClient).findDisk("disk-1");
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
@@ -622,7 +639,7 @@ public class TaskCommandTest {
 
   @Test(dataProvider = "getDiskEntitiesParam")
   public void testFindDiskHostWithDiskNotFoundException(BaseDiskEntity disk) throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     when(rootSchedulerClient.findDisk("disk-1"))
@@ -637,25 +654,24 @@ public class TaskCommandTest {
 
     assertThat(disk.getAgent(), is(nullValue()));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId(null);
     inOrder.verify(rootSchedulerClient).findDisk("disk-1");
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
   }
 
   @Test(dataProvider = "getDiskEntitiesParam")
   public void testFindDiskHostWithStaleAgentId(BaseDiskEntity disk) throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     when(hostClient.findDisk("disk-1")).thenReturn(false);
     when(rootSchedulerClient.findDisk("disk-1")).thenReturn(findResponse);
     disk.setId("disk-1");
-    disk.setAgent("stale-agent-id");
+    disk.setAgent("agent-id");
     command.findHost(disk);
 
     assertThat(disk.getAgent(), is("agent-id"));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId("stale-agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).findDisk("disk-1");
     inOrder.verify(rootSchedulerClient).findDisk("disk-1");
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
@@ -664,7 +680,7 @@ public class TaskCommandTest {
 
   @Test(dataProvider = "getDiskEntitiesParam")
   public void testFindDiskHostWithAgentId(BaseDiskEntity disk) throws Exception {
-    TestTaskCommand command = new TestTaskCommand(rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     when(hostClient.findDisk("disk-1")).thenReturn(true);
@@ -672,7 +688,7 @@ public class TaskCommandTest {
     disk.setAgent("agent-id");
     command.findHost(disk);
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
-    inOrder.verify(hostClient).setAgentId("agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).findDisk("disk-1");
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
   }
@@ -700,10 +716,11 @@ public class TaskCommandTest {
     public boolean cleanedUp = false;
 
     @Inject
-    public TestTaskCommand(RootSchedulerClient rootSchedulerClient, HostClient hostClient,
-                           HousekeeperClient housekeeperClient, TaskBackend taskBackend,
+    public TestTaskCommand(ApiFeDcpRestClient apiFeDcpRestClient, RootSchedulerClient rootSchedulerClient,
+                           HostClient hostClient, HousekeeperClient housekeeperClient, TaskBackend taskBackend,
                            StepCommandFactory stepCommandFactory, TaskEntity task, DeployerClient deployerClient) {
-      super(rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task);
+      super(apiFeDcpRestClient, rootSchedulerClient, hostClient, housekeeperClient,
+          deployerClient, entityLockBackend, task);
       setReservation("reservation-id");
       setTaskBackend(taskBackend);
       setStepCommandFactory(stepCommandFactory);

@@ -24,6 +24,7 @@ import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
@@ -31,12 +32,15 @@ import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.VmDiskOpError;
 import com.vmware.photon.controller.host.gen.VmDiskOpResultCode;
@@ -46,6 +50,7 @@ import com.vmware.photon.controller.resource.gen.Disk;
 import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
 import org.mockito.InOrder;
+import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
@@ -136,6 +141,8 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   @Mock
   AttachedDiskBackend attachedDiskBackend;
   @Mock
+  ApiFeDcpRestClient dcpClient;
+  @Mock
   private RootSchedulerClient rootSchedulerClient;
   @Mock
   private HostClient hostClient;
@@ -153,6 +160,9 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
 
   @Mock
   private DeployerClient deployerClient;
+
+  @Mock
+  private com.vmware.xenon.common.Operation hostServiceOp;
 
   private TaskCommand taskCommand;
   private StepEntity step;
@@ -176,7 +186,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   private FindResponse findResponse;
 
   @BeforeMethod
-  public void setUp() throws Exception {
+  public void setUp() throws Exception, DocumentNotFoundException {
     attachedDiskIds = new ArrayList<>();
     attachedDiskEntities = new ArrayList<>();
     persistentDiskEntities = new ArrayList<>();
@@ -240,7 +250,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     when(diskBackend.find(PersistentDisk.KIND, diskId1)).thenReturn(disk1);
     when(diskBackend.find(PersistentDisk.KIND, diskId2)).thenReturn(disk2);
 
-    taskCommand = spy(new TaskCommand(
+    taskCommand = spy(new TaskCommand(dcpClient,
         rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
@@ -252,6 +262,10 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     when(attachedDiskBackend.findAttachedDisk(disk2)).thenReturn(attachedDiskEntity2);
     when(taskCommand.getRootSchedulerClient().findVm(vmId)).thenReturn(findResponse);
     when(taskCommand.getHostClient()).thenReturn(hostClient);
+    HostService.State hostServiceState = new HostService.State();
+    hostServiceState.hostAddress = "host-ip";
+    when(hostServiceOp.getBody(Matchers.<Class>any())).thenReturn(hostServiceState);
+    when(dcpClient.get(Matchers.startsWith(HostServiceFactory.SELF_LINK))).thenReturn(hostServiceOp);
   }
 
   @Test
@@ -289,7 +303,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(hostClient, rootSchedulerClient);
-    inOrder.verify(hostClient).setAgentId("staled-agent");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).attachDisks(vmId, attachedDiskIds);
     inOrder.verify(rootSchedulerClient).findVm(vmId);
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);

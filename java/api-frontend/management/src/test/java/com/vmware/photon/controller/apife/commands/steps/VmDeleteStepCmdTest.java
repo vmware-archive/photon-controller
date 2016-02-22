@@ -20,6 +20,7 @@ import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
@@ -29,11 +30,14 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.DeleteVmResponse;
 import com.vmware.photon.controller.host.gen.DeleteVmResultCode;
@@ -42,6 +46,7 @@ import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;
+import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
@@ -60,6 +65,9 @@ import java.util.List;
  * Tests {@link VmDeleteStepCmd}.
  */
 public class VmDeleteStepCmdTest extends PowerMockTestCase {
+
+  @Mock
+  private ApiFeDcpRestClient dcpClient;
 
   @Mock
   private RootSchedulerClient rootSchedulerClient;
@@ -85,6 +93,9 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
   @Mock
   private EntityLockBackend entityLockBackend;
 
+  @Mock
+  private com.vmware.xenon.common.Operation hostServiceOp;
+
   private TaskCommand taskCommand;
   private String stepId = "step-1";
   private TaskEntity task;
@@ -95,7 +106,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
   private FindResponse findResponse;
 
   @BeforeMethod
-  public void setUp() throws Exception {
+  public void setUp() throws Exception, DocumentNotFoundException {
     task = new TaskEntity();
     task.setId("task-1");
 
@@ -111,11 +122,15 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     serverAddress.setPort(0);
     findResponse.setAddress(serverAddress);
 
-    taskCommand = spy(new TaskCommand(
+    taskCommand = spy(new TaskCommand(dcpClient,
         rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
     when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
+    HostService.State hostServiceState = new HostService.State();
+    hostServiceState.hostAddress = "host-ip";
+    when(hostServiceOp.getBody(Matchers.<Class>any())).thenReturn(hostServiceState);
+    when(dcpClient.get(Matchers.startsWith(HostServiceFactory.SELF_LINK))).thenReturn(hostServiceOp);
   }
 
   @Test
@@ -198,7 +213,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("vm-1-agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm("vm-1", null);
     inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
     inOrder.verify(vmBackend).isosAttached(vm);
@@ -219,7 +234,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("old-agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
     inOrder.verify(rootSchedulerClient).findVm("vm-1");
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
@@ -243,7 +258,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
-    inOrder.verify(hostClient).setAgentId("agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
     inOrder.verify(rootSchedulerClient).findVm("vm-1");
     inOrder.verify(vmBackend).isosAttached(vm);
@@ -293,7 +308,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
-    inOrder.verify(hostClient).setAgentId("agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
     inOrder.verify(rootSchedulerClient).findVm(vm.getId());
     inOrder.verify(vmBackend).isosAttached(vm);
@@ -321,7 +336,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     cmd.execute();
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
-    inOrder.verify(hostClient).setAgentId("agent-id");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
     inOrder.verify(rootSchedulerClient).findVm("vm-1");
     inOrder.verify(vmBackend).isosAttached(vm);
