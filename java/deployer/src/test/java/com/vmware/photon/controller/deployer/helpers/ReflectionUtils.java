@@ -24,6 +24,7 @@ import com.vmware.xenon.common.ServiceDocument;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -62,6 +63,8 @@ public class ReflectionUtils {
       return new HashSet<>();
     } else if (declaredField.getType() == String.class) {
       return declaredField.getName();
+    } else if (declaredField.getType() == URI.class) {
+      return new URI("http://localhost");
     } else if (declaredField.getType().isEnum()) {
       return declaredField.getType().getEnumConstants()[0];
     } else {
