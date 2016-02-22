@@ -27,21 +27,21 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Validate the statsInfo.
+ * Validate the stats.
  */
 public class StatsInfoValidator {
   /**
    * Validate if StatsInfo has the correct configuration information.
    */
-  public static void validate(StatsInfo statsInfo) throws InvalidStatsConfigException {
+  public static void validate(StatsInfo stats) throws InvalidStatsConfigException {
     Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-    if (statsInfo.getEnabled()) {
-      Set<ConstraintViolation<StatsInfo>> violations = validator.validate(statsInfo, StatsEnabled.class);
+    if (stats.getEnabled()) {
+      Set<ConstraintViolation<StatsInfo>> violations = validator.validate(stats, StatsEnabled.class);
       if (!violations.isEmpty()) {
         throw new InvalidStatsConfigException(getErrorMessage(violations));
       }
     } else {
-      Set<ConstraintViolation<StatsInfo>> violations = validator.validate(statsInfo, StatsDisabled.class);
+      Set<ConstraintViolation<StatsInfo>> violations = validator.validate(stats, StatsDisabled.class);
       if (!violations.isEmpty()) {
         throw new InvalidStatsConfigException(getErrorMessage(violations));
       }
