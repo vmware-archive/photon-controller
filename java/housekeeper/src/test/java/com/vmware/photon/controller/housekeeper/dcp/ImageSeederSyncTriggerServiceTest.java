@@ -46,6 +46,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -54,6 +55,7 @@ import static org.testng.Assert.fail;
 
 import java.net.InetSocketAddress;
 import java.util.EnumSet;
+import java.util.Random;
 import java.util.function.Predicate;
 
 /**
@@ -217,8 +219,49 @@ public class ImageSeederSyncTriggerServiceTest {
     }
 
     @Test(dataProvider = "hostCount")
+    public void testPatchThatShouldNotTriggerChildTasks(int hostCount) throws Throwable {
+      Random random = new Random();
+
+      request.shouldTriggerTasks = false;
+      request.triggersError = (long) random.nextInt(Integer.MAX_VALUE);
+      request.triggersSuccess = (long) random.nextInt(Integer.MAX_VALUE);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null,
+          serviceConfigFactory, hostCount);
+
+      ServiceHost host = machine.getHosts()[0];
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
+      ImageService.State createdImageState = createNewImageEntity();
+      String newImageId = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
+      createImageToImageDatastoreDocument(newImageId);
+
+      // Send a patch to the trigger service that just updates the stats
+      machine.sendPatchAndWait(machine.getImageSeederSyncServiceUri(), request);
+
+      ImageSeederSyncTriggerService.State state = machine.getServiceState(machine.getImageSeederSyncServiceUri(),
+          ImageSeederSyncTriggerService.State.class);
+
+      assertThat(state.triggersError, is(request.triggersError));
+      assertThat(state.triggersSuccess, is(request.triggersSuccess));
+
+      // Check that ImageSeederService was NOT triggered.
+      QueryTask.QuerySpecification spec =
+          QueryTaskUtils.buildTaskStatusQuerySpec(
+              ImageSeederService.State.class,
+              TaskState.TaskStage.STARTED,
+              TaskState.TaskStage.FINISHED,
+              TaskState.TaskStage.FAILED);
+
+      QueryTask query = QueryTask.create(spec)
+          .setDirect(true);
+      QueryTask queryResponse = machine.sendQueryAndWait(query);
+      assertThat(queryResponse.results.documentLinks.size(), lessThanOrEqualTo(0));
+    }
+
+    @Test(dataProvider = "hostCount")
     public void testTriggerSuccess(int hostCount) throws Throwable {
-      request.pulse = true;
+      request.shouldTriggerTasks = true;
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null,
           serviceConfigFactory, hostCount);
 
@@ -252,6 +295,7 @@ public class ImageSeederSyncTriggerServiceTest {
           });
       assertThat(queryResponse.results.documentLinks.size(), greaterThanOrEqualTo(1));
     }
+
 
     private ImageService.State createNewImageEntity() throws Throwable {
       machine.startFactoryServiceSynchronously(ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
