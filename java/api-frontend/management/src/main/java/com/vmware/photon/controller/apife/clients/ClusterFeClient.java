@@ -78,8 +78,8 @@ public class ClusterFeClient {
     return clusterBackend.get(id);
   }
 
-  public ResourceList<Cluster> find(String projectId) throws ExternalException {
-    return new ResourceList<>(clusterBackend.find(projectId));
+  public ResourceList<Cluster> find(String projectId, Optional<Integer> pageSize) throws ExternalException {
+    return clusterBackend.find(projectId, pageSize);
   }
 
   public Task delete(String id) throws ExternalException {
@@ -96,5 +96,9 @@ public class ClusterFeClient {
 
   public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
     return clusterBackend.getVmsPage(pageLink);
+  }
+
+  public ResourceList<Cluster> getClustersPage(String pageLink) throws ExternalException {
+    return clusterBackend.getClustersPage(pageLink);
   }
 }

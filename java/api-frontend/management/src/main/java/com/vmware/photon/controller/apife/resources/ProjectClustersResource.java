@@ -19,12 +19,15 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -39,10 +42,12 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 /**
  * Resource APIs for managing clusters in a project.
@@ -54,10 +59,12 @@ import javax.ws.rs.core.Response;
 public class ProjectClustersResource {
 
   private final ClusterFeClient clusterFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public ProjectClustersResource(ClusterFeClient clusterFeClient) {
+  public ProjectClustersResource(ClusterFeClient clusterFeClient, PaginationConfig paginationConfig) {
     this.clusterFeClient = clusterFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @POST
@@ -82,10 +89,22 @@ public class ProjectClustersResource {
       @ApiResponse(code = 200, message = "List of clusters in the project")
   })
   public Response find(@Context Request request,
-                       @PathParam("id") String projectId) throws ExternalException {
+                       @PathParam("id") String projectId,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
+
+    ResourceList<Cluster> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = clusterFeClient.getClustersPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = clusterFeClient.find(projectId, adjustedPageSize);
+    }
+
+    String apiRoute = UriBuilder.fromPath(ClusterResourceRoutes.PROJECT_CLUSTERS_PATH).build(projectId).toString();
     return generateResourceListResponse(
         Response.Status.OK,
-        clusterFeClient.find(projectId),
+        PaginationUtils.formalizePageLinks(resourceList, apiRoute),
         (ContainerRequest) request,
         ClusterResourceRoutes.CLUSTERS_PATH);
   }
