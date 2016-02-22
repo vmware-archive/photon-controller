@@ -41,6 +41,7 @@ describe "deployment", management: true, devbox: true do
       EsxCloud::DeploymentCreateSpec.new(
         ["image_datastore"],
         EsxCloud::AuthInfo.new(false),
+        EsxCloud::StatsInfo.new(false),
         "0.0.0.1",
         "0.0.0.2",
         true)
@@ -55,6 +56,7 @@ describe "deployment", management: true, devbox: true do
             EsxCloud::DeploymentCreateSpec.new(
               ["image_datastore"],
               EsxCloud::AuthInfo.new(true),
+              EsxCloud::StatsInfo.new(false),
               "0.0.0.1",
               "0.0.0.2",
               true)
@@ -71,6 +73,7 @@ describe "deployment", management: true, devbox: true do
             EsxCloud::DeploymentCreateSpec.new(
               ["image_datastore"],
               EsxCloud::AuthInfo.new(false, '0.0.0.0','8080', 't', 'u', 'p', ['t\\securityGroup1']),
+              EsxCloud::StatsInfo.new(false),
               "0.0.0.1",
               "0.0.0.2",
               true)

@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
@@ -63,8 +64,8 @@ public class DeploymentsResourceTest extends ResourceTest {
     spec = new DeploymentCreateSpec();
     spec.setNtpEndpoint("0.0.0.0");
     spec.setSyslogEndpoint("0.0.0.1");
-    spec.setStatsStoreEndpoint("0.0.0.2");
     spec.setImageDatastores(Collections.singleton("imageDatastore"));
+    spec.setStats(new StatsInfoBuilder().enabled(false).build());
 
     addResource(new DeploymentsResource(deploymentFeClient));
   }
@@ -101,6 +102,25 @@ public class DeploymentsResourceTest extends ResourceTest {
     ApiError apiError = response.readEntity(ApiError.class);
     assertThat(apiError.getCode(), is("InvalidAuthConfig"));
     assertThat(apiError.getMessage(), containsString("securityGroups must be null"));
+  }
+
+  @Test
+  public void testInvalidDeploymentWithStatsEnabled() throws Exception {
+    spec.setAuth(new AuthInfoBuilder().enabled(false).build());
+    spec.setStats(new StatsInfoBuilder().enabled(true).storeEndpoint(null).build());
+
+    Task task = new Task();
+    task.setId(taskId);
+    when(deploymentFeClient.create(spec)).thenReturn(task);
+
+    Response response = createDeployment(spec);
+
+    assertThat(response.getStatus(), is(400));
+
+    ApiError apiError = response.readEntity(ApiError.class);
+    assertThat(apiError.getCode(), is("InvalidStatsConfig"));
+    assertThat(apiError.getMessage(), containsString("storeEndpoint may not be null"));
+    assertThat(apiError.getMessage(), containsString("storePort may not be null"));
   }
 
   @Test
@@ -201,7 +221,7 @@ public class DeploymentsResourceTest extends ResourceTest {
     deployment.setImageDatastores(Collections.singleton("imageDatastore"));
     deployment.setSyslogEndpoint("0.0.0.0");
     deployment.setNtpEndpoint("0.0.0.1");
-    deployment.setStatsStoreEndpoint("0.0.0.2");
+    deployment.setStats(new StatsInfoBuilder().build());
     deployment.setAuth(new AuthInfoBuilder().build());
     deployment.setUseImageDatastoreForVms(true);
 

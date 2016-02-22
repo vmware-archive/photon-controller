@@ -70,6 +70,7 @@ require "common/resources/cluster"
 require "common/resources/cluster_list"
 require "common/resources/cluster_configuration"
 require "common/resources/security_group"
+require "common/resources/stats_info"
 require "common/resources/availability_zone"
 require "common/resources/availability_zone_list"
 

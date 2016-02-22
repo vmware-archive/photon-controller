@@ -13,19 +13,24 @@
 
 package com.vmware.photon.controller.api;
 
-
+import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
+import com.vmware.photon.controller.api.constraints.StatsDisabled;
+import com.vmware.photon.controller.api.constraints.StatsEnabled;
 import com.vmware.photon.controller.api.helpers.Validator;
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.asJson;
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.fromJson;
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.jsonFixture;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.collections.CollectionUtils;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Tests {@link StatsInfo}.
@@ -47,20 +52,83 @@ public class StatsInfoTest {
   private void dummy() {
   }
 
+
   /**
    * Tests for validations.
    */
   public class ValidationTest {
 
+    private final String[] statsEnabledErrorMsgs = new String[]{
+        "storeEndpoint may not be null (was null)",
+        "storePort may not be null (was null)"
+    };
+
+    private final String[] statsDisabledErrorMsgs = new String[]{
+        "storeEndpoint must be null (was e)",
+        "storePort must be null (was 1)",
+    };
+
     private Validator validator = new Validator();
 
-    @Test
-    public void testValidStatsInfo() {
-      ImmutableList<String> violations = validator.validate(createStatsInfo());
+    @Test(dataProvider = "validStatsInfo")
+    public void testValidStatsInfo(StatsInfo stats) {
+      ImmutableList<String> violations = validator.validate(stats);
       assertThat(violations.isEmpty(), is(true));
     }
 
+    @DataProvider(name = "validStatsInfo")
+    public Object[][] getValidStatsInfo() {
+      return new Object[][]{
+          {
+            new StatsInfoBuilder()
+              .enabled(false)
+              .build(),
+          },
+          {
+            new StatsInfoBuilder()
+              .enabled(true).storeEndpoint("test").storePort(100)
+              .build(),
+          },
+          {
+            new StatsInfoBuilder()
+              .enabled(true).storeEndpoint("test")
+              .build()
+          },
+      };
+    }
+
+    @Test(dataProvider = "invalidStatsInfo")
+    public void testInvalidStatsInfo(StatsInfo stats, String[] errorMsgs) {
+      ImmutableList<String> violations;
+      if (stats.getEnabled()) {
+        violations = validator.validate(stats, StatsEnabled.class);
+      } else {
+        violations = validator.validate(stats, StatsDisabled.class);
+      }
+
+      assertThat(violations.size(), is(errorMsgs.length));
+      assertThat(CollectionUtils.isEqualCollection(violations, Arrays.asList(errorMsgs)), is(true));
+    }
+
+    @DataProvider(name = "invalidStatsInfo")
+    public Object[][] getInvalidStatsInfo() {
+      return new Object[][]{
+          {new StatsInfoBuilder()
+              .enabled(true)
+              .build(),
+              statsEnabledErrorMsgs},
+          {new StatsInfoBuilder()
+              .enabled(false)
+              .storeEndpoint("e")
+              .storePort(1)
+              .build(),
+              statsDisabledErrorMsgs},
+      };
+    }
   }
+
+
+
 
   /**
    * Tests {@link StatsInfo#toString()}.
@@ -71,8 +139,8 @@ public class StatsInfoTest {
     public void testCorrectString() {
       String expectedString =
           "StatsInfo{enabled=true, storeEndpoint=10.146.64.236, storePort=2004}";
-      StatsInfo statsInfo = createStatsInfo();
-      assertThat(statsInfo.toString(), is(expectedString));
+      StatsInfo stats = createStatsInfo();
+      assertThat(stats.toString(), is(expectedString));
     }
   }
 
@@ -83,11 +151,11 @@ public class StatsInfoTest {
 
     @Test
     public void testStatsInfo() throws IOException {
-      StatsInfo statsInfo = createStatsInfo();
+      StatsInfo stats = createStatsInfo();
       String json = jsonFixture(JSON_FILE);
 
-      assertThat(asJson(statsInfo), is(equalTo(json)));
-      assertThat(fromJson(json, StatsInfo.class), is(statsInfo));
+      assertThat(asJson(stats), is(equalTo(json)));
+      assertThat(fromJson(json, StatsInfo.class), is(stats));
     }
   }
 }
