@@ -65,7 +65,7 @@ module EsxCloud
       # @return [ResourceTicketList]
       def get_resource_ticket_list_from_response(result)
         resource_tickets = result.split("\n").drop(1).map do |resource_ticket_info|
-          find_resource_ticket_by_id(resource_ticket_info.split[0])
+          find_resource_ticket_by_id(resource_ticket_info.split("\t")[0])
         end
 
         ResourceTicketList.new(resource_tickets)
@@ -75,7 +75,8 @@ module EsxCloud
       # @param [String] tenant_id
       # @return [ResourceTicket]
       def get_resource_ticket_from_response(result, tenant_id)
-        values = result.split
+        result.slice! "\n"
+        values = result.split("\t")
         resource_ticket_hash = { "name" => values[0],
                                  "id" => values[1],
                                  "limits" => getLimitsOrUsage(values[2]),
@@ -89,7 +90,7 @@ module EsxCloud
         if result.to_s != ''
           limitsOrUsages = result.split(",").map do |limitOrUsage|
             attributes = limitOrUsage.split(":")
-            {"key" => attributes[0], "value" => attributes[1].to_f,"unit" => attributes[1]}
+            {"key" => attributes[0], "value" => attributes[1].to_f,"unit" => attributes[2]}
           end
         end
 

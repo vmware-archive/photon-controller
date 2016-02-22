@@ -140,11 +140,19 @@ module EsxCloud
       # @param [String] result
       # @return [Host]
       def get_host_from_response(result)
-        values = result.split
+        result.slice! "\n"
+        values = result.split("\t")
         host_hash = { "id" => values[0], "username" => values[1], "password" => values[2],
                       "address" => values[3], "usageTags" => values[4], "state" => values[5],
-                      "metadata" => metadata_to_hash(values[6]), "availabilityZone" => values[7],
-                      "esxVersion" => values[8] }
+                      "metadata" => metadata_to_hash(values[6])}
+
+        if values[7].to_s != ""
+          host_hash.merge!({"availabilityZone" => values[7]})
+        end
+        if values[8].to_s != ""
+          host_hash.merge!({"esxVersion" => values[8]})
+        end
+
         Host.create_from_hash(host_hash)
       end
 
@@ -152,9 +160,11 @@ module EsxCloud
       # @return hash
       def metadata_to_hash(metadata)
         hash_new = Hash.new
-        metadata.split(',').each { |attribute|
-          values = attribute.split(':')
-          hash_new.merge!({ values[0] => values[1]})}
+        if metadata.to_s != ''
+          metadata.split(',').each { |attribute|
+            values = attribute.split(':')
+            hash_new.merge!({ values[0] => values[1]})}
+        end
         hash_new
       end
     end

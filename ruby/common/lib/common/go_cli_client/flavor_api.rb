@@ -73,9 +73,15 @@ module EsxCloud
       # @param [String] result
       # @return Flavor
       def get_flavor_from_response(result)
-        values = result.split()
+        result.slice! "\n"
+        values = result.split("\t")
         flavor_hash = { "id" => values[0], "name" => values[1], "kind" => values[2],
-                        "cost" => cost_to_hash(values[3]), "state" => values[4] }
+                        "cost" => cost_to_hash(values[3])}
+
+        if values[4].to_s != ""
+          flavor_hash.merge!({"state" => values[4]})
+        end
+
         Flavor.create_from_hash(flavor_hash)
       end
 
