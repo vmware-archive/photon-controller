@@ -13,23 +13,17 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
-import com.vmware.xenon.common.FactoryService;
-import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
 
 /**
- * This class implements a Xenon service which provides a factory for {@link ProvisionAgentTaskService} instances.
+ * This class defines a basic task service state document which is used for message passing between task service
+ * instances.
  */
-public class ProvisionAgentTaskFactoryService extends FactoryService {
+public class TaskServiceState extends ServiceDocument {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/deployer/tasks/provision-agent";
-
-  public ProvisionAgentTaskFactoryService() {
-    super(ProvisionAgentTaskService.State.class);
-  }
-
-  @Override
-  public Service createServiceInstance() {
-    return new ProvisionAgentTaskService();
-  }
+  /**
+   * This value represents the state of the task.
+   */
+  public TaskState taskState;
 }
