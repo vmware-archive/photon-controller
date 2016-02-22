@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
+import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
@@ -21,6 +22,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
+import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.xenon.common.Operation;
@@ -33,7 +35,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -83,6 +87,7 @@ public class ConstraintCheckerPerfTest {
       HostService.State host = new HostService.State();
       host.hostAddress = "host" + i;
       host.state = HostState.READY;
+      host.agentState = AgentState.ACTIVE;
       host.userName = "username";
       host.password = "password";
       host.reportedDatastores = new HashSet<>();
@@ -132,10 +137,10 @@ public class ConstraintCheckerPerfTest {
     dcpRestClient.start();
 
     ConstraintChecker inMemory = new InMemoryConstraintChecker(dcpRestClient);
-    return new Object[][]{
-        {inMemory, 1},
-        {inMemory, 4},
-        {inMemory, 8},
+    return new Object[][] {
+      { inMemory, 1 },
+      { inMemory, 4 },
+      { inMemory, 8 },
     };
   }
 
@@ -153,7 +158,8 @@ public class ConstraintCheckerPerfTest {
       Thread worker = new Thread(() -> {
         List<ResourceConstraint> constraints = new LinkedList<>();
         for (int j = 0; j < numRequests; j++) {
-          checker.getCandidates(constraints, 4);
+          Map<String, ServerAddress> candidates = checker.getCandidates(constraints, 4);
+          assertThat(candidates.size(), not(equalTo(0)));
         }
       });
       worker.start();
