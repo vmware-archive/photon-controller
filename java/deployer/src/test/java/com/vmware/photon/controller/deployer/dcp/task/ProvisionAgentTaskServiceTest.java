@@ -17,7 +17,6 @@ import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
-import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentConfigurationException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
@@ -51,7 +50,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -83,11 +81,7 @@ public class ProvisionAgentTaskServiceTest {
 
     @Test
     public void testServiceOptions() {
-      assertThat(provisionAgentTaskService.getOptions(), is(EnumSet.of(
-          Service.ServiceOption.CONCURRENT_GET_HANDLING,
-          Service.ServiceOption.OWNER_SELECTION,
-          Service.ServiceOption.PERSISTENCE,
-          Service.ServiceOption.REPLICATION)));
+      assertThat(provisionAgentTaskService.getOptions(), is(EnumSet.noneOf(Service.ServiceOption.class)));
     }
   }
 
@@ -419,275 +413,6 @@ public class ProvisionAgentTaskServiceTest {
   }
 
   /**
-   * This class implements tests for the PROVISION_AGENT sub-stage.
-   */
-  public class ProvisionAgentTest {
-
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
-    private AgentControlClientFactory agentControlClientFactory;
-    private HostClientFactory hostClientFactory;
-    private ProvisionAgentTaskService.State startState;
-    private TestEnvironment testEnvironment;
-
-    @BeforeClass
-    public void setUpClass() throws Throwable {
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
-      agentControlClientFactory = mock(AgentControlClientFactory.class);
-      hostClientFactory = mock(HostClientFactory.class);
-
-      testEnvironment = new TestEnvironment.Builder()
-          .cloudServerSet(cloudStoreEnvironment.getServerSet())
-          .agentControlClientFactory(agentControlClientFactory)
-          .hostClientFactory(hostClientFactory)
-          .hostCount(1)
-          .build();
-
-      startState = buildValidStartState(TaskState.TaskStage.STARTED,
-          ProvisionAgentTaskService.TaskState.SubStage.PROVISION_AGENT);
-      startState.controlFlags = ControlFlags.CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION;
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreEnvironment).documentSelfLink;
-      startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
-          Collections.singleton(UsageTag.MGMT.name())).documentSelfLink;
-    }
-
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      if (testEnvironment != null) {
-        testEnvironment.stop();
-        testEnvironment = null;
-      }
-
-      if (cloudStoreEnvironment != null) {
-        cloudStoreEnvironment.stop();
-        cloudStoreEnvironment = null;
-      }
-    }
-
-    @Test
-    public void testProvisionAgentSuccess() throws Throwable {
-
-      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
-          .provisionResultCode(ProvisionResultCode.OK)
-          .build();
-
-      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
-
-      ProvisionAgentTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionAgentTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionAgentTaskService.State.class,
-              (state) -> state.taskState.subStage != ProvisionAgentTaskService.TaskState.SubStage.PROVISION_AGENT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(finalState.taskState.subStage, is(ProvisionAgentTaskService.TaskState.SubStage.WAIT_FOR_AGENT));
-      assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
-    }
-
-    @Test(dataProvider = "ProvisionFailureCodes")
-    public void testProvisionAgentFailureWithResult(ProvisionResultCode resultCode, Class<XenonRuntimeException> clazz)
-        throws Throwable {
-
-      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
-          .provisionResultCode(resultCode)
-          .build();
-
-      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
-
-      ProvisionAgentTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionAgentTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionAgentTaskService.State.class,
-              (state) -> state.taskState.subStage != ProvisionAgentTaskService.TaskState.SubStage.PROVISION_AGENT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString(
-          "Provisioning the agent on host hostAddress failed with error"));
-      assertThat(finalState.taskState.failure.message, containsString(clazz.getName()));
-    }
-
-    @DataProvider(name = "ProvisionFailureCodes")
-    public Object[][] getProvisionFailureCodes() {
-      return new Object[][]{
-          {ProvisionResultCode.INVALID_CONFIG, InvalidAgentConfigurationException.class},
-          {ProvisionResultCode.INVALID_STATE, InvalidAgentStateException.class},
-          {ProvisionResultCode.SYSTEM_ERROR, SystemErrorException.class},
-      };
-    }
-
-    @Test
-    public void testProvisionAgentFailureWithTException() throws Throwable {
-
-      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
-          .provisionFailure(new TException("Thrift exception during provision call"))
-          .build();
-
-      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
-
-      ProvisionAgentTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionAgentTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionAgentTaskService.State.class,
-              (state) -> state.taskState.subStage != ProvisionAgentTaskService.TaskState.SubStage.PROVISION_AGENT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString(
-          "Provisioning the agent on host hostAddress failed with error"));
-      assertThat(finalState.taskState.failure.message, containsString(TException.class.getName()));
-    }
-  }
-
-  /**
-   * This class implements tests for the WAIT_FOR_AGENT sub-stage.
-   */
-  public class WaitForAgentTest {
-
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
-    private AgentControlClientFactory agentControlClientFactory;
-    private ProvisionAgentTaskService.State startState;
-    private TestEnvironment testEnvironment;
-
-    @BeforeClass
-    public void setUpClass() throws Throwable {
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
-      agentControlClientFactory = mock(AgentControlClientFactory.class);
-
-      testEnvironment = new TestEnvironment.Builder()
-          .cloudServerSet(cloudStoreEnvironment.getServerSet())
-          .agentControlClientFactory(agentControlClientFactory)
-          .hostCount(1)
-          .build();
-
-      startState = buildValidStartState(TaskState.TaskStage.STARTED,
-          ProvisionAgentTaskService.TaskState.SubStage.WAIT_FOR_AGENT);
-      startState.controlFlags = ControlFlags.CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION;
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreEnvironment).documentSelfLink;
-      startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
-          Collections.singleton(UsageTag.MGMT.name())).documentSelfLink;
-      startState.maximumPollCount = 3;
-      startState.pollInterval = 10;
-    }
-
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      if (testEnvironment != null) {
-        testEnvironment.stop();
-        testEnvironment = null;
-      }
-
-      if (cloudStoreEnvironment != null) {
-        cloudStoreEnvironment.stop();
-        cloudStoreEnvironment = null;
-      }
-    }
-
-    @Test
-    public void testWaitForAgentSuccess() throws Throwable {
-
-      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
-          .agentStatusCode(AgentStatusCode.OK)
-          .build();
-
-      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
-
-      ProvisionAgentTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionAgentTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionAgentTaskService.State.class,
-              (state) -> state.taskState.subStage != ProvisionAgentTaskService.TaskState.SubStage.WAIT_FOR_AGENT);
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
-    }
-
-    @Test
-    public void testWaitForAgentSuccessAfterFailures() throws Throwable {
-
-      AgentControlClientMock exceptionMock = new AgentControlClientMock.Builder()
-          .getAgentStatusFailure(new TException("Thrift exception during getAgentStatus call"))
-          .build();
-
-      AgentControlClientMock restartingMock = new AgentControlClientMock.Builder()
-          .agentStatusCode(AgentStatusCode.RESTARTING)
-          .build();
-
-      AgentControlClientMock readyMock = new AgentControlClientMock.Builder()
-          .agentStatusCode(AgentStatusCode.OK)
-          .build();
-
-      when(agentControlClientFactory.create())
-          .thenReturn(exceptionMock)
-          .thenReturn(restartingMock)
-          .thenReturn(readyMock);
-
-      ProvisionAgentTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionAgentTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionAgentTaskService.State.class,
-              (state) -> state.taskState.subStage != ProvisionAgentTaskService.TaskState.SubStage.WAIT_FOR_AGENT);
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
-    }
-
-    @Test
-    public void testWaitForAgentFailureWithResult() throws Throwable {
-
-      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
-          .agentStatusCode(AgentStatusCode.RESTARTING)
-          .build();
-
-      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
-
-      ProvisionAgentTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionAgentTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionAgentTaskService.State.class,
-              (state) -> state.taskState.subStage != ProvisionAgentTaskService.TaskState.SubStage.WAIT_FOR_AGENT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString(
-          "The agent on host hostAddress failed to become ready after provisioning after 3 retries"));
-    }
-
-    @Test
-    public void testWaitForAgentFailureWithTException() throws Throwable {
-
-      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
-          .getAgentStatusFailure(new TException("Thrift exception during getAgentStatus call"))
-          .build();
-
-      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
-
-      ProvisionAgentTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionAgentTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionAgentTaskService.State.class,
-              (state) -> state.taskState.subStage != ProvisionAgentTaskService.TaskState.SubStage.WAIT_FOR_AGENT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString(
-          "The agent on host hostAddress failed to become ready after provisioning after 3 retries"));
-    }
-  }
-
-  /**
    * This class implements end-to-end tests for the service.
    */
   public class EndToEndTest {
@@ -754,6 +479,10 @@ public class ProvisionAgentTaskServiceTest {
     @Test
     public void testEndToEndSuccessAfterAgentStatusFailures() throws Throwable {
 
+      AgentControlClientMock provisionAgentSuccessMock = new AgentControlClientMock.Builder()
+          .provisionResultCode(ProvisionResultCode.OK)
+          .build();
+
       AgentControlClientMock agentStatusExceptionMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .getAgentStatusFailure(new TException("Thrift exception during getAgentStatus call"))
@@ -769,10 +498,11 @@ public class ProvisionAgentTaskServiceTest {
           .agentStatusCode(AgentStatusCode.OK)
           .build();
 
-      when(agentControlClientFactory.create())
-          .thenReturn(agentStatusExceptionMock)
-          .thenReturn(agentStatusRestartingMock)
-          .thenReturn(agentStatusReadyMock);
+      doReturn(provisionAgentSuccessMock)
+          .doReturn(agentStatusExceptionMock)
+          .doReturn(agentStatusRestartingMock)
+          .doReturn(agentStatusReadyMock)
+          .when(agentControlClientFactory).create();
 
       ProvisionAgentTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -785,11 +515,12 @@ public class ProvisionAgentTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
     }
 
-    @Test
-    public void testProvisionFailure() throws Throwable {
+    @Test(dataProvider = "ProvisionFailureCodes")
+    public void testProvisionAgentFailureWithResult(ProvisionResultCode resultCode, Class<XenonRuntimeException> clazz)
+        throws Throwable {
 
       AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
-          .provisionResultCode(ProvisionResultCode.SYSTEM_ERROR)
+          .provisionResultCode(resultCode)
           .build();
 
       doReturn(agentControlClientMock).when(agentControlClientFactory).create();
@@ -799,22 +530,30 @@ public class ProvisionAgentTaskServiceTest {
               ProvisionAgentTaskFactoryService.SELF_LINK,
               startState,
               ProvisionAgentTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+              (state) -> state.taskState.stage != TaskState.TaskStage.STARTED);
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString(
           "Provisioning the agent on host hostAddress failed with error"));
-      assertThat(finalState.taskState.failure.message, containsString(SystemErrorException.class.getName()));
+      assertThat(finalState.taskState.failure.message, containsString(clazz.getName()));
+    }
+
+    @DataProvider(name = "ProvisionFailureCodes")
+    public Object[][] getProvisionFailureCodes() {
+      return new Object[][]{
+          {ProvisionResultCode.INVALID_CONFIG, InvalidAgentConfigurationException.class},
+          {ProvisionResultCode.INVALID_STATE, InvalidAgentStateException.class},
+          {ProvisionResultCode.SYSTEM_ERROR, SystemErrorException.class},
+      };
     }
 
     @Test
-    public void testWaitForAgentFailure() throws Throwable {
+    public void testProvisionAgentFailureWithTException() throws Throwable {
 
       AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
-          .provisionResultCode(ProvisionResultCode.OK)
-          .agentStatusCode(AgentStatusCode.RESTARTING)
+          .provisionFailure(new TException("Thrift exception during provision call"))
           .build();
 
       doReturn(agentControlClientMock).when(agentControlClientFactory).create();
@@ -824,7 +563,64 @@ public class ProvisionAgentTaskServiceTest {
               ProvisionAgentTaskFactoryService.SELF_LINK,
               startState,
               ProvisionAgentTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+              (state) -> state.taskState.stage != TaskState.TaskStage.STARTED);
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(
+          "Provisioning the agent on host hostAddress failed with error"));
+      assertThat(finalState.taskState.failure.message, containsString(TException.class.getName()));
+    }
+
+    @Test(dataProvider = "AgentStatusFailureCodes")
+    public void testWaitForAgentFailureWithResult(AgentStatusCode resultCode) throws Throwable {
+
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
+          .provisionResultCode(ProvisionResultCode.OK)
+          .agentStatusCode(resultCode)
+          .build();
+
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
+
+      ProvisionAgentTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              ProvisionAgentTaskFactoryService.SELF_LINK,
+              startState,
+              ProvisionAgentTaskService.State.class,
+              (state) -> state.taskState.stage != TaskState.TaskStage.STARTED);
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(
+          "The agent on host hostAddress failed to become ready after provisioning after 3 retries"));
+    }
+
+    @DataProvider(name = "AgentStatusFailureCodes")
+    public Object[][] getAgentStatusFailureCodes() {
+      return new Object[][]{
+          {AgentStatusCode.RESTARTING},
+          {AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED},
+      };
+    }
+
+    @Test
+    public void testWaitForAgentFailureWithTException() throws Throwable {
+
+      AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
+          .provisionResultCode(ProvisionResultCode.OK)
+          .getAgentStatusFailure(new TException("Thrift exception during getAgentStatus call"))
+          .build();
+
+      doReturn(agentControlClientMock).when(agentControlClientFactory).create();
+
+      ProvisionAgentTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              ProvisionAgentTaskFactoryService.SELF_LINK,
+              startState,
+              ProvisionAgentTaskService.State.class,
+              (state) -> state.taskState.stage != TaskState.TaskStage.STARTED);
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.subStage, nullValue());

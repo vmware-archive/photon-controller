@@ -18,18 +18,18 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
 /**
- * This class implements a Xenon service which provides a factory for {@link ProvisionAgentTaskService} instances.
+ * This class implements a Xenon service which provides a factory for {@link ChildTaskAggregatorService} instances.
  */
-public class ProvisionAgentTaskFactoryService extends FactoryService {
+public class ChildTaskAggregatorFactoryService extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/deployer/tasks/provision-agent";
+  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/deployer/tasks/aggregate-children";
 
-  public ProvisionAgentTaskFactoryService() {
-    super(ProvisionAgentTaskService.State.class);
+  public ChildTaskAggregatorFactoryService() {
+    super(ChildTaskAggregatorService.State.class);
   }
 
   @Override
   public Service createServiceInstance() {
-    return new ProvisionAgentTaskService();
+    return new ChildTaskAggregatorService();
   }
 }

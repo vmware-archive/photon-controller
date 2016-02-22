@@ -493,44 +493,27 @@ public class ProvisionHostTaskService extends StatefulService {
 
   private void processProvisionAgentSubStage(State currentState, DeploymentService.State deploymentState) {
 
+    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GET_HOST_CONFIG, null);
+    if (ControlFlags.disableOperationProcessingOnStageTransition(currentState.controlFlags)) {
+      patchState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    }
+
     ProvisionAgentTaskService.State startState = new ProvisionAgentTaskService.State();
+    startState.parentTaskServiceLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(patchState);
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.hostServiceLink = currentState.hostServiceLink;
     startState.chairmanServerList = deploymentState.chairmanServerList;
 
-    TaskUtils.startTaskAsync(
-        this,
-        ProvisionAgentTaskFactoryService.SELF_LINK,
-        startState,
-        (state) -> {
-          ServiceUtils.logInfo(ProvisionHostTaskService.this, "State is " + state.taskState.stage);
-          return TaskUtils.finalTaskStages.contains(state.taskState.stage);
-        },
-        ProvisionAgentTaskService.State.class,
-        currentState.taskPollDelay,
-        new FutureCallback<ProvisionAgentTaskService.State>() {
-          @Override
-          public void onSuccess(@Nullable ProvisionAgentTaskService.State state) {
-            switch (state.taskState.stage) {
-              case FINISHED:
-                sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.GET_HOST_CONFIG);
-                break;
-              case FAILED:
-                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                patchState.taskState.failure = state.taskState.failure;
-                TaskUtils.sendSelfPatch(ProvisionHostTaskService.this, patchState);
-                break;
-              case CANCELLED:
-                sendStageProgressPatch(currentState, TaskState.TaskStage.CANCELLED, null);
-                break;
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            failTask(throwable);
-          }
-        });
+    sendRequest(Operation
+        .createPost(this, ProvisionAgentTaskFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              }
+            }));
   }
 
   //

@@ -37,6 +37,8 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
@@ -1126,65 +1128,63 @@ public class AddManagementHostWorkflowService extends StatefulService {
                     } catch (Throwable t) {
                       failTask(t);
                     }
-
                   }
               ));
     }
   }
 
-  private void provisionCloudAgents(State currentState, DeploymentService.State deploymentService,
+  private void provisionCloudAgents(State currentState,
+                                    DeploymentService.State deploymentState,
                                     Set<String> documentLinks) {
-    final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
 
-    ProvisionAgentTaskService.State startState = createProvisionAgentTaskState(currentState, deploymentService);
-    FutureCallback<ProvisionAgentTaskService.State> futureCallback =
-        new FutureCallback<ProvisionAgentTaskService.State>() {
-          @Override
-          public void onSuccess(@Nullable ProvisionAgentTaskService.State result) {
-            switch (result.taskState.stage) {
-              case FINISHED:
-                if (0 == pendingChildren.decrementAndGet()) {
-                  TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this,
-                      buildPatch(TaskState.TaskStage.FINISHED, null, null));
-                }
-                break;
-              case FAILED:
-                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                patchState.taskState.failure = result.taskState.failure;
-                TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, patchState);
-                break;
-              case CANCELLED:
-                TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(TaskState.TaskStage.CANCELLED,
-                    null, null));
-                break;
-            }
-          }
+    ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
+    startState.parentTaskLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.FINISHED, null, null));
+    startState.pendingCompletionCount = documentLinks.size();
+    startState.errorThreshold = 0.0;
 
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
+    sendRequest(Operation
+        .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                provisionCloudAgents(currentState, deploymentState, documentLinks,
+                    o.getBody(ServiceDocument.class).documentSelfLink);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void provisionCloudAgents(State currentState,
+                                    DeploymentService.State deploymentState,
+                                    Set<String> documentLinks,
+                                    String aggregatorServiceLink) {
+
+    ProvisionAgentTaskService.State startState = new ProvisionAgentTaskService.State();
+    startState.parentTaskServiceLink = aggregatorServiceLink;
+    startState.deploymentServiceLink = currentState.deploymentServiceLink;
+    startState.chairmanServerList = deploymentState.chairmanServerList;
 
     for (String hostServiceLink : documentLinks) {
       startState.hostServiceLink = hostServiceLink;
-      TaskUtils.startTaskAsync(this,
-          ProvisionAgentTaskFactoryService.SELF_LINK,
-          createProvisionAgentTaskState(currentState, deploymentService),
-          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-          ProvisionAgentTaskService.State.class,
-          currentState.taskPollDelay,
-          futureCallback);
-    }
-  }
 
-  private ProvisionAgentTaskService.State createProvisionAgentTaskState(State currentState, DeploymentService.State
-      deploymentService) {
-    ProvisionAgentTaskService.State startState = new ProvisionAgentTaskService.State();
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.hostServiceLink = currentState.hostServiceLink;
-    startState.chairmanServerList = deploymentService.chairmanServerList;
-    return startState;
+      sendRequest(Operation
+          .createPost(this, ProvisionAgentTaskFactoryService.SELF_LINK)
+          .setBody(startState)
+          .setCompletion(
+              (o, e) -> {
+                if (e != null) {
+                  failTask(e);
+                }
+              }));
+    }
   }
 
   private State applyPatch(State currentState, State patchState) {
