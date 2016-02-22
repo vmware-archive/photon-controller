@@ -40,6 +40,7 @@ describe "deployment lifecycle", order: :defined, deployer: true do
     EsxCloud::DeploymentCreateSpec.new(
         EsxCloud::TestHelpers.get_datastore_names,
         EsxCloud::AuthInfo.new(false),
+        EsxCloud::StatsInfo.new(false),
         ENV["SYSLOG_ENDPOINT"],
         ENV["NTP_ENDPOINT"],
         true)

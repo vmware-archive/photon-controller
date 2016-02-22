@@ -18,8 +18,10 @@ import com.vmware.photon.controller.api.constraints.NullableDomainOrIP;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
+
 import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.constraints.NotNull;
@@ -47,9 +49,9 @@ public class Deployment extends Base {
   private String syslogEndpoint;
 
   @JsonProperty
-  @ApiModelProperty(value = "statsStoreEndpoint")
-  @NullableDomainOrIP
-  private String statsStoreEndpoint;
+  @ApiModelProperty(value = "Stats information")
+  @NotNull
+  private StatsInfo stats;
 
   @JsonProperty
   @ApiModelProperty(value = "ntpEndpoint")
@@ -102,12 +104,12 @@ public class Deployment extends Base {
     this.syslogEndpoint = syslogEndpoint;
   }
 
-  public void setStatsStoreEndpoint(String statsStoreEndpoint) {
-    this.statsStoreEndpoint = statsStoreEndpoint;
+  public void setStats(StatsInfo stats) {
+    this.stats = stats;
   }
 
-  public String getStatsStoreEndpoint() {
-    return statsStoreEndpoint;
+  public StatsInfo getStats() {
+    return stats;
   }
 
   public String getNtpEndpoint() {
@@ -196,7 +198,7 @@ public class Deployment extends Base {
     Deployment other = (Deployment) o;
 
     return Objects.equals(this.getSyslogEndpoint(), other.getSyslogEndpoint())
-        && Objects.equals(this.getStatsStoreEndpoint(), other.getStatsStoreEndpoint())
+        && Objects.equals(this.getStats(), other.getStats())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms())
@@ -212,7 +214,7 @@ public class Deployment extends Base {
     return Objects.hash(
         super.hashCode(),
         this.getSyslogEndpoint(),
-        this.getStatsStoreEndpoint(),
+        this.getStats(),
         this.getNtpEndpoint(),
         this.getImageDatastores(),
         this.isUseImageDatastoreForVms(),
@@ -227,7 +229,7 @@ public class Deployment extends Base {
     return super.toStringHelper()
         .add("imageDatastores", StringUtils.join(imageDatastores, ','))
         .add("syslogEndpoint", syslogEndpoint)
-        .add("statsStoreEndpoint", statsStoreEndpoint)
+        .add("stats", stats)
         .add("ntpEndpoint", ntpEndpoint)
         .add("useImageDatastoreForVms", useImageDatastoreForVms)
         .add("auth", auth.toString())
@@ -236,5 +238,4 @@ public class Deployment extends Base {
         .add("migrationProgress", migrationStatus)
         .add("clusterConfigurations", getClusterConfigurations());
   }
-
 }

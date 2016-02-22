@@ -35,7 +35,11 @@ public class DeploymentEntity extends BaseEntity {
 
   private String syslogEndpoint;
 
+  private boolean statsEnabled;
+
   private String statsStoreEndpoint;
+
+  private Integer statsStorePort;
 
   private boolean authEnabled;
 
@@ -107,12 +111,28 @@ public class DeploymentEntity extends BaseEntity {
     this.syslogEndpoint = endpoint;
   }
 
+  public boolean getStatsEnabled() {
+    return this.statsEnabled;
+  }
+
+  public void setStatsEnabled(boolean statsEnabled) {
+    this.statsEnabled = statsEnabled;
+  }
+
   public String getStatsStoreEndpoint() {
     return this.statsStoreEndpoint;
   }
 
-  public void setStatsStoreEndpoint(String endpoint) {
-    this.statsStoreEndpoint = endpoint;
+  public void setStatsStoreEndpoint(String statsStoreEndpoint) {
+    this.statsStoreEndpoint = statsStoreEndpoint;
+  }
+
+  public Integer getStatsStorePort() {
+    return this.statsStorePort;
+  }
+
+  public void setStatsStorePort(Integer statsStorePort) {
+    this.statsStorePort = statsStorePort;
   }
 
   public boolean getAuthEnabled() {
@@ -240,7 +260,9 @@ public class DeploymentEntity extends BaseEntity {
 
     DeploymentEntity other = (DeploymentEntity) o;
     return Objects.equals(this.getSyslogEndpoint(), other.getSyslogEndpoint())
+        && Objects.equals(this.getStatsEnabled(), other.getStatsEnabled())
         && Objects.equals(this.getStatsStoreEndpoint(), other.getStatsStoreEndpoint())
+        && Objects.equals(this.getStatsStorePort(), other.getStatsStorePort())
         && Objects.equals(this.getAuthEnabled(), other.getAuthEnabled())
         && Objects.equals(this.getOauthEndpoint(), other.getOauthEndpoint())
         && Objects.equals(this.getOauthPort(), other.getOauthPort())
@@ -263,7 +285,9 @@ public class DeploymentEntity extends BaseEntity {
     return super.toStringHelper()
         .add("state", this.getState())
         .add("syslogEndpoint", this.getSyslogEndpoint())
+        .add("statsEnabled", this.getStatsEnabled())
         .add("statsStoreEndpoint", this.getStatsStoreEndpoint())
+        .add("statsStorePort", this.getStatsStorePort())
         .add("authEnabled", this.getAuthEnabled())
         .add("oauthEndpoint", this.getOauthEndpoint())
         .add("oauthPort", this.getOauthPort())
