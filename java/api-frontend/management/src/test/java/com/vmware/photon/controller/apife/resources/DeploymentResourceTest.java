@@ -13,14 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.ClusterConfiguration;
-import com.vmware.photon.controller.api.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.ClusterType;
-import com.vmware.photon.controller.api.Deployment;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.*;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
@@ -81,7 +76,7 @@ public class DeploymentResourceTest extends ResourceTest {
     deployment.setImageDatastores(Collections.singleton("imageDatastore"));
     deployment.setSyslogEndpoint("0.0.0.0");
     deployment.setNtpEndpoint("0.0.0.1");
-    deployment.setStatsStoreEndpoint("0.0.0.2");
+    deployment.setStatsInfo(new StatsInfoBuilder().build());
     deployment.setAuth(new AuthInfoBuilder().build());
     deployment.setUseImageDatastoreForVms(true);
 

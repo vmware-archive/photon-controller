@@ -13,11 +13,16 @@
 
 package com.vmware.photon.controller.api;
 
+import com.vmware.photon.controller.api.constraints.StatsEnabled;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
+
+import javax.validation.constraints.NotNull;
 
 import java.util.Objects;
 
@@ -35,10 +40,12 @@ public class StatsInfo {
 
   @JsonProperty
   @ApiModelProperty(value = "Url/IP of the Stats Store Endpoint", required = false)
+  @NotNull(groups = {StatsEnabled.class})
   private String storeEndpoint;
 
   @JsonProperty
   @ApiModelProperty(value = "The Stats Server Port", required = false)
+  @NotNull(groups = {StatsEnabled.class})
   private Integer storePort;
 
   public boolean getEnabled() {

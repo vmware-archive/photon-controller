@@ -36,13 +36,18 @@ module EsxCloud
       EsxCloud::DeploymentCreateSpec.new(
         image_datastores,
         EsxCloud::AuthInfo.new(
-          deployment['auth_enabled'] == true,
+          deployment['auth_enabled'],
           deployment['oauth_endpoint'],
           deployment['oauth_port'],
           deployment['oauth_tenant'],
           deployment['oauth_username'],
           deployment['oauth_password'],
           deployment['oauth_security_groups']),
+        EsxCloud::StatsInfo.new(
+          deployment['stats_enabled'],
+          deployment['stats_store_endpoint'],
+          deployment['stats_store_port']
+        ),
         deployment['syslog_endpoint'],
         deployment['ntp_endpoint'],
         deployment['use_image_datastore_for_vms'])

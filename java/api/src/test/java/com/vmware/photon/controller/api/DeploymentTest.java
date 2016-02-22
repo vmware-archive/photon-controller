@@ -15,6 +15,7 @@ package com.vmware.photon.controller.api;
 
 import com.vmware.photon.controller.api.base.Base;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.helpers.Validator;
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.asJson;
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.fromJson;
@@ -42,14 +43,16 @@ public class DeploymentTest {
   private Deployment createDeployment(
       Set<String> imageDatastores,
       String syslogEndpoint,
-      String ntpEndpoint,
-      String statsStoreEndpoint) {
+      String ntpEndpoint) {
     Deployment deployment = new Deployment();
     deployment.setId("id");
     deployment.setImageDatastores(imageDatastores);
     deployment.setSyslogEndpoint(syslogEndpoint);
     deployment.setNtpEndpoint(ntpEndpoint);
-    deployment.setStatsStoreEndpoint(statsStoreEndpoint);
+    deployment.setStatsInfo(new StatsInfoBuilder()
+        .storeEndpoint("10.146.64.111")
+        .storePort(2004).enabled(true)
+        .build());
     deployment.setAuth(new AuthInfoBuilder()
         .enabled(true)
         .endpoint("10.146.64.236")
@@ -90,8 +93,8 @@ public class DeploymentTest {
     @DataProvider(name = "validDeployments")
     public Object[][] getValidDeployments() {
       return new Object[][]{
-          {createDeployment(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", "0.0.0.3")},
-          {createDeployment(Collections.singleton("i"), null, null, null)},
+          {createDeployment(Collections.singleton("i"), "0.0.0.1", "0.0.0.2")},
+          {createDeployment(Collections.singleton("i"), null, null)},
       };
     }
 
@@ -104,16 +107,14 @@ public class DeploymentTest {
     @DataProvider(name = "invalidDeployments")
     public Object[][] getInvalidDeployments() {
       return new Object[][]{
-          {createDeployment(null, "0.0.0.1", "0.0.0.2", "0.0.0.3"),
+          {createDeployment(null, "0.0.0.1", "0.0.0.2"),
               "imageDatastores may not be null (was null)"},
-          {createDeployment(new HashSet<String>(), "0.0.0.1", "0.0.0.2", "0.0.0.3"),
+          {createDeployment(new HashSet<String>(), "0.0.0.1", "0.0.0.2"),
               "imageDatastores size must be between 1 and 2147483647 (was [])"},
-          {createDeployment(Collections.singleton("i"), "fake", "0.0.0.2", "0.0.0.3"),
+          {createDeployment(Collections.singleton("i"), "fake", "0.0.0.2"),
               "syslogEndpoint fake is invalid IP or Domain Address"},
-          {createDeployment(Collections.singleton("i"), "0.0.0.2", "fake", "0.0.0.3"),
+          {createDeployment(Collections.singleton("i"), "0.0.0.2", "fake"),
               "ntpEndpoint fake is invalid IP or Domain Address"},
-          {createDeployment(Collections.singleton("i"), "0.0.0.2", "0.0.0.1", "fake"),
-              "statsStoreEndpoint fake is invalid IP or Domain Address"},
       };
     }
 
@@ -136,7 +137,8 @@ public class DeploymentTest {
     public void testCorrectString() {
       String expectedString =
           "Deployment{id=id, Kind=deployment, imageDatastores=image-datastore1,image-datastore2, " +
-              "syslogEndpoint=0.0.0.1, statsStoreEndpoint=0.0.0.3, " +
+              "syslogEndpoint=0.0.0.1, statsInfo=StatsInfo{enabled=true, storeEndpoint=10.146.64.111, " +
+              "storePort=2004}, " +
               "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, " +
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443," +
               " tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, loadBalancerEnabled=true," +
@@ -145,7 +147,7 @@ public class DeploymentTest {
       imageDatastores.add("image-datastore1");
       imageDatastores.add("image-datastore2");
       Deployment deployment = createDeployment(
-          imageDatastores, "0.0.0.1", "0.0.0.2", "0.0.0.3");
+          imageDatastores, "0.0.0.1", "0.0.0.2");
       assertThat(deployment.toString(), is(expectedString));
     }
   }
@@ -160,7 +162,7 @@ public class DeploymentTest {
     @Test
     public void testSerialization() throws Exception {
       Deployment deployment = createDeployment(
-          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2", "0.0.0.3");
+          Collections.singleton("image-datastore"), "0.0.0.1", "0.0.0.2");
       deployment.setState(DeploymentState.CREATING);
       String json = jsonFixture(JSON_FILE);
 

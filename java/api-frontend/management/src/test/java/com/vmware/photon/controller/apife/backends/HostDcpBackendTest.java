@@ -25,6 +25,7 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
@@ -125,7 +126,11 @@ public class HostDcpBackendTest {
     deploymentCreateSpec.setImageDatastores(Collections.singleton("imageDatastore"));
     deploymentCreateSpec.setNtpEndpoint("ntp");
     deploymentCreateSpec.setSyslogEndpoint("syslog");
-    deploymentCreateSpec.setStatsStoreEndpoint("statsStore");
+    deploymentCreateSpec.setStatsInfo(new StatsInfoBuilder()
+        .enabled(true)
+        .storeEndpoint("10.146.64.111")
+        .storePort(2004).enabled(true)
+        .build());
     deploymentCreateSpec.setUseImageDatastoreForVms(true);
     deploymentCreateSpec.setAuth(new AuthInfoBuilder()
         .enabled(true)
