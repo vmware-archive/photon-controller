@@ -54,7 +54,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * This class implements a DCP microservice which performs the task of provisioning an agent.
+ * This class implements a Xenon task service which provisions the agent on a host.
  */
 public class ProvisionAgentTaskService extends StatefulService {
 
@@ -97,6 +97,23 @@ public class ProvisionAgentTaskService extends StatefulService {
      */
     @DefaultInteger(value = 0)
     public Integer controlFlags;
+
+    /**
+     * This value represents the URI of the parent task service to be notified when the current task completes.
+     *
+     * If this value is not specified, then no notification will be sent on completion.
+     */
+    @Immutable
+    public String parentTaskServiceLink;
+
+    /**
+     * This value represents the body of the patch message to send to the parent task on successful completion.
+     *
+     * If this value is null, then the patch body will contain a simple {@link TaskServiceState} indicating successful
+     * completion.
+     */
+    @Immutable
+    public String parentPatchBody;
 
     /**
      * This value represents the document link of the {@link DeploymentService} in whose context the task is being
@@ -146,9 +163,6 @@ public class ProvisionAgentTaskService extends StatefulService {
 
   public ProvisionAgentTaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
   @Override
@@ -196,6 +210,8 @@ public class ProvisionAgentTaskService extends StatefulService {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
         processStartedStage(currentState);
+      } else {
+        notifyParentTask(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
@@ -256,6 +272,34 @@ public class ProvisionAgentTaskService extends StatefulService {
     }
   }
 
+  private void notifyParentTask(State currentState) {
+
+    if (currentState.parentTaskServiceLink == null) {
+      ServiceUtils.logInfo(this, "Skipping parent task notification");
+      return;
+    }
+
+    Operation patchOperation = Operation.createPatch(this, currentState.parentTaskServiceLink);
+    switch (currentState.taskState.stage) {
+      case FINISHED:
+        if (currentState.parentPatchBody != null) {
+          patchOperation.setBody(currentState.parentPatchBody);
+          break;
+        }
+        // Fall through
+      case FAILED:
+      case CANCELLED:
+        TaskServiceState patchState = new TaskServiceState();
+        patchState.taskState = currentState.taskState;
+        patchOperation.setBody(patchState);
+        break;
+      default:
+        throw new IllegalStateException("Unexpected state: " + currentState.taskState.stage);
+    }
+
+    sendRequest(patchOperation);
+  }
+
   //
   // PROVISION_AGENT sub-stage methods
   //
@@ -268,20 +312,21 @@ public class ProvisionAgentTaskService extends StatefulService {
 
     OperationJoin
         .create(deploymentOp, hostOp)
-        .setCompletion((ops, exs) -> {
-          if (exs != null && !exs.isEmpty()) {
-            failTask(exs.values());
-            return;
-          }
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
 
-          try {
-            processProvisionAgentSubStage(currentState,
-                ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
-                ops.get(hostOp.getId()).getBody(HostService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
+              try {
+                processProvisionAgentSubStage(currentState,
+                    ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
+                    ops.get(hostOp.getId()).getBody(HostService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
         .sendWith(this);
   }
 
@@ -336,14 +381,14 @@ public class ProvisionAgentTaskService extends StatefulService {
               && hostState.usageTags.contains(UsageTag.MGMT.name())
               && !hostState.usageTags.contains(UsageTag.CLOUD.name())),
           ServiceUtils.getIDFromDocumentSelfLink(currentState.hostServiceLink),
-          ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink),
+          ServiceUtils.getIDFromDocumentSelfLink(currentState.deploymentServiceLink),
           deploymentState.ntpEndpoint,
           new AsyncMethodCallback<AgentControl.AsyncClient.provision_call>() {
             @Override
             public void onComplete(AgentControl.AsyncClient.provision_call provisionCall) {
               try {
                 AgentControlClient.ResponseValidator.checkProvisionResponse(provisionCall.getResult());
-                sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT);
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT);
               } catch (Throwable t) {
                 logProvisioningErrorAndFail(hostState, t);
               }
@@ -374,18 +419,19 @@ public class ProvisionAgentTaskService extends StatefulService {
 
     HostUtils.getCloudStoreHelper(this)
         .createGet(currentState.hostServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
 
-          try {
-            processWaitForAgentSubStage(currentState, op.getBody(HostService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
+              try {
+                processWaitForAgentSubStage(currentState, o.getBody(HostService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
         .sendWith(this);
   }
 
@@ -400,9 +446,9 @@ public class ProvisionAgentTaskService extends StatefulService {
             AgentStatusResponse agentStatusResponse = getAgentStatusCall.getResult();
             AgentControlClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse);
             if (agentStatusResponse.getStatus().equals(AgentStatusCode.RESTARTING)) {
-              throw new IllegalStateException("Agent is restarting");
+              throw new IllegalStateException("The agent on host " + hostState.hostAddress + " is restarting");
             } else {
-              sendStageProgressPatch(currentState, TaskState.TaskStage.FINISHED, null);
+              sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
             }
           } catch (Throwable t) {
             retryGetAgentStatusOrFail(currentState, hostState, t);
@@ -440,13 +486,9 @@ public class ProvisionAgentTaskService extends StatefulService {
   // Utility routines
   //
 
-  private void sendStageProgressPatch(State currentState, TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
+  private void sendStageProgressPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
     ServiceUtils.logTrace(this, "Sending self-patch to stage %s : %s", taskStage, subStage);
-    State patchState = buildPatch(taskStage, subStage, null);
-    if (ControlFlags.disableOperationProcessingOnStageTransition(currentState.controlFlags)) {
-      patchState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-    }
-    TaskUtils.sendSelfPatch(this, patchState);
+    TaskUtils.sendSelfPatch(this, buildPatch(taskStage, subStage, null));
   }
 
   private void failTask(Throwable failure) {
@@ -460,14 +502,15 @@ public class ProvisionAgentTaskService extends StatefulService {
   }
 
   @VisibleForTesting
-  protected static State buildPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage, @Nullable Throwable t) {
+  protected static State buildPatch(TaskState.TaskStage taskStage,
+                                    TaskState.SubStage subStage,
+                                    @Nullable Throwable failure) {
     State patchState = new State();
     patchState.taskState = new TaskState();
     patchState.taskState.stage = taskStage;
     patchState.taskState.subStage = subStage;
-
-    if (t != null) {
-      patchState.taskState.failure = Utils.toServiceErrorResponse(t);
+    if (failure != null) {
+      patchState.taskState.failure = Utils.toServiceErrorResponse(failure);
     }
 
     return patchState;

@@ -40,6 +40,7 @@ import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFa
 import com.vmware.photon.controller.deployer.dcp.task.AllocateTenantResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.BuildRuntimeConfigurationTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskFactoryService;
@@ -152,12 +153,12 @@ public class DeployerXenonServiceHost
       VmFactoryService.class,
 
       // Task Services
-      ValidateHostTaskFactoryService.class,
       AllocateClusterManagerResourcesTaskFactoryService.class,
       AllocateTenantResourcesTaskFactoryService.class,
       AllocateHostResourceTaskFactoryService.class,
       BuildRuntimeConfigurationTaskFactoryService.class,
       ChangeHostModeTaskFactoryService.class,
+      ChildTaskAggregatorFactoryService.class,
       CopyStateTaskFactoryService.class,
       CopyStateTriggerTaskFactoryService.class,
       CreateContainerSpecLayoutTaskFactoryService.class,
@@ -179,6 +180,7 @@ public class DeployerXenonServiceHost
       SetDatastoreTagsTaskFactoryService.class,
       UploadImageTaskFactoryService.class,
       UploadVibTaskFactoryService.class,
+      ValidateHostTaskFactoryService.class,
       WaitForDockerTaskFactoryService.class,
       WaitForServiceTaskFactoryService.class,
       TaskSchedulerServiceFactory.class,
