@@ -21,7 +21,8 @@ describe EsxCloud::Deployment do
   end
 
   it "delegates create to client" do
-    spec = EsxCloud::DeploymentCreateSpec.new(["deployment_id"], EsxCloud::AuthInfo.new(false), "0.0.0.1", "0.0.0.2", true)
+    spec = EsxCloud::DeploymentCreateSpec.new(["deployment_id"],
+                                              EsxCloud::AuthInfo.new(false), EsxCloud::StatsInfo.new(false), "0.0.0.1", "1.0.0.2", true)
     expect(client).to receive(:create_api_deployment).with(spec.to_hash).and_return(deployment)
     expect(EsxCloud::Deployment.create(spec)).to eq deployment
   end

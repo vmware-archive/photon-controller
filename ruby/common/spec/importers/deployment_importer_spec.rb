@@ -49,6 +49,9 @@ deployment:
   oauth_security_groups: ["sg1", "sg2"]
   syslog_endpoint: 0.0.0.1
   ntp_endpoint: 0.0.0.2
+  stats_enabled: true
+  stats_store_endpoint: 0.1.2.3
+  stats_store_port: '2004'
   use_image_datastore_for_vms: true
 CONTENT
         end
@@ -58,6 +61,7 @@ CONTENT
           let(:spec) do
             EsxCloud::DeploymentCreateSpec.new(["image_datastore"],
                                                EsxCloud::AuthInfo.new(true, '0.0.0.0', '8080', 't', 'u', 'p', ['sg1', 'sg2']),
+                                               EsxCloud::StatsInfo.new(true, '0.1.2.3', '2004'),
                                                "0.0.0.1",
                                                "0.0.0.2",
                                                true)
@@ -72,13 +76,14 @@ CONTENT
 deployment:
   image_datastores: image_datastore
   auth_enabled: false
+  stats_enabled : false
 CONTENT
         end
 
         it_behaves_like "import configuration" do
           let(:file) { yml_file }
           let(:spec) do
-            EsxCloud::DeploymentCreateSpec.new(["image_datastore"], EsxCloud::AuthInfo.new(false))
+            EsxCloud::DeploymentCreateSpec.new(["image_datastore"], EsxCloud::AuthInfo.new(false), EsxCloud::StatsInfo.new(false))
           end
         end
 
@@ -91,13 +96,14 @@ deployment:
   - image_ds1
   - image_ds2
   auth_enabled: false
+  stats_enabled: false
 CONTENT
           end
 
           it_behaves_like "import configuration" do
             let(:file) { yml_file }
             let(:spec) do
-              EsxCloud::DeploymentCreateSpec.new(["image_ds1", "image_ds2"], EsxCloud::AuthInfo.new(false))
+              EsxCloud::DeploymentCreateSpec.new(["image_ds1", "image_ds2"], EsxCloud::AuthInfo.new(false), EsxCloud::StatsInfo.new(false))
             end
           end
         end
@@ -109,13 +115,14 @@ CONTENT
 deployment:
   image_datastores: image_ds1,image_ds2
   auth_enabled: false
+  stats_enabled: false
 CONTENT
           end
 
           it_behaves_like "import configuration" do
             let(:file) { yml_file }
             let(:spec) do
-              EsxCloud::DeploymentCreateSpec.new(["image_ds1", "image_ds2"], EsxCloud::AuthInfo.new(false))
+              EsxCloud::DeploymentCreateSpec.new(["image_ds1", "image_ds2"], EsxCloud::AuthInfo.new(false), EsxCloud::StatsInfo.new(false))
             end
           end
         end
