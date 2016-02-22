@@ -42,9 +42,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class ImageSeederSyncTriggerService extends StatefulService {
   private static final long OWNER_SELECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
-
-  private static final long UNUSED_IMAGE_AGE = TimeUnit.MINUTES.toSeconds(30);
-
   private static final long DEFAULT_TRIGGER_INTERVAL = TimeUnit.HOURS.toMicros(1);
   private static final long EXPIRATION_TIME_MULTIPLIER = 5;
 
@@ -71,8 +68,8 @@ public class ImageSeederSyncTriggerService extends StatefulService {
     if (state.triggersError == null) {
       state.triggersError = 0L;
     }
-    if (state.pulse != null) {
-      state.pulse = null;
+    if (state.shouldTriggerTasks != null) {
+      state.shouldTriggerTasks = null;
     }
 
     try {
@@ -97,10 +94,15 @@ public class ImageSeederSyncTriggerService extends StatefulService {
 
       this.applyPatch(currentState, patchState);
       this.validateState(currentState);
+
+      // apply/persist the patch
       patch.complete();
 
-      // Process and complete patch.
-      processPatch(patch, currentState, patchState);
+      if (patchState.shouldTriggerTasks == null || !patchState.shouldTriggerTasks) {
+        return;
+      }
+      // do post processing on the patch
+      triggerTasks(patch, currentState, patchState);
     } catch (Throwable e) {
       ServiceUtils.logSevere(this, e);
       if (!OperationUtils.isCompleted(patch)) {
@@ -132,7 +134,7 @@ public class ImageSeederSyncTriggerService extends StatefulService {
       }
 
       State state = new State();
-      state.pulse = true;
+      state.shouldTriggerTasks = true;
       sendSelfPatch(state);
     };
 
@@ -146,8 +148,7 @@ public class ImageSeederSyncTriggerService extends StatefulService {
   /**
    * Process patch.
    */
-  private void processPatch(Operation patch, final State currentState, final State patchState) {
-
+  private void triggerTasks(Operation patch, final State currentState, final State patchState) {
     sendRequest(buildGetAllImagesQuery()
         .setCompletion(
             (op, t) -> {
@@ -219,7 +220,8 @@ public class ImageSeederSyncTriggerService extends StatefulService {
         ServiceUtils.logSevere(ImageSeederSyncTriggerService.this, throwable);
         newState.triggersError = currentState.triggersError + 1;
       }
-      // sendSelfPatch(newState);
+      //update stats only without setting the trigger tasks flag.
+      sendSelfPatch(newState);
     };
 
     ImageSeederService.State postState = new ImageSeederService.State();
@@ -324,7 +326,12 @@ public class ImageSeederSyncTriggerService extends StatefulService {
    * Class defines the durable state of the ImageRemoverService.
    */
   public static class State extends ServiceDocument {
-    public Boolean pulse;
+
+    // Patches to this field are never applied/persisted.
+    // This field is only used to determine if the patch is being made to trigger services or update the other state
+    // fields.
+    public Boolean shouldTriggerTasks;
+
     public Long triggersSuccess;
     public Long triggersError;
   }
