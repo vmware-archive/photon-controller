@@ -22,6 +22,7 @@ import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.MigrationStatus;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.StatsInfo;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
@@ -191,7 +192,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
     List<TenantEntity> tenantEntities = tenantBackend.getAllTenantEntities();
     if (tenantEntities != null && !tenantEntities.isEmpty()) {
-      List<BaseEntity> tenantEntitiesToBePushed = new ArrayList<BaseEntity>();
+      List<BaseEntity> tenantEntitiesToBePushed = new ArrayList();
       tenantEntitiesToBePushed.addAll(tenantEntities);
       taskBackend.getStepBackend().createQueuedStep(taskEntity, tenantEntitiesToBePushed,
           Operation.PUSH_TENANT_SECURITY_GROUPS);
@@ -247,15 +248,23 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     deployment.setState(deploymentEntity.getState());
     deployment.setImageDatastores(deploymentEntity.getImageDatastores());
     deployment.setSyslogEndpoint(deploymentEntity.getSyslogEndpoint());
-    deployment.setStatsStoreEndpoint(deploymentEntity.getStatsStoreEndpoint());
+
+    StatsInfo stats = new StatsInfo();
+    stats.setEnabled(deploymentEntity.getStatsEnabled());
+    stats.setStoreEndpoint(deploymentEntity.getStatsStoreEndpoint());
+    stats.setStorePort(deploymentEntity.getStatsStorePort());
+    deployment.setStats(stats);
+
     deployment.setNtpEndpoint(deploymentEntity.getNtpEndpoint());
     deployment.setUseImageDatastoreForVms(deploymentEntity.getUseImageDatastoreForVms());
+
     AuthInfo authInfo = new AuthInfo();
     authInfo.setEnabled(deploymentEntity.getAuthEnabled());
     authInfo.setEndpoint(deploymentEntity.getOauthEndpoint());
     authInfo.setTenant(deploymentEntity.getOauthTenant());
     authInfo.setSecurityGroups(deploymentEntity.getOauthSecurityGroups());
     deployment.setAuth(authInfo);
+
     deployment.setLoadBalancerEnabled(deploymentEntity.getLoadBalancerEnabled());
     deployment.setMigrationStatus(generateMigrationStatus(deploymentEntity));
 
@@ -420,7 +429,15 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     deployment.imageDataStoreNames = spec.getImageDatastores();
     deployment.imageDataStoreUsedForVMs = spec.isUseImageDatastoreForVms();
     deployment.syslogEndpoint = spec.getSyslogEndpoint();
-    deployment.statsStoreEndpoint = spec.getStatsStoreEndpoint();
+
+    StatsInfo stats = spec.getStats();
+    deployment.statsEnabled = false;
+    if (stats != null) {
+      deployment.statsEnabled = stats.getEnabled();
+      deployment.statsStoreEndpoint = stats.getStoreEndpoint();
+      deployment.statsStorePort = stats.getStorePort();
+    }
+
     deployment.ntpEndpoint = spec.getNtpEndpoint();
     if (spec.getAuth() != null) {
       deployment.oAuthEnabled = spec.getAuth().getEnabled();
@@ -453,7 +470,9 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     entity.setImageDatastores(deployment.imageDataStoreNames);
     entity.setUseImageDatastoreForVms(deployment.imageDataStoreUsedForVMs);
     entity.setSyslogEndpoint(deployment.syslogEndpoint);
+    entity.setStatsEnabled(deployment.statsEnabled);
     entity.setStatsStoreEndpoint(deployment.statsStoreEndpoint);
+    entity.setStatsStorePort(deployment.statsStorePort);
     entity.setNtpEndpoint(deployment.ntpEndpoint);
     entity.setAuthEnabled(deployment.oAuthEnabled);
     entity.setOauthEndpoint(deployment.oAuthServerAddress);
@@ -474,7 +493,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     if (number == null) {
       return defaultValue;
     }
-    return number.longValue();
+    return number;
   }
 
   private TaskEntity createDeployTask(DeploymentEntity deploymentEntity) throws ExternalException {
