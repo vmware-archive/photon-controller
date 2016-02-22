@@ -14,8 +14,10 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.PortGroup;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupNotFoundException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.PortGroupService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.PortGroupServiceFactory;
@@ -165,24 +167,29 @@ public class PortGroupDcpBackendTest {
     public void testSuccess(
         Optional<String> name,
         Optional<UsageTag> usageTag,
+        Optional<Integer> pageSize,
         int expectedSize) {
-      List<PortGroup> portGroups = portGroupBackend.filter(name, usageTag);
-      assertThat(portGroups.size(), is(expectedSize));
+      ResourceList<PortGroup> portGroups = portGroupBackend.filter(name, usageTag, pageSize);
+      assertThat(portGroups.getItems().size(), is(expectedSize));
     }
 
     @DataProvider(name = "filterParams")
     public Object[][] getFilterParams() {
       return new Object[][]{
-          {Optional.absent(), Optional.absent(), 5},
-          {Optional.of("P"), Optional.absent(), 0},
-          {Optional.of("P1"), Optional.absent(), 3},
-          {Optional.of("P2"), Optional.absent(), 2},
-          {Optional.absent(), Optional.of(UsageTag.CLOUD), 2},
-          {Optional.absent(), Optional.of(UsageTag.MGMT), 2},
-          {Optional.of("P1"), Optional.of(UsageTag.MGMT), 1},
-          {Optional.of("P2"), Optional.of(UsageTag.MGMT), 1},
-          {Optional.of("P1"), Optional.of(UsageTag.CLOUD), 2},
-          {Optional.of("P2"), Optional.of(UsageTag.CLOUD), 0},
+          {Optional.absent(), Optional.absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), 5},
+          {Optional.of("P"), Optional.absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), 0},
+          {Optional.of("P1"), Optional.absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), 3},
+          {Optional.of("P2"), Optional.absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), 2},
+          {Optional.absent(), Optional.of(UsageTag.CLOUD), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), 2},
+          {Optional.absent(), Optional.of(UsageTag.MGMT), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), 2},
+          {Optional.of("P1"), Optional.of(UsageTag.MGMT), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), 1},
+          {Optional.of("P2"), Optional.of(UsageTag.MGMT), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), 1},
+          {Optional.of("P1"), Optional.of(UsageTag.CLOUD), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), 2},
+          {Optional.of("P2"), Optional.of(UsageTag.CLOUD), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), 0},
+          {Optional.absent(), Optional.absent(), Optional.absent(), 5},
+          {Optional.absent(), Optional.absent(), Optional.of(1), 1},
+          {Optional.of("P1"), Optional.absent(), Optional.of(3), 3},
+          {Optional.of("P1"), Optional.absent(), Optional.of(1), 1},
       };
     }
   }

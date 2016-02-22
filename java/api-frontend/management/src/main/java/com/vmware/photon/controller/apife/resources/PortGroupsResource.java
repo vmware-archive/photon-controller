@@ -16,8 +16,11 @@ package com.vmware.photon.controller.apife.resources;
 import com.vmware.photon.controller.api.PortGroup;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.PortGroupFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.PortGroupResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
 import com.google.common.base.Optional;
@@ -37,6 +40,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 /**
  * Port groups resource api def.
@@ -48,10 +52,12 @@ import javax.ws.rs.core.Response;
 public class PortGroupsResource {
 
   private final PortGroupFeClient portGroupFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public PortGroupsResource(PortGroupFeClient portGroupFeClient) {
+  public PortGroupsResource(PortGroupFeClient portGroupFeClient, PaginationConfig paginationConfig) {
     this.portGroupFeClient = portGroupFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @GET
@@ -60,11 +66,22 @@ public class PortGroupsResource {
   @ApiResponses(value = {@ApiResponse(code = 200, message = "Success")})
   public Response find(@Context Request request,
                        @QueryParam("name") Optional<String> name,
-                       @QueryParam("usageTag") Optional<UsageTag> usageTag) {
-    ResourceList<PortGroup> portGroups = portGroupFeClient.find(name, usageTag);
+                       @QueryParam("usageTag") Optional<UsageTag> usageTag,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
+
+    ResourceList<PortGroup> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = portGroupFeClient.getPortGroupsPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = portGroupFeClient.find(name, usageTag, adjustedPageSize);
+    }
+
+    String apiRoute = UriBuilder.fromPath(PortGroupResourceRoutes.API).build().toString();
     return generateResourceListResponse(
         Response.Status.OK,
-        portGroups,
+        PaginationUtils.formalizePageLinks(resourceList, apiRoute),
         (ContainerRequest) request,
         PortGroupResourceRoutes.PORT_GROUP_PATH);
   }

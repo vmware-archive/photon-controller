@@ -14,22 +14,24 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.PortGroup;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupNotFoundException;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.PortGroupService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.PortGroupServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * portgroup service backend.
@@ -52,7 +54,8 @@ public class PortGroupDcpBackend implements PortGroupBackend {
   }
 
   @Override
-  public List<PortGroup> filter(Optional<String> name, Optional<UsageTag> usageTag) {
+  public ResourceList<PortGroup> filter(Optional<String> name, Optional<UsageTag> usageTag,
+                                        Optional<Integer> pageSize) {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     if (name.isPresent()) {
       termsBuilder.put("name", name.get());
@@ -62,15 +65,27 @@ public class PortGroupDcpBackend implements PortGroupBackend {
       termsBuilder.put(PortGroupService.USAGE_TAGS_KEY, usageTag.get().toString());
     }
 
-    List<PortGroup> portGroups = new ArrayList<>();
-    ImmutableMap<String, String> terms = termsBuilder.build();
-    logger.info("Filtering Port Groups using terms {}", terms);
-    for (PortGroupService.State state : dcpClient.queryDocuments(
-        PortGroupService.State.class, terms)) {
-      portGroups.add(toApiRepresentation(state));
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(PortGroupService.State.class,
+        termsBuilder.build(), pageSize, true);
+    return PaginationUtils.xenonQueryResultToResourceList(
+        PortGroupService.State.class,
+        queryResult,
+        state -> toApiRepresentation(state));
+  }
+
+  @Override
+  public ResourceList<PortGroup> getPortGroupsPage(String pageLink) throws ExternalException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
     }
 
-    return portGroups;
+    return PaginationUtils.xenonQueryResultToResourceList(
+        PortGroupService.State.class,
+        queryResult,
+        state -> toApiRepresentation(state));
   }
 
   private PortGroupService.State findById(String id) throws PortGroupNotFoundException {

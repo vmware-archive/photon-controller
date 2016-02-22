@@ -40,12 +40,16 @@ public class PortGroupFeClient {
     this.portGroupBackend = portGroupBackend;
   }
 
-  public ResourceList<PortGroup> find(Optional<String> name, Optional<UsageTag> usageTag) {
+  public ResourceList<PortGroup> find(Optional<String> name, Optional<UsageTag> usageTag, Optional<Integer> pageSize) {
     logger.info("find port groups of name {} and usageTag {}", name.orNull(), usageTag.orNull());
-    return new ResourceList<>(portGroupBackend.filter(name, usageTag));
+    return portGroupBackend.filter(name, usageTag, pageSize);
   }
 
   public PortGroup get(String id) throws ExternalException {
     return portGroupBackend.toApiRepresentation(id);
+  }
+
+  public ResourceList<PortGroup> getPortGroupsPage(String pageLink) throws ExternalException {
+    return portGroupBackend.getPortGroupsPage(pageLink);
   }
 }
