@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTas
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.BaseCommand;
 import com.vmware.photon.controller.apife.commands.steps.StepCommand;
 import com.vmware.photon.controller.apife.commands.steps.StepCommandFactory;
@@ -28,11 +29,14 @@ import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.TaskNotCompletedException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.scheduler.gen.FindResponse;
@@ -63,6 +67,7 @@ public class TaskCommand extends BaseCommand {
   private TaskEntity task;
   private Resource resource;
   private String reservation;
+  private ApiFeDcpRestClient dcpClient;
   private RootSchedulerClient rootSchedulerClient;
   private HostClient hostClient;
   private HousekeeperClient housekeeperClient;
@@ -70,7 +75,8 @@ public class TaskCommand extends BaseCommand {
   private EntityLockBackend entityLockBackend;
 
   @Inject
-  public TaskCommand(RootSchedulerClient rootSchedulerClient,
+  public TaskCommand(ApiFeDcpRestClient dcpClient,
+                     RootSchedulerClient rootSchedulerClient,
                      HostClient hostClient,
                      HousekeeperClient housekeeperClient,
                      DeployerClient deployerClient,
@@ -78,6 +84,7 @@ public class TaskCommand extends BaseCommand {
                      @Assisted TaskEntity task) {
     super(task.getId());
     this.task = checkNotNull(task);
+    this.dcpClient = dcpClient;
     this.rootSchedulerClient = checkNotNull(rootSchedulerClient);
     this.hostClient = checkNotNull(hostClient);
     this.housekeeperClient = checkNotNull(housekeeperClient);
@@ -203,11 +210,17 @@ public class TaskCommand extends BaseCommand {
       throws RpcException, InterruptedException, VmNotFoundException {
     checkNotNull(hostClient);
     if (useCachedHostInfo) {
-      if (StringUtils.isNotBlank(vm.getAgent())) {
-        hostClient.setAgentId(vm.getAgent());
-        return hostClient;
-      } else if (StringUtils.isNotBlank(vm.getHost())) {
-        hostClient.setHostIp(vm.getHost());
+      String hostIp = vm.getHost();
+      if (StringUtils.isBlank(hostIp) && StringUtils.isNotBlank(vm.getAgent())) {
+        try {
+          hostIp = lookupHostIp(vm.getAgent());
+        } catch (DocumentNotFoundException ex) {
+          logger.error(String.format("Host %s does not exist.", vm.getAgent()), ex);
+          throw new VmNotFoundException(vm.getId());
+        }
+      }
+      if (StringUtils.isNotBlank(hostIp)) {
+        hostClient.setHostIp(hostIp);
         return hostClient;
       }
     }
@@ -218,12 +231,32 @@ public class TaskCommand extends BaseCommand {
   public HostClient findHost(BaseDiskEntity disk)
       throws RpcException, InterruptedException, DiskNotFoundException {
     checkNotNull(hostClient);
-    hostClient.setAgentId(disk.getAgent());
-    if (disk.getAgent() == null || !hostClient.findDisk(disk.getId())) {
+
+    boolean foundDisk = false;
+    if (disk.getAgent() != null) {
+      try {
+        String hostIp = lookupHostIp(disk.getAgent());
+        hostClient.setHostIp(hostIp);
+        foundDisk = hostClient.findDisk(disk.getId());
+      } catch (DocumentNotFoundException ex) {
+        logger.error(String.format("Host %s does not exist.", disk.getAgent()), ex);
+        foundDisk = false;
+      }
+    }
+
+    if (disk.getAgent() == null || !foundDisk) {
       invokeRootScheduler(disk);
     }
 
     return hostClient;
+  }
+
+  private String lookupHostIp(String agentId) throws DocumentNotFoundException {
+    checkNotNull(agentId);
+
+    com.vmware.xenon.common.Operation result = dcpClient.get(HostServiceFactory.SELF_LINK + "/" + agentId);
+    HostService.State hostState = result.getBody(HostService.State.class);
+    return hostState.hostAddress;
   }
 
   private void invokeRootScheduler(BaseDiskEntity disk)

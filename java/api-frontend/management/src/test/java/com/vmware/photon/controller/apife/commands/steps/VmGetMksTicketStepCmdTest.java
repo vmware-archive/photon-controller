@@ -16,16 +16,20 @@ package com.vmware.photon.controller.apife.commands.steps;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.MksTicketResponse;
 import com.vmware.photon.controller.host.gen.MksTicketResultCode;
@@ -34,6 +38,7 @@ import com.vmware.photon.controller.resource.gen.MksTicket;
 import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
 import org.mockito.InOrder;
+import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
@@ -60,6 +65,9 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
   private HostClient hostClient;
 
   @Mock
+  private ApiFeDcpRestClient dcpClient;
+
+  @Mock
   private RootSchedulerClient rootSchedulerClient;
 
   @Mock
@@ -74,6 +82,9 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
   @Mock
   private EntityLockBackend entityLockBackend;
 
+  @Mock
+  private com.vmware.xenon.common.Operation hostServiceOp;
+
   private TaskCommand taskCommand;
 
   private VmEntity vm;
@@ -86,7 +97,7 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
   private String vmId = "vm-1";
 
   @BeforeMethod
-  public void setUp() throws Exception {
+  public void setUp() throws Exception, DocumentNotFoundException {
     task = new TaskEntity();
     task.setId("task-1");
 
@@ -108,11 +119,15 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
     serverAddress.setPort(0);
     findResponse.setAddress(serverAddress);
 
-    taskCommand = spy(new TaskCommand(
+    taskCommand = spy(new TaskCommand(dcpClient,
         rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
     when(rootSchedulerClient.findVm(vmId)).thenReturn(findResponse);
+    HostService.State hostServiceState = new HostService.State();
+    hostServiceState.hostAddress = "host-ip";
+    when(hostServiceOp.getBody(Matchers.<Class>any())).thenReturn(hostServiceState);
+    when(dcpClient.get(Matchers.startsWith(HostServiceFactory.SELF_LINK))).thenReturn(hostServiceOp);
 
     when(taskCommand.getTask()).thenReturn(task);
   }
@@ -144,7 +159,7 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(hostClient, taskBackend, rootSchedulerClient);
-    inOrder.verify(hostClient).setAgentId("staled-agent");
+    inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).getVmMksTicket(vmId);
     inOrder.verify(rootSchedulerClient).findVm(vmId);
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
