@@ -195,7 +195,6 @@ public class BasicServiceHost
       Service service, ServiceDocument body, String path, Boolean disableOptions) throws Throwable {
 
     if (disableOptions) {
-      service.toggleOption(Service.ServiceOption.ENFORCE_QUORUM, false);
       service.toggleOption(Service.ServiceOption.OWNER_SELECTION, false);
       service.toggleOption(Service.ServiceOption.REPLICATION, false);
     }

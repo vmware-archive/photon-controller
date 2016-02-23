@@ -14,12 +14,12 @@
 package com.vmware.photon.controller.common.xenon;
 
 import com.vmware.photon.controller.common.xenon.helpers.services.TestServiceWithSelfLink;
+import com.vmware.photon.controller.common.xenon.helpers.services.TestServiceWithStageFactory;
 import com.vmware.photon.controller.common.xenon.helpers.services.TestServiceWithoutSelfLink;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.services.common.ExampleFactoryService;
 import com.vmware.xenon.services.common.ExampleService;
 import com.vmware.xenon.services.common.NodeGroupService;
 import com.vmware.xenon.services.common.NodeState;
@@ -497,17 +497,17 @@ public class ServiceHostUtilsTest {
       try {
         ServiceHostUtils.startServices(
             host,
-            ExampleFactoryService.class,
+            TestServiceWithStageFactory.class,
             TestServiceWithoutSelfLink.class,
             TestServiceWithSelfLink.class);
       } catch (InvalidParameterException ex) {
         assertThat(ex.getMessage(), startsWith("No SELF_LINK field"));
       }
 
-      ServiceHostUtils.waitForServiceAvailability(host, 1000, ExampleFactoryService.SELF_LINK);
+      ServiceHostUtils.waitForServiceAvailability(host, 1000, TestServiceWithStageFactory.SELF_LINK);
       assertTrue(
-          host.checkServiceAvailable(ExampleFactoryService.SELF_LINK),
-          "ExampleFactoryService is not available!");
+          host.checkServiceAvailable(TestServiceWithStageFactory.SELF_LINK),
+          "TestServiceWithStageFactory is not available!");
       assertFalse(
           host.checkServiceAvailable(TestServiceWithSelfLink.SELF_LINK),
           "TestServiceWithSelfLink is not available!");
@@ -518,13 +518,13 @@ public class ServiceHostUtilsTest {
      */
     @Test
     public void testSuccess() throws Throwable {
-      ServiceHostUtils.startServices(host, ExampleFactoryService.class, TestServiceWithSelfLink.class);
-      ServiceHostUtils.waitForServiceAvailability(host, 1000, ExampleFactoryService.SELF_LINK);
+      ServiceHostUtils.startServices(host, TestServiceWithStageFactory.class, TestServiceWithSelfLink.class);
+      ServiceHostUtils.waitForServiceAvailability(host, 1000, TestServiceWithStageFactory.SELF_LINK);
       ServiceHostUtils.waitForServiceAvailability(host, 1000, TestServiceWithSelfLink.SELF_LINK);
 
       assertTrue(
-          host.checkServiceAvailable(ExampleFactoryService.SELF_LINK),
-          "ExampleFactoryService is not available!");
+          host.checkServiceAvailable(TestServiceWithStageFactory.SELF_LINK),
+          "TestServiceWithStageFactory is not available!");
       assertTrue(
           host.checkServiceAvailable(TestServiceWithSelfLink.SELF_LINK),
           "TestServiceWithSelfLink is not available!");
@@ -620,11 +620,11 @@ public class ServiceHostUtilsTest {
      */
     @Test
     public void testSuccessWithoutPath() throws Throwable {
-      ServiceHostUtils.startService(host, ExampleFactoryService.class);
-      ServiceHostUtils.waitForServiceAvailability(host, 1000, ExampleFactoryService.SELF_LINK);
+      ServiceHostUtils.startService(host, TestServiceWithSelfLink.class);
+      ServiceHostUtils.waitForServiceAvailability(host, 1000, TestServiceWithSelfLink.SELF_LINK);
 
       assertTrue(
-          host.checkServiceAvailable(ExampleFactoryService.SELF_LINK),
+          host.checkServiceAvailable(TestServiceWithSelfLink.SELF_LINK),
           "ExampleFactoryService is not available!");
     }
 
@@ -635,12 +635,12 @@ public class ServiceHostUtilsTest {
     public void testSuccessWithPath() throws Throwable {
       String path = "/test-path";
 
-      ServiceHostUtils.startService(host, ExampleFactoryService.class, path);
+      ServiceHostUtils.startService(host, TestServiceWithSelfLink.class, path);
       ServiceHostUtils.waitForServiceAvailability(host, 1000, path);
 
       assertTrue(
           host.checkServiceAvailable(path),
-          "ExampleFactoryService is not available!");
+          "TestServiceWithSelfLink is not available!");
     }
   }
 
@@ -670,19 +670,19 @@ public class ServiceHostUtilsTest {
      */
     @Test
     public void testSuccess() throws Throwable {
-      ServiceHostUtils.startServices(host, ExampleFactoryService.class, TestServiceWithSelfLink.class);
-      ServiceHostUtils.waitForServiceAvailability(host, 1000, ExampleFactoryService.SELF_LINK);
+      ServiceHostUtils.startServices(host, TestServiceWithStageFactory.class, TestServiceWithSelfLink.class);
+      ServiceHostUtils.waitForServiceAvailability(host, 1000, TestServiceWithStageFactory.SELF_LINK);
       ServiceHostUtils.waitForServiceAvailability(host, 1000, TestServiceWithSelfLink.SELF_LINK);
 
       assertTrue(
-          ServiceHostUtils.isServiceReady(host, "SELF_LINK", ExampleFactoryService.class),
-          "ExampleFactoryService is not available!");
+          ServiceHostUtils.isServiceReady(host, "SELF_LINK", TestServiceWithStageFactory.class),
+          "TestServiceWithStageFactory is not available!");
       assertTrue(
           ServiceHostUtils.isServiceReady(host, "SELF_LINK", TestServiceWithSelfLink.class),
           "TestServiceWithSelfLink is not available!");
       assertTrue(
           ServiceHostUtils.areServicesReady(host, "SELF_LINK",
-              ExampleFactoryService.class, TestServiceWithSelfLink.class),
+              TestServiceWithStageFactory.class, TestServiceWithSelfLink.class),
           "Services are not available!");
     }
   }
@@ -710,12 +710,12 @@ public class ServiceHostUtilsTest {
     @Test
     public void testDeleteAllDocuments() throws Throwable {
 
-      ServiceHostUtils.startService(host, ExampleFactoryService.class);
+      host.startServiceSynchronously(ExampleService.createFactory(), null, ExampleService.FACTORY_LINK);
 
       ExampleService.ExampleServiceState exampleServiceState1 = new ExampleService.ExampleServiceState();
       exampleServiceState1.name = UUID.randomUUID().toString();
 
-      Operation createOperation = Operation.createPost(UriUtils.buildUri(host, ExampleFactoryService.SELF_LINK))
+      Operation createOperation = Operation.createPost(UriUtils.buildUri(host, ExampleService.FACTORY_LINK))
           .setBody(exampleServiceState1);
 
       Operation result = host.sendRequestAndWait(createOperation);
@@ -729,7 +729,7 @@ public class ServiceHostUtilsTest {
       ExampleService.ExampleServiceState exampleServiceState2 = new ExampleService.ExampleServiceState();
       exampleServiceState2.name = UUID.randomUUID().toString();
 
-      createOperation = Operation.createPost(UriUtils.buildUri(host, ExampleFactoryService.SELF_LINK))
+      createOperation = Operation.createPost(UriUtils.buildUri(host, ExampleService.FACTORY_LINK))
           .setBody(exampleServiceState2);
 
       result = host.sendRequestAndWait(createOperation);
@@ -743,7 +743,7 @@ public class ServiceHostUtilsTest {
 
       ServiceHostUtils.waitForServiceState(
           ServiceDocumentQueryResult.class,
-          ExampleFactoryService.SELF_LINK,
+          ExampleService.FACTORY_LINK,
           (ServiceDocumentQueryResult queryResult) -> queryResult.documentCount == 0,
           host, SLEEP_TIME_MILLIS, MAX_ITERATIONS,
           null);
