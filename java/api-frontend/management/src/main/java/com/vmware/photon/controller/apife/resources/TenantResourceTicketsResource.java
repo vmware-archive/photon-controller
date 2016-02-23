@@ -19,9 +19,11 @@ import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.ResourceTicketFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ResourceTicketResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
@@ -45,6 +47,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 /**
  * This resource is for resource ticket related API under a tenant.
@@ -56,10 +59,13 @@ import javax.ws.rs.core.Response;
 public class TenantResourceTicketsResource {
 
   private final ResourceTicketFeClient resourceTicketFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public TenantResourceTicketsResource(ResourceTicketFeClient resourceTicketFeClient) {
+  public TenantResourceTicketsResource(ResourceTicketFeClient resourceTicketFeClient,
+                                       PaginationConfig paginationConfig) {
     this.resourceTicketFeClient = resourceTicketFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @POST
@@ -83,11 +89,23 @@ public class TenantResourceTicketsResource {
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of resource tickets for the tenant")})
   public Response find(@Context Request request,
                        @PathParam("id") String tenantId,
-                       @QueryParam("name") Optional<String> name)
+                       @QueryParam("name") Optional<String> name,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
+
+    ResourceList<ResourceTicket> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = resourceTicketFeClient.getPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = resourceTicketFeClient.find(tenantId, name, adjustedPageSize);
+    }
+
+    String apiRoute = UriBuilder.fromPath(TenantResourceRoutes.TENANT_RESOURCE_TICKETS_PATH).build(tenantId).toString();
     return generateResourceListResponse(
         Response.Status.OK,
-        resourceTicketFeClient.find(tenantId, name),
+        PaginationUtils.formalizePageLinks(resourceList, apiRoute),
         (ContainerRequest) request,
         ResourceTicketResourceRoutes.RESOURCE_TICKET_PATH);
   }

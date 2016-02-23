@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.ResourceTicket;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
@@ -22,6 +23,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.Data;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidResourceTicketSubdivideException;
@@ -298,19 +300,23 @@ public class ResourceTicketDcpBackendTest {
 
       dcpClient.post(ResourceTicketServiceFactory.SELF_LINK, resourceTicket);
 
-      List<ResourceTicket> foundTickets = resourceTicketBackend.filter(
-          resourceTicket.tenantId, Optional.of(resourceTicket.name));
+      ResourceList<ResourceTicket> foundTickets = resourceTicketBackend.filter(
+          resourceTicket.tenantId, Optional.of(resourceTicket.name),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(foundTickets, is(notNullValue()));
-      assertThat(foundTickets.size(), is(1));
-      assertThat(foundTickets.get(0).getTenantId(), is(resourceTicket.tenantId));
-      assertThat(foundTickets.get(0).getName(), is(resourceTicket.name));
+      assertThat(foundTickets.getItems().size(), is(1));
+      assertThat(foundTickets.getItems().get(0).getTenantId(), is(resourceTicket.tenantId));
+      assertThat(foundTickets.getItems().get(0).getName(), is(resourceTicket.name));
 
-      foundTickets = resourceTicketBackend.filter(
-          resourceTicket.tenantId, Optional.<String>absent());
+      foundTickets = resourceTicketBackend.filter(resourceTicket.tenantId, Optional.<String>absent(), Optional.of(1));
       assertThat(foundTickets, is(notNullValue()));
-      assertThat(foundTickets.size(), is(2));
-      assertThat(foundTickets.get(0).getTenantId(), is(resourceTicket.tenantId));
-      assertThat(foundTickets.get(1).getTenantId(), is(resourceTicket.tenantId));
+      assertThat(foundTickets.getItems().size(), is(1));
+      assertThat(foundTickets.getItems().get(0).getTenantId(), is(resourceTicket.tenantId));
+
+      foundTickets = resourceTicketBackend.getPage(foundTickets.getNextPageLink());
+      assertThat(foundTickets, is(notNullValue()));
+      assertThat(foundTickets.getItems().size(), is(1));
+      assertThat(foundTickets.getItems().get(0).getTenantId(), is(resourceTicket.tenantId));
     }
   }
 

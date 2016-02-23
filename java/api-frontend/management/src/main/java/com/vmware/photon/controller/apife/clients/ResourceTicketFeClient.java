@@ -54,8 +54,12 @@ public class ResourceTicketFeClient {
     return task;
   }
 
-  public ResourceList<ResourceTicket> find(String tenantId, Optional<String> name)
+  public ResourceList<ResourceTicket> find(String tenantId, Optional<String> name, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(resourceTicketBackend.filter(tenantId, name));
+    return resourceTicketBackend.filter(tenantId, name, pageSize);
+  }
+
+  public ResourceList<ResourceTicket> getPage(String pageLink) throws ExternalException {
+    return resourceTicketBackend.getPage(pageLink);
   }
 }

@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.ResourceTicket;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -95,9 +96,12 @@ public interface ResourceTicketBackend {
 
   void delete(String resourceTicketId) throws ResourceTicketNotFoundException;
 
-  List<ResourceTicket> filter(String tenantId, Optional<String> name) throws ExternalException;
+  ResourceList<ResourceTicket> filter(String tenantId, Optional<String> name, Optional<Integer> pageSize)
+      throws ExternalException;
 
-  List<ResourceTicketEntity> filterByParentId(String parentId);
+  List<ResourceTicketEntity> filterByParentId(String parentId) throws ExternalException;
+
+  ResourceList<ResourceTicket> getPage(String pageLink) throws ExternalException;
 
   ResourceTicket getApiRepresentation(String id) throws ResourceTicketNotFoundException;
 
