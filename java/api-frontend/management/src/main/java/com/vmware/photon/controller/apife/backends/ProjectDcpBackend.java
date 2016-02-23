@@ -273,7 +273,9 @@ public class ProjectDcpBackend implements ProjectBackend {
           String.format("Project '%s' VM list is non-empty", projectId));
     }
 
-    if (!diskBackend.filter(projectId, Optional.<String>absent()).isEmpty()) {
+    if (!diskBackend.filter(projectId,
+        Optional.<String>absent(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)).getItems().isEmpty()) {
       throw new ContainerNotEmptyException(projectEntity,
           String.format("Project '%s' persistent disk list is non-empty", projectId));
     }

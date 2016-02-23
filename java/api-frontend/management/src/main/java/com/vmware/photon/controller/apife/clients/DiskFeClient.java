@@ -79,10 +79,10 @@ public class DiskFeClient {
 
   public ResourceList<PersistentDisk> find(String projectId, Optional<String> name, Optional<Integer> pageSize)
       throws ExternalException {
-    return new ResourceList<>(diskBackend.filter(projectId, name));
+    return diskBackend.filter(projectId, name, pageSize);
   }
 
   public ResourceList<PersistentDisk> getDisksPage(String pageLink) throws ExternalException {
-    return new ResourceList<>();
+    return diskBackend.getDisksPage(pageLink);
   }
 }

@@ -25,9 +25,11 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
@@ -44,10 +46,12 @@ import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidFlavorStateException;
 import com.vmware.photon.controller.apife.lib.QuotaCost;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DiskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DiskServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -102,9 +106,10 @@ public class DiskDcpBackend implements DiskBackend {
   }
 
   @Override
-  public List<PersistentDisk> filter(String projectId, Optional<String> name) throws ExternalException {
+  public ResourceList<PersistentDisk> filter(String projectId, Optional<String> name, Optional<Integer> pageSize)
+      throws ExternalException {
     projectBackend.findById(projectId);
-    List<DiskService.State> diskDocuments = findByProjectIdAndName(projectId, name);
+    ResourceList<DiskService.State> diskDocuments = findByProjectIdAndName(projectId, name, pageSize);
 
     return toPersistentDiskList(diskDocuments);
   }
@@ -203,6 +208,32 @@ public class DiskDcpBackend implements DiskBackend {
   public BaseDiskEntity find(String kind, String id) throws DiskNotFoundException {
     DiskService.State state = findById(id);
     return toDiskEntity(state, kind);
+  }
+
+  @Override
+  public ResourceList<PersistentDisk> getDisksPage(String pageLink) throws ExternalException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    ResourceList<DiskService.State> diskStates = PaginationUtils.xenonQueryResultToResourceList(
+        DiskService.State.class,
+        queryResult);
+
+    List<PersistentDisk> disks = new ArrayList<>();
+    for (DiskService.State diskState : diskStates.getItems()) {
+      disks.add(toPersistentDisk(diskState));
+    }
+
+    ResourceList<PersistentDisk> result = new ResourceList<>();
+    result.setItems(disks);
+    result.setNextPageLink(diskStates.getNextPageLink());
+    result.setPreviousPageLink(diskStates.getPreviousPageLink());
+
+    return result;
   }
 
   private TaskEntity createTask(String kind, String diskId) throws ExternalException {
@@ -339,7 +370,8 @@ public class DiskDcpBackend implements DiskBackend {
     }
   }
 
-  private List<DiskService.State> findByProjectIdAndName(String projectId, Optional<String> name) {
+  private ResourceList<DiskService.State> findByProjectIdAndName(String projectId, Optional<String> name,
+                                                                 Optional<Integer> pageSize) {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
 
     termsBuilder.put("projectId", projectId);
@@ -348,16 +380,24 @@ public class DiskDcpBackend implements DiskBackend {
       termsBuilder.put("name", name.get());
     }
 
-    return dcpClient.queryDocuments(DiskService.State.class, termsBuilder.build());
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(DiskService.State.class, termsBuilder.build(),
+        pageSize, true);
+    return PaginationUtils.xenonQueryResultToResourceList(DiskService.State.class, queryResult);
   }
 
-  private List<PersistentDisk> toPersistentDiskList(List<DiskService.State> diskDocuments) throws ExternalException {
+  private ResourceList<PersistentDisk> toPersistentDiskList(ResourceList<DiskService.State> diskDocuments)
+      throws ExternalException {
+    ResourceList<PersistentDisk> result = new ResourceList<>();
+
     List<PersistentDisk> persistentDiskList = new ArrayList<>();
-    for (DiskService.State state : diskDocuments) {
+    for (DiskService.State state : diskDocuments.getItems()) {
       persistentDiskList.add(toPersistentDisk(state));
     }
 
-    return persistentDiskList;
+    result.setItems(persistentDiskList);
+    result.setNextPageLink(diskDocuments.getNextPageLink());
+    result.setPreviousPageLink(diskDocuments.getPreviousPageLink());
+    return result;
   }
 
   /**

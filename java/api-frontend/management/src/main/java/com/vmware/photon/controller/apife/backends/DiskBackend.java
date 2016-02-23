@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.DiskCreateSpec;
 import com.vmware.photon.controller.api.DiskState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -36,7 +37,8 @@ public interface DiskBackend {
 
   PersistentDisk toApiRepresentation(String id) throws ExternalException;
 
-  List<PersistentDisk> filter(String projectId, Optional<String> name) throws ExternalException;
+  ResourceList<PersistentDisk> filter(String projectId, Optional<String> name, Optional<Integer> pageSize)
+      throws ExternalException;
 
   boolean existsUsingFlavor(String flavorId) throws ExternalException;
 
@@ -56,5 +58,7 @@ public interface DiskBackend {
                                  Operation operation) throws ExternalException;
 
   BaseDiskEntity find(String kind, String id) throws DiskNotFoundException;
+
+  ResourceList<PersistentDisk> getDisksPage(String pageLink) throws ExternalException;
 
 }
