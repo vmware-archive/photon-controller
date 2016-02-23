@@ -547,7 +547,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
       String sourceDeploymentId)
       throws Throwable {
     MiscUtils.getZookeeperQuorumFromSourceSystem(this, currentState.sourceLoadBalancerAddress,
-        currentState.sourceDeploymentId, currentState.taskPollDelay, new TaskFailingCallback<List<String>>(this) {
+        sourceDeploymentId, currentState.taskPollDelay, new TaskFailingCallback<List<String>>(this) {
           @Override
           public void onSuccess(@Nullable List<String> ipAddresses) {
             String zookeeperQuorum = MiscUtils.generateReplicaList(ipAddresses, Integer.toString(ServicePortConstants
