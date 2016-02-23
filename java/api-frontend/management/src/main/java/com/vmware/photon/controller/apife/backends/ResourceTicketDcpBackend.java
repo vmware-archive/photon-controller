@@ -15,12 +15,15 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.QuotaLineItem;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.ResourceTicket;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -29,12 +32,14 @@ import com.vmware.photon.controller.apife.exceptions.external.NameTakenException
 import com.vmware.photon.controller.apife.exceptions.external.QuotaException;
 import com.vmware.photon.controller.apife.exceptions.external.ResourceTicketNotFoundException;
 import com.vmware.photon.controller.apife.lib.QuotaCost;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -260,39 +265,39 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
   }
 
   @Override
-  public List<ResourceTicket> filter(String tenantId, Optional<String> name) throws ExternalException {
+  public ResourceList<ResourceTicket> filter(String tenantId,
+                                             Optional<String> name,
+                                             Optional<Integer> pageSize) throws ExternalException {
     tenantBackend.findById(tenantId);
-    List<ResourceTicket> result = new ArrayList<>();
 
-    List<ResourceTicketService.State> tickets = filterTicketDocuments(
+    ResourceList<ResourceTicketEntity> tickets = filterTicketDocuments(
         Optional.of(tenantId),
         Optional.<String>absent(),
-        name
+        name,
+        pageSize
     );
 
-    if (tickets != null) {
-      for (ResourceTicketService.State ticket : tickets) {
-        result.add(convertToResourceTicketEntity(ticket).toApiRepresentation());
-      }
-    }
+    List<ResourceTicket> result = new ArrayList<>();
+    tickets.getItems().forEach(ticket -> result.add(ticket.toApiRepresentation()));
 
-    return result;
+    return new ResourceList<>(result, tickets.getNextPageLink(), tickets.getPreviousPageLink());
   }
 
   @Override
-  public List<ResourceTicketEntity> filterByParentId(String parentId) {
-    List<ResourceTicketEntity> resourceTicketEntities = new ArrayList<>();
-
-    List<ResourceTicketService.State> tickets = filterTicketDocuments(
+  public List<ResourceTicketEntity> filterByParentId(String parentId) throws ExternalException {
+    ResourceList<ResourceTicketEntity> tickets = filterTicketDocuments(
         Optional.<String>absent(),
         Optional.of(parentId),
-        Optional.<String>absent()
+        Optional.<String>absent(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)
     );
 
-    if (tickets != null) {
-      for (ResourceTicketService.State ticket : tickets) {
-        resourceTicketEntities.add(convertToResourceTicketEntity(ticket));
-      }
+    List<ResourceTicketEntity> resourceTicketEntities = new ArrayList<>();
+    resourceTicketEntities.addAll(tickets.getItems());
+
+    while (StringUtils.isNotBlank(tickets.getNextPageLink())) {
+      tickets = getEntitiesPage(tickets.getNextPageLink());
+      resourceTicketEntities.addAll(tickets.getItems());
     }
 
     return resourceTicketEntities;
@@ -307,7 +312,8 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
   public ResourceTicketEntity create(String tenantId, ResourceTicketCreateSpec spec) throws ExternalException {
     tenantBackend.findById(tenantId);
 
-    if (!filter(tenantId, Optional.of(spec.getName())).isEmpty()) {
+    if (!filter(tenantId, Optional.of(spec.getName()), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE))
+        .getItems().isEmpty()) {
       throw new NameTakenException(ResourceTicketEntity.KIND, spec.getName());
     }
 
@@ -345,17 +351,40 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
   public ResourceTicketEntity findByName(String tenantId, String name) throws ExternalException {
     tenantBackend.findById(tenantId);
 
-    List<ResourceTicketService.State> tickets = filterTicketDocuments(
+    ResourceList<ResourceTicketEntity> tickets = filterTicketDocuments(
         Optional.of(tenantId),
         Optional.<String>absent(),
-        Optional.of(name)
+        Optional.of(name),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)
     );
 
-    if (tickets == null || tickets.size() <= 0) {
+    if (tickets == null || tickets.getItems().size() <= 0) {
       throw new ResourceTicketNotFoundException("Resource ticket not found with name" + name);
     }
 
-    return convertToResourceTicketEntity(tickets.get(0));
+    return tickets.getItems().get(0);
+  }
+
+  @Override
+  public ResourceList<ResourceTicket> getPage(String pageLink) throws ExternalException {
+    ResourceList<ResourceTicketEntity> serviceStates = getEntitiesPage(pageLink);
+
+    List<ResourceTicket> result = new ArrayList<>();
+    serviceStates.getItems().forEach(entity -> result.add(entity.toApiRepresentation()));
+
+    return new ResourceList<>(result, serviceStates.getNextPageLink(), serviceStates.getPreviousPageLink());
+  }
+
+  private ResourceList<ResourceTicketEntity> getEntitiesPage(String pageLink) throws ExternalException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(ResourceTicketService.State.class, queryResult,
+        state -> convertToResourceTicketEntity(state));
   }
 
   private void patchResourceTicketService(String resourceTicketId, ResourceTicketService.Patch patch)
@@ -369,10 +398,12 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
     }
   }
 
-  private List<ResourceTicketService.State> filterTicketDocuments(
+  private ResourceList<ResourceTicketEntity> filterTicketDocuments(
       Optional<String> tenantId,
       Optional<String> parentId,
-      Optional<String> name) {
+      Optional<String> name,
+      Optional<Integer> pageSize) {
+
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
 
     if (tenantId.isPresent()) {
@@ -387,7 +418,11 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
       termsBuilder.put("name", name.get());
     }
 
-    return dcpClient.queryDocuments(ResourceTicketService.State.class, termsBuilder.build());
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(ResourceTicketService.State.class,
+        termsBuilder.build(), pageSize, true);
+
+    return PaginationUtils.xenonQueryResultToResourceList(ResourceTicketService.State.class, queryResult,
+        state -> convertToResourceTicketEntity(state));
   }
 
   private ResourceTicketService.State getResourceTicketStateById(String id) throws ResourceTicketNotFoundException {

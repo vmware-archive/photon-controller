@@ -25,6 +25,7 @@ import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
 import com.vmware.photon.controller.apife.entities.SecurityGroupEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -47,6 +48,7 @@ import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -254,16 +256,22 @@ public class TenantDcpBackend implements TenantBackend {
           String.format("Tenant '%s' project list is non-empty", tenantEntity.getName()));
     }
 
-    List<ResourceTicket> tenantTicketList = resourceTicketBackend.filter(tenantEntity.getId(),
-        Optional.<String>absent());
-    if (tenantTicketList != null) {
-      for (ResourceTicket tenantTicket : tenantTicketList) {
-        List<ResourceTicketEntity> projectTicketList = resourceTicketBackend.filterByParentId(tenantTicket.getId());
-        for (ResourceTicketEntity projectTicket : projectTicketList) {
-          resourceTicketBackend.delete(projectTicket.getId());
-        }
-        resourceTicketBackend.delete(tenantTicket.getId());
+    List<ResourceTicket> tenantTicketList = new ArrayList<>();
+    ResourceList<ResourceTicket> resourceList = resourceTicketBackend.filter(tenantEntity.getId(),
+        Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+    tenantTicketList.addAll(resourceList.getItems());
+
+    while (StringUtils.isNotBlank(resourceList.getNextPageLink())) {
+      resourceList = resourceTicketBackend.getPage(resourceList.getNextPageLink());
+      tenantTicketList.addAll(resourceList.getItems());
+    }
+
+    for (ResourceTicket tenantTicket : tenantTicketList) {
+      List<ResourceTicketEntity> projectTicketList = resourceTicketBackend.filterByParentId(tenantTicket.getId());
+      for (ResourceTicketEntity projectTicket : projectTicketList) {
+        resourceTicketBackend.delete(projectTicket.getId());
       }
+      resourceTicketBackend.delete(tenantTicket.getId());
     }
 
     dcpClient.delete(TenantServiceFactory.SELF_LINK + "/" + tenantEntity.getId(),
