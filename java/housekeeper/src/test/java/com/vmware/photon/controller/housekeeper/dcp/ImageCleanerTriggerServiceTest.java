@@ -19,7 +19,6 @@ import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
@@ -288,7 +287,6 @@ public class ImageCleanerTriggerServiceTest {
     private TestEnvironment machine;
     private HostClientFactory hostClientFactory;
     private CloudStoreHelper cloudStoreHelper;
-    private ZookeeperHostMonitor zookeeperHostMonitor;
     private ServiceConfigFactory serviceConfigFactory;
 
     private ImageCleanerTriggerService.State request;
@@ -299,7 +297,6 @@ public class ImageCleanerTriggerServiceTest {
       serviceConfigFactory = mock(ServiceConfigFactory.class);
       cloudStoreHelper = mock(CloudStoreHelper.class);
       doReturn(new HostClientMock()).when(hostClientFactory).create();
-      zookeeperHostMonitor = mock(ZookeeperHostMonitor.class);
       serviceConfigFactory = mock(ServiceConfigFactory.class);
 
       // Build input.
@@ -323,7 +320,7 @@ public class ImageCleanerTriggerServiceTest {
 
     @Test(dataProvider = "hostCount")
     public void testTriggerActivationSuccess(int hostCount) throws Throwable {
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null,
           serviceConfigFactory, hostCount);
 
       //Call Service.
@@ -345,7 +342,7 @@ public class ImageCleanerTriggerServiceTest {
       request.executionState = ImageCleanerTriggerService.ExecutionState.RUNNING;
       request.pulse = true;
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null,
           serviceConfigFactory, hostCount);
 
       // Send a patch to the trigger service to simulate a maintenance interval kicking in
