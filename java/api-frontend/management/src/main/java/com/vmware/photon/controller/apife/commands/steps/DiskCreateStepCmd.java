@@ -107,6 +107,7 @@ public class DiskCreateStepCmd extends StepCommand {
       BaseDiskEntity diskEntity = getDiskEntity(disk.getId());
       try {
         HostClient.ResponseValidator.checkCreateDiskError(error);
+        logger.info("created disk longzhou_longzhou: {}", taskCommand.getHostClient().getAgentId());
         diskBackend.updateState(
             diskEntity,
             DiskState.DETACHED,

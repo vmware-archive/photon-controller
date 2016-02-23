@@ -261,7 +261,7 @@ public class TaskCommand extends BaseCommand {
 
   private void invokeRootScheduler(BaseDiskEntity disk)
       throws RpcException, InterruptedException, DiskNotFoundException {
-    logger.info("no cached agent or stale agent id, looking up from the scheduler");
+    logger.info("longzhou_longzhou no cached agent or stale agent id, looking up from the scheduler " + disk.getId());
     try {
       FindResponse response = rootSchedulerClient.findDisk(disk.getId());
       disk.setAgent(response.getAgent_id());
@@ -274,7 +274,7 @@ public class TaskCommand extends BaseCommand {
 
   private void invokeRootScheduler(VmEntity vm)
       throws RpcException, InterruptedException, VmNotFoundException {
-    logger.info("no cached agent or host id, looking up from the scheduler");
+    logger.info("longzhou_longzhou no cached agent or host id, looking up from the scheduler" + vm.getId());
     try {
       FindResponse response = rootSchedulerClient.findVm(vm.getId());
       vm.setAgent(response.getAgent_id());
