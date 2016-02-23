@@ -201,6 +201,14 @@ public class RegisterAuthClientTaskService extends StatefulService {
       startState.taskState = patchState.taskState;
     }
 
+    if (null != patchState.loginUrl) {
+      startState.loginUrl = patchState.loginUrl;
+    }
+
+    if (null != patchState.logoutUrl) {
+      startState.logoutUrl = patchState.logoutUrl;
+    }
+
     return startState;
   }
 

@@ -495,7 +495,7 @@ public class CreateContainersWorkflowService extends StatefulService {
                 break;
               case MGMT_UI:
                 deploymentPatch.oAuthMgmtUiLoginEndpoint = result.loginUrl;
-                deploymentPatch.oAuthSwaggerLogoutEndpoint = result.logoutUrl;
+                deploymentPatch.oAuthMgmtUiLogoutEndpoint = result.logoutUrl;
                 break;
             }
 
