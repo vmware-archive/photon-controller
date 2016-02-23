@@ -127,6 +127,7 @@ public class XenonRestClient implements XenonClient {
         .setExpiration(Utils.getNowMicrosUtc() + getPostOperationExpirationMicros())
         .setBody(body)
         .setReferer(this.localHostUri)
+        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE)
         .setContextId(LoggingUtils.getRequestId());
 
     return send(postOperation);

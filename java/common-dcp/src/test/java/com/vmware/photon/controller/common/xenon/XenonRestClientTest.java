@@ -21,7 +21,6 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.ExampleFactoryService;
 import com.vmware.xenon.services.common.ExampleService;
 import com.vmware.xenon.services.common.LimitedReplicationExampleFactoryService;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
@@ -87,9 +86,8 @@ public class XenonRestClientTest {
 
   private void setUpHostAndClient() throws Throwable {
     host = BasicServiceHost.create();
-    ExampleFactoryService exampleFactoryService = new ExampleFactoryService();
-    host.startServiceSynchronously(exampleFactoryService, null, ExampleFactoryService.SELF_LINK);
-    assertThat(host.checkServiceAvailable(exampleFactoryService.getSelfLink()), is(true));
+    host.startServiceSynchronously(ExampleService.createFactory(), null, ExampleService.FACTORY_LINK);
+    assertThat(host.checkServiceAvailable(ExampleService.FACTORY_LINK), is(true));
 
     StaticServerSet serverSet = new StaticServerSet(
         new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
@@ -103,7 +101,7 @@ public class XenonRestClientTest {
 
   private String createDocument(XenonRestClient xenonRestClient, ExampleService.ExampleServiceState exampleServiceState)
       throws Throwable {
-    Operation result = xenonRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
+    Operation result = xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
 
     assertThat(result.getStatusCode(), is(200));
     ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -118,7 +116,7 @@ public class XenonRestClientTest {
     for (Integer i = 0; i < hostCount; i++) {
       hosts[i] = BasicServiceHost.create();
       hosts[i].setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(100));
-      hosts[i].startServiceSynchronously(new ExampleFactoryService(), null, ExampleFactoryService.SELF_LINK);
+      hosts[i].startServiceSynchronously(ExampleService.createFactory(), null, ExampleService.FACTORY_LINK);
 
       servers[i] = new InetSocketAddress(hosts[i].getPreferredAddress(), hosts[i].getPort());
     }
@@ -183,7 +181,7 @@ public class XenonRestClientTest {
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       exampleServiceState.name = UUID.randomUUID().toString();
 
-      Operation result = xenonRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      Operation result = xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
 
       assertThat(result.getStatusCode(), is(200));
       ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -198,7 +196,7 @@ public class XenonRestClientTest {
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       exampleServiceState.name = UUID.randomUUID().toString();
 
-      xenonRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
     }
 
     @Test(expectedExceptions = XenonRuntimeException.class)
@@ -208,7 +206,7 @@ public class XenonRestClientTest {
       ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
       exampleServiceState.name = UUID.randomUUID().toString();
 
-      xenonRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
     }
   }
 
@@ -250,7 +248,7 @@ public class XenonRestClientTest {
 
     @Test(expectedExceptions = DocumentNotFoundException.class)
     public void testGetOfNonExistingDocument() throws Throwable {
-      xenonRestClient.get(ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString());
+      xenonRestClient.get(ExampleService.FACTORY_LINK + "/" + UUID.randomUUID().toString());
     }
 
     @Test
@@ -292,7 +290,7 @@ public class XenonRestClientTest {
       exampleServiceState2.name = UUID.randomUUID().toString();
       String documentSelfLink2 = createDocument(exampleServiceState2);
 
-      String documentSelfLink3 = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
+      String documentSelfLink3 = ExampleService.FACTORY_LINK + "/" + UUID.randomUUID().toString();
 
       xenonRestClient.get(Arrays.asList(documentSelfLink1, documentSelfLink2, documentSelfLink3), 3);
     }
@@ -300,9 +298,9 @@ public class XenonRestClientTest {
     @Test(expectedExceptions = DocumentNotFoundException.class)
     public void testGetOfThreeMissingDocuments() throws Throwable {
 
-      String documentSelfLink1 = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
-      String documentSelfLink2 = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
-      String documentSelfLink3 = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
+      String documentSelfLink1 = ExampleService.FACTORY_LINK + "/" + UUID.randomUUID().toString();
+      String documentSelfLink2 = ExampleService.FACTORY_LINK + "/" + UUID.randomUUID().toString();
+      String documentSelfLink3 = ExampleService.FACTORY_LINK + "/" + UUID.randomUUID().toString();
 
       xenonRestClient.get(Arrays.asList(documentSelfLink1, documentSelfLink2, documentSelfLink3), 3);
     }
@@ -332,7 +330,7 @@ public class XenonRestClientTest {
 
     @Test
     public void testTimeoutOfOperation() throws Throwable {
-      String documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
+      String documentSelfLink = ExampleService.FACTORY_LINK + "/" + UUID.randomUUID().toString();
       URI uri = xenonRestClient.getServiceUri(documentSelfLink);
       ServiceErrorResponse serviceErrorResponse = new ServiceErrorResponse();
       serviceErrorResponse.statusCode = Operation.STATUS_CODE_TIMEOUT;
@@ -518,7 +516,7 @@ public class XenonRestClientTest {
       exampleServiceState.counter = 0L;
 
       xenonRestClient.patch(
-          ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString(),
+          ExampleService.FACTORY_LINK + "/" + UUID.randomUUID().toString(),
           exampleServiceState);
     }
   }
@@ -729,7 +727,7 @@ public class XenonRestClientTest {
 
     private void setUpHostAndClient() throws Throwable {
       host = BasicServiceHost.create();
-      host.startServiceSynchronously(new ExampleFactoryService(), null, ExampleFactoryService.SELF_LINK);
+      host.startServiceSynchronously(ExampleService.createFactory(), null, ExampleService.FACTORY_LINK);
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
@@ -737,7 +735,7 @@ public class XenonRestClientTest {
     }
 
     private String createDocument(ExampleService.ExampleServiceState exampleServiceState) throws Throwable {
-      Operation result = xenonRestClient.post(ExampleFactoryService.SELF_LINK, exampleServiceState);
+      Operation result = xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
 
       assertThat(result.getStatusCode(), is(200));
       ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
@@ -788,7 +786,7 @@ public class XenonRestClientTest {
       for (int i = 0; i < MAX_ITERATIONS; i++) {
         for (XenonRestClient xenonRestClient : xenonRestClients) {
           try {
-            documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
+            documentSelfLink = ExampleService.FACTORY_LINK + "/" + UUID.randomUUID().toString();
             xenonRestClient.get(documentSelfLink);
             Assert.fail("get for a non-existing document should have failed");
           } catch (DocumentNotFoundException e) {
@@ -806,7 +804,7 @@ public class XenonRestClientTest {
         for (XenonRestClient xenonRestClient : xenonRestClients) {
           try {
             exampleServiceState.name = UUID.randomUUID().toString();
-            documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
+            documentSelfLink = ExampleService.FACTORY_LINK + "/" + UUID.randomUUID().toString();
             xenonRestClient.patch(documentSelfLink, exampleServiceState);
             Assert.fail("patch for a non-existing document should have failed");
           } catch (DocumentNotFoundException e) {
@@ -820,7 +818,7 @@ public class XenonRestClientTest {
     public void testDeleteOfNonExistingDocument() throws Throwable {
       for (int i = 0; i < MAX_ITERATIONS; i++) {
         for (XenonRestClient xenonRestClient : xenonRestClients) {
-          String documentSelfLink = ExampleFactoryService.SELF_LINK + "/" + UUID.randomUUID().toString();
+          String documentSelfLink = ExampleService.FACTORY_LINK + "/" + UUID.randomUUID().toString();
           xenonRestClient.delete(documentSelfLink, null);
         }
       }

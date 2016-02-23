@@ -16,7 +16,6 @@ package com.vmware.photon.controller.common.xenon;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.ExampleFactoryService;
 import com.vmware.xenon.services.common.ExampleService;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
@@ -291,22 +290,21 @@ public class BasicServiceHostTest {
 
     @Test
     public void testStartServiceSynchronously() throws Throwable {
-      ExampleFactoryService exampleFactoryService = new ExampleFactoryService();
-      host.startServiceSynchronously(exampleFactoryService, null, ExampleFactoryService.SELF_LINK);
-      assertThat(host.checkServiceAvailable(exampleFactoryService.getSelfLink()), is(true));
+      host.startServiceSynchronously(ExampleService.createFactory(), null, ExampleService.FACTORY_LINK);
+      assertThat(host.checkServiceAvailable(ExampleService.FACTORY_LINK), is(true));
     }
 
     @Test
     public void testStartServiceSynchronouslyFails() throws Throwable {
       AlwaysFailingToStartService alwaysFailingToStartService = new AlwaysFailingToStartService();
       try {
-        host.startServiceSynchronously(alwaysFailingToStartService, null, ExampleFactoryService.SELF_LINK);
+        host.startServiceSynchronously(alwaysFailingToStartService, null, ExampleService.FACTORY_LINK);
         Assert.fail("Service start did not fail as expected");
       } catch (Exception exception) {
         assertThat(exception.getMessage(), is(equalTo(AlwaysFailingToStartService.ERROR_MESSAGE)));
       }
 
-      assertThat(host.checkServiceAvailable(ExampleFactoryService.SELF_LINK), is(false));
+      assertThat(host.checkServiceAvailable(ExampleService.FACTORY_LINK), is(false));
     }
   }
 

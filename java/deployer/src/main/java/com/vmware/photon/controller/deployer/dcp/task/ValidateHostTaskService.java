@@ -149,7 +149,6 @@ public class ValidateHostTaskService extends StatefulService {
 
   public ValidateHostTaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.ENFORCE_QUORUM, true);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);

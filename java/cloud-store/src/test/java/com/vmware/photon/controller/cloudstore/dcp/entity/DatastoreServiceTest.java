@@ -81,8 +81,7 @@ public class DatastoreServiceTest {
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION,
           Service.ServiceOption.OWNER_SELECTION,
-          Service.ServiceOption.INSTRUMENTATION,
-          Service.ServiceOption.ENFORCE_QUORUM);
+          Service.ServiceOption.INSTRUMENTATION);
       assertThat(new DatastoreService().getOptions(), is(expected));
     }
   }
