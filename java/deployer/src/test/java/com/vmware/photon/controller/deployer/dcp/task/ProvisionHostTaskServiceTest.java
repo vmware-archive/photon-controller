@@ -77,6 +77,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -913,17 +914,17 @@ public class ProvisionHostTaskServiceTest {
           ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG);
       startState.controlFlags = ControlFlags.CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION;
       startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreEnvironment).documentSelfLink;
+    }
 
+    @BeforeMethod
+    public void setUpTest() throws Throwable {
       datastoreList = buildDatastoreList(10);
 
       imageDatastoreIds = datastoreList.stream()
           .limit(3)
           .map((datastore) -> datastore.getId())
           .collect(Collectors.toSet());
-    }
 
-    @BeforeMethod
-    public void setUpTest() throws Throwable {
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
       startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
@@ -1245,8 +1246,9 @@ public class ProvisionHostTaskServiceTest {
   private List<Datastore> buildDatastoreList(int count) {
     List<Datastore> returnValue = new ArrayList<>(count);
     for (int i = 0; i < count; i++) {
-      Datastore datastore = new Datastore("datastore-id-" + Integer.toString(i));
-      datastore.setName("datastore-name-" + Integer.toString(i));
+      String datastoreName = UUID.randomUUID().toString();
+      Datastore datastore = new Datastore("datastore-id-" + datastoreName);
+      datastore.setName("datastore-name-" + datastoreName);
       switch (i % 3) {
         case 0:
           datastore.setTags(Collections.singleton("tag1"));

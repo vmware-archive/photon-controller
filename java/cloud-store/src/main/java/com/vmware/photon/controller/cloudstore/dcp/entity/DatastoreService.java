@@ -39,7 +39,6 @@ public class DatastoreService extends StatefulService {
 
   public DatastoreService() {
     super(State.class);
-    super.toggleOption(ServiceOption.ENFORCE_QUORUM, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
