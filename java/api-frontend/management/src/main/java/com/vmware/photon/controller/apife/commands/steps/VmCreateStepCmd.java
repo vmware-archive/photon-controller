@@ -82,6 +82,7 @@ public class VmCreateStepCmd extends StepCommand {
       CreateVmResponse response = taskCommand.getHostClient().createVm(
           taskCommand.getReservation(), createNetworkConnectionSpec(vm), vm.getEnvironment());
 
+      logger.info("created VM longzhou_longzhou: {}", taskCommand.getHostClient().getAgentId());
       vmBackend.updateState(vm, VmState.STOPPED, taskCommand.getHostClient().getAgentId(),
           taskCommand.getHostClient().getHostIp(),
           response.getVm().getDatastore().getId(),
