@@ -173,8 +173,11 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     long timeoutMs = config.getRootPlaceParams().getTimeout();
 
     // Pick candidates that satisfy the resource constraints.
+    Stopwatch getCandidatesStopwatch = Stopwatch.createStarted();
     List<ResourceConstraint> constraints = getResourceConstraints(request);
     Map<String, ServerAddress> candidates = checker.getCandidates(constraints, numSamples);
+    logger.info("elapsed-time flat-place-get-candidates {}", getCandidatesStopwatch.elapsed(TimeUnit.MILLISECONDS));
+
     if (candidates.isEmpty()) {
       logger.warn("Place failure, constraints cannot be satisfied for request: {}", request);
       return new PlaceResponse(PlaceResultCode.NO_SUCH_RESOURCE);
@@ -182,6 +185,7 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
 
     // Send place request to the candidates.
     logger.info("Sending place requests to {} with timeout {} ms", candidates, timeoutMs);
+    Stopwatch scoreCandidatesStopwatch = Stopwatch.createStarted();
     final Set<PlaceResponse> okResponses = Sets.newConcurrentHashSet();
     final Set<PlaceResultCode> returnCodes = Sets.newConcurrentHashSet();
     final CountDownLatch done = new CountDownLatch(candidates.size());
@@ -232,6 +236,8 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     } catch (InterruptedException ex) {
       logger.debug("Got interrupted waiting for place responses", ex);
     }
+    logger.info("elapsed-time flat-place-score-candidates {}", scoreCandidatesStopwatch.elapsed(TimeUnit.MILLISECONDS));
+
 
     // Return the best response.
     PlaceResponse response = scoreCalculator.pickBestResponse(okResponses);

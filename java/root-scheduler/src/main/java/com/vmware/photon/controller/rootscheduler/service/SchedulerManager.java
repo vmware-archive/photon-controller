@@ -32,6 +32,7 @@ import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -170,7 +171,9 @@ public class SchedulerManager {
       return new PlaceResponse(PlaceResultCode.SYSTEM_ERROR);
     }
 
+    Stopwatch getSchedulersStopwatch = Stopwatch.createStarted();
     Collection<ManagedScheduler> placementSchedulers = getPlacementSchedulers(request, rootPlaceParams);
+    logger.info("elapsed-time root-get-schedulers {}", getSchedulersStopwatch.elapsed(TimeUnit.MILLISECONDS));
 
     /*
      * No children satisfying the constraints can be found, return error
@@ -185,6 +188,7 @@ public class SchedulerManager {
      * If the leaf scheduler place parameters are not set,
      * read it from the config and set it here.
      */
+    Stopwatch getPlacementsStopwatch = Stopwatch.createStarted();
     PlaceParams leafPlaceParams = request.getLeafSchedulerParams();
     if (leafPlaceParams == null) {
       leafPlaceParams = config.getLeafPlaceParams();
@@ -237,6 +241,7 @@ public class SchedulerManager {
     }
 
     done.await(initialPlaceTimeout, TimeUnit.MILLISECONDS);
+    logger.info("elapsed-time root-get-placements {}", getPlacementsStopwatch.elapsed(TimeUnit.MILLISECONDS));
 
     if (okResponses.size() < fastPlaceResponseMinCount) {
       long timeoutMs = rootPlaceParams.getTimeout() - initialPlaceTimeout;
