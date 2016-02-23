@@ -50,7 +50,6 @@ public class Deployment extends Base {
 
   @JsonProperty
   @ApiModelProperty(value = "Stats information")
-  @NotNull
   private StatsInfo stats;
 
   @JsonProperty
