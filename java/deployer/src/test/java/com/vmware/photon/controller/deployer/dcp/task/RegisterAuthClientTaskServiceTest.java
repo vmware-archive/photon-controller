@@ -393,6 +393,8 @@ public class RegisterAuthClientTaskServiceTest {
           (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
+      assertThat(finalState.loginUrl, is("http://login"));
+      assertThat(finalState.logoutUrl, is("http://logout"));
     }
 
     @Test
