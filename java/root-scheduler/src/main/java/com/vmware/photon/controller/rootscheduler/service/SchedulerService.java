@@ -26,8 +26,14 @@ import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 import com.vmware.photon.controller.status.gen.GetStatusRequest;
 import com.vmware.photon.controller.status.gen.Status;
 
+import com.google.common.base.Stopwatch;
 import com.google.inject.Inject;
+
 import org.apache.thrift.TException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Scheduler thrift service.
@@ -38,6 +44,7 @@ import org.apache.thrift.TException;
 public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHandler {
   public static final String FLAT_SCHEDULER_MODE = "flat";
   public static final String HIERARCHICAL_SCHEDULER_MODE = "hierarchical";
+  private static final Logger logger = LoggerFactory.getLogger(SchedulerService.class);
 
   private Config config;
   private RootSchedulerService rootSchedulerService;
@@ -81,8 +88,17 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
 
   @Override
   public PlaceResponse place(PlaceRequest request) throws TException {
-    return config.getMode().equals(FLAT_SCHEDULER_MODE) ?
+    // This will be logged with the request id, so we can know the request/scheduler association
+    // When the root scheduler is retired, this should be removed.
+    logger.info("scheduler-type: {}", config.getMode());
+
+    Stopwatch stopwatch = Stopwatch.createStarted();
+    PlaceResponse placeResponse = config.getMode().equals(FLAT_SCHEDULER_MODE) ?
         flatSchedulerService.place(request) : rootSchedulerService.place(request);
+    stopwatch.stop();
+    logger.info("elapsed-time place {} milliseconds", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+    return placeResponse;
   }
 
   @Override
