@@ -25,6 +25,7 @@ import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.ResourceTicketReservation;
 import com.vmware.photon.controller.api.TenantCreateSpec;
@@ -32,6 +33,7 @@ import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -485,12 +487,14 @@ public class DiskDcpBackendTest {
       spec.setName("disk-2");
       diskBackend.prepareDiskCreate(projectId, spec);
 
-      List<PersistentDisk> persistentDiskList = diskBackend.filter(projectId, Optional.<String>absent());
-      assertThat(persistentDiskList.size(), is(2));
+      ResourceList<PersistentDisk> persistentDiskList = diskBackend.filter(projectId, Optional.<String>absent(),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(persistentDiskList.getItems().size(), is(2));
 
-      persistentDiskList = diskBackend.filter(projectId, Optional.of("disk-1"));
-      assertThat(persistentDiskList.size(), is(1));
-      assertThat(persistentDiskList.get(0).getName(), is("disk-1"));
+      persistentDiskList = diskBackend.filter(projectId, Optional.of("disk-1"),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(persistentDiskList.getItems().size(), is(1));
+      assertThat(persistentDiskList.getItems().get(0).getName(), is("disk-1"));
     }
 
     @Test
