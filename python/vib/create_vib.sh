@@ -116,6 +116,15 @@ build_for_py_ver() {
      CHAIRMAN_PORT $CHAIRMAN_PORT \
      > $DEST_VIB_LAYOUT/$FIREWALL_CONF
 
+   # Fill in template for stats publisher's port rule
+   # TODO: Update this port based on user's provided state store port number at deployment time.
+   FIREWALL_STATS_CONF=payloads/agent/etc/vmware/firewall/photon-controller-agent-stats.xml
+   STATS_STORE_PORT=${STATS_STORE_PORT:-2004}
+   ../misc/fill_template $SRC_VIB_LAYOUT/$FIREWALL_STATS_CONF \
+     STATS_STORE_PORT  $STATS_STORE_PORT \
+     > $DEST_VIB_LAYOUT/$FIREWALL_STATS_CONF
+
+
    AGENT_VERSION=$(cat ../src/agent/VERSION)
    if [ -n "$PROMOTE_NUMBER" ]; then
      AGENT_VERSION="$AGENT_VERSION.$PROMOTE_NUMBER"
@@ -140,4 +149,4 @@ for esxver in 6.0.0 5.5.0; do
    ESX_VERSION=$esxver
    build_for_py_ver $esxver
 done
-vibauthor -C -t $DEST_VIB_LAYOUT -v $DIST_DIR/photon-controller-agent-$AGENT_VERSION-$ESX_VERSION.vib -f
+./vibauthor.sh -C -t $DEST_VIB_LAYOUT -v $DIST_DIR/photon-controller-agent-$AGENT_VERSION-$ESX_VERSION.vib -f
