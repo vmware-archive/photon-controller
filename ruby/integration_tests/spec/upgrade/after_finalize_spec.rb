@@ -159,21 +159,6 @@ describe "migrate finalize", upgrade: true do
     end
   end
 
-  describe "interaction with migrated cluster" do
-    it "should list all existing clusters" do
-      # find cluster project
-      project = find_cluster_project
-      expect(project).not_to be_nil
-      # list all clusters
-      clusters = client.get_project_clusters(project.id)
-      expect(clusters).not_to be_nil
-      # should contain exactly one cluster
-      expect(clusters.items.length).to equal(1)
-      # resize cluster / not working in beta1
-      # client.resize_cluster(clusters.items[0].id, 3)
-    end
-  end
-
   describe "creating new entities" do
     it "should be able to create new tenant with entities" do
       EsxCloud::ManagementPlaneSeeder.populate
