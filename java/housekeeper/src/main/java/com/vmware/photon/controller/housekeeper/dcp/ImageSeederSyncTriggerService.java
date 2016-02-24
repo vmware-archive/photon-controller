@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
@@ -310,8 +311,13 @@ public class ImageSeederSyncTriggerService extends StatefulService {
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
         .setTermMatchValue(Utils.buildKind(ImageService.State.class));
 
+    QueryTask.Query stateClause = new QueryTask.Query()
+        .setTermPropertyName("state")
+        .setTermMatchValue(ImageState.READY.toString());
+
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.query.addBooleanClause(stateClause);
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
