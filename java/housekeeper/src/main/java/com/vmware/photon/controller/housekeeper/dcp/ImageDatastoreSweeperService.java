@@ -14,13 +14,16 @@
 package com.vmware.photon.controller.housekeeper.dcp;
 
 
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.OperationInProgressException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -35,16 +38,14 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.GetDeletedImagesResponse;
 import com.vmware.photon.controller.host.gen.GetInactiveImagesResponse;
 import com.vmware.photon.controller.host.gen.Host;
-import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.host.gen.StartImageScanResponse;
 import com.vmware.photon.controller.host.gen.StartImageSweepResponse;
-import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
 import com.vmware.photon.controller.resource.gen.InactiveImageDescriptor;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
@@ -61,6 +62,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -123,13 +125,13 @@ public class ImageDatastoreSweeperService extends StatefulService {
   }
 
   /**
-   * Retrieves the ZookeeperHostMonitor from the host.
+   * Retrieves the CloudStoreHelper from the host.
    *
    * @return
    */
   @VisibleForTesting
-  protected ZookeeperHostMonitor getZookeeperHostMonitor() {
-    return ((ZookeeperHostMonitorProvider) getHost()).getZookeeperHostMonitor();
+  protected CloudStoreHelper getCloudStoreHelper() {
+    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper();
   }
 
   /**
@@ -309,18 +311,43 @@ public class ImageDatastoreSweeperService extends StatefulService {
    * @param current
    */
   private void getHostInfo(final State current) {
-    Set<HostConfig> hostSet = getZookeeperHostMonitor().getHostsForDatastore(current.datastore);
-    checkState(hostSet.size() > 0, "Could not find any hosts for datastore '%s'.", current.datastore);
-    ServiceUtils.logInfo(this, "GetHostsForDatastore '%s' returned '%s'", current.datastore, Utils.toJson(hostSet));
+    try {
+      Operation queryHostSet = buildHostQuery(current.datastore, current.isImageDatastore);
 
-    if (current.isSelfProgressionDisabled) {
-      // not sending patch to move to next stage
-      return;
+      OperationSequence.create(queryHostSet)
+        .setCompletion((operations, throwable) -> {
+          if (throwable != null) {
+            failTask(throwable.values().iterator().next());
+            return;
+          }
+
+          Operation op = operations.get(queryHostSet.getId());
+          NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
+          List<HostService.State> documentLinks = QueryTaskUtils
+                  .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
+
+          Set<String> hostSet = new HashSet<String>();
+          for (HostService.State state : documentLinks) {
+            hostSet.add(state.hostAddress);
+          }
+
+          checkState(hostSet.size() > 0, "Could not find any hosts for datastore '%s'.", current.datastore);
+          ServiceUtils.logInfo(this, "GetHostsForDatastore '%s' returned '%s'", current.datastore,
+                  Utils.toJson(hostSet));
+
+          if (current.isSelfProgressionDisabled) {
+            // not sending patch to move to next stage
+            return;
+          }
+
+          State patch = this.buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.TRIGGER_SCAN, null);
+          patch.host = ServiceUtils.selectRandomItem(hostSet);
+          this.sendSelfPatch(patch);
+        }
+        ).sendWith(this);
+    } catch (Exception e) {
+      failTask(e);
     }
-
-    State patch = this.buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.TRIGGER_SCAN, null);
-    patch.host = ServiceUtils.selectRandomItem(hostSet).getAddress().getHost();
-    this.sendSelfPatch(patch);
   }
 
   /**
@@ -741,6 +768,45 @@ public class ImageDatastoreSweeperService extends StatefulService {
     }
 
     return s;
+  }
+
+  /**
+   * Build a QuerySpecification for querying hosts with access to datastore.
+   *
+   * @param dataStore
+   * @param isImageDatastore
+   * @return
+   */
+  private Operation buildHostQuery(final String dataStore, final boolean isImageDatastore) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+            .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+            .setTermMatchValue(Utils.buildKind(HostService.State.class));
+
+    String fieldName = QueryTask.QuerySpecification.buildCollectionItemName(
+            HostService.State.FIELD_NAME_REPORTED_DATASTORES);
+
+    if (isImageDatastore) {
+      fieldName = QueryTask.QuerySpecification.buildCollectionItemName(
+              HostService.State.FIELD_NAME_REPORTED_IMAGE_DATASTORES);
+    }
+
+    QueryTask.Query datastoreClause = new QueryTask.Query()
+            .setTermPropertyName(fieldName)
+            .setTermMatchValue(dataStore);
+
+    QueryTask.Query stateClause = new QueryTask.Query()
+            .setTermPropertyName("state")
+            .setTermMatchValue(HostState.READY.toString());
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.query.addBooleanClause(datastoreClause);
+    querySpecification.query.addBooleanClause(stateClause);
+    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    return getCloudStoreHelper()
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 
   /**
