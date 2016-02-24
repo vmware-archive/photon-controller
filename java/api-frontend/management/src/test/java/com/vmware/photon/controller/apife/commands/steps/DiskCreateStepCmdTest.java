@@ -98,6 +98,7 @@ public class DiskCreateStepCmdTest extends PowerMockTestCase {
   private Resource diskResource;
   private String diskID1 = "disk-1";
   private String diskID2 = "disk-2";
+  private String agentId = "agent-id";
   private EphemeralDiskEntity disk1;
   private PersistentDiskEntity disk2;
 
@@ -108,6 +109,7 @@ public class DiskCreateStepCmdTest extends PowerMockTestCase {
     when(taskCommand.getReservation()).thenReturn(reservationId);
     when(taskCommand.getResource()).thenReturn(diskResource);
     when(taskCommand.getHostClient()).thenReturn(hostClient);
+    when(taskCommand.lookupAgentId(anyString())).thenReturn(agentId);
 
     diskBackend = spy(new DiskDcpBackend(
         mock(ApiFeDcpRestClient.class),
@@ -134,8 +136,10 @@ public class DiskCreateStepCmdTest extends PowerMockTestCase {
     doReturn(disk2).when(diskBackend).find(PersistentDisk.KIND, diskID2);
 
     command.execute();
-    verify(diskBackend).updateState(disk1, DiskState.DETACHED, null, "datastore-id");
-    verify(diskBackend).updateState(disk2, DiskState.DETACHED, null, "datastore-id");
+    assertThat(disk1.getAgent(), is("agent-id"));
+    assertThat(disk2.getAgent(), is("agent-id"));
+    verify(diskBackend).updateState(disk1, DiskState.DETACHED, "agent-id", "datastore-id");
+    verify(diskBackend).updateState(disk2, DiskState.DETACHED, "agent-id", "datastore-id");
   }
 
   @Test
