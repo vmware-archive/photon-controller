@@ -18,3 +18,25 @@ struct StatsPluginConfig {
   1: required string store_endpoint
   2: required i32 store_port
 }
+
+// Stats request: change the collection level of the stats collector
+struct SetCollectionLevelRequest {
+  1: required i32 level
+
+  99: optional string tracing_info
+}
+
+enum SetCollectionLevelResultCode {
+  OK = 0
+  SYSTEM_ERROR = 1
+  INVALID_LEVEL = 2
+}
+
+struct SetCollectionLevelResponse {
+  1: required SetCollectionLevelResultCode result
+  2: optional string error
+}
+
+service StatsService {
+  SetCollectionLevelResponse set_collection_level(1: SetCollectionLevelRequest request)
+}
