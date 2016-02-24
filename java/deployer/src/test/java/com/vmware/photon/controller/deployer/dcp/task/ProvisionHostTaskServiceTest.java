@@ -77,6 +77,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -1245,8 +1246,9 @@ public class ProvisionHostTaskServiceTest {
   private List<Datastore> buildDatastoreList(int count) {
     List<Datastore> returnValue = new ArrayList<>(count);
     for (int i = 0; i < count; i++) {
-      Datastore datastore = new Datastore("datastore-id-" + Integer.toString(i));
-      datastore.setName("datastore-name-" + Integer.toString(i));
+      String datastoreName = UUID.randomUUID().toString();
+      Datastore datastore = new Datastore("datastore-id-" + datastoreName);
+      datastore.setName("datastore-name-" + datastoreName);
       switch (i % 3) {
         case 0:
           datastore.setTags(Collections.singleton("tag1"));
