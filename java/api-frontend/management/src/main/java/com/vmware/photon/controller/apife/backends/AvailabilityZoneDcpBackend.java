@@ -17,18 +17,23 @@ import com.vmware.photon.controller.api.AvailabilityZone;
 import com.vmware.photon.controller.api.AvailabilityZoneCreateSpec;
 import com.vmware.photon.controller.api.AvailabilityZoneState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -61,7 +66,8 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
 
   @Override
   public TaskEntity createAvailabilityZone(AvailabilityZoneCreateSpec availabilityZone) throws ExternalException {
-    if (!findDocumentsByName(Optional.of(availabilityZone.getName())).isEmpty()) {
+    if (!(findEntitiesByName(Optional.of(availabilityZone.getName()),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE))).getItems().isEmpty()) {
       throw new NameTakenException(AvailabilityZone.KIND, availabilityZone.getName());
     }
 
@@ -80,15 +86,14 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
   }
 
   @Override
-  public List<AvailabilityZone> getListApiRepresentation() throws ExternalException {
-    List<AvailabilityZone> resourceList = new ArrayList<>();
-    List<AvailabilityZoneEntity> list = getAll();
+  public ResourceList<AvailabilityZone> getListApiRepresentation(Optional<Integer> pageSize)
+      throws ExternalException {
 
-    for (AvailabilityZoneEntity entity : list) {
-      resourceList.add(entity.toApiRepresentation());
-    }
+    List<AvailabilityZone> result = new ArrayList<>();
+    ResourceList<AvailabilityZoneEntity> list = getAll(pageSize);
+    list.getItems().forEach(entity -> result.add(entity.toApiRepresentation()));
 
-    return resourceList;
+    return new ResourceList<>(result, list.getNextPageLink(), list.getPreviousPageLink());
   }
 
   @Override
@@ -98,8 +103,8 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
   }
 
   @Override
-  public List<AvailabilityZoneEntity> getAll() throws ExternalException {
-    return findEntitiesByName(Optional.<String>absent());
+  public ResourceList<AvailabilityZoneEntity> getAll(Optional<Integer> pageSize) throws ExternalException {
+    return findEntitiesByName(Optional.<String>absent(), pageSize);
   }
 
   @Override
@@ -129,6 +134,19 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
     throw new NotImplementedException();
   }
 
+  @Override
+  public ResourceList<AvailabilityZone> getPage(String pageLink) throws ExternalException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(AvailabilityZoneService.State.class, queryResult,
+        state -> convertToEntity(state).toApiRepresentation());
+  }
+
   private AvailabilityZoneEntity convertToEntity(AvailabilityZoneService.State availabilityZone) {
     AvailabilityZoneEntity availabilityZoneEntity = new AvailabilityZoneEntity();
     availabilityZoneEntity.setName(availabilityZone.name);
@@ -149,21 +167,7 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
     return result.getBody(AvailabilityZoneService.State.class);
   }
 
-  private List<AvailabilityZoneEntity> findEntitiesByName(Optional<String> name)
-      throws ExternalException {
-    List<AvailabilityZoneEntity> availabilityZoneEntityList = null;
-    List<AvailabilityZoneService.State> availabilityZoneStateList = findDocumentsByName(name);
-    if (availabilityZoneStateList != null) {
-      availabilityZoneEntityList = new ArrayList<>(availabilityZoneStateList.size());
-      for (AvailabilityZoneService.State availabilityZoneState : availabilityZoneStateList) {
-        availabilityZoneEntityList.add(convertToEntity(availabilityZoneState));
-      }
-    }
-
-    return availabilityZoneEntityList;
-  }
-
-  private List<AvailabilityZoneService.State> findDocumentsByName(Optional<String> name)
+  private ResourceList<AvailabilityZoneEntity> findEntitiesByName(Optional<String> name, Optional<Integer> pageSize)
       throws ExternalException {
 
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
@@ -171,6 +175,10 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
       termsBuilder.put("name", name.get());
     }
 
-    return dcpClient.queryDocuments(AvailabilityZoneService.State.class, termsBuilder.build());
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(AvailabilityZoneService.State.class,
+        termsBuilder.build(), pageSize, true);
+
+    return PaginationUtils.xenonQueryResultToResourceList(AvailabilityZoneService.State.class, queryResult,
+        state -> convertToEntity(state));
   }
 }

@@ -19,8 +19,10 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.AvailabilityZoneFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.AvailabilityZonesResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
@@ -53,10 +55,13 @@ import javax.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AvailabilityZonesResource {
   private final AvailabilityZoneFeClient availabilityZoneFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public AvailabilityZonesResource(AvailabilityZoneFeClient availabilityZoneFeClient) {
+  public AvailabilityZonesResource(AvailabilityZoneFeClient availabilityZoneFeClient,
+                                   PaginationConfig paginationConfig) {
     this.availabilityZoneFeClient = availabilityZoneFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @POST
@@ -75,14 +80,24 @@ public class AvailabilityZonesResource {
 
   @GET
   @ApiOperation(value = "Get all availability zones' information", response = AvailabilityZone.class,
-      responseContainer = ResourceList
-      .CLASS_NAME)
+      responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of availabilityZones")})
   public Response list(@Context Request request,
-                       @QueryParam("name") Optional<String> name) throws ExternalException {
+                       @QueryParam("name") Optional<String> name,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
+
+    ResourceList<AvailabilityZone> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = availabilityZoneFeClient.listPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = availabilityZoneFeClient.list(adjustedPageSize);
+    }
+
     return generateResourceListResponse(
         Response.Status.OK,
-        availabilityZoneFeClient.list(),
+        PaginationUtils.formalizePageLinks(resourceList, AvailabilityZonesResourceRoutes.API),
         (ContainerRequest) request,
         AvailabilityZonesResourceRoutes.AVAILABILITYZONE_PATH);
   }

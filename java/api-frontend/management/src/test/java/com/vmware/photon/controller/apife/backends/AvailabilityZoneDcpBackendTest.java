@@ -16,8 +16,10 @@ package com.vmware.photon.controller.apife.backends;
 import com.vmware.photon.controller.api.AvailabilityZone;
 import com.vmware.photon.controller.api.AvailabilityZoneCreateSpec;
 import com.vmware.photon.controller.api.AvailabilityZoneState;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNotFoundException;
@@ -29,6 +31,7 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.xenon.common.Operation;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -41,7 +44,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.testng.Assert.fail;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -240,21 +242,27 @@ public class AvailabilityZoneDcpBackendTest {
     @Test
     public void testGetAll() throws Throwable {
       createTestAvailabilityZoneDocument(createTestAvailabilityZone(AvailabilityZoneState.CREATING));
-      List<AvailabilityZoneEntity> foundAvailabilityZoneEntities = availabilityZoneDcpBackend.getAll();
-      assertThat(foundAvailabilityZoneEntities.isEmpty(), is(false));
-      assertThat(foundAvailabilityZoneEntities.size(), is(2));
-      assertThat(foundAvailabilityZoneEntities.get(0).getState(), is(availabilityZone.state));
-      assertThat(foundAvailabilityZoneEntities.get(1).getState(), is(availabilityZone.state));
+      ResourceList<AvailabilityZoneEntity> foundAvailabilityZoneEntities = availabilityZoneDcpBackend.getAll(
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(foundAvailabilityZoneEntities.getItems().isEmpty(), is(false));
+      assertThat(foundAvailabilityZoneEntities.getItems().size(), is(2));
+      assertThat(foundAvailabilityZoneEntities.getItems().get(0).getState(), is(availabilityZone.state));
+      assertThat(foundAvailabilityZoneEntities.getItems().get(1).getState(), is(availabilityZone.state));
     }
 
     @Test
     public void testGetListApiRepresentation() throws Throwable {
       createTestAvailabilityZoneDocument(createTestAvailabilityZone(AvailabilityZoneState.CREATING));
-      List<AvailabilityZone> foundAvailabilityZones = availabilityZoneDcpBackend.getListApiRepresentation();
-      assertThat(foundAvailabilityZones.isEmpty(), is(false));
-      assertThat(foundAvailabilityZones.size(), is(2));
-      assertThat(foundAvailabilityZones.get(0).getState(), is(availabilityZone.state));
-      assertThat(foundAvailabilityZones.get(1).getState(), is(availabilityZone.state));
+      ResourceList<AvailabilityZone> foundAvailabilityZones = availabilityZoneDcpBackend.getListApiRepresentation
+          (Optional.of(1));
+      assertThat(foundAvailabilityZones.getItems().isEmpty(), is(false));
+      assertThat(foundAvailabilityZones.getItems().size(), is(1));
+      assertThat(foundAvailabilityZones.getItems().get(0).getState(), is(availabilityZone.state));
+
+      foundAvailabilityZones = availabilityZoneDcpBackend.getPage(foundAvailabilityZones.getNextPageLink());
+      assertThat(foundAvailabilityZones.getItems().isEmpty(), is(false));
+      assertThat(foundAvailabilityZones.getItems().size(), is(1));
+      assertThat(foundAvailabilityZones.getItems().get(0).getState(), is(availabilityZone.state));
     }
   }
 

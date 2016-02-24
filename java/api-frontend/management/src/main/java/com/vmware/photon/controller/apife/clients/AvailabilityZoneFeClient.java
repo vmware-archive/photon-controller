@@ -22,6 +22,7 @@ import com.vmware.photon.controller.apife.backends.AvailabilityZoneBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
@@ -61,7 +62,11 @@ public class AvailabilityZoneFeClient {
     return task;
   }
 
-  public ResourceList<AvailabilityZone> list() throws ExternalException {
-    return new ResourceList<>(availabilityZoneBackend.getListApiRepresentation());
+  public ResourceList<AvailabilityZone> list(Optional<Integer> pageSize) throws ExternalException {
+    return availabilityZoneBackend.getListApiRepresentation(pageSize);
+  }
+
+  public ResourceList<AvailabilityZone> listPage(String pageLink) throws ExternalException {
+    return availabilityZoneBackend.getPage(pageLink);
   }
 }
