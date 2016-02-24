@@ -36,18 +36,21 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import java.util.List;
 
@@ -251,17 +254,33 @@ public class TaskCommand extends BaseCommand {
     return hostClient;
   }
 
+  public String lookupAgentId(String hostIp) {
+    checkNotNull(hostIp);
+
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    termsBuilder.put("hostAddress", hostIp);
+
+    List<String> result = dcpClient.queryDocumentsForLinks(HostService.State.class, termsBuilder.build());
+    checkState(result.size() == 1, "Expect one and only one host with Address {}, found {}", hostIp, result.size());
+
+    String agentId = ServiceUtils.getIDFromDocumentSelfLink(result.get(0));
+    checkNotNull(agentId);
+
+    return agentId;
+  }
+
   private String lookupHostIp(String agentId) throws DocumentNotFoundException {
     checkNotNull(agentId);
 
     com.vmware.xenon.common.Operation result = dcpClient.get(HostServiceFactory.SELF_LINK + "/" + agentId);
     HostService.State hostState = result.getBody(HostService.State.class);
+
     return hostState.hostAddress;
   }
 
   private void invokeRootScheduler(BaseDiskEntity disk)
       throws RpcException, InterruptedException, DiskNotFoundException {
-    logger.info("no cached agent or stale agent id, looking up from the scheduler");
+    logger.warn("disk {} does not have agentId, looking up from the scheduler", disk.getId());
     try {
       FindResponse response = rootSchedulerClient.findDisk(disk.getId());
       disk.setAgent(response.getAgent_id());
@@ -274,7 +293,7 @@ public class TaskCommand extends BaseCommand {
 
   private void invokeRootScheduler(VmEntity vm)
       throws RpcException, InterruptedException, VmNotFoundException {
-    logger.info("no cached agent or host id, looking up from the scheduler");
+    logger.warn("vm {} does not have agentId or hostIp, looking up from the scheduler", vm.getId());
     try {
       FindResponse response = rootSchedulerClient.findVm(vm.getId());
       vm.setAgent(response.getAgent_id());
