@@ -44,7 +44,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.startsWith;
@@ -56,7 +56,6 @@ import static org.testng.Assert.fail;
 import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.Random;
-import java.util.function.Predicate;
 
 /**
  * Tests {@link com.vmware.photon.controller.housekeeper.dcp.ImageSeederSyncTriggerService}.
@@ -232,7 +231,7 @@ public class ImageSeederSyncTriggerServiceTest {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       cloudStoreHelper.setServerSet(serverSet);
-      ImageService.State createdImageState = createNewImageEntity();
+      ImageService.State createdImageState = createNewImageEntity(ImageState.READY);
       String newImageId = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       createImageToImageDatastoreDocument(newImageId);
 
@@ -269,7 +268,12 @@ public class ImageSeederSyncTriggerServiceTest {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       cloudStoreHelper.setServerSet(serverSet);
-      ImageService.State createdImageState = createNewImageEntity();
+
+      // ImageSeederSyncTriggerService should not trigger image in ERROR or CREATING state.
+      createNewImageEntity(ImageState.ERROR);
+      createNewImageEntity(ImageState.CREATING);
+      ImageService.State createdImageState = createNewImageEntity(ImageState.READY);
+
       String newImageId = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       createImageToImageDatastoreDocument(newImageId);
 
@@ -287,24 +291,20 @@ public class ImageSeederSyncTriggerServiceTest {
       QueryTask query = QueryTask.create(spec)
           .setDirect(true);
       QueryTask queryResponse = machine.waitForQuery(query,
-          new Predicate<QueryTask>() {
-            @Override
-            public boolean test(QueryTask queryTask) {
-              return queryTask.results.documentLinks.size() >= 1;
-            }
-          });
-      assertThat(queryResponse.results.documentLinks.size(), greaterThanOrEqualTo(1));
+          (QueryTask queryTask) ->
+              queryTask.results.documentLinks.size() >= 1
+      );
+      assertThat(queryResponse.results.documentLinks.size(), equalTo(1));
     }
 
-
-    private ImageService.State createNewImageEntity() throws Throwable {
+    private ImageService.State createNewImageEntity(ImageState imageState) throws Throwable {
       machine.startFactoryServiceSynchronously(ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
       ServiceHost host = machine.getHosts()[0];
 
       ImageService.State state = new ImageService.State();
       state.name = "image-1";
       state.replicationType = ImageReplicationType.EAGER;
-      state.state = ImageState.READY;
+      state.state = imageState;
 
       Operation op = cloudStoreHelper
           .createPost(ImageServiceFactory.SELF_LINK)
