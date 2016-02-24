@@ -37,9 +37,6 @@ import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.thrift.ModuleFactory;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostSet;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.AttachISORequest;
 import com.vmware.photon.controller.host.gen.AttachISOResponse;
@@ -125,7 +122,6 @@ import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
 
 import com.example.echo.Echoer;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
@@ -151,15 +147,11 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -172,19 +164,15 @@ public class HostClientTest {
 
   private HostClient hostClient;
   private Host.AsyncClient clientProxy;
-  private String agentId = "agent-id";
-  private ZookeeperServerSetFactory zookeeperServerSetFactory;
-  private ZookeeperHostSet zookeeperHostSet;
 
   private void setUp() {
     hostClient = spy(new HostClient(
-        mock(ClientProxyFactory.class), mock(ClientPoolFactory.class), mock(ZookeeperServerSetFactory.class)));
+        mock(ClientProxyFactory.class), mock(ClientPoolFactory.class)));
     clientProxy = mock(Host.AsyncClient.class);
   }
 
   private void setUpWithGuiceInjection() {
     Injector injector = Guice.createInjector(
-        new ZookeeperModule(),
         new ThriftModule(),
         new ThriftServiceModule<>(
             new TypeLiteral<Echoer.AsyncClient>() {
@@ -196,11 +184,7 @@ public class HostClientTest {
         ),
         new ModuleFactory.TracingTestModule());
 
-    zookeeperServerSetFactory = mock(ZookeeperServerSetFactory.class);
-    zookeeperHostSet = mock(ZookeeperHostSet.class);
-    when(zookeeperServerSetFactory.createHostServerSet(agentId)).thenReturn(zookeeperHostSet);
     hostClient = injector.getInstance(HostClient.class);
-    hostClient.setServerSetFactory(zookeeperServerSetFactory);
   }
 
   /**
@@ -236,52 +220,11 @@ public class HostClientTest {
     }
 
     @Test
-    public void testSetClientProxyWithAgentId() throws Throwable {
-      hostClient.setAgentId(agentId);
-      hostClient.ensureClient();
-
-      verify(zookeeperServerSetFactory).createHostServerSet(agentId);
-      assertThat(hostClient.getClientProxy(), notNullValue());
-      assertThat(hostClient.getAgentId(), is(agentId));
-      assertThat(hostClient.getHostIp(), nullValue());
-      assertThat(hostClient.getPort(), is(0));
-    }
-
-    @Test
     public void testSetClientProxyWithIpAndPort() throws Throwable {
       hostClient.setIpAndPort("127.0.0.1", 2181);
       assertThat(hostClient.getClientProxy(), nullValue());
       hostClient.ensureClient();
       assertThat(hostClient.getClientProxy(), notNullValue());
-      assertThat(hostClient.getAgentId(), nullValue());
-      assertThat(hostClient.getHostIp(), is("127.0.0.1"));
-      assertThat(hostClient.getPort(), is(2181));
-    }
-
-    @Test
-    public void testSetClientProxySwitchingBetweenIpAndAgentId() throws Throwable {
-      hostClient.setIpAndPort("127.0.0.1", 2181);
-      assertThat(hostClient.getClientProxy(), nullValue());
-      hostClient.ensureClient();
-      assertThat(hostClient.getClientProxy(), notNullValue());
-      assertThat(hostClient.getAgentId(), nullValue());
-      assertThat(hostClient.getHostIp(), is("127.0.0.1"));
-      assertThat(hostClient.getPort(), is(2181));
-
-      hostClient.setAgentId(agentId);
-      hostClient.ensureClient();
-
-      verify(zookeeperServerSetFactory).createHostServerSet(agentId);
-      assertThat(hostClient.getClientProxy(), notNullValue());
-      assertThat(hostClient.getAgentId(), is(agentId));
-      assertThat(hostClient.getHostIp(), nullValue());
-      assertThat(hostClient.getPort(), is(0));
-
-      hostClient.setIpAndPort("127.0.0.1", 2181);
-      assertThat(hostClient.getClientProxy(), nullValue());
-      hostClient.ensureClient();
-      assertThat(hostClient.getClientProxy(), notNullValue());
-      assertThat(hostClient.getAgentId(), nullValue());
       assertThat(hostClient.getHostIp(), is("127.0.0.1"));
       assertThat(hostClient.getPort(), is(2181));
     }
@@ -350,86 +293,6 @@ public class HostClientTest {
       assertThat(hostClient.getHostIp(), is("127.0.0.1"));
       assertThat(hostClient.getPort(), is(2180));
       assertThat(hostClient.getClientProxy(), nullValue());
-    }
-
-  }
-
-  /**
-   * This class implements tests for method {@link HostClient#getHostIp()} getHostIp}.
-   */
-  public class GetHostIpTest {
-
-    @BeforeMethod
-    private void setUp() {
-      setUpWithGuiceInjection();
-    }
-
-    @AfterMethod
-    private void tearDown() {
-      hostClient = null;
-    }
-
-    @Test
-    public void testNullAgentId() {
-      hostClient.setHostIp("127.0.0.1");
-      assertThat(hostClient.getAgentId(), nullValue());
-      assertThat(hostClient.getHostIp(), is("127.0.0.1"));
-    }
-
-    @Test
-    public void testGetHostIpForAgentId() throws Throwable {
-      hostClient.setAgentId(agentId);
-      when(zookeeperHostSet.getServers())
-          .thenReturn(ImmutableSet.of(new InetSocketAddress("127.0.0.1", 0)));
-
-      hostClient.ensureClient();
-
-      assertThat(hostClient.getAgentId(), is(agentId));
-      assertThat(hostClient.getHostIp(), is("127.0.0.1"));
-      verify(zookeeperHostSet).getServers();
-    }
-
-    @Test
-    public void testGetHostIpForAgentIdWithNoServerSet() throws Throwable {
-      hostClient.setAgentId(agentId);
-      hostClient.ensureClient();
-
-      try {
-        hostClient.getHostIp();
-      } catch (Exception ex) {
-        assertEquals(ex.getClass(), NullPointerException.class);
-        assertEquals(ex.getMessage(), "serverSet is not initialized in ensureClient");
-      }
-    }
-
-    @Test
-    public void testGetHostIpForAgentIdWithEmptyServerSet() throws Throwable {
-      hostClient.setAgentId(agentId);
-      when(zookeeperHostSet.getServers()).thenReturn(new HashSet<InetSocketAddress>());
-
-      hostClient.ensureClient();
-      assertThat(hostClient.getAgentId(), is(agentId));
-      assertThat(hostClient.getHostIp(), nullValue());
-      verify(zookeeperHostSet).getServers();
-    }
-
-    @Test
-    public void testGetHostIpForAgentIdWithInvalidServerSet() throws Throwable {
-      hostClient.setAgentId(agentId);
-      when(zookeeperHostSet.getServers())
-          .thenReturn(ImmutableSet.of(
-              new InetSocketAddress("127.0.0.1", 0),
-              new InetSocketAddress("127.0.0.2", 0)));
-
-      hostClient.ensureClient();
-      try {
-        hostClient.getHostIp();
-      } catch (Exception ex) {
-        assertEquals(ex.getClass(), IllegalStateException.class);
-        assertEquals(ex.getMessage(),
-            "There is more than one host assigned to this agent's serverSet: [/127.0.0.1:0, /127.0.0.2:0]");
-      }
-      verify(zookeeperHostSet).getServers();
     }
   }
 

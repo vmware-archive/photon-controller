@@ -73,7 +73,6 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   private VmEntity vm;
   private StepEntity step;
   private String stepId = "step-1";
-  private String agentId = "agent-1";
   private String reservationId = "r-100";
   private String agentIp = "1.1.1.1";
   private CreateVmResponse createVmResponse = new CreateVmResponse();
@@ -84,27 +83,13 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
     vm.setId("vm-1");
     when(taskCommand.getReservation()).thenReturn(reservationId);
     when(taskCommand.getHostClient()).thenReturn(hostClient);
-    when(hostClient.getAgentId()).thenReturn(agentId);
     when(hostClient.getHostIp()).thenReturn(agentIp);
 
     createVmResponse.setVm(createThriftVm("vm-1", "vm-100", "datastore-1", "datastore-name"));
   }
 
   @Test
-  public void testSuccessfulVmCreateWithAgentId() throws Throwable {
-    VmCreateStepCmd command = getVmCreateStepCmd();
-    command.createVm();
-
-    InOrder inOrder = inOrder(hostClient, vmBackend);
-    inOrder.verify(hostClient).createVm(reservationId, null, new HashMap<String, String>());
-    inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name");
-
-    verifyNoMoreInteractions(vmBackend);
-  }
-
-  @Test
   public void testSuccessfulVmCreateWithHostIp() throws Throwable {
-    when(hostClient.getAgentId()).thenReturn(null);
     VmCreateStepCmd command = getVmCreateStepCmd();
     command.createVm();
 
@@ -132,7 +117,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
 
     InOrder inOrder = inOrder(hostClient, vmBackend);
     inOrder.verify(hostClient).createVm(reservationId, networkConnectionSpec, new HashMap<String, String>());
-    inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name");
+    inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, null, agentIp, "datastore-1", "datastore-name");
 
     verifyNoMoreInteractions(vmBackend);
   }

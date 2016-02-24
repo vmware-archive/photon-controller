@@ -16,7 +16,6 @@ package com.vmware.photon.controller.housekeeper.dcp.mock;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.CopyImageResponse;
 import com.vmware.photon.controller.host.gen.CopyImageResultCode;
@@ -89,7 +88,7 @@ public class HostClientMock extends HostClient {
   private Map<String, List<String>> imageListForGetImagesRequest;
 
   public HostClientMock() {
-    super(mock(ClientProxyFactory.class), mock(ClientPoolFactory.class), mock(ZookeeperServerSetFactory.class));
+    super(mock(ClientProxyFactory.class), mock(ClientPoolFactory.class));
     state = Collections.synchronizedMap(new HashMap<>());
     copyImageResultCode = CopyImageResultCode.OK;
     getImagesResultCode = GetImagesResultCode.OK;
