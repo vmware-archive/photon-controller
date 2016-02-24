@@ -73,6 +73,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
@@ -691,6 +692,25 @@ public class TaskCommandTest {
     inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).findDisk("disk-1");
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
+  }
+
+  @Test
+  public void testLookupAgentIdSuccess() {
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
+        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
+    String agentId = command.lookupAgentId("host-ip");
+    assertEquals("agent-id", agentId);
+  }
+
+  @Test
+  public void testLookupAgentIdNotFound() {
+    TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
+        housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
+    try {
+      command.lookupAgentId("unknown-ip");
+      fail();
+    } catch (IllegalStateException ex) {
+    }
   }
 
   private StepEntity createDisableStep(String id, StepEntity.State stepState) {
