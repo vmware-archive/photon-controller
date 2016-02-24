@@ -268,6 +268,7 @@ public class TestHelper {
     VmService.State startState = new VmService.State();
     startState.name = "NAME";
     startState.hostServiceLink = "HOST_SERVICE_LINK";
+    startState.ipAddress = "IP_ADDRESS";
     return startState;
   }
 

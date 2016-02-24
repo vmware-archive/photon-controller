@@ -17,7 +17,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
-import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -27,22 +26,20 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
+import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorService;
+import com.vmware.photon.controller.deployer.dcp.task.CreateContainerTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.CreateContainerTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
-import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -53,30 +50,28 @@ import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
 /**
- * This class implements a DCP service representing the create containers workflow.
+ * This class implements a Xenon task service which creates service containers for a deployment.
  */
 public class CreateContainersWorkflowService extends StatefulService {
 
+  private static final String MGMT_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s:4343/oauth_callback.html";
+  private static final String MGMT_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s:4343/logout_callback";
+  private static final String SWAGGER_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
+  private static final String SWAGGER_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
+
   /**
-   * This enum represents the services which require authentication.
+   * This enum lists the services which require authentication.
    */
-  public enum ServiceRequireAuth {
+  public enum AuthenticationServiceType {
     SWAGGER,
     MGMT_UI
   }
-
-  private static final String SWAGGER_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
-  private static final String SWAGGER_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
-  private static final String MGMT_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s:4343/oauth_callback.html";
-  private static final String MGMT_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s:4343/logout_callback";
 
   /**
    * This class defines the state of a {@link CreateContainersWorkflowService} task.
@@ -84,12 +79,7 @@ public class CreateContainersWorkflowService extends StatefulService {
   public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
-     * This value represents the current sub-stage for the task.
-     */
-    public SubStage subStage;
-
-    /**
-     * This enum represents the possible sub-states for this work-flow.
+     * This class defines the possible sub-stages for a task.
      */
     public enum SubStage {
       CREATE_ZOOKEEPER_AND_DB_CONTAINERS,
@@ -98,13 +88,17 @@ public class CreateContainersWorkflowService extends StatefulService {
       REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
       REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
       CREATE_SERVICE_CONTAINERS,
-      CREATE_LOAD_BALANCER_CONTAINER
+      CREATE_LOAD_BALANCER_CONTAINER,
     }
+
+    /**
+     * This value represents the sub-stage of the current task.
+     */
+    public SubStage subStage;
   }
 
   /**
-   * This class defines the document state associated with a single
-   * {@link CreateContainersWorkflowService} instance.
+   * This class defines the document state associated with a {@link CreateContainersWorkflowService} task.
    */
   public static class State extends ServiceDocument {
 
@@ -115,41 +109,46 @@ public class CreateContainersWorkflowService extends StatefulService {
     public TaskState taskState;
 
     /**
-     * This value represents the interval, in milliseconds, to use when polling
-     * the state of a dcp task.
+     * This value represents the control flags for the current task.
+     */
+    @DefaultInteger(value = 0)
+    public Integer controlFlags;
+
+    /**
+     * This value represents the interval to wait, in milliseconds, when polling the state of a child task.
      */
     @Positive
+    @Immutable
     public Integer taskPollDelay;
 
     /**
-     * This value represents the URL of the DeploymentService object.
+     * This value represents the document link of the {@link DeploymentService} in whose context the operation is being
+     * performed.
      */
     @NotNull
     @Immutable
     public String deploymentServiceLink;
 
     /**
-     * This value represents the control flags for the operation.
+     * If present, this value represents the document link of the VM service on which the service containers should be
+     * created.
      */
-    @DefaultInteger(value = 0)
-    public Integer controlFlags;
+    @Immutable
+    public String vmServiceLink;
 
     /**
-     * Saves the auth enabled status to avoid reading deployment state multiple times.
+     * This value represents whether authentication is enabled for the current deployment.
      */
     @NotNull
     @Immutable
     public Boolean isAuthEnabled;
 
     /**
-     * Saves the whether this is run as part of new deployment or add management host.
+     * This value represents whether the current task is being executed as part of a new deployment.
      */
-    @Immutable
     @DefaultBoolean(value = true)
-    public Boolean isNewDeployment;
-
     @Immutable
-    public String vmServiceLink;
+    public Boolean isNewDeployment;
   }
 
   public CreateContainersWorkflowService() {
@@ -157,25 +156,19 @@ public class CreateContainersWorkflowService extends StatefulService {
     super.toggleOption(ServiceOption.PERSISTENCE, true);
   }
 
-  /**
-   * This method is called when a start operation is performed for the current
-   * service instance.
-   *
-   * @param start Supplies the start operation object.
-   */
   @Override
-  public void handleStart(Operation start) {
-    ServiceUtils.logInfo(this, "Handling start for service %s", getSelfLink());
-    State startState = start.getBody(State.class);
+  public void handleStart(Operation startOp) {
+    ServiceUtils.logTrace(this, "Handling start operation");
+    State startState = startOp.getBody(State.class);
     InitializationUtils.initialize(startState);
 
-    if (null == startState.taskPollDelay) {
+    if (startState.taskPollDelay == null) {
       startState.taskPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
     }
 
     validateState(startState);
 
-    if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
+    if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
       startState.taskState.subStage = TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS;
     }
@@ -185,145 +178,109 @@ public class CreateContainersWorkflowService extends StatefulService {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
     }
 
-    start.setBody(startState).complete();
+    startOp.setBody(startState).complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-      } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        sendStageProgressPatch(startState.taskState);
+      } else if (startState.taskState.stage == TaskState.TaskStage.STARTED) {
+        sendStageProgressPatch(startState.taskState.stage, startState.taskState.subStage);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method is called when a patch operation is performed for the current
-   * service instance.
-   *
-   * @param patch Supplies the start operation object.
-   */
   @Override
-  public void handlePatch(Operation patch) {
-    ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
-    State startState = getState(patch);
-    validateState(startState);
-    State patchState = patch.getBody(State.class);
-    validatePatchState(startState, patchState);
-    State currentState = applyPatch(startState, patchState);
+  public void handlePatch(Operation patchOp) {
+    ServiceUtils.logTrace(this, "Handling patch operation");
+    State currentState = getState(patchOp);
+    State patchState = patchOp.getBody(State.class);
+    validatePatchState(currentState, patchState);
+    PatchUtils.patchState(currentState, patchState);
     validateState(currentState);
-    patch.complete();
+    patchOp.complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
-      } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        processStartedState(currentState);
+      } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
+        processStartedStage(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method validates a state object for internal consistency.
-   *
-   * @param currentState Supplies current state object.
-   */
   private void validateState(State currentState) {
     ValidationUtils.validateState(currentState);
-    ValidationUtils.validateTaskStage(currentState.taskState);
-    validateTaskSubStage(currentState.taskState);
-
-    if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-      switch (currentState.taskState.subStage) {
-        case CREATE_ZOOKEEPER_AND_DB_CONTAINERS:
-        case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
-        case CREATE_LIGHTWAVE_CONTAINER:
-        case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
-        case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
-        case CREATE_SERVICE_CONTAINERS:
-        case CREATE_LOAD_BALANCER_CONTAINER:
-          break;
-        default:
-          throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage);
-      }
-    }
+    validateTaskState(currentState.taskState);
   }
 
-  private void validateTaskSubStage(TaskState taskState) {
+  private void validatePatchState(State currentState, State patchState) {
+    ValidationUtils.validatePatch(currentState, patchState);
+    validateTaskState(patchState.taskState);
+    validateTaskStageProgression(currentState.taskState, patchState.taskState);
+  }
+
+  private void validateTaskState(TaskState taskState) {
+    ValidationUtils.validateTaskStage(taskState);
     switch (taskState.stage) {
       case CREATED:
-        checkState(null == taskState.subStage);
-        break;
-      case STARTED:
-        checkState(null != taskState.subStage);
-        break;
       case FINISHED:
       case FAILED:
       case CANCELLED:
-        checkState(null == taskState.subStage);
+        checkState(taskState.subStage == null);
         break;
+      case STARTED:
+        checkState(taskState.subStage != null);
+        switch (taskState.subStage) {
+          case CREATE_ZOOKEEPER_AND_DB_CONTAINERS:
+          case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
+          case CREATE_LIGHTWAVE_CONTAINER:
+          case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
+          case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
+          case CREATE_SERVICE_CONTAINERS:
+          case CREATE_LOAD_BALANCER_CONTAINER:
+            break;
+          default:
+            throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
+        }
     }
   }
 
-  /**
-   * This method checks a patch object for validity against a document state object.
-   *
-   * @param startState Supplies the start state object.
-   * @param patchState Supplies the patch state object.
-   */
-  private void validatePatchState(State startState, State patchState) {
-    ValidationUtils.validatePatch(startState, patchState);
-    ValidationUtils.validateTaskStage(patchState.taskState);
-    validateTaskSubStage(patchState.taskState);
-    ValidationUtils.validateTaskStageProgression(startState.taskState, patchState.taskState);
-
-    if (null != startState.taskState.subStage && null != patchState.taskState.subStage) {
-      checkState(patchState.taskState.subStage.ordinal() >= startState.taskState.subStage.ordinal());
+  private void validateTaskStageProgression(TaskState currentState, TaskState patchState) {
+    ValidationUtils.validateTaskStageProgression(currentState, patchState);
+    if (currentState.subStage != null && patchState.subStage != null) {
+      checkState(patchState.subStage.ordinal() >= currentState.subStage.ordinal());
     }
   }
 
-  /**
-   * This method performs document state updates in response to an operation which
-   * sets the state to STARTED.
-   *
-   * @param currentState Supplies the current state object.
-   */
-  private void processStartedState(final State currentState) throws Throwable {
+  private void processStartedStage(State currentState) {
     switch (currentState.taskState.subStage) {
       case CREATE_ZOOKEEPER_AND_DB_CONTAINERS:
-        createContainers(currentState, Arrays.asList(
-                ContainersConfig.ContainerType.Zookeeper,
-                ContainersConfig.ContainerType.CloudStore),
+        createContainers(currentState,
+            Arrays.asList(ContainersConfig.ContainerType.Zookeeper, ContainersConfig.ContainerType.CloudStore),
             TaskState.TaskStage.STARTED,
             TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS);
         break;
       case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
-        pauseBackgroundTasks(currentState, TaskState.TaskStage.STARTED,
-            TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
+        processPreemptivePauseBackgroundTasksSubStage(currentState);
         break;
       case CREATE_LIGHTWAVE_CONTAINER:
-        createLightwaveContainer(currentState,
-            TaskState.TaskStage.STARTED,
-            TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+        processCreateLightwaveContainerSubStage(currentState);
         break;
       case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
-        processRegisterAuthClient(currentState,
-            ServiceRequireAuth.SWAGGER,
-            TaskState.TaskStage.STARTED,
+        registerAuthClient(currentState, AuthenticationServiceType.SWAGGER, TaskState.TaskStage.STARTED,
             TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_MGMT_UI);
         break;
       case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
-        processRegisterAuthClient(currentState,
-            ServiceRequireAuth.MGMT_UI,
-            TaskState.TaskStage.STARTED,
+        registerAuthClient(currentState, AuthenticationServiceType.MGMT_UI, TaskState.TaskStage.STARTED,
             TaskState.SubStage.CREATE_SERVICE_CONTAINERS);
         break;
       case CREATE_SERVICE_CONTAINERS:
-        createContainers(currentState, Arrays.asList(
-                ContainersConfig.ContainerType.Chairman,
+        createContainers(currentState,
+            Arrays.asList(ContainersConfig.ContainerType.Chairman,
                 ContainersConfig.ContainerType.Deployer,
                 ContainersConfig.ContainerType.Housekeeper,
                 ContainersConfig.ContainerType.ManagementApi,
@@ -333,209 +290,249 @@ public class CreateContainersWorkflowService extends StatefulService {
             TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER);
         break;
       case CREATE_LOAD_BALANCER_CONTAINER:
-        createLoadBalancerContainer(currentState,
-            TaskState.TaskStage.FINISHED, null);
+        processCreateLoadBalancerContainerSubStage(currentState);
         break;
     }
   }
 
-  private void pauseBackgroundTasks(final State currentState, final TaskState.TaskStage nextStage, final TaskState
-      .SubStage nextSubStage) {
-    if (currentState.isNewDeployment) {
-      sendRequest(
-          ((DeployerXenonServiceHost) getHost()).getCloudStoreHelper()
-              .createGet(currentState.deploymentServiceLink)
-              .setCompletion(
-                  (operation, throwable) -> {
-                    if (throwable != null) {
-                      failTask(throwable);
-                    }
+  //
+  // PREEMPTIVE_PAUSE_BACKGROUND_TASKS sub-stage routines
+  //
 
-                    try {
-                      DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
-                      ZookeeperClient zookeeperClient
-                          = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder()
-                          .create();
+  private void processPreemptivePauseBackgroundTasksSubStage(State currentState) {
 
-                      ServiceConfig serviceConfig = zookeeperClient.getServiceConfig(deploymentState
-                          .zookeeperQuorum, "apife");
-                      try {
-                        serviceConfig.pauseBackground();
-                        TaskUtils.sendSelfPatch(CreateContainersWorkflowService.this, buildPatch(nextStage,
-                            nextSubStage, null));
-                      } catch (Throwable t) {
-                        failTask(t);
-                      }
-                    } catch (Throwable t) {
-                      failTask(t);
-                    }
-                  }
-              )
-      );
-    } else {
-      TaskUtils.sendSelfPatch(CreateContainersWorkflowService.this, buildPatch(nextStage, nextSubStage, null));
-    }
-  }
-
-  /**
-   * This method creates containers based on the list of container types.
-   *
-   * @param currentState   Supplies the current state object.
-   * @param containerTypes Supplies the list of container types for which
-   *                       containers have to be created.
-   */
-  private void createContainers(final State currentState, List<ContainersConfig.ContainerType> containerTypes,
-                                final TaskState.TaskStage nextStage, final TaskState.SubStage nextSubStage) {
-    final AtomicInteger pendingContainerTypes = new AtomicInteger(containerTypes.size());
-    final Service service = this;
-
-    FutureCallback<String> futureCallback =
-        new FutureCallback<String>() {
-          @Override
-          public void onSuccess(String result) {
-            if (0 == pendingContainerTypes.decrementAndGet()) {
-              ServiceUtils.logInfo(service, "Stage %s completed", result);
-              TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-
-    for (ContainersConfig.ContainerType containerType : containerTypes) {
-      queryContainerTemplate(currentState, containerType, futureCallback);
-    }
-  }
-
-  /**
-   * This method checks if authentication is enabled and if yes, starts deployment of lightwave container.
-   *
-   * @param currentState Current state object
-   * @param nextStage    Next stage to set
-   * @param nextSubStage Next substage to set
-   */
-  private void createLightwaveContainer(final State currentState,
-                                        final TaskState.TaskStage nextStage, final TaskState.SubStage nextSubStage) {
-    final Service service = this;
-
-    if (currentState.isAuthEnabled && currentState.isNewDeployment) {
-      ServiceUtils.logInfo(service, "Stage %s starting, authentication is enabled",
-          TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
-      createContainers(currentState, Arrays.asList(ContainersConfig.ContainerType.Lightwave),
-          nextStage,
-          nextSubStage);
-    } else {
-      ServiceUtils.logInfo(service, "Stage %s completed, authentication is not enabled",
-          TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
-      TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
-    }
-  }
-
-  /**
-   * This method checks if this is a new deployment and if yes, starts deployment of loadbalancer container.
-   *
-   * @param currentState Current state object
-   * @param nextStage    Next stage to set
-   * @param nextSubStage Next substage to set
-   */
-  private void createLoadBalancerContainer(final State currentState,
-                                           final TaskState.TaskStage nextStage, final TaskState.SubStage nextSubStage) {
-    final Service service = this;
-
-    if (currentState.isNewDeployment) {
-      ServiceUtils.logInfo(service, "Stage %s starting, lb is created for new deployment",
-          TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER);
-      createContainers(currentState, Arrays.asList(ContainersConfig.ContainerType.LoadBalancer),
-          nextStage,
-          nextSubStage);
-    } else {
-      ServiceUtils.logInfo(service, "Stage %s completed, lb is not created for new deployment",
-          TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER);
-      TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
-    }
-  }
-
-  /**
-   * This method registers client in Lightwave to obtain the logon and logout urls for API-FE.
-   *
-   * @param currentState Current state object
-   * @throws Throwable
-   */
-  private void processRegisterAuthClient(final State currentState,
-                                         ServiceRequireAuth serviceRequireAuth,
-                                         TaskState.TaskStage nextStage,
-                                         TaskState.SubStage nextSubStage) throws Throwable {
-    log(Level.INFO, "Registering authentication client with Lightwave");
-
-    final Service service = this;
-    if (!currentState.isAuthEnabled || !currentState.isNewDeployment) {
-      log(Level.INFO, "Stage %s finished, no need to register as auth is disabled = " + currentState.isAuthEnabled +
-              " or this is not a new deployment",
-          currentState.taskState.subStage);
-      TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
+    if (!currentState.isNewDeployment) {
+      ServiceUtils.logInfo(this, "Skipping pause of background tasks (not a new deployment");
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
       return;
     }
 
-    FutureCallback<RegisterAuthClientTaskService.State> callback
-        = new FutureCallback<RegisterAuthClientTaskService.State>() {
-      @Override
-      public void onSuccess(@Nullable RegisterAuthClientTaskService.State result) {
-        switch (result.taskState.stage) {
-          case FINISHED:
-            log(Level.INFO, "Stage %s finished successfully", currentState.taskState.subStage);
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
 
-            DeploymentService.State deploymentPatch = new DeploymentService.State();
-            switch (serviceRequireAuth) {
-              case SWAGGER:
-                deploymentPatch.oAuthSwaggerLoginEndpoint = result.loginUrl;
-                deploymentPatch.oAuthSwaggerLogoutEndpoint = result.logoutUrl;
-                break;
-              case MGMT_UI:
-                deploymentPatch.oAuthMgmtUiLoginEndpoint = result.loginUrl;
-                deploymentPatch.oAuthMgmtUiLogoutEndpoint = result.logoutUrl;
-                break;
-            }
+              try {
+                pauseBackgroundTasks(o.getBody(DeploymentService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
 
-            sendRequest(HostUtils.getCloudStoreHelper(CreateContainersWorkflowService.this)
-                .createPatch(currentState.deploymentServiceLink)
-                .setBody(deploymentPatch)
-                .setCompletion((deploymentPatchOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
+  private void pauseBackgroundTasks(DeploymentService.State deploymentState) throws Throwable {
+    ZookeeperClient zookeeperClient = HostUtils.getZookeeperClient(this);
+    zookeeperClient.getServiceConfig(deploymentState.zookeeperQuorum, "apife").pauseBackground();
+    sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
+  }
 
-                  TaskUtils.sendSelfPatch(service, buildPatch(nextStage, nextSubStage, null));
-                }));
-            break;
-          case FAILED:
-            State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-            patchState.taskState.failure = result.taskState.failure;
-            TaskUtils.sendSelfPatch(service, patchState);
-            break;
-          case CANCELLED:
-            TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-            break;
-          default:
-            State patchFailState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-            TaskUtils.sendSelfPatch(service, patchFailState);
-            break;
-        }
-      }
+  //
+  // CREATE_LIGHTWAVE_CONTAINER sub-stage routines
+  //
 
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
+  private void processCreateLightwaveContainerSubStage(State currentState) {
+
+    if (!currentState.isNewDeployment) {
+      ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (not a new deployment");
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+      return;
+    }
+
+    if (!currentState.isAuthEnabled) {
+      ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (auth is disabled)");
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+      return;
+    }
+
+    createContainers(currentState,
+        Collections.singletonList(ContainersConfig.ContainerType.Lightwave),
+        TaskState.TaskStage.STARTED,
+        TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+  }
+
+  //
+  // CREATE_LOAD_BALANCER_CONTAINER sub-stage routines
+  //
+
+  private void processCreateLoadBalancerContainerSubStage(State currentState) {
+
+    if (!currentState.isNewDeployment) {
+      ServiceUtils.logInfo(this, "Skipping creation of load balancer container (not a new deployment");
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+      return;
+    }
+
+    createContainers(currentState,
+        Collections.singletonList(ContainersConfig.ContainerType.LoadBalancer),
+        TaskState.TaskStage.FINISHED,
+        null);
+  }
+
+  //
+  // Utility routines
+  //
+
+  private void createContainers(State currentState,
+                                List<ContainersConfig.ContainerType> containerTypes,
+                                TaskState.TaskStage nextStage,
+                                TaskState.SubStage nextSubStage) {
+
+    QueryTask.Query.Builder templateNameClauseBuilder = QueryTask.Query.Builder.create();
+    for (ContainersConfig.ContainerType containerType : containerTypes) {
+      templateNameClauseBuilder.addFieldClause(ContainerTemplateService.State.FIELD_NAME_NAME, containerType.name(),
+          QueryTask.Query.Occurance.SHOULD_OCCUR);
+    }
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerTemplateService.State.class)
+            .addClause(templateNameClauseBuilder.build())
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                List<String> documentLinks = o.getBody(QueryTask.class).results.documentLinks;
+                checkState(documentLinks.size() == containerTypes.size());
+                queryContainersForTemplates(currentState, documentLinks, nextStage, nextSubStage);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void queryContainersForTemplates(State currentState,
+                                           List<String> templateServiceLinks,
+                                           TaskState.TaskStage nextStage,
+                                           TaskState.SubStage nextSubStage) {
+
+    QueryTask.Query.Builder templateClauseBuilder = QueryTask.Query.Builder.create();
+    for (String templateServiceLink : templateServiceLinks) {
+      templateClauseBuilder.addFieldClause(ContainerService.State.FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK,
+          templateServiceLink, QueryTask.Query.Occurance.SHOULD_OCCUR);
+    }
+
+    QueryTask.Query.Builder containerQueryBuilder = QueryTask.Query.Builder.create()
+        .addKindFieldClause(ContainerService.State.class)
+        .addClause(templateClauseBuilder.build());
+
+    if (currentState.vmServiceLink != null) {
+      containerQueryBuilder.addFieldClause(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK,
+          currentState.vmServiceLink);
+    }
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(containerQueryBuilder.build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(Operation.
+        createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                List<String> documentLinks = o.getBody(QueryTask.class).results.documentLinks;
+                checkState(documentLinks.size() != 0);
+                createAggregatorTask(currentState, documentLinks, nextStage, nextSubStage);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void createAggregatorTask(State currentState,
+                                    List<String> containerServiceLinks,
+                                    TaskState.TaskStage nextStage,
+                                    TaskState.SubStage nextSubStage) {
+
+    ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
+    startState.parentTaskLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(buildPatch(nextStage, nextSubStage, null));
+    startState.pendingCompletionCount = containerServiceLinks.size();
+    startState.errorThreshold = 0.0;
+
+    sendRequest(Operation
+        .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                createContainerTasks(currentState, containerServiceLinks,
+                    o.getBody(ServiceDocument.class).documentSelfLink);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void createContainerTasks(State currentState,
+                                    List<String> containerServiceLinks,
+                                    String aggregatorServiceLink) {
+
+    for (String containerServiceLink : containerServiceLinks) {
+      CreateContainerTaskService.State startState = new CreateContainerTaskService.State();
+      startState.parentTaskServiceLink = aggregatorServiceLink;
+      startState.deploymentServiceLink = currentState.deploymentServiceLink;
+      startState.containerServiceLink = containerServiceLink;
+
+      sendRequest(Operation
+          .createPost(this, CreateContainerTaskFactoryService.SELF_LINK)
+          .setBody(startState)
+          .setCompletion(
+              (o, e) -> {
+                if (e != null) {
+                  failTask(e);
+                }
+              }));
+    }
+  }
+
+  private void registerAuthClient(State currentState,
+                                  AuthenticationServiceType serviceType,
+                                  TaskState.TaskStage nextStage,
+                                  TaskState.SubStage nextSubStage) {
+
+    if (!currentState.isNewDeployment) {
+      ServiceUtils.logInfo(this, "Skipping auth client registration for " + serviceType + " (not a new deployment");
+      sendStageProgressPatch(nextStage, nextSubStage);
+      return;
+    }
+
+    if (!currentState.isAuthEnabled) {
+      ServiceUtils.logInfo(this, "Skipping auth client registration for " + serviceType + " (auth is disabled");
+      sendStageProgressPatch(nextStage, nextSubStage);
+      return;
+    }
 
     RegisterAuthClientTaskService.State startState = new RegisterAuthClientTaskService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
 
-    switch (serviceRequireAuth) {
+    switch (serviceType) {
       case SWAGGER:
         startState.loginRedirectUrlTemplate = SWAGGER_UI_LOGIN_REDIRECT_URL_TEMPLATE;
         startState.logoutRedirectUrlTemplate = SWAGGER_UI_LOGOUT_REDIRECT_URL_TEMPLATE;
@@ -546,257 +543,98 @@ public class CreateContainersWorkflowService extends StatefulService {
         break;
     }
 
-    TaskUtils.startTaskAsync(
-        this,
+    TaskUtils.startTaskAsync(this,
         RegisterAuthClientTaskFactoryService.SELF_LINK,
         startState,
         (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
         RegisterAuthClientTaskService.State.class,
         currentState.taskPollDelay,
-        callback);
-  }
-
-  /**
-   * This method queries for specific container template based on container type.
-   *
-   * @param currentState   Supplies the current state object.
-   * @param containerType  Supplies the type of container whose template has to
-   *                       be found.
-   * @param futureCallback Supplies the callback to be called when the container
-   *                       creation succeeds.
-   */
-  private void queryContainerTemplate(final State currentState,
-                                      ContainersConfig.ContainerType containerType,
-                                      final FutureCallback<String> futureCallback) {
-
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ContainerTemplateService.State.class));
-
-    QueryTask.Query nameClause = new QueryTask.Query()
-        .setTermPropertyName(ContainerTemplateService.State.FIELD_NAME_NAME)
-        .setTermMatchValue(containerType.name());
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(nameClause);
-
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
+        new FutureCallback<RegisterAuthClientTaskService.State>() {
           @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+          public void onSuccess(@Nullable RegisterAuthClientTaskService.State state) {
+            switch (state.taskState.stage) {
+              case FINISHED: {
+                DeploymentService.State patchState = new DeploymentService.State();
+                switch (serviceType) {
+                  case SWAGGER:
+                    patchState.oAuthSwaggerLoginEndpoint = state.loginUrl;
+                    patchState.oAuthSwaggerLogoutEndpoint = state.logoutUrl;
+                    break;
+                  case MGMT_UI:
+                    patchState.oAuthMgmtUiLoginEndpoint = state.loginUrl;
+                    patchState.oAuthMgmtUiLogoutEndpoint = state.logoutUrl;
+                    break;
+                }
 
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(CreateContainersWorkflowService.this, documentLinks);
-              checkState(1 == documentLinks.size());
-              queryContainersForTemplate(currentState, documentLinks.iterator().next(), futureCallback);
-            } catch (Throwable t) {
-              failTask(t);
+                updateDeploymentLoginEndpoints(currentState, patchState, nextStage, nextSubStage);
+                break;
+              }
+
+              case FAILED: {
+                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                patchState.taskState.failure = state.taskState.failure;
+                TaskUtils.sendSelfPatch(CreateContainersWorkflowService.this, patchState);
+                break;
+              }
+
+              case CANCELLED: {
+                State patchState = buildPatch(TaskState.TaskStage.CANCELLED, null, null);
+                TaskUtils.sendSelfPatch(CreateContainersWorkflowService.this, patchState);
+                break;
+              }
             }
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
           }
         });
-
-    sendRequest(queryPostOperation);
   }
 
-  private void queryContainersForTemplate(final State currentState,
-                                          String containerTemplateServiceLink,
-                                          final FutureCallback<String> futureCallback) {
+  private void updateDeploymentLoginEndpoints(State currentState,
+                                              DeploymentService.State patchState,
+                                              TaskState.TaskStage nextStage,
+                                              TaskState.SubStage nextSubStage) {
 
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ContainerService.State.class));
-
-    QueryTask.Query containerTemplateServiceLinkClause = new QueryTask.Query()
-        .setTermPropertyName(ContainerService.State.FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK)
-        .setTermMatchValue(containerTemplateServiceLink);
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(containerTemplateServiceLinkClause);
-
-    if (currentState.vmServiceLink != null) {
-      QueryTask.Query vmServiceLinkClause = new QueryTask.Query()
-          .setTermPropertyName(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK)
-          .setTermMatchValue(currentState.vmServiceLink);
-      querySpecification.query.addBooleanClause(vmServiceLinkClause);
-    }
-
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(CreateContainersWorkflowService.this, documentLinks);
-              checkState(documentLinks.size() > 0);
-              createContainerTasks(currentState, documentLinks, futureCallback);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        });
-
-    sendRequest(queryPostOperation);
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createPatch(currentState.deploymentServiceLink)
+        .setBody(patchState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              } else {
+                sendStageProgressPatch(nextStage, nextSubStage);
+              }
+            }));
   }
 
-  private void createContainerTasks(State currentState,
-                                    Collection<String> documentLinks,
-                                    FutureCallback<String> futureCallback) {
-
-    List<CreateAndValidateContainerWorkflowService.State> createContainerTasks = new ArrayList<>();
-    for (String documentLink : documentLinks) {
-      CreateAndValidateContainerWorkflowService.State startState =
-          new CreateAndValidateContainerWorkflowService.State();
-      startState.containerServiceLink = documentLink;
-      startState.deploymentServiceLink = currentState.deploymentServiceLink;
-      createContainerTasks.add(startState);
-    }
-
-    processCreateContainers(currentState, createContainerTasks, futureCallback);
+  private void sendStageProgressPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
+    ServiceUtils.logTrace(this, "Sending self-patch to stage %s:%s", taskStage, subStage);
+    TaskUtils.sendSelfPatch(this, buildPatch(taskStage, subStage, null));
   }
 
-  /**
-   * This method creates containers by calling all the create container tasks.
-   *
-   * @param currentState         Supplies the current state object.
-   * @param createContainerTasks Supplies a list of create container tasks.
-   * @param futureCallback       Supplies the callback to be called when the container
-   *                             creation succeeds.
-   */
-  private void processCreateContainers(
-      final State currentState,
-      final List<CreateAndValidateContainerWorkflowService.State> createContainerTasks,
-      final FutureCallback<String> futureCallback) {
-
-    final AtomicInteger pendingCreates = new AtomicInteger(createContainerTasks.size());
-    final Service service = this;
-
-    FutureCallback<CreateAndValidateContainerWorkflowService.State> callback =
-        new FutureCallback<CreateAndValidateContainerWorkflowService.State>() {
-          @Override
-          public void onSuccess(@Nullable CreateAndValidateContainerWorkflowService.State result) {
-            if (result.taskState.stage == TaskState.TaskStage.FAILED) {
-              State state = buildPatch(TaskState.TaskStage.FAILED, null, null);
-              state.taskState.failure = result.taskState.failure;
-              TaskUtils.sendSelfPatch(service, state);
-              return;
-            }
-
-            if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
-              TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-              return;
-            }
-
-            if (0 == pendingCreates.decrementAndGet()) {
-              futureCallback.onSuccess(currentState.taskState.subStage.name());
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            futureCallback.onFailure(t);
-          }
-        };
-
-    for (CreateAndValidateContainerWorkflowService.State startState : createContainerTasks) {
-
-      TaskUtils.startTaskAsync(
-          this,
-          CreateAndValidateContainerWorkflowFactoryService.SELF_LINK,
-          startState,
-          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-          CreateAndValidateContainerWorkflowService.State.class,
-          currentState.taskPollDelay,
-          callback);
-    }
+  private void failTask(Throwable failure) {
+    ServiceUtils.logSevere(this, failure);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failure));
   }
 
-  /**
-   * This method applies a patch to a state object.
-   *
-   * @param startState Supplies the start state object.
-   * @param patchState Supplies the patch state object.
-   */
-
-  private State applyPatch(State startState, State patchState) {
-    if (patchState.taskState.stage != startState.taskState.stage
-        || patchState.taskState.subStage != startState.taskState.subStage) {
-      ServiceUtils.logInfo(this, "Moving from %s:%s to stage %s:%s",
-          startState.taskState.stage, startState.taskState.subStage,
-          patchState.taskState.stage, patchState.taskState.subStage);
-    }
-
-    PatchUtils.patchState(startState, patchState);
-    return startState;
+  private void failTask(Collection<Throwable> failures) {
+    ServiceUtils.logSevere(this, failures);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
   }
 
-  /**
-   * This method sends a patch operation to the current service instance to
-   * move to a new state.
-   *
-   * @param state
-   */
-  private void sendStageProgressPatch(TaskState state) {
-    ServiceUtils.logInfo(this, "Sending self-patch to stage %s:%s", state.stage, state.subStage);
-    TaskUtils.sendSelfPatch(this, buildPatch(state.stage, state.subStage, null));
-  }
-
-  /**
-   * This method sends a patch operation to the current service instance to
-   * move to the FAILED state in response to the specified exception.
-   *
-   * @param e
-   */
-  private void failTask(Throwable e) {
-    ServiceUtils.logSevere(this, e);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, e));
-  }
-
-  /**
-   * This method builds a patch state object which can be used to submit a
-   * self-patch.
-   *
-   * @param patchStage
-   * @param patchSubStage
-   * @param t
-   * @return
-   */
   @VisibleForTesting
-  protected static State buildPatch(
-      TaskState.TaskStage patchStage,
-      @Nullable TaskState.SubStage patchSubStage,
-      @Nullable Throwable t) {
-
+  protected static State buildPatch(TaskState.TaskStage taskStage,
+                                    TaskState.SubStage subStage,
+                                    @Nullable Throwable failure) {
     State patchState = new State();
     patchState.taskState = new TaskState();
-    patchState.taskState.stage = patchStage;
-    patchState.taskState.subStage = patchSubStage;
-
-    if (null != t) {
-      patchState.taskState.failure = Utils.toServiceErrorResponse(t);
+    patchState.taskState.stage = taskStage;
+    patchState.taskState.subStage = subStage;
+    if (failure != null) {
+      patchState.taskState.failure = Utils.toServiceErrorResponse(failure);
     }
 
     return patchState;
