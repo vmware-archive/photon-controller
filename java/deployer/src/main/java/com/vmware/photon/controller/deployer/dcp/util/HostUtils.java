@@ -35,6 +35,10 @@ import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddres
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactoryProvider;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
+import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
+import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactoryProvider;
 import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -116,6 +120,16 @@ public class HostUtils {
   }
 
   /**
+   * This function gets the health check helper factory from the Xenon host associated with the specified service.
+   *
+   * @param service Supplies a Xenon service instance.
+   * @return The health check helper factory provided by the Xenon host associated with the service.
+   */
+  public static HealthCheckHelperFactory getHealthCheckHelperFactory(Service service) {
+    return ((HealthCheckHelperFactoryProvider) service.getHost()).getHealthCheckHelperFactory();
+  }
+
+  /**
    * This function gets the ESX host client from the DCP host associated with the specified service.
    *
    * @param service Supplies a DCP service instance.
@@ -175,5 +189,15 @@ public class HostUtils {
    */
   public static CloudStoreHelper getCloudStoreHelper(Service service) {
     return ((DeployerXenonServiceHost) service.getHost()).getCloudStoreHelper();
+  }
+
+  /**
+   * This function gets a Zookeeper client object from the host associated with the specified service.
+   *
+   * @param service Supplies a DCP service instance.
+   * @return A factory-created Zookeeper client object.
+   */
+  public static ZookeeperClient getZookeeperClient(Service service) {
+    return ((ZookeeperClientFactoryProvider) service.getHost()).getZookeeperServerSetFactoryBuilder().create();
   }
 }

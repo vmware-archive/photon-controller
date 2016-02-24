@@ -13,825 +13,758 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
-import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.constant.ServiceFileConstants;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
-import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowService;
+import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
+import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
+import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
+import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
-import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
-import com.vmware.xenon.services.common.QueryTask;
 
-import com.github.dockerjava.api.DockerException;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Matchers;
-import org.mockito.internal.matchers.NotNull;
+import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.anyVararg;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Executors;
 
 /**
  * This class implements tests for the {@link CreateContainerTaskService} class.
  */
 public class CreateContainerTaskServiceTest {
 
-  private TestHost host;
-  private CreateContainerTaskService service;
-  private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
-
   /**
-   * Dummy function to make IntelliJ think that this is a test class.
+   * This dummy test enables IntelliJ to recognize this as a test class.
    */
-  @Test
-  private void dummy() {
-  }
-
-  private CreateContainerTaskService.State buildValidStartupState() {
-    return buildValidStartupState(
-        TaskState.TaskStage.CREATED);
-  }
-
-  private CreateContainerTaskService.State buildValidStartupState(
-      TaskState.TaskStage stage) {
-
-    CreateContainerTaskService.State state = new CreateContainerTaskService.State();
-    state.taskState = new TaskState();
-    state.taskState.stage = stage;
-    state.containerServiceLink = "CONTAINER_SERVICE_LINK";
-    state.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-    state.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
-
-    if (TaskState.TaskStage.FINISHED == stage) {
-      state.containerId = "containerId";
-    }
-
-    return state;
-  }
-
-  private CreateContainerTaskService.State buildValidPatchState() {
-    return buildValidPatchState(TaskState.TaskStage.STARTED);
-  }
-
-  private CreateContainerTaskService.State buildValidPatchState(TaskState.TaskStage stage) {
-
-    CreateContainerTaskService.State state = new CreateContainerTaskService.State();
-    state.taskState = new TaskState();
-    state.taskState.stage = stage;
-
-    if (TaskState.TaskStage.FINISHED == stage) {
-      state.containerId = "containerId";
-    }
-
-    return state;
-  }
-
-  private TestEnvironment createTestEnvironment(
-      DeployerConfig deployerConfig,
-      ListeningExecutorService listeningExecutorService,
-      DockerProvisionerFactory dockerProvisionerFactory,
-      int hostCount)
-      throws Throwable {
-
-    return new TestEnvironment.Builder()
-        .containersConfig(deployerConfig.getContainersConfig())
-        .deployerContext(deployerConfig.getDeployerContext())
-        .dockerProvisionerFactory(dockerProvisionerFactory)
-        .listeningExecutorService(listeningExecutorService)
-        .cloudServerSet(cloudStoreMachine.getServerSet())
-        .hostCount(hostCount)
-        .build();
+  @Test(enabled = false)
+  public void dummy() {
   }
 
   /**
-   * Tests for the constructors.
+   * This class implements tests for object initialization.
    */
   public class InitializationTest {
 
+    private CreateContainerTaskService createContainerTaskService;
+
     @BeforeMethod
-    public void setUp() throws Throwable {
-      service = new CreateContainerTaskService();
+    public void setUpTest() {
+      createContainerTaskService = new CreateContainerTaskService();
     }
 
-    /**
-     * Tests that the service starts with the expected capabilities.
-     */
     @Test
-    public void testCapabilities() {
-
-      EnumSet<Service.ServiceOption> expected = EnumSet.of(
-          Service.ServiceOption.CONCURRENT_GET_HANDLING,
-          Service.ServiceOption.OWNER_SELECTION,
-          Service.ServiceOption.PERSISTENCE,
-          Service.ServiceOption.REPLICATION);
-      assertThat(service.getOptions(), is(expected));
+    public void testServiceOptions() {
+      assertThat(createContainerTaskService.getOptions(), is(EnumSet.noneOf(Service.ServiceOption.class)));
     }
   }
 
   /**
-   * Tests for the handleStart method.
+   * This class implements tests for the handleStart method.
    */
   public class HandleStartTest {
 
-    @BeforeClass
-    public void setUpClass() throws Throwable {
-      host = TestHost.create();
-    }
-
-    @BeforeMethod
-    public void setUpTest() throws Throwable {
-      service = new CreateContainerTaskService();
-    }
-
-    @AfterMethod
-    public void tearDownTest() throws Throwable {
-      try {
-        host.deleteServiceSynchronously();
-      } catch (ServiceHost.ServiceNotFoundException e) {
-        // Exceptions are expected in the case where a service instance was not successfully created.
-      }
-    }
-
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      TestHost.destroy(host);
-    }
-
-    /**
-     * This test verifies that service instances can be created with specific
-     * start states.
-     *
-     * @param stage Supplies the stage of state.
-     * @throws Throwable Throws exception if any error is encountered.
-     */
-    @Test(dataProvider = "validStartStates")
-    public void testMinimalStartState(TaskState.TaskStage stage) throws Throwable {
-
-      CreateContainerTaskService.State startState = buildValidStartupState(stage);
-      Operation startOp = host.startServiceSynchronously(service, startState);
-      assertThat(startOp.getStatusCode(), is(200));
-
-      CreateContainerTaskService.State savedState = host.getServiceState(
-          CreateContainerTaskService.State.class);
-      assertThat(savedState.taskState, notNullValue());
-      assertThat(savedState.containerServiceLink, is("CONTAINER_SERVICE_LINK"));
-    }
-
-    @DataProvider(name = "validStartStates")
-    public Object[][] getValidStartStatesWithoutUploadImageId() {
-
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CANCELLED}
-      };
-    }
-
-    /**
-     * This test verifies that the task state of a service instance which is started
-     * in a terminal state is not modified on startup when state transitions are
-     * enabled.
-     *
-     * @param stage Supplies the stage of the state.
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test(dataProvider = "startStateNotChanged")
-    public void testMinimalStartStateNotChanged(TaskState.TaskStage stage) throws Throwable {
-
-      CreateContainerTaskService.State startState = buildValidStartupState(stage);
-      Operation startOp = host.startServiceSynchronously(service, startState);
-      assertThat(startOp.getStatusCode(), is(200));
-
-      CreateContainerTaskService.State savedState =
-          host.getServiceState(CreateContainerTaskService.State.class);
-      assertThat(savedState.taskState, notNullValue());
-      assertThat(savedState.taskState.stage, is(stage));
-      assertThat(savedState.containerServiceLink, is("CONTAINER_SERVICE_LINK"));
-    }
-
-    @DataProvider(name = "startStateNotChanged")
-    public Object[][] getStartStateNotChanged() {
-
-      return new Object[][]{
-          {TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CANCELLED}
-      };
-    }
-
-    /**
-     * This test verifies that the service handles the missing of the specified list of attributes
-     * in the start state.
-     *
-     * @param attributeName Supplies the attribute name.
-     * @throws Throwable
-     */
-    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
-    public void testMissingStateValue(String attributeName) throws Throwable {
-      CreateContainerTaskService.State startState = buildValidStartupState();
-      Field declaredField = startState.getClass().getDeclaredField(attributeName);
-      declaredField.set(startState, null);
-
-      host.startServiceSynchronously(service, startState);
-    }
-
-    @DataProvider(name = "attributeNames")
-    public Object[][] getAttributeNames() {
-      List<String> notNullAttributes
-          = ReflectionUtils.getAttributeNamesWithAnnotation(CreateContainerTaskService.State.class, NotNull.class);
-      return TestHelper.toDataProvidersList(notNullAttributes);
-    }
-  }
-
-  /**
-   * Tests for the handlePatch method.
-   */
-  public class HandlePatchTest {
+    private CreateContainerTaskService createContainerTaskService;
+    private TestHost testHost;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      host = TestHost.create();
+      testHost = TestHost.create();
     }
 
     @BeforeMethod
     public void setUpTest() {
-      service = new CreateContainerTaskService();
+      createContainerTaskService = new CreateContainerTaskService();
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      host.deleteServiceSynchronously();
+      try {
+        testHost.deleteServiceSynchronously();
+      } catch (ServiceHost.ServiceNotFoundException e) {
+        // Exceptions are expected in the case where a service was not successfully created.
+      }
     }
 
     @AfterClass
     public void tearDownClass() throws Throwable {
-      TestHost.destroy(host);
+      TestHost.destroy(testHost);
     }
 
-    /**
-     * This test verifies that legal stage transitions succeed.
-     *
-     * @param startStage  Supplies the stage of the start state.
-     * @param targetStage Supplies the stage of the target state.
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test(dataProvider = "validStageUpdates")
-    public void testValidStageUpdates(
-        TaskState.TaskStage startStage,
-        TaskState.TaskStage targetStage)
+    @Test(dataProvider = "ValidStartStages")
+    public void testValidStartStage(TaskState.TaskStage taskStage,
+                                    CreateContainerTaskService.TaskState.SubStage subStage)
         throws Throwable {
+      CreateContainerTaskService.State startState = buildValidStartState(taskStage, subStage);
+      Operation startOp = testHost.startServiceSynchronously(createContainerTaskService, startState);
+      assertThat(startOp.getStatusCode(), is(200));
 
-      CreateContainerTaskService.State startState = buildValidStartupState(startStage);
-      host.startServiceSynchronously(service, startState);
-
-      CreateContainerTaskService.State patchState = buildValidPatchState(targetStage);
-      Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-          .setBody(patchState);
-
-      Operation resultOp = host.sendRequestAndWait(patchOp);
-      assertThat(resultOp.getStatusCode(), is(200));
-
-      CreateContainerTaskService.State savedState =
-          host.getServiceState(CreateContainerTaskService.State.class);
-      assertThat(savedState.taskState.stage, is(targetStage));
+      CreateContainerTaskService.State serviceState =
+          testHost.getServiceState(CreateContainerTaskService.State.class);
+      assertThat(serviceState.deploymentServiceLink, is("DEPLOYMENT_SERVICE_LINK"));
+      assertThat(serviceState.containerServiceLink, is("CONTAINER_SERVICE_LINK"));
+      assertThat(serviceState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
     }
 
-    @DataProvider(name = "validStageUpdates")
-    public Object[][] getValidStageUpdates()
-        throws Throwable {
-
+    @DataProvider(name = "ValidStartStages")
+    public Object[][] getValidStartStages() {
       return new Object[][]{
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.CANCELLED},
-
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CANCELLED},
+          {null, null},
+          {TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE},
+          {TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.CANCELLED, null},
       };
     }
 
-    /**
-     * This test verifies that illegal stage transitions fail, where
-     * the start state is invalid.
-     *
-     * @param startStage  Supplies the stage of the start state.
-     * @param targetStage Supplies the stage of the target state.
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test(dataProvider = "illegalStageUpdatesInvalidPatch")
-    public void testIllegalStageUpdatesInvalidPatch(
-        TaskState.TaskStage startStage,
-        TaskState.TaskStage targetStage)
+    @Test(dataProvider = "TransitionalStartStages")
+    public void testTransitionalStartState(TaskState.TaskStage taskStage,
+                                           CreateContainerTaskService.TaskState.SubStage subStage)
         throws Throwable {
+      CreateContainerTaskService.State startState = buildValidStartState(taskStage, subStage);
+      Operation startOp = testHost.startServiceSynchronously(createContainerTaskService, startState);
+      assertThat(startOp.getStatusCode(), is(200));
 
-      CreateContainerTaskService.State startState = buildValidStartupState(startStage);
-      host.startServiceSynchronously(service, startState);
-
-      CreateContainerTaskService.State patchState = buildValidPatchState(targetStage);
-      Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-          .setBody(patchState);
-
-      try {
-        host.sendRequestAndWait(patchOp);
-        fail("Patch handling should throw in response to invalid start state");
-      } catch (XenonRuntimeException e) {
-      }
+      CreateContainerTaskService.State serviceState =
+          testHost.getServiceState(CreateContainerTaskService.State.class);
+      assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
+      assertThat(serviceState.taskState.subStage,
+          is(CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER));
     }
 
-    @DataProvider(name = "illegalStageUpdatesInvalidPatch")
-    public Object[][] getIllegalStageUpdatesInvalidPatch() {
-
+    @DataProvider(name = "TransitionalStartStages")
+    public Object[][] getTransitionalStartStages() {
       return new Object[][]{
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CREATED},
-
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.CANCELLED},
-
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.CANCELLED},
-
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CANCELLED},
+          {null, null},
+          {TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
       };
     }
 
-    /**
-     * This test verifies that the service handles the presence of the specified list of attributes
-     * in the start state.
-     *
-     * @param attributeName Supplies the attribute name.
-     * @throws Throwable
-     */
-    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
-    public void testInvalidPatchStateValue(String attributeName) throws Throwable {
-      CreateContainerTaskService.State startState = buildValidStartupState();
-      host.startServiceSynchronously(service, startState);
+    @Test(dataProvider = "TerminalStartStages")
+    public void testTerminalStartStage(TaskState.TaskStage taskStage,
+                                       CreateContainerTaskService.TaskState.SubStage subStage)
+        throws Throwable {
+      CreateContainerTaskService.State startState = buildValidStartState(taskStage, subStage);
+      startState.controlFlags = null;
+      Operation startOp = testHost.startServiceSynchronously(createContainerTaskService, startState);
+      assertThat(startOp.getStatusCode(), is(200));
 
-      CreateContainerTaskService.State patchState = buildValidPatchState();
-      Field declaredField = patchState.getClass().getDeclaredField(attributeName);
-      if (declaredField.getType() == Boolean.class) {
-        declaredField.set(patchState, Boolean.FALSE);
-      } else if (declaredField.getType() == Integer.class) {
-        declaredField.set(patchState, new Integer(0));
-      } else {
-        declaredField.set(patchState, declaredField.getType().newInstance());
-      }
-
-      Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-          .setBody(patchState);
-      host.sendRequestAndWait(patchOp);
+      CreateContainerTaskService.State serviceState =
+          testHost.getServiceState(CreateContainerTaskService.State.class);
+      assertThat(serviceState.taskState.stage, is(taskStage));
+      assertThat(serviceState.taskState.subStage, is(subStage));
+      assertThat(serviceState.controlFlags, is(0));
     }
 
-    @DataProvider(name = "attributeNames")
-    public Object[][] getAttributeNames() {
-      List<String> immutableAttributes
-          = ReflectionUtils.getAttributeNamesWithAnnotation(CreateContainerTaskService.State.class, Immutable.class);
-      return TestHelper.toDataProvidersList(immutableAttributes);
+    @DataProvider(name = "TerminalStartStages")
+    public Object[][] getTerminalStartStages() {
+      return new Object[][]{
+          {TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.CANCELLED, null},
+      };
+    }
+
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = XenonRuntimeException.class)
+    public void testInvalidStartStateMissingRequiredFieldName(String fieldName) throws Throwable {
+      CreateContainerTaskService.State startState = buildValidStartState(null, null);
+      Field declaredField = startState.getClass().getDeclaredField(fieldName);
+      declaredField.set(startState, null);
+      testHost.startServiceSynchronously(createContainerTaskService, startState);
+    }
+
+    @DataProvider(name = "RequiredFieldNames")
+    public Object[][] getRequiredFieldNames() {
+      return TestHelper.toDataProvidersList(
+          ReflectionUtils.getAttributeNamesWithAnnotation(
+              CreateContainerTaskService.State.class, NotNull.class));
     }
   }
 
   /**
-   * End-to-end tests for the create container task.
+   * This class implements tests for the handlePatch method.
    */
-  public class EndToEndTest {
-    private static final String configFilePath = "/config.yml";
+  public class HandlePatchTest {
 
-    private TestEnvironment machine;
-    private ListeningExecutorService listeningExecutorService;
-    private DockerProvisionerFactory dockerProvisionerFactory;
-    private CreateContainerTaskService.State startState;
-    private AuthClientHandler.ImplicitClient implicitClient;
-
-    private DeployerConfig deployerConfig;
+    private CreateContainerTaskService createContainerTaskService;
+    private TestHost testHost;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
-          this.getClass().getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
-      implicitClient = new AuthClientHandler.ImplicitClient("client_id", "http://login", "http://logout");
-
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      testHost = TestHost.create();
     }
 
     @BeforeMethod
-    public void setUpTest() throws Exception {
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
-
-      startState = buildValidStartupState();
-      startState.controlFlags = 0x0;
+    public void setUpTest() {
+      createContainerTaskService = new CreateContainerTaskService();
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-
-      if (null != machine) {
-        machine.stop();
-        machine = null;
-      }
-
-      startState = null;
+      testHost.deleteServiceSynchronously();
     }
 
     @AfterClass
     public void tearDownClass() throws Throwable {
-      listeningExecutorService.shutdown();
-
-      if (null != cloudStoreMachine) {
-        cloudStoreMachine.stop();
-        cloudStoreMachine = null;
-      }
+      TestHost.destroy(testHost);
     }
 
-    /**
-     * This test verifies the failure scenario when launching container without a proper docker endpoint.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test
-    public void testTaskFailureToReachDockerEndpoint() throws Throwable {
-      machine = createTestEnvironment(deployerConfig, listeningExecutorService, dockerProvisionerFactory, 1);
+    @Test(dataProvider = "ValidStageTransitions")
+    public void testValidStageTransition(TaskState.TaskStage startStage,
+                                         CreateContainerTaskService.TaskState.SubStage startSubStage,
+                                         TaskState.TaskStage patchStage,
+                                         CreateContainerTaskService.TaskState.SubStage patchSubStage)
+        throws Throwable {
+      CreateContainerTaskService.State startState = buildValidStartState(startStage, startSubStage);
+      Operation startOp = testHost.startServiceSynchronously(createContainerTaskService, startState);
+      assertThat(startOp.getStatusCode(), is(200));
 
-      createHostEntitiesAndAllocateVmsAndContainers(3, 7);
-      setupValidOtherServiceDocuments(ContainersConfig.ContainerType.Chairman);
+      Operation patchOp = Operation
+          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
+          .setBody(CreateContainerTaskService.buildPatch(patchStage, patchSubStage, null));
 
-      CreateContainerTaskService.State finalState =
-          machine.callServiceAndWaitForState(
-              CreateContainerTaskFactoryService.SELF_LINK,
-              startState,
-              CreateContainerTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+      assertThat(testHost.sendRequestAndWait(patchOp).getStatusCode(), is(200));
 
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.containerId, nullValue());
+      CreateContainerTaskService.State serviceState =
+          testHost.getServiceState(CreateContainerTaskService.State.class);
+      assertThat(serviceState.taskState.stage, is(patchStage));
+      assertThat(serviceState.taskState.subStage, is(patchSubStage));
+      assertThat(serviceState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
     }
 
-    /**
-     * This test verifies the failure scenario which returns null result from provisioner.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testTaskFailureWithNull() throws Throwable {
-      machine = createTestEnvironment(deployerConfig, listeningExecutorService, dockerProvisionerFactory, 1);
-
-      createHostEntitiesAndAllocateVmsAndContainers(3, 7);
-
-      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-      when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          Matchers.<String>anyVararg())).thenCallRealMethod();
-
-      setupValidOtherServiceDocuments(ContainersConfig.ContainerType.Chairman);
-
-      setupDeploymentServiceDocument(null);
-
-      CreateContainerTaskService.State finalState =
-          machine.callServiceAndWaitForState(
-              CreateContainerTaskFactoryService.SELF_LINK,
-              startState,
-              CreateContainerTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.containerId, nullValue());
-      assertTrue(finalState.taskState.failure.message.contains("Create container returned null"));
-    }
-
-    /**
-     * This test verifies the failure scenario with internal docker exception.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testTaskFailureInsideDocker() throws Throwable {
-
-      machine = createTestEnvironment(deployerConfig, listeningExecutorService, dockerProvisionerFactory, 1);
-
-      createHostEntitiesAndAllocateVmsAndContainers(3, 7);
-
-      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-      when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " + "failed", 500));
-
-      setupValidOtherServiceDocuments(ContainersConfig.ContainerType.Chairman);
-
-      setupDeploymentServiceDocument(null);
-
-      CreateContainerTaskService.State finalState =
-          machine.callServiceAndWaitForState(
-              CreateContainerTaskFactoryService.SELF_LINK,
-              startState,
-              CreateContainerTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.containerId, nullValue());
-      assertThat(finalState.taskState.failure.message, org.hamcrest.Matchers.containsString("Start container failed"));
-    }
-
-    /**
-     * This test verifies the success scenario when launching container.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    @Test(dataProvider = "mandatoryEnvironmentVariable")
-    public void testTaskSuccess(ContainersConfig.ContainerType containerType) throws Throwable {
-      machine = createTestEnvironment(deployerConfig, listeningExecutorService, dockerProvisionerFactory, 1);
-
-      createHostEntitiesAndAllocateVmsAndContainers(3, 7);
-
-      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-      when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          Matchers.<String>anyVararg())).thenReturn("id");
-
-      setupValidOtherServiceDocuments(containerType);
-      setupDeploymentServiceDocument(implicitClient);
-
-      CreateContainerTaskService.State finalState =
-          machine.callServiceAndWaitForState(
-              CreateContainerTaskFactoryService.SELF_LINK,
-              startState,
-              CreateContainerTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-      assertEquals(finalState.containerId, "id");
-
-      ArgumentCaptor<Map> volumeBindingsArgument = ArgumentCaptor.forClass(Map.class);
-      verify(dockerProvisioner, times(1)).launchContainer(anyString(), anyString(), anyInt(), anyLong(),
-          volumeBindingsArgument.capture(), anyMap(), anyString(), anyBoolean(), anyMap(), anyBoolean(),
-          anyBoolean(), Matchers.<String>anyVararg());
-
-      String expectedKey = ServiceFileConstants.VM_MUSTACHE_DIRECTORY + ServiceFileConstants
-          .CONTAINER_CONFIG_ROOT_DIRS.get(containerType);
-      assertTrue(volumeBindingsArgument.getValue().containsKey(expectedKey));
-      if (containerType == ContainersConfig.ContainerType.Zookeeper) {
-        assertThat(volumeBindingsArgument.getValue().get(expectedKey), is(ServiceFileConstants
-            .CONTAINER_CONFIG_DIRECTORY + "," + CreateContainerTaskService.ZOOKEEPER_CONF_DIR + "," +
-            CreateContainerTaskService.ZOOKEEPER_DATA_DIR));
-      } else if (containerType == ContainersConfig.ContainerType.LoadBalancer) {
-        assertThat(volumeBindingsArgument.getValue().get(expectedKey), is(ServiceFileConstants
-            .CONTAINER_CONFIG_DIRECTORY + "," + CreateContainerTaskService.HAPROXY_CONF_DIR));
-      } else {
-        assertThat(volumeBindingsArgument.getValue().get(expectedKey), is(ServiceFileConstants
-            .CONTAINER_CONFIG_DIRECTORY));
-      }
-    }
-
-    @DataProvider(name = "mandatoryEnvironmentVariable")
-    public Object[][] getMandatoryEnvironmentVariables() {
-
+    @DataProvider(name = "ValidStageTransitions")
+    public Object[][] getValidStageTransitions() {
       return new Object[][]{
-          {ContainersConfig.ContainerType.Chairman},
-          {ContainersConfig.ContainerType.RootScheduler},
-          {ContainersConfig.ContainerType.Housekeeper},
-          {ContainersConfig.ContainerType.CloudStore},
-          {ContainersConfig.ContainerType.ManagementApi},
-          {ContainersConfig.ContainerType.Zookeeper},
-          {ContainersConfig.ContainerType.Deployer},
-          {ContainersConfig.ContainerType.LoadBalancer},
+          {TaskState.TaskStage.CREATED, null,
+              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER,
+              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE},
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE,
+              TaskState.TaskStage.FINISHED, null},
+
+          {TaskState.TaskStage.CREATED, null,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.CREATED, null,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE,
+              TaskState.TaskStage.CANCELLED, null},
       };
     }
 
-    /**
-     * This test verifies the success scenario when the container to be created
-     * already has a container id in the container service entity.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testTaskSuccessWhenSkippedDueToContainerId() throws Throwable {
-      machine = createTestEnvironment(deployerConfig, listeningExecutorService, dockerProvisionerFactory, 1);
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
+    public void testInvalidStageTransition(TaskState.TaskStage startStage,
+                                           CreateContainerTaskService.TaskState.SubStage startSubStage,
+                                           TaskState.TaskStage patchStage,
+                                           CreateContainerTaskService.TaskState.SubStage patchSubStage)
+        throws Throwable {
+      CreateContainerTaskService.State startState = buildValidStartState(startStage, startSubStage);
+      Operation startOp = testHost.startServiceSynchronously(createContainerTaskService, startState);
+      assertThat(startOp.getStatusCode(), is(200));
 
-      createHostEntitiesAndAllocateVmsAndContainers(3, 7);
+      Operation patchOp = Operation
+          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
+          .setBody(CreateContainerTaskService.buildPatch(patchStage, patchSubStage, null));
+
+      testHost.sendRequestAndWait(patchOp);
+    }
+
+    @DataProvider(name = "InvalidStageTransitions")
+    public Object[][] getInvalidStageTransitions() {
+      return new Object[][]{
+          {TaskState.TaskStage.CREATED, null,
+              TaskState.TaskStage.CREATED, null},
+
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER,
+              TaskState.TaskStage.CREATED, null},
+
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE,
+              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
+
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.CANCELLED, null},
+      };
+    }
+
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = XenonRuntimeException.class)
+    public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
+      CreateContainerTaskService.State startState = buildValidStartState(null, null);
+      Operation startOp = testHost.startServiceSynchronously(createContainerTaskService, startState);
+      assertThat(startOp.getStatusCode(), is(200));
+
+      CreateContainerTaskService.State patchState =
+          CreateContainerTaskService.buildPatch(TaskState.TaskStage.STARTED,
+              CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER, null);
+
+      Field declaredField = patchState.getClass().getDeclaredField(fieldName);
+      declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
+      Operation patchOp = Operation.createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI)).setBody(patchState);
+      testHost.sendRequestAndWait(patchOp);
+    }
+
+    @DataProvider(name = "ImmutableFieldNames")
+    public Object[][] getImmutableFieldNames() {
+      return TestHelper.toDataProvidersList(
+          ReflectionUtils.getAttributeNamesWithAnnotation(
+              CreateContainerTaskService.State.class, Immutable.class));
+    }
+  }
+
+  /**
+   * This class implements end-to-end tests for the service.
+   */
+  public class EndToEndTest {
+
+    private static final String SWAGGER_LOGIN_URL = "http://1.2.3.4/swagger_login";
+    private static final String SWAGGER_LOGOUT_URL = "http://1.2.3.4/swagger_logout";
+    private static final String MGMT_UI_LOGIN_URL = "http://1.2.3.4/mgmt_ui_login";
+    private static final String MGMT_UI_LOGOUT_URL = "http://1.2.3.4/mgmt_ui_logout";
+
+    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private DeployerConfig deployerConfig;
+    private DockerProvisionerFactory dockerProvisionerFactory;
+    private HealthCheckHelperFactory healthCheckHelperFactory;
+    private CreateContainerTaskService.State startState;
+    private TestEnvironment testEnvironment;
+
+    private class CaptorHolder {
+
+      @Captor
+      ArgumentCaptor<Map<String, String>> captor;
+
+      public CaptorHolder() {
+        MockitoAnnotations.initMocks(this);
+      }
+    }
+
+    @BeforeClass
+    public void setUpClass() throws Throwable {
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      deployerConfig = ConfigBuilder.build(DeployerConfig.class, getClass().getResource("/config.yml").getPath());
+      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
+      healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
+
+      TestHelper.setContainersConfig(deployerConfig);
+
+      testEnvironment = new TestEnvironment.Builder()
+          .cloudServerSet(cloudStoreEnvironment.getServerSet())
+          .containersConfig(deployerConfig.getContainersConfig())
+          .deployerContext(deployerConfig.getDeployerContext())
+          .dockerProvisionerFactory(dockerProvisionerFactory)
+          .healthCheckerFactory(healthCheckHelperFactory)
+          .hostCount(1)
+          .build();
+    }
+
+    @BeforeMethod
+    public void setUpTest() throws Throwable {
+      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DeploymentService.State.class);
+      TestHelper.assertNoServicesOfType(testEnvironment, ContainerService.State.class);
+      TestHelper.assertNoServicesOfType(testEnvironment, ContainerTemplateService.State.class);
+      TestHelper.assertNoServicesOfType(testEnvironment, VmService.State.class);
+
+      startState = buildValidStartState(null, null);
+      startState.controlFlags = null;
+      startState.requiredPollCount = 3;
+      startState.maximumPollCount = 10;
+      startState.taskPollDelay = 10;
+    }
+
+    public void createTestDocuments(ContainersConfig.ContainerType containerType, boolean authEnabled)
+        throws Throwable {
+
+      DeploymentService.State deploymentStartState = TestHelper.getDeploymentServiceStartState(authEnabled);
+
+      if (authEnabled) {
+        deploymentStartState.oAuthSwaggerLoginEndpoint = SWAGGER_LOGIN_URL;
+        deploymentStartState.oAuthSwaggerLogoutEndpoint = SWAGGER_LOGOUT_URL;
+        deploymentStartState.oAuthMgmtUiLoginEndpoint = MGMT_UI_LOGIN_URL;
+        deploymentStartState.oAuthMgmtUiLogoutEndpoint = MGMT_UI_LOGOUT_URL;
+      }
+
+      DeploymentService.State deploymentState =
+          TestHelper.createDeploymentService(cloudStoreEnvironment, deploymentStartState);
+
+      ContainerTemplateService.State templateState =
+          TestHelper.createContainerTemplateService(testEnvironment,
+              deployerConfig.getContainersConfig().getContainerSpecs().get(containerType.name()));
+
+      VmService.State vmState = TestHelper.createVmService(testEnvironment);
+
+      ContainerService.State containerState =
+          TestHelper.createContainerService(testEnvironment, templateState, vmState);
+
+      startState.deploymentServiceLink = deploymentState.documentSelfLink;
+      startState.containerServiceLink = containerState.documentSelfLink;
+    }
+
+    @AfterMethod
+    public void tearDownTest() throws Throwable {
+      TestHelper.deleteServicesOfType(cloudStoreEnvironment, DeploymentService.State.class);
+      TestHelper.deleteServicesOfType(testEnvironment, ContainerService.State.class);
+      TestHelper.deleteServicesOfType(testEnvironment, ContainerTemplateService.State.class);
+      TestHelper.deleteServicesOfType(testEnvironment, VmService.State.class);
+    }
+
+    @AfterClass
+    public void tearDownClass() throws Throwable {
+      testEnvironment.stop();
+      cloudStoreEnvironment.stop();
+    }
+
+    @Test(dataProvider = "ContainerTypes")
+    public void testSuccess(ContainersConfig.ContainerType containerType) throws Throwable {
+      testSuccess(containerType, false);
+    }
+
+    @Test(dataProvider = "ContainerTypes")
+    public void testSuccessWithAuthEnabled(ContainersConfig.ContainerType containerType) throws Throwable {
+      testSuccess(containerType, true);
+    }
+
+    private void testSuccess(ContainersConfig.ContainerType containerType, Boolean authEnabled) throws Throwable {
+
+      createTestDocuments(containerType, authEnabled);
 
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-      when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          Matchers.<String>anyVararg())).thenReturn("id");
+      doReturn(dockerProvisioner).when(dockerProvisionerFactory).create(anyString());
+      doReturn("CONTAINER_ID")
+          .when(dockerProvisioner)
+          .launchContainer(anyString(),
+              anyString(),
+              anyInt(),
+              anyLong(),
+              Matchers.<Map<String, String>>any(),
+              Matchers.<Map<Integer, Integer>>any(),
+              anyString(),
+              anyBoolean(),
+              Matchers.<Map<String, String>>any(),
+              anyBoolean(),
+              anyBoolean(),
+              anyVararg());
 
-      setupValidOtherServiceDocumentsWithContainerId(ContainersConfig.ContainerType.Chairman);
-      setupDeploymentServiceDocument(implicitClient);
+      HealthChecker successfulHealthChecker = () -> true;
+      HealthChecker failureHealthChecker = () -> false;
+      HealthCheckHelper healthCheckHelper = mock(HealthCheckHelper.class);
+
+      doReturn(successfulHealthChecker)
+          .doReturn(successfulHealthChecker)
+          .doReturn(failureHealthChecker)
+          .doReturn(successfulHealthChecker)
+          .when(healthCheckHelper).getHealthChecker();
+
+      doReturn(healthCheckHelper).when(healthCheckHelperFactory)
+          .create(any(Service.class), any(ContainersConfig.ContainerType.class), anyString());
 
       CreateContainerTaskService.State finalState =
-          machine.callServiceAndWaitForState(
+          testEnvironment.callServiceAndWaitForState(
               CreateContainerTaskFactoryService.SELF_LINK,
               startState,
               CreateContainerTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
-      assertEquals(finalState.containerId, "id");
-    }
+      assertThat(finalState.taskState.subStage, nullValue());
 
-    /**
-     * This method sets up valid service documents which are needed for test
-     * with container id.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    private void setupValidOtherServiceDocumentsWithContainerId(ContainersConfig.ContainerType type) throws Throwable {
-      String containerTemplateServiceLink = getContainerTemplateService(type);
-      Set<ContainerService.State> containerServices = getContainerServiceForTemplate(containerTemplateServiceLink);
+      ContainersConfig.Spec containerSpec =
+          deployerConfig.getContainersConfig().getContainerSpecs().get(containerType.name());
 
-      ContainerService.State containerService = containerServices.iterator().next();
-      containerService.containerId = "id";
-      startState.containerServiceLink = containerService.documentSelfLink;
-    }
+      CaptorHolder volumeBindingsCaptor = new CaptorHolder();
+      CaptorHolder environmentVariablesCaptor = new CaptorHolder();
 
-    /**
-     * This method sets up valid service documents which are needed for test.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    private void setupValidOtherServiceDocuments(ContainersConfig.ContainerType type) throws Throwable {
-      String containerTemplateServiceLink = getContainerTemplateService(type);
-      Set<ContainerService.State> containerServices = getContainerServiceForTemplate(containerTemplateServiceLink);
+      verify(dockerProvisioner, times(1)).launchContainer(
+          Matchers.eq(containerSpec.getServiceName()),
+          Matchers.eq(containerSpec.getContainerImage()),
+          anyInt(),
+          anyLong(),
+          volumeBindingsCaptor.captor.capture(),
+          Matchers.eq(containerSpec.getPortBindings()),
+          Matchers.eq(containerSpec.getVolumesFrom()),
+          Matchers.eq(containerSpec.getIsPrivileged()),
+          environmentVariablesCaptor.captor.capture(),
+          Matchers.eq(true),
+          Matchers.eq(containerSpec.getUseHostNetwork()),
+          anyVararg());
 
-      ContainerService.State containerService = containerServices.iterator().next();
-      startState.containerServiceLink = containerService.documentSelfLink;
-    }
+      String hostVolumeKeyName = ServiceFileConstants.VM_MUSTACHE_DIRECTORY +
+          ServiceFileConstants.CONTAINER_CONFIG_ROOT_DIRS.get(containerType);
 
-    private void setupDeploymentServiceDocument(AuthClientHandler.ImplicitClient implicitClient) throws Throwable {
-      DeploymentService.State deploymentStartState = TestHelper.getDeploymentServiceStartState(false);
-      if (implicitClient != null) {
-        deploymentStartState.oAuthSwaggerLoginEndpoint = implicitClient.loginURI;
-        deploymentStartState.oAuthSwaggerLogoutEndpoint = implicitClient.logoutURI;
-        deploymentStartState.oAuthMgmtUiLoginEndpoint = implicitClient.loginURI;
-        deploymentStartState.oAuthMgmtUiLogoutEndpoint = implicitClient.logoutURI;
-      }
-      deploymentStartState.oAuthServerAddress = "https://lookupService";
-      deploymentStartState.oAuthServerPort = 433;
-      deploymentStartState.oAuthEnabled = true;
-      deploymentStartState.syslogEndpoint = "1.2.3.4:514";
-      deploymentStartState.statsEnabled = true;
-      deploymentStartState.statsStoreEndpoint = "2.3.4.5";
-      deploymentStartState.statsStorePort = 8081;
-      deploymentStartState.ntpEndpoint = "5.6.7.8";
-
-      startState.deploymentServiceLink =
-          TestHelper.createDeploymentService(cloudStoreMachine, deploymentStartState).documentSelfLink;
-    }
-
-    private String getContainerTemplateService(ContainersConfig.ContainerType type) throws Throwable {
-
-      QueryTask.Query kindClause = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(ContainerTemplateService.State.class));
-
-      QueryTask.Query nameClause = new QueryTask.Query()
-          .setTermPropertyName(ContainerTemplateService.State.FIELD_NAME_NAME)
-          .setTermMatchValue(type.name());
-
-      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-      querySpecification.query.addBooleanClause(kindClause);
-      querySpecification.query.addBooleanClause(nameClause);
-
-      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-      NodeGroupBroadcastResponse queryResponse = machine.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
-
-      assertThat(documentLinks.size(), is(1));
-      return documentLinks.iterator().next();
-    }
-
-    private Set<ContainerService.State> getContainerServiceForTemplate(String containerTemplateServiceLink)
-        throws Throwable {
-      QueryTask.Query kindClause = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(ContainerService.State.class));
-
-      QueryTask.Query containerTemplateServiceLinkClause = new QueryTask.Query()
-          .setTermPropertyName(ContainerService.State.FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK)
-          .setTermMatchValue(containerTemplateServiceLink);
-
-      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-      querySpecification.query.addBooleanClause(kindClause);
-      querySpecification.query.addBooleanClause(containerTemplateServiceLinkClause);
-
-      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-      NodeGroupBroadcastResponse queryResponse = machine.sendBroadcastQueryAndWait(queryTask);
-      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
-
-      Set<ContainerService.State> containerServices = new HashSet<>();
-      for (String documentLink : documentLinks) {
-        containerServices.add(machine.getServiceState(documentLink, ContainerService.State.class));
+      Map<String, String> volumeBindings = volumeBindingsCaptor.captor.getValue();
+      assertThat(volumeBindings, hasKey(hostVolumeKeyName));
+      String volumeBindingValue = volumeBindings.get(hostVolumeKeyName);
+      assertThat(volumeBindingValue, containsString(ServiceFileConstants.CONTAINER_CONFIG_DIRECTORY));
+      switch (containerType) {
+        case Zookeeper:
+          assertThat(volumeBindingValue, containsString(CreateContainerTaskService.ZOOKEEPER_CONF_DIR));
+          assertThat(volumeBindingValue, containsString(CreateContainerTaskService.ZOOKEEPER_DATA_DIR));
+          break;
+        case LoadBalancer:
+          assertThat(volumeBindingValue, containsString(CreateContainerTaskService.HAPROXY_CONF_DIR));
+          break;
+        case Lightwave:
+          assertThat(volumeBindingValue, containsString(CreateContainerTaskService.LIGHTWAVE_CONF_DIR));
+          break;
       }
 
-      return containerServices;
+      Map<String, String> environmentVariables = environmentVariablesCaptor.captor.getValue();
+      for (Map.Entry<String, String> entry : containerSpec.getDynamicParameters().entrySet()) {
+        assertThat(environmentVariables, hasEntry(entry.getKey(), entry.getValue()));
+      }
+
+      if (authEnabled) {
+        assertThat(environmentVariables,
+            hasEntry(BuildRuntimeConfigurationTaskService.ENV_SWAGGER_LOGIN_URL, SWAGGER_LOGIN_URL));
+        assertThat(environmentVariables,
+            hasEntry(BuildRuntimeConfigurationTaskService.ENV_SWAGGER_LOGOUT_URL, SWAGGER_LOGOUT_URL));
+        assertThat(environmentVariables,
+            hasEntry(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_LOGIN_URL, MGMT_UI_LOGIN_URL));
+        assertThat(environmentVariables,
+            hasEntry(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_LOGOUT_URL, MGMT_UI_LOGOUT_URL));
+      }
+
+      verify(healthCheckHelper, times(6)).getHealthChecker();
     }
 
-    private void createHostEntitiesAndAllocateVmsAndContainers(
-        int mgmtCount,
-        int cloudCount) throws Throwable {
+    @DataProvider(name = "ContainerTypes")
+    public Object[][] getEndToEndTestConfig() {
+      return TestHelper.toDataProvidersList(Arrays.asList(ContainersConfig.ContainerType.values()));
+    }
 
-      for (int i = 0; i < mgmtCount; i++) {
-        TestHelper.createHostService(cloudStoreMachine, Collections.singleton(UsageTag.MGMT.name()));
-      }
+    @Test(dataProvider = "OneContainerType")
+    public void testFailureContainerCreationException(ContainersConfig.ContainerType containerType) throws Throwable {
 
-      for (int i = 0; i < cloudCount; i++) {
-        TestHelper.createHostService(cloudStoreMachine, Collections.singleton(UsageTag.CLOUD.name()));
-      }
+      createTestDocuments(containerType, false);
 
-      CreateManagementPlaneLayoutWorkflowService.State workflowStartState =
-          new CreateManagementPlaneLayoutWorkflowService.State();
-      workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
+      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
+      doReturn(dockerProvisioner).when(dockerProvisionerFactory).create(anyString());
+      doThrow(new RuntimeException("Exception during launchContainer call"))
+          .when(dockerProvisioner)
+          .launchContainer(
+              anyString(),
+              anyString(),
+              anyInt(),
+              anyLong(),
+              Matchers.<Map<String, String>>any(),
+              Matchers.<Map<Integer, Integer>>any(),
+              anyString(),
+              anyBoolean(),
+              Matchers.<Map<String, String>>any(),
+              anyBoolean(),
+              anyBoolean(),
+              anyVararg());
 
-
-      CreateManagementPlaneLayoutWorkflowService.State finalState =
-          machine.callServiceAndWaitForState(
-              CreateManagementPlaneLayoutWorkflowFactoryService.SELF_LINK,
-              workflowStartState,
-              CreateManagementPlaneLayoutWorkflowService.State.class,
+      CreateContainerTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateContainerTaskFactoryService.SELF_LINK,
+              startState,
+              CreateContainerTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-      TestHelper.createDeploymentService(cloudStoreMachine);
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("Exception during launchContainer call"));
     }
+
+    @Test(dataProvider = "OneContainerType")
+    public void testFailureContainerCreationNullResult(ContainersConfig.ContainerType containerType) throws Throwable {
+
+      createTestDocuments(containerType, false);
+
+      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
+      doReturn(dockerProvisioner).when(dockerProvisionerFactory).create(anyString());
+      doReturn(null)
+          .when(dockerProvisioner)
+          .launchContainer(
+              anyString(),
+              anyString(),
+              anyInt(),
+              anyLong(),
+              Matchers.<Map<String, String>>any(),
+              Matchers.<Map<Integer, Integer>>any(),
+              anyString(),
+              anyBoolean(),
+              Matchers.<Map<String, String>>any(),
+              anyBoolean(),
+              anyBoolean(),
+              anyVararg());
+
+      CreateContainerTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateContainerTaskFactoryService.SELF_LINK,
+              startState,
+              CreateContainerTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("Create container returned null"));
+    }
+
+    @Test(dataProvider = "OneContainerType")
+    public void testFailureServiceNotReady(ContainersConfig.ContainerType containerType) throws Throwable {
+
+      createTestDocuments(containerType, false);
+
+      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
+      doReturn(dockerProvisioner).when(dockerProvisionerFactory).create(anyString());
+      doReturn("CONTAINER_ID")
+          .when(dockerProvisioner)
+          .launchContainer(
+              anyString(),
+              anyString(),
+              anyInt(),
+              anyLong(),
+              Matchers.<Map<String, String>>any(),
+              Matchers.<Map<Integer, Integer>>any(),
+              anyString(),
+              anyBoolean(),
+              Matchers.<Map<String, String>>any(),
+              anyBoolean(),
+              anyBoolean(),
+              anyVararg());
+
+      HealthChecker successfulHealthChecker = () -> true;
+      HealthChecker failureHealthChecker = () -> false;
+      HealthCheckHelper healthCheckHelper = mock(HealthCheckHelper.class);
+
+      doReturn(successfulHealthChecker)
+          .doReturn(successfulHealthChecker)
+          .doReturn(failureHealthChecker)
+          .when(healthCheckHelper).getHealthChecker();
+
+      doReturn(healthCheckHelper).when(healthCheckHelperFactory)
+          .create(any(Service.class), any(ContainersConfig.ContainerType.class), anyString());
+
+      CreateContainerTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateContainerTaskFactoryService.SELF_LINK,
+              startState,
+              CreateContainerTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("Container CONTAINER_ID of type " +
+          containerType + " on VM IP_ADDRESS failed to become ready after 10 iterations"));
+    }
+
+    @DataProvider(name = "OneContainerType")
+    public Object[][] getOneContainerType() {
+      return new Object[][]{
+          {ContainersConfig.ContainerType.values()[0]},
+      };
+    }
+  }
+
+  private CreateContainerTaskService.State buildValidStartState(
+      TaskState.TaskStage taskStage,
+      CreateContainerTaskService.TaskState.SubStage subStage) {
+    CreateContainerTaskService.State startState = new CreateContainerTaskService.State();
+    startState.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
+    startState.containerServiceLink = "CONTAINER_SERVICE_LINK";
+    startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    if (taskStage != null) {
+      startState.taskState = new CreateContainerTaskService.TaskState();
+      startState.taskState.stage = taskStage;
+      startState.taskState.subStage = subStage;
+    }
+
+    return startState;
   }
 }

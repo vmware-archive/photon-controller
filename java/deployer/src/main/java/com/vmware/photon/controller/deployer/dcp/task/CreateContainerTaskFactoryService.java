@@ -13,17 +13,15 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
 /**
- * This class implements a DCP micro-service which provides a factory for
- * {@link CreateContainerTaskService} instances.
+ * This class implements a Xenon service which provides a factory for {@link CreateContainerTaskService} instances.
  */
 public class CreateContainerTaskFactoryService extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/create-container-tasks";
+  public static final String SELF_LINK = "/deployer/tasks/create-container";
 
   public CreateContainerTaskFactoryService() {
     super(CreateContainerTaskService.State.class);
