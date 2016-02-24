@@ -26,10 +26,7 @@ import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceS
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
-import com.vmware.photon.controller.common.zookeeper.ZkHostMonitor;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.Config;
-import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
@@ -53,7 +50,7 @@ import java.util.Map;
 public class HousekeeperXenonServiceHost
     extends ServiceHost
     implements XenonHostInfoProvider,
-    HostClientProvider, ZookeeperHostMonitorProvider, CloudStoreHelperProvider, ServiceConfigProvider {
+    HostClientProvider, CloudStoreHelperProvider, ServiceConfigProvider {
 
   protected static final String IMAGE_COPY_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/image-copy";
@@ -85,7 +82,6 @@ public class HousekeeperXenonServiceHost
   private static final Logger logger = LoggerFactory.getLogger(HousekeeperXenonServiceHost.class);
 
   private final HostClientFactory hostClientFactory;
-  private final ZookeeperHostMonitor zookeeperHostMonitor;
   private final CloudStoreHelper cloudStoreHelper;
   private final ServiceConfigFactory serviceConfigFactory;
 
@@ -96,11 +92,9 @@ public class HousekeeperXenonServiceHost
       @Config.Port int port,
       @XenonConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
-      @ZkHostMonitor ZookeeperHostMonitor zookeeperHostMonitor,
       ServiceConfigFactory serviceConfigFactory) throws Throwable {
 
     this.hostClientFactory = checkNotNull(hostClientFactory);
-    this.zookeeperHostMonitor = checkNotNull(zookeeperHostMonitor);
     this.serviceConfigFactory =  checkNotNull(serviceConfigFactory);
     this.cloudStoreHelper = checkNotNull(cloudStoreHelper);
     ServiceHost.Arguments arguments = new ServiceHost.Arguments();
@@ -157,11 +151,6 @@ public class HousekeeperXenonServiceHost
   @Override
   public HostClient getHostClient() {
     return hostClientFactory.create();
-  }
-
-  @Override
-  public ZookeeperHostMonitor getZookeeperHostMonitor() {
-    return zookeeperHostMonitor;
   }
 
   @Override

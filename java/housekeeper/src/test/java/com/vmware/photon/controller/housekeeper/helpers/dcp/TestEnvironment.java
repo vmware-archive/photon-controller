@@ -56,7 +56,7 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperXenonServic
         zookeeperHostMonitor = injector.getInstance(ZookeeperHostMonitor.class);
       }
       hosts[i] = new HousekeeperXenonServiceHost(cloudStoreHelper, BIND_ADDRESS, -1,
-          sandbox, hostClientFactory, zookeeperHostMonitor, serviceConfigFactory);
+          sandbox, hostClientFactory, serviceConfigFactory);
     }
   }
 
