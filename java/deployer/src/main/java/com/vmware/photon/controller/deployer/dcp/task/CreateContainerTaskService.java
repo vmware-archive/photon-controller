@@ -16,6 +16,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
+import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -30,44 +31,58 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
+import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
-import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFutureTask;
+import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
- * This class implements a DCP micro-service which performs the task of
- * creating a container on the specified VM.
+ * This class implements a Xenon task service which brings up a Photon Controller service inside a container and
+ * verifies that the service has been started successfully.
  */
 public class CreateContainerTaskService extends StatefulService {
 
-  public static final String ZOOKEEPER_DATA_DIR = "/var/esxcloud/data/zookeeper";
-  public static final String ZOOKEEPER_CONF_DIR = "/usr/lib/zookeeper/conf";
   public static final String HAPROXY_CONF_DIR = "/etc/haproxy";
   public static final String LIGHTWAVE_CONF_DIR = "/var/lib/vmware/config";
+  public static final String ZOOKEEPER_DATA_DIR = "/var/esxcloud/data/zookeeper";
+  public static final String ZOOKEEPER_CONF_DIR = "/usr/lib/zookeeper/conf";
 
   /**
-   * This class defines the document state associated with a single
-   * {@link CreateContainerTaskService} instance.
+   * This class defines the state of a {@link CreateContainerTaskService} task.
+   */
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+
+    /**
+     * This class defines the possible sub-stages for a task.
+     */
+    public enum SubStage {
+      CREATE_CONTAINER,
+      WAIT_FOR_SERVICE,
+    }
+
+    /**
+     * This value represents the sub-stage of the current task.
+     */
+    public SubStage subStage;
+  }
+
+  /**
+   * This class defines the document state associated with a {@link CreateContainerTaskService} task.
    */
   public static class State extends ServiceDocument {
+
     /**
      * This value represents the state of the current task.
      */
@@ -75,55 +90,103 @@ public class CreateContainerTaskService extends StatefulService {
     public TaskState taskState;
 
     /**
-     * This value represents the id of the container that is created.
+     * This value represents the control flags for the current task.
      */
-    public String containerId;
+    @DefaultInteger(value = 0)
+    public Integer controlFlags;
 
     /**
-     * This value represents the URL of the ContainerService object which
-     * represents the container to be created.
+     * This value represents the document link of the parent task service to be notified when the current task
+     * completes.
+     * <p>
+     * If this value is not specified, then no notification will be sent on completion.
      */
-    @NotNull
     @Immutable
-    public String containerServiceLink;
+    public String parentTaskServiceLink;
 
     /**
-     * This value represents the URL of the DeploymentService object.
+     * This value represents the body of the patch message to send to the parent task service on successful completion.
+     * <p>
+     * If this value is not specified, then the patch body will contain a simple {@link TaskServiceState} indicating
+     * successful completion.
+     */
+    @Immutable
+    public String parentPatchBody;
+
+    /**
+     * This value represents the document link of the {@link DeploymentService} in whose context the operation is being
+     * performed.
      */
     @NotNull
     @Immutable
     public String deploymentServiceLink;
 
     /**
-     * Control flags.
+     * This value represents the document link of the {@link ContainerService} representing the container to be
+     * created.
+     */
+    @NotNull
+    @Immutable
+    public String containerServiceLink;
+
+    /**
+     * This value represents the number of consecutive successful polling iterations which must be performed before a
+     * service can be declared ready.
+     */
+    @DefaultInteger(value = 10)
+    @Immutable
+    public Integer requiredPollCount;
+
+    /**
+     * This value represents the maximum number of polling iterations which should be attempted before declaring
+     * failure.
      */
     @Immutable
+    public Integer maximumPollCount;
+
+    /**
+     * This value represents the delay, in milliseconds, to use when polling the state of a container.
+     */
+    @Immutable
+    public Integer taskPollDelay;
+
+    /**
+     * This value represents the number of polling iterations which have been performed by the current task.
+     */
     @DefaultInteger(value = 0)
-    public Integer controlFlags;
+    public Integer pollCount;
+
+    /**
+     * This value represents the number of consecutive successful polling iterations which have been performed by the
+     * current task.
+     */
+    @DefaultInteger(value = 0)
+    public Integer successfulPollCount;
   }
 
   public CreateContainerTaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
-  /**
-   * This method is called when a start operation is performed on the current
-   * service instance.
-   *
-   * @param start Supplies a patch operation to be handled.
-   */
   @Override
-  public void handleStart(Operation start) {
-    ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
-    State startState = start.getBody(State.class);
+  public void handleStart(Operation postOp) {
+    ServiceUtils.logTrace(this, "Handling start operation");
+    State startState = postOp.getBody(State.class);
     InitializationUtils.initialize(startState);
+
+    if (startState.maximumPollCount == null) {
+      startState.maximumPollCount = HostUtils.getDeployerContext(this).getWaitForServiceMaxRetryCount();
+    }
+
+    if (startState.taskPollDelay == null) {
+      startState.taskPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
+    }
+
     validateState(startState);
 
-    if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
+    if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
+      startState.taskState.subStage = TaskState.SubStage.CREATE_CONTAINER;
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -131,404 +194,377 @@ public class CreateContainerTaskService extends StatefulService {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
     }
 
-    start.setBody(startState).complete();
+    postOp.setBody(startState).complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-      } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage, null));
+      } else if (startState.taskState.stage == TaskState.TaskStage.STARTED) {
+        TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage, startState.taskState.subStage, null));
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method is called when a patch operation is performed on the current
-   * service instance.
-   *
-   * @param patch Supplies a patch operation to be handled.
-   */
   @Override
-  public void handlePatch(Operation patch) {
-    ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
-    State startState = getState(patch);
-    State patchState = patch.getBody(State.class);
-    validatePatchState(startState, patchState);
-    State currentState = applyPatch(startState, patchState);
+  public void handlePatch(Operation patchOp) {
+    ServiceUtils.logTrace(this, "Handling patch operation");
+    State currentState = getState(patchOp);
+    State patchState = patchOp.getBody(State.class);
+    validatePatchState(currentState, patchState);
+    PatchUtils.patchState(currentState, patchState);
     validateState(currentState);
-    patch.complete();
+    patchOp.complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
-        ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
-      } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        processGetContainerService(currentState);
+        ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
+      } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
+        processStartedStage(currentState);
+      } else {
+        notifyParentTask(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method validates a state object for internal consistency.
-   *
-   * @param currentState Supplies the current state of the service instance.
-   */
-  protected void validateState(State currentState) {
+  private void validateState(State currentState) {
     ValidationUtils.validateState(currentState);
-    ValidationUtils.validateTaskStage(currentState.taskState);
+    validateTaskState(currentState.taskState);
   }
 
-  /**
-   * This method validates a patch object against a valid document state
-   * object.
-   *
-   * @param startState Supplies the state of the current service instance.
-   * @param patchState Supplies the state object specified in the patch
-   *                   operation.
-   */
-  protected void validatePatchState(State startState, State patchState) {
-    ValidationUtils.validatePatch(startState, patchState);
-    ValidationUtils.validateTaskStage(patchState.taskState);
-    ValidationUtils.validateTaskStageProgression(startState.taskState, patchState.taskState);
+  private void validatePatchState(State currentState, State patchState) {
+    ValidationUtils.validatePatch(currentState, patchState);
+    validateTaskState(patchState.taskState);
+    validateTaskStageProgression(currentState.taskState, patchState.taskState);
   }
 
-  /**
-   * This method applies a patch to a state object.
-   *
-   * @param startState Supplies the initial state of the current service
-   *                   instance.
-   * @param patchState Supplies the patch state associated with a patch
-   *                   operation.
-   * @return The updated state of the current service instance.
-   */
-  private State applyPatch(State startState, State patchState) {
-    if (patchState.taskState != null) {
-      if (patchState.taskState.stage != startState.taskState.stage) {
-        ServiceUtils.logInfo(this, "Moving to stage %s", patchState.taskState.stage);
-      }
+  private void validateTaskState(TaskState taskState) {
+    ValidationUtils.validateTaskStage(taskState);
+    switch (taskState.stage) {
+      case CREATED:
+      case FINISHED:
+      case FAILED:
+      case CANCELLED:
+        checkState(taskState.subStage == null);
+        break;
+      case STARTED:
+        checkState(taskState.subStage != null);
+        switch (taskState.subStage) {
+          case CREATE_CONTAINER:
+          case WAIT_FOR_SERVICE:
+            break;
+          default:
+            throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
+        }
+    }
+  }
 
-      startState.taskState = patchState.taskState;
+  private void validateTaskStageProgression(TaskState currentState, TaskState patchState) {
+    ValidationUtils.validateTaskStageProgression(currentState, patchState);
+    if (patchState.subStage != null && currentState.subStage != null) {
+      checkState(patchState.subStage.ordinal() >= currentState.subStage.ordinal());
+    }
+  }
 
-      if (null != patchState.containerId) {
-        startState.containerId = patchState.containerId;
-      }
+  private void processStartedStage(State currentState) {
+    switch (currentState.taskState.subStage) {
+      case CREATE_CONTAINER:
+        processCreateContainerSubStage(currentState);
+        break;
+      case WAIT_FOR_SERVICE:
+        processWaitForServiceSubStage(currentState);
+        break;
+    }
+  }
+
+  private void notifyParentTask(State currentState) {
+
+    if (currentState.parentTaskServiceLink == null) {
+      ServiceUtils.logInfo(this, "Skipping parent task notification");
+      return;
     }
 
-    return startState;
-  }
-
-  /**
-   * This method performs document state updates in response to an operation
-   * which creates a container. It has a callback handler which retrieves the
-   * container service link and calls another method to get the VM ip address
-   * and container template.
-   *
-   * @param currentState
-   */
-  private void processGetContainerService(final State currentState) {
-    final Service service = this;
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
+    Operation patchOp = Operation.createPatch(this, currentState.parentTaskServiceLink);
+    switch (currentState.taskState.stage) {
+      case FINISHED:
+        if (currentState.parentPatchBody != null) {
+          patchOp.setBody(currentState.parentPatchBody);
+          break;
         }
-
-        try {
-          ContainerService.State containerState = operation.getBody(ContainerService.State.class);
-          // Skip if container already created
-          if (containerState.containerId != null) {
-            State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-            patchState.containerId = containerState.containerId;
-            TaskUtils.sendSelfPatch(service, patchState);
-            return;
-          }
-          processGetDeploymentService(currentState, containerState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    Operation getOperation = Operation
-        .createGet(UriUtils.buildUri(getHost(), currentState.containerServiceLink))
-        .setCompletion(completionHandler);
-
-    sendRequest(getOperation);
-  }
-
-  /**
-   * Obtains the deployment service state to retrieve logon and logout URLs if auth is enabled.
-   *
-   * @param currentState
-   * @param containerState
-   */
-  private void processGetDeploymentService(final State currentState, final ContainerService.State containerState) {
-
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(currentState.deploymentServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
-
-                  try {
-                    DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
-                    processGetVmState(currentState, containerState, deploymentState);
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            ));
-  }
-
-  /**
-   * This method retrieves the VM Service entity document pointed by the
-   * container service to get the ip address of the vm.
-   *
-   * @param currentState
-   * @param deploymentState
-   */
-  private void processGetVmState(final State currentState, final ContainerService.State containerState,
-                                 DeploymentService.State deploymentState) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-
-        try {
-          VmService.State vmState = operation.getBody(VmService.State.class);
-          processGetContainerTemplate(currentState, vmState, containerState, deploymentState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    Operation getOperation = Operation
-        .createGet(UriUtils.buildUri(getHost(), containerState.vmServiceLink))
-        .setCompletion(completionHandler);
-
-    sendRequest(getOperation);
-  }
-
-  /**
-   * This method retrieves the VM Service entity document pointed by the
-   * container service to get the ip address of the vm.
-   *
-   * @param currentState
-   * @param deploymentState
-   */
-  private void processGetContainerTemplate(
-      final State currentState,
-      final VmService.State vmState,
-      final ContainerService.State containerState, DeploymentService.State deploymentState) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-
-        try {
-          ContainerTemplateService.State containerTemplateState = operation.getBody(ContainerTemplateService.State
-              .class);
-          setVolumeBindings(currentState, vmState, containerTemplateState, deploymentState, containerState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    Operation getOperation = Operation
-        .createGet(UriUtils.buildUri(getHost(), containerState.containerTemplateServiceLink))
-        .setCompletion(completionHandler);
-
-    sendRequest(getOperation);
-  }
-
-  private void setVolumeBindings(final State currentState,
-                                 final VmService.State vmState,
-                                 final ContainerTemplateService.State containerTemplateState,
-                                 DeploymentService.State deploymentState,
-                                 ContainerService.State containerState) {
-    ContainersConfig.ContainerType containerType =
-        ContainersConfig.ContainerType.valueOf(containerTemplateState.name);
-
-    if (containerTemplateState.volumeBindings == null) {
-      containerTemplateState.volumeBindings = new HashMap<>();
+        // Fall through
+      case FAILED:
+      case CANCELLED:
+        TaskServiceState patchState = new TaskServiceState();
+        patchState.taskState = currentState.taskState;
+        patchOp.setBody(patchState);
+        break;
+      default:
+        throw new IllegalStateException("Unexpected state: " + currentState.taskState.stage);
     }
 
-    String hostVolume = ServiceFileConstants.VM_MUSTACHE_DIRECTORY + ServiceFileConstants
-        .CONTAINER_CONFIG_ROOT_DIRS.get(containerType);
-    containerTemplateState.volumeBindings.put(hostVolume, ServiceFileConstants.CONTAINER_CONFIG_DIRECTORY);
-
-    if (containerTemplateState.name.equals(ContainersConfig.ContainerType.Zookeeper.name())) {
-      containerTemplateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + ZOOKEEPER_CONF_DIR);
-      containerTemplateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + ZOOKEEPER_DATA_DIR);
-    }
-
-    if (containerTemplateState.name.equals(ContainersConfig.ContainerType.LoadBalancer.name())) {
-      containerTemplateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + HAPROXY_CONF_DIR);
-    }
-
-    if (containerTemplateState.name.equals(ContainersConfig.ContainerType.Lightwave.name())) {
-      containerTemplateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + LIGHTWAVE_CONF_DIR);
-    }
-
-    processCreateContainer(currentState, vmState.ipAddress, containerTemplateState, deploymentState, containerState);
+    sendRequest(patchOp);
   }
 
-  /**
-   * This method creates a docker container by submitting a future task to
-   * the executor service for the DCP host. On successful completion, the
-   * service is transitioned to the FINISHED state.
-   *
-   * @param currentState    Supplies the updated state of the current service
-   *                        instance.
-   * @param deploymentState
-   */
-  private void processCreateContainer(final State currentState,
-                                      final String vmIpAddress,
-                                      final ContainerTemplateService.State containerTemplateState,
-                                      DeploymentService.State deploymentState,
-                                      ContainerService.State containerState) {
+  //
+  // CREATE_CONTAINER sub-stage routines
+  //
 
-    final Service service = this;
-    ListenableFutureTask<String> futureTask = ListenableFutureTask.create(new Callable<String>() {
-      @Override
-      public String call() {
-        List<String> commandList = new ArrayList<>();
-        commandList.add(DeployerDefaults.DEFAULT_ENTRYPOINT_COMMAND);
+  private void processCreateContainerSubStage(State currentState) {
 
-        Map<String, String> environmentVariables = null;
-        if (deploymentState.oAuthEnabled) {
-          environmentVariables = new HashMap<String, String>();
-          environmentVariables.putAll(containerTemplateState.environmentVariables);
-          if (!environmentVariables.containsKey(BuildRuntimeConfigurationTaskService.ENV_ENABLE_AUTH)) {
-            environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_ENABLE_AUTH, "true");
-          }
-          environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_SWAGGER_LOGIN_URL,
-              deploymentState.oAuthSwaggerLoginEndpoint);
-          environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_SWAGGER_LOGOUT_URL,
-              deploymentState.oAuthSwaggerLogoutEndpoint);
-          environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_LOGIN_URL,
-              deploymentState.oAuthMgmtUiLoginEndpoint);
-          environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_LOGOUT_URL,
-              deploymentState.oAuthSwaggerLogoutEndpoint);
-        } else {
-          environmentVariables = containerTemplateState.environmentVariables;
-        }
+    Operation deploymentOp = HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymentServiceLink);
+    Operation containerOp = Operation.createGet(this, currentState.containerServiceLink);
 
-        DockerProvisioner dockerProvisioner = HostUtils.getDockerProvisionerFactory(service).create(vmIpAddress);
-        String containerId = dockerProvisioner.launchContainer(
-            containerTemplateState.name,
-            containerTemplateState.containerImage,
-            containerState.cpuShares,
-            containerState.memoryMb,
-            containerTemplateState.volumeBindings,
-            containerTemplateState.portBindings,
-            containerTemplateState.volumesFrom,
-            containerTemplateState.isPrivileged,
-            environmentVariables,
-            true,
-            containerTemplateState.useHostNetwork,
-            commandList.toArray(new String[commandList.size()]));
-        return containerId;
-      }
-    });
-
-    HostUtils.getListeningExecutorService(this).submit(futureTask);
-
-    FutureCallback<String> futureCallback = new FutureCallback<String>() {
-      @Override
-      public void onSuccess(@Nullable String result) {
-        try {
-          if (null == result) {
-            failTask(new IllegalStateException("Create container returned null"));
-            return;
-          }
-
-          Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-            @Override
-            public void handle(Operation operation, Throwable throwable) {
-              if (null != throwable) {
-                failTask(throwable);
+    OperationJoin
+        .create(deploymentOp, containerOp)
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
                 return;
               }
-              // Update ourselves with FINISHED stage.
-              State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-              ContainerService.State containerState = operation.getBody(ContainerService.State.class);
-              patchState.containerId = containerState.containerId;
-              TaskUtils.sendSelfPatch(service, patchState);
-            }
-          };
 
-          // Update the Container service state with the containerId.
-          ContainerService.State containerPatchState = new ContainerService.State();
-          containerPatchState.containerId = result;
-          Operation patchOperation = Operation
-              .createPatch(UriUtils.buildUri(getHost(), currentState.containerServiceLink))
-              .setBody(containerPatchState)
-              .setCompletion(completionHandler);
-          sendRequest(patchOperation);
-        } catch (Throwable e) {
-          failTask(e);
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-
-    Futures.addCallback(futureTask, futureCallback);
+              try {
+                processCreateContainerSubStage(currentState,
+                    ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
+                    ops.get(containerOp.getId()).getBody(ContainerService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+        .sendWith(this);
   }
 
-  /**
-   * This method builds a state object which can be used to submit a stage
-   * progress self-patch.
-   *
-   * @param stage Supplies the state to which the service instance should be
-   *              transitioned.
-   * @param e     Supplies an optional Throwable object representing the failure
-   *              encountered by the service instance.
-   * @return A State object which can be used to submit a stage progress self-
-   * patch.
-   */
-  @VisibleForTesting
-  protected State buildPatch(TaskState.TaskStage stage, @Nullable Throwable e) {
-    State state = new State();
-    state.taskState = new TaskState();
-    state.taskState.stage = stage;
+  private void processCreateContainerSubStage(State currentState,
+                                              DeploymentService.State deploymentState,
+                                              ContainerService.State containerState) {
 
-    if (null != e) {
-      state.taskState.failure = Utils.toServiceErrorResponse(e);
+    Operation templateOp = Operation.createGet(this, containerState.containerTemplateServiceLink);
+    Operation vmOp = Operation.createGet(this, containerState.vmServiceLink);
+
+    OperationJoin
+        .create(templateOp, vmOp)
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
+
+              try {
+                processCreateContainerSubStage(currentState, deploymentState, containerState,
+                    ops.get(templateOp.getId()).getBody(ContainerTemplateService.State.class),
+                    ops.get(vmOp.getId()).getBody(VmService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+        .sendWith(this);
+  }
+
+  private void processCreateContainerSubStage(State currentState,
+                                              DeploymentService.State deploymentState,
+                                              ContainerService.State containerState,
+                                              ContainerTemplateService.State templateState,
+                                              VmService.State vmState) {
+
+    ContainersConfig.ContainerType containerType =
+        ContainersConfig.ContainerType.valueOf(templateState.name);
+
+    String hostVolume = ServiceFileConstants.VM_MUSTACHE_DIRECTORY +
+        ServiceFileConstants.CONTAINER_CONFIG_ROOT_DIRS.get(containerType);
+
+    if (templateState.volumeBindings == null) {
+      templateState.volumeBindings = new HashMap<>();
     }
 
-    return state;
+    templateState.volumeBindings.put(hostVolume, ServiceFileConstants.CONTAINER_CONFIG_DIRECTORY);
+
+    switch (containerType) {
+      case Zookeeper:
+        templateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + ZOOKEEPER_CONF_DIR);
+        templateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + ZOOKEEPER_DATA_DIR);
+        break;
+      case LoadBalancer:
+        templateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + HAPROXY_CONF_DIR);
+        break;
+      case Lightwave:
+        templateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + LIGHTWAVE_CONF_DIR);
+        break;
+    }
+
+    String[] commandList = {DeployerDefaults.DEFAULT_ENTRYPOINT_COMMAND};
+
+    Map<String, String> environmentVariables = new HashMap<>();
+    if (templateState.environmentVariables != null) {
+      environmentVariables.putAll(templateState.environmentVariables);
+    }
+
+    if (deploymentState.oAuthEnabled) {
+      environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_ENABLE_AUTH, "true");
+      environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_SWAGGER_LOGIN_URL,
+          deploymentState.oAuthSwaggerLoginEndpoint);
+      environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_SWAGGER_LOGOUT_URL,
+          deploymentState.oAuthSwaggerLogoutEndpoint);
+      environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_LOGIN_URL,
+          deploymentState.oAuthMgmtUiLoginEndpoint);
+      environmentVariables.put(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_LOGOUT_URL,
+          deploymentState.oAuthMgmtUiLogoutEndpoint);
+    }
+
+    String containerId = HostUtils.getDockerProvisionerFactory(this)
+        .create(vmState.ipAddress)
+        .launchContainer(templateState.name,
+            templateState.containerImage,
+            containerState.cpuShares,
+            containerState.memoryMb,
+            templateState.volumeBindings,
+            templateState.portBindings,
+            templateState.volumesFrom,
+            templateState.isPrivileged,
+            environmentVariables,
+            true,
+            templateState.useHostNetwork,
+            commandList);
+
+    if (containerId == null) {
+      throw new IllegalStateException("Create container returned null");
+    }
+
+    ContainerService.State patchState = new ContainerService.State();
+    patchState.containerId = containerId;
+
+    sendRequest(Operation
+        .createPatch(this, currentState.containerServiceLink)
+        .setBody(patchState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              } else {
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_SERVICE);
+              }
+            }));
   }
 
-  /**
-   * This method sends a patch operation to the current service instance to
-   * transition to the FAILED state in response to the specified exception.
-   *
-   * @param e Supplies the failure encountered by the service instance.
-   */
-  private void failTask(Throwable e) {
-    ServiceUtils.logSevere(this, e);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, e));
+  //
+  // WAIT_FOR_SERVICE sub-stage routines
+  //
+
+  private void processWaitForServiceSubStage(State currentState) {
+
+    sendRequest(Operation
+        .createGet(this, currentState.containerServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                processWaitForServiceSubStage(currentState, o.getBody(ContainerService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processWaitForServiceSubStage(State currentState, ContainerService.State containerState) {
+
+    Operation templateOp = Operation.createGet(this, containerState.containerTemplateServiceLink);
+    Operation vmOp = Operation.createGet(this, containerState.vmServiceLink);
+
+    OperationJoin
+        .create(templateOp, vmOp)
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
+
+              try {
+                processWaitForServiceSubStage(currentState, containerState,
+                    ops.get(templateOp.getId()).getBody(ContainerTemplateService.State.class),
+                    ops.get(vmOp.getId()).getBody(VmService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+        .sendWith(this);
+  }
+
+  private void processWaitForServiceSubStage(State currentState,
+                                             ContainerService.State containerState,
+                                             ContainerTemplateService.State templateState,
+                                             VmService.State vmState) {
+
+    ContainersConfig.ContainerType containerType =
+        ContainersConfig.ContainerType.valueOf(templateState.name);
+
+    HealthChecker healthChecker = HostUtils.getHealthCheckHelperFactory(this)
+        .create(this, containerType, vmState.ipAddress)
+        .getHealthChecker();
+
+    if (healthChecker.isReady()) {
+      currentState.pollCount++;
+      currentState.successfulPollCount++;
+    } else {
+      currentState.pollCount++;
+      currentState.successfulPollCount = 0;
+    }
+
+    if (currentState.successfulPollCount >= currentState.requiredPollCount) {
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+    } else if (currentState.pollCount >= currentState.maximumPollCount) {
+      failTask(new IllegalStateException("Container " + containerState.containerId + " of type " + containerType +
+          " on VM " + vmState.ipAddress + " failed to become ready after " + currentState.pollCount + " iterations"));
+    } else {
+      getHost().schedule(
+          () -> {
+            State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_SERVICE, null);
+            patchState.pollCount = currentState.pollCount;
+            patchState.successfulPollCount = currentState.successfulPollCount;
+            TaskUtils.sendSelfPatch(this, patchState);
+          },
+          currentState.taskPollDelay, TimeUnit.MILLISECONDS);
+    }
+  }
+
+  //
+  // Utility routines
+  //
+
+  private void sendStageProgressPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
+    ServiceUtils.logTrace(this, "Sending self-patch to stage %s : %s", taskStage, subStage);
+    TaskUtils.sendSelfPatch(this, buildPatch(taskStage, subStage, null));
+  }
+
+  private void failTask(Throwable failure) {
+    ServiceUtils.logSevere(this, failure);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failure));
+  }
+
+  private void failTask(Collection<Throwable> failures) {
+    ServiceUtils.logSevere(this, failures);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
+  }
+
+  @VisibleForTesting
+  protected static State buildPatch(TaskState.TaskStage taskStage,
+                                    TaskState.SubStage subStage,
+                                    @Nullable Throwable failure) {
+    State patchState = new State();
+    patchState.taskState = new TaskState();
+    patchState.taskState.stage = taskStage;
+    patchState.taskState.subStage = subStage;
+    if (failure != null) {
+      patchState.taskState.failure = Utils.toServiceErrorResponse(failure);
+    }
+
+    return patchState;
   }
 }

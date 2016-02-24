@@ -110,6 +110,21 @@ public class HostUtilsTest {
   }
 
   /**
+   * This class implements tests for the getHealthCheckerHelperFactory method.
+   */
+  public class GetHealthCheckerHelperFactoryTest {
+
+    private StatefulService service;
+
+    @Test(expectedExceptions = ClassCastException.class)
+    public void testClassCastError() {
+      service = spy(new StatefulService(ServiceDocument.class));
+      doReturn(mock(ServiceHost.class)).when(service).getHost();
+      HostUtils.getHealthCheckHelperFactory(service);
+    }
+  }
+
+  /**
    * This class implements tests for the getHostClient method.
    */
   public class GetHostClientTest {

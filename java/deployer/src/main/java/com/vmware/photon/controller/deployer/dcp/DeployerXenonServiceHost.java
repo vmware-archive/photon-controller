@@ -66,14 +66,12 @@ import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryServic
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.WaitForDockerTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.WaitForServiceTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AllocateResourcesWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.BatchCreateManagementWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.BuildContainersConfigurationWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.BulkProvisionHostsWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.dcp.workflow.CreateAndValidateContainerWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateContainersWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementVmWorkflowFactoryService;
@@ -182,7 +180,6 @@ public class DeployerXenonServiceHost
       UploadVibTaskFactoryService.class,
       ValidateHostTaskFactoryService.class,
       WaitForDockerTaskFactoryService.class,
-      WaitForServiceTaskFactoryService.class,
       TaskSchedulerServiceFactory.class,
 
       // Workflow services
@@ -192,7 +189,6 @@ public class DeployerXenonServiceHost
       BatchCreateManagementWorkflowFactoryService.class,
       BuildContainersConfigurationWorkflowFactoryService.class,
       BulkProvisionHostsWorkflowFactoryService.class,
-      CreateAndValidateContainerWorkflowFactoryService.class,
       CreateContainersWorkflowFactoryService.class,
       CreateManagementPlaneLayoutWorkflowFactoryService.class,
       CreateManagementVmWorkflowFactoryService.class,
