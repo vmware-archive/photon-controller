@@ -142,6 +142,57 @@ public class ClusterApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testResize() throws IOException {
+    Task responseTask = new Task();
+    responseTask.setId("12345");
+    responseTask.setState("QUEUED");
+    responseTask.setQueuedTime(Date.from(Instant.now()));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(responseTask);
+
+    setupMocks(serializedTask, HttpStatus.SC_CREATED);
+
+    ClusterApi clusterApi = new ClusterApi(restClient);
+
+    Task task = clusterApi.resize("dummy-cluster-id", 100);
+    assertEquals(task, responseTask);
+  }
+
+  @Test
+  public void testResizeAsync() throws IOException, InterruptedException {
+    final Task responseTask = new Task();
+    responseTask.setId("12345");
+    responseTask.setState("QUEUED");
+    responseTask.setQueuedTime(Date.from(Instant.now()));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(responseTask);
+
+    setupMocks(serializedTask, HttpStatus.SC_CREATED);
+
+    ClusterApi clusterApi = new ClusterApi(restClient);
+
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    clusterApi.resizeAsync("dummy-cluster-id", 100, new FutureCallback<Task>() {
+      @Override
+      public void onSuccess(Task result) {
+        assertEquals(result, responseTask);
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
   public void testGetVms() throws IOException {
     Vm vm1 = new Vm();
     vm1.setId("vm1");
