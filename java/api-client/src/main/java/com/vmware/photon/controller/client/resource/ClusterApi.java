@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.client.resource;
 
 import com.vmware.photon.controller.api.Cluster;
+import com.vmware.photon.controller.api.ClusterResizeOperation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
@@ -100,6 +101,45 @@ public class ClusterApi extends ApiBase {
   public void deleteAsync(final String clusterId, final FutureCallback<Task> responseCallback)
       throws IOException {
     deleteObjectAsync(clusterId, responseCallback);
+  }
+
+  /**
+   * Resize the specified cluster.
+   *
+   * @param clusterId
+   * @param size
+   * @return
+   * @throws IOException
+   */
+  public Task resize(String clusterId, int size) throws IOException {
+    String path = String.format("%s/%s/resize", getBasePath(), clusterId);
+
+    ClusterResizeOperation op = new ClusterResizeOperation();
+    op.setNewSlaveCount(size);
+
+    HttpResponse response = this.restClient.perform(RestClient.Method.POST, path, serializeObjectAsJson(op));
+    this.restClient.checkResponse(response, HttpStatus.SC_CREATED);
+
+    return parseTaskFromHttpResponse(response);
+  }
+
+  /**
+   * Resize the specified cluster.
+   *
+   * @param clusterId
+   * @param size
+   * @param responseCallback
+   * @throws IOException
+   */
+  public void resizeAsync(
+      final String clusterId, final int size, final FutureCallback<Task> responseCallback)
+      throws IOException {
+    String path = String.format("%s/%s/resize", getBasePath(), clusterId);
+
+    ClusterResizeOperation op = new ClusterResizeOperation();
+    op.setNewSlaveCount(size);
+
+    createObjectAsync(clusterId, serializeObjectAsJson(op), responseCallback);
   }
 
   /**
