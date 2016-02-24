@@ -16,16 +16,16 @@ module EsxCloud
     def self.populate()
       seeder = ManagementPlaneSeeder.new
       image_file = ENV["ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE"] || fail("ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE is not defined")
-      image_id = EsxCloud::Image.create(image_file, random_name("image-"), "EAGER").id
+      image_id = EsxCloud::Image.create(image_file, ManagementPlaneSeeder.random_name("image-"), "EAGER").id
       2.times do
         tenant = create_random_tenant
         2.times do
-          resource_ticket = tenant.create_resource_ticket :name => random_name("rt-"), :limits => create_small_limits
+          resource_ticket = tenant.create_resource_ticket :name => ManagementPlaneSeeder.random_name("rt-"), :limits => create_small_limits
           2.times do
-            project = tenant.create_project name: random_name("project-"), resource_ticket_name: resource_ticket.name, limits: [create_limit("vm", 10.0, "COUNT"), create_limit("vm.memory", 50.0, "GB")]
+            project = tenant.create_project name: ManagementPlaneSeeder.random_name("project-"), resource_ticket_name: resource_ticket.name, limits: [create_limit("vm", 10.0, "COUNT"), create_limit("vm.memory", 50.0, "GB")]
             # create vms
             3.times do
-              seeder.create_vm project, random_name("vm-"), image_id
+              seeder.create_vm project, ManagementPlaneSeeder.random_name("vm-"), image_id
             end
           end
         end
@@ -33,8 +33,8 @@ module EsxCloud
     end
 
     def create_vm(project, vm_name, image_id)
-      ephemeral_disk = create_ephemeral_disk(random_name("#{vm_name}-disk-e-"))
-      persistent_disk = create_persistent_disk(project, random_name("#{vm_name}-disk-"))
+      ephemeral_disk = create_ephemeral_disk(ManagementPlaneSeeder.random_name("#{vm_name}-disk-e-"))
+      persistent_disk = create_persistent_disk(project, ManagementPlaneSeeder.random_name("#{vm_name}-disk-"))
       create_vm_spec = { image_id: image_id,
                          name: vm_name,
                          flavor: create_vm_flavor.name,
@@ -91,7 +91,7 @@ module EsxCloud
 
     private
 
-    def random_name(prefix = "rn")
+    def self.random_name(prefix = "rn")
       prefix + SecureRandom.base64(12).tr("+/", "ab")
     end
   end

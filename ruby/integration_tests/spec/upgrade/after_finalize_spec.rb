@@ -21,7 +21,7 @@ require 'dcp/cloud_store/cloud_store_client'
 require_relative '../../lib/management_plane_seeder'
 require_relative '../../lib/test_helpers'
 
-describe "migrate finalize", upgrade: true do
+describe "migrate finalize" do#, upgrade: true do
 
   DOCKER_PORT = 2375
 
@@ -118,6 +118,7 @@ describe "migrate finalize", upgrade: true do
 
         req = VersionRequest.new
         res = agent_client.get_version req
+        puts host.address
         expect(res.version).to eq "0.1.2"
       end
     end
