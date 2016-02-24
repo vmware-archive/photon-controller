@@ -13,8 +13,14 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -27,13 +33,10 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.host.gen.GetMonitoredImagesResultCode;
 import com.vmware.photon.controller.host.gen.StartImageOperationResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
-import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorGetHostsForDatastoreErrorMock;
-import com.vmware.photon.controller.housekeeper.dcp.mock.ZookeeperHostMonitorSuccessMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockGetDeletedImages;
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockGetInactiveImages;
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockStartImageScan;
@@ -62,7 +65,6 @@ import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -74,6 +76,8 @@ import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -187,54 +191,6 @@ public class ImageDatastoreSweeperServiceTest {
   }
 
   /**
-   * Tests getZookeeperHostMonitor.
-   */
-  public class GetZookeeperHostMonitorTest {
-    private TestHost host;
-    private ZookeeperHostMonitor zookeeperHostMonitor;
-
-    @BeforeMethod
-    public void setUp() throws Throwable {
-      service = spy(new ImageDatastoreSweeperService());
-
-      zookeeperHostMonitor = mock(ZookeeperHostMonitor.class);
-      host = TestHost.create(mock(HostClient.class), zookeeperHostMonitor);
-    }
-
-    @AfterMethod
-    public void tearDown() throws Throwable {
-      if (host != null) {
-        TestHost.destroy(host);
-      }
-    }
-
-    /**
-     * Test that the zookeeperHostMonitor stored in the host is returned.
-     */
-    @Test
-    public void testZookeeperHostMonitorIsReturned() throws Throwable {
-      host.startServiceSynchronously(service, buildValidStartupState());
-      assertThat(service.getZookeeperHostMonitor(), is(zookeeperHostMonitor));
-    }
-
-    /**
-     * Test that correct exception is thrown when host does not implement the
-     * ZookeeperHostMonitorProvider interface.
-     */
-    @Test
-    public void testClassCastError() {
-      doReturn(mock(ServiceHost.class)).when(service).getHost();
-
-      try {
-        service.getZookeeperHostMonitor();
-        fail("Cast class ServiceHost to ZookeeperHostMonitorProvider should fail");
-      } catch (ClassCastException ex) {
-        assertThat(ex.getMessage(), startsWith("com.vmware.xenon.common.ServiceHost"));
-      }
-    }
-  }
-
-  /**
    * Tests for getHostClient.
    */
   public class HostClientTest {
@@ -290,7 +246,7 @@ public class ImageDatastoreSweeperServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = spy(new ImageDatastoreSweeperService());
-      host = TestHost.create(mock(HostClient.class), mock(ZookeeperHostMonitor.class));
+      host = TestHost.create(mock(HostClient.class));
     }
 
     @AfterMethod
@@ -531,7 +487,7 @@ public class ImageDatastoreSweeperServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = spy(new ImageDatastoreSweeperService());
-      host = TestHost.create(mock(HostClient.class), new ZookeeperHostMonitorSuccessMock(),
+      host = TestHost.create(mock(HostClient.class), null,
           new CloudStoreHelperMock());
     }
 
@@ -901,15 +857,12 @@ public class ImageDatastoreSweeperServiceTest {
     private HostClientFactory hostClientFactory;
     private ServiceConfigFactory serviceConfigFactory;
     private CloudStoreHelper cloudStoreHelper;
-    private ZookeeperHostMonitor zookeeperHostMonitor;
 
     @BeforeMethod
     public void setUp() throws Throwable {
       hostClientFactory = mock(HostClientFactory.class);
       doReturn(new HostClientMock()).when(hostClientFactory).create();
-
       serviceConfigFactory = mock(ServiceConfigFactory.class);
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock();
       cloudStoreHelper = new CloudStoreHelper();
 
       // Build input.
@@ -952,17 +905,19 @@ public class ImageDatastoreSweeperServiceTest {
                             int[] iaImageParams,
                             boolean isImageDatastore,
                             int deletedImages) throws Throwable {
-      zookeeperHostMonitor = new ZookeeperHostMonitorSuccessMock();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
-          serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
       ServiceHost host = machine.getHosts()[0];
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      cloudStoreHelper.setServerSet(serverSet);
 
       machine.startFactoryServiceSynchronously(
-          ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
+          ImageDatastoreSweeperServiceFactory.class, ImageDatastoreSweeperServiceFactory.SELF_LINK);
+      machine.startFactoryServiceSynchronously(ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
+
+      setServerSet(machine.getHosts()[0]);
+      List<DatastoreService.State> dataStores = new ArrayList<>();
+      List<DatastoreService.State> imageDatastores = new ArrayList<>();
+      createDatastoreService(hostCount, dataStores, imageDatastores);
+      createHostService(dataStores, imageDatastores);
 
       // create reference images
       List<ImageService.State> refImages =
@@ -971,6 +926,12 @@ public class ImageDatastoreSweeperServiceTest {
       // adjust request
       request.referenceImagesCount = refImages.size();
       request.isImageDatastore = isImageDatastore;
+
+      if (isImageDatastore) {
+        request.datastore = imageDatastores.iterator().next().id;
+      } else {
+        request.datastore = dataStores.iterator().next().id;
+      }
 
       // configure host client
       List<InactiveImageDescriptor> inactiveImages =
@@ -1075,48 +1036,6 @@ public class ImageDatastoreSweeperServiceTest {
     }
 
     /**
-     * Tests call listHostsForStorage to zookeeper client fails.
-     *
-     * @param hostCount
-     * @throws Throwable
-     */
-    @Test(dataProvider = "ZKMonGetHostsForDatastoreError")
-    public void testZKMonGetHostsForDatastoreError(int hostCount, ZookeeperHostMonitor zkHostMonitor)
-        throws Throwable {
-
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zkHostMonitor,
-          serviceConfigFactory, hostCount);
-      ImageDatastoreSweeperService.State response = machine.callServiceAndWaitForState(
-          ImageDatastoreSweeperServiceFactory.SELF_LINK,
-          request,
-          ImageDatastoreSweeperService.State.class,
-          state -> state.taskState.stage == TaskState.TaskStage.FAILED
-      );
-
-      // Check response
-      assertThat(response.datastore, is(request.datastore));
-      assertThat(response.host, nullValue());
-
-      // Check stats.
-      ServiceStats stats = machine.getOwnerServiceStats(response);
-      assertThat(
-          stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
-          is(1.0 +  // START:GET_HOST_INFO
-              1.0   // FAILED
-          )
-      );
-    }
-
-    @DataProvider(name = "ZKMonGetHostsForDatastoreError")
-    public Object[][] getZKMonGetHostsForDatastoreErrorData() throws Exception {
-      return new Object[][]{
-          {1, new ZookeeperHostMonitorGetHostsForDatastoreErrorMock()},
-          {1, new ZookeeperHostMonitorSuccessMock(0, 0)},
-          {3, new ZookeeperHostMonitorSuccessMock(0, 0)}
-      };
-    }
-
-    /**
      * Test Thrift calls to host fail.
      *
      * @param hostCount
@@ -1128,12 +1047,20 @@ public class ImageDatastoreSweeperServiceTest {
     @Test(dataProvider = "HostClientErrors")
     public void testHostClientErrors(int hostCount, double patchCount, String reason, HostClientMock hostClient)
         throws Throwable {
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
+      machine.startFactoryServiceSynchronously(
+              ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
 
+      setServerSet(machine.getHosts()[0]);
+      List<DatastoreService.State> dataStores = new ArrayList<>();
+      List<DatastoreService.State> imageDatastores = new ArrayList<>();
+      createDatastoreService(hostCount, dataStores, imageDatastores);
+      createHostService(dataStores, imageDatastores);
+
+      request.datastore = dataStores.iterator().next().id;
       hostClient.setInactiveImages(request.datastore, new ArrayList<>());
       doReturn(hostClient).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
-          serviceConfigFactory, hostCount);
       ImageDatastoreSweeperService.State response = machine.callServiceAndWaitForState(
           ImageDatastoreSweeperServiceFactory.SELF_LINK,
           request,
@@ -1196,6 +1123,96 @@ public class ImageDatastoreSweeperServiceTest {
           {3, 6.0, "TException", new ErrorMockGetDeletedImages()},
           {3, 6.0, "SYSTEM_ERROR", new ErrorMockGetDeletedImages(GetMonitoredImagesResultCode.SYSTEM_ERROR)},
       };
+    }
+
+    private void createHostService(List<DatastoreService.State> datastores,
+                                   List<DatastoreService.State> imageDatastores) throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+      machine.startFactoryServiceSynchronously(
+              HostServiceFactory.class,
+              HostServiceFactory.SELF_LINK);
+
+
+      Iterator<DatastoreService.State> datastoreIterator = datastores.iterator();
+      DatastoreService.State imageDatastore = imageDatastores.iterator().next();
+      while (datastoreIterator.hasNext()) {
+        HostService.State state = new HostService.State();
+        state.state = HostState.READY;
+        state.hostAddress = "0.0.0.0";
+        state.userName = "test-name";
+        state.password = "test-password";
+        state.usageTags = new HashSet<>();
+        state.usageTags.add(UsageTag.CLOUD.name());
+        state.reportedDatastores = new HashSet<>();
+        state.reportedDatastores.add(datastoreIterator.next().id);
+        state.reportedImageDatastores = new HashSet<>();
+        state.reportedImageDatastores.add(imageDatastore.id);
+
+        Operation op = cloudStoreHelper
+                .createPost(HostServiceFactory.SELF_LINK)
+                .setBody(state)
+                .setCompletion((operation, throwable) -> {
+                  if (null != throwable) {
+                    Assert.fail("Failed to create a host in cloud store.");
+                  }
+                });
+        Operation ops = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+        int i = 0;
+        i++;
+      }
+    }
+
+    private void createDatastoreService(int datastoreNum, List<DatastoreService.State> datastores,
+                                        List<DatastoreService.State> imageDatastores) throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+
+      machine.startFactoryServiceSynchronously(
+              DatastoreServiceFactory.class,
+              DatastoreServiceFactory.SELF_LINK);
+
+      for (int i = 0; i < datastoreNum; i++) {
+        DatastoreService.State state = new DatastoreService.State();
+        state.id = "datastore-id" + i;
+        state.name = "datastore-name-" + i;
+        state.isImageDatastore = false;
+        state.type = "EXT3";
+        state.documentSelfLink = "/" + state.id;
+        datastores.add(state);
+
+        Operation op = cloudStoreHelper
+                .createPost(DatastoreServiceFactory.SELF_LINK)
+                .setBody(state)
+                .setCompletion((operation, throwable) -> {
+                  if (null != throwable) {
+                    Assert.fail("Failed to create a datastore document in cloud store.");
+                  }
+                });
+        ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      }
+
+      DatastoreService.State state = new DatastoreService.State();
+      state.id = "image-datastore-id-1";
+      state.name = "image-datastore-name-1";
+      state.isImageDatastore = true;
+      state.type = "EXT3";
+      state.documentSelfLink = "/" + state.id;
+      imageDatastores.add(state);
+
+      Operation op = cloudStoreHelper
+              .createPost(DatastoreServiceFactory.SELF_LINK)
+              .setBody(state)
+              .setCompletion((operation, throwable) -> {
+                if (null != throwable) {
+                  Assert.fail("Failed to create a datastore document in cloud store.");
+                }
+              });
+      ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+    }
+
+    private void setServerSet(ServiceHost host) {
+      StaticServerSet serverSet = new StaticServerSet(
+        new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      cloudStoreHelper.setServerSet(serverSet);
     }
 
     private List<ImageService.State> buildReferenceImages(ServiceHost host, int count, int tombstoned)
