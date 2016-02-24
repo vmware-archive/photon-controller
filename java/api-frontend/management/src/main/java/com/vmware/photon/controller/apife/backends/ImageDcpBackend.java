@@ -309,7 +309,7 @@ public class ImageDcpBackend implements ImageBackend {
     try {
       ImageService.State state = dcpClient.get(ImageServiceFactory.SELF_LINK + "/" + imageId)
           .getBody(ImageService.State.class);
-      return state.totalImageDatastore == state.replicatedImageDatastore;
+      return state.totalImageDatastore.equals(state.replicatedImageDatastore);
     } catch (DocumentNotFoundException e) {
       throw new ImageNotFoundException(ImageNotFoundException.Type.ID, imageId);
     }
