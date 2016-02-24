@@ -289,7 +289,7 @@ public class ImageDcpBackend implements ImageBackend {
           new ImageToImageDatastoreMappingService.State();
       state.imageDatastoreId = datastores.get(0).id;
       state.imageId = imageId;
-      state.documentSelfLink = imageId + "-" + datastores.get(0).id;
+      state.documentSelfLink = imageId + "_" + datastores.get(0).id;
 
       dcpClient.post(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, state);
       logger.info("ImageToImageDatastoreMappingServiceState created with imageId {}, ImageDatastore {}", imageId,

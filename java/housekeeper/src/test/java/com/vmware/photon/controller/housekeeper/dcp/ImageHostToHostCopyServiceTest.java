@@ -217,6 +217,8 @@ public class ImageHostToHostCopyServiceTest {
     @DataProvider(name = "targetStages")
     public Object[][] getTargetStages() {
       return new Object[][]{
+          {TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC},
           {TaskState.TaskStage.STARTED, ImageHostToHostCopyService.TaskState.SubStage.RETRIEVE_HOSTS},
           {TaskState.TaskStage.STARTED, ImageHostToHostCopyService.TaskState.SubStage.TRANSFER_IMAGE},
           {TaskState.TaskStage.FINISHED, null},
@@ -441,9 +443,17 @@ public class ImageHostToHostCopyServiceTest {
     public Object[][] getInvalidStageTransitions() throws Throwable {
       return new Object[][]{
           {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
-              ImageHostToHostCopyService.TaskState.SubStage.RETRIEVE_HOSTS,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC,
               ImageHostToHostCopyService.TaskState.TaskStage.FINISHED,
-              ImageHostToHostCopyService.TaskState.SubStage.RETRIEVE_HOSTS},
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC},
+          {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC,
+              null,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC},
+          {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC,
+              TaskState.TaskStage.CREATED,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC},
           {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
               ImageHostToHostCopyService.TaskState.SubStage.RETRIEVE_HOSTS,
               null,
@@ -544,6 +554,23 @@ public class ImageHostToHostCopyServiceTest {
     @DataProvider(name = "stageTransitions")
     public Object[][] getValidStageTransitions() throws Throwable {
       return new Object[][]{
+          {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC,
+              ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC},
+          {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC,
+              ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.RETRIEVE_HOSTS},
+          {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC,
+              ImageHostToHostCopyService.TaskState.TaskStage.FINISHED, null},
+          {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC,
+              ImageHostToHostCopyService.TaskState.TaskStage.FAILED, null},
+          {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
+              ImageHostToHostCopyService.TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC,
+              ImageHostToHostCopyService.TaskState.TaskStage.CANCELLED, null},
           {ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
               ImageHostToHostCopyService.TaskState.SubStage.RETRIEVE_HOSTS,
               ImageHostToHostCopyService.TaskState.TaskStage.STARTED,
@@ -1041,8 +1068,6 @@ public class ImageHostToHostCopyServiceTest {
       assertThat(response.image, is(copyTask.image));
       assertThat(response.sourceDatastore, is(copyTask.sourceDatastore));
       assertThat(response.destinationDatastore, is(copyTask.destinationDatastore));
-      assertThat(response.host, notNullValue());
-      assertThat(response.destinationHost, notNullValue());
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);

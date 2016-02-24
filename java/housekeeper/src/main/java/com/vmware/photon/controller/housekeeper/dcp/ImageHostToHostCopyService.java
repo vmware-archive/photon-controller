@@ -81,7 +81,7 @@ public class ImageHostToHostCopyService extends StatefulService {
     State s = new State();
     s.taskInfo = new TaskState();
     s.taskInfo.stage = TaskState.TaskStage.STARTED;
-    s.taskInfo.subStage = TaskState.SubStage.RETRIEVE_HOSTS;
+    s.taskInfo.subStage = TaskState.SubStage.CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC;
     return s;
   }
 
@@ -208,6 +208,7 @@ public class ImageHostToHostCopyService extends StatefulService {
       case STARTED:
         checkState(current.taskInfo.subStage != null, "subStage cannot be null");
         switch (current.taskInfo.subStage) {
+          case CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC:
           case RETRIEVE_HOSTS:
             break;
           case TRANSFER_IMAGE:
@@ -264,6 +265,9 @@ public class ImageHostToHostCopyService extends StatefulService {
   protected void handleStartedStage(final State current) {
     // Handle task sub-state.
     switch (current.taskInfo.subStage) {
+      case CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC:
+        checkImageToImageDatastoreMappingDocument(current);
+        break;
       case RETRIEVE_HOSTS:
         getHostsFromDataStores(current);
         break;
@@ -276,6 +280,31 @@ public class ImageHostToHostCopyService extends StatefulService {
       default:
         throw new IllegalStateException("Un-supported substage" + current.taskInfo.subStage.toString());
     }
+  }
+
+  /**
+   * Check if the ImageToImageDatastoreMappingService has already created for the destination image datastore, if so,
+   * go to FINISHED stage.
+   *
+   * @param current
+   */
+  private void checkImageToImageDatastoreMappingDocument(final State current) {
+    Operation getimageToImageDatastoreMappingService =
+        ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper().createGet
+            (ImageToImageDatastoreMappingServiceFactory.SELF_LINK + "/" + current.image
+                + "_" + current.destinationDatastore)
+            .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (operation.getStatusCode() != 404) {
+                    sendStageProgressPatch(current, com.vmware.xenon.common.TaskState.TaskStage.FINISHED, null);
+                  } else {
+                    sendStageProgressPatch(current, com.vmware.xenon.common.TaskState.TaskStage.STARTED,
+                        TaskState.SubStage.RETRIEVE_HOSTS);
+                  }
+                }
+            );
+    sendRequest(getimageToImageDatastoreMappingService);
   }
 
   /**
@@ -781,6 +810,7 @@ public class ImageHostToHostCopyService extends StatefulService {
      * Execution sub-stage.
      */
     public static enum SubStage {
+      CHECK_IMAGE_TO_IMAGE_DATASTORE_MAPPING_DOC,
       RETRIEVE_HOSTS,
       TRANSFER_IMAGE,
       UPDATE_IMAGE_REPLICATION_DOCUMENT

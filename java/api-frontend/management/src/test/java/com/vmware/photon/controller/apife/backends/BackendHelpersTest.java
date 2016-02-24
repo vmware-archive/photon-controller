@@ -133,7 +133,7 @@ public class BackendHelpersTest {
       ImageToImageDatastoreMappingService.State state = new ImageToImageDatastoreMappingService.State();
       state.imageId = imageId;
       state.imageDatastoreId = imageDatastoreId;
-      state.documentSelfLink = imageId + "-" + imageDatastoreId;
+      state.documentSelfLink = imageId + "_" + imageDatastoreId;
 
       dcpClient.post(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, state);
     }
