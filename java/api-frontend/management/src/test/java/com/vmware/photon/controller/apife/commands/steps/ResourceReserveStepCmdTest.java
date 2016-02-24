@@ -188,7 +188,6 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
-    when(hostClient.getAgentId()).thenReturn("bar");
     when(flavorBackend.getEntityById(vmFlavorEntity.getId())).thenReturn(vmFlavorEntity);
     when(flavorBackend.getEntityById(diskFlavorEntity.getId())).thenReturn(diskFlavorEntity);
   }

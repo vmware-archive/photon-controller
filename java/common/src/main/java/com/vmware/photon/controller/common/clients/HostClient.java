@@ -45,8 +45,6 @@ import com.vmware.photon.controller.common.thrift.ClientPool;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientPoolOptions;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
-import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.AttachISORequest;
 import com.vmware.photon.controller.host.gen.AttachISOResponse;
@@ -126,7 +124,6 @@ import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
 import org.slf4j.Logger;
@@ -134,12 +131,9 @@ import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -187,7 +181,6 @@ public class HostClient {
   private static final long RESERVE_TIMEOUT_MS = 60000;
   private final ClientProxyFactory<Host.AsyncClient> clientProxyFactory;
   private final ClientPoolFactory<Host.AsyncClient> clientPoolFactory;
-  private ZookeeperServerSetFactory serverSetFactory;
   /**
    * clientProxy acquires a new client from ClientPool for every thrift call.
    * Reference: {@link ClientProxyImpl#createMethodHandler() createMethodHandler}.
@@ -196,23 +189,15 @@ public class HostClient {
   private String hostIp;
   private int port;
   private ClientPool<Host.AsyncClient> clientPool;
-  private String agentId;
-  private ServerSet serverSet;
 
   @Inject
   public HostClient(ClientProxyFactory<Host.AsyncClient> clientProxyFactory,
-                    ClientPoolFactory<Host.AsyncClient> clientPoolFactory,
-                    ZookeeperServerSetFactory serverSetFactory) {
+                    ClientPoolFactory<Host.AsyncClient> clientPoolFactory) {
     this.clientProxyFactory = clientProxyFactory;
     this.clientPoolFactory = clientPoolFactory;
-    this.serverSetFactory = serverSetFactory;
   }
 
   public String getHostIp() {
-    if (this.getAgentId() != null) {
-      return getIpForAgentId();
-    }
-
     return hostIp;
   }
 
@@ -236,22 +221,6 @@ public class HostClient {
     this.close();
     this.hostIp = ip;
     this.port = port;
-    this.agentId = null;
-  }
-
-  public String getAgentId() {
-    return agentId;
-  }
-
-  public void setAgentId(String agentId) throws RpcException {
-    if (Objects.equals(this.agentId, agentId)) {
-      return;
-    }
-
-    this.close();
-    this.agentId = agentId;
-    this.hostIp = null;
-    this.port = 0;
   }
 
   /**
@@ -273,7 +242,7 @@ public class HostClient {
     VmDisksAttachRequest vmDisksAttachRequest = new VmDisksAttachRequest(vmId, diskIds);
     clientProxy.setTimeout(ATTACH_DISKS_TIMEOUT_MS);
     logger.info("attach_disks vm {}, disks {}, target {} request {}",
-        vmId, diskIds, getTarget(), vmDisksAttachRequest);
+        vmId, diskIds, getHostIp(), vmDisksAttachRequest);
 
     try {
       clientProxy.attach_disks(vmDisksAttachRequest, handler);
@@ -302,7 +271,7 @@ public class HostClient {
     attachDisks(vmId, diskIds, syncHandler);
     syncHandler.await();
     logger.info("attach_disks vm {}, disks {}, target {}",
-        vmId, diskIds, getTarget());
+        vmId, diskIds, getHostIp());
     return ResponseValidator.checkAttachDisksResponse(syncHandler.getResponse());
   }
 
@@ -324,7 +293,7 @@ public class HostClient {
     AttachISORequest attachISORequest = new AttachISORequest(vmId, isoPath);
     clientProxy.setTimeout(ATTACH_ISO_TIMEOUT_MS);
     logger.info("attach_iso vm {}, isoPath {}, target {} request {}",
-        vmId, isoPath, getTarget(), attachISORequest);
+        vmId, isoPath, getHostIp(), attachISORequest);
 
     try {
       clientProxy.attach_iso(attachISORequest, handler);
@@ -351,7 +320,7 @@ public class HostClient {
     attachISOtoVM(vmId, isoPath, syncHandler);
     syncHandler.await();
     logger.info("finished attach_iso vm {}, isoPath {}, target {}",
-        vmId, isoPath, getTarget());
+        vmId, isoPath, getHostIp());
     return ResponseValidator.checkAttachISOResponse(syncHandler.getResponse());
   }
 
@@ -375,7 +344,7 @@ public class HostClient {
     copyImageRequest.setSource(Util.constructImage(source, imageId));
     copyImageRequest.setDestination(Util.constructImage(destination, imageId));
     // N.B. No timeout was specified here. This may be a bug.
-    logger.info("copy_image target {}, request {}", getTarget(), copyImageRequest);
+    logger.info("copy_image target {}, request {}", getHostIp(), copyImageRequest);
 
     try {
       clientProxy.copy_image(copyImageRequest, handler);
@@ -429,7 +398,7 @@ public class HostClient {
     transferImageRequest.setSource_datastore_id(source);
     transferImageRequest.setSource_image_id(imageId);
     // N.B. No timeout was specified here. This may be a bug.
-    logger.info("transfer_image target {}, request {}", getTarget(), transferImageRequest);
+    logger.info("transfer_image target {}, request {}", getHostIp(), transferImageRequest);
 
     try {
       clientProxy.transfer_image(transferImageRequest, handler);
@@ -477,7 +446,7 @@ public class HostClient {
     CreateDisksRequest createDisksRequest = new CreateDisksRequest(reservation);
     clientProxy.setTimeout(CREATE_DISKS_TIMEOUT_MS);
     logger.info("create_disks reservation {}, target {}, request {}",
-        reservation, getTarget(), createDisksRequest);
+        reservation, getHostIp(), createDisksRequest);
 
     try {
       clientProxy.create_disks(createDisksRequest, handler);
@@ -502,7 +471,7 @@ public class HostClient {
     createDisks(reservation, syncHandler);
     syncHandler.await();
     logger.info("finished create_disks reservation {}, target {}",
-        reservation, getTarget());
+        reservation, getHostIp());
     return ResponseValidator.checkCreateDisksResponse(syncHandler.getResponse());
   }
 
@@ -530,7 +499,7 @@ public class HostClient {
     }
 
     clientProxy.setTimeout(CREATE_VM_TIMEOUT_MS);
-    logger.info("create_vm target {}, reservation {}, request {}", getTarget(), reservation, createVmRequest);
+    logger.info("create_vm target {}, reservation {}, request {}", getHostIp(), reservation, createVmRequest);
 
     try {
       clientProxy.create_vm(createVmRequest, handler);
@@ -558,7 +527,7 @@ public class HostClient {
     SyncHandler<CreateVmResponse, Host.AsyncClient.create_vm_call> syncHandler = new SyncHandler<>();
     createVm(reservation, networkConnectionSpec, environment, syncHandler);
     syncHandler.await();
-    logger.info("finished create_vm target {}, reservation {}", getTarget(), reservation);
+    logger.info("finished create_vm target {}, reservation {}", getHostIp(), reservation);
     return ResponseValidator.checkCreateVmResponse(syncHandler.getResponse());
   }
 
@@ -577,7 +546,7 @@ public class HostClient {
     ensureClient();
     DeleteDisksRequest deleteDisksRequest = new DeleteDisksRequest(diskIds);
     clientProxy.setTimeout(DELETE_DISK_TIMEOUT_MS);
-    logger.info("delete_disks diskIds {}, target {}, request {}", diskIds, getTarget(), deleteDisksRequest);
+    logger.info("delete_disks diskIds {}, target {}, request {}", diskIds, getHostIp(), deleteDisksRequest);
 
     try {
       clientProxy.delete_disks(deleteDisksRequest, handler);
@@ -602,7 +571,7 @@ public class HostClient {
     SyncHandler<DeleteDisksResponse, Host.AsyncClient.delete_disks_call> syncHandler = new SyncHandler<>();
     deleteDisks(diskIds, syncHandler);
     syncHandler.await();
-    logger.info("finished delete_disks diskIds {}, target {}", diskIds, getTarget());
+    logger.info("finished delete_disks diskIds {}, target {}", diskIds, getHostIp());
     return ResponseValidator.checkDeleteDisksResponse(syncHandler.getResponse());
   }
 
@@ -645,7 +614,7 @@ public class HostClient {
     createImageRequest.setDatastore(datastore);
     createImageRequest.setTmp_image_path(tmpImagePath);
     clientProxy.setTimeout(CREATE_IMAGE_TIMEOUT_MS);
-    logger.info("create_image target {}, request {}", getTarget(), createImageRequest);
+    logger.info("create_image target {}, request {}", getHostIp(), createImageRequest);
 
     try {
       clientProxy.create_image(createImageRequest, handler);
@@ -682,7 +651,7 @@ public class HostClient {
     DeleteImageRequest deleteImageRequest = new DeleteImageRequest(new Image(imageId, new Datastore(dataStore)));
     deleteImageRequest.setTombstone(setTombstone);
     clientProxy.setTimeout(DELETE_IMAGE_TIMEOUT_MS);
-    logger.info("delete_image target {}, request {}", getTarget(), deleteImageRequest);
+    logger.info("delete_image target {}, request {}", getHostIp(), deleteImageRequest);
 
     try {
       clientProxy.delete_image(deleteImageRequest, handler);
@@ -744,7 +713,7 @@ public class HostClient {
     }
 
     try {
-      logger.info("start_image_scan target {}, request {}", getTarget(), request);
+      logger.info("start_image_scan target {}, request {}", getHostIp(), request);
       clientProxy.setTimeout(START_IMAGE_SCAN_TIMEOUT_MS);
       clientProxy.start_image_scan(request, handler);
     } catch (TException e) {
@@ -768,7 +737,7 @@ public class HostClient {
     GetInactiveImagesRequest request = new GetInactiveImagesRequest(dataStore);
 
     try {
-      logger.info("get_inactive images target {}, request {}", getTarget(), request);
+      logger.info("get_inactive images target {}, request {}", getHostIp(), request);
       clientProxy.setTimeout(GET_INACTIVE_IMAGES_TIMEOUT_MS);
       clientProxy.get_inactive_images(request, handler);
     } catch (TException e) {
@@ -802,7 +771,7 @@ public class HostClient {
     }
 
     try {
-      logger.info("start_image_sweep target {}, request {}", getTarget(), request);
+      logger.info("start_image_sweep target {}, request {}", getHostIp(), request);
       clientProxy.setTimeout(START_IMAGE_SWEEP_TIMEOUT_MS);
       clientProxy.start_image_sweep(request, handler);
     } catch (TException e) {
@@ -826,7 +795,7 @@ public class HostClient {
     GetDeletedImagesRequest request = new GetDeletedImagesRequest(dataStore);
 
     try {
-      logger.info("get_deleted_images target {}, request {}", getTarget(), request);
+      logger.info("get_deleted_images target {}, request {}", getHostIp(), request);
       clientProxy.setTimeout(GET_DELETED_IMAGES_TIMEOUT_MS);
       clientProxy.get_deleted_images(request, handler);
     } catch (TException e) {
@@ -858,7 +827,7 @@ public class HostClient {
     CreateImageFromVmRequest createImageFromVmRequest = new CreateImageFromVmRequest(
         vmId, imageId, datastore, tmpImagePath);
     clientProxy.setTimeout(CREATE_IMAGE_TIMEOUT_MS);
-    logger.info("create_image_from_vm target {}, request {}", getTarget(), createImageFromVmRequest);
+    logger.info("create_image_from_vm target {}, request {}", getHostIp(), createImageFromVmRequest);
 
     try {
       clientProxy.create_image_from_vm(createImageFromVmRequest, handler);
@@ -926,7 +895,7 @@ public class HostClient {
     ensureClient();
     DeleteDirectoryRequest deleteDirectoryRequest = new DeleteDirectoryRequest(dataStore, directoryPath);
     clientProxy.setTimeout(DELETE_DIRECTORY_TIMEOUT_MS);
-    logger.info("delete_directory target {}, request {]", getTarget(), deleteDirectoryRequest);
+    logger.info("delete_directory target {}, request {]", getHostIp(), deleteDirectoryRequest);
 
     try {
       clientProxy.delete_directory(deleteDirectoryRequest, handler);
@@ -954,7 +923,7 @@ public class HostClient {
     DeleteVmRequest deleteVmRequest = new DeleteVmRequest(vmId);
     deleteVmRequest.setDisk_ids(diskIdsToDetach);
     clientProxy.setTimeout(DELETE_VM_TIMEOUT_MS);
-    logger.info("delete_vm {}, target {}, request {}", vmId, getTarget(), deleteVmRequest);
+    logger.info("delete_vm {}, target {}, request {}", vmId, getHostIp(), deleteVmRequest);
 
     try {
       clientProxy.delete_vm(deleteVmRequest, handler);
@@ -980,7 +949,7 @@ public class HostClient {
     SyncHandler<DeleteVmResponse, Host.AsyncClient.delete_vm_call> syncHandler = new SyncHandler<>();
     deleteVm(vmId, diskIdsToDetach, syncHandler);
     syncHandler.await();
-    logger.info("finished delete_vm {}, target {}", vmId, getTarget());
+    logger.info("finished delete_vm {}, target {}", vmId, getHostIp());
     return ResponseValidator.checkDeleteVmResponse(syncHandler.getResponse());
   }
 
@@ -1002,7 +971,7 @@ public class HostClient {
     VmDisksDetachRequest vmDisksDetachRequest = new VmDisksDetachRequest(vmId, diskIds);
     clientProxy.setTimeout(DETACH_DISKS_TIMEOUT_MS);
     logger.info("detach_disks vm {}, disks {}, target {}, request {}",
-        vmId, diskIds, getTarget(), vmDisksDetachRequest);
+        vmId, diskIds, getHostIp(), vmDisksDetachRequest);
 
     try {
       clientProxy.detach_disks(vmDisksDetachRequest, handler);
@@ -1030,7 +999,7 @@ public class HostClient {
     detachDisks(vmId, diskIds, syncHandler);
     syncHandler.await();
     logger.info("finished detach_disks vm {}, disks {}, target {}",
-        vmId, diskIds, getTarget());
+        vmId, diskIds, getHostIp());
     return ResponseValidator.checkDetachDisksResponse(syncHandler.getResponse());
   }
 
@@ -1053,7 +1022,7 @@ public class HostClient {
     DetachISORequest detachISORequest = new DetachISORequest(vmId);
     detachISORequest.setDelete_file(isDeleteFile);
     clientProxy.setTimeout(DETACH_ISO_TIMEOUT_MS);
-    logger.info("detach_iso vm {}, target {}, request {}", vmId, getTarget(), detachISORequest);
+    logger.info("detach_iso vm {}, target {}, request {}", vmId, getHostIp(), detachISORequest);
 
     try {
       clientProxy.detach_iso(detachISORequest, handler);
@@ -1080,7 +1049,7 @@ public class HostClient {
     SyncHandler<DetachISOResponse, Host.AsyncClient.detach_iso_call> syncHandler = new SyncHandler<>();
     detachISO(vmId, isDeleteFile, syncHandler);
     syncHandler.await();
-    logger.info("finished detach_iso vm {}, target {}", vmId, getTarget());
+    logger.info("finished detach_iso vm {}, target {}", vmId, getHostIp());
     return ResponseValidator.checkDetachISOResponse(syncHandler.getResponse());
   }
 
@@ -1101,7 +1070,7 @@ public class HostClient {
     locator.setDisk(new DiskLocator(diskId));
     FindRequest findRequest = new FindRequest(locator);
     clientProxy.setTimeout(FIND_DISK_TIMEOUT_MS);
-    logger.info("find disk {}, target {}, request {}", diskId, getTarget(), findRequest);
+    logger.info("find disk {}, target {}, request {}", diskId, getHostIp(), findRequest);
 
     try {
       clientProxy.find(findRequest, handler);
@@ -1127,7 +1096,7 @@ public class HostClient {
     SyncHandler<FindResponse, Host.AsyncClient.find_call> syncHandler = new SyncHandler<>();
     findDisk(diskId, syncHandler);
     syncHandler.await();
-    logger.info("finished find disk {}, target {}", diskId, getTarget());
+    logger.info("finished find disk {}, target {}", diskId, getHostIp());
     return ResponseValidator.checkFindDiskResponse(syncHandler.getResponse());
   }
 
@@ -1148,7 +1117,7 @@ public class HostClient {
     locator.setVm(new VmLocator(vmId));
     FindRequest findRequest = new FindRequest(locator);
     clientProxy.setTimeout(FIND_VM_TIMEOUT_MS);
-    logger.info("find vm {}, target {}, request {}", vmId, getTarget(), findRequest);
+    logger.info("find vm {}, target {}, request {}", vmId, getHostIp(), findRequest);
 
     try {
       clientProxy.find(findRequest, handler);
@@ -1173,7 +1142,7 @@ public class HostClient {
     SyncHandler<FindResponse, Host.AsyncClient.find_call> syncHandler = new SyncHandler<>();
     findVm(vmId, syncHandler);
     syncHandler.await();
-    logger.info("finished find vm {}, target {}, request {}", vmId, getTarget());
+    logger.info("finished find vm {}, target {}, request {}", vmId, getHostIp());
     return ResponseValidator.checkFindVmResponse(syncHandler.getResponse());
   }
 
@@ -1190,7 +1159,7 @@ public class HostClient {
     ensureClient();
     GetConfigRequest getConfigRequest = new GetConfigRequest();
     clientProxy.setTimeout(GET_HOST_CONFIG_TIMEOUT_MS);
-    logger.info("get_host_config target {}, request {}", getTarget(), getConfigRequest);
+    logger.info("get_host_config target {}, request {}", getHostIp(), getConfigRequest);
 
     try {
       clientProxy.get_host_config(getConfigRequest, handler);
@@ -1233,7 +1202,7 @@ public class HostClient {
     ensureClient();
     ImageInfoRequest imageInfoRequest = new ImageInfoRequest(imageId, dataStoreId);
     clientProxy.setTimeout(GET_IMAGE_INFO_TIMEOUT_MS);
-    logger.info("get_image_info target {}, request {}", getTarget(), imageInfoRequest);
+    logger.info("get_image_info target {}, request {}", getHostIp(), imageInfoRequest);
 
     try {
       clientProxy.get_image_info(imageInfoRequest, handler);
@@ -1277,7 +1246,7 @@ public class HostClient {
     ensureClient();
     GetImagesRequest getImagesRequest = new GetImagesRequest(dataStoreId);
     clientProxy.setTimeout(GET_IMAGES_TIMEOUT_MS);
-    logger.info("get_images target {}, request {}", getTarget(), getImagesRequest);
+    logger.info("get_images target {}, request {}", getHostIp(), getImagesRequest);
 
     try {
       clientProxy.get_images(getImagesRequest, handler);
@@ -1322,7 +1291,7 @@ public class HostClient {
     serviceTicketRequest.setDatastore_name(dataStore);
     clientProxy.setTimeout(GET_SERVICE_TICKET_TIMEOUT_MS);
     logger.info("get_service_ticket dataStore {}, target {}, request {}",
-        dataStore, getTarget(), serviceTicketRequest);
+        dataStore, getHostIp(), serviceTicketRequest);
 
     try {
       clientProxy.get_service_ticket(serviceTicketRequest, handler);
@@ -1347,7 +1316,7 @@ public class HostClient {
     SyncHandler<ServiceTicketResponse, Host.AsyncClient.get_service_ticket_call> syncHandler = new SyncHandler<>();
     getNfcServiceTicket(dataStore, syncHandler);
     syncHandler.await();
-    logger.info("finished get_service_ticket dataStore {}, target {}", dataStore, getTarget());
+    logger.info("finished get_service_ticket dataStore {}, target {}", dataStore, getHostIp());
     return ResponseValidator.checkGetNfcServiceTicketResponse(syncHandler.getResponse());
   }
 
@@ -1366,7 +1335,7 @@ public class HostClient {
     ensureClient();
     GetVmNetworkRequest getVmNetworkRequest = new GetVmNetworkRequest(vmId);
     clientProxy.setTimeout(GET_VM_NETWORK_TIMEOUT_MS);
-    logger.info("get_vm_networks vm {}, target {}, request {}", vmId, getTarget(), getVmNetworkRequest);
+    logger.info("get_vm_networks vm {}, target {}, request {}", vmId, getHostIp(), getVmNetworkRequest);
 
     try {
       clientProxy.get_vm_networks(getVmNetworkRequest, handler);
@@ -1382,7 +1351,7 @@ public class HostClient {
     ensureClient();
     MksTicketRequest mksTicketRequest = new MksTicketRequest(vmId);
     clientProxy.setTimeout(GET_VM_MKS_TICKET_TIMEOUT_MS);
-    logger.info("get_vm_mks_ticket vm {}, target {}, request {}", vmId, getTarget(), mksTicketRequest);
+    logger.info("get_vm_mks_ticket vm {}, target {}, request {}", vmId, getHostIp(), mksTicketRequest);
 
     try {
       clientProxy.get_mks_ticket(mksTicketRequest, handler);
@@ -1407,7 +1376,7 @@ public class HostClient {
     SyncHandler<GetVmNetworkResponse, Host.AsyncClient.get_vm_networks_call> syncHandler = new SyncHandler<>();
     getVmNetworks(vmId, syncHandler);
     syncHandler.await();
-    logger.info("finished get_vm_networks vm {}, target {}", vmId, getTarget());
+    logger.info("finished get_vm_networks vm {}, target {}", vmId, getHostIp());
     return ResponseValidator.checkGetVmNetworkResponse(syncHandler.getResponse());
   }
 
@@ -1417,7 +1386,7 @@ public class HostClient {
     SyncHandler<MksTicketResponse, Host.AsyncClient.get_mks_ticket_call> syncHandler = new SyncHandler<>();
     getVmMksTicket(vmId, syncHandler);
     syncHandler.await();
-    logger.info("finished get_mks_ticket vm {}, target {}", vmId, getTarget());
+    logger.info("finished get_mks_ticket vm {}, target {}", vmId, getHostIp());
     return ResponseValidator.checkGetMksTicketResponse(syncHandler.getResponse());
   }
 
@@ -1436,7 +1405,7 @@ public class HostClient {
     ensureClient();
     PlaceRequest placeRequest = new PlaceRequest(resource);
     clientProxy.setTimeout(PLACE_TIMEOUT_MS);
-    logger.debug("place resource {}, target {}, request {}", resource, getTarget(), placeRequest);
+    logger.debug("place resource {}, target {}, request {}", resource, getHostIp(), placeRequest);
 
     try {
       clientProxy.place(placeRequest, handler);
@@ -1461,7 +1430,7 @@ public class HostClient {
     SyncHandler<PlaceResponse, Host.AsyncClient.place_call> syncHandler = new SyncHandler<>();
     place(resource, syncHandler);
     syncHandler.await();
-    logger.debug("finished place resource {}, target {}", resource, getTarget());
+    logger.debug("finished place resource {}, target {}", resource, getHostIp());
     return ResponseValidator.checkPlaceResponse(syncHandler.getResponse());
   }
 
@@ -1481,7 +1450,7 @@ public class HostClient {
     ensureClient();
     PowerVmOpRequest powerVmOpRequest = new PowerVmOpRequest(vmId, op);
     clientProxy.setTimeout(POWER_VM_OP_TIMEOUT_MS);
-    logger.info("power_vm_op vm {}, target {}, request {}", vmId, getTarget(), powerVmOpRequest);
+    logger.info("power_vm_op vm {}, target {}, request {}", vmId, getHostIp(), powerVmOpRequest);
 
     try {
       clientProxy.power_vm_op(powerVmOpRequest, handler);
@@ -1507,7 +1476,7 @@ public class HostClient {
     SyncHandler<PowerVmOpResponse, Host.AsyncClient.power_vm_op_call> syncHandler = new SyncHandler<>();
     powerVmOp(vmId, op, syncHandler);
     syncHandler.await();
-    logger.info("finished power_vm_op vm {}, target {}", vmId, getTarget());
+    logger.info("finished power_vm_op vm {}, target {}", vmId, getHostIp());
     return ResponseValidator.checkPowerVmOpResponse(syncHandler.getResponse());
   }
 
@@ -1529,7 +1498,7 @@ public class HostClient {
     setAvailabilityZoneRequest.setAvailability_zone(availabilityZone);
 
     clientProxy.setTimeout(SET_AVAILABILITY_ZONE_TIMEOUT_MS);
-    logger.info("set availability zone target {}, request {}", getTarget(), setAvailabilityZoneRequest);
+    logger.info("set availability zone target {}, request {}", getHostIp(), setAvailabilityZoneRequest);
 
     try {
       clientProxy.set_availability_zone(setAvailabilityZoneRequest, handler);
@@ -1580,7 +1549,7 @@ public class HostClient {
 
     clientProxy.setTimeout(RESERVE_TIMEOUT_MS);
     logger.info("reserve resource {}, generation {}, target {}, request {}",
-        resource, generation, getTarget(), reserveRequest);
+        resource, generation, getHostIp(), reserveRequest);
 
     try {
       clientProxy.reserve(reserveRequest, handler);
@@ -1607,7 +1576,7 @@ public class HostClient {
     reserve(resource, generation, syncHandler);
     syncHandler.await();
     logger.info("finished reserve resource {}, generation {}, target {}",
-        resource, generation, getTarget());
+        resource, generation, getHostIp());
     return ResponseValidator.checkReserveResponse(syncHandler.getResponse());
   }
 
@@ -1622,7 +1591,7 @@ public class HostClient {
   public void setHostMode(HostMode hostMode, AsyncMethodCallback<Host.AsyncClient.set_host_mode_call> handler)
       throws RpcException {
     ensureClient();
-    logger.info("set_host_mode_call, target {}", getTarget());
+    logger.info("set_host_mode_call, target {}", getHostIp());
 
     try {
       SetHostModeRequest setHostModeRequest = new SetHostModeRequest(hostMode);
@@ -1639,15 +1608,6 @@ public class HostClient {
       clientPool.close();
       clientPool = null;
     }
-
-    if (serverSet != null) {
-      try {
-        serverSet.close();
-      } catch (IOException e) {
-        logger.warn("Exception closing server set", e);
-      }
-      serverSet = null;
-    }
   }
 
   @VisibleForTesting
@@ -1658,17 +1618,7 @@ public class HostClient {
 
     close();
 
-    if (this.getAgentId() != null) {
-      createClientProxyWithAgentId();
-      return;
-    }
-
     createClientProxyWithIpAndPort();
-  }
-
-  @VisibleForTesting
-  protected void setServerSetFactory(ZookeeperServerSetFactory serverSetFactory) {
-    this.serverSetFactory = serverSetFactory;
   }
 
   @VisibleForTesting
@@ -1679,43 +1629,6 @@ public class HostClient {
   @VisibleForTesting
   protected void setClientProxy(Host.AsyncClient clientProxy) {
     this.clientProxy = clientProxy;
-  }
-
-  /**
-   * Get the target of this HostClient.
-   *
-   * @return If agent id is available, then return agent id; otherwise, return the host ip
-   */
-  private String getTarget() {
-    if (StringUtils.isNotBlank(getAgentId())) {
-      return String.format("Agent id: %s, ip: %s", getAgentId(), getHostIp());
-    }
-
-    return String.format("Host: %s", getHostIp());
-  }
-
-  private String getIpForAgentId() {
-    checkNotNull(serverSet, "serverSet is not initialized in ensureClient");
-    Set<InetSocketAddress> servers = serverSet.getServers();
-    if (servers == null || servers.isEmpty()) {
-      logger.warn("There is no host assigned to this agent's serverSet.");
-      return null;
-    }
-
-    if (servers.size() > 1) {
-      throw new IllegalStateException(
-          String.format("There is more than one host assigned to this agent's serverSet: %s", servers));
-    }
-
-    return servers.iterator().next().getHostString();
-  }
-
-  private void createClientProxyWithAgentId() {
-    logger.debug("Creating host async client of agentId {}", this.getAgentId());
-    checkNotNull(serverSetFactory, "serverSetFactory should not be null to create serverSet");
-    serverSet = serverSetFactory.createHostServerSet(agentId);
-    clientPool = clientPoolFactory.create(serverSet, CLIENT_POOL_OPTIONS);
-    clientProxy = clientProxyFactory.create(clientPool).get();
   }
 
   private void createClientProxyWithIpAndPort() {
