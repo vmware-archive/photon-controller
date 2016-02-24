@@ -21,8 +21,6 @@ import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
-import com.vmware.photon.controller.common.zookeeper.ZkHostMonitor;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
 import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
@@ -111,9 +109,8 @@ public class HousekeeperModule extends AbstractModule {
       @Config.Port int port,
       @XenonConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
-      @ZkHostMonitor ZookeeperHostMonitor zkHostMonitor,
       ServiceConfigFactory serviceConfigFactory) throws Throwable {
-    return new HousekeeperXenonServiceHost(cloudStoreHelper, bind, port, storagePath, hostClientFactory, zkHostMonitor,
+    return new HousekeeperXenonServiceHost(cloudStoreHelper, bind, port, storagePath, hostClientFactory,
         serviceConfigFactory);
   }
 }

@@ -19,7 +19,6 @@ import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.ConfigTest;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
@@ -140,19 +139,6 @@ public class HousekeeperXenonServiceHostTest {
     }
 
     @Test
-    public void testGetZookeeperHostMonitor() {
-      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
-      assertThat(host.getZookeeperHostMonitor(), notNullValue());
-    }
-
-    @Test(expectedExceptions = NullPointerException.class)
-    public void testGetZookeeperHostMonitorNull() throws Throwable {
-      CloudStoreHelper cloudStoreHelper = injector.getInstance(CloudStoreHelper.class);
-      new HousekeeperXenonServiceHost(cloudStoreHelper, "localhost", 16001, storageDir.getPath(),
-          injector.getInstance(HostClientFactory.class), null, null);
-    }
-
-    @Test
     public void testGetServiceConfig() {
       HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(host.getServiceConfig(), notNullValue());
@@ -253,7 +239,6 @@ public class HousekeeperXenonServiceHostTest {
           injector.getInstance(CloudStoreHelper.class),
           "0.0.0.0", 16000, storageDir.getPath(),
           injector.getInstance(HostClientFactory.class),
-          injector.getInstance(ZookeeperHostMonitor.class),
           injector.getInstance(ServiceConfigFactory.class));
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
@@ -263,7 +248,6 @@ public class HousekeeperXenonServiceHostTest {
           injector.getInstance(CloudStoreHelper.class),
           "0.0.0.0", 16002, storageDir2.getPath(),
           injector.getInstance(HostClientFactory.class),
-          injector.getInstance(ZookeeperHostMonitor.class),
           injector.getInstance(ServiceConfigFactory.class));
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
