@@ -37,27 +37,43 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
     def _initialize_datastores(self):
         self.initialized = False
 
-        # Initialize datastores and image_datastores. The provision request
-        # can specify both datastore names and IDs.
-        datastores = set([self._to_thrift_datastore(ds) for ds in
-                          self._hypervisor.vim_client.get_all_datastores()])
-        if self._configured_datastores:
-            vm_datastores = set([ds for ds in datastores
-                                if ds.name in self._configured_datastores or
-                                ds.id in self._configured_datastores])
-        else:
-            vm_datastores = datastores
-        image_datastores = set([ds["name"] for ds in
-                               self._configured_image_datastores])
-        self._image_datastores = set([ds for ds in datastores
-                                      if ds.name in image_datastores or
-                                      ds.id in image_datastores])
-        self._datastores = vm_datastores | self._image_datastores
+        # host_datastores is the list of datastores reported by hostd
+        host_datastores = set(
+                [self._to_thrift_datastore(ds) for ds in
+                 self._hypervisor.vim_client.get_all_datastores()])
 
+        # vm_datastores is the intersection of _configured_datastores
+        # (aka ALLOWED_DATASTORES from deployer yml) and host_datastores
+        if self._configured_datastores:
+            vm_datastores = set([ds for ds in host_datastores
+                                 if ds.name in self._configured_datastores or
+                                 ds.id in self._configured_datastores])
+        else:
+            vm_datastores = host_datastores
+
+        # image_datastores is the intersection of _configured_image_datastores
+        # (aka IMAGE_DATASTORES from deployer yml) and host_datastores
+        image_ds_names = set([ds["name"] for ds in
+                              self._configured_image_datastores])
+        image_datastores = set([ds for ds in host_datastores
+                                if ds.name in image_ds_names or
+                                ds.id in image_ds_names])
+
+        # combined_datastores is the union of vm_datastores and
+        # image_datastores
+        combined_datastores = vm_datastores | image_datastores
+
+        # create directory structure on datastores, populate class members,
+        # filtering out unavailable/readonly datastores.
+        self._datastores = set()
+        self._image_datastores = set()
         self._datastore_id_to_name_map = {}
-        for ds in self._datastores:
+        for ds in combined_datastores:
             try:
                 datastore_mkdirs(self._hypervisor.vim_client, ds.name)
+                self._datastores.add(ds)
+                if ds in image_datastores:
+                    self._image_datastores.add(ds)
                 self._datastore_id_to_name_map[ds.id] = ds.name
             except:
                 self.logger.exception("Failed to initialize %s" % ds)
@@ -70,7 +86,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
                                 for ds in self._configured_image_datastores])
         if not vm_datastores and not image_ds_for_vms:
             self.logger.critical("Datastore(s) %s not found in %s, %s" % (
-                                 self._configured_datastores, datastores,
+                                 self._configured_datastores, host_datastores,
                                  self._configured_image_datastores))
             return
 
@@ -78,9 +94,17 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         if not self._image_datastores:
             self.logger.critical("Image datastore(s) %s not found in %s" % (
                                  self._configured_image_datastores,
-                                 datastores))
+                                 host_datastores))
             return
+
+        # mark initialize complete, and logging
         self.initialized = True
+        self.logger.info("EsxDatastoreManager._datastores: %s",
+                         self._datastores)
+        self.logger.info("EsxDatastoreManager._image_datastores: %s",
+                         self._image_datastores)
+        self.logger.info("EsxDatastoreManager._datastore_id_to_name_map: %s",
+                         self._datastore_id_to_name_map)
 
     @locked
     def get_datastore_ids(self):
