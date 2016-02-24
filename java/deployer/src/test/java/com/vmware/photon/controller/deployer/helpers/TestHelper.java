@@ -201,6 +201,7 @@ public class TestHelper {
     containerTemplateServiceState.isPrivileged = spec.getIsPrivileged();
     containerTemplateServiceState.volumesFrom = spec.getVolumesFrom();
     containerTemplateServiceState.containerImage = spec.getContainerImage();
+    containerTemplateServiceState.useHostNetwork = spec.getUseHostNetwork();
 
     containerTemplateServiceState.portBindings = new HashMap<>();
     if (null != spec.getPortBindings()) {
@@ -268,6 +269,7 @@ public class TestHelper {
     VmService.State startState = new VmService.State();
     startState.name = "NAME";
     startState.hostServiceLink = "HOST_SERVICE_LINK";
+    startState.ipAddress = "IP_ADDRESS";
     return startState;
   }
 
