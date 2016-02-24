@@ -16,16 +16,16 @@ module EsxCloud
     def self.populate()
       seeder = ManagementPlaneSeeder.new
       image_file = ENV["ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE"] || fail("ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE is not defined")
-      image_id = EsxCloud::Image.create(image_file, random_name("image-"), "EAGER").id
+      image_id = EsxCloud::Image.create(image_file, seeder.random_name("image-"), "EAGER").id
       2.times do
-        tenant = create_random_tenant
+        tenant = seeder.create_random_tenant
         2.times do
-          resource_ticket = tenant.create_resource_ticket :name => random_name("rt-"), :limits => create_small_limits
+          resource_ticket = tenant.create_resource_ticket :name => seeder.random_name("rt-"), :limits => seeder.create_small_limits
           2.times do
-            project = tenant.create_project name: random_name("project-"), resource_ticket_name: resource_ticket.name, limits: [create_limit("vm", 10.0, "COUNT"), create_limit("vm.memory", 50.0, "GB")]
+            project = tenant.create_project name: seeder.random_name("project-"), resource_ticket_name: resource_ticket.name, limits: [seeder.create_limit("vm", 10.0, "COUNT"), seeder.create_limit("vm.memory", 50.0, "GB")]
             # create vms
             3.times do
-              seeder.create_vm project, random_name("vm-"), image_id
+              seeder.create_vm project, seeder.random_name("vm-"), image_id
             end
           end
         end
@@ -64,6 +64,14 @@ module EsxCloud
       create_flavor "vm", cost
     end
 
+    def create_random_tenant
+      create_tenant(name: random_name("tenant-"))
+    end
+
+    def create_tenant(options = {})
+      Tenant.create(TenantCreateSpec.new(options[:name], options[:security_groups]))
+    end
+
     def create_ephemeral_disk_flavor(cost = 1.0)
       cost = [
           EsxCloud::QuotaLineItem.new("ephemeral-disk.cost", cost, "COUNT")
@@ -89,7 +97,16 @@ module EsxCloud
       EsxCloud::Flavor.create spec
     end
 
-    private
+    def create_small_limits
+      [
+          QuotaLineItem.new("vm.memory", 375.0, "GB"),
+          QuotaLineItem.new("vm", 1000.0, "COUNT")
+      ]
+    end
+
+    def create_limit(key, value, unit)
+      QuotaLineItem.new(key, value, unit)
+    end
 
     def random_name(prefix = "rn")
       prefix + SecureRandom.base64(12).tr("+/", "ab")

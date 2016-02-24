@@ -45,7 +45,6 @@ describe "migrate finalize", upgrade: true do
           "/esxcloud/cloudstore/hosts" => "/photon/cloudstore/hosts",
           "/esxcloud/cloudstore/entity-locks" => "/photon/cloudstore/entity-locks",
           "/esxcloud/cloudstore/attached-disks" => "/photon/cloudstore/attached-disks",
-          "/esxcloud/cloudstore/tombstones" => "/photon/cloudstore/tombstones",
           "/esxcloud/cloudstore/flavors" => "/photon/cloudstore/flavors",
           "/esxcloud/cloudstore/images" => "/photon/cloudstore/images",
           "/esxcloud/cloudstore/networks" => "/photon/cloudstore/networks",
@@ -59,7 +58,6 @@ describe "migrate finalize", upgrade: true do
           "/photon/cloudstore/hosts" => "/photon/cloudstore/hosts",
           "/photon/cloudstore/entity-locks" => "/photon/cloudstore/entity-locks",
           "/photon/cloudstore/attached-disks" => "/photon/cloudstore/attached-disks",
-          "/photon/cloudstore/tombstones" => "/photon/cloudstore/tombstones",
           "/photon/cloudstore/flavors" => "/photon/cloudstore/flavors",
           "/photon/cloudstore/images" => "/photon/cloudstore/images",
           "/photon/cloudstore/networks" => "/photon/cloudstore/networks",
@@ -118,6 +116,7 @@ describe "migrate finalize", upgrade: true do
 
         req = VersionRequest.new
         res = agent_client.get_version req
+        puts host.address
         expect(res.version).to eq "0.1.2"
       end
     end
@@ -133,14 +132,14 @@ describe "migrate finalize", upgrade: true do
         next if tenant.name == "mgmt-tenant"
         client.find_all_projects(tenant.id).items.each do |project|
           # create vm under each project
-          seeder.create_vm(project, random_name("vm-new-"), image.id)
+          seeder.create_vm(project, seeder.random_name("vm-new-"), image.id)
         end
         client.find_all_resource_tickets(tenant.id).items.each do |ticket|
           # create project under each resource ticket
-          tenant.create_project(name: random_name("project-new-"), resource_ticket_name: ticket.name, limits: [create_limit("vm", 1.0, "COUNT"), create_limit("vm.count", 1.0, "COUNT"), create_limit("vm.memory", 1.0, "GB")])
+          tenant.create_project(name: seeder.random_name("project-new-"), resource_ticket_name: ticket.name, limits: [create_limit("vm", 1.0, "COUNT"), create_limit("vm.count", 1.0, "COUNT"), create_limit("vm.memory", 1.0, "GB")])
         end
         # create resource ticket under each tenant
-        tenant.create_resource_ticket(:name => random_name("rt-"), :limits => create_small_limits)
+        tenant.create_resource_ticket(:name => seeder.random_name("rt-"), :limits => create_small_limits)
       end
     end
 
@@ -162,16 +161,6 @@ describe "migrate finalize", upgrade: true do
   describe "creating new entities" do
     it "should be able to create new tenant with entities" do
       EsxCloud::ManagementPlaneSeeder.populate
-    end
-  end
-
-  def find_cluster_project()
-    client.find_all_tenants.items.each do |tenant|
-      client.find_all_projects(tenant.id).items.each do |project|
-        if project.name.start_with?("cluster-project-")
-          return project
-        end
-      end
     end
   end
 
