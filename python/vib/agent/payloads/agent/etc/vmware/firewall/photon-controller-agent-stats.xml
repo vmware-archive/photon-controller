@@ -1,0 +1,13 @@
+<ConfigRoot>
+<service id='0000'>
+  <id>photon-controller-agent-stats</id>
+  <rule id = '0000'>
+    <direction>outbound</direction>
+    <protocol>tcp</protocol>
+    <porttype>dst</porttype>
+    <port>$STATS_STORE_PORT</port>
+  </rule>
+  <enabled>true</enabled>
+  <required>false</required>
+</service>
+</ConfigRoot>
