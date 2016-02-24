@@ -54,6 +54,7 @@ module EsxCloud::Cli
 
         deployment = client.deploy_deployment(deployment.id)
         puts green("deployment '#{deployment.id}' deployed")
+
       end
 
       usage "system destroy"
@@ -70,6 +71,16 @@ module EsxCloud::Cli
           puts green("deployment '#{d.id}' deployed")
         end
 
+        # delete all the hosts
+        deployments.each do |d|
+          hosts = client.get_deployment_hosts(d.id)
+          puts "Cleaning Host(s):" unless hosts.size == 0
+          hosts.each do |h|
+            puts "  removing host #{h.id}"
+            EsxCloud::Host.delete h.id
+          end
+        end
+
         # delete the deployment
         deployments = EsxCloud::Deployment.find_all.items
         puts "Cleaning Deployment(s):" unless deployments.size == 0
@@ -78,15 +89,7 @@ module EsxCloud::Cli
           EsxCloud::Deployment.delete d.id
         end
 
-        # delete all the hosts
-        hosts = EsxCloud::Host.find_all.items
-        puts "Cleaning Host(s):" unless hosts.size == 0
-        hosts.each do |h|
-          puts "  removing host #{h.id}"
-          EsxCloud::Host.delete h.id
-        end
-
-        if deployments.size == 0 && hosts.size == 0
+        if deployments.size == 0
           puts "No previous installation found"
         else
           puts
