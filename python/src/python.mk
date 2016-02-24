@@ -18,10 +18,10 @@ PACKAGE := $(NAME)-$(VERSION)
 PY_SRC := $(shell find . -type f -name \*.py)
 
 ifdef CHECK_PRUNE
-	CHECK_CMD := find . -name $(CHECK_PRUNE) -prune -a -type f -o -name '*.py' -exec $(BIN)/flake8 {} +;
+	CHECK_CMD := find . -name $(CHECK_PRUNE) -prune -a -type f -o -name '*.py' -exec $(BIN)/flake8 --max-line-length=120 {} +;
 	CHECK_COPYRIGHT := find . -name $(CHECK_PRUNE) -prune -a -type f -o -name '*.py' | xargs -n1 -L1 $(MISC_BIN)/check_copyright
 else
-	CHECK_CMD := find . -name '*.py' -exec $(BIN)/flake8 {} +;
+	CHECK_CMD := find . -name '*.py' -exec $(BIN)/flake8 --max-line-length=120 {} +;
 	CHECK_COPYRIGHT := find . -name '*.py' | xargs -n1 -L1 $(MISC_BIN)/check_copyright
 endif
 
