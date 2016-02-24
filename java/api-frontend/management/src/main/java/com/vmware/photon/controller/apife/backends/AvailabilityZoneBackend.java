@@ -15,11 +15,12 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.AvailabilityZone;
 import com.vmware.photon.controller.api.AvailabilityZoneCreateSpec;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 
-import java.util.List;
+import com.google.common.base.Optional;
 
 /**
  * Backend interface for availability zone related operations.
@@ -29,11 +30,13 @@ public interface AvailabilityZoneBackend {
 
   AvailabilityZone getApiRepresentation(String id) throws ExternalException;
 
-  List<AvailabilityZone> getListApiRepresentation() throws ExternalException;
+  ResourceList<AvailabilityZone> getListApiRepresentation(Optional<Integer> pageSize) throws ExternalException;
 
   AvailabilityZoneEntity getEntityById(String id) throws ExternalException;
 
-  List<AvailabilityZoneEntity> getAll() throws ExternalException;
+  ResourceList<AvailabilityZoneEntity> getAll(Optional<Integer> pageSize) throws ExternalException;
+
+  ResourceList<AvailabilityZone> getPage(String pageLink) throws ExternalException;
 
   TaskEntity prepareAvailabilityZoneDelete(String id) throws ExternalException;
 
