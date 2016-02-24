@@ -16,19 +16,14 @@ package com.vmware.photon.controller.apife.backends;
 import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.DiskCreateSpec;
 import com.vmware.photon.controller.api.DiskState;
-import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 
 import com.google.common.base.Optional;
-
-import java.util.List;
-
 
 /**
  * The Disk Backend Interface.
@@ -53,9 +48,6 @@ public interface DiskBackend {
   void updateState(BaseDiskEntity disk, DiskState state) throws DiskNotFoundException;
 
   void updateState(BaseDiskEntity disk, DiskState state, String agent, String datastore) throws DiskNotFoundException;
-
-  void createVmDiskOperationStep(TaskEntity task, VmEntity vm, List<String> diskIds,
-                                 Operation operation) throws ExternalException;
 
   BaseDiskEntity find(String kind, String id) throws DiskNotFoundException;
 

@@ -120,7 +120,7 @@ public class ResourceReserveStepCmd extends StepCommand {
   protected void execute() throws ApiFeException, InterruptedException, RpcException {
     List<BaseEntity> entityList = step.getTransientResourceEntities();
     for (BaseEntity entity : entityList) {
-      if (entity.getKind() != Vm.KIND && entity.getKind() != PersistentDisk.KIND) {
+      if (!entity.getKind().equals(Vm.KIND) && !entity.getKind().equals(PersistentDisk.KIND)) {
         continue;
       }
 
@@ -133,7 +133,7 @@ public class ResourceReserveStepCmd extends StepCommand {
     taskCommand.setResource(resource);
 
     String reservation;
-    if (infrastructureEntity.getKind() == Vm.KIND) {
+    if (infrastructureEntity.getKind().equals(Vm.KIND)) {
       String targetHostIp = ((VmEntity) infrastructureEntity).getHostAffinity();
       reservation = loadReservation(resource, targetHostIp, infrastructureEntity.getKind());
     } else {
@@ -300,8 +300,7 @@ public class ResourceReserveStepCmd extends StepCommand {
 
     for (String value : resourceConstraint.getValues()) {
       if (StringUtils.isBlank(value)) {
-        String errorMessage = String.format("Blank resource constraint value for " +
-            resourceConstraint.getType().toString());
+        String errorMessage = "Blank resource constraint value for " + resourceConstraint.getType().toString();
         logger.error(errorMessage);
 
         throw new InvalidLocalitySpecException(errorMessage);
@@ -368,7 +367,7 @@ public class ResourceReserveStepCmd extends StepCommand {
             logger.info("Adding Datastore_Tag resource constraints with value {}", resourceConstraint.getValues());
           } else {
             //This will go away once we support user defined datastore tagging
-            String errorMessage = String.format("Unknown resource constraint value " + key);
+            String errorMessage = "Unknown resource constraint value " + key;
             logger.error(errorMessage);
 
             throw new ResourceConstraintException(errorMessage);
@@ -397,7 +396,7 @@ public class ResourceReserveStepCmd extends StepCommand {
         if (targetHostIp == null) {
           ResourceConstraint resourceConstraint = null;
           List<ResourceConstraint> origResourceConstraints = null;
-          if (entityKind == Vm.KIND) {
+          if (entityKind.equals(Vm.KIND)) {
             // Add constraints caused by unfinished image seeding
             resourceConstraint = createImageSeedingResourceConstraints();
 
@@ -415,7 +414,7 @@ public class ResourceReserveStepCmd extends StepCommand {
           taskCommand.getHostClient().setIpAndPort(hostIp, port);
 
           // Remove constraints added for unfinished image seeding
-          if (entityKind == Vm.KIND && resourceConstraint != null) {
+          if (entityKind.equals(Vm.KIND) && resourceConstraint != null) {
             resource.getVm().setResource_constraints(origResourceConstraints);
           }
         } else {
@@ -531,7 +530,7 @@ public class ResourceReserveStepCmd extends StepCommand {
     List<ResourceConstraint> resourceConstraints = new ArrayList<>();
     if (vmEntity.getAffinities() != null && !vmEntity.getAffinities().isEmpty()) {
       for (LocalityEntity localityEntity : vmEntity.getAffinities()) {
-        if (localityEntity.getKind() == DATASTORE_KIND) {
+        if (localityEntity.getKind().equals(DATASTORE_KIND)) {
           ResourceConstraint resourceConstraint = new ResourceConstraint();
           resourceConstraint.setType(ResourceConstraintType.DATASTORE);
           resourceConstraint.setValues(ImmutableList.of(localityEntity.getResourceId()));

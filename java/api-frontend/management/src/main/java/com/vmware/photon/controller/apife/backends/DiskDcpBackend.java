@@ -42,7 +42,6 @@ import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidFlavorStateException;
 import com.vmware.photon.controller.apife.lib.QuotaCost;
@@ -196,12 +195,6 @@ public class DiskDcpBackend implements DiskBackend {
     disk.setAgent(agent);
     disk.setDatastore(datastore);
     updateState(disk, diskServiceState);
-  }
-
-  @Override
-  public void createVmDiskOperationStep(TaskEntity task, VmEntity vm, List<String> diskIds,
-                                        Operation operation) throws ExternalException {
-    throw new UnsupportedOperationException();
   }
 
   @Override
