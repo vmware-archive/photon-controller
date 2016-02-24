@@ -63,8 +63,8 @@ public class VmCreateStepCmd extends StepCommand {
 
   @Override
   protected void execute() throws ApiFeException, InterruptedException, RpcException {
-    createVm();
-    attachDisks();
+    VmEntity vm = createVm();
+    attachDisks(vm);
   }
 
   @Override
@@ -72,7 +72,7 @@ public class VmCreateStepCmd extends StepCommand {
   }
 
   @VisibleForTesting
-  protected void createVm() throws ApiFeException, InterruptedException, RpcException {
+  protected VmEntity createVm() throws ApiFeException, InterruptedException, RpcException {
     try {
       List<VmEntity> vmEntityList = step.getTransientResourceEntities(Vm.KIND);
       Preconditions.checkArgument(vmEntityList.size() == 1,
@@ -82,12 +82,14 @@ public class VmCreateStepCmd extends StepCommand {
       CreateVmResponse response = taskCommand.getHostClient().createVm(
           taskCommand.getReservation(), createNetworkConnectionSpec(vm), vm.getEnvironment());
 
-      vmBackend.updateState(vm, VmState.STOPPED, null,
+      vmBackend.updateState(vm, VmState.STOPPED,
+          taskCommand.lookupAgentId(taskCommand.getHostClient().getHostIp()),
           taskCommand.getHostClient().getHostIp(),
           response.getVm().getDatastore().getId(),
           response.getVm().getDatastore().getName());
 
-      logger.info("created VM: {}", vm.getId());
+      logger.info("created VM: {}", vm);
+      return vm;
     } catch (RpcException e) {
       logger.error("failed creating VM {}", vm.getId(), e);
       vmBackend.updateState(vm, VmState.ERROR);
@@ -96,15 +98,15 @@ public class VmCreateStepCmd extends StepCommand {
   }
 
   @VisibleForTesting
-  protected void attachDisks() throws ApiFeException {
+  protected void attachDisks(VmEntity vm) throws ApiFeException {
     if (!step.getTransientResourceEntities(PersistentDisk.KIND).isEmpty()) {
       throw new InternalException(String.format("There are persistent disks to be attached to VM %s", vm.getId()));
     }
 
     List<EphemeralDiskEntity> disks = step.getTransientResourceEntities(EphemeralDisk.KIND);
     for (EphemeralDiskEntity disk : disks) {
-      diskBackend.updateState(disk, DiskState.ATTACHED);
-      logger.info("attached Disk: {}", disk.getId());
+      diskBackend.updateState(disk, DiskState.ATTACHED, vm.getAgent(), vm.getDatastore());
+      logger.info("attached Disk: {}", disk);
     }
   }
 

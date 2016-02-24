@@ -110,7 +110,7 @@ public class DiskCreateStepCmd extends StepCommand {
         diskBackend.updateState(
             diskEntity,
             DiskState.DETACHED,
-            null,
+            taskCommand.lookupAgentId(taskCommand.getHostClient().getHostIp()),
             disk.getDatastore().getId());
         logger.info("created disk: {}", disk.getId());
       } catch (RpcException e) {
