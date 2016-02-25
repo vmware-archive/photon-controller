@@ -66,6 +66,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -120,6 +122,7 @@ public class ImageDatastoreSweeperServiceTest {
     switch (stage) {
       case STARTED:
         switch (subStage) {
+          case GET_HOST_INFO:
           case TRIGGER_SCAN:
             state.host = "1.1.1.1";
             // fall through
@@ -528,6 +531,7 @@ public class ImageDatastoreSweeperServiceTest {
 
       ImageDatastoreSweeperService.State startState = buildValidStartupState(initialStage, initialSubStage);
       host.startServiceSynchronously(service, startState);
+      doNothing().when(service).sendRequest(any());
 
       ImageDatastoreSweeperService.State patchState = buildMinimalPatch(targetStage, targetSubStage);
       Operation patchOp = Operation
