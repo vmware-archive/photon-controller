@@ -465,14 +465,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
                 return;
               }
 
-              if (null == current.parentLink ||
-                  null == current.referenceImagesCount) {
-                // no reference images - we can go straight to deleting inactive images
-                startImageDelete(current, response.getImage_descs(), new HashMap<>());
-                return;
-              }
-
-              // retrieve the list of images found on the shared image datastore
+              // retrieve the list of images found from cloud store
               fetchReferenceImages(current, response.getImage_descs());
 
             } catch (Exception e) {
@@ -554,7 +547,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
   }
 
   /**
-   * Retrieves the list of reference images on the image datastore.
+   * Retrieves the list of reference images from cloud store.
    *
    * @param current
    * @param inactiveImages
@@ -887,12 +880,6 @@ public class ImageDatastoreSweeperService extends StatefulService {
      */
     @Immutable
     public String parentLink;
-
-    /**
-     * Number of images that were found of the shared images datastore.
-     */
-    @Immutable
-    public Integer referenceImagesCount;
 
     /**
      * The timestamp indicating when the reference images were retrieved.
