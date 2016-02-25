@@ -15,8 +15,8 @@ export API_PORT_9000_TCP_PORT="{{{APIFE_PORT}}}"
 
 if [ -n "$ENABLE_AUTH" -a "$ENABLE_AUTH" == "true" ]
 then
-  export LOGINREDIRECTENDPOINT="{{{MGMT_UI_LOGIN_URL}}}"
-  export LOGOUTREDIRECTENDPOINT="{{{MGMT_UI_LOGOUT_URL}}}"
+  export LOGINREDIRECTENDPOINT=$MGMT_UI_LOGIN_URL
+  export LOGOUTREDIRECTENDPOINT=$MGMT_UI_LOGOUT_URL
 fi
 
 /bin/bash /etc/nginx/config.sh && nginx -g 'daemon off;'
