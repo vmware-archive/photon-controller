@@ -15,9 +15,7 @@ fi
 # Create temp work directory in current directory to support OS X docker container for vibauthor,
 # because directory vibautor container can mount to current directory and need access to
 # vib temp directory to create the vib.
-# TMPDIR is internally used by mktemp to create the directory inside $TMPDIR location.
-TMPDIR=`pwd`
-TMP_VIB_DIR=`mktemp -d -t create_vib.XXXXX`
+TMP_VIB_DIR=$(mktemp -d "$PWD/create_vib.XXXXX")
 trap "rm -rf $TMP_VIB_DIR" EXIT
 
 # Make sure we're in the right location
