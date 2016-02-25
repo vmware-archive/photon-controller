@@ -15,9 +15,7 @@ fi
 # Create temp work directory in current directory to support OS X docker container for vibauthor,
 # because directory vibautor container can mount to current directory and need access to
 # vib temp directory to create the vib.
-# TMPDIR is internally used by mktemp to create the directory inside $TMPDIR location.
-TMPDIR=`pwd`
-TMP_VIB_DIR=`mktemp -d -t create_vib.XXXXX`
+TMP_VIB_DIR=$(mktemp -d "$PWD/create_vib.XXXXX")
 trap "rm -rf $TMP_VIB_DIR" EXIT
 
 # Make sure we're in the right location
@@ -140,4 +138,4 @@ for esxver in 6.0.0 5.5.0; do
    ESX_VERSION=$esxver
    build_for_py_ver $esxver
 done
-vibauthor -C -t $DEST_VIB_LAYOUT -v $DIST_DIR/photon-controller-agent-$AGENT_VERSION-$ESX_VERSION.vib -f
+./vibauthor.sh -C -t $DEST_VIB_LAYOUT -v $DIST_DIR/photon-controller-agent-$AGENT_VERSION-$ESX_VERSION.vib -f

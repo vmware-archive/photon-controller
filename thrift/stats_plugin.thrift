@@ -17,4 +17,5 @@ namespace py gen.stats.plugin
 struct StatsPluginConfig {
   1: required string store_endpoint
   2: required i32 store_port
+  3: required bool enabled
 }
