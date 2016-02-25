@@ -523,6 +523,8 @@ Vagrant.configure("2") do |config|
       -v /esxcloud/java/distributions/configurations/configuration-zookeeper:/var/esxcloud/data/zookeeper \
       -v /esxcloud/java/distributions/configurations/configuration-zookeeper:/usr/lib/zookeeper/conf \
       --name devbox_zookeeper_container --entrypoint /bin/bash devbox/zookeeper /usr/lib/zookeeper/conf/run.sh
+    echo "Sleeping for ZK start"
+    sleep 100
   EOS
 
   #
@@ -642,6 +644,7 @@ Vagrant.configure("2") do |config|
       sleep $SLEEP_BETWEEN_RETRIES_SEC
       i=$[$i+1]
     done
+    docker logs devbox_zookeeper_container > /vagrant/log/docker_zookeeper.log
     exit $success
   EOS
 
