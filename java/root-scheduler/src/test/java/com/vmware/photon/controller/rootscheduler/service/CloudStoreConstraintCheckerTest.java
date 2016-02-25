@@ -177,8 +177,19 @@ public class CloudStoreConstraintCheckerTest {
     assertThat(selectedHosts.size(), equalTo(1));
 
     // Part 1b: Ensure that when we delete the host, we can no longer find it
+    // Note that in when we have multiple hosts and our quorum is less than
+    // the total number of hosts (which is the case in cloudStoreTestEnvironmentLarge),
+    // some hosts may still report hosts after the delete, for a short while. This may
+    // especially be true on a loaded build machine. Therefore we do this as a poll.
     deleteHosts(cloudStoreEnvironment, hosts);
-    selectedHosts = checker.getCandidates(null, 1);
+    for (int i = 0; i < 10; i++) {
+      selectedHosts = checker.getCandidates(null, 1);
+      if (selectedHosts.size() == 0) {
+        break;
+      }
+      logger.info("Host not deleted yet, will retry");
+      Thread.sleep(1000);
+    }
     assertThat(selectedHosts.size(), equalTo(0));
 
     // Part 2a: Ensure that we can find a host with the maximum scheduling constant (actually, 9999)
@@ -189,7 +200,14 @@ public class CloudStoreConstraintCheckerTest {
 
     // Part 2b: Ensure that when we delete the host, we can no longer find it
     deleteHosts(cloudStoreEnvironment, hosts);
-    selectedHosts = checker.getCandidates(null, 1);
+    for (int i = 0; i < 10; i++) {
+      selectedHosts = checker.getCandidates(null, 1);
+      if (selectedHosts.size() == 0) {
+        break;
+      }
+      logger.info("Host not deleted yet, will retry");
+      Thread.sleep(1000);
+    }
     assertThat(selectedHosts.size(), equalTo(0));
   }
 
