@@ -178,8 +178,7 @@ public class CloudStoreConstraintCheckerTest {
 
     // Part 1b: Ensure that when we delete the host, we can no longer find it
     deleteHosts(cloudStoreEnvironment, hosts);
-    selectedHosts = checker.getCandidates(null, 1);
-    assertThat(selectedHosts.size(), equalTo(0));
+    verifyNoHosts(checker);
 
     // Part 2a: Ensure that we can find a host with the maximum scheduling constant (actually, 9999)
     hosts = createSimpleHostWithSchedulingConstant(HostService.MAX_SCHEDULING_CONSTANT - 1);
@@ -189,7 +188,26 @@ public class CloudStoreConstraintCheckerTest {
 
     // Part 2b: Ensure that when we delete the host, we can no longer find it
     deleteHosts(cloudStoreEnvironment, hosts);
-    selectedHosts = checker.getCandidates(null, 1);
+    verifyNoHosts(checker);
+  }
+
+  /**
+   * Verify that there are no hosts available
+   *
+   * Note that in when we have multiple hosts and our quorum is less than the total number of hosts (which is the case
+   * in cloudStoreTestEnvironmentLarge), some hosts may still report hosts after the delete, for a short while. This may
+   * especially be true on a loaded build machine. Therefore we do this as a poll.
+   */
+  private void verifyNoHosts(CloudStoreConstraintChecker checker) throws Throwable {
+    Map<String, ServerAddress> selectedHosts = null;
+    for (int i = 0; i < 10000; i++) {
+      selectedHosts = checker.getCandidates(null, 1);
+      if (selectedHosts.size() == 0) {
+        break;
+      }
+      logger.info("Host not deleted yet, will retry");
+      Thread.sleep(1);
+    }
     assertThat(selectedHosts.size(), equalTo(0));
   }
 
