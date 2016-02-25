@@ -25,4 +25,28 @@ else
   echo "myid file does not exit"
 fi
 
+{{#PAUSE_APIFE_BACKGROUND}}
+if [[ ! -e pauseBackground ]]
+then
+  echo "Pausing apife background"
+
+  /usr/bin/zkServer.sh start-foreground $CONFIG &
+  ZK_PID=$!
+  echo ZK_PID
+  sleep 70
+  /usr/bin/zkCli.sh <<EOF
+    create /config
+    create /config/apife
+    create /config/apife/status PAUSED_BACKGROUND
+    quit
+EOF
+  echo "Creating Pause file"
+  mkdir pauseBackground
+  echo "Pause file created"
+  kill $ZK_PID
+  echo "Zookeeper stopped"
+fi
+{{/PAUSE_APIFE_BACKGROUND}}
+echo "Starting zookeeper"
+
 exec /usr/bin/zkServer.sh start-foreground $CONFIG
