@@ -48,7 +48,7 @@ public class DatastoreServiceFactoryTest {
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
         Service.ServiceOption.IDEMPOTENT_POST);
     assertThat(factory.getOptions(), is(expected));
-    assertThat(factory.getPeerNodeSelectorPath(), is(equalTo(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR)));
+    assertThat(factory.getPeerNodeSelectorPath(), is(equalTo(ServiceUriPaths.DEFAULT_NODE_SELECTOR)));
   }
 
   @Test

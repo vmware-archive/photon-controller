@@ -48,7 +48,7 @@ public class HostServiceFactoryTest {
 
     assertThat(hostServiceFactory.getOptions(), is(expected));
     assertThat(hostServiceFactory.getPeerNodeSelectorPath(),
-        is(equalTo(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR)));
+        is(equalTo(ServiceUriPaths.DEFAULT_NODE_SELECTOR)));
   }
 
   @Test
