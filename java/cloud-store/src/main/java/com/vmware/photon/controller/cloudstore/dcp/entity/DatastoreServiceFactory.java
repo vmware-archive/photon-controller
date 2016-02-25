@@ -27,8 +27,9 @@ public class DatastoreServiceFactory extends FactoryService {
 
   public DatastoreServiceFactory() {
     super(DatastoreService.State.class);
-    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
     super.toggleOption(ServiceOption.IDEMPOTENT_POST, true);
+    // Symmetric replication allows the flat scheduler to avoid expensive broadcast queries
+    super.setPeerNodeSelectorPath(ServiceUriPaths.NODE_SELECTOR_FOR_SYMMETRIC_REPLICATION);
   }
 
   @Override
