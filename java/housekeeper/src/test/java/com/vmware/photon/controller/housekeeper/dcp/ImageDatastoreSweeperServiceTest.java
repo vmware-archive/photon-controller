@@ -785,7 +785,6 @@ public class ImageDatastoreSweeperServiceTest {
           {"sweepRate", 10L},
           {"sweepTimeout", 10L},
           {"parentLink", "/new-link"},
-          {"referenceImagesCount", 10},
           {"imageCreateWatermarkTime", 10L},
           {"imageDeleteWatermarkTime", 10L},
           {"datastore", "new-datastore"}
@@ -924,7 +923,6 @@ public class ImageDatastoreSweeperServiceTest {
           buildReferenceImages(host, refImageParams[0], refImageParams[1]);
 
       // adjust request
-      request.referenceImagesCount = refImages.size();
       request.isImageDatastore = isImageDatastore;
 
       if (isImageDatastore) {

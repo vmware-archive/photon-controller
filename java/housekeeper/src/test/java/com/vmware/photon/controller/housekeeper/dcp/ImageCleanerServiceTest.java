@@ -1162,7 +1162,6 @@ public class ImageCleanerServiceTest {
         throws Throwable {
       ImageDatastoreSweeperService.State task = new ImageDatastoreSweeperService.State();
       task.parentLink = TestHost.SERVICE_URI;
-      task.referenceImagesCount = 5;
       task.imageCreateWatermarkTime = System.currentTimeMillis();
       task.imageDeleteWatermarkTime = System.currentTimeMillis();
       task.datastore = "data-store-id";
