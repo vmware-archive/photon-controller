@@ -1103,6 +1103,7 @@ class SyncVmCacheThread(threading.Thread):
         self.last_host_stat_updated = 0
 
     def run(self):
+        count = 0
         while True:
             if not self.active:
                 self._logger.info("Exit vmcache sync thread.")
@@ -1136,6 +1137,10 @@ class SyncVmCacheThread(threading.Thread):
                                              "disconnect")
                         client.disconnect()
                 self._wait_between_failures()
+
+            # temporary logging to help debug agent hang
+            self._logger.info("SyncVmCacheThread alive %d", count)
+            count += 1
 
     def stop(self):
         self._logger.info("Stop syncing vm cache thread")
