@@ -139,7 +139,7 @@ public class ClusterApi extends ApiBase {
     ClusterResizeOperation op = new ClusterResizeOperation();
     op.setNewSlaveCount(size);
 
-    createObjectAsync(clusterId, serializeObjectAsJson(op), responseCallback);
+    createObjectAsync(path, serializeObjectAsJson(op), responseCallback);
   }
 
   /**
