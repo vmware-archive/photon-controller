@@ -164,7 +164,7 @@ class TestUnitAgent(unittest.TestCase):
         req.address = addr
 
         stats_plugin_config = StatsPluginConfig(
-            store_endpoint="10.0.0.100", store_port=8081)
+            store_endpoint="10.0.0.100", store_port=8081, enabled=True)
         req.stats_plugin_config = stats_plugin_config
 
         req.host_id = "host1"
@@ -174,6 +174,7 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.availability_zone, equal_to("test1"))
         assert_that(self.agent.stats_store_endpoint, equal_to("10.0.0.100"))
         assert_that(self.agent.stats_store_port, equal_to(8081))
+        assert_that(self.agent.stats_store_enabled, equal_to(True))
         assert_that(self.agent.hostname, equal_to("localhost"))
         assert_that(self.agent.host_port, equal_to(2345))
         assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
