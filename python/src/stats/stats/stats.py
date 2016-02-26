@@ -12,6 +12,8 @@
 
 import logging
 
+import common
+from common.service_name import ServiceName
 from common.photon_thrift.decorators import error_handler
 from common.photon_thrift.decorators import log_request
 from gen.stats.plugin import StatsService
@@ -25,12 +27,31 @@ from stats_publisher import StatsPublisher
 class StatsHandler(StatsService.Iface):
 
     def __init__(self):
-        self._db = MemoryTimeSeriesDB()
+        self._db = None
+        self._collector = None
+        self._publisher = None
+
         self._logger = logging.getLogger(__name__)
+        self._agent_config = common.services.get(ServiceName.AGENT_CONFIG)
+
+        if self._agent_config.stats_store_endpoint is None:
+            self._logger.info("stats_store_endpoint is empty. Stats plugin will be silent")
+            return
+
+        self._db = MemoryTimeSeriesDB()
         self._collector = StatsCollector(self._db)
         self._collector.configure_collectors()
         self._publisher = StatsPublisher(self._db)
         self._publisher.configure_publishers()
+
+    def get_db(self):
+        return self._db
+
+    def get_collector(self):
+        return self._collector
+
+    def get_publisher(self):
+        return self._publisher
 
     def _error_response(self, code, error, response):
         self._logger.debug(error)
@@ -39,6 +60,21 @@ class StatsHandler(StatsService.Iface):
         return response
 
     def start(self):
+        if self._agent_config.stats_store_endpoint is None:
+            return
+
+        if self._collector is None:
+            self._logger.error("Stats collector is not initialized at init time. Stats plugin will be silent")
+            return
+
+        if self._publisher is None:
+            self._logger.error("Stats publisher is not initialized at init time. Stats plugin will be silent")
+            return
+
+        if self._db is None:
+            self._logger.error("Stats internal DB is not initialized at init time. Stats plugin will be silent")
+            return
+
         self._collector.start_collection()
         self._publisher.start_publishing()
 
