@@ -75,15 +75,15 @@ class PerfManagerCollector(Collector):
 
         self._initialized = False
 
-    @property
-    def vim_client(self):
+    @staticmethod
+    def vim_client():
         return common.services.get(ServiceName.VIM_CLIENT)
 
     def get_perf_manager(self):
-        return self.vim_client.perf_manager
+        return self.vim_client().perf_manager
 
     def get_host_system(self):
-        return self.vim_client.host_system
+        return self.vim_client().host_system
 
     def _update_selected_metrics(self, level):
         self._selected_metric_names = self._get_metrics_at_or_below_level(level)
@@ -173,8 +173,8 @@ class PerfManagerCollector(Collector):
 
         prefix_map = {}
         spec_list = []
-        for vm in self.vim_client.get_vms_in_cache():
-            vm_obj = self.vim_client.get_vm_obj_in_cache(vm.name)
+        for vm in self.vim_client().get_vms_in_cache():
+            vm_obj = self.vim_client().get_vm_obj_in_cache(vm.name)
             self._logger.info("Add vm query spec: vm:%s" % vm_obj)
             if vm.tenant_id is not None and vm.project_id is not None:
                 spec_list.append(

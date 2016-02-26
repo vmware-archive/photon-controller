@@ -51,8 +51,12 @@ class GraphitePublisher(Publisher):
         return message
 
     def publish(self, stats):
-        message = self._build_pickled_data_msg(stats)
-        sock = socket.socket()
-        sock.connect((self._carbon_host, self._carbon_port))
-        sock.sendall(message)
-        sock.close()
+        try:
+            message = self._build_pickled_data_msg(stats)
+            sock = socket.socket()
+            sock.connect((self._carbon_host, self._carbon_port))
+            sock.sendall(message)
+            sock.close()
+        except:
+            self._logger.error(
+                "could not connect with stats_store_endpoint: %s : %s" % (self._carbon_host, self._carbon_port))
