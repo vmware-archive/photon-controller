@@ -15,19 +15,31 @@ module EsxCloud
       # @param [Hash] payload
       # @return [Network]
       def create_network(payload)
-        @api_client.create_network(payload)
+        portgroups = payload[:portGroups]
+        description = payload[:description]
+        cmd = "network create -n '#{payload[:name]}' -p '#{portgroups.join(", ")}'"
+
+        cmd += " -d '#{description}'" if description
+
+        network_id = run_cli(cmd)
+
+        find_network_by_id(network_id)
       end
 
       # @param [String] id
       # @return [Boolean]
       def delete_network(id)
-        @api_client.delete_network(id)
+        run_cli("network delete '#{id}'")
+
+        true
       end
 
       # @param [String] id
       # @return [Network]
       def find_network_by_id(id)
-        @api_client.find_network_by_id(id)
+        result = run_cli("network show #{id}")
+
+        get_network_from_response(result)
       end
 
       # @param [String] name
@@ -38,7 +50,8 @@ module EsxCloud
 
       # @return [NetworkList]
       def find_all_networks
-        @api_client.find_all_networks
+        result = run_cli("network list")
+        get_network_list_from_response(result)
       end
 
       # @param [String] id
@@ -48,6 +61,36 @@ module EsxCloud
         @api_client.set_portgroups(id, portgroups)
       end
 
+      private
+
+      def get_network_from_response(result)
+        result.slice! "\n"
+        values = result.split("\t")
+        network_hash = { "id" =>values[0],
+                         "name" => values[1],
+                         "state" => values[2],
+                         "portGroups" =>stringToArray(values[3]),
+                         "description" => values[4]
+                       }
+        Network.create_from_hash(network_hash)
+      end
+
+      def get_network_list_from_response(result)
+        networks = result.split("\n").drop(1).map do |network_info|
+          find_network_by_id(network_info.split("\t")[0])
+        end
+        NetworkList.new(networks)
+      end
+
+      # @param [String] result
+      # @return [Array]
+      def stringToArray(result)
+        values = Array.new
+        if result.to_s != ''
+          values = result.split(',')
+        end
+        values
+      end
     end
   end
 end
