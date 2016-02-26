@@ -85,6 +85,8 @@ public class NetworksResource {
       throws ExternalException {
     return generateResourceListResponse(
         Response.Status.OK,
-        networkFeClient.find(name));
+        networkFeClient.find(name),
+        (ContainerRequest) request,
+        NetworkResourceRoutes.NETWORK_PATH);
   }
 }

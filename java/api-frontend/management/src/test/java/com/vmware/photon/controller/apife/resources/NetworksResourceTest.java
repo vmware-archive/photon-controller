@@ -39,6 +39,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
+import java.util.UUID;
 
 /**
  * Tests {@link NetworksResource}.
@@ -103,12 +104,19 @@ public class NetworksResourceTest extends ResourceTest {
   @Test
   public void testGetAllNetworks() throws Exception {
     when(networkFeClient.find(Optional.<String>absent()))
-        .thenReturn(new ResourceList<>(ImmutableList.of(createNetwork("n1"), createNetwork("n2"))));
+        .thenReturn(new ResourceList<Network>(ImmutableList.of(createNetwork("n1"), createNetwork("n2"))));
 
     ResourceList<Network> networks = getNetworks(Optional.<String>absent());
     assertThat(networks.getItems().size(), is(2));
     assertThat(networks.getItems().get(0).getName(), is("n1"));
     assertThat(networks.getItems().get(1).getName(), is("n2"));
+
+    for (int i = 0; i < networks.getItems().size(); i++) {
+      Network network = networks.getItems().get(i);
+      assertThat(new URI(network.getSelfLink()).isAbsolute(), is(true));
+      assertThat(network.getSelfLink().endsWith(UriBuilder.fromPath(NetworkResourceRoutes.NETWORK_PATH)
+          .build(network.getId()).toString()), is(true));
+    }
   }
 
   @Test
@@ -140,6 +148,7 @@ public class NetworksResourceTest extends ResourceTest {
 
   private Network createNetwork(String name) {
     Network network = new Network();
+    network.setId(UUID.randomUUID().toString());
     network.setName(name);
     network.setPortGroups(ImmutableList.of("PG1"));
     return network;
