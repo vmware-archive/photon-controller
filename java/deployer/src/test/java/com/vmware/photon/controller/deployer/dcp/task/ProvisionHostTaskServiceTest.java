@@ -61,6 +61,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.doReturn;
@@ -1079,6 +1080,7 @@ public class ProvisionHostTaskServiceTest {
     private final File scriptDirectory = new File("/tmp/deployAgent/scripts");
     private final File scriptLogDirectory = new File("/tmp/deployAgent/logs");
     private final File storageDirectory = new File("/tmp/deployAgent");
+    private final int datastoreCount = 10;
 
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
     private List<Datastore> datastoreList;
@@ -1096,17 +1098,11 @@ public class ProvisionHostTaskServiceTest {
       FileUtils.deleteDirectory(storageDirectory);
 
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
-      datastoreList = buildDatastoreList(10);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-
-      imageDatastoreIds = datastoreList.stream()
-          .limit(3)
-          .map((datastore) -> datastore.getId())
-          .collect(Collectors.toSet());
 
       testEnvironment = new TestEnvironment.Builder()
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
@@ -1124,6 +1120,11 @@ public class ProvisionHostTaskServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
+      datastoreList = buildDatastoreList(datastoreCount);
+      imageDatastoreIds = datastoreList.stream()
+          .limit(3)
+          .map((datastore) -> datastore.getId())
+          .collect(Collectors.toSet());
       assertTrue(scriptDirectory.mkdirs());
       assertTrue(scriptLogDirectory.mkdirs());
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
@@ -1157,8 +1158,15 @@ public class ProvisionHostTaskServiceTest {
       FileUtils.deleteDirectory(storageDirectory);
     }
 
-    @Test
-    public void testEndToEndSuccess() throws Throwable {
+    @DataProvider(name = "PreExistingDatastoreCount")
+    public Object[][] getPreExistingDatastoreCount() {
+      return new Object[][]{
+          {0}, {1}, {datastoreCount}
+      };
+    }
+
+    @Test(dataProvider = "PreExistingDatastoreCount")
+    public void testEndToEndSuccess(int preExistingDatastoresCount) throws Throwable {
 
       MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.SCRIPT_NAME, true);
 
@@ -1169,6 +1177,8 @@ public class ProvisionHostTaskServiceTest {
       hostConfig.setMemory_mb(8192);
       hostConfig.setEsx_version("6.0");
 
+      // This is to make sure datastore update succeeds even if there is an already existing datastore document
+      createDatastoreDocuments(datastoreList, preExistingDatastoresCount);
 
       AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .agentStatusCode(AgentStatusCode.OK)
@@ -1219,6 +1229,20 @@ public class ProvisionHostTaskServiceTest {
       assertThat(hostState.esxVersion, is("6.0"));
       assertThat(hostState.cpuCount, is(4));
       assertThat(hostState.memoryMb, is(8192));
+    }
+
+    private void createDatastoreDocuments(List<Datastore> datastoreList, int count) throws Throwable {
+      for (int i = 0; i < count; i++) {
+        Datastore datastore = datastoreList.get(i);
+        DatastoreService.State datastoreState = new DatastoreService.State();
+        datastoreState.documentSelfLink = datastore.getId();
+        datastoreState.id = datastore.getId();
+        datastoreState.name = datastore.getName();
+        datastoreState.type = datastore.getType().name();
+        datastoreState.tags = datastore.getTags();
+        Operation result = cloudStoreEnvironment.sendPostAndWait(DatastoreServiceFactory.SELF_LINK, datastoreState);
+        assertThat(result.getStatusCode(), equalTo(200));
+      }
     }
   }
 
