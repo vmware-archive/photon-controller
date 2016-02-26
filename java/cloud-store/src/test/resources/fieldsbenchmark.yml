@@ -106,6 +106,3 @@ NetworkService:
   description: java.lang.String
   state: com.vmware.esxcloud.api.NetworkState
   portGroups: java.util.List
-EntityLockService:
-  entityId: java.lang.String
-  taskId: java.lang.String
