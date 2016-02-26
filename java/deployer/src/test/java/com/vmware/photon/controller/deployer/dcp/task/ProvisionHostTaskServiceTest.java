@@ -61,6 +61,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.doReturn;
@@ -1169,6 +1170,8 @@ public class ProvisionHostTaskServiceTest {
       hostConfig.setMemory_mb(8192);
       hostConfig.setEsx_version("6.0");
 
+      // This is to make sure datstore update succeeds even if there is an already existing datastore document
+      createOneDatastoreDocument(datastoreList);
 
       AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .agentStatusCode(AgentStatusCode.OK)
@@ -1219,6 +1222,18 @@ public class ProvisionHostTaskServiceTest {
       assertThat(hostState.esxVersion, is("6.0"));
       assertThat(hostState.cpuCount, is(4));
       assertThat(hostState.memoryMb, is(8192));
+    }
+
+    private void createOneDatastoreDocument(List<Datastore> datastoreList) throws Throwable {
+      Datastore datastore = datastoreList.get(0);
+      DatastoreService.State datastoreState = new DatastoreService.State();
+      datastoreState.documentSelfLink = datastore.getId();
+      datastoreState.id = datastore.getId();
+      datastoreState.name = datastore.getName();
+      datastoreState.type = datastore.getType().name();
+      datastoreState.tags = datastore.getTags();
+      Operation result = cloudStoreEnvironment.sendPostAndWait(DatastoreServiceFactory.SELF_LINK, datastoreState);
+      assertThat(result.getStatusCode(), equalTo(200));
     }
   }
 

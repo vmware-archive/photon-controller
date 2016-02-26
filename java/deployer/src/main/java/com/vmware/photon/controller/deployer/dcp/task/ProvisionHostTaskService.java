@@ -651,12 +651,6 @@ public class ProvisionHostTaskService extends StatefulService {
                 .createPost(DatastoreServiceFactory.SELF_LINK)
                 .setBody(datastoreState)))
         .setCompletion((ops, exs) -> {
-          for (Map.Entry<Long, Operation> entry : ops.entrySet()) {
-            if (entry.getValue().getStatusCode() == Operation.STATUS_CODE_CONFLICT) {
-              exs.remove(entry.getKey());
-            }
-          }
-
           if (exs != null && !exs.isEmpty()) {
             failTask(exs.values());
             return;
