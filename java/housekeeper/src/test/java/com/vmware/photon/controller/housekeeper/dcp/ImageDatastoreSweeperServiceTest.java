@@ -269,7 +269,7 @@ public class ImageDatastoreSweeperServiceTest {
           is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
 
-      assertThat(savedState.hostPollInterval, is(ImageDatastoreSweeperService.DEFAULT_HOST_POLL_INTERVAL));
+      assertThat(savedState.hostPollIntervalMilliSeconds, is(ImageDatastoreSweeperService.DEFAULT_HOST_POLL_INTERVAL));
     }
 
     /**
@@ -466,8 +466,8 @@ public class ImageDatastoreSweeperServiceTest {
           {"sweepTimeout", 0L},
           {"sweepTimeout", -10L},
 
-          {"hostPollInterval", 0},
-          {"hostPollInterval", -10},
+          {"hostPollIntervalMilliSeconds", 0},
+          {"hostPollIntervalMilliSeconds", -10},
 
           {"imageCreateWatermarkTime", 0L},
           {"imageCreateWatermarkTime", -10L},
@@ -800,13 +800,13 @@ public class ImageDatastoreSweeperServiceTest {
      */
     @Test(dataProvider = "InvalidHostPollIntervalUpdate",
         expectedExceptions = XenonRuntimeException.class,
-        expectedExceptionsMessageRegExp = "hostPollInterval must be greater than zero")
+        expectedExceptionsMessageRegExp = "hostPollIntervalMilliSeconds must be greater than zero")
     public void testInvalidHostPollIntervalUpdate(Integer value) throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState());
 
       ImageDatastoreSweeperService.State patch = buildMinimalPatch(
           TaskState.TaskStage.STARTED, ImageDatastoreSweeperService.TaskState.SubStage.GET_HOST_INFO);
-      patch.hostPollInterval = value;
+      patch.hostPollIntervalMilliSeconds = value;
 
       Operation op = Operation
           .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
@@ -869,7 +869,7 @@ public class ImageDatastoreSweeperServiceTest {
       request = buildValidStartupState();
       request.isSelfProgressionDisabled = false;
       request.parentLink = PARENT_LINK;
-      request.hostPollInterval = 1;
+      request.hostPollIntervalMilliSeconds = 1;
     }
 
     @AfterMethod
