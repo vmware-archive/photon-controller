@@ -119,6 +119,7 @@ def load_plugins():
     for entries in iter_entry_points(group="photon.controller.plugin"):
         plugins.append(entries.load())
 
+    logger.info("Plugins found: %s " % plugins)
     # Init all plugins
     for plugin in plugins:
         if plugin.init:

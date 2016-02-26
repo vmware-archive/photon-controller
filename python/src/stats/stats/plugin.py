@@ -12,8 +12,8 @@
 
 import common.plugin
 
-# from gen.stats.plugin import StatsService
-# from .stats import StatsHandler
+from gen.stats.plugin import StatsService
+from .stats import StatsHandler
 
 
 class StatsPlugin(common.plugin.Plugin):
@@ -21,21 +21,17 @@ class StatsPlugin(common.plugin.Plugin):
         super(StatsPlugin, self).__init__("Stats")
 
     def init(self):
-        # TODO: Register thrift service after stats enabled flag is working.
-        # self._handler = StatsHandler()
-        # service = common.plugin.ThriftService(
-        # name="StatsService",
-        #     service=StatsService,
-        #     handler=self._handler,
-        #     num_threads=2,
-        # )
-        #
-        # self.add_thrift_service(service)
-        pass
+        self._handler = StatsHandler()
+        service = common.plugin.ThriftService(
+            name="StatsService",
+            service=StatsService,
+            handler=self._handler,
+            num_threads=2,
+        )
+
+        self.add_thrift_service(service)
 
     def start(self):
-        # TODO: Start the plugin after stats enabled flag is working.
-        # self._handler.start()
-        pass
+        self._handler.start()
 
 plugin = StatsPlugin()
