@@ -44,7 +44,11 @@ describe "network", management: true do
           expect(e.errors.size).to eq 1
           expect(e.errors.first.code).to eq "InvalidEntity"
         rescue EsxCloud::CliError => e
-          expect(e.output).to include("InvalidEntity")
+          if ENV["DRIVER"] == "gocli"
+            expect(e.output).to include("Please provide network name")
+          else
+            expect(e.output).to include("InvalidEntity")
+          end
         end
       end
     end
@@ -80,7 +84,11 @@ describe "network", management: true do
           expect(e.errors.size).to eq 1
           expect(e.errors.first.message).to eq error_msg
         rescue EsxCloud::CliError => e
-          expect(e.output).to include(error_msg)
+          if ENV["DRIVER"] == "gocli"
+            expect(e.output).to include("Please provide portgroups")
+          else
+            expect(e.output).to include(error_msg)
+          end
         end
       end
     end
