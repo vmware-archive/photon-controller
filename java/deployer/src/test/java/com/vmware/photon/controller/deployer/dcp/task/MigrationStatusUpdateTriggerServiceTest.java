@@ -22,7 +22,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.DeployerContextTest;
-import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerService.State;
 import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -42,6 +41,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -81,7 +81,8 @@ public class MigrationStatusUpdateTriggerServiceTest {
           Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.OWNER_SELECTION,
           Service.ServiceOption.PERSISTENCE,
-          Service.ServiceOption.REPLICATION);
+          Service.ServiceOption.REPLICATION,
+          Service.ServiceOption.PERIODIC_MAINTENANCE);
 
       assertThat(service.getOptions(), is(expected));
     }
@@ -186,7 +187,8 @@ public class MigrationStatusUpdateTriggerServiceTest {
           .sendPostAndWait(MigrationStatusUpdateTriggerFactoryService.SELF_LINK, startState);
       State state = postResult.getBody(MigrationStatusUpdateTriggerService.State.class);
 
-      testEnvironment.getServiceState(state.documentSelfLink, MigrationStatusUpdateTriggerService.State.class);
+      testEnvironment.sendPatchAndWait(state.documentSelfLink, new MigrationStatusUpdateTriggerService.State());
+      Thread.sleep(1000);
 
       DeploymentService.State deploymentState = cloudStoreMachine
           .getServiceState(state.deploymentServiceLink, DeploymentService.State.class);
@@ -209,7 +211,8 @@ public class MigrationStatusUpdateTriggerServiceTest {
           .sendPostAndWait(MigrationStatusUpdateTriggerFactoryService.SELF_LINK, startState);
       State state = postResult.getBody(MigrationStatusUpdateTriggerService.State.class);
 
-      testEnvironment.getServiceState(state.documentSelfLink, MigrationStatusUpdateTriggerService.State.class);
+      testEnvironment.sendPatchAndWait(state.documentSelfLink, new MigrationStatusUpdateTriggerService.State());
+      Thread.sleep(1000);
 
       DeploymentService.State deploymentState = cloudStoreMachine
           .getServiceState(state.deploymentServiceLink, DeploymentService.State.class);
@@ -217,18 +220,6 @@ public class MigrationStatusUpdateTriggerServiceTest {
       assertThat(deploymentState.dataMigrationProgress.values().stream().mapToInt(value -> value).sum(), is(0));
       assertThat(deploymentState.vibsUploaded, is(0L));
       assertThat(deploymentState.vibsUploading, is(1L));
-    }
-
-    @Test(expectedExceptions = XenonRuntimeException.class)
-    public void failsWhenDeploymentDocumentNotFound() throws Throwable {
-      startTestEnvironment();
-      startState.deploymentServiceLink = "/fakeurl";
-
-      Operation postResult = testEnvironment
-          .sendPostAndWait(MigrationStatusUpdateTriggerFactoryService.SELF_LINK, startState);
-      State state = postResult.getBody(MigrationStatusUpdateTriggerService.State.class);
-
-      testEnvironment.getServiceState(state.documentSelfLink, MigrationStatusUpdateTriggerService.State.class);
     }
 
     private void startTestEnvironment() {
@@ -269,7 +260,7 @@ public class MigrationStatusUpdateTriggerServiceTest {
       startState.destinationIp = "127.0.0.1";
       startState.sourceServers = new HashSet<>();
       startState.sourceServers.add(new Pair<>("127.0.0.1", 1234));
-      startState.factoryLink = ContainerTemplateFactoryService.SELF_LINK;
+      startState.factoryLink = deployerContext.getFactoryLinkMapEntries().iterator().next().getValue();
       startState.sourceFactoryLink = deployerContext.getFactoryLinkMapEntries().iterator().next().getKey();
       return startState;
     }

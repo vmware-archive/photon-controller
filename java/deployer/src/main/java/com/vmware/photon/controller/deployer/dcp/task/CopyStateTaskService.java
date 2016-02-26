@@ -50,18 +50,23 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.NumericRange;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
-import org.apache.http.concurrent.FutureCallback;
+import com.google.common.base.Objects;
 
 import javax.annotation.Nullable;
 
 import java.net.URI;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 
 /**
  * This class moves DCP state between two DCP clusters.
@@ -212,7 +217,8 @@ public class CopyStateTaskService extends StatefulService {
       return;
     }
     try {
-      retrieveDocuments(currentState);
+      LinkedBlockingQueue<Pair<String, Integer>> queue = new LinkedBlockingQueue<>(currentState.sourceServers);
+      retrieveDocuments(currentState, queue, currentState.queryDocumentsChangedSinceEpoc);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(patchOperation)) {
@@ -221,139 +227,140 @@ public class CopyStateTaskService extends StatefulService {
     }
   }
 
-  private void retrieveDocuments(final State currentState) {
-    QueryTask.Query excludeCreatedTasks
-        = buildExcludeQuery(currentState.taskStateFieldName, TaskState.TaskStage.CREATED.name());
-    QueryTask.Query excludeStartedTasks
-        = buildExcludeQuery(currentState.taskStateFieldName, TaskState.TaskStage.STARTED.name());
-    QueryTask.Query typeClause
-        = buildWildCardQuery(ServiceDocument.FIELD_NAME_SELF_LINK, currentState.sourceFactoryLink + "*");
-    QueryTask.Query timeClause
-        = buildTimeClause(currentState.queryDocumentsChangedSinceEpoc);
+  private void retrieveDocuments(
+      final State currentState,
+      Queue<Pair<String, Integer>> sourceServers,
+      long lastUpdateQueryTime) {
 
-    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
-    querySpec.resultLimit = currentState.queryResultLimit;
-    querySpec.query
-        .addBooleanClause(excludeCreatedTasks)
-        .addBooleanClause(excludeStartedTasks)
-        .addBooleanClause(typeClause)
-        .addBooleanClause(timeClause);
-    querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-
-    OperationJoin.JoinedCompletionHandler joinHandler = new OperationJoin.JoinedCompletionHandler() {
-
-      @Override
-      public void handle(Map<Long, Operation> ops, Map<Long, Throwable> failures) {
-        if (failures != null && failures.size() > 0) {
-          failTask(failures.values().iterator().next());
-          return;
-        }
-
-        AtomicInteger remainingQueries = new AtomicInteger(ops.size());
-        Map<String, Long> mapOfLastChangedTimePerHost = new HashMap<>();
-        FutureCallback callback = new FutureCallback() {
-          @Override
-          public void completed(Object result) {
-            if (remainingQueries.decrementAndGet() == 0) {
-              State patch = new State();
-              patch.taskState = new TaskState();
-              patch.taskState.stage = TaskState.TaskStage.FINISHED;
-              // This is the min last updated time among all the servers
-              patch.lastDocumentUpdateTimeEpoc = mapOfLastChangedTimePerHost.entrySet().stream()
-                  .map(entry -> entry.getValue())
-                  .mapToLong(l -> l.longValue())
-                  .min()
-                  .orElse(0);
-              ;
-              TaskUtils.sendSelfPatch(CopyStateTaskService.this, patch);
-            }
+    OperationJoin.create(
+        currentState.sourceServers.stream()
+          .map(pair -> {
+            Operation op = Operation
+                .createPost(buildQueryURI(currentState, pair))
+                .setBody(retrieveDocumentsQuery(currentState));
+            AuthenticationUtils.addSystemUserAuthcontext(op, getSystemAuthorizationContext());
+            return op;
+          })
+        ).setCompletion((os, ts) -> {
+          if (ts != null && !ts.isEmpty()) {
+            failTask(ts);
+            return;
           }
-
-          @Override
-          public void failed(Exception ex) {
-            failTask(ex);
-          }
-
-          @Override
-          public void cancelled() {
-
-          }
-        };
-
-        for (Operation op : ops.values()) {
-          continueWithNextPage(
-              op.getBody(QueryTask.class).results,
-              currentState, op.getUri(),
-              currentState.queryDocumentsChangedSinceEpoc, mapOfLastChangedTimePerHost, callback);
-        }
-      }
-    };
-
-    OperationJoin
-        .create(currentState.sourceServers.stream().map(sourceServer -> {
-          Operation op = Operation
-              .createPost(buildQueryURI(currentState, sourceServer))
-              .setBody(QueryTask.create(querySpec).setDirect(true));
-          AuthenticationUtils.addSystemUserAuthcontext(op, getSystemAuthorizationContext());
-          return op;
-        }))
-        .setCompletion(joinHandler)
-        .sendWith(this);
+          Map<URI, String> nextPageLinks = os.values().stream()
+              .filter(o -> o.getBody(QueryTask.class).results.nextPageLink != null)
+              .map(o -> {
+                QueryTask qt = o.getBody(QueryTask.class);
+                URI uri = convertToBaseUri(currentState, o);
+                return new AbstractMap.SimpleEntry<>(uri, qt.results.nextPageLink);
+            }).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+          continueWithNextPage(nextPageLinks, currentState, lastUpdateQueryTime);
+        })
+      .sendWith(this);
   }
 
-  private void continueWithNextPage(ServiceDocumentQueryResult results, State currentState, URI sourceServerURI, long
-      lastUpdateQueryTime, Map<String, Long> mapOfLastChangedTimePerHost, FutureCallback finishedCallback) {
-    if (results.nextPageLink != null) {
-      retrieveNextPage(currentState, results.nextPageLink, sourceServerURI, lastUpdateQueryTime,
-          mapOfLastChangedTimePerHost, finishedCallback);
+  private void continueWithNextPage(
+      Map<URI, String> nextPageLinks,
+      State currentState,
+      long lastUpdateQueryTime) {
+
+    if (!nextPageLinks.isEmpty()) {
+      retrieveNextPage(currentState, nextPageLinks, lastUpdateQueryTime);
     } else {
-      finishedCallback.completed(null);
+      // if there are no more results in the querye continue with the next host
+      State patch = new State();
+      patch.taskState = new TaskState();
+      patch.taskState.stage = TaskState.TaskStage.FINISHED;
+      patch.lastDocumentUpdateTimeEpoc = lastUpdateQueryTime;
+      TaskUtils.sendSelfPatch(CopyStateTaskService.this, patch);
     }
   }
 
-  private void retrieveNextPage(final State currentState, String nextPageLink, URI sourceServerURI, long
-      lastUpdateQueryTime, Map<String, Long> mapOfLastChangedTimePerHost, FutureCallback finishedCallback) {
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (throwable != null) {
-          failTask(throwable);
+  private void retrieveNextPage(
+      final State currentState,
+      Map<URI, String> nextPageLinks,
+      long lastUpdateQueryTime) {
+
+    OperationJoin.create(
+        nextPageLinks.entrySet().stream()
+          .map(entry -> {
+            Operation o = Operation.createGet(UriUtils.buildUri(entry.getKey(), entry.getValue()));
+            AuthenticationUtils.addSystemUserAuthcontext(o, getSystemAuthorizationContext());
+            return o;
+          })
+        )
+      .setCompletion((os, ts) -> {
+        if (ts != null && ts.isEmpty()) {
+          failTask(ts);
           return;
         }
-        storeDocuments(currentState, operation.getBody(QueryTask.class).results, sourceServerURI,
-            lastUpdateQueryTime, mapOfLastChangedTimePerHost, finishedCallback);
-      }
-    };
-
-    Operation get = Operation
-        .createGet(UriUtils.buildUri(sourceServerURI.getHost(), sourceServerURI.getPort(), nextPageLink, null))
-        .setCompletion(handler);
-    AuthenticationUtils.addSystemUserAuthcontext(get, getSystemAuthorizationContext());
-    sendRequest(get);
+        Map<URI, ServiceDocumentQueryResult> results = os.values().stream()
+          .map(o -> {
+            QueryTask qt =  o.getBody(QueryTask.class);
+            return new AbstractMap.SimpleEntry<>(convertToBaseUri(currentState, o), qt.results);
+          })
+          .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+        storeDocuments(currentState, results, lastUpdateQueryTime);
+      })
+      .sendWith(this);
   }
 
-  private void storeDocuments(final State currentState, final ServiceDocumentQueryResult results, URI sourceServerURI,
-                              long lastUpdateQueryTime,  Map<String, Long> mapOfLastChangedTimePerHost,
-                              FutureCallback finishedCallback) {
-    if (results.documents.isEmpty() || results.documents.isEmpty() || results.documentCount == 0) {
-      continueWithNextPage(results, currentState, sourceServerURI, lastUpdateQueryTime, mapOfLastChangedTimePerHost,
-          finishedCallback);
+  private void storeDocuments(
+      final State currentState,
+      Map<URI, ServiceDocumentQueryResult> results,
+      long lastUpdateQueryTime) {
+
+    if (results.isEmpty()) {
+      continueWithNextPage(
+          Collections.emptyMap(),
+          currentState,
+          lastUpdateQueryTime);
       return;
     }
 
-    QueryTaskUtils.logQueryResults(this, results.documentLinks);
     URI destinationFactoryURI = buildDestinationFactoryURI(currentState);
 
-    long lastUpdateTimeOnPage = results.documents.values().stream()
+    List<Object> ownerSelectedResults = new ArrayList<>();
+    for (ServiceDocumentQueryResult result : results.values()) {
+      ownerSelectedResults.addAll(
+          result.documents.values().stream()
+          .filter(doc -> {
+            ServiceDocument serviceDoc = Utils.fromJson(doc, ServiceDocument.class);
+            return serviceDoc.documentOwner == null
+                || Objects.equal(serviceDoc.documentOwner, result.documentOwner);
+          })
+          .collect(Collectors.toList())
+        );
+    }
+    QueryTaskUtils.logQueryResults(this, ownerSelectedResults.stream()
+        .map(doc -> {
+          ServiceDocument serviceDoc = Utils.fromJson(doc, ServiceDocument.class);
+          return serviceDoc.documentSelfLink;
+        })
+        .collect(Collectors.toList()));
+
+    long lastUpdateTimeOnPage = ownerSelectedResults.stream()
         .map(doc -> Utils.getJsonMapValue(doc, DOCUMENT_UPDATE_TIME_MICROS, Long.class))
         .mapToLong(l -> l.longValue())
         .max()
         .orElse(0);
     final long newLastUpdateTime = Math.max(lastUpdateQueryTime, lastUpdateTimeOnPage);
-    mapOfLastChangedTimePerHost.put(results.documentOwner, newLastUpdateTime);
+
+    if (ownerSelectedResults.isEmpty()) {
+      Map<URI, String> pageLinks = results.entrySet().stream()
+          .filter(entry -> entry.getValue().nextPageLink != null)
+          .map(entry -> {
+            return new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue().nextPageLink);
+          })
+          .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+        continueWithNextPage(
+            pageLinks,
+            currentState,
+            newLastUpdateTime);
+      return;
+    }
 
     OperationJoin
-        .create(results.documents.values().stream()
+        .create(ownerSelectedResults.stream()
             .map(document -> {
               String documentId = extractId(document, currentState.sourceFactoryLink);
               return buildDeleteOperation(destinationFactoryURI + "/" + documentId);
@@ -362,9 +369,8 @@ public class CopyStateTaskService extends StatefulService {
           if (null != execptions && !execptions.isEmpty()) {
             // Ignore delete not found error
           }
-
           OperationJoin
-              .create(results.documents.values().stream()
+              .create(ownerSelectedResults.stream()
                   .map(document -> {
                     Object json = removeFactoryPathFromSelfLink(document, currentState.sourceFactoryLink);
                     return buildPostOperation(json, destinationFactoryURI, currentState);
@@ -374,8 +380,16 @@ public class CopyStateTaskService extends StatefulService {
                   failTask(exs);
                   return;
                 }
-                continueWithNextPage(results, currentState, sourceServerURI, newLastUpdateTime,
-                    mapOfLastChangedTimePerHost, finishedCallback);
+                Map<URI, String> pageLinks = results.entrySet().stream()
+                  .filter(entry -> entry.getValue().nextPageLink != null)
+                  .map(entry -> {
+                    return new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue().nextPageLink);
+                  })
+                  .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+                continueWithNextPage(
+                    pageLinks,
+                    currentState,
+                    newLastUpdateTime);
               })
               .sendWith(this);
         })
@@ -401,6 +415,12 @@ public class CopyStateTaskService extends StatefulService {
       failTask(ex);
       throw new RuntimeException(ex);
     }
+  }
+
+  private URI convertToBaseUri(final State currentState, Operation o) {
+    URI full = o.getUri();
+    URI uri = UriUtils.buildUri(currentState.sourceProtocol, full.getHost(), full.getPort(), null, null);
+    return uri;
   }
 
   private String findDestinationServiceClassName(State currentState) {
@@ -449,6 +469,28 @@ public class CopyStateTaskService extends StatefulService {
     }
 
     return result;
+  }
+
+  private QueryTask retrieveDocumentsQuery(State currentState) {
+    QueryTask.Query excludeCreatedTasks
+        = buildExcludeQuery(currentState.taskStateFieldName, TaskState.TaskStage.CREATED.name());
+    QueryTask.Query excludeStartedTasks
+        = buildExcludeQuery(currentState.taskStateFieldName, TaskState.TaskStage.STARTED.name());
+    QueryTask.Query typeClause
+        = buildWildCardQuery(ServiceDocument.FIELD_NAME_SELF_LINK, currentState.sourceFactoryLink + "*");
+    QueryTask.Query timeClause
+        = buildTimeClause(currentState.queryDocumentsChangedSinceEpoc);
+
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+    querySpec.resultLimit = currentState.queryResultLimit;
+    querySpec.query
+        .addBooleanClause(excludeCreatedTasks)
+        .addBooleanClause(excludeStartedTasks)
+        .addBooleanClause(typeClause)
+        .addBooleanClause(timeClause);
+    querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    return QueryTask.create(querySpec).setDirect(true);
   }
 
   private Operation buildDeleteOperation(String uriString) {
@@ -531,6 +573,7 @@ public class CopyStateTaskService extends StatefulService {
   }
 
   private void failTask(Throwable t) {
+    ServiceUtils.logSevere(this, new Exception());
     ServiceUtils.logSevere(this, t);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, t));
   }
