@@ -69,11 +69,13 @@ class TestPerfManagerCollector(unittest.TestCase):
         self.coll.get_host_system = MagicMock(
             return_value=host)
 
-        vim_mock = self.coll.vim_client
-        vim_mock.get_vms_in_cache.return_value = [MagicMock(name="fake-vm-id",
-                                                            project_id="p1",
-                                                            tenant_id="t1")]
-        vim_mock.get_vm_obj_in_cache.return_value = vim.VirtualMachine('9')
+        self.mock_vim = MagicMock()
+        self.mock_vim.get_vms_in_cache.return_value = [MagicMock(name="fake-vm-id",
+                                                                 project_id="p1",
+                                                                 tenant_id="t1")]
+        self.mock_vim.get_vm_obj_in_cache.return_value = vim.VirtualMachine('9')
+
+        self.coll.vim_client = MagicMock(return_value=self.mock_vim)
 
     def test_initialize_host_counters(self):
         self.coll.initialize_host_counters()
