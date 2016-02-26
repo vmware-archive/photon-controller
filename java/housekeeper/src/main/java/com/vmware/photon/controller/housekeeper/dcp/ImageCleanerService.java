@@ -420,7 +420,7 @@ public class ImageCleanerService extends StatefulService {
     request.parentLink = this.getSelfLink();
     request.imageCreateWatermarkTime = current.imageWatermarkTime;
     request.imageDeleteWatermarkTime = current.imageDeleteWatermarkTime;
-    request.hostPollInterval = current.queryPollDelay;
+    request.hostPollIntervalMilliSeconds = current.queryPollDelay;
     request.isImageDatastore = isImageDatastore;
     request.documentExpirationTimeMicros = current.documentExpirationTimeMicros;
 

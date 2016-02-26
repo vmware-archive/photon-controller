@@ -1076,7 +1076,7 @@ public class ImageCleanerServiceTest {
           Utils.fromJson(document.getValue(), ImageDatastoreSweeperService.State.class);
         assertThat(docState.imageCreateWatermarkTime, is(startState.imageWatermarkTime));
         assertThat(docState.imageDeleteWatermarkTime, is(startState.imageDeleteWatermarkTime));
-        assertThat(docState.hostPollInterval, is(startState.queryPollDelay));
+        assertThat(docState.hostPollIntervalMilliSeconds, is(startState.queryPollDelay));
         if (docState.isImageDatastore) {
           hadIsImageDatastoreFlag++;
         }

@@ -417,7 +417,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
                 } catch (RpcException ex) {
                   onError(ex);
                 }
-              }, current.hostPollInterval, TimeUnit.MILLISECONDS);
+              }, current.hostPollIntervalMilliSeconds, TimeUnit.MILLISECONDS);
 
             } catch (Exception e) {
               onError(e);
@@ -528,7 +528,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
                 } catch (RpcException ex) {
                   onError(ex);
                 }
-              }, current.hostPollInterval, TimeUnit.MICROSECONDS);
+              }, current.hostPollIntervalMilliSeconds, TimeUnit.MILLISECONDS);
 
             } catch (Exception e) {
               onError(e);
@@ -873,7 +873,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
      */
     @DefaultInteger(value = DEFAULT_HOST_POLL_INTERVAL)
     @Positive
-    public Integer hostPollInterval;
+    public Integer hostPollIntervalMilliSeconds;
 
     /**
      * Self-link for the service that triggered this service.
