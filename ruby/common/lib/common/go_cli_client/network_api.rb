@@ -15,19 +15,30 @@ module EsxCloud
       # @param [Hash] payload
       # @return [Network]
       def create_network(payload)
-        @api_client.create_network(payload)
+        portgroups = payload[:portGroups]
+        description = payload[:description]
+        cmd = "network create -n '#{payload[:name]}' -p '#{portgroups.join(", ")}'"
+
+        cmd += " -d '#{description}'" if description
+
+        network_id = run_cli(cmd)
+
+        find_network_by_id(network_id)
       end
 
       # @param [String] id
       # @return [Boolean]
       def delete_network(id)
-        @api_client.delete_network(id)
+        run_cli("network delete '#{id}'")
+        true
       end
 
       # @param [String] id
       # @return [Network]
       def find_network_by_id(id)
-        @api_client.find_network_by_id(id)
+        result = run_cli("network show #{id}")
+
+        get_network_from_response(result)
       end
 
       # @param [String] name
@@ -38,7 +49,8 @@ module EsxCloud
 
       # @return [NetworkList]
       def find_all_networks
-        @api_client.find_all_networks
+        result = run_cli("network list")
+        get_network_list_from_response(result)
       end
 
       # @param [String] id
@@ -48,6 +60,36 @@ module EsxCloud
         @api_client.set_portgroups(id, portgroups)
       end
 
+      private
+
+      def get_network_from_response(result)
+        result.slice! "\n"
+        values = result.split("\t", -1)
+        network_hash = Hash.new
+        network_hash["id"]          = values[0] unless values[0] == ""
+        network_hash["name"]        = values[1] unless values[1] == ""
+        network_hash["state"]       = values[2] unless values[2] == ""
+        network_hash["portGroups"]  = stringToArray(values[3])
+        network_hash["description"] = values[4] unless values[4] == ""
+
+        Network.create_from_hash(network_hash)
+      end
+
+      def get_network_list_from_response(result)
+        networks = result.split("\n").map do |network_info|
+          get_network_details network_info.split("\t")[0]
+        end
+        NetworkList.new(networks)
+      end
+
+      def get_network_details(network_id)
+        begin
+          find_network_by_id network_id
+        rescue EsxCloud::CliError => e
+          raise() unless e.message.include? "NetworkNotFound"
+          nil
+        end
+      end
     end
   end
 end
