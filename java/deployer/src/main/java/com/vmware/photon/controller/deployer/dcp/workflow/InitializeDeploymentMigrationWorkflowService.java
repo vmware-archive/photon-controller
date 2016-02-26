@@ -63,7 +63,6 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.Query;
-import com.vmware.xenon.services.common.QueryTask.Query.Occurance;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -81,7 +80,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -321,10 +319,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
       .addBooleanClause(kindClause)
       .addBooleanClause(
           Query.Builder.create()
-            .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.DELETED.name(), Occurance.MUST_NOT_OCCUR)
-            .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.ERROR.name(), Occurance.MUST_NOT_OCCUR)
-            .addFieldClause(HostService.State.FIELD_NAME_STATE,
-                HostState.NOT_PROVISIONED.name(), Occurance.MUST_NOT_OCCUR)
+            .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.READY.name())
             .build());
     return querySpecification;
   }
@@ -378,7 +373,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
   }
 
   private void uploadVibs(State currentState) throws Throwable {
-    Operation.CompletionHandler getSourceHostsHandler = new Operation.CompletionHandler() {
+    Operation.CompletionHandler getHostsHandler = new Operation.CompletionHandler() {
       @Override
       public void handle(Operation operation, Throwable throwable) {
         if (null != throwable) {
@@ -390,39 +385,18 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
           NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
           Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
           if (documentLinks.size() > 0) {
-            final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
-            FutureCallback<UploadVibTaskService.State> futureCallback =
-                new TaskFailingCallback<UploadVibTaskService.State>(InitializeDeploymentMigrationWorkflowService.this) {
-              @Override
-              public void onSuccess(@Nullable UploadVibTaskService.State result) {
-                switch (result.taskState.stage) {
-                  case FINISHED: {
-                    if (0 == pendingChildren.decrementAndGet()) {
-                      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONTINOUS_MIGRATE_DATA);
-                    }
-                    break;
-                  }
-                  case FAILED: {
-                    State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                    patchState.taskState.failure = result.taskState.failure;
-                    TaskUtils.sendSelfPatch(InitializeDeploymentMigrationWorkflowService.this, patchState);
-                    break;
-                  }
-                  case CANCELLED:
-                    sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
-                    break;
-                  default:
-                    failTask(new RuntimeException("Unexpected task.stage [" + result.taskState.stage.name() + "]"));
-                    break;
-                }
-              }
-            };
-            for (String link : documentLinks) {
-              processUploadVibSubStage(currentState, link, futureCallback);
+            for (String hostServiceLink : documentLinks) {
+              UploadVibTaskService.State startState = new UploadVibTaskService.State();
+              startState.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/"
+                  + currentState.destinationDeploymentId;
+              startState.hostServiceLink = hostServiceLink;
+              Operation.createPost(UriUtils.buildUri(getHost(), UploadVibTaskFactoryService.SELF_LINK))
+                .setBody(startState)
+                .sendWith(InitializeDeploymentMigrationWorkflowService.this);
             }
-          } else {
-            sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONTINOUS_MIGRATE_DATA);
           }
+
+          sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONTINOUS_MIGRATE_DATA);
         } catch (Throwable t) {
           failTask(t);
         }
@@ -432,24 +406,8 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     HostUtils.getCloudStoreHelper(this)
       .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
       .setBody(QueryTask.create(buildHostQuerySpecification()).setDirect(true))
-      .setCompletion(getSourceHostsHandler)
+      .setCompletion(getHostsHandler)
       .sendWith(this);
-  }
-
-  private void processUploadVibSubStage(State currentState, String hostServiceLink,
-                                        FutureCallback<UploadVibTaskService.State> futureCallback) {
-    UploadVibTaskService.State startState = new UploadVibTaskService.State();
-    startState.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + currentState.destinationDeploymentId;
-    startState.hostServiceLink = hostServiceLink;
-
-    TaskUtils.startTaskAsync(
-        this,
-        UploadVibTaskFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        UploadVibTaskService.State.class,
-        currentState.taskPollDelay,
-        futureCallback);
   }
 
   private void migrateDataContinously(State currentState) {

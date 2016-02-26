@@ -58,7 +58,6 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.Query;
-import com.vmware.xenon.services.common.QueryTask.Query.Occurance;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -598,10 +597,10 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     startState.chairmanServerList = deploymentState.chairmanServerList;
     startState.usageTag = UsageTag.CLOUD.name();
     startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.CLOUD.name());
+    // only reprovision hosts that are actually in ready state, otherwise this might fail due to trying
+    // to provision a bad host
     startState.querySpecification.query.addBooleanClause(Query.Builder.create()
-        .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.DELETED.name(), Occurance.MUST_NOT_OCCUR)
-        .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.ERROR.name(), Occurance.MUST_NOT_OCCUR)
-        .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.NOT_PROVISIONED.name(), Occurance.MUST_NOT_OCCUR)
+        .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.READY.name())
         .build());
     startState.taskPollDelay = currentState.taskPollDelay;
 
