@@ -68,8 +68,8 @@ public class ImageCleanerTriggerService extends StatefulService {
     if (state.triggersError == null) {
       state.triggersError = 0L;
     }
-    if (state.pulse != null) {
-      state.pulse = null;
+    if (state.shouldTriggerTasks != null) {
+      state.shouldTriggerTasks = null;
     }
 
     try {
@@ -150,7 +150,7 @@ public class ImageCleanerTriggerService extends StatefulService {
         }
 
         State state = new State();
-        state.pulse = true;
+        state.shouldTriggerTasks = true;
         sendSelfPatch(state);
       }
     };
@@ -166,9 +166,9 @@ public class ImageCleanerTriggerService extends StatefulService {
    * Process patch.
    */
   private void processPatch(Operation patch, final State currentState, final State patchState) {
-    // If the triggered is stopped or this is not a pulse, exit.
+    // If the triggered is stopped or this is not a shouldTriggerTasks, exit.
     if (currentState.executionState != ExecutionState.RUNNING ||
-        patchState.pulse == null || patchState.pulse != true) {
+        patchState.shouldTriggerTasks == null || !patchState.shouldTriggerTasks) {
       return;
     }
 
@@ -222,7 +222,7 @@ public class ImageCleanerTriggerService extends StatefulService {
   protected void validatePatch(State patch) {
     if (patch.triggersSuccess == null &&
         patch.triggersError == null &&
-        patch.pulse == null) {
+        patch.shouldTriggerTasks == null) {
       checkArgument(patch.executionState != null, "ExecutionState cannot be null.");
     }
   }
@@ -296,7 +296,7 @@ public class ImageCleanerTriggerService extends StatefulService {
    */
   public static class State extends ServiceDocument {
     public ExecutionState executionState;
-    public Boolean pulse;
+    public Boolean shouldTriggerTasks;
     public Long triggersSuccess;
     public Long triggersError;
   }

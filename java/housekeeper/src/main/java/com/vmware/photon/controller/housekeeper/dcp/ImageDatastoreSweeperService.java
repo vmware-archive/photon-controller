@@ -535,7 +535,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
                 } catch (RpcException ex) {
                   onError(ex);
                 }
-              }, current.hostPollInterval, TimeUnit.MICROSECONDS);
+              }, current.hostPollInterval, TimeUnit.MILLISECONDS);
 
             } catch (Exception e) {
               onError(e);

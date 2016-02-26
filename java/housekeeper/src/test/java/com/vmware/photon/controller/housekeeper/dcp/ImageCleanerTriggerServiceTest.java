@@ -343,7 +343,7 @@ public class ImageCleanerTriggerServiceTest {
     @Test(dataProvider = "hostCount")
     public void testTriggerSuccess(int hostCount) throws Throwable {
       request.executionState = ImageCleanerTriggerService.ExecutionState.RUNNING;
-      request.pulse = true;
+      request.shouldTriggerTasks = true;
 
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, zookeeperHostMonitor,
           serviceConfigFactory, hostCount);
