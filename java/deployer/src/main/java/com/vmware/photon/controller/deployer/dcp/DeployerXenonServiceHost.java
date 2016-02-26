@@ -59,6 +59,8 @@ import com.vmware.photon.controller.deployer.dcp.task.DeleteVmTaskFactoryService
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.RateLimitedWorkQueueFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.RateLimitedWorkQueueService;
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.SetDatastoreTagsTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskFactoryService;
@@ -97,6 +99,7 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactor
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.common.collect.ImmutableMap;
@@ -107,7 +110,6 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Map;
 
@@ -145,6 +147,10 @@ public class DeployerXenonServiceHost
 
   public static final Class[] FACTORY_SERVICES = {
 
+      // Core services
+      RateLimitedWorkQueueFactoryService.class,
+      TaskSchedulerServiceFactory.class,
+
       // Entity Services
       ContainerFactoryService.class,
       ContainerTemplateFactoryService.class,
@@ -180,7 +186,6 @@ public class DeployerXenonServiceHost
       UploadVibTaskFactoryService.class,
       ValidateHostTaskFactoryService.class,
       WaitForDockerTaskFactoryService.class,
-      TaskSchedulerServiceFactory.class,
 
       // Workflow services
       AddCloudHostWorkflowFactoryService.class,
@@ -204,13 +209,13 @@ public class DeployerXenonServiceHost
 
   private static final int DEFAULT_TASK_LIMIT = 8;
 
-  protected static final String UPLOAD_VIB_SCHEDULER_SERVICE =
-      TaskSchedulerServiceFactory.SELF_LINK + "/vib-uploads";
-
   private static final Map<String, TaskSchedulerServiceStateBuilder> TASK_SCHEDULERS =
       ImmutableMap.<String, TaskSchedulerServiceStateBuilder>builder()
-          .put(UPLOAD_VIB_SCHEDULER_SERVICE,
-              new TaskSchedulerServiceStateBuilder(UploadVibTaskService.class, DEFAULT_TASK_LIMIT))
+          .build();
+
+  private static final Map<String, Integer> WORK_QUEUES =
+      ImmutableMap.<String, Integer>builder()
+          .put(Utils.buildKind(UploadVibTaskService.State.class), DEFAULT_TASK_LIMIT)
           .build();
 
   private static final String DEPLOYER_URI = "deployer";
@@ -346,13 +351,9 @@ public class DeployerXenonServiceHost
   public ServiceHost start() throws Throwable {
     super.start();
     startDefaultCoreServicesSynchronously();
-
-    // Start all the factories
     ServiceHostUtils.startServices(this, getFactoryServices());
     this.addPrivilegedService(CopyStateTaskService.class);
-
-    startTaskSchedulerServices();
-
+    startCoreServices();
     return this;
   }
 
@@ -535,33 +536,62 @@ public class DeployerXenonServiceHost
         Class.class);
   }
 
-  private void startTaskSchedulerServices() {
-    registerForServiceAvailability(new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        for (String link : TASK_SCHEDULERS.keySet()) {
-          try {
-            startTaskSchedulerService(link, TASK_SCHEDULERS.get(link));
-          } catch (Exception ex) {
-            // This method gets executed on a background thread so since we cannot make return the
-            // error to the caller, we swallow the exception here to allow the other the other schedulers
-            // to start
-            logger.warn("Could not register %s", link, ex);
+  private void startCoreServices() {
+
+    registerForServiceAvailability(
+        (o, e) -> {
+          if (e != null) {
+            logger.error("Failed to start task scheduler factory service: " + Utils.toString(e));
+            return;
           }
-        }
-      }
-    }, TaskSchedulerServiceFactory.SELF_LINK);
+
+          for (String selfLink : TASK_SCHEDULERS.keySet()) {
+            try {
+              startTaskSchedulerService(selfLink, TASK_SCHEDULERS.get(selfLink));
+            } catch (Throwable t) {
+              logger.warn("Failed to start task scheduler service [%s]: %s", selfLink, Utils.toString(t));
+            }
+          }
+        }, TaskSchedulerServiceFactory.SELF_LINK);
+
+    registerForServiceAvailability(
+        (o, e) -> {
+          if (e != null) {
+            logger.error("Failed to start work queue factory service: " + Utils.toString(e));
+            return;
+          }
+
+          for (String queueKind : WORK_QUEUES.keySet()) {
+            try {
+              startWorkQueueService(queueKind, WORK_QUEUES.get(queueKind));
+            } catch (Throwable t) {
+              logger.warn("Failed to start work queue service [%s]: %s", queueKind, Utils.toString(t));
+            }
+          }
+        }, RateLimitedWorkQueueFactoryService.SELF_LINK);
   }
 
-  private void startTaskSchedulerService(final String selfLink, TaskSchedulerServiceStateBuilder builder)
-      throws IllegalAccessException, InstantiationException {
-    TaskSchedulerService.State state = builder.build();
-    state.documentSelfLink = TaskSchedulerServiceStateBuilder.getSuffixFromSelfLink(selfLink);
+  private void startTaskSchedulerService(String selfLink, TaskSchedulerServiceStateBuilder builder) {
 
-    URI uri = UriUtils.buildUri(DeployerXenonServiceHost.this, TaskSchedulerServiceFactory.SELF_LINK, null);
-    Operation post = Operation.createPost(uri).setBody(state);
-    post.setReferer(UriUtils.buildUri(DeployerXenonServiceHost.this, DEPLOYER_URI));
-    sendRequest(post);
+    TaskSchedulerService.State startState = builder.build();
+    startState.documentSelfLink = TaskSchedulerServiceStateBuilder.getSuffixFromSelfLink(selfLink);
+
+    sendRequest(Operation
+        .createPost(UriUtils.buildUri(this, TaskSchedulerServiceFactory.SELF_LINK))
+        .setBody(startState)
+        .setReferer(UriUtils.buildUri(this, DEPLOYER_URI)));
+  }
+
+  private void startWorkQueueService(String queueKind, int concurrencyLimit) {
+
+    RateLimitedWorkQueueService.State startState = new RateLimitedWorkQueueService.State();
+    startState.workItemKind = queueKind;
+    startState.concurrencyLimit = concurrencyLimit;
+
+    sendRequest(Operation
+        .createPost(UriUtils.buildUri(this, RateLimitedWorkQueueFactoryService.SELF_LINK))
+        .setBody(startState)
+        .setReferer(UriUtils.buildUri(this, DEPLOYER_URI)));
   }
 
   @Override

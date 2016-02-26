@@ -74,7 +74,6 @@ public class DeployerXenonServiceHostTest {
     serviceSelfLinks = ServiceHostUtils.getServiceSelfLinks(
         DeployerXenonServiceHost.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
         DeployerXenonServiceHost.FACTORY_SERVICES);
-    serviceSelfLinks.add(DeployerXenonServiceHost.UPLOAD_VIB_SCHEDULER_SERVICE);
 
     final CountDownLatch latch = new CountDownLatch(serviceSelfLinks.size());
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {
