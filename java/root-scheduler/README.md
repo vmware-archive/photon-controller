@@ -30,7 +30,7 @@ The resulting JAR file can be found in `build/distributions`.
 
 ## Runtime Configuration
 
-When the deployer container is started, the container entrypoint is `/etc/esxcloud/run.sh`. This starts a new instance
+When the root-scheduler container is started, the container entrypoint is `/etc/esxcloud/run.sh`. This starts a new instance
 of the root-scheduler service using the configuration in `/etc/esxcloud/root-scheduler.yml`.
 
 In production scenarios, the configuration directory is mapped to `/etc/esxcloud/mustache/root-scheduler` in the underlying VM.
