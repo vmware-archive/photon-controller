@@ -179,7 +179,7 @@ public class EntityLockDcpBackendTest {
 
         entityLockDcpBackend.setTaskLock(entity.getId(), taskEntityOther);
         fail("should have failed with ConcurrentTaskException");
-      } catch (ConcurrentTaskException e) {
+      } catch (ConcurrentTaskException ignored) {
       }
     }
 

@@ -16,16 +16,21 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
+import com.vmware.photon.controller.common.xenon.validation.RenamedField;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.StatefulService;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * Class EntityLockService is used for data persistence of entity lock.
  */
 public class EntityLockService extends StatefulService {
+
+  public static final String LOCK_TAKEN_MESSAGE = "Lock already taken";
 
   public EntityLockService() {
     super(State.class);
@@ -41,7 +46,10 @@ public class EntityLockService extends StatefulService {
     try {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
-      validateState(startState);
+      ValidationUtils.validateState(startState);
+      if (startState.isAvailable) {
+        throw new IllegalArgumentException("Creating a lock with isAvailable=true is not allowed");
+      }
       startOperation.complete();
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
@@ -51,13 +59,54 @@ public class EntityLockService extends StatefulService {
     }
   }
 
-  /**
-   * Validate the service state for coherence.
-   *
-   * @param currentState
-   */
-  protected void validateState(State currentState) {
-    ValidationUtils.validateState(currentState);
+  @Override
+  public void handlePut(Operation op) {
+    ServiceUtils.logInfo(this, "Handling PUT for service %s", getSelfLink());
+
+    if (!op.hasBody()) {
+      op.fail(new IllegalArgumentException("body is required"));
+      return;
+    }
+
+    State currentState = getState(op);
+    State newState = op.getBody(State.class);
+
+    // if the new payload is identical to the existing state, complete operation with STATUS_CODE_NOT_MODIFIED
+    ServiceDocumentDescription documentDescription = this.getDocumentTemplate().documentDescription;
+    if (ServiceDocument.equals(documentDescription, currentState, newState)) {
+      op.setStatusCode(Operation.STATUS_CODE_NOT_MODIFIED);
+      op.complete();
+      return;
+    }
+
+    // validate the payload.
+    // TODO(pankaj): We need to replace the logic in the validation utils to return IllegalArgumentException instead of
+    // IllegalStateException since Xenon would automatically map IllegalArgumentException to http bad request
+    // https://www.pivotaltracker.com/story/show/114581369
+    //
+    try {
+      ValidationUtils.validateState(newState);
+    } catch (IllegalStateException e) {
+      ServiceUtils.failOperationAsBadRequest(this, op, e);
+      return;
+    }
+
+    checkArgument(currentState.entityId.equalsIgnoreCase(newState.entityId), "entityId for a lock cannot be changed");
+
+    // if the requester is new and the request is to release the lock then
+    if (!currentState.ownerId.equalsIgnoreCase(newState.ownerId) && newState.isAvailable) {
+      throw new IllegalStateException("Only the current owner can release a lock");
+    }
+
+    // if the requester is new and the request is to acquire the lock and the lock is not available
+    if (!currentState.ownerId.equalsIgnoreCase(newState.ownerId) &&
+        !newState.isAvailable &&
+        !currentState.isAvailable) {
+      throw new IllegalStateException(LOCK_TAKEN_MESSAGE);
+    }
+
+    setState(op, newState);
+    op.complete();
   }
 
   /**
@@ -66,11 +115,13 @@ public class EntityLockService extends StatefulService {
   public static class State extends ServiceDocument {
 
     @NotBlank
-    @Immutable
     public String entityId;
 
+    @RenamedField(originalName = "taskId")
     @NotBlank
-    @Immutable
-    public String taskId;
+    public String ownerId;
+
+    @NotBlank
+    public Boolean isAvailable;
   }
 }
