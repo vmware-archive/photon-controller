@@ -108,4 +108,5 @@ NetworkService:
   portGroups: java.util.List
 EntityLockService:
   entityId: java.lang.String
-  taskId: java.lang.String
+  ownerId: java.lang.String
+  isAvailable: java.lang.Boolean

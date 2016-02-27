@@ -94,7 +94,8 @@ public class EntityLockServiceTest {
 
       testState = new EntityLockService.State();
       testState.entityId = UUID.randomUUID().toString();
-      testState.taskId = UUID.randomUUID().toString();
+      testState.ownerId = UUID.randomUUID().toString();
+      testState.isAvailable = false;
     }
 
     @AfterMethod
@@ -121,29 +122,11 @@ public class EntityLockServiceTest {
       assertThat(result.getStatusCode(), is(200));
       EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
       assertThat(createdState.entityId, is(equalTo(testState.entityId)));
-      assertThat(createdState.taskId, is(equalTo(testState.taskId)));
+      assertThat(createdState.ownerId, is(equalTo(testState.ownerId)));
       EntityLockService.State savedState =
           host.getServiceState(EntityLockService.State.class, createdState.documentSelfLink);
       assertThat(savedState.entityId, is(equalTo(testState.entityId)));
-      assertThat(savedState.taskId, is(equalTo(testState.taskId)));
-    }
-
-    /**
-     * Test service start with missing taskId in start state.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testMissingEntityId() throws Throwable {
-      EntityLockService.State startState = new EntityLockService.State();
-      startState.entityId = "entity-id";
-
-      try {
-        host.startServiceSynchronously(service, startState);
-        fail("Service start did not fail when 'taskId' was null");
-      } catch (BadRequestException e) {
-        assertThat(e.getMessage(), is("taskId cannot be null"));
-      }
+      assertThat(savedState.ownerId, is(equalTo(testState.ownerId)));
     }
 
     /**
@@ -152,9 +135,10 @@ public class EntityLockServiceTest {
      * @throws Throwable
      */
     @Test
-    public void testMissingTaskId() throws Throwable {
+    public void testMissingEntityId() throws Throwable {
       EntityLockService.State startState = new EntityLockService.State();
-      startState.taskId = "task-id";
+      startState.ownerId = "owner-id";
+      startState.isAvailable = false;
 
       try {
         host.startServiceSynchronously(service, startState);
@@ -162,6 +146,102 @@ public class EntityLockServiceTest {
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("entityId cannot be null"));
       }
+    }
+
+    /**
+     * Test service start with missing ownerId in start state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testMissingOwnerId() throws Throwable {
+      EntityLockService.State startState = new EntityLockService.State();
+      startState.entityId = "entity-id";
+      startState.isAvailable = false;
+
+      try {
+        host.startServiceSynchronously(service, startState);
+        fail("Service start did not fail when 'ownerId' was null");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), is("ownerId cannot be null"));
+      }
+    }
+
+    /**
+     * Test service start with missing isAvailable in start state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testMissingAvailabilityFlag() throws Throwable {
+      EntityLockService.State startState = new EntityLockService.State();
+      startState.entityId = "entity-id";
+      startState.ownerId = "owner-id";
+
+      try {
+        host.startServiceSynchronously(service, startState);
+        fail("Service start did not fail when 'isAvailable' was null");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), is("isAvailable cannot be null"));
+      }
+    }
+
+    /**
+     * Test service start with invalid availability flag in start state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testInvalidAvailabilityFlag() throws Throwable {
+      EntityLockService.State startState = new EntityLockService.State();
+      startState.entityId = "entity-id";
+      startState.ownerId = "owner-id";
+      startState.isAvailable = true;
+
+      try {
+        host.startServiceSynchronously(service, startState);
+        fail("Service start did not fail when 'isAvailable' was true");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), is("Creating a lock with isAvailable=true is not allowed"));
+      }
+    }
+
+    /**
+     * Test service start with invalid availability flag in start state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testMultiplePosts() throws Throwable {
+      host.startServiceSynchronously(new EntityLockServiceFactory(), null);
+
+      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+
+      assertThat(result.getStatusCode(), is(200));
+      EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
+      assertThat(createdState.entityId, is(equalTo(testState.entityId)));
+      assertThat(createdState.ownerId, is(equalTo(testState.ownerId)));
+      assertThat(createdState.isAvailable, is(false));
+      EntityLockService.State savedState =
+          host.getServiceState(EntityLockService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.entityId, is(equalTo(testState.entityId)));
+      assertThat(savedState.ownerId, is(equalTo(testState.ownerId)));
+      assertThat(savedState.isAvailable, is(false));
+
+      testState.isAvailable = true;
+      testState.documentSelfLink = savedState.documentSelfLink;
+
+      result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+
+      assertThat(result.getStatusCode(), is(200));
+      createdState = result.getBody(EntityLockService.State.class);
+      assertThat(createdState.entityId, is(equalTo(testState.entityId)));
+      assertThat(createdState.ownerId, is(equalTo(testState.ownerId)));
+      assertThat(createdState.isAvailable, is(true));
+      savedState = host.getServiceState(EntityLockService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.entityId, is(equalTo(testState.entityId)));
+      assertThat(savedState.ownerId, is(equalTo(testState.ownerId)));
+      assertThat(savedState.isAvailable, is(true));
     }
   }
 
