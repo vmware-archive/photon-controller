@@ -504,7 +504,7 @@ public class ImageDcpBackendTest {
     @Test
     public void testUpdateImageDatastoreTwice() throws Throwable {
       imageName = UUID.randomUUID().toString();
-      String imageDatastoreId = "image-datastore-id";
+      String imageDatastoreId = "image-datastore-id-2";
       String imageId = createImageDocument(dcpClient, imageName, ImageState.READY, 1L, 10, 8, 5, 2);
       ImageEntity imageEntity = imageBackend.findById(imageId);
 
