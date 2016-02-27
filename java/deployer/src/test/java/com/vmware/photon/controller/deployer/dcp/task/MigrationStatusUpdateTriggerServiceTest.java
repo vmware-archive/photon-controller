@@ -48,8 +48,6 @@ import static org.hamcrest.Matchers.is;
 import java.lang.reflect.Field;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * This class implements tests for the {@link MigrationStatusUpdateTriggerService}
@@ -192,15 +190,12 @@ public class MigrationStatusUpdateTriggerServiceTest {
       testEnvironment.sendPatchAndWait(state.documentSelfLink, new MigrationStatusUpdateTriggerService.State());
       Thread.sleep(1000);
 
-      Set<String> destinationFactories = deployerContext.getFactoryLinkMapEntries().stream()
-          .map(e -> e.getValue()).collect(Collectors.toSet());
-
       DeploymentService.State deploymentState = cloudStoreMachine
           .getServiceState(state.deploymentServiceLink, DeploymentService.State.class);
-      assertThat(deploymentState.dataMigrationProgress.size(), is(destinationFactories.size()));
+      assertThat(deploymentState.dataMigrationProgress.size(), is(deployerContext.getFactoryLinkMapEntries().size()));
       assertThat(
           deploymentState.dataMigrationProgress
-              .get(deployerContext.getFactoryLinkMapEntries().iterator().next().getValue() + "/"),
+              .get(deployerContext.getFactoryLinkMapEntries().iterator().next().getKey() + "/"),
           is(1));
       assertThat(deploymentState.vibsUploaded, is(1L));
       assertThat(deploymentState.vibsUploading, is(0L));
@@ -219,12 +214,9 @@ public class MigrationStatusUpdateTriggerServiceTest {
       testEnvironment.sendPatchAndWait(state.documentSelfLink, new MigrationStatusUpdateTriggerService.State());
       Thread.sleep(1000);
 
-      Set<String> destinationFactories = deployerContext.getFactoryLinkMapEntries().stream()
-          .map(e -> e.getValue()).collect(Collectors.toSet());
-
       DeploymentService.State deploymentState = cloudStoreMachine
           .getServiceState(state.deploymentServiceLink, DeploymentService.State.class);
-      assertThat(deploymentState.dataMigrationProgress.size(), is(destinationFactories.size()));
+      assertThat(deploymentState.dataMigrationProgress.size(), is(deployerContext.getFactoryLinkMapEntries().size()));
       assertThat(deploymentState.dataMigrationProgress.values().stream().mapToInt(value -> value).sum(), is(0));
       assertThat(deploymentState.vibsUploaded, is(0L));
       assertThat(deploymentState.vibsUploading, is(1L));

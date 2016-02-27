@@ -14,6 +14,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -31,7 +32,6 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  */
 public class MigrationStatusUpdateTriggerService extends StatefulService {
 
-  private static final long DEFAULT_TRIGGER_INTERVAL = TimeUnit.SECONDS.toMicros(30);
+  private static final long DEFAULT_TRIGGER_INTERVAL = TimeUnit.SECONDS.toMicros(5);
 
   /**
    * This class defines the document state associated with a single
@@ -100,7 +100,8 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
             Map<String, Integer> finishedCopyStateCounts
                 = countFinishedCopyStateTaskServices(copyStateTaskQuery, op);
             List<UploadVibTaskService.State> documents
-                = extractDocuments(op.get(uploadVibTaskQuery.getId()), UploadVibTaskService.State.class);
+                = QueryTaskUtils
+                    .getBroadcastQueryDocuments(UploadVibTaskService.State.class, op.get(uploadVibTaskQuery.getId()));
             long vibsUploaded = countTasks(documents, task -> task.taskState.stage == TaskStage.FINISHED);
             long vibsUploading = countTasks(
                 documents,
@@ -119,18 +120,20 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
       Map<Long, Operation> op) {
     Set<String> sourceFactories = HostUtils.getDeployerContext(this)
         .getFactoryLinkMapEntries().stream()
-        .map(entry -> entry.getValue())
+        .map(entry -> entry.getKey())
         .collect(Collectors.toSet());
 
     List<CopyStateTaskService.State> copyStateTasks
-        = extractDocuments(op.get(copyStateTaskQuery.getId()), CopyStateTaskService.State.class);
+        = QueryTaskUtils.getBroadcastQueryDocuments(
+            CopyStateTaskService.State.class, op.get(copyStateTaskQuery.getId()));
 
     Map<String, Integer> map = new HashMap<>();
     sourceFactories.stream().forEach(factoryLink -> map.put(appendIfNotExists(factoryLink, "/"), 0));
     copyStateTasks.stream().forEach(state -> {
-      if (state.taskState.stage == TaskStage.FINISHED && map.containsKey(state.factoryLink)) {
-        Integer count = map.get(state.factoryLink);
-        map.put(state.factoryLink, count + 1);
+      if (state.taskState.stage == TaskStage.FINISHED
+          && map.containsKey(state.sourceFactoryLink)) {
+        Integer count = map.get(state.sourceFactoryLink);
+        map.put(state.sourceFactoryLink, count + 1);
       }
     });
     return map;
@@ -159,13 +162,6 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
       return factoryLink;
     }
     return factoryLink + string;
-  }
-
-  private <T> List<T> extractDocuments(Operation operation, Class<T> type) {
-    Collection<Object> values = operation.getBody(QueryTask.class).results.documents.values();
-    return values.stream()
-        .map(entry -> Utils.fromJson(entry, type))
-        .collect(Collectors.toList());
   }
 
   private long countTasks(List<UploadVibTaskService.State> tasks, Predicate<UploadVibTaskService.State> predicate) {
@@ -203,7 +199,9 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     return Operation
-        .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+        .createPost(UriUtils.buildBroadcastRequestUri(
+            UriUtils.buildUri(
+                getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 }
