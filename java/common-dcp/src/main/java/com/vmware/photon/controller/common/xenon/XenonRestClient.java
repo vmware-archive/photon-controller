@@ -458,6 +458,7 @@ public class XenonRestClient implements XenonClient {
     switch (completedOperation.getStatusCode()) {
       case Operation.STATUS_CODE_OK:
       case Operation.STATUS_CODE_ACCEPTED:
+      case Operation.STATUS_CODE_NOT_MODIFIED:
         return;
       case Operation.STATUS_CODE_NOT_FOUND:
         throw new DocumentNotFoundException(requestedOperation, completedOperation);
