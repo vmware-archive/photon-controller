@@ -184,6 +184,8 @@ public class TaskCommandTest {
   @Inject
   private FlavorLoader flavorLoader;
 
+  private String agentId;
+
   @AfterClass
   public static void afterClassCleanup() throws Throwable {
     commonHostAndClientTeardown();
@@ -221,7 +223,8 @@ public class TaskCommandTest {
     dcpClient.post(VmServiceFactory.SELF_LINK, vmState);
 
     HostService.State hostState = new HostService.State();
-    hostState.documentSelfLink = "agent-id";
+    agentId = UUID.randomUUID().toString();
+    hostState.documentSelfLink = agentId;
     hostState.hostAddress = "host-ip";
     hostState.userName = "root";
     hostState.password = "password";
@@ -239,7 +242,7 @@ public class TaskCommandTest {
     findResponse = new FindResponse();
     Datastore datastore = new Datastore();
     datastore.setId("datastore-id");
-    findResponse.setAgent_id("agent-id");
+    findResponse.setAgent_id(agentId);
     findResponse.setDatastore(datastore);
     ServerAddress serverAddress = new ServerAddress();
     serverAddress.setHost("0.0.0.0");
@@ -482,7 +485,7 @@ public class TaskCommandTest {
     vm.setId("vm-1");
     command.getHostClient(vm);
 
-    assertThat(vm.getAgent(), is("agent-id"));
+    assertThat(vm.getAgent(), is(agentId));
     assertThat(vm.getDatastore(), is("datastore-id"));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
     inOrder.verify(rootSchedulerClient).findVm("vm-1");
@@ -520,7 +523,7 @@ public class TaskCommandTest {
     when(hostClient.findVm("vm-1")).thenReturn(true);
     VmEntity vm = new VmEntity();
     vm.setId("vm-1");
-    vm.setAgent("agent-id");
+    vm.setAgent(agentId);
     command.getHostClient(vm);
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
@@ -538,7 +541,7 @@ public class TaskCommandTest {
     vm.setId("vm-1");
     command.getHostClient(vm);
 
-    assertThat(vm.getAgent(), is("agent-id"));
+    assertThat(vm.getAgent(), is(agentId));
     assertThat(vm.getDatastore(), is("datastore-id"));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
     inOrder.verify(rootSchedulerClient).findVm(vm.getId());
@@ -575,7 +578,7 @@ public class TaskCommandTest {
 
     VmEntity vm = new VmEntity();
     vm.setId("vm-1");
-    vm.setAgent("agent-id");
+    vm.setAgent(agentId);
     command.getHostClient(vm);
 
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
@@ -631,7 +634,7 @@ public class TaskCommandTest {
     disk.setId("disk-1");
     command.findHost(disk);
 
-    assertThat(disk.getAgent(), is("agent-id"));
+    assertThat(disk.getAgent(), is(agentId));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
     inOrder.verify(rootSchedulerClient).findDisk("disk-1");
     inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
@@ -667,10 +670,10 @@ public class TaskCommandTest {
     when(hostClient.findDisk("disk-1")).thenReturn(false);
     when(rootSchedulerClient.findDisk("disk-1")).thenReturn(findResponse);
     disk.setId("disk-1");
-    disk.setAgent("agent-id");
+    disk.setAgent(agentId);
     command.findHost(disk);
 
-    assertThat(disk.getAgent(), is("agent-id"));
+    assertThat(disk.getAgent(), is(agentId));
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
     inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).findDisk("disk-1");
@@ -686,7 +689,7 @@ public class TaskCommandTest {
 
     when(hostClient.findDisk("disk-1")).thenReturn(true);
     disk.setId("disk-1");
-    disk.setAgent("agent-id");
+    disk.setAgent(agentId);
     command.findHost(disk);
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
     inOrder.verify(hostClient).setHostIp("host-ip");
@@ -699,7 +702,7 @@ public class TaskCommandTest {
     TestTaskCommand command = new TestTaskCommand(apiFeDcpRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
     String agentId = command.lookupAgentId("host-ip");
-    assertEquals("agent-id", agentId);
+    assertEquals(this.agentId, agentId);
   }
 
   @Test
