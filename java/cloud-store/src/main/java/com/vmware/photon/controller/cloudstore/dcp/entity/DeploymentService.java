@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
+import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
@@ -332,6 +333,7 @@ public class DeploymentService extends StatefulService {
     /**
      * This value represents the port used by the Stats store endpoint.
      */
+    @DefaultInteger(value = 0)
     public Integer statsStorePort;
 
     /**

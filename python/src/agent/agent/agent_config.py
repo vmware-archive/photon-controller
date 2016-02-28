@@ -71,6 +71,7 @@ class AgentConfig(object):
 
     STATS_STORE_ENDPOINT = "stats_store_endpoint"
     STATS_STORE_PORT = "stats_store_port"
+    STATS_ENABLED = "stats_enabled"
 
     PROVISION_ARGS = [HOST_PORT]
     BOOTSTRAP_ARGS = PROVISION_ARGS + [AVAILABILITY_ZONE, HOSTNAME, CHAIRMAN,
@@ -191,13 +192,16 @@ class AgentConfig(object):
         reboot |= self._check_and_set_attr(
             self.HOST_PORT, port)
 
-        if provision_req.stats_plugin_config:
+        if provision_req.stats_plugin_config is not None and provision_req.stats_plugin_config.enabled:
             reboot |= self._check_and_set_attr(
                 self.STATS_STORE_ENDPOINT,
                 provision_req.stats_plugin_config.store_endpoint)
             reboot |= self._check_and_set_attr(
                 self.STATS_STORE_PORT,
                 provision_req.stats_plugin_config.store_port)
+            reboot |= self._check_and_set_attr(
+                self.STATS_ENABLED,
+                provision_req.stats_plugin_config.enabled)
 
         chairman_str = \
             self._parse_chairman_server_address(provision_req.chairman_server)
@@ -304,6 +308,11 @@ class AgentConfig(object):
     @locked
     def stats_store_port(self):
         return getattr(self._options, self.STATS_STORE_PORT)
+
+    @property
+    @locked
+    def stats_store_enabled(self):
+        return getattr(self._options, self.STATS_ENABLED)
 
     @property
     @locked
