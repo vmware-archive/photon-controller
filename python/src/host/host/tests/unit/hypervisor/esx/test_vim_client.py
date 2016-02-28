@@ -61,8 +61,7 @@ class TestVimClient(unittest.TestCase):
         assert_that(vim_client.password, is_("password"))
         connect_mock.assert_called_once_with(host="esx.local",
                                              user="root",
-                                             pwd="password",
-                                             version="vim.version.version9")
+                                             pwd="password")
 
     @patch.object(VimClient, "update_cache")
     @patch("pysdk.connect.Connect")
