@@ -76,7 +76,7 @@ class PerfManagerCollector(Collector):
         self._initialized = False
 
     @staticmethod
-    def vim_client():
+    def get_vim_client():
         return common.services.get(ServiceName.VIM_CLIENT)
 
     def get_perf_manager(self):
