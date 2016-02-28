@@ -181,6 +181,23 @@ class TestEsxDatastoreManager(unittest.TestCase):
                     contains_inanyorder("id-2", "id-3"))
         assert_that(manager.initialized, is_(True))
 
+    @patch("os.mkdir")
+    def test_empty_url_datastores(self, mkdir_mock):
+        """Test that datastores with empty url get filtered out."""
+        vim_client = MagicMock()
+        vim_client.get_all_datastores.return_value = self.get_datastore_mock([
+            ["datastore1", "", "VMFS", True],
+            ["datastore2", None, "VMFS", True],
+            ["datastore3", "/vmfs/volumes/id-3", "VMFS", True],
+            ])
+        hypervisor = MagicMock()
+        hypervisor.vim_client = vim_client
+
+        ds_list = ["datastore1", "datastore2", "datastore3"]
+        image_ds = [{"name": "datastore3", "used_for_vms": True}]
+        manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
+        assert_that(manager.get_datastore_ids(), contains_inanyorder("id-3"))
+
     def get_datastore_mock(self, datastores):
         result = []
         for datastore in datastores:
