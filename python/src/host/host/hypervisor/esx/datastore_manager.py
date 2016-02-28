@@ -24,7 +24,6 @@ from host.hypervisor.hypervisor import UpdateListener
 
 
 class EsxDatastoreManager(DatastoreManager, UpdateListener):
-
     def __init__(self, hypervisor, datastores, image_datastores):
         self.lock = threading.Lock()
         self.logger = logging.getLogger(__name__)
@@ -38,9 +37,13 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         self.initialized = False
 
         # host_datastores is the list of datastores reported by hostd
-        host_datastores = set(
-                [self._to_thrift_datastore(ds) for ds in
-                 self._hypervisor.vim_client.get_all_datastores()])
+        datastores = []
+        for ds in self._hypervisor.vim_client.get_all_datastores():
+            datastore = self._to_thrift_datastore(ds)
+            if (datastore is not None):
+                datastores.append(datastore)
+
+        host_datastores = set(datastores)
 
         # vm_datastores is the intersection of _configured_datastores
         # (aka ALLOWED_DATASTORES from deployer yml) and host_datastores
@@ -140,6 +143,13 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
     def _to_thrift_datastore(self, ds):
         """ From vim.Datastore to gen.resource.ttypes.Datastore
         """
+        # On 5.0 version of API, the root filesystem is also in the list
+        # of datastores, and has empty url. But we need url to get
+        # the uuid, and hence have to skip any datastore without a url.
+        if ds.info.url is None or not ds.info.url:
+            self.logger.critical("skipping %s because info.url of this datastore is empty" % ds.name)
+            return None
+
         uuid = ds.info.url.rsplit("/", 1)[1]
         name = ds.name
         type = ds.summary.type
@@ -147,7 +157,14 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         tags = []
 
         if type == "VMFS":
-            if ds.info.vmfs.local:
+            # 'local' is new property in 5.5 API version, if it is not available then we fall back to old
+            # way of getting to know local/shared access.
+            if hasattr(ds.info.vmfs, 'local'):
+                shared = not ds.info.vmfs.local
+            else:
+                shared = ds.summary.multipleHostAccess
+
+            if shared is False:
                 thrift_type = DatastoreType.LOCAL_VMFS
                 system_tag = LOCAL_VMFS_TAG
             else:

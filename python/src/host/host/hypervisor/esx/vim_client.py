@@ -227,7 +227,7 @@ class VimClient(object):
     def connect_ticket(self, host, ticket):
         if ticket:
             try:
-                stub = SoapStubAdapter(host, HOSTD_PORT, VIM_NAMESPACE)
+                stub = SoapStubAdapter(host, HOSTD_PORT)
                 si = vim.ServiceInstance("ServiceInstance", stub)
                 si.RetrieveContent().sessionManager.CloneSession(ticket)
                 return si
@@ -240,8 +240,7 @@ class VimClient(object):
         try:
             si = connect.Connect(host=host,
                                  user=user,
-                                 pwd=pwd,
-                                 version=VIM_VERSION)
+                                 pwd=pwd)
             return si
         except vim.fault.HostConnectFault as connection_exception:
             self._logger.info(
