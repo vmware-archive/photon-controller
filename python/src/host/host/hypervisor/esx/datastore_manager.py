@@ -38,9 +38,13 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         self.initialized = False
 
         # host_datastores is the list of datastores reported by hostd
-        host_datastores = set(
-                [self._to_thrift_datastore(ds) for ds in
-                 self._hypervisor.vim_client.get_all_datastores()])
+        datastores = []
+        for ds in self._hypervisor.vim_client.get_all_datastores():
+            datastore = self._to_thrift_datastore(ds)
+            if datastore is not None:
+                datastores.append(datastore)
+
+        host_datastores = set(datastores)
 
         # vm_datastores is the intersection of _configured_datastores
         # (aka ALLOWED_DATASTORES from deployer yml) and host_datastores
@@ -140,6 +144,11 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
     def _to_thrift_datastore(self, ds):
         """ From vim.Datastore to gen.resource.ttypes.Datastore
         """
+        # Ignore this datastore if it has no url
+        if ds.info.url is None or not ds.info.url:
+            self.logger.critical("Ignoring %s because info.url of this datastore is empty" % ds.name)
+            return None
+
         uuid = ds.info.url.rsplit("/", 1)[1]
         name = ds.name
         type = ds.summary.type
@@ -147,7 +156,14 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         tags = []
 
         if type == "VMFS":
-            if ds.info.vmfs.local:
+            # if 'local' property is not available then we fall back to old
+            # way of getting to know local/shared access which was used in API versions before 5.5.
+            if hasattr(ds.info.vmfs, 'local'):
+                shared = not ds.info.vmfs.local
+            else:
+                shared = ds.summary.multipleHostAccess
+
+            if shared is False:
                 thrift_type = DatastoreType.LOCAL_VMFS
                 system_tag = LOCAL_VMFS_TAG
             else:
