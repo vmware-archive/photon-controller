@@ -352,10 +352,13 @@ public class ProvisionAgentTaskService extends StatefulService {
       Collections.addAll(networks, allowedNetworks);
     }
 
-    StatsPluginConfig statsPluginConfig = null;
-    if (deploymentState.statsEnabled) {
-      statsPluginConfig = new StatsPluginConfig();
+    StatsPluginConfig statsPluginConfig = new StatsPluginConfig(deploymentState.statsEnabled);
+
+    if (deploymentState.statsStoreEndpoint != null) {
       statsPluginConfig.setStore_endpoint(deploymentState.statsStoreEndpoint);
+    }
+
+    if (deploymentState.statsStorePort != null) {
       statsPluginConfig.setStore_port(deploymentState.statsStorePort);
     }
 

@@ -215,7 +215,7 @@ public class AgentControlClientTest {
     private double memoryOverCommit = 1.0;
     private String loggingEndpoint = "loggingEndpoint";
     private String logLevel = "logLevel";
-    private StatsPluginConfig statsPluginConfig = new StatsPluginConfig("10.10.10.10", 8081);
+    private StatsPluginConfig statsPluginConfig = new StatsPluginConfig(false);
     private boolean managementOnly = false;
     private String hostId = "id1";
     private String deploymentId = "deploymentId";
