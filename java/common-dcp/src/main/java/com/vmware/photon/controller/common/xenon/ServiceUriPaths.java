@@ -25,6 +25,8 @@ public class ServiceUriPaths extends com.vmware.xenon.services.common.ServiceUri
 
   public static final String CLUSTERMANAGER_ROOT = SERVICES_ROOT + "/clustermanager";
 
+  public static final String BARE_METAL_PROVISIONER_ROOT = SERVICES_ROOT + "/bmp";
+
   public static final String CLUSTER_RESIZE_TASK_SERVICE =
       CLUSTERMANAGER_ROOT + "/cluster-resize-tasks";
 
