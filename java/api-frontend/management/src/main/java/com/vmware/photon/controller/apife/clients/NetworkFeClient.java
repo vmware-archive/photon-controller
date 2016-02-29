@@ -55,8 +55,8 @@ public class NetworkFeClient {
     return networkBackend.toApiRepresentation(id);
   }
 
-  public ResourceList<Network> find(Optional<String> name) {
-    return new ResourceList<>(networkBackend.filter(name, Optional.<String>absent()));
+  public ResourceList<Network> find(Optional<String> name, Optional<Integer> pageSize) {
+    return networkBackend.filter(name, Optional.<String>absent(), pageSize);
   }
 
   public Task delete(String id) throws ExternalException {
@@ -67,5 +67,9 @@ public class NetworkFeClient {
   public Task setPortGroups(String networkId, List<String> portGroups) throws ExternalException {
     TaskEntity taskEntity = networkBackend.updatePortGroups(networkId, portGroups);
     return taskBackend.getApiRepresentation(taskEntity);
+  }
+
+  public ResourceList<Network> getPage(String pageLink) throws ExternalException {
+    return networkBackend.getPage(pageLink);
   }
 }

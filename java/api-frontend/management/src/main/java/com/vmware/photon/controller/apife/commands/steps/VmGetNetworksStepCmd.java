@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.NetworkConnection;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmNetworks;
 import com.vmware.photon.controller.api.VmState;
@@ -25,6 +26,7 @@ import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
@@ -167,11 +169,11 @@ public class VmGetNetworksStepCmd extends StepCommand {
   private void setNetworkInNetworkConnection(VmNetworkInfo vmNetworkInfo, NetworkConnection connection) {
     String portGroup = vmNetworkInfo.getNetwork();
     if (portGroup != null) {
-      List<Network> networks = networkBackend.filter(
-          Optional.<String>absent(), Optional.of(portGroup));
-      Preconditions.checkArgument(networks.size() <= 1,
-          networks.size() + " networks found with port group " + portGroup);
-      connection.setNetwork(networks.isEmpty() ? portGroup : networks.get(0).getId());
+      ResourceList<Network> networks = networkBackend.filter(
+          Optional.<String>absent(), Optional.of(portGroup), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      Preconditions.checkArgument(networks.getItems().size() <= 1,
+          networks.getItems().size() + " networks found with port group " + portGroup);
+      connection.setNetwork(networks.getItems().isEmpty() ? portGroup : networks.getItems().get(0).getId());
     }
   }
 }

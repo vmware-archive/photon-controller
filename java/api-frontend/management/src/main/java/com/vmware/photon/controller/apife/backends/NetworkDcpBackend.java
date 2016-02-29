@@ -17,18 +17,23 @@ import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -41,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +103,7 @@ public class NetworkDcpBackend implements NetworkBackend {
   }
 
   @Override
-  public List<Network> filter(Optional<String> name, Optional<String> portGroup) {
+  public ResourceList<Network> filter(Optional<String> name, Optional<String> portGroup, Optional<Integer> pageSize) {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     if (name.isPresent()) {
       termsBuilder.put("name", name.get());
@@ -109,16 +113,14 @@ public class NetworkDcpBackend implements NetworkBackend {
       termsBuilder.put(NetworkService.PORT_GROUPS_KEY, portGroup.get().toString());
     }
 
-    List<Network> networks = new ArrayList<>();
     ImmutableMap<String, String> terms = termsBuilder.build();
     logger.info("Filtering Port Groups using terms {}", terms);
-    List<NetworkService.State> documents =
-        dcpClient.queryDocuments(NetworkService.State.class, terms);
-    for (NetworkService.State state : documents) {
-      networks.add(toApiRepresentation(convertToEntity(state)));
-    }
 
-    return networks;
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(NetworkService.State.class,
+        terms, pageSize, true);
+
+    return PaginationUtils.xenonQueryResultToResourceList(NetworkService.State.class, queryResult,
+        state -> toApiRepresentation(convertToEntity(state)));
   }
 
   @Override
@@ -176,13 +178,27 @@ public class NetworkDcpBackend implements NetworkBackend {
     return task;
   }
 
+  @Override
+  public ResourceList<Network> getPage(String pageLink) throws ExternalException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = dcpClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(NetworkService.State.class, queryResult,
+        state -> toApiRepresentation(convertToEntity(state)));
+  }
+
   private List<String> checkPortGroupsNotAddedToAnyNetwork(List<String> portGroups)
       throws PortGroupsAlreadyAddedToNetworkException {
     Map<String, Network> violations = new HashMap<>();
     for (String portGroup : portGroups) {
-      List<Network> networks = filter(Optional.<String>absent(), Optional.of(portGroup));
-      if (!networks.isEmpty()) {
-        violations.put(portGroup, networks.get(0));
+      ResourceList<Network> networks = filter(Optional.<String>absent(), Optional.of(portGroup),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      if (!networks.getItems().isEmpty()) {
+        violations.put(portGroup, networks.getItems().get(0));
       }
     }
 
