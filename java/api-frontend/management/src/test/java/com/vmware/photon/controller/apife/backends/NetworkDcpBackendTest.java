@@ -18,10 +18,12 @@ import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -168,9 +170,11 @@ public class NetworkDcpBackendTest {
       spec2.setPortGroups(new ArrayList<>());
       networkBackend.createNetwork(spec2);
 
-      List<Network> networks = networkBackend.filter(
-          Optional.fromNullable(spec1.getName()), Optional.<String>absent());
-      assertThat(networks.size(), is(2));
+      ResourceList<Network> networks = networkBackend.filter(
+          Optional.fromNullable(spec1.getName()),
+          Optional.<String>absent(),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(2));
     }
 
     @Test
@@ -189,7 +193,8 @@ public class NetworkDcpBackendTest {
   }
 
   /**
-   * Tests {@link NetworkDcpBackend#filter(com.google.common.base.Optional, com.google.common.base.Optional)}}.
+   * Tests {@link NetworkDcpBackend#filter(com.google.common.base.Optional, com.google.common.base.Optional,
+   * com.google.common.base.Optional)}}.
    */
   @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
   public static class FilterTest {
@@ -223,27 +228,32 @@ public class NetworkDcpBackendTest {
       NetworkCreateSpec spec = createNetworkCreateSpec();
       networkBackend.createNetwork(spec);
 
-      List<Network> networks = networkBackend.filter(
-          Optional.of(spec.getName()), Optional.<String>absent());
-      assertThat(networks.size(), is(1));
-      assertThat(networks.get(0).getName(), is(spec.getName()));
-      assertThat(networks.get(0).getDescription(), is(spec.getDescription()));
-      assertThat(networks.get(0).getPortGroups(), is(spec.getPortGroups()));
+      ResourceList<Network> networks = networkBackend.filter(Optional.of(spec.getName()), Optional.<String>absent(),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(1));
+      assertThat(networks.getItems().get(0).getName(), is(spec.getName()));
+      assertThat(networks.getItems().get(0).getDescription(), is(spec.getDescription()));
+      assertThat(networks.getItems().get(0).getPortGroups(), is(spec.getPortGroups()));
 
-      networks = networkBackend.filter(Optional.of("n2"), Optional.<String>absent());
-      assertThat(networks.isEmpty(), is(true));
+      networks = networkBackend.filter(Optional.of("n2"), Optional.<String>absent(),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().isEmpty(), is(true));
 
-      networks = networkBackend.filter(Optional.<String>absent(), Optional.<String>absent());
-      assertThat(networks.size(), is(1));
+      networks = networkBackend.filter(Optional.<String>absent(), Optional.<String>absent(),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(1));
 
-      networks = networkBackend.filter(Optional.<String>absent(), Optional.of("PG1"));
-      assertThat(networks.size(), is(1));
+      networks = networkBackend.filter(Optional.<String>absent(), Optional.of("PG1"),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(1));
 
-      networks = networkBackend.filter(Optional.<String>absent(), Optional.of("foo"));
-      assertThat(networks.isEmpty(), is(true));
+      networks = networkBackend.filter(Optional.<String>absent(), Optional.of("foo"),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().isEmpty(), is(true));
 
-      networks = networkBackend.filter(Optional.of(spec.getName()), Optional.of("PG2"));
-      assertThat(networks.size(), is(1));
+      networks = networkBackend.filter(Optional.of(spec.getName()), Optional.of("PG2"),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(1));
     }
   }
 
@@ -340,25 +350,25 @@ public class NetworkDcpBackendTest {
     public void testSuccess() throws Throwable {
       NetworkCreateSpec spec = createNetworkCreateSpec();
       TaskEntity task = networkBackend.createNetwork(spec);
-      List<Network> networks = networkBackend.filter(
-          Optional.fromNullable(spec.getName()), Optional.<String>absent());
-      assertThat(networks.size(), is(1));
+      ResourceList<Network> networks = networkBackend.filter(Optional.fromNullable(spec.getName()),
+          Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(1));
 
       String networkId = task.getEntityId();
 
       networkBackend.prepareNetworkDelete(networkId);
-      networks = networkBackend.filter(
-          Optional.fromNullable(spec.getName()), Optional.<String>absent());
-      assertThat(networks.size(), is(0));
+      networks = networkBackend.filter(Optional.fromNullable(spec.getName()), Optional.<String>absent(),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(0));
     }
 
     @Test
     public void testWhenVmsAreAttached() throws Throwable {
       NetworkCreateSpec spec = createNetworkCreateSpec();
       TaskEntity task = networkBackend.createNetwork(spec);
-      List<Network> networks = networkBackend.filter(
-          Optional.fromNullable(spec.getName()), Optional.<String>absent());
-      assertThat(networks.size(), is(1));
+      ResourceList<Network> networks = networkBackend.filter(Optional.fromNullable(spec.getName()),
+          Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(1));
 
       String networkId = task.getEntityId();
 
@@ -386,10 +396,10 @@ public class NetworkDcpBackendTest {
       dcpClient.post(VmServiceFactory.SELF_LINK, vm);
 
       networkBackend.prepareNetworkDelete(networkId);
-      networks = networkBackend.filter(
-          Optional.fromNullable(spec.getName()), Optional.<String>absent());
-      assertThat(networks.size(), is(1));
-      Network network = networks.get(0);
+      networks = networkBackend.filter(Optional.fromNullable(spec.getName()), Optional.<String>absent(),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(1));
+      Network network = networks.getItems().get(0);
       assertThat(network.getId(), is(networkId));
       assertThat(network.getState(), is(NetworkState.PENDING_DELETE));
     }
@@ -403,9 +413,9 @@ public class NetworkDcpBackendTest {
     public void testDeletePendingDeleteNetwork() throws Exception {
       NetworkCreateSpec spec = createNetworkCreateSpec();
       TaskEntity task = networkBackend.createNetwork(spec);
-      List<Network> networks = networkBackend.filter(
-          Optional.fromNullable(spec.getName()), Optional.<String>absent());
-      assertThat(networks.size(), is(1));
+      ResourceList<Network> networks = networkBackend.filter(Optional.fromNullable(spec.getName()),
+          Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(1));
 
       String networkId = task.getEntityId();
 
@@ -503,9 +513,9 @@ public class NetworkDcpBackendTest {
       assertThat(tombstone.getEntityId(), is(entity.getId()));
       assertThat(tombstone.getEntityKind(), is(Network.KIND));
 
-      List<Network> networks = networkBackend.filter(
-          Optional.fromNullable(entity.getName()), Optional.<String>absent());
-      assertThat(networks.size(), is(0));
+      ResourceList<Network> networks = networkBackend.filter(Optional.fromNullable(entity.getName()),
+          Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(0));
     }
 
     @Test
@@ -536,11 +546,11 @@ public class NetworkDcpBackendTest {
       assertThat(tombstoneBackend.getByEntityId(entity.getId()), nullValue());
 
 
-      List<Network> networks = networkBackend.filter(
-          Optional.fromNullable(entity.getName()), Optional.<String>absent());
-      assertThat(networks.size(), is(1));
+      ResourceList<Network> networks = networkBackend.filter(Optional.fromNullable(entity.getName()),
+          Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(networks.getItems().size(), is(1));
 
-      Network network = networks.get(0);
+      Network network = networks.getItems().get(0);
       assertThat(network.getId(), is(entity.getId()));
       assertThat(network.getState(), is(NetworkState.READY));
     }

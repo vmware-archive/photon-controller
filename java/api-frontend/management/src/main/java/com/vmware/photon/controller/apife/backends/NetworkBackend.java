@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.NetworkCreateSpec;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -32,7 +33,9 @@ public interface NetworkBackend {
 
   TaskEntity createNetwork(NetworkCreateSpec network) throws PortGroupsAlreadyAddedToNetworkException;
 
-  List<Network> filter(Optional<String> name, Optional<String> portGroup);
+  ResourceList<Network> filter(Optional<String> name, Optional<String> portGroup, Optional<Integer> pageSize);
+
+  ResourceList<Network> getPage(String pageLink) throws ExternalException;
 
   NetworkEntity findById(String id) throws NetworkNotFoundException;
 

@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Network;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.external.UnsupportedOperationException;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
@@ -22,6 +23,7 @@ import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
@@ -180,8 +182,9 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
     Network network = new Network();
     network.setId("network-id");
 
-    when(networkBackend.filter(Optional.<String>absent(), Optional.of("PG1")))
-        .thenReturn(ImmutableList.of(network));
+    when(networkBackend.filter(Optional.<String>absent(), Optional.of("PG1"),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
+        .thenReturn(new ResourceList<>(ImmutableList.of(network)));
     VmGetNetworksStepCmd command = getCommand();
     command.execute();
 
@@ -201,8 +204,8 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
 
     vmNetworks.get(0).setNetwork("PG1");
 
-    when(networkBackend.filter(Optional.<String>absent(), Optional.of("PG1")))
-        .thenReturn(new ArrayList<>());
+    when(networkBackend.filter(Optional.<String>absent(), Optional.of("PG1"),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE))).thenReturn(new ResourceList<>(new ArrayList<>()));
     VmGetNetworksStepCmd command = getCommand();
     command.execute();
 

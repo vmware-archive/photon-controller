@@ -19,8 +19,10 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
@@ -54,10 +56,12 @@ import javax.ws.rs.core.Response;
 public class NetworksResource {
 
   private final NetworkFeClient networkFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public NetworksResource(NetworkFeClient networkFeClient) {
+  public NetworksResource(NetworkFeClient networkFeClient, PaginationConfig paginationConfig) {
     this.networkFeClient = networkFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @POST
@@ -81,11 +85,23 @@ public class NetworksResource {
   @ApiResponses(value = {
       @ApiResponse(code = 200, message = "List of network API representation")
   })
-  public Response list(@Context Request request, @QueryParam("name") Optional<String> name)
+  public Response list(@Context Request request,
+                       @QueryParam("name") Optional<String> name,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
+
+    ResourceList<Network> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = networkFeClient.getPage(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = networkFeClient.find(name, adjustedPageSize);
+    }
+
     return generateResourceListResponse(
         Response.Status.OK,
-        networkFeClient.find(name),
+        PaginationUtils.formalizePageLinks(resourceList, NetworkResourceRoutes.API),
         (ContainerRequest) request,
         NetworkResourceRoutes.NETWORK_PATH);
   }
