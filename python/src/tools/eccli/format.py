@@ -9,11 +9,20 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
+from pprint import pformat
+
+from datetime import datetime
 
 
 def print_request(request):
-    print "Calling %s ..." % request
+    print "\n\033[32m***** %s (%s) *****\033[37m" %\
+          (type(request).__name__, datetime.now())
+    print pformat(vars(request), indent=2)
+    print "\n"
 
 
 def print_response(response):
-    print "Response: %s" % response
+    print "\n\033[34m***** %s (%s) *****\033[37m" %\
+          (type(response).__name__, datetime.now())
+    print pformat(vars(response), indent=2)
+    print "\n"
