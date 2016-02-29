@@ -30,6 +30,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.collections.CollectionUtils;
+import org.hamcrest.Matchers;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -207,6 +208,62 @@ public class XenonRestClientTest {
       exampleServiceState.name = UUID.randomUUID().toString();
 
       xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
+    }
+
+    @Test
+    public void testStartForDeletedServiceFail() throws Throwable {
+      xenonRestClient.start();
+      ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
+      exampleServiceState.name = UUID.randomUUID().toString();
+
+      Operation result = xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
+
+      assertThat(result.getStatusCode(), is(200));
+      ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
+      assertThat(createdState.name, is(equalTo(exampleServiceState.name)));
+      ExampleService.ExampleServiceState savedState = host.getServiceState(ExampleService.ExampleServiceState.class,
+          createdState.documentSelfLink);
+      assertThat(savedState.name, is(equalTo(exampleServiceState.name)));
+
+      exampleServiceState.documentSelfLink = createdState.documentSelfLink;
+
+      xenonRestClient.delete(exampleServiceState.documentSelfLink, new ExampleService.ExampleServiceState());
+
+      try {
+        xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
+        fail("POST for an existing service should fail");
+      } catch (XenonRuntimeException e) {
+        assertThat(e.getMessage(), Matchers.containsString("Service already exists or previously deleted"));
+      }
+    }
+
+    @Test
+    public void testStartForDeletedServiceSuccess() throws Throwable {
+      xenonRestClient.start();
+      ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
+      exampleServiceState.name = UUID.randomUUID().toString();
+
+      Operation result = xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
+
+      assertThat(result.getStatusCode(), is(200));
+      ExampleService.ExampleServiceState createdState = result.getBody(ExampleService.ExampleServiceState.class);
+      assertThat(createdState.name, is(equalTo(exampleServiceState.name)));
+      ExampleService.ExampleServiceState savedState = host.getServiceState(ExampleService.ExampleServiceState.class,
+          createdState.documentSelfLink);
+      assertThat(savedState.name, is(equalTo(exampleServiceState.name)));
+
+      exampleServiceState.documentSelfLink = createdState.documentSelfLink;
+
+      xenonRestClient.delete(exampleServiceState.documentSelfLink, new ExampleService.ExampleServiceState());
+
+      result = xenonRestClient.post(true, ExampleService.FACTORY_LINK, exampleServiceState);
+
+      assertThat(result.getStatusCode(), is(200));
+      createdState = result.getBody(ExampleService.ExampleServiceState.class);
+      assertThat(createdState.name, is(equalTo(exampleServiceState.name)));
+      savedState = host.getServiceState(ExampleService.ExampleServiceState.class,
+          createdState.documentSelfLink);
+      assertThat(savedState.name, is(equalTo(exampleServiceState.name)));
     }
   }
 
