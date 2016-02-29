@@ -54,9 +54,14 @@ public class ApiFeDcpRestClient extends XenonRestClient {
 
   @Override
   public Operation post(String serviceSelfLink, ServiceDocument body) {
+      return this.post(false, serviceSelfLink, body);
+  }
+
+  @Override
+  public Operation post(Boolean forceIndexUpdate, String serviceSelfLink, ServiceDocument body) {
 
     try {
-      return super.post(serviceSelfLink, body);
+      return super.post(forceIndexUpdate, serviceSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {

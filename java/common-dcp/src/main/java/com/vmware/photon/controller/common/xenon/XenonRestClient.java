@@ -119,6 +119,12 @@ public class XenonRestClient implements XenonClient {
   @Override
   public Operation post(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    return post(false, serviceSelfLink, body);
+  }
+
+  @Override
+  public Operation post(Boolean forceIndexUpdate, String serviceSelfLink, ServiceDocument body)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
     URI serviceUri = getServiceUri(serviceSelfLink);
 
     Operation postOperation = Operation
@@ -127,12 +133,12 @@ public class XenonRestClient implements XenonClient {
         .setExpiration(Utils.getNowMicrosUtc() + getPostOperationExpirationMicros())
         .setBody(body)
         .setReferer(this.localHostUri)
-            // PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE is a workaround needed
-            // because Xenon 0.7.0 does not allow POST to a previously deleted service
-            // we need to implement an alternative solution so that this workaround can be removed
-            // https://www.pivotaltracker.com/story/show/114425451
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE)
         .setContextId(LoggingUtils.getRequestId());
+
+    if (forceIndexUpdate) {
+      // this pragma will allow POST to a previously deleted service.
+      postOperation.addPragmaDirective(Operation.PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE);
+    }
 
     return send(postOperation);
   }

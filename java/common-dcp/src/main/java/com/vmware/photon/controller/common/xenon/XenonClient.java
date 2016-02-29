@@ -40,6 +40,9 @@ public interface XenonClient {
   Operation post(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
+  Operation post(Boolean forceIndexUpdate, String serviceSelfLink, ServiceDocument body)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
+
   Operation get(String documentSelfLink)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
