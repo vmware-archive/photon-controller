@@ -7,7 +7,7 @@ GOPATH := $(CURDIR):$(GOVENDOR)
 GO ?= go
 GOVERSION ?= go1.5
 OS := $(shell uname)
-NAME := go-dcp-bmp
+NAME := go-bmp
 
 ifeq ($(OS), Linux)
 CGO_ENABLED = 0
