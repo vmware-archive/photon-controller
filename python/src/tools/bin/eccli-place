@@ -1,16 +1,20 @@
 #!/usr/bin/env python
 # Copyright (c) 2015 VMware, Inc. All Rights Reserved.
 import sys
+import uuid
 
 from common.photon_thrift.direct_client import DirectClient
 
-from eccli.concurrency import run_concurrency
 from eccli.format import print_request
 from eccli.format import print_response
 from eccli.optparser import default_parser
 from eccli.thrift import get_client
-from gen.scheduler.ttypes import PlaceRequest
-from gen.resource.ttypes import Vm, Disk
+from eccli.utils import createVmResource
+from eccli.utils import createDisksResource
+from gen.host.ttypes import ReserveRequest
+
+from gen.resource.ttypes import Resource
+from gen.scheduler.ttypes import PlaceRequest, PlaceResultCode
 
 parser = default_parser(usage="eccli-config-get [options]",
                         add_help=True)
@@ -20,32 +24,36 @@ parser.add_option("-v", "--vm",
 parser.add_option("-d", "--disks",
                   action="store_true", dest="disks",
                   help="Place disks")
-parser.add_option("-s", "--scheduler_id",
-                  action="store", type="string", dest="scheduler_id",
-                  help="scheduler_id")
+parser.add_option("-i", "--image",
+                  action="store", type="string", dest="image",
+                  help="Image for vm boot disk")
 (options, args) = parser.parse_args()
 
-
-request = PlaceRequest()
-
+# create resource
+resource = Resource()
 if options.vm:
-    place_vm = True
+    resource.vm = createVmResource(options.image)
 elif options.disks:
-    place_vm = False
+    resource.disks = createDisksResource()
 else:
     print "Should choose either --vm (place vm) or --disks (place disks)"
     sys.exit(1)
 
-if place_vm:
-    request.resource = Vm()
-else:
-    request.resource = []
-if options.scheduler_id:
-    request.scheduler_id = options.scheduler_id
+# place
+place_request = PlaceRequest()
+place_request.resource = resource
+print_request(place_request)
+client = get_client(options, "Host")
+place_response = client.place(place_request)
+print_response(place_response)
+if place_response.result != PlaceResultCode.OK:
+    sys.exit(1)
 
-print_request(request)
-client = get_client(options, "Scheduler")
-response = client.place(request)
-print_response(response)
-
-run_concurrency("place", request, options)
+# reserve
+reserve_request = ReserveRequest()
+reserve_request.generation = 1
+reserve_request.resource = resource
+reserve_request.resource.placement_list = place_response.placementList
+print_request(reserve_request)
+reserve_response = client.reserve(reserve_request)
+print_response(reserve_response)
