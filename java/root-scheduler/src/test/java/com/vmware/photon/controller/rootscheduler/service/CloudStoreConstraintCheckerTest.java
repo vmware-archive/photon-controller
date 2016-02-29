@@ -30,7 +30,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.UriUtils;
 
 import ch.qos.logback.classic.Level;
-
 import com.google.common.base.Stopwatch;
 import com.google.common.net.InetAddresses;
 import org.slf4j.Logger;
@@ -148,8 +147,8 @@ public class CloudStoreConstraintCheckerTest {
   @DataProvider(name = "environment")
   public Object[][] createDefault() {
     return new Object[][] {
-        { "fully replicated Cloudstore", this.cloudStoreTestEnvironmentSmall, this.checkerSmall },
-        { "asymmetic replication Cloudstore", this.cloudStoreTestEnvironmentLarge, this.checkerLarge },
+        { "Single-host small Cloudstore", this.cloudStoreTestEnvironmentSmall, this.checkerSmall },
+        { "Multi-host large Cloudstore", this.cloudStoreTestEnvironmentLarge, this.checkerLarge },
     };
   }
 
@@ -172,9 +171,7 @@ public class CloudStoreConstraintCheckerTest {
     // Part 1a: Ensure that we can find a host with scheduling constant 0
     List<HostService.State> hosts = createSimpleHostWithSchedulingConstant(0);
     createHosts(cloudStoreEnvironment, hosts);
-
-    Map<String, ServerAddress> selectedHosts = checker.getCandidates(null, 1);
-    assertThat(selectedHosts.size(), equalTo(1));
+    verifyHostCount(checker, 1);
 
     // Part 1b: Ensure that when we delete the host, we can no longer find it
     deleteHosts(cloudStoreEnvironment, hosts);
@@ -183,8 +180,7 @@ public class CloudStoreConstraintCheckerTest {
     // Part 2a: Ensure that we can find a host with the maximum scheduling constant (actually, 9999)
     hosts = createSimpleHostWithSchedulingConstant(HostService.MAX_SCHEDULING_CONSTANT - 1);
     createHosts(cloudStoreEnvironment, hosts);
-    selectedHosts = checker.getCandidates(null, 1);
-    assertThat(selectedHosts.size(), equalTo(1));
+    verifyHostCount(checker, 1);
 
     // Part 2b: Ensure that when we delete the host, we can no longer find it
     deleteHosts(cloudStoreEnvironment, hosts);
@@ -209,6 +205,26 @@ public class CloudStoreConstraintCheckerTest {
       Thread.sleep(1);
     }
     assertThat(selectedHosts.size(), equalTo(0));
+  }
+
+  /**
+   * Verify that the required number of hosts are picked by the scheduler.
+   *
+   * Note that when we have multiple hosts and our quorum is less than the total number of hosts (which is the case
+   * in cloudStoreTestEnvironmentLarge), some Cloudstore hosts may not have the newly created hosts, for a short
+   * while. This may especially be true on a loaded build machine. Therefore we do this as a poll.
+   */
+  private void verifyHostCount(CloudStoreConstraintChecker checker, int hostCount) throws Throwable {
+    Map<String, ServerAddress> selectedHosts = null;
+    for (int i = 0; i < 10000; i++) {
+      selectedHosts = checker.getCandidates(null, 1);
+      if (selectedHosts.size() == hostCount) {
+        break;
+      }
+      logger.info("Host not replicated yet, will retry");
+      Thread.sleep(1);
+    }
+    assertThat(selectedHosts.size(), equalTo(hostCount));
   }
 
   private List<HostService.State> createSimpleHostWithSchedulingConstant(
