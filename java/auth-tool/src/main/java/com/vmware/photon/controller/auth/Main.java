@@ -20,7 +20,6 @@ import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.auth.AuthException;
 import com.vmware.photon.controller.common.auth.AuthOIDCClient;
 import com.vmware.photon.controller.common.auth.AuthTokenHandler;
-import com.vmware.photon.controller.common.cert.X509CertificateHelper;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -31,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.cert.X509Certificate;
 
 /**
  * Main class for auth related tool.
@@ -76,10 +74,7 @@ public class Main {
           AuthClientHandler authClientHandler = oidcClient.getClientHandler(arguments.getUsername(),
               arguments.getPassword());
 
-          X509CertificateHelper x509CertificateHelper = new X509CertificateHelper();
-          X509Certificate x509Certificate = x509CertificateHelper.generateX509Certificate();
-
-          AuthClientHandler.ImplicitClient implicitClient = authClientHandler.registerImplicitClient(x509Certificate,
+          AuthClientHandler.ImplicitClient implicitClient = authClientHandler.registerImplicitClient(
               new URI(arguments.getLoginRedirectEndpoint()), new URI(arguments.getLogoutRedirectEndpoint()));
 
           printClientRegistrationInfo(implicitClient);

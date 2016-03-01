@@ -36,7 +36,6 @@ import org.apache.http.HttpException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -93,13 +92,11 @@ public class AuthClientHandler {
    * @return
    * @throws AuthException
    */
-  public ImplicitClient registerImplicitClient(X509Certificate clientX509Certificate, URI loginRedirectURI,
-                                               URI logoutRedirectURI)
+  public ImplicitClient registerImplicitClient(URI loginRedirectURI, URI logoutRedirectURI)
           throws AuthException {
     try {
       OIDCTokens tokens = tokenHandler.getAdminServerAccessToken(user, password);
-      OIDCClientDTO oidcClientDTO = registerClient(clientX509Certificate,
-          loginRedirectURI, loginRedirectURI, logoutRedirectURI);
+      OIDCClientDTO oidcClientDTO = registerClient(loginRedirectURI, loginRedirectURI, logoutRedirectURI);
       ClientID clientID = new ClientID(oidcClientDTO.getClientId());
       URI loginURI = buildAuthenticationRequestURI(clientID, loginRedirectURI);
       URI logoutURI = buildLogoutRequestURI(clientID, tokens.getIdToken(), logoutRedirectURI);
@@ -118,8 +115,8 @@ public class AuthClientHandler {
    * @return
    * @throws AuthException
    */
-  public OIDCClientDTO registerClient(X509Certificate clientX509Certificate, URI redirectURI) throws AuthException {
-    return registerClient(clientX509Certificate, redirectURI, redirectURI, redirectURI);
+  public OIDCClientDTO registerClient(URI redirectURI) throws AuthException {
+    return registerClient(redirectURI, redirectURI, redirectURI);
   }
 
   /**
@@ -166,8 +163,7 @@ public class AuthClientHandler {
   /**
    * Register OAuth client.
    */
-  private OIDCClientDTO registerClient(X509Certificate clientX509Certificate,
-                                       URI redirectURI, URI logoutURI, URI postLogoutURI)
+  private OIDCClientDTO registerClient(URI redirectURI, URI logoutURI, URI postLogoutURI)
       throws AuthException {
     Exception registerException = null;
 
@@ -177,8 +173,7 @@ public class AuthClientHandler {
           .withRedirectUris(Arrays.asList(redirectURI.toString()))
           .withPostLogoutRedirectUris(Arrays.asList(postLogoutURI.toString()))
           .withLogoutUri(logoutURI.toString())
-          .withTokenEndpointAuthMethod(ClientAuthenticationMethod.PRIVATE_KEY_JWT.getValue())
-          .withCertSubjectDN(clientX509Certificate.getSubjectDN().getName())
+          .withTokenEndpointAuthMethod(ClientAuthenticationMethod.NONE.getValue())
           .build();
       idmClient.oidcClient().register(tenant, oidcClientMetadataDTO);
 

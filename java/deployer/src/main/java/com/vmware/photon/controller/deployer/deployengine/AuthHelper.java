@@ -16,7 +16,6 @@ package com.vmware.photon.controller.deployer.deployengine;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.auth.AuthException;
 import com.vmware.photon.controller.common.auth.AuthOIDCClient;
-import com.vmware.photon.controller.common.cert.X509CertificateHelper;
 
 import org.bouncycastle.operator.OperatorCreationException;
 
@@ -24,7 +23,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 
 /**
  * Helper class for auth related work.
@@ -70,10 +68,6 @@ public class AuthHelper {
 
     AuthClientHandler authClientHandler = oidcClient.getClientHandler(user, password);
 
-    X509CertificateHelper x509CertificateHelper = new X509CertificateHelper();
-    X509Certificate x509Certificate = x509CertificateHelper.generateX509Certificate();
-
-    return authClientHandler.registerImplicitClient(x509Certificate,
-        new URI(loginRedirectEndpoint), new URI(logoutRedirectEndpoint));
+    return authClientHandler.registerImplicitClient(new URI(loginRedirectEndpoint), new URI(logoutRedirectEndpoint));
   }
 }

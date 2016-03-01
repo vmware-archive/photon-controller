@@ -120,7 +120,7 @@ public class AuthClientHandlerTest {
     doReturn(oidcClientDTOList).when(oidcClientResource).getAll(
         eq(AuthTestHelper.TENANT));
 
-    OIDCClientDTO oidcClientDTO = clientHandler.registerClient(clientCertificate, new URI("https://redirect"));
+    OIDCClientDTO oidcClientDTO = clientHandler.registerClient(new URI("https://redirect"));
     Assert.assertEquals(dummyClientId, oidcClientDTO.getClientId());
     Assert.assertEquals(oidcClientMetadataDTOMock, oidcClientDTO.getOIDCClientMetadataDTO());
     verify(oidcClientResource).register(eq(AuthTestHelper.TENANT), any(OIDCClientMetadataDTO.class));
@@ -144,7 +144,7 @@ public class AuthClientHandlerTest {
     doReturn(dummyClientId).when(oidcClientDTOMock).getClientId();
 
     try {
-      clientHandler.registerClient(clientCertificate, new URI("https://redirect"));
+      clientHandler.registerClient(new URI("https://redirect"));
       fail("Expected exception.");
     } catch (AuthException e) {
     }
@@ -205,8 +205,8 @@ public class AuthClientHandlerTest {
     doReturn(expectedLogoutResponse).when(oidcClient).buildLogoutRequestURI(eq(logoutRedirect), eq(idToken), any(State
         .class));
 
-    AuthClientHandler.ImplicitClient implicitClient = clientHandler.registerImplicitClient(clientCertificate,
-        loginRedirect, logoutRedirect);
+    AuthClientHandler.ImplicitClient implicitClient = clientHandler.registerImplicitClient(loginRedirect,
+            logoutRedirect);
     Assert.assertEquals(expectedLoginResponse.toString(), implicitClient.loginURI);
     Assert.assertEquals(expectedLogoutResponse.toString(), implicitClient.logoutURI);
   }
