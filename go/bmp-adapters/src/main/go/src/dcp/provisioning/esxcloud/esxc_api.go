@@ -10,8 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	// "github.com/esxcloud/esxcloud-go-sdk/esxcloud"
-	"github.com/esxcloud/photon-go-sdk/photon"
+	//"github.com/esxcloud/photon-go-sdk/photon"
 	"github.com/golang/glog"
 )
 
@@ -364,24 +363,24 @@ func (esxcapi *EsxcapiService) EsxcapiAttachISO(zone string, esxcloudVMID string
 		glog.Infof("|ESXCLOUD-TRACE| EsxcapiAttachISO(zone=%q, esxcloudVMID=%q, isoFilePath=%q)...", zone, esxcloudVMID, isoFilePath)
 	}
 
-	url := "http://" + zone
-	client := photon.NewClient(url, nil)
-
-	attachTask, err := client.VMs.AttachISO(esxcloudVMID, isoFilePath)
-	if err != nil {
-		if glog.V(dcp.Debug) {
-			glog.Infof("|ESXCLOUD-DEBUG| EsxcapiAttachISO() failed to attach ISO. Error: %q", err)
-		}
-		return err
-	}
-
-	_, err = client.Tasks.Wait(attachTask.ID)
-	if err != nil {
-		if glog.V(dcp.Debug) {
-			glog.Infof("|ESXCLOUD-DEBUG| EsxcapiAttachISO() failed while waiting on task completion. Error: %q", err)
-		}
-		return err
-	}
+//	url := "http://" + zone
+//	client := photon.NewClient(url, nil)
+//
+//	attachTask, err := client.VMs.AttachISO(esxcloudVMID, isoFilePath)
+//	if err != nil {
+//		if glog.V(dcp.Debug) {
+//			glog.Infof("|ESXCLOUD-DEBUG| EsxcapiAttachISO() failed to attach ISO. Error: %q", err)
+//		}
+//		return err
+//	}
+//
+//	_, err = client.Tasks.Wait(attachTask.ID)
+//	if err != nil {
+//		if glog.V(dcp.Debug) {
+//			glog.Infof("|ESXCLOUD-DEBUG| EsxcapiAttachISO() failed while waiting on task completion. Error: %q", err)
+//		}
+//		return err
+//	}
 
 	return err
 }
