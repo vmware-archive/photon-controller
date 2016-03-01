@@ -8,7 +8,7 @@ TOPLEVEL=$(git rev-parse --show-toplevel)
 REVISION=$(git rev-parse HEAD)
 
 DIRTY=""
-if [ $(git diff-files $TOPLEVEL/python $TOPLEVEL/thrift) -ne "" ]; then
+if [ $(git diff-files $TOPLEVEL/python $TOPLEVEL/thrift) != "" ]; then
 	DIRTY="-dirty"
 fi
 
