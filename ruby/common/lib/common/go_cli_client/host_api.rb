@@ -142,10 +142,16 @@ module EsxCloud
       def get_host_from_response(result)
         result.slice! "\n"
         values = result.split("\t")
-        host_hash = { "id" => values[0], "username" => values[1], "password" => values[2],
-                      "address" => values[3], "usageTags" => values[4], "state" => values[5],
-                      "metadata" => metadata_to_hash(values[6]), "availabilityZone" => values[7],
-                      "esxVersion" => values[8] }
+        host_hash = Hash.new
+        host_hash["id"]               = values[0] unless values[0] == ""
+        host_hash["username"]         = values[1] unless values[1] == ""
+        host_hash["password"]         = values[2] unless values[2] == ""
+        host_hash["address"]          = values[3] unless values[3] == ""
+        host_hash["usageTags"]        = values[4] unless values[4] == ""
+        host_hash["state"]            = values[5] unless values[5] == ""
+        host_hash["metadata"]         = metadata_to_hash(values[6])
+        host_hash["availabilityZone"] = values[7] unless values[7] == ""
+        host_hash["esxVersion"]       = values[8] unless values[8] == ""
 
         Host.create_from_hash(host_hash)
       end
