@@ -224,8 +224,7 @@ public class ImageSeederSyncTriggerServiceTest {
       request.shouldTriggerTasks = false;
       request.triggersError = (long) random.nextInt(Integer.MAX_VALUE);
       request.triggersSuccess = (long) random.nextInt(Integer.MAX_VALUE);
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null,
-          serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
 
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
@@ -261,8 +260,7 @@ public class ImageSeederSyncTriggerServiceTest {
     @Test(dataProvider = "hostCount")
     public void testTriggerSuccess(int hostCount) throws Throwable {
       request.shouldTriggerTasks = true;
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null,
-          serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
 
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(

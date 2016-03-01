@@ -18,25 +18,21 @@ import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperHostMonitor;
-import com.vmware.photon.controller.housekeeper.zookeeper.ZookeeperHostMonitorProvider;
 
 /**
  * Test helper used to test MicroServices in isolation.
  */
 public class TestHost
     extends BasicServiceHost
-    implements HostClientProvider, ZookeeperHostMonitorProvider, CloudStoreHelperProvider {
+    implements HostClientProvider, CloudStoreHelperProvider {
 
   private final HostClient hostClient;
-  private final ZookeeperHostMonitor zookeeperHostMonitor;
   private final CloudStoreHelper cloudStoreHelper;
 
-  private TestHost(HostClient hostClient, ZookeeperHostMonitor zookeeperHostMonitor,
+  private TestHost(HostClient hostClient,
                    CloudStoreHelper cloudStoreHelper) {
     super();
     this.hostClient = hostClient;
-    this.zookeeperHostMonitor = zookeeperHostMonitor;
     this.cloudStoreHelper = cloudStoreHelper;
   }
 
@@ -45,14 +41,9 @@ public class TestHost
   }
 
   public static TestHost create(HostClient hostClient,
-                                ZookeeperHostMonitor zookeeperHostMonitor) throws Throwable {
-    return create(hostClient, zookeeperHostMonitor, null);
-  }
-
-  public static TestHost create(HostClient hostClient,
-                                ZookeeperHostMonitor zookeeperHostMonitor, CloudStoreHelper cloudStoreHelper)
+                                CloudStoreHelper cloudStoreHelper)
       throws Throwable {
-    TestHost host = new TestHost(hostClient, zookeeperHostMonitor, cloudStoreHelper);
+    TestHost host = new TestHost(hostClient, cloudStoreHelper);
     host.initialize();
     host.startWithCoreServices();
     return host;
@@ -61,11 +52,6 @@ public class TestHost
   @Override
   public HostClient getHostClient() {
     return hostClient;
-  }
-
-  @Override
-  public ZookeeperHostMonitor getZookeeperHostMonitor() {
-    return zookeeperHostMonitor;
   }
 
   @Override

@@ -490,8 +490,7 @@ public class ImageDatastoreSweeperServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = spy(new ImageDatastoreSweeperService());
-      host = TestHost.create(mock(HostClient.class), null,
-          new CloudStoreHelperMock());
+      host = TestHost.create(mock(HostClient.class), new CloudStoreHelperMock());
     }
 
     @AfterMethod
@@ -909,7 +908,7 @@ public class ImageDatastoreSweeperServiceTest {
                             boolean isImageDatastore,
                             int deletedImages) throws Throwable {
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
       ServiceHost host = machine.getHosts()[0];
 
       machine.startFactoryServiceSynchronously(
@@ -1049,7 +1048,7 @@ public class ImageDatastoreSweeperServiceTest {
     @Test(dataProvider = "HostClientErrors")
     public void testHostClientErrors(int hostCount, double patchCount, String reason, HostClientMock hostClient)
         throws Throwable {
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
       machine.startFactoryServiceSynchronously(
               ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
 
