@@ -31,6 +31,8 @@ class TestStatsPublisher(unittest.TestCase):
         agent_config = MagicMock()
         agent_config.host_id = "fake-id"
         agent_config.stats_store_endpoint = "1.1.1.1"
+        agent_config.stats_store_port = 1111
+        agent_config.host_tags = "abc"
         self._mock_db = MagicMock()
         common.services.register(ServiceName.AGENT_CONFIG, agent_config)
 
@@ -61,7 +63,9 @@ class TestStatsPublisher(unittest.TestCase):
         publisher.configure_publishers()
 
         _graphite_pub_cls.assert_called_once_with(host_id="fake-id",
-                                                  carbon_host='1.1.1.1')
+                                                  carbon_host='1.1.1.1',
+                                                  carbon_port=1111,
+                                                  host_tags = "abc")
         assert_that(publisher._publishers, contains(mock_publisher))
 
     @patch('stats.stats_publisher.GraphitePublisher')

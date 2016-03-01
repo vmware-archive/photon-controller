@@ -56,9 +56,13 @@ class StatsPublisher(object):
         self._publishers.append(publisher)
 
     def configure_publishers(self):
-        host = self._agent_config.stats_store_endpoint
+        stats_store_endpoint = self._agent_config.stats_store_endpoint
+        stats_store_port = self._agent_config.stats_store_port
+        host_tags = self._agent_config.host_tags
         pm_publisher = GraphitePublisher(host_id=self._host_id,
-                                         carbon_host=host)
+                                         carbon_host=stats_store_endpoint,
+                                         carbon_port=stats_store_port,
+                                         host_tags=host_tags)
         self.register_publisher(pm_publisher)
 
     def publish(self):
