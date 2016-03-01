@@ -75,8 +75,20 @@ module EsxCloud
       def get_flavor_from_response(result)
         result.slice! "\n"
         values = result.split("\t")
-        flavor_hash = { "id" => values[0], "name" => values[1], "kind" => values[2],
-                        "cost" => cost_to_hash(values[3]), "state" => values[4] }
+        flavor_hash = Hash.new
+        unless values[0] == ""
+          flavor_hash["id"] = values[0]
+        end
+        unless values[1] == ""
+          flavor_hash["name"] = values[1]
+        end
+        unless values[2] == ""
+          flavor_hash["kind"] = values[2]
+        end
+          flavor_hash["cost"] = cost_to_hash(values[3])
+        unless values[4] == ""
+          flavor_hash["state"] = values[4]
+        end
 
         Flavor.create_from_hash(flavor_hash)
       end
@@ -85,9 +97,11 @@ module EsxCloud
       # @return hash
       def cost_to_hash(costs)
         costs_New = Array.new
-        costs.split(',').each { |cost|
-          values = cost.split(':')
-          costs_New.push({ "key" => values[0], "value" => values[1], "unit" => values[2]})}
+        if costs.to_s != ''
+          costs.split(',').each { |cost|
+            values = cost.split(':')
+            costs_New.push({ "key" => values[0], "value" => values[1], "unit" => values[2]})}
+        end
         costs_New
       end
     end
