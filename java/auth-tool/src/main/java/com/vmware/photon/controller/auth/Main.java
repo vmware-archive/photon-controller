@@ -79,7 +79,7 @@ public class Main {
           X509CertificateHelper x509CertificateHelper = new X509CertificateHelper();
           X509Certificate x509Certificate = x509CertificateHelper.generateX509Certificate();
 
-          AuthClientHandler.ImplicitClient implicitClient = authClientHandler.registerImplicitClient(x509Certificate,
+          AuthClientHandler.ImplicitClient implicitClient = authClientHandler.registerImplicitClient(
               new URI(arguments.getLoginRedirectEndpoint()), new URI(arguments.getLogoutRedirectEndpoint()));
 
           printClientRegistrationInfo(implicitClient);

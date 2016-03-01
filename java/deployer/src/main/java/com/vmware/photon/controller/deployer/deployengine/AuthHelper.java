@@ -73,7 +73,6 @@ public class AuthHelper {
     X509CertificateHelper x509CertificateHelper = new X509CertificateHelper();
     X509Certificate x509Certificate = x509CertificateHelper.generateX509Certificate();
 
-    return authClientHandler.registerImplicitClient(x509Certificate,
-        new URI(loginRedirectEndpoint), new URI(logoutRedirectEndpoint));
+    return authClientHandler.registerImplicitClient(new URI(loginRedirectEndpoint), new URI(logoutRedirectEndpoint));
   }
 }

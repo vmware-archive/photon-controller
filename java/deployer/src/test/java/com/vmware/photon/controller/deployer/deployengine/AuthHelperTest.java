@@ -21,7 +21,6 @@ import com.vmware.photon.controller.common.auth.AuthOIDCClient;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -32,7 +31,6 @@ import static org.testng.AssertJUnit.assertEquals;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.cert.X509Certificate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -72,8 +70,8 @@ public class AuthHelperTest {
   @Test
   public void getRedirectUriTestSuccess() throws Throwable {
     doReturn(authClientHandler).when(authOIDCClient).getClientHandler(eq(userName), eq(password));
-    doReturn(implicitClient).when(authClientHandler).registerImplicitClient(isA(X509Certificate.class),
-            eq(loginRedirectUri), eq(logoutRedirectUri));
+    doReturn(implicitClient).when(authClientHandler).registerImplicitClient(eq(loginRedirectUri),
+            eq(logoutRedirectUri));
 
     AuthHelper authHelper = new AuthHelper();
     AuthClientHandler.ImplicitClient gotImplicitClient = authHelper.getResourceLoginUri(authOIDCClient,
@@ -83,8 +81,7 @@ public class AuthHelperTest {
     assertEquals(gotImplicitClient.logoutURI, implicitClient.logoutURI);
 
     verify(authOIDCClient, times(1)).getClientHandler(userName, password);
-    verify(authClientHandler, times(1)).registerImplicitClient(isA(X509Certificate.class),
-        eq(loginRedirectUri), eq(logoutRedirectUri));
+    verify(authClientHandler, times(1)).registerImplicitClient(eq(loginRedirectUri), eq(logoutRedirectUri));
   }
 
   @Test(expectedExceptions = AuthException.class)
@@ -98,7 +95,7 @@ public class AuthHelperTest {
         loginRedirectEndpoint, logoutRedirectEndpoint);
 
     verify(authOIDCClient, times(1)).getClientHandler(userName, password);
-    verify(authClientHandler, never()).registerClient(isA(X509Certificate.class), eq(loginRedirectUri));
+    verify(authClientHandler, never()).registerClient(eq(loginRedirectUri));
     verify(authClientHandler, never()).buildAuthenticationRequestURI(eq(clientID), eq(loginRedirectUri));
   }
 
@@ -107,14 +104,13 @@ public class AuthHelperTest {
     doReturn(authClientHandler).when(authOIDCClient).getClientHandler(eq(userName), eq(password));
     doThrow(new AuthException("Failed to build URI."))
             .when(authClientHandler)
-            .registerImplicitClient(isA(X509Certificate.class), eq(loginRedirectUri), eq(logoutRedirectUri));
+            .registerImplicitClient(eq(loginRedirectUri), eq(logoutRedirectUri));
 
     AuthHelper authHelper = new AuthHelper();
     authHelper.getResourceLoginUri(authOIDCClient, userName, password,
         loginRedirectEndpoint, logoutRedirectEndpoint);
 
     verify(authOIDCClient, times(1)).getClientHandler(userName, password);
-    verify(authClientHandler, times(1)).registerImplicitClient(isA(X509Certificate.class),
-        eq(loginRedirectUri), eq(logoutRedirectUri));
+    verify(authClientHandler, times(1)).registerImplicitClient(eq(loginRedirectUri), eq(logoutRedirectUri));
   }
 }
