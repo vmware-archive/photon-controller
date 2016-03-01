@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # Copyright (c) 2015 VMware, Inc. All Rights Reserved.
 import sys
-import uuid
 
 from common.photon_thrift.direct_client import DirectClient
 
@@ -11,10 +10,11 @@ from eccli.optparser import default_parser
 from eccli.thrift import get_client
 from eccli.utils import createVmResource
 from eccli.utils import createDisksResource
-from gen.host.ttypes import ReserveRequest
 
+from gen.host.ttypes import ReserveRequest
 from gen.resource.ttypes import Resource
-from gen.scheduler.ttypes import PlaceRequest, PlaceResultCode
+from gen.scheduler.ttypes import PlaceRequest
+from gen.scheduler.ttypes import PlaceResultCode
 
 parser = default_parser(usage="eccli-config-get [options]",
                         add_help=True)

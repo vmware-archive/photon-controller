@@ -9,19 +9,19 @@ from eccli.format import print_response
 from eccli.optparser import default_parser
 from eccli.thrift import get_client
 
-from gen.host.ttypes import CreateVmRequest
+from gen.host.ttypes import CreateDisksRequest
 
-parser = default_parser(usage="eccli-vm-create [options]",
+parser = default_parser(usage="eccli-disk-create [options]",
                         add_help=True)
 parser.add_option("-r", "--reservation",
                   action="store", type="string", dest="reservation",
                   help="Reservation id from reserve call")
 (options, args) = parser.parse_args()
 
-request = CreateVmRequest()
+request = CreateDisksRequest()
 request.reservation = options.reservation
 
 print_request(request)
 client = get_client(options, "Host")
-response = client.create_vm(request)
+response = client.create_disks(request)
 print_response(response)

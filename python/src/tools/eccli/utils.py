@@ -50,4 +50,7 @@ def createDisksResource():
     disk.persistent = True
     disk.new_disk = True
     disk.capacity_gb = 2
+    disk.flavor_info = Flavor()
+    disk.flavor_info.name = "some-disk-flavor"
+    disk.flavor_info.cost = []
     return [disk]
