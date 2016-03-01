@@ -18,7 +18,7 @@ from .stats import StatsHandler
 
 class StatsPlugin(common.plugin.Plugin):
     def __init__(self):
-        super(StatsPlugin, self).__init__("Stats")
+        super(StatsPlugin, self).__init__("Stats", is_core=False)
 
     def init(self):
         self._handler = StatsHandler()
