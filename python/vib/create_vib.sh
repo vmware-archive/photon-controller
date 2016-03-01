@@ -8,9 +8,11 @@ TOPLEVEL=$(git rev-parse --show-toplevel)
 REVISION=$(git rev-parse HEAD)
 
 DIRTY=""
-if [ $(git diff-files $TOPLEVEL/python $TOPLEVEL/thrift) -ne "" ]; then
+set +x
+if [ "$(git diff-files $TOPLEVEL/python $TOPLEVEL/thrift)" != "" ]; then
 	DIRTY="-dirty"
 fi
+set -x
 
 # Create temp work directory in current directory to support OS X docker container for vibauthor,
 # because directory vibautor container can mount to current directory and need access to

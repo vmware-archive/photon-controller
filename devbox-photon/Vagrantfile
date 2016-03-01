@@ -640,7 +640,8 @@ Vagrant.configure("2") do |config|
         success=0
         break
       fi
-      echo "Services not started yet. Status: $status. Retry count: $i"
+      status=$(echo $status | tr  -d '"' | grep -oh ":[A-Z_]*,status:\\w*" | tr '\n' ' ')
+      echo "$status. Retry count: $i"
       sleep $SLEEP_BETWEEN_RETRIES_SEC
       i=$[$i+1]
     done
