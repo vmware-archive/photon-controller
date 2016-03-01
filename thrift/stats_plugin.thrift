@@ -15,9 +15,10 @@ namespace java com.vmware.photon.controller.stats.plugin.gen
 namespace py gen.stats.plugin
 
 struct StatsPluginConfig {
-  1: required bool enabled
-  2: optional string store_endpoint
-  3: optional i32 store_port
+  1: required bool stats_enabled
+  2: optional string stats_store_endpoint
+  3: optional i32 stats_store_port
+  4: optional string stats_host_tags
 }
 
 // Stats request: change the collection level of the stats collector

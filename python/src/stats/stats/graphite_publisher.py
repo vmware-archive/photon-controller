@@ -23,16 +23,32 @@ DEFAULT_CARBON_PORT = 2004
 class GraphitePublisher(Publisher):
 
     def __init__(self, host_id, carbon_host, carbon_port=DEFAULT_CARBON_PORT,
-                 use_pickle_format=True):
+                 use_pickle_format=True, host_tags=None):
         self._logger = logging.getLogger(__name__)
         self._carbon_host = carbon_host
         self._carbon_port = carbon_port
         self._use_pickle = use_pickle_format
-        self._host_metric_prefix = "photon." + str(host_id)
+        tags = self.get_sensitized_tags(host_tags)
+        self._host_metric_prefix = "photon." + str(host_id) + tags
 
         if not use_pickle_format:
             # Not supporting plain text format for now.
             raise NotImplementedError
+
+    @staticmethod
+    def get_sensitized_tags(host_tags):
+        tags = ""
+        if host_tags is not None:
+            host_tags = host_tags.strip()
+            if host_tags is not "":
+                tag_list = host_tags.split(',')
+                tag_list = map(lambda tag: tag.strip().replace(' ', '_'), tag_list)
+                tag_list = filter(lambda tag: tag is not "", tag_list)
+                tag_list.sort()
+                tags_joined = ".".join(tag_list)
+                if tags_joined != "":
+                    tags = "." + tags_joined
+        return tags
 
     def _build_pickled_data_msg(self, stats):
         # pickle-based message is of the form
@@ -58,5 +74,5 @@ class GraphitePublisher(Publisher):
             sock.sendall(message)
             sock.close()
         except:
-            self._logger.error(
+            self._logger.critical(
                 "could not connect with stats_store_endpoint: %s : %s" % (self._carbon_host, self._carbon_port))

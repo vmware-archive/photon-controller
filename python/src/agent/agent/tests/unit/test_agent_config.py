@@ -112,13 +112,17 @@ class TestUnitAgent(unittest.TestCase):
                                    "--datastores", "ds1, ds2",
                                    "--vm-network", "VM Network",
                                    "--wait-timeout", "5",
+                                   "--stats-enabled", "True",
                                    "--stats-store-endpoint", "10.10.10.10",
                                    "--stats-store-port", "8081",
+                                   "--stats-host-tags", "MGMT,CLOUD",
                                    "--chairman", "h1:1300, h2:1300"])
         assert_that(self.agent.availability_zone, equal_to("test"))
         assert_that(self.agent.hostname, equal_to("localhost"))
+        assert_that(self.agent.stats_enabled, equal_to(True))
         assert_that(self.agent.stats_store_endpoint, equal_to("10.10.10.10"))
         assert_that(self.agent.stats_store_port, equal_to(8081))
+        assert_that(self.agent.stats_host_tags, equal_to("MGMT,CLOUD"))
         assert_that(self.agent.host_port, equal_to(1234))
         assert_that(self.agent.datastores, equal_to(["ds1", "ds2"]))
         assert_that(self.agent.networks, equal_to(["VM Network"]))
@@ -164,7 +168,7 @@ class TestUnitAgent(unittest.TestCase):
         req.address = addr
 
         stats_plugin_config = StatsPluginConfig(
-            store_endpoint="10.0.0.100", store_port=8081, enabled=True)
+            stats_store_endpoint="10.0.0.100", stats_store_port=8081, stats_enabled=True)
         req.stats_plugin_config = stats_plugin_config
 
         req.host_id = "host1"
@@ -174,7 +178,7 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.availability_zone, equal_to("test1"))
         assert_that(self.agent.stats_store_endpoint, equal_to("10.0.0.100"))
         assert_that(self.agent.stats_store_port, equal_to(8081))
-        assert_that(self.agent.stats_store_enabled, equal_to(True))
+        assert_that(self.agent.stats_enabled, equal_to(True))
         assert_that(self.agent.hostname, equal_to("localhost"))
         assert_that(self.agent.host_port, equal_to(2345))
         assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
@@ -310,6 +314,8 @@ class TestUnitAgent(unittest.TestCase):
         req.availability_zone = "test1"
         req.datastores = ["ds3", "ds4"]
         req.networks = ["Public"]
+        req.stats_plugin_config = StatsPluginConfig()
+        req.stats_plugin_config.enabled = False
         addr = ServerAddress(host="localhost", port=2345)
         req.address = addr
         self.agent.update_config(req)
