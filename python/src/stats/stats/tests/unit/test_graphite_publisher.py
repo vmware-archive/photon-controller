@@ -38,14 +38,24 @@ class TestGraphitePublisher(unittest.TestCase):
         host_id = "fake-id"
         stats = {"key1": [(1000000, 1), (1000020, 2)]}
         pub = graphite_publisher.GraphitePublisher(
-            host_id=host_id, carbon_host="10.10.10.10", carbon_port=2004)
+            host_id=host_id, carbon_host="10.10.10.10", carbon_port=2004, host_tags="tag")
 
         result = pub._build_pickled_data_msg(stats)
-        expected_data = [('photon.fake-id.key1', (1000000, 1)),
-                         ('photon.fake-id.key1', (1000020, 2))]
+        expected_data = [('photon.fake-id.tag.key1', (1000000, 1)),
+                         ('photon.fake-id.tag.key1', (1000020, 2))]
         _dumps.assert_called_once_with(expected_data, protocol=2)
         _pack.assert_called_once_with("!L", len("picklemsg"))
         assert_that(result, is_("packed_header" + "picklemsg"))
+
+    def test_host_tags_are_sensitized_and_sorted(self):
+        assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags(None), is_(""))
+        assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags(" "), is_(""))
+        assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags(" , "), is_(""))
+        assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags("abc"), is_(".abc"))
+        assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags(" abc "), is_(".abc"))
+        assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags("abc,xyz"), is_(".abc.xyz"))
+        assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags(" xyz, abc "), is_(".abc.xyz"))
+        assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags(" xyz, abc, mno "), is_(".abc.mno.xyz"))
 
     @patch(
         "stats.graphite_publisher.GraphitePublisher._build_pickled_data_msg")

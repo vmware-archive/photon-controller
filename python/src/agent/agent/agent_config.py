@@ -69,9 +69,10 @@ class AgentConfig(object):
     DEPLOYMENT_ID = "deployment_id"
     IMAGE_DATASTORES = "image_datastores"
 
-    STATS_STORE_ENDPOINT = "stats_store_endpoint"
-    STATS_STORE_PORT = "stats_store_port"
-    STATS_ENABLED = "stats_enabled"
+    STATS_STORE_ENDPOINT = "store_endpoint"
+    STATS_STORE_PORT = "store_port"
+    STATS_ENABLED = "enabled"
+    STATS_HOST_TAGS = "host_tags"
 
     PROVISION_ARGS = [HOST_PORT]
     BOOTSTRAP_ARGS = PROVISION_ARGS + [AVAILABILITY_ZONE, HOSTNAME, CHAIRMAN,
@@ -192,7 +193,7 @@ class AgentConfig(object):
         reboot |= self._check_and_set_attr(
             self.HOST_PORT, port)
 
-        if provision_req.stats_plugin_config is not None and provision_req.stats_plugin_config.enabled:
+        if provision_req.stats_plugin_config is not None:
             reboot |= self._check_and_set_attr(
                 self.STATS_STORE_ENDPOINT,
                 provision_req.stats_plugin_config.store_endpoint)
@@ -202,6 +203,9 @@ class AgentConfig(object):
             reboot |= self._check_and_set_attr(
                 self.STATS_ENABLED,
                 provision_req.stats_plugin_config.enabled)
+            reboot |= self._check_and_set_attr(
+                self.STATS_HOST_TAGS,
+                provision_req.stats_plugin_config.host_tags)
 
         chairman_str = \
             self._parse_chairman_server_address(provision_req.chairman_server)
@@ -308,6 +312,11 @@ class AgentConfig(object):
     @locked
     def stats_store_port(self):
         return getattr(self._options, self.STATS_STORE_PORT)
+
+    @property
+    @locked
+    def stats_host_tags(self):
+        return getattr(self._options, self.STATS_HOST_TAGS)
 
     @property
     @locked
@@ -594,18 +603,31 @@ class AgentConfig(object):
                           type="string", default=None,
                           help="ID of this host")
 
+        parser.add_option("--stats-enabled",
+                          dest=self.STATS_ENABLED,
+                          action="store_true",
+                          default=False,
+                          help="Flag to enable stats")
+
         parser.add_option("--stats-store-endpoint",
-                          dest="stats_store_endpoint",
+                          dest=self.STATS_STORE_ENDPOINT,
                           type="string",
                           default=None,
                           help="Uri or IP Address of the stats "
                                "store server (i.e. graphite)")
+
         parser.add_option("--stats-store-port",
-                          dest="stats_store_port",
+                          dest=self.STATS_STORE_PORT,
                           type="int",
                           default=0,
                           help="Port number of the stats "
                                "store server (i.e. graphite)")
+
+        parser.add_option("--stats-host-tags",
+                          dest=self.STATS_HOST_TAGS,
+                          type="string",
+                          default=None,
+                          help="Host tags for tagging metrics in stats")
 
         parser.add_option("--deployment-id", dest=self.DEPLOYMENT_ID,
                           type="string", default=None,
