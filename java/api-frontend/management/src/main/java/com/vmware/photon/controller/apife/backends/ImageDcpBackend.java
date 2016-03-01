@@ -154,7 +154,6 @@ public class ImageDcpBackend implements ImageBackend {
     imageEntity.setId(id);
 
     TaskEntity task = uploadTask(inputStream, imageEntity);
-    logger.info("Task created: {}", task);
     return task;
   }
 
@@ -168,7 +167,6 @@ public class ImageDcpBackend implements ImageBackend {
     }
 
     TaskEntity task = deleteTask(image);
-    logger.info("Task created: {}", task);
     return task;
   }
 

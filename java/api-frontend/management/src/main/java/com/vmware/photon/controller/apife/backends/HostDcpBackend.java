@@ -96,7 +96,6 @@ public class HostDcpBackend implements HostBackend {
     HostEntity host = create(hostCreateSpec);
     logger.info("created Host: {}", host);
     TaskEntity task = createTask(host, deploymentId);
-    logger.info("created Task: {}", task);
     return task;
   }
 
@@ -107,7 +106,6 @@ public class HostDcpBackend implements HostBackend {
         Operation.DELETE_HOST, HostState.OPERATION_PREREQ_STATE);
     logger.info("deleting host: {}", hostEntity);
     TaskEntity task = deleteTask(hostEntity);
-    logger.info("created Task: {}", task);
     return task;
   }
 
@@ -196,7 +194,6 @@ public class HostDcpBackend implements HostBackend {
 
     state.availabilityZoneId = hostSetAvailabilityZoneOperation.getAvailabilityZoneId();
     TaskEntity taskEntity = createQueuedTaskEntity(toHostEntity(state), Operation.SET_AVAILABILITYZONE);
-    logger.info("created Task: {}", taskEntity);
     return taskEntity;
   }
 
@@ -208,7 +205,6 @@ public class HostDcpBackend implements HostBackend {
     logger.info("putting host {} in suspended mode.");
     hostEntity.setState(HostState.SUSPENDED);
     TaskEntity taskEntity = createQueuedTaskEntity(hostEntity, Operation.SUSPEND_HOST);
-    logger.info("created Task: {}", taskEntity);
 
     return taskEntity;
   }
@@ -220,7 +216,6 @@ public class HostDcpBackend implements HostBackend {
         Operation.RESUME_HOST, HostState.OPERATION_PREREQ_STATE);
     logger.info("resuming host {} to normal mode.");
     TaskEntity taskEntity = createQueuedTaskEntity(hostEntity, Operation.RESUME_HOST);
-    logger.info("created Task: {}", taskEntity);
 
     return taskEntity;
   }
@@ -232,7 +227,6 @@ public class HostDcpBackend implements HostBackend {
         Operation.ENTER_MAINTENANCE_MODE, HostState.OPERATION_PREREQ_STATE);
     logger.info("host {} enters maintenance mode.");
     TaskEntity taskEntity = createQueuedTaskEntity(hostEntity, Operation.ENTER_MAINTENANCE_MODE);
-    logger.info("crated Task: {}", taskEntity);
     return taskEntity;
   }
 
@@ -243,7 +237,6 @@ public class HostDcpBackend implements HostBackend {
         Operation.EXIT_MAINTENANCE_MODE, HostState.OPERATION_PREREQ_STATE);
     logger.info("host {} exits maintenance mode.");
     TaskEntity taskEntity = createQueuedTaskEntity(hostEntity, Operation.EXIT_MAINTENANCE_MODE);
-    logger.info("created Task: {}", taskEntity);
 
     return taskEntity;
   }

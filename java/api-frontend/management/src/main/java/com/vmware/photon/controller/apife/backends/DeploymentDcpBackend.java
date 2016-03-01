@@ -96,7 +96,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     logger.info("created deployment {}", deploymentEntity);
 
     TaskEntity taskEntity = taskBackend.createCompletedTask(deploymentEntity, Operation.CREATE_DEPLOYMENT);
-    logger.info("created task {}", taskEntity);
 
     return taskEntity;
   }
@@ -110,7 +109,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     logger.info("Delete deployment {}", deploymentEntity);
     tombstone(deploymentEntity);
     TaskEntity taskEntity = this.taskBackend.createCompletedTask(deploymentEntity, Operation.DELETE_DEPLOYMENT);
-    logger.info("created task {}", taskEntity);
     return taskEntity;
   }
 
@@ -124,7 +122,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
     logger.info("Initialize migrate  {}", deploymentEntity);
     TaskEntity taskEntity = createInitializeMigrateDeploymentTask(sourceLoadbalancerAddress, deploymentEntity);
-    logger.info("created task {}", taskEntity);
     taskEntity.getToBeLockedEntityIds().add(deploymentEntity.getId());
     return taskEntity;
   }
@@ -138,7 +135,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
     logger.info("Finalize migrate  {}", deploymentEntity);
     TaskEntity taskEntity = createFinalizeMigrateDeploymentTask(sourceLoadbalancerAddress, deploymentEntity);
-    logger.info("created task {}", taskEntity);
     taskEntity.getToBeLockedEntityIds().add(deploymentEntity.getId());
     return taskEntity;
   }
@@ -150,7 +146,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
         Operation.PERFORM_DEPLOYMENT, DeploymentState.OPERATION_PREREQ_STATE);
 
     TaskEntity taskEntity = createDeployTask(deploymentEntity);
-    logger.info("created task {}", taskEntity);
     return taskEntity;
   }
 
@@ -162,7 +157,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
     logger.info("Destroy deployment {}", deploymentEntity);
     TaskEntity taskEntity = destroyTask(deploymentEntity);
-    logger.info("created task {}", taskEntity);
     return taskEntity;
   }
 
@@ -198,7 +192,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
           Operation.PUSH_TENANT_SECURITY_GROUPS);
     }
 
-    logger.info("Created task: {}", taskEntity);
     return taskEntity;
   }
 

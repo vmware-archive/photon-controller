@@ -124,7 +124,6 @@ public class DiskDcpBackend implements DiskBackend {
     BaseDiskEntity diskEntity = create(projectId, spec);
     logger.info("created Disk: {}", diskEntity);
     TaskEntity task = createTask(diskEntity.getKind(), diskEntity.getId());
-    logger.info("created Task: {}", task);
     return task;
   }
 
@@ -133,7 +132,6 @@ public class DiskDcpBackend implements DiskBackend {
     PersistentDiskEntity diskEntity = (PersistentDiskEntity) find(PersistentDisk.KIND, diskId);
     logger.info("deleting Disk: {}", diskEntity);
     TaskEntity task = deleteTask(diskEntity, true);
-    logger.info("created Task: {}", task);
     return task;
   }
 
