@@ -77,11 +77,13 @@ module EsxCloud
       def get_resource_ticket_from_response(result, tenant_id)
         result.slice! "\n"
         values = result.split("\t")
-        resource_ticket_hash = { "name" => values[0],
-                                 "id" => values[1],
-                                 "limits" => getLimitsOrUsage(values[2]),
-                                 "usage" => getLimitsOrUsage(values[3]),
-                                 "tenantId" => tenant_id}
+        resource_ticket_hash = Hash.new
+        resource_ticket_hash["name"]     = values[0] unless values[0] == ""
+        resource_ticket_hash["id"]       = values[1] unless values[1] == ""
+        resource_ticket_hash["limits"]   = getLimitsOrUsage(values[2])
+        resource_ticket_hash["usage"]    = getLimitsOrUsage(values[3])
+        resource_ticket_hash["tenantId"] = tenant_id
+
         ResourceTicket.create_from_hash(resource_ticket_hash)
       end
 
