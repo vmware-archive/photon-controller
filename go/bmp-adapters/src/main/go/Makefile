@@ -16,7 +16,7 @@ endif
 
 export GOPATH
 
-all: check test
+all: check test build
 
 check: goversion goimports govet golint
 
