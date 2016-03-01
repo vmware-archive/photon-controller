@@ -25,7 +25,7 @@ clean-src/%: src/%
 
 CLEAN_TARGETS := $(patsubst %,clean-%,$(PACKAGES))
 clean: $(CLEAN_TARGETS)
-	rm -rf dist develop develop_tools
+	rm -rf dist develop
 
 .PHONY: clean clean-src/%
 
