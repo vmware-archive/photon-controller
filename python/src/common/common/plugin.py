@@ -34,8 +34,13 @@ class Plugin(object):
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, name):
+    def __init__(self, name, is_core=True):
+        """
+        :param name: plugin name
+        :param is_core: boolean to indicate if this is the core plugins or not. Core plugin should be able to start
+        """
         self.name = name
+        self.is_core = is_core
         self._thrift_services = set()
         self._backend_workers = set()
 
@@ -127,9 +132,9 @@ def load_plugins():
                 plugin.init()
                 logger.info("Plugin %s initialized" % plugin.name)
             except:
-                logger.exception("Init plugin %s failed" % plugin.name)
-                raise
-
+                logger.exception("Init of plugin %s failed" % plugin.name)
+                if plugin.is_core:
+                    raise
     # Start all plugins
     for plugin in plugins:
         if plugin.start:
@@ -138,7 +143,8 @@ def load_plugins():
                 logger.info("Plugin %s started" % plugin.name)
             except:
                 logger.exception("Start plugin %s failed" % plugin.name)
-                raise
+                if plugin.is_core:
+                    raise
 
     global loaded_plugins
     loaded_plugins = plugins
