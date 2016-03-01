@@ -25,7 +25,6 @@ import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.Test;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -34,7 +33,6 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import static org.powermock.api.mockito.PowerMockito.whenNew;
 
 import java.net.URI;
-import java.security.cert.X509Certificate;
 
 /**
  * Test {@link Main}.
@@ -139,13 +137,13 @@ public class MainTest extends PowerMockTestCase {
 
     AuthClientHandler.ImplicitClient implicitClient = new AuthClientHandler.ImplicitClient("client-id", "login-url",
         "logout-url");
-    when(authClientHandler.registerImplicitClient(isA(X509Certificate.class), eq(new URI(LOGIN_REDIRECT_URL)),
+    when(authClientHandler.registerImplicitClient(eq(new URI(LOGIN_REDIRECT_URL)),
         eq(new URI(LOGOUT_REDIRECT_URL)))).thenReturn(implicitClient);
 
     Main.main(new String[]
         {"register-client", "-t", TENANT, "-u", USER, "-p", PASSWORD, "-a", AUTH_SERVER_ADDRESS,
             "-n", Integer.toString(AUTH_SERVER_PORT), "-r", LOGIN_REDIRECT_URL, "-o", LOGOUT_REDIRECT_URL});
-    verify(authClientHandler, times(1)).registerImplicitClient(isA(X509Certificate.class),
-        eq(new URI(LOGIN_REDIRECT_URL)), eq(new URI(LOGOUT_REDIRECT_URL)));
+    verify(authClientHandler, times(1)).registerImplicitClient(eq(new URI(LOGIN_REDIRECT_URL)),
+            eq(new URI(LOGOUT_REDIRECT_URL)));
   }
 }
