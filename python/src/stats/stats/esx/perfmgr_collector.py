@@ -76,7 +76,7 @@ class PerfManagerCollector(Collector):
         self._initialized = False
 
     @staticmethod
-    def vim_client():
+    def get_vim_client():
         return common.services.get(ServiceName.VIM_CLIENT)
 
     def get_perf_manager(self):
@@ -235,8 +235,9 @@ class PerfManagerCollector(Collector):
             for value in values:
                 id = value.id.counterId
                 counter_values = [float(i) for i in value.value.split(',')]
-                metric_name = "%s%s" % (stat_prefix, self._counter_to_metric_map[id])
-                results[metric_name] = zip(timestamps, counter_values)
+                if id in self._counter_to_metric_map:
+                    metric_name = "%s%s" % (stat_prefix, self._counter_to_metric_map[id])
+                    results[metric_name] = zip(timestamps, counter_values)
         return results
 
     def _host_cpu_usage(self, host):
