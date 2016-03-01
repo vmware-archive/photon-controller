@@ -34,8 +34,12 @@ class StatsHandler(StatsService.Iface):
         self._logger = logging.getLogger(__name__)
         self._agent_config = common.services.get(ServiceName.AGENT_CONFIG)
 
-        if self._agent_config.stats_store_endpoint is None:
-            self._logger.info("stats_store_endpoint is empty. Stats plugin will be silent")
+        if self._agent_config.stats_store_enabled is None or self._agent_config.stats_store_enabled is False:
+            self._logger.info("Stats not configured, Stats plugin will be in silent mode")
+            return
+
+        if self._agent_config.stats_store_endpoint is None or self._agent_config.stats_store_port is None:
+            self._logger.error("stats endpoint/port not specified, though stats are enabled")
             return
 
         self._db = MemoryTimeSeriesDB()
@@ -60,7 +64,10 @@ class StatsHandler(StatsService.Iface):
         return response
 
     def start(self):
-        if self._agent_config.stats_store_endpoint is None:
+        if self._agent_config.stats_store_enabled is None or \
+           self._agent_config.stats_store_enabled is False or \
+           self._agent_config.stats_store_endpoint is None or \
+           self._agent_config.stats_store_port is None:
             return
 
         if self._collector is None:

@@ -69,9 +69,9 @@ class AgentConfig(object):
     DEPLOYMENT_ID = "deployment_id"
     IMAGE_DATASTORES = "image_datastores"
 
-    STATS_STORE_ENDPOINT = "stats_store_endpoint"
-    STATS_STORE_PORT = "stats_store_port"
-    STATS_ENABLED = "stats_enabled"
+    STATS_STORE_ENDPOINT = "store_endpoint"
+    STATS_STORE_PORT = "store_port"
+    STATS_ENABLED = "enabled"
 
     PROVISION_ARGS = [HOST_PORT]
     BOOTSTRAP_ARGS = PROVISION_ARGS + [AVAILABILITY_ZONE, HOSTNAME, CHAIRMAN,

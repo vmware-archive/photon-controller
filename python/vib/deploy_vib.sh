@@ -41,9 +41,9 @@ vibfilename=`basename $vibfile`
 
 cleanup() {
   # This closes the control channel
-  ssh_base -O exit $target_host
+  ssh_base -O exit $target_host || true
 
-  rm -rf $tmpdir
+  rm -rf $tmpdir || true
 }
 
 trap cleanup EXIT
