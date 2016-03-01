@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.TaskServiceState;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
@@ -100,7 +101,7 @@ public class ProvisionAgentTaskService extends StatefulService {
 
     /**
      * This value represents the URI of the parent task service to be notified when the current task completes.
-     *
+     * <p>
      * If this value is not specified, then no notification will be sent on completion.
      */
     @Immutable
@@ -108,7 +109,7 @@ public class ProvisionAgentTaskService extends StatefulService {
 
     /**
      * This value represents the body of the patch message to send to the parent task on successful completion.
-     *
+     * <p>
      * If this value is null, then the patch body will contain a simple {@link TaskServiceState} indicating successful
      * completion.
      */
