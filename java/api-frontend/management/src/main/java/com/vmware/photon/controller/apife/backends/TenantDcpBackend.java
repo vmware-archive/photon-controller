@@ -175,7 +175,6 @@ public class TenantDcpBackend implements TenantBackend {
 
     taskBackend.getStepBackend().createQueuedStep(taskEntity, tenantEntity, Operation.PUSH_TENANT_SECURITY_GROUPS);
 
-    logger.info("Created Task: {}", taskEntity);
     return taskEntity;
   }
 

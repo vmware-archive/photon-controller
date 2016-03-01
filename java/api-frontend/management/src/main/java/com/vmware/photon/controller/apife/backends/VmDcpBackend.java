@@ -409,7 +409,6 @@ public class VmDcpBackend implements VmBackend {
     VmEntity vm = create(project, spec);
     logger.info("created VM: {}", vm);
     TaskEntity task = createTask(project, vm);
-    logger.info("created Task: {}", task);
     return task;
   }
 
@@ -418,7 +417,6 @@ public class VmDcpBackend implements VmBackend {
     VmEntity vm = findById(vmId);
     logger.info("deleting VM: {}", vm);
     TaskEntity task = deleteTask(vm);
-    logger.info("created Task: {}", task);
     return task;
   }
 
@@ -431,7 +429,6 @@ public class VmDcpBackend implements VmBackend {
 
     logger.info("Operation {} on VM {}", operation, vm);
     TaskEntity task = operationTask(vm, operation);
-    logger.info("created Task: {}", task);
     return task;
   }
 
@@ -473,7 +470,6 @@ public class VmDcpBackend implements VmBackend {
       task.getToBeLockedEntityIds().add(entity.getId());
     }
 
-    logger.info("created Task: {}", task);
     return task;
   }
 
@@ -489,7 +485,6 @@ public class VmDcpBackend implements VmBackend {
 
     logger.info("Operation {} on VM {}", Operation.ATTACH_ISO, vm);
     TaskEntity task = attachIsoTask(inputStream, vm, iso);
-    logger.info("created Task: {}", task);
     return task;
   }
 
@@ -515,7 +510,6 @@ public class VmDcpBackend implements VmBackend {
     step.setOperation(Operation.GET_NETWORKS);
 
     TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.GET_NETWORKS, false, stepEntities);
-    logger.info("created Task: {}", task);
     return task;
   }
 
@@ -535,7 +529,6 @@ public class VmDcpBackend implements VmBackend {
     step.setOperation(Operation.GET_MKS_TICKET);
 
     TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.GET_MKS_TICKET, false, stepEntities);
-    logger.info("created Task: {}", task);
     return task;
   }
 
@@ -604,7 +597,6 @@ public class VmDcpBackend implements VmBackend {
     ImageEntity image = imageBackend.deriveImage(imageCreateSpec, vmImage);
     logger.info("created image: {}", image);
     TaskEntity task = createImageTask(vm, image, vmImage);
-    logger.info("Task created: {}", task);
     return task;
   }
 
@@ -1057,7 +1049,6 @@ public class VmDcpBackend implements VmBackend {
     TaskEntity task = taskBackend.createTaskWithSteps(vmEntity, Operation.DETACH_ISO, false, stepEntities);
     task.getToBeLockedEntityIds().add(vmEntity.getId());
 
-    logger.info("created Task: {}", task);
     return task;
   }
 
@@ -1082,7 +1073,6 @@ public class VmDcpBackend implements VmBackend {
     TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.CREATE_VM_IMAGE, false, stepEntities);
     task.getToBeLockedEntityIds().add(vm.getId());
 
-    logger.info("created Task: {}", task);
     return task;
   }
 
