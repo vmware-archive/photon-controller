@@ -127,8 +127,8 @@ def load_plugins():
                 plugin.init()
                 logger.info("Plugin %s initialized" % plugin.name)
             except:
-                logger.exception("Init plugin %s failed" % plugin.name)
-                raise
+                # Throw an exceptional message but swallow the exception and be nice with other plugins.
+                logger.exception("Init of plugin %s failed" % plugin.name)
 
     # Start all plugins
     for plugin in plugins:
@@ -137,8 +137,8 @@ def load_plugins():
                 plugin.start()
                 logger.info("Plugin %s started" % plugin.name)
             except:
+                # Throw an exceptional message but swallow the exception and be nice with other plugins.
                 logger.exception("Start plugin %s failed" % plugin.name)
-                raise
 
     global loaded_plugins
     loaded_plugins = plugins
