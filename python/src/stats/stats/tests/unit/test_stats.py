@@ -23,7 +23,6 @@ import stats.stats
 
 
 class TestStats(unittest.TestCase):
-
     def setUp(self):
         self.agent_config = MagicMock()
         common.services.register(ServiceName.AGENT_CONFIG, self.agent_config)
@@ -34,29 +33,51 @@ class TestStats(unittest.TestCase):
     @patch('stats.stats.StatsCollector.configure_collectors')
     def test_stats_handler(self, _config_collectors, _start_collection,
                            _config_publishers, _start_publishing):
+        self.agent_config.stats_store_enabled = True
         self.agent_config.stats_store_endpoint = None
         handler = stats.stats.StatsHandler()
+        self.validate_stats_not_configured(
+                _config_collectors, _config_publishers, _start_collection, _start_publishing, handler)
 
-        _config_collectors.assert_not_called()
-        _config_publishers.assert_not_called()
-        _start_collection.assert_not_called()
-        _start_publishing.assert_not_called()
-
-        assert (handler.get_db() is None)
-        assert (handler.get_collector() is None)
-        assert (handler.get_publisher() is None)
-
+        self.agent_config.stats_store_enabled = None
         self.agent_config.stats_store_endpoint = "endpoint"
         handler = stats.stats.StatsHandler()
+        self.validate_stats_not_configured(
+                _config_collectors, _config_publishers, _start_collection, _start_publishing, handler)
 
+        self.agent_config.stats_store_enabled = False
+        self.agent_config.stats_store_endpoint = "endpoint"
+        handler = stats.stats.StatsHandler()
+        self.validate_stats_not_configured(
+                _config_collectors, _config_publishers, _start_collection, _start_publishing, handler)
+
+        self.agent_config.stats_store_enabled = True
+        self.agent_config.stats_store_endpoint = "endpoint"
+        handler = stats.stats.StatsHandler()
+        self.validate_stats_configured(
+                _config_collectors, _config_publishers, _start_collection, _start_publishing)
+
+        handler.start()
+        _start_collection.assert_called_once_with()
+        _start_publishing.assert_called_once_with()
+
+    @staticmethod
+    def validate_stats_configured(_config_collectors, _config_publishers, _start_collection, _start_publishing):
         _config_collectors.assert_called_once_with()
         _config_publishers.assert_called_once_with()
         _start_collection.assert_not_called()
         _start_publishing.assert_not_called()
 
-        handler.start()
-        _start_collection.assert_called_once_with()
-        _start_publishing.assert_called_once_with()
+    @staticmethod
+    def validate_stats_not_configured(
+            _config_collectors, _config_publishers, _start_collection, _start_publishing, handler):
+        _config_collectors.assert_not_called()
+        _config_publishers.assert_not_called()
+        _start_collection.assert_not_called()
+        _start_publishing.assert_not_called()
+        assert (handler.get_db() is None)
+        assert (handler.get_collector() is None)
+        assert (handler.get_publisher() is None)
 
     @patch('stats.stats.StatsHandler')
     @patch('common.plugin.ThriftService')
