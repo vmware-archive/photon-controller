@@ -18,6 +18,7 @@ struct StatsPluginConfig {
   1: required bool enabled
   2: optional string store_endpoint
   3: optional i32 store_port
+  4: optional string host_tags
 }
 
 // Stats request: change the collection level of the stats collector

@@ -69,9 +69,10 @@ class AgentConfig(object):
     DEPLOYMENT_ID = "deployment_id"
     IMAGE_DATASTORES = "image_datastores"
 
-    STATS_STORE_ENDPOINT = "stats_store_endpoint"
-    STATS_STORE_PORT = "stats_store_port"
-    STATS_ENABLED = "stats_enabled"
+    STATS_STORE_ENDPOINT = "store_endpoint"
+    STATS_STORE_PORT = "store_port"
+    STATS_ENABLED = "enabled"
+    HOST_TAGS = "host_tags"
 
     PROVISION_ARGS = [HOST_PORT]
     BOOTSTRAP_ARGS = PROVISION_ARGS + [AVAILABILITY_ZONE, HOSTNAME, CHAIRMAN,
@@ -202,6 +203,9 @@ class AgentConfig(object):
             reboot |= self._check_and_set_attr(
                 self.STATS_ENABLED,
                 provision_req.stats_plugin_config.enabled)
+            reboot |= self._check_and_set_attr(
+                self.HOST_TAGS,
+                provision_req.stats_plugin_config.host_tags)
 
         chairman_str = \
             self._parse_chairman_server_address(provision_req.chairman_server)
@@ -308,6 +312,11 @@ class AgentConfig(object):
     @locked
     def stats_store_port(self):
         return getattr(self._options, self.STATS_STORE_PORT)
+
+    @property
+    @locked
+    def host_tags(self):
+        return getattr(self._options, self.HOST_TAGS)
 
     @property
     @locked
