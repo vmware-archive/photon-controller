@@ -87,9 +87,7 @@ public class UploadVibTaskServiceTest {
     public void testServiceOptions() {
       assertThat(uploadVibTaskService.getOptions(), is(EnumSet.of(
           Service.ServiceOption.CONCURRENT_GET_HANDLING,
-          Service.ServiceOption.OWNER_SELECTION,
-          Service.ServiceOption.PERSISTENCE,
-          Service.ServiceOption.REPLICATION)));
+          Service.ServiceOption.PERSISTENCE)));
     }
   }
 

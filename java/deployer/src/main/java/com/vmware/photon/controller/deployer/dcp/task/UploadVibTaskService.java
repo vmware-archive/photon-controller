@@ -89,9 +89,7 @@ public class UploadVibTaskService extends StatefulService {
 
   public UploadVibTaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
   @Override
@@ -102,8 +100,8 @@ public class UploadVibTaskService extends StatefulService {
     validateState(startState);
 
     //
-    // Do not automatically transition to STARTED state. The task scheduler service will transition tasks to the
-    // STARTED state as executor slots become available.
+    // Do not automatically transition to STARTED state. The work queue service for this class will
+    // transition tasks to the STARTED state as executor slots become available.
     //
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -250,13 +248,6 @@ public class UploadVibTaskService extends StatefulService {
   private void failTask(Throwable failure) {
     ServiceUtils.logSevere(this, failure);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, failure));
-  }
-
-  //
-  // N.B. This routine is required for services which are started by the task scheduler service.
-  //
-  public static State buildStartPatch() {
-    return buildPatch(TaskState.TaskStage.STARTED, null);
   }
 
   @VisibleForTesting
