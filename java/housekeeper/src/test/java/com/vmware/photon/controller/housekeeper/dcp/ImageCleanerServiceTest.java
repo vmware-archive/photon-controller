@@ -440,7 +440,7 @@ public class ImageCleanerServiceTest {
     public void setUp() throws Throwable {
       service = spy(new ImageCleanerService());
       CloudStoreHelper cloudStoreHelper = new CloudStoreHelper();
-      host = TestHost.create(new HostClientMock(), null, cloudStoreHelper);
+      host = TestHost.create(new HostClientMock(), cloudStoreHelper);
       StaticServerSet serverSet = new StaticServerSet(
         new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       cloudStoreHelper.setServerSet(serverSet);
@@ -1317,7 +1317,7 @@ public class ImageCleanerServiceTest {
      */
     @Test(dataProvider = "testSuccessParams")
     public void testSuccess(int hostCount, int referenceImagesCount) throws Throwable {
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
       machine.startFactoryServiceSynchronously(ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
       machine.startFactoryServiceSynchronously(
               ImageDatastoreSweeperServiceFactory.class, ImageDatastoreSweeperServiceFactory.SELF_LINK);
@@ -1391,7 +1391,7 @@ public class ImageCleanerServiceTest {
     @Test(dataProvider = "testImageSweepFailParams")
     public void testImageSweepFail(int hostCount, HostClientMock hostClient) throws Throwable {
       doReturn(hostClient).when(hostClientFactory).create();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
       machine.startFactoryServiceSynchronously(ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
       machine.startFactoryServiceSynchronously(
               ImageDatastoreSweeperServiceFactory.class, ImageDatastoreSweeperServiceFactory.SELF_LINK);

@@ -320,7 +320,7 @@ public class ImageCleanerTriggerServiceTest {
 
     @Test(dataProvider = "hostCount")
     public void testTriggerActivationSuccess(int hostCount) throws Throwable {
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null,
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory,
           serviceConfigFactory, hostCount);
 
       //Call Service.
@@ -342,7 +342,7 @@ public class ImageCleanerTriggerServiceTest {
       request.executionState = ImageCleanerTriggerService.ExecutionState.RUNNING;
       request.shouldTriggerTasks = true;
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null,
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory,
           serviceConfigFactory, hostCount);
 
       // Send a patch to the trigger service to simulate a maintenance interval kicking in

@@ -428,7 +428,7 @@ public class ImageReplicatorServiceTest {
     public void setUp() throws Throwable {
       service = spy(new ImageReplicatorService());
       CloudStoreHelper cloudStoreHelper = new CloudStoreHelper();
-      host = TestHost.create(mock(HostClient.class), null, cloudStoreHelper);
+      host = TestHost.create(mock(HostClient.class), cloudStoreHelper);
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       cloudStoreHelper.setServerSet(serverSet);
@@ -1052,7 +1052,7 @@ public class ImageReplicatorServiceTest {
     public void testImageReplicatorSuccess(int hostCount) throws Throwable {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       createHostService(3, 3);
       createDatastoreService(3);
@@ -1089,7 +1089,7 @@ public class ImageReplicatorServiceTest {
     public void testNewImageReplicatorCopyImageFail(int hostCount) throws Throwable {
       doReturn(new HostClientCopyImageErrorMock()).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, null, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       newImageReplicator.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       createHostService(3, 3);
