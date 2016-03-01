@@ -41,6 +41,7 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import org.apache.thrift.async.AsyncMethodCallback;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -355,12 +356,15 @@ public class ProvisionAgentTaskService extends StatefulService {
     StatsPluginConfig statsPluginConfig = new StatsPluginConfig(deploymentState.statsEnabled);
 
     if (deploymentState.statsStoreEndpoint != null) {
-      statsPluginConfig.setStore_endpoint(deploymentState.statsStoreEndpoint);
+      statsPluginConfig.setStats_store_endpoint(deploymentState.statsStoreEndpoint);
     }
 
     if (deploymentState.statsStorePort != null) {
-      statsPluginConfig.setStore_port(deploymentState.statsStorePort);
+      statsPluginConfig.setStats_store_port(deploymentState.statsStorePort);
     }
+
+    statsPluginConfig.setStats_host_tags(
+        hostState.usageTags != null ? Joiner.on(",").skipNulls().join(hostState.usageTags) : null);
 
     try {
       AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
