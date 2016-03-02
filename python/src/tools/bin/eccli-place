@@ -4,19 +4,19 @@ import sys
 
 from common.photon_thrift.direct_client import DirectClient
 
-from eccli.format import print_request
+from eccli.format import print_request, print_result
 from eccli.format import print_response
 from eccli.optparser import default_parser
 from eccli.thrift import get_client
 from eccli.utils import createVmResource
 from eccli.utils import createDisksResource
 
-from gen.host.ttypes import ReserveRequest
+from gen.host.ttypes import ReserveRequest, ReserveResultCode
 from gen.resource.ttypes import Resource
 from gen.scheduler.ttypes import PlaceRequest
 from gen.scheduler.ttypes import PlaceResultCode
 
-parser = default_parser(usage="eccli-config-get [options]",
+parser = default_parser(usage="eccli-place [options]",
                         add_help=True)
 parser.add_option("-v", "--vm",
                   action="store_true", dest="vm",
@@ -31,12 +31,12 @@ parser.add_option("-i", "--image",
 
 # create resource
 resource = Resource()
-if options.vm:
+if options.vm and options.image:
     resource.vm = createVmResource(options.image)
 elif options.disks:
     resource.disks = createDisksResource()
 else:
-    print "Should choose either --vm (place vm) or --disks (place disks)"
+    parser.print_help()
     sys.exit(1)
 
 # place
@@ -57,3 +57,6 @@ reserve_request.resource.placement_list = place_response.placementList
 print_request(reserve_request)
 reserve_response = client.reserve(reserve_request)
 print_response(reserve_response)
+
+if reserve_response.result is ReserveResultCode.OK:
+    print_result("reservation: %s" % reserve_response.reservation)
