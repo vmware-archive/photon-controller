@@ -112,6 +112,124 @@ public class ApiTestBase {
         );
   }
 
+  public final void setupMocksForPagination(String serializedResponse, String serializedResponseForNextPage,
+                                            String nextPageLink, int responseCode) throws IOException {
+    this.asyncHttpClient = mock(CloseableHttpAsyncClient.class);
+    this.httpClient = mock(HttpClient.class);
+
+    doAnswer(new Answer() {
+      @Override
+      public Object answer(InvocationOnMock invocation) throws Throwable {
+        return null;
+      }
+    }).when(this.asyncHttpClient).close();
+
+    this.restClient = new RestClient("http://1.1.1.1", this.asyncHttpClient, this.httpClient);
+
+    final HttpResponse httpResponse = mock(HttpResponse.class);
+    StatusLine statusLine = mock(StatusLine.class);
+    when(httpResponse.getStatusLine()).thenReturn(statusLine);
+    when(statusLine.getStatusCode()).thenReturn(responseCode);
+    when(httpResponse.getEntity()).thenReturn(new StringEntity(serializedResponse, ContentType.APPLICATION_JSON));
+
+    final HttpResponse httpResponseForNextPage = mock(HttpResponse.class);
+    StatusLine statusLineForNextPage = mock(StatusLine.class);
+    when(httpResponseForNextPage.getStatusLine()).thenReturn(statusLineForNextPage);
+    when(statusLineForNextPage.getStatusCode()).thenReturn(responseCode);
+    when(httpResponseForNextPage.getEntity())
+        .thenReturn(new StringEntity(serializedResponseForNextPage, ContentType.APPLICATION_JSON));
+
+    final Future<HttpResponse> httpResponseFuture = new Future<HttpResponse>() {
+      @Override
+      public boolean cancel(boolean mayInterruptIfRunning) {
+        return false;
+      }
+
+      @Override
+      public boolean isCancelled() {
+        return false;
+      }
+
+      @Override
+      public boolean isDone() {
+        return true;
+      }
+
+      @Override
+      public HttpResponse get() throws InterruptedException, ExecutionException {
+        return httpResponse;
+      }
+
+      @Override
+      public HttpResponse get(long timeout, TimeUnit unit)
+          throws InterruptedException, ExecutionException, TimeoutException {
+        return httpResponse;
+      }
+    };
+
+    final Future<HttpResponse> httpResponseFutureForNextPage = new Future<HttpResponse>() {
+      @Override
+      public boolean cancel(boolean mayInterruptIfRunning) {
+        return false;
+      }
+
+      @Override
+      public boolean isCancelled() {
+        return false;
+      }
+
+      @Override
+      public boolean isDone() {
+        return true;
+      }
+
+      @Override
+      public HttpResponse get() throws InterruptedException, ExecutionException {
+        return httpResponseForNextPage;
+      }
+
+      @Override
+      public HttpResponse get(long timeout, TimeUnit unit)
+          throws InterruptedException, ExecutionException, TimeoutException {
+        return httpResponseForNextPage;
+      }
+    };
+
+    when(this.httpClient.execute(any(HttpUriRequest.class))).thenAnswer(new Answer<HttpResponse>() {
+      @Override
+      public HttpResponse answer(InvocationOnMock invocation) throws Throwable {
+        HttpUriRequest httpUriRequest = (HttpUriRequest) invocation.getArguments()[0];
+        if (httpUriRequest.getURI().toString().contains(nextPageLink)) {
+          return httpResponseForNextPage;
+        }
+        return httpResponse;
+      }
+    });
+
+    when(this.asyncHttpClient.execute(any(HttpUriRequest.class),
+        any(BasicHttpContext.class),
+        any(FutureCallback.class)))
+        .thenAnswer(
+            new Answer<Object>() {
+              @Override
+              public Object answer(InvocationOnMock invocation) throws Throwable {
+                HttpUriRequest httpUriRequest = (HttpUriRequest) invocation.getArguments()[0];
+                if (httpUriRequest.getURI().toString().contains(nextPageLink)) {
+                  if (invocation.getArguments()[2] != null) {
+                    ((FutureCallback<HttpResponse>) invocation.getArguments()[2]).completed(httpResponseForNextPage);
+                  }
+                  return httpResponseFutureForNextPage;
+                }
+
+                if (invocation.getArguments()[2] != null) {
+                  ((FutureCallback<HttpResponse>) invocation.getArguments()[2]).completed(httpResponse);
+                }
+                return httpResponseFuture;
+              }
+            }
+        );
+  }
+
   public final void setupMocksToThrow(final Exception exceptionToThrow) throws IOException {
     this.asyncHttpClient = mock(CloseableHttpAsyncClient.class);
     this.httpClient = mock(HttpClient.class);

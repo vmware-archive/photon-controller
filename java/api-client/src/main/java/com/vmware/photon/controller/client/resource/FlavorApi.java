@@ -76,14 +76,33 @@ public class FlavorApi extends ApiBase {
    * @throws IOException
    */
   public ResourceList<Flavor> listAll() throws IOException {
-    HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, getBasePath(), null);
-    this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
+    ResourceList<Flavor> flavorResourceList = new ResourceList<>();
+    ResourceList<Flavor> resourceList = getFlavorResourceList(getBasePath());
+    flavorResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getFlavorResourceList(resourceList.getNextPageLink());
+      flavorResourceList.getItems().addAll(resourceList.getItems());
+    }
 
-    return this.restClient.parseHttpResponse(
+    return flavorResourceList;
+  }
+
+  /**
+   * Get all flavors at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<Flavor> getFlavorResourceList(String path) throws IOException {
+    HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
+    this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
+    ResourceList<Flavor> resourceList = this.restClient.parseHttpResponse(
         httpResponse,
         new TypeReference<ResourceList<Flavor>>() {
         }
     );
+    return resourceList;
   }
 
   /**
