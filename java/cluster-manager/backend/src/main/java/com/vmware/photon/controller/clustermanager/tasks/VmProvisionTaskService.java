@@ -86,6 +86,12 @@ public class VmProvisionTaskService extends StatefulService {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
       startState.taskState.subStage = State.TaskState.SubStage.CREATE_VM;
     }
+
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
     startOperation.setBody(startState).complete();
 
     try {
