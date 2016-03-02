@@ -117,6 +117,37 @@ public class ProjectApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testGetProjectTasksForPagination() throws IOException {
+    Task task1 = new Task();
+    task1.setId("task1");
+
+    Task task2 = new Task();
+    task2.setId("task2");
+
+    Task task3 = new Task();
+    task3.setId("task3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Task> taskResourceList = new ResourceList<>(Arrays.asList(task1, task2), nextPageLink, null);
+    ResourceList<Task> taskResourceListNextPage = new ResourceList<>(Arrays.asList(task3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(taskResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(taskResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ProjectApi projectApi = new ProjectApi(restClient);
+
+    ResourceList<Task> response = projectApi.getTasksForProject("foo");
+    assertEquals(response.getItems().size(), taskResourceList.getItems().size() + taskResourceListNextPage.getItems()
+        .size());
+    assertTrue(response.getItems().containsAll(taskResourceList.getItems()));
+    assertTrue(response.getItems().containsAll(taskResourceListNextPage.getItems()));
+  }
+
+  @Test
   public void testGetProjectTasksAsync() throws IOException, InterruptedException {
     Task task1 = new Task();
     task1.setId("task1");
@@ -139,6 +170,52 @@ public class ProjectApiTest extends ApiTestBase {
       @Override
       public void onSuccess(@Nullable ResourceList<Task> result) {
         assertEquals(result.getItems(), taskResourceList.getItems());
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testGetProjectTasksAsyncForPagination() throws IOException, InterruptedException {
+    Task task1 = new Task();
+    task1.setId("task1");
+
+    Task task2 = new Task();
+    task2.setId("task2");
+
+    Task task3 = new Task();
+    task3.setId("task3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Task> taskResourceList = new ResourceList<>(Arrays.asList(task1, task2), nextPageLink, null);
+    ResourceList<Task> taskResourceListNextPage = new ResourceList<>(Arrays.asList(task3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(taskResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(taskResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ProjectApi projectApi = new ProjectApi(restClient);
+
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    projectApi.getTasksForProjectAsync("foo", new FutureCallback<ResourceList<Task>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Task> result) {
+        assertEquals(result.getItems().size(), taskResourceList.getItems().size() + taskResourceListNextPage.getItems()
+            .size());
+        assertTrue(result.getItems().containsAll(taskResourceList.getItems()));
+        assertTrue(result.getItems().containsAll(taskResourceListNextPage.getItems()));
         latch.countDown();
       }
 
@@ -278,6 +355,39 @@ public class ProjectApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testGetPersistentDisksForPagination() throws IOException {
+    PersistentDisk persistentDisk1 = new PersistentDisk();
+    persistentDisk1.setId("persistentDisk1");
+
+    PersistentDisk persistentDisk2 = new PersistentDisk();
+    persistentDisk2.setId("persistentDisk2");
+
+    PersistentDisk persistentDisk3 = new PersistentDisk();
+    persistentDisk3.setId("persistentDisk3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<PersistentDisk> persistentDiskResourceList =
+        new ResourceList<>(Arrays.asList(persistentDisk1, persistentDisk2), nextPageLink, null);
+    ResourceList<PersistentDisk> persistentDiskResourceListNextPage =
+        new ResourceList<>(Arrays.asList(persistentDisk3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(persistentDiskResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(persistentDiskResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ProjectApi projectApi = new ProjectApi(restClient);
+
+    ResourceList<PersistentDisk> response = projectApi.getDisksInProject("foo");
+    assertEquals(response.getItems().size(),
+        persistentDiskResourceList.getItems().size() + persistentDiskResourceListNextPage.getItems().size());
+    assertTrue(response.getItems().containsAll(persistentDiskResourceList.getItems()));
+    assertTrue(response.getItems().containsAll(persistentDiskResourceListNextPage.getItems()));
+  }
+
+  @Test
   public void testGetPersistentDisksAsync() throws IOException, InterruptedException {
     PersistentDisk persistentDisk1 = new PersistentDisk();
     persistentDisk1.setId("persistentDisk1");
@@ -300,6 +410,53 @@ public class ProjectApiTest extends ApiTestBase {
       @Override
       public void onSuccess(@Nullable ResourceList<PersistentDisk> result) {
         assertEquals(result.getItems(), persistentDiskResourceList.getItems());
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testGetPersistentDisksAsyncForPagination() throws IOException, InterruptedException {
+    PersistentDisk persistentDisk1 = new PersistentDisk();
+    persistentDisk1.setId("persistentDisk1");
+
+    PersistentDisk persistentDisk2 = new PersistentDisk();
+    persistentDisk2.setId("persistentDisk2");
+
+    PersistentDisk persistentDisk3 = new PersistentDisk();
+    persistentDisk3.setId("persistentDisk3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<PersistentDisk> persistentDiskResourceList =
+        new ResourceList<>(Arrays.asList(persistentDisk1, persistentDisk2), nextPageLink, null);
+    ResourceList<PersistentDisk> persistentDiskResourceListNextPage =
+        new ResourceList<>(Arrays.asList(persistentDisk3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(persistentDiskResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(persistentDiskResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ProjectApi projectApi = new ProjectApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    projectApi.getDisksInProjectAsync("foo", new FutureCallback<ResourceList<PersistentDisk>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<PersistentDisk> result) {
+        assertEquals(result.getItems().size(),
+            persistentDiskResourceList.getItems().size() + persistentDiskResourceListNextPage.getItems().size());
+        assertTrue(result.getItems().containsAll(persistentDiskResourceList.getItems()));
+        assertTrue(result.getItems().containsAll(persistentDiskResourceListNextPage.getItems()));
         latch.countDown();
       }
 
@@ -392,6 +549,39 @@ public class ProjectApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testGetVmsForPagination() throws IOException {
+    FlavoredCompact vm1 = new FlavoredCompact();
+    vm1.setId("vm1");
+    vm1.setKind("vm");
+
+    FlavoredCompact vm2 = new FlavoredCompact();
+    vm2.setId("vm2");
+    vm2.setKind("vm");
+
+    FlavoredCompact vm3 = new FlavoredCompact();
+    vm3.setId("vm3");
+    vm3.setKind("vm3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<FlavoredCompact> vmSummaryList = new ResourceList<>(Arrays.asList(vm1, vm2), nextPageLink, null);
+    ResourceList<FlavoredCompact> vmSummaryListNextPage = new ResourceList<>(Arrays.asList(vm3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(vmSummaryList);
+    String serializedTaskNextPage = mapper.writeValueAsString(vmSummaryListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ProjectApi projectApi = new ProjectApi(restClient);
+
+    ResourceList<FlavoredCompact> response = projectApi.getVmsInProject("foo");
+    assertEquals(response.getItems().size(), vmSummaryList.getItems().size() + vmSummaryListNextPage.getItems().size());
+    assertTrue(response.getItems().containsAll(vmSummaryList.getItems()));
+    assertTrue(response.getItems().containsAll(vmSummaryListNextPage.getItems()));
+  }
+
+  @Test
   public void testGetVmsAsync() throws IOException, InterruptedException {
     FlavoredCompact vm1 = new FlavoredCompact();
     vm1.setId("vm1");
@@ -416,6 +606,54 @@ public class ProjectApiTest extends ApiTestBase {
       @Override
       public void onSuccess(@Nullable ResourceList<FlavoredCompact> result) {
         assertEquals(result.getItems(), vmSummaryList.getItems());
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testGetVmsAsyncForPagination() throws IOException, InterruptedException {
+    FlavoredCompact vm1 = new FlavoredCompact();
+    vm1.setId("vm1");
+    vm1.setKind("vm");
+
+    FlavoredCompact vm2 = new FlavoredCompact();
+    vm2.setId("vm2");
+    vm2.setKind("vm");
+
+    FlavoredCompact vm3 = new FlavoredCompact();
+    vm3.setId("vm3");
+    vm3.setKind("vm3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<FlavoredCompact> vmSummaryList = new ResourceList<>(Arrays.asList(vm1, vm2), nextPageLink, null);
+    ResourceList<FlavoredCompact> vmSummaryListNextPage = new ResourceList<>(Arrays.asList(vm3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(vmSummaryList);
+    String serializedTaskNextPage = mapper.writeValueAsString(vmSummaryListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ProjectApi projectApi = new ProjectApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    projectApi.getVmsInProjectAsync("foo", new FutureCallback<ResourceList<FlavoredCompact>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<FlavoredCompact> result) {
+        assertEquals(result.getItems().size(),
+            vmSummaryList.getItems().size() + vmSummaryListNextPage.getItems().size());
+        assertTrue(result.getItems().containsAll(vmSummaryList.getItems()));
+        assertTrue(result.getItems().containsAll(vmSummaryListNextPage.getItems()));
         latch.countDown();
       }
 
@@ -506,6 +744,39 @@ public class ProjectApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testGetClustersForPagination() throws IOException {
+    Cluster cluster1 = new Cluster();
+    cluster1.setId("cluster1");
+    cluster1.setName("cluster1Name");
+
+    Cluster cluster2 = new Cluster();
+    cluster2.setId("cluster2");
+    cluster2.setName("cluster2Name");
+
+    Cluster cluster3 = new Cluster();
+    cluster3.setId("cluster3");
+    cluster3.setName("cluster3Name");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Cluster> clusterList = new ResourceList<>(Arrays.asList(cluster1, cluster2), nextPageLink, null);
+    ResourceList<Cluster> clusterListNextPage = new ResourceList<>(Arrays.asList(cluster3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(clusterList);
+    String serializedTaskNextPage = mapper.writeValueAsString(clusterListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ProjectApi projectApi = new ProjectApi(restClient);
+
+    ResourceList<Cluster> response = projectApi.getClustersInProject("foo");
+    assertEquals(response.getItems().size(), clusterList.getItems().size() + clusterListNextPage.getItems().size());
+    assertTrue(response.getItems().containsAll(clusterList.getItems()));
+    assertTrue(response.getItems().containsAll(clusterListNextPage.getItems()));
+  }
+
+  @Test
   public void testGetClustersAsync() throws IOException, InterruptedException {
     Cluster cluster1 = new Cluster();
     cluster1.setId("cluster1");
@@ -530,6 +801,53 @@ public class ProjectApiTest extends ApiTestBase {
       @Override
       public void onSuccess(@Nullable ResourceList<Cluster> result) {
         assertEquals(result.getItems(), clusterList.getItems());
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testGetClustersAsyncForPagination() throws IOException, InterruptedException {
+    Cluster cluster1 = new Cluster();
+    cluster1.setId("cluster1");
+    cluster1.setName("cluster1Name");
+
+    Cluster cluster2 = new Cluster();
+    cluster2.setId("cluster2");
+    cluster2.setName("cluster2Name");
+
+    Cluster cluster3 = new Cluster();
+    cluster3.setId("cluster3");
+    cluster3.setName("cluster3Name");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Cluster> clusterList = new ResourceList<>(Arrays.asList(cluster1, cluster2), nextPageLink, null);
+    ResourceList<Cluster> clusterListNextPage = new ResourceList<>(Arrays.asList(cluster3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(clusterList);
+    String serializedTaskNextPage = mapper.writeValueAsString(clusterListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ProjectApi projectApi = new ProjectApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    projectApi.getClustersInProjectAsync("foo", new FutureCallback<ResourceList<Cluster>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Cluster> result) {
+        assertEquals(result.getItems().size(), clusterList.getItems().size() + clusterListNextPage.getItems().size());
+        assertTrue(result.getItems().containsAll(clusterList.getItems()));
+        assertTrue(result.getItems().containsAll(clusterListNextPage.getItems()));
         latch.countDown();
       }
 
