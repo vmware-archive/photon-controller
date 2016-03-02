@@ -29,6 +29,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 
 /**
@@ -89,9 +91,27 @@ public class ProjectApi extends ApiBase {
   public ResourceList<Task> getTasksForProject(String projectId) throws IOException {
     String path = String.format("%s/%s/tasks", getBasePath(), projectId);
 
+    ResourceList<Task> taskResourceList = new ResourceList<>();
+    ResourceList<Task> resourceList = getTaskResourceList(path);
+    taskResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getTaskResourceList(resourceList.getNextPageLink());
+      taskResourceList.getItems().addAll(resourceList.getItems());
+    }
+
+    return taskResourceList;
+  }
+
+  /**
+   * Get all Tasks at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<Task> getTaskResourceList(String path) throws IOException {
     HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
     this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
-
     return this.restClient.parseHttpResponse(
         httpResponse,
         new TypeReference<ResourceList<Task>>() {
@@ -112,8 +132,33 @@ public class ProjectApi extends ApiBase {
       IOException {
     final String path = String.format("%s/%s/tasks", getBasePath(), projectId);
 
-    getObjectByPathAsync(path, responseCallback, new TypeReference<ResourceList<Task>>() {
-    });
+    ResourceList<Task> taskResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<Task>> callback = new FutureCallback<ResourceList<Task>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Task> result) {
+        if (taskResourceList.getItems() == null) {
+          taskResourceList.setItems(result.getItems());
+        } else {
+          taskResourceList.getItems().addAll(result.getItems());
+        }
+        if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
+          try {
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<Task>>() {});
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          responseCallback.onSuccess(taskResourceList);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        responseCallback.onFailure(t);
+      }
+    };
+
+    getObjectByPathAsync(path, callback, new TypeReference<ResourceList<Task>>() {});
   }
 
   /**
@@ -189,9 +234,27 @@ public class ProjectApi extends ApiBase {
   public ResourceList<PersistentDisk> getDisksInProject(String projectId) throws IOException {
     String path = String.format("%s/%s/disks", getBasePath(), projectId);
 
+    ResourceList<PersistentDisk> persistentDiskResourceList = new ResourceList<>();
+    ResourceList<PersistentDisk> resourceList = getPersistentDiskResourceList(path);
+    persistentDiskResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getPersistentDiskResourceList(resourceList.getNextPageLink());
+      persistentDiskResourceList.getItems().addAll(resourceList.getItems());
+    }
+
+    return persistentDiskResourceList;
+  }
+
+  /**
+   * Get all persistentDisks at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<PersistentDisk> getPersistentDiskResourceList(String path) throws IOException {
     HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
     this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
-
     return this.restClient.parseHttpResponse(
         httpResponse,
         new TypeReference<ResourceList<PersistentDisk>>() {
@@ -211,8 +274,33 @@ public class ProjectApi extends ApiBase {
       throws IOException {
     final String path = String.format("%s/%s/disks", getBasePath(), projectId);
 
-    getObjectByPathAsync(path, responseCallback, new TypeReference<ResourceList<PersistentDisk>>() {
-    });
+    ResourceList<PersistentDisk> persistentDiskResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<PersistentDisk>> callback = new FutureCallback<ResourceList<PersistentDisk>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<PersistentDisk> result) {
+        if (persistentDiskResourceList.getItems() == null) {
+          persistentDiskResourceList.setItems(result.getItems());
+        } else {
+          persistentDiskResourceList.getItems().addAll(result.getItems());
+        }
+        if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
+          try {
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<PersistentDisk>>() {});
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          responseCallback.onSuccess(persistentDiskResourceList);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        responseCallback.onFailure(t);
+      }
+    };
+
+    getObjectByPathAsync(path, callback, new TypeReference<ResourceList<PersistentDisk>>() {});
   }
 
   /**
@@ -261,9 +349,27 @@ public class ProjectApi extends ApiBase {
   public ResourceList<FlavoredCompact> getVmsInProject(String projectId) throws IOException {
     String path = String.format("%s/%s/vms", getBasePath(), projectId);
 
+    ResourceList<FlavoredCompact> flavoredCompactResourceList = new ResourceList<>();
+    ResourceList<FlavoredCompact> resourceList = getFlavoredCompactResourceList(path);
+    flavoredCompactResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getFlavoredCompactResourceList(resourceList.getNextPageLink());
+      flavoredCompactResourceList.getItems().addAll(resourceList.getItems());
+    }
+
+    return flavoredCompactResourceList;
+  }
+
+  /**
+   * Get all flavoredCompacts at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<FlavoredCompact> getFlavoredCompactResourceList(String path) throws IOException {
     HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
     this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
-
     return this.restClient.parseHttpResponse(
         httpResponse,
         new TypeReference<ResourceList<FlavoredCompact>>() {
@@ -284,8 +390,33 @@ public class ProjectApi extends ApiBase {
       IOException {
     final String path = String.format("%s/%s/vms", getBasePath(), projectId);
 
-    getObjectByPathAsync(path, responseCallback, new TypeReference<ResourceList<FlavoredCompact>>() {
-    });
+    ResourceList<FlavoredCompact> flavoredCompactResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<FlavoredCompact>> callback = new FutureCallback<ResourceList<FlavoredCompact>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<FlavoredCompact> result) {
+        if (flavoredCompactResourceList.getItems() == null) {
+          flavoredCompactResourceList.setItems(result.getItems());
+        } else {
+          flavoredCompactResourceList.getItems().addAll(result.getItems());
+        }
+        if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
+          try {
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<FlavoredCompact>>() {});
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          responseCallback.onSuccess(flavoredCompactResourceList);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        responseCallback.onFailure(t);
+      }
+    };
+
+    getObjectByPathAsync(path, callback, new TypeReference<ResourceList<FlavoredCompact>>() {});
   }
 
   /**
@@ -333,9 +464,27 @@ public class ProjectApi extends ApiBase {
   public ResourceList<Cluster> getClustersInProject(String projectId) throws IOException {
     String path = String.format("%s/%s/clusters", getBasePath(), projectId);
 
+    ResourceList<Cluster> clusterResourceList = new ResourceList<>();
+    ResourceList<Cluster> resourceList = getClusterResourceList(path);
+    clusterResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getClusterResourceList(resourceList.getNextPageLink());
+      clusterResourceList.getItems().addAll(resourceList.getItems());
+    }
+
+    return clusterResourceList;
+  }
+
+  /**
+   * Get all flavors at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<Cluster> getClusterResourceList(String path) throws IOException {
     HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
     this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
-
     return this.restClient.parseHttpResponse(
         httpResponse,
         new TypeReference<ResourceList<Cluster>>() {
@@ -354,7 +503,32 @@ public class ProjectApi extends ApiBase {
       responseCallback) throws IOException {
     String path = String.format("%s/%s/clusters", getBasePath(), projectId);
 
-    getObjectByPathAsync(path, responseCallback, new TypeReference<ResourceList<Cluster>>() {
-    });
+    ResourceList<Cluster> clusterResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<Cluster>> callback = new FutureCallback<ResourceList<Cluster>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Cluster> result) {
+        if (clusterResourceList.getItems() == null) {
+          clusterResourceList.setItems(result.getItems());
+        } else {
+          clusterResourceList.getItems().addAll(result.getItems());
+        }
+        if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
+          try {
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<Cluster>>() {});
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          responseCallback.onSuccess(clusterResourceList);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        responseCallback.onFailure(t);
+      }
+    };
+
+    getObjectByPathAsync(path, callback, new TypeReference<ResourceList<Cluster>>() {});
   }
 }

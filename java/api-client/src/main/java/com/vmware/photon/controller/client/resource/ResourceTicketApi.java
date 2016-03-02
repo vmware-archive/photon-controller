@@ -23,6 +23,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 
 /**
@@ -83,10 +85,27 @@ public class ResourceTicketApi extends ApiBase {
    */
   public ResourceList<Task> getTasksForResourceTicket(String resourceTicketId) throws IOException {
     String path = String.format("%s/%s/tasks", getBasePath(), resourceTicketId);
+    ResourceList<Task> taskResourceList = new ResourceList<>();
+    ResourceList<Task> resourceList = getTaskResourceList(path);
+    taskResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getTaskResourceList(resourceList.getNextPageLink());
+      taskResourceList.getItems().addAll(resourceList.getItems());
+    }
 
+    return taskResourceList;
+  }
+
+  /**
+   * Get all tasks at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<Task> getTaskResourceList(String path) throws IOException {
     HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
     this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
-
     return this.restClient.parseHttpResponse(
         httpResponse,
         new TypeReference<ResourceList<Task>>() {
@@ -106,7 +125,33 @@ public class ResourceTicketApi extends ApiBase {
       IOException {
     final String path = String.format("%s/%s/tasks", getBasePath(), resourceTicketId);
 
-    getObjectByPathAsync(path, responseCallback, new TypeReference<ResourceList<Task>>() {
-    });
+    ResourceList<Task> taskResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<Task>> callback = new FutureCallback<ResourceList<Task>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Task> result) {
+        if (taskResourceList.getItems() == null) {
+          taskResourceList.setItems(result.getItems());
+        } else {
+          taskResourceList.getItems().addAll(result.getItems());
+        }
+        if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
+          try {
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<Task>>() {});
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          responseCallback.onSuccess(taskResourceList);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        responseCallback.onFailure(t);
+      }
+    };
+
+    getObjectByPathAsync(path, callback, new TypeReference<ResourceList<Task>>() {});
+
   }
 }
