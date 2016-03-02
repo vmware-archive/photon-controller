@@ -64,10 +64,10 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
             #end
 
             #it "provisions a host" do
-            host = EsxCloud::Host.create(@deployment.id, to_spec(@host))
+            @host = EsxCloud::Host.create(@deployment.id, to_spec(@host))
 
-            expect(host.state).to eq("READY")
-            expect(host_is_reachable host, @seeder).to be(true)
+            expect(@host.state).to eq("READY")
+            expect(host_is_reachable @host, @seeder).to be(true)
             #end
           end
         end
@@ -106,10 +106,10 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
             #end
 
             #it "provisions a host" do
-            host = EsxCloud::Host.create(@deployment.id, to_spec(@host))
+            @host = EsxCloud::Host.create(@deployment.id, to_spec(@host))
 
-            expect(host.state).to eq("READY")
-            expect(host_is_reachable host, @seeder).to be(true)
+            expect(@host.state).to eq("READY")
+            expect(host_is_reachable @host, @seeder).to be(true)
             #end
           end
         end
@@ -130,6 +130,8 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       after(:all) do
         vms = EsxCloud::Host.get_host_vms(@host.id)
         vms.items.each{ |vm| vm.delete }
+        ignoring_all_errors { EsxCloud::Host.exit_maintenance_mode @host.id }
+        ignoring_all_errors { EsxCloud::Host.resume @host.id }
       end
 
       before(:each) do
