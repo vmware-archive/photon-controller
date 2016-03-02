@@ -58,6 +58,12 @@ public class ClusterResizeTaskService extends StatefulService {
       startState.taskState.stage = ClusterResizeTask.TaskState.TaskStage.STARTED;
       startState.taskState.subStage = ClusterResizeTask.TaskState.SubStage.INITIALIZE_CLUSTER;
     }
+
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
     start.setBody(startState).complete();
 
     try {
