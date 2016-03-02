@@ -74,6 +74,12 @@ public class ClusterExpandTaskService extends StatefulService {
     if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
     }
+
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+    }
+
     start.setBody(startState).complete();
 
     try {
