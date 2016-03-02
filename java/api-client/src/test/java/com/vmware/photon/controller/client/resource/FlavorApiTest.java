@@ -117,6 +117,38 @@ public class FlavorApiTest extends ApiTestBase {
     assertTrue(response.getItems().containsAll(flavorResourceList.getItems()));
   }
 
+  @Test
+  public void testListAllForPagination() throws IOException {
+    Flavor flavor1 = new Flavor();
+    flavor1.setId("flavor1");
+    flavor1.setKind("vm");
+
+    Flavor flavor2 = new Flavor();
+    flavor2.setId("flavor2");
+    flavor2.setKind("vm");
+
+    Flavor flavor3 = new Flavor();
+    flavor3.setId("flavor3");
+    flavor3.setKind("vm");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Flavor> flavorResourceList = new ResourceList<>(Arrays.asList(flavor1, flavor2), nextPageLink, null);
+    ResourceList<Flavor> flavorResourceListNextPage = new ResourceList<>(Arrays.asList(flavor3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedResponse = mapper.writeValueAsString(flavorResourceList);
+    String serializedResponseNextPage = mapper.writeValueAsString(flavorResourceListNextPage);
+
+    setupMocksForPagination(serializedResponse, serializedResponseNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    FlavorApi flavorApi = new FlavorApi(restClient);
+    ResourceList<Flavor> response = flavorApi.listAll();
+    assertEquals(response.getItems().size(),
+        flavorResourceList.getItems().size() + flavorResourceListNextPage.getItems().size());
+    assertTrue(response.getItems().containsAll(flavorResourceList.getItems()));
+    assertTrue(response.getItems().containsAll(flavorResourceListNextPage.getItems()));
+  }
 
   @Test
   public void testListAllAsync() throws Exception {
