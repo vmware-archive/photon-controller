@@ -111,6 +111,41 @@ public class DisksApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testDiskTasksForPagination() throws IOException {
+
+    Task task1 = new Task();
+    task1.setId("task1");
+
+    Task task2 = new Task();
+    task2.setId("task2");
+
+    Task task3 = new Task();
+    task3.setId("task3");
+
+    Task task4 = new Task();
+    task4.setId("task4");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Task> taskResourceList = new ResourceList<>(Arrays.asList(task1, task2), nextPageLink, null);
+    ResourceList<Task> taskResourceListNextPage = new ResourceList<>(Arrays.asList(task3, task4));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(taskResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(taskResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    DisksApi disksApi = new DisksApi(restClient);
+
+    ResourceList<Task> response = disksApi.getTasksForDisk("foo");
+    assertEquals(response.getItems().size(), taskResourceList.getItems().size() + taskResourceListNextPage.getItems()
+        .size());
+    assertTrue(response.getItems().containsAll(taskResourceList.getItems()));
+    assertTrue(response.getItems().containsAll(taskResourceListNextPage.getItems()));
+  }
+
+  @Test
   public void testGetTasksForDisksAsync() throws IOException, InterruptedException {
     Task task1 = new Task();
     task1.setId("task1");
@@ -132,6 +167,54 @@ public class DisksApiTest extends ApiTestBase {
       @Override
       public void onSuccess(@Nullable ResourceList<Task> result) {
         assertEquals(result.getItems(), taskResourceList.getItems());
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));;
+  }
+
+  @Test
+  public void testGetTasksForDisksAsyncForPagination() throws IOException, InterruptedException {
+    Task task1 = new Task();
+    task1.setId("task1");
+
+    Task task2 = new Task();
+    task2.setId("task2");
+
+    Task task3 = new Task();
+    task3.setId("task3");
+
+    Task task4 = new Task();
+    task4.setId("task4");
+
+    String nextPageLink = "nextPageLink";
+
+    final ResourceList<Task> taskResourceList = new ResourceList<>(Arrays.asList(task1, task2), nextPageLink, null);
+    final ResourceList<Task> taskResourceListNextPage = new ResourceList<>(Arrays.asList(task3, task4));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(taskResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(taskResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    DisksApi disksApi = new DisksApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    disksApi.getTasksForDiskAsync("persistentDisk", new FutureCallback<ResourceList<Task>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Task> result) {
+        assertEquals(result.getItems().size(), taskResourceList.getItems().size() + taskResourceListNextPage.getItems()
+            .size());
+        assertTrue(result.getItems().containsAll(taskResourceList.getItems()));
+        assertTrue(result.getItems().containsAll(taskResourceListNextPage.getItems()));
         latch.countDown();
       }
 

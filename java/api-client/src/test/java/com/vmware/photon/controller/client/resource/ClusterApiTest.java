@@ -216,6 +216,36 @@ public class ClusterApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testGetVmsForPagination() throws IOException {
+    Vm vm1 = new Vm();
+    vm1.setId("vm1");
+
+    Vm vm2 = new Vm();
+    vm2.setId("vm2");
+
+    Vm vm3 = new Vm();
+    vm3.setId("vm3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Vm> vmList = new ResourceList<>(Arrays.asList(vm1, vm2), nextPageLink, null);
+    ResourceList<Vm> vmListNextPage = new ResourceList<>(Arrays.asList(vm3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(vmList);
+    String serializedTaskNextPage = mapper.writeValueAsString(vmListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ClusterApi clusterApi = new ClusterApi(restClient);
+
+    ResourceList<Vm> response = clusterApi.getVmsInCluster("foo");
+    assertEquals(response.getItems().size(), vmList.getItems().size() + vmListNextPage.getItems().size());
+    assertTrue(response.getItems().containsAll(vmList.getItems()));
+    assertTrue(response.getItems().containsAll(vmListNextPage.getItems()));
+  }
+
+  @Test
   public void testGetVmsAsync() throws IOException, InterruptedException {
     Vm vm1 = new Vm();
     vm1.setId("vm1");
@@ -238,6 +268,50 @@ public class ClusterApiTest extends ApiTestBase {
       @Override
       public void onSuccess(ResourceList<Vm> result) {
         assertEquals(result.getItems(), vmList.getItems());
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testGetVmsAsyncForPagination() throws IOException, InterruptedException {
+    Vm vm1 = new Vm();
+    vm1.setId("vm1");
+
+    Vm vm2 = new Vm();
+    vm2.setId("vm2");
+
+    Vm vm3 = new Vm();
+    vm3.setId("vm3");
+
+    String nextPageLink = "nextPageLink";
+
+    final ResourceList<Vm> vmList = new ResourceList<>(Arrays.asList(vm1, vm2), nextPageLink, null);
+    final ResourceList<Vm> vmListNextPage = new ResourceList<>(Arrays.asList(vm3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(vmList);
+    String serializedTaskNextPage = mapper.writeValueAsString(vmListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ClusterApi clusterApi = new ClusterApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    clusterApi.getVmsInClusterAsync("foo", new FutureCallback<ResourceList<Vm>>() {
+      @Override
+      public void onSuccess(ResourceList<Vm> result) {
+        assertEquals(result.getItems().size(), vmList.getItems().size() + vmListNextPage.getItems().size());
+        assertTrue(result.getItems().containsAll(vmList.getItems()));
+        assertTrue(result.getItems().containsAll(vmListNextPage.getItems()));
         latch.countDown();
       }
 
