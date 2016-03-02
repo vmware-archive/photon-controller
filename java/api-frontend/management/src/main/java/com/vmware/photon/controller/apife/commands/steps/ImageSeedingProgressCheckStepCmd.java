@@ -56,8 +56,14 @@ public class ImageSeedingProgressCheckStepCmd extends StepCommand {
   protected void execute() throws ExternalException {
     TaskEntity taskEntity = stepEntity.getTask();
     String imageId = (String) taskEntity.getTransientResources(IMAGE_ID_KEY_NAME);
+    boolean imageSeedingDone = true;
 
-    boolean imageSeedingDone = imageBackend.isImageSeedingDone(imageId);
+    //Best efforts to check if image seeding is done.
+    try {
+      imageSeedingDone = imageBackend.isImageSeedingDone(imageId);
+    } catch (Exception e) {
+      logger.warn("Best efforts checking image seeding progress failed, continue...");
+    }
     if (imageSeedingDone) {
       taskEntity.setTransientResources(CANDIDATE_IMAGE_STORES_KEY_NAME, new ArrayList<String>());
     } else {
