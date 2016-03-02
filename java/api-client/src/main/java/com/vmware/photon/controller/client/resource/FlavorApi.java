@@ -24,6 +24,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 
 /**
@@ -112,8 +114,33 @@ public class FlavorApi extends ApiBase {
    * @throws IOException
    */
   public void listAllAsync(final FutureCallback<ResourceList<Flavor>> responseCallback) throws IOException {
-    getObjectByPathAsync(getBasePath(), responseCallback, new TypeReference<ResourceList<Flavor>>() {
-    });
+    ResourceList<Flavor> flavorResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<Flavor>> callback = new FutureCallback<ResourceList<Flavor>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Flavor> result) {
+        if (flavorResourceList.getItems() == null) {
+          flavorResourceList.setItems(result.getItems());
+        } else {
+          flavorResourceList.getItems().addAll(result.getItems());
+        }
+        if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
+          try {
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<Flavor>>() {});
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          responseCallback.onSuccess(flavorResourceList);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        responseCallback.onFailure(t);
+      }
+    };
+
+    getObjectByPathAsync(getBasePath(), callback, new TypeReference<ResourceList<Flavor>>() {});
   }
 
   /**

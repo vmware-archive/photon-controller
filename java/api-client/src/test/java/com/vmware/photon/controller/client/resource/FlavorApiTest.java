@@ -189,6 +189,55 @@ public class FlavorApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testListAllAsyncForPagination() throws Exception {
+    Flavor flavor1 = new Flavor();
+    flavor1.setId("flavor1");
+    flavor1.setKind("vm");
+
+    Flavor flavor2 = new Flavor();
+    flavor2.setId("flavor2");
+    flavor2.setKind("vm");
+
+    Flavor flavor3 = new Flavor();
+    flavor3.setId("flavor3");
+    flavor3.setKind("vm");
+
+    String nextPageLink = "nextPageLink";
+
+    final ResourceList<Flavor> flavorResourceList = new ResourceList<>(Arrays.asList(flavor1, flavor2), nextPageLink,
+        null);
+    final ResourceList<Flavor> flavorResourceListNextPage = new ResourceList<>(Arrays.asList(flavor3));
+    final ResourceList<Flavor> expectedFlavorResourceList = new ResourceList<>(Arrays.asList(flavor1, flavor2,
+        flavor3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedResponse = mapper.writeValueAsString(flavorResourceList);
+    String serializedResponseNextPage = mapper.writeValueAsString(flavorResourceListNextPage);
+
+    setupMocksForPagination(serializedResponse, serializedResponseNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    FlavorApi flavorApi = new FlavorApi(restClient);
+
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    flavorApi.listAllAsync(new FutureCallback<ResourceList<Flavor>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Flavor> result) {
+        assertTrue(result.getItems().containsAll(expectedFlavorResourceList.getItems()));
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
   public void testGetFlavor() throws IOException {
     Flavor flavor1 = new Flavor();
     flavor1.setId("flavor1");
