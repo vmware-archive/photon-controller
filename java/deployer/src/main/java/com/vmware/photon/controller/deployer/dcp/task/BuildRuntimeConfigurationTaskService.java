@@ -414,6 +414,26 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
         break;
 
+      case ManagementUi:
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(vmState.hostServiceLink)
+            .setCompletion((op, ex) -> {
+              if (null != ex) {
+                failTask(ex);
+                return;
+              }
+
+              try {
+                scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
+                    deploymentState, Collections.singletonList(ContainersConfig.ContainerType.LoadBalancer));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+            .sendWith(this);
+
+        break;
+
       case Deployer:
         List<ContainersConfig.ContainerType> containerTypes = currentState.isNewDeployment ?
             Arrays.asList(ContainersConfig.ContainerType.Zookeeper, ContainersConfig.ContainerType.LoadBalancer) :
@@ -706,6 +726,10 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
             containerState.dynamicParameters.put(ENV_AUTH_SERVER_ADDRESS, ipList.get(0));
           }
         }
+        break;
+
+      case ManagementUi:
+        containerState.dynamicParameters.put(ENV_LOADBALANCER_IP, ipList.get(0));
         break;
 
       case Chairman:
