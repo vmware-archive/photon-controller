@@ -29,7 +29,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.testng.Assert.fail;
 
 import java.util.Arrays;
 import java.util.List;
@@ -107,11 +106,11 @@ public class ImageSeedingProgressCheckStepCmdTest {
     ImageSeedingProgressCheckStepCmd cmd = new ImageSeedingProgressCheckStepCmd(taskCommand, stepBackend, stepEntity,
         imageBackend);
 
-    try {
-      cmd.execute();
-      fail("Should have failed due to reading image replication status error.");
-    } catch (ExternalException e) {
-      assertThat(e.getMessage(), is(expectedErrorMsg));
-    }
+    cmd.execute();
+    Object result = taskEntity.getTransientResources(ImageSeedingProgressCheckStepCmd.CANDIDATE_IMAGE_STORES_KEY_NAME);
+    assertThat(result, is(notNullValue()));
+
+    List<String> candidateImageDatastores = (List<String>) result;
+    assertThat(candidateImageDatastores.size(), is(0));
   }
 }
