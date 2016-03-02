@@ -130,6 +130,35 @@ public class ImagesApiTest extends ApiTestBase {
     assertTrue(response.getItems().containsAll(imageResourceList.getItems()));
   }
 
+  @Test
+  public void testGetAllImagesForPagination() throws IOException {
+    Image image1 = new Image();
+    image1.setId("image1");
+
+    Image image2 = new Image();
+    image2.setId("image2");
+
+    Image image3 = new Image();
+    image3.setId("image3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Image> imageResourceList = new ResourceList<>(Arrays.asList(image1, image2), nextPageLink, null);
+    ResourceList<Image> imageResourceListNextPage = new ResourceList<>(Arrays.asList(image3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(imageResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(imageResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ImagesApi imagesApi = new ImagesApi(this.restClient);
+    ResourceList<Image> response = imagesApi.getImages();
+    assertEquals(response.getItems().size(), imageResourceList.getItems().size() + imageResourceListNextPage
+        .getItems().size());
+    assertTrue(response.getItems().containsAll(imageResourceList.getItems()));
+    assertTrue(response.getItems().containsAll(imageResourceListNextPage.getItems()));
+  }
 
   @Test
   public void testGetAllImagesAsync() throws IOException, InterruptedException {
@@ -166,6 +195,52 @@ public class ImagesApiTest extends ApiTestBase {
 
     assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
 
+  }
+
+  @Test
+  public void testGetAllImagesAsyncForPagination() throws IOException, InterruptedException {
+    Image image1 = new Image();
+    image1.setId("image1");
+
+    Image image2 = new Image();
+    image2.setId("image2");
+
+    Image image3 = new Image();
+    image3.setId("image3");
+
+    String nextPageLink = "nextPageLink";
+
+    final ResourceList<Image> imageResourceList = new ResourceList<>(Arrays.asList(image1, image2), nextPageLink, null);
+    final ResourceList<Image> imageResourceListNextPage = new ResourceList<>(Arrays.asList(image3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(imageResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(imageResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ImagesApi imagesApi = new ImagesApi(this.restClient);
+
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    imagesApi.getImagesAsync(new FutureCallback<ResourceList<Image>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Image> result) {
+        assertEquals(result.getItems().size(), imageResourceList.getItems().size() + imageResourceListNextPage
+            .getItems().size());
+        assertTrue(result.getItems().containsAll(imageResourceList.getItems()));
+        assertTrue(result.getItems().containsAll(imageResourceListNextPage.getItems()));
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
   }
 
   @Test
