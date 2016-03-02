@@ -367,7 +367,7 @@ class EsxVmConfig(object):
                 vmdk_file = vmdk_path(datastore, disk_id,
                                       folder=disk_root_folder)
         else:
-            # For a vm config spec used during VM mporting, the vmdk
+            # For a vm config spec used during VM importing, the vmdk
             # backing file path is just a placeholder for a disk that is
             # destined for a folder in datastore specified. Hence, while
             # it has to be set, it can be left empty.

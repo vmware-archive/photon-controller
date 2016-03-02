@@ -26,3 +26,8 @@ def print_response(response):
           (type(response).__name__, datetime.now())
     print pformat(vars(response), indent=2)
     print "\n"
+
+
+def print_result(result):
+    print "\n\033[33m***** %s *****\033[37m" % result
+    print "\n"
