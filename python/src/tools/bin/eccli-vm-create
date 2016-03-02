@@ -4,12 +4,13 @@ import sys
 
 from common.photon_thrift.direct_client import DirectClient
 
-from eccli.format import print_request
+from eccli.format import print_request, print_result
 from eccli.format import print_response
 from eccli.optparser import default_parser
 from eccli.thrift import get_client
 
-from gen.host.ttypes import CreateVmRequest
+from gen.host.ttypes import CreateVmRequest, CreateDisksResultCode, \
+    CreateVmResultCode
 
 parser = default_parser(usage="eccli-vm-create [options]",
                         add_help=True)
@@ -18,6 +19,10 @@ parser.add_option("-r", "--reservation",
                   help="Reservation id from reserve call")
 (options, args) = parser.parse_args()
 
+if not options.reservation:
+    parser.print_help()
+    exit(1)
+
 request = CreateVmRequest()
 request.reservation = options.reservation
 
@@ -25,3 +30,6 @@ print_request(request)
 client = get_client(options, "Host")
 response = client.create_vm(request)
 print_response(response)
+
+if response.result is CreateVmResultCode.OK:
+    print_result("vm id: %s" % response.vm.id)
