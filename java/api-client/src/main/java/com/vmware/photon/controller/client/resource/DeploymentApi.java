@@ -24,6 +24,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 
 /**
@@ -43,13 +45,31 @@ public class DeploymentApi extends ApiBase {
   /**
    * List all deployments.
    *
-   * @return List of flavors
+   * @return List of deployments
    * @throws IOException
    */
   public ResourceList<Deployment> listAll() throws IOException {
-    HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, getBasePath(), null);
-    this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
+    ResourceList<Deployment> deploymentResourceList = new ResourceList<>();
+    ResourceList<Deployment> resourceList = getDeploymentResourceList(getBasePath());
+    deploymentResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getDeploymentResourceList(resourceList.getNextPageLink());
+      deploymentResourceList.getItems().addAll(resourceList.getItems());
+    }
 
+    return deploymentResourceList;
+  }
+
+  /**
+   * Get all deployments at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<Deployment> getDeploymentResourceList(String path) throws IOException {
+    HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
+    this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
     return this.restClient.parseHttpResponse(
         httpResponse,
         new TypeReference<ResourceList<Deployment>>() {
@@ -64,8 +84,33 @@ public class DeploymentApi extends ApiBase {
    * @throws IOException
    */
   public void listAllAsync(final FutureCallback<ResourceList<Deployment>> responseCallback) throws IOException {
-    getObjectByPathAsync(getBasePath(), responseCallback, new TypeReference<ResourceList<Deployment>>() {
-    });
+    ResourceList<Deployment> deploymentResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<Deployment>> callback = new FutureCallback<ResourceList<Deployment>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Deployment> result) {
+        if (deploymentResourceList.getItems() == null) {
+          deploymentResourceList.setItems(result.getItems());
+        } else {
+          deploymentResourceList.getItems().addAll(result.getItems());
+        }
+        if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
+          try {
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<Deployment>>() {});
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          responseCallback.onSuccess(deploymentResourceList);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        responseCallback.onFailure(t);
+      }
+    };
+
+    getObjectByPathAsync(getBasePath(), callback, new TypeReference<ResourceList<Deployment>>() {});
   }
 
   /**
@@ -135,10 +180,27 @@ public class DeploymentApi extends ApiBase {
    */
   public ResourceList<Vm> getAllDeploymentVms(final String deploymentId) throws IOException{
     String path = String.format("%s/%s/vms", getBasePath(), deploymentId);
+    ResourceList<Vm> vmResourceList = new ResourceList<>();
+    ResourceList<Vm> resourceList = getVmResourceList(path);
+    vmResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getVmResourceList(resourceList.getNextPageLink());
+      vmResourceList.getItems().addAll(resourceList.getItems());
+    }
 
+    return vmResourceList;
+  }
+
+  /**
+   * Get all vms at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<Vm> getVmResourceList(String path) throws IOException {
     HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
     this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
-
     return this.restClient.parseHttpResponse(
         httpResponse,
         new TypeReference<ResourceList<Vm>>() {
@@ -157,7 +219,32 @@ public class DeploymentApi extends ApiBase {
       throws
       IOException {
     String path = String.format("%s/%s/vms", getBasePath(), deploymentId);
-    getObjectByPathAsync(path, responseCallback, new TypeReference<ResourceList<Vm>>() {
-    });
+    ResourceList<Vm> vmResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<Vm>> callback = new FutureCallback<ResourceList<Vm>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Vm> result) {
+        if (vmResourceList.getItems() == null) {
+          vmResourceList.setItems(result.getItems());
+        } else {
+          vmResourceList.getItems().addAll(result.getItems());
+        }
+        if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
+          try {
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<Vm>>() {});
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          responseCallback.onSuccess(vmResourceList);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        responseCallback.onFailure(t);
+      }
+    };
+
+    getObjectByPathAsync(path, callback, new TypeReference<ResourceList<Vm>>() {});
   }
 }

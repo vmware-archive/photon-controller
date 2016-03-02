@@ -61,6 +61,31 @@ public class DeploymentApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testListAllForPagination() throws IOException {
+    Deployment deployment = getNewDeployment();
+    Deployment deploymentNextPage = getNewDeployment();
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Deployment> deploymentResourceList = new ResourceList<>(Arrays.asList(deployment), nextPageLink, null);
+    ResourceList<Deployment> deploymentResourceListNextPage = new ResourceList<>(Arrays.asList(deploymentNextPage));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedResponse = mapper.writeValueAsString(deploymentResourceList);
+    String serializedResponseNextPage = mapper.writeValueAsString(deploymentResourceListNextPage);
+
+    setupMocksForPagination(serializedResponse, serializedResponseNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+
+    ResourceList<Deployment> response = deploymentApi.listAll();
+    assertEquals(response.getItems().size(), deploymentResourceList.getItems().size() +
+        deploymentResourceListNextPage.getItems().size());
+    assertTrue(response.getItems().containsAll(deploymentResourceList.getItems()));
+    assertTrue(response.getItems().containsAll(deploymentResourceListNextPage.getItems()));
+  }
+
+  @Test
   public void testListAllAsync() throws Exception {
     Deployment deployment = getNewDeployment();
 
@@ -79,6 +104,47 @@ public class DeploymentApiTest extends ApiTestBase {
       @Override
       public void onSuccess(@Nullable ResourceList<Deployment> result) {
         assertEquals(result.getItems(), deploymentResourceList.getItems());
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testListAllAsyncForPagination() throws Exception {
+    Deployment deployment = getNewDeployment();
+    Deployment deploymentNextPage = getNewDeployment();
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Deployment> deploymentResourceList = new ResourceList<>(Arrays.asList(deployment), nextPageLink, null);
+    ResourceList<Deployment> deploymentResourceListNextPage = new ResourceList<>(Arrays.asList(deploymentNextPage));
+
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedResponse = mapper.writeValueAsString(deploymentResourceList);
+    String serializedResponseNextPage = mapper.writeValueAsString(deploymentResourceListNextPage);
+
+    setupMocksForPagination(serializedResponse, serializedResponseNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    deploymentApi.listAllAsync(new FutureCallback<ResourceList<Deployment>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Deployment> result) {
+        assertEquals(result.getItems().size(), deploymentResourceList.getItems().size() +
+            deploymentResourceListNextPage.getItems().size());
+        assertTrue(result.getItems().containsAll(deploymentResourceList.getItems()));
+        assertTrue(result.getItems().containsAll(deploymentResourceListNextPage.getItems()));
         latch.countDown();
       }
 
@@ -202,7 +268,37 @@ public class DeploymentApiTest extends ApiTestBase {
   }
 
   @Test
-  public void testGetHostsAsync() throws IOException, InterruptedException {
+  public void testGetVmsForPagination() throws IOException {
+    Vm vm1 = new Vm();
+    vm1.setId("vm1");
+
+    Vm vm2 = new Vm();
+    vm2.setId("vm2");
+
+    Vm vm3 = new Vm();
+    vm3.setId("vm3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Vm> vmList = new ResourceList<>(Arrays.asList(vm1, vm2), nextPageLink, null);
+    ResourceList<Vm> vmListNextPage = new ResourceList<>(Arrays.asList(vm3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(vmList);
+    String serializedTaskNextPage = mapper.writeValueAsString(vmListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+
+    ResourceList<Vm> response = deploymentApi.getAllDeploymentVms("foo");
+    assertEquals(response.getItems().size(), vmList.getItems().size() + vmListNextPage.getItems().size());
+    assertTrue(response.getItems().containsAll(vmList.getItems()));
+    assertTrue(response.getItems().containsAll(vmListNextPage.getItems()));
+  }
+
+  @Test
+  public void testGetVmsAsync() throws IOException, InterruptedException {
     Vm vm1 = new Vm();
     vm1.setId("vm1");
 
@@ -224,6 +320,50 @@ public class DeploymentApiTest extends ApiTestBase {
       @Override
       public void onSuccess(ResourceList<Vm> result) {
         assertEquals(result.getItems(), vmList.getItems());
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testGetVmsAsyncForPagination() throws IOException, InterruptedException {
+    Vm vm1 = new Vm();
+    vm1.setId("vm1");
+
+    Vm vm2 = new Vm();
+    vm2.setId("vm2");
+
+    Vm vm3 = new Vm();
+    vm3.setId("vm3");
+
+    String nextPageLink = "nextPageLink";
+
+    final ResourceList<Vm> vmList = new ResourceList<>(Arrays.asList(vm1, vm2), nextPageLink, null);
+    final ResourceList<Vm> vmListNextPage = new ResourceList<>(Arrays.asList(vm3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(vmList);
+    String serializedTaskNextPage = mapper.writeValueAsString(vmListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    deploymentApi.getAllDeploymentVmsAsync("foo", new FutureCallback<ResourceList<Vm>>() {
+      @Override
+      public void onSuccess(ResourceList<Vm> result) {
+        assertEquals(result.getItems().size(), vmList.getItems().size() + vmListNextPage.getItems().size());
+        assertTrue(result.getItems().containsAll(vmList.getItems()));
+        assertTrue(result.getItems().containsAll(vmListNextPage.getItems()));
         latch.countDown();
       }
 
