@@ -10,7 +10,7 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 
-export API_PORT_9000_TCP_ADDR="{{{APIFE_ADDR}}}"
+export API_PORT_9000_TCP_ADDR="{{{APIFE_IP}}}"
 export API_PORT_9000_TCP_PORT="{{{APIFE_PORT}}}"
 
 if [ -n "$ENABLE_AUTH" -a "$ENABLE_AUTH" == "true" ]

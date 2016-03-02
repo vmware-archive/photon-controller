@@ -14,7 +14,5 @@
   "volumeBindings": {
   },
   "dynamicParameters": {
-    "APIFE_ADDR": "localhost",
-    "APIFE_PORT": 9000
   }
 }
