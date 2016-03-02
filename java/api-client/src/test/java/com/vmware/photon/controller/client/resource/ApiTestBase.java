@@ -46,6 +46,7 @@ public class ApiTestBase {
   protected RestClient restClient;
 
   public static final int COUNTDOWNLATCH_AWAIT_TIMEOUT = 10;
+  public static final int ARGUMENT_INDEX_TWO = 2;
 
   public final void setupMocks(String serializedResponse, int responseCode) throws IOException {
     this.asyncHttpClient = mock(CloseableHttpAsyncClient.class);
@@ -103,8 +104,9 @@ public class ApiTestBase {
             new Answer<Object>() {
               @Override
               public Object answer(InvocationOnMock invocation) throws Throwable {
-                if (invocation.getArguments()[2] != null) {
-                  ((FutureCallback<HttpResponse>) invocation.getArguments()[2]).completed(httpResponse);
+                if (invocation.getArguments()[ARGUMENT_INDEX_TWO] != null) {
+                  ((FutureCallback<HttpResponse>) invocation.getArguments()[ARGUMENT_INDEX_TWO])
+                      .completed(httpResponse);
                 }
                 return httpResponseFuture;
               }
@@ -215,14 +217,16 @@ public class ApiTestBase {
               public Object answer(InvocationOnMock invocation) throws Throwable {
                 HttpUriRequest httpUriRequest = (HttpUriRequest) invocation.getArguments()[0];
                 if (httpUriRequest.getURI().toString().contains(nextPageLink)) {
-                  if (invocation.getArguments()[2] != null) {
-                    ((FutureCallback<HttpResponse>) invocation.getArguments()[2]).completed(httpResponseForNextPage);
+                  if (invocation.getArguments()[ARGUMENT_INDEX_TWO] != null) {
+                    ((FutureCallback<HttpResponse>) invocation.getArguments()[ARGUMENT_INDEX_TWO])
+                        .completed(httpResponseForNextPage);
                   }
                   return httpResponseFutureForNextPage;
                 }
 
-                if (invocation.getArguments()[2] != null) {
-                  ((FutureCallback<HttpResponse>) invocation.getArguments()[2]).completed(httpResponse);
+                if (invocation.getArguments()[ARGUMENT_INDEX_TWO] != null) {
+                  ((FutureCallback<HttpResponse>) invocation.getArguments()[ARGUMENT_INDEX_TWO])
+                      .completed(httpResponse);
                 }
                 return httpResponseFuture;
               }
