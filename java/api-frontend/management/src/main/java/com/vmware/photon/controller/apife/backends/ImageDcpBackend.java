@@ -37,6 +37,7 @@ import com.vmware.photon.controller.apife.exceptions.external.ImageUploadExcepti
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
@@ -278,6 +279,19 @@ public class ImageDcpBackend implements ImageBackend {
         termsBuilder.build());
 
     if (datastores.size() != 1) {
+
+      //
+      // Get all of the datastore documents from cloud store and dump them to the log.
+      //
+
+      try {
+        com.vmware.xenon.common.Operation result = dcpClient.get(DatastoreServiceFactory.SELF_LINK);
+        QueryTask queryTask = result.getBody(QueryTask.class);
+        logger.info("Found datastores: " + Utils.toJson(queryTask));
+      } catch (DocumentNotFoundException | XenonRuntimeException e) {
+        // Ignore failures -- this is just for logging purposes
+      }
+
       logger.error("expected exactly 1 imageDatastore found {} [{}]", datastores.size(), Utils.toJson(datastores));
       throw new ExternalException("expected exactly 1 imageDatastore found [" + datastores.size() + "]");
     }
