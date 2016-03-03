@@ -114,6 +114,7 @@ public class HostServiceTest {
           Service.ServiceOption.OWNER_SELECTION,
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION,
+          Service.ServiceOption.ON_DEMAND_LOAD,
           Service.ServiceOption.PERIODIC_MAINTENANCE);
 
       HostService service = new HostService();
