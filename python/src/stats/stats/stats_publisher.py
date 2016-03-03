@@ -11,6 +11,7 @@
 # under the License.
 
 import logging
+import socket
 
 import common
 from common.service_name import ServiceName
@@ -29,7 +30,10 @@ class StatsPublisher(object):
         # XXX plugin configuration should be decoupled from agent_config arg
         # parsing
         self._agent_config = common.services.get(ServiceName.AGENT_CONFIG)
-        self._host_id = self._agent_config.host_id
+        self._hostname = self._agent_config.hostname
+        if self._hostname is None:
+            self._hostname = socket.gethostname()
+
         self._publish_interval_secs = float(self._agent_config.__dict__.get(
             "stats_publish_interval",
             StatsPublisher.DEFAULT_PUBLISH_INTERVAL_SECS))
@@ -59,11 +63,12 @@ class StatsPublisher(object):
         stats_store_endpoint = self._agent_config.stats_store_endpoint
         stats_store_port = self._agent_config.stats_store_port
         stats_host_tags = self._agent_config.stats_host_tags
-        pm_publisher = GraphitePublisher(host_id=self._host_id,
+        pm_publisher = GraphitePublisher(hostname=self._hostname,
                                          carbon_host=stats_store_endpoint,
                                          carbon_port=stats_store_port,
                                          host_tags=stats_host_tags)
         self.register_publisher(pm_publisher)
+        self._logger.info("Stats publisher configured")
 
     def publish(self):
         retrieved_stats = {}
@@ -77,5 +82,4 @@ class StatsPublisher(object):
         self._last_seen_ts = latest_ts
         if retrieved_stats:
             for publisher in self._publishers:
-                self._logger.info("publish metrics with %s" % str(publisher))
                 publisher.publish(retrieved_stats)

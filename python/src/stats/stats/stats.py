@@ -39,7 +39,7 @@ class StatsHandler(StatsService.Iface):
             return
 
         if self._agent_config.stats_store_endpoint is None or self._agent_config.stats_store_port is None:
-            self._logger.error("stats endpoint/port not specified, though stats are enabled")
+            self._logger.error("Stats endpoint/port not specified, though stats are enabled")
             return
 
         self._db = MemoryTimeSeriesDB()
