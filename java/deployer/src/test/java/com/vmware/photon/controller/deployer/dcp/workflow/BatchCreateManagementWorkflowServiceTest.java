@@ -42,6 +42,7 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -77,6 +78,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -93,6 +95,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -873,6 +876,16 @@ public class BatchCreateManagementWorkflowServiceTest {
       doReturn(mock(ServiceConfig.class))
           .when(zkBuilder)
           .getServiceConfig(anyString(), anyString());
+
+      InetSocketAddress address = cloudStoreMachine.getServerSet().getServers().iterator().next();
+      doReturn(Collections.singleton(address))
+        .when(zkBuilder).getServers(anyString(), eq(DeployerModule.CLOUDSTORE_SERVICE_NAME));
+      InetSocketAddress adjustedAddress = new InetSocketAddress(address.getHostName(), address.getPort() - 1);
+      doReturn(Collections.singleton(adjustedAddress))
+        .when(zkBuilder).getServers(anyString(), eq(DeployerModule.DEPLOYER_SERVICE_NAME));
+      doReturn(Collections.singleton(adjustedAddress))
+        .when(zkBuilder).getServers(anyString(), eq(DeployerModule.HOUSEKEEPER_SERVICE_NAME));
+
       return new TestEnvironment.Builder()
           .deployerContext(deployerContext)
           .dockerProvisionerFactory(dockerProvisionerFactory)
