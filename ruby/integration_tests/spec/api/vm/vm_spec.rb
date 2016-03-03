@@ -256,6 +256,9 @@ describe "vm", management: true, image: true do
       end
 
       context "when affinities are specified" do
+        before(:all) do
+          wait_for_image_seeding_progress_is_done
+        end
 
         it "can pass one disk affinity" do
           persistent_disks1 = @seeder.persistent_disk!
