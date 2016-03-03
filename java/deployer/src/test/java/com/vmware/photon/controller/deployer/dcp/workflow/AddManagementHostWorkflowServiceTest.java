@@ -30,6 +30,7 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
@@ -841,7 +842,8 @@ public class AddManagementHostWorkflowServiceTest {
           .when(zkBuilder)
           .getServers(Matchers.startsWith("0.0.0.0:2181"), eq("cloudstore"));
       doAnswer(new Answer<Object>() {
-                 public Object answer(InvocationOnMock invocation) {
+                 @Override
+                public Object answer(InvocationOnMock invocation) {
                    ((FutureCallback) invocation.getArguments()[4]).onSuccess(null);
                    return null;
                  }
@@ -851,6 +853,11 @@ public class AddManagementHostWorkflowServiceTest {
       doReturn(mock(ServiceConfig.class))
           .when(zkBuilder)
           .getServiceConfig(anyString(), anyString());
+
+      InetSocketAddress address = remoteStore.getServerSet().getServers().iterator().next();
+      InetSocketAddress adjustedAddress = new InetSocketAddress(address.getHostName(), address.getPort() - 1);
+      doReturn(Collections.singleton(adjustedAddress))
+        .when(zkBuilder).getServers(anyString(), eq(DeployerModule.HOUSEKEEPER_SERVICE_NAME));
     }
 
     @AfterMethod
@@ -1233,7 +1240,7 @@ public class AddManagementHostWorkflowServiceTest {
       Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
       List<T> states = new ArrayList<>();
       for (String documentLink : documentLinks) {
-        states.add((T) multiHostEnvironment.getServiceState(documentLink, classType));
+        states.add(multiHostEnvironment.getServiceState(documentLink, classType));
       }
 
       return states;

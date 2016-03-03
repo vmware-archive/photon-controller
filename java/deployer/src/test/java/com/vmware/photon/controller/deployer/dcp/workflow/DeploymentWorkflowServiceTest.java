@@ -35,6 +35,7 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
@@ -702,6 +703,11 @@ public class DeploymentWorkflowServiceTest {
       doReturn(mock(ServiceConfig.class))
           .when(zkBuilder)
           .getServiceConfig(anyString(), anyString());
+
+      InetSocketAddress address = remoteStore.getServerSet().getServers().iterator().next();
+      InetSocketAddress adjustedAddress = new InetSocketAddress(address.getHostName(), address.getPort() - 1);
+      doReturn(Collections.singleton(adjustedAddress))
+        .when(zkBuilder).getServers(anyString(), eq(DeployerModule.HOUSEKEEPER_SERVICE_NAME));
     }
 
     @AfterMethod
@@ -1119,7 +1125,7 @@ public class DeploymentWorkflowServiceTest {
       Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
       List<T> states = new ArrayList<>();
       for (String documentLink : documentLinks) {
-        states.add((T) multiHostEnvironment.getServiceState(documentLink, classType));
+        states.add(multiHostEnvironment.getServiceState(documentLink, classType));
       }
 
       return states;
