@@ -47,6 +47,7 @@ public class DatastoreServiceFactoryTest {
         Service.ServiceOption.FACTORY,
         Service.ServiceOption.CONCURRENT_GET_HANDLING,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
+        Service.ServiceOption.ON_DEMAND_LOAD,
         Service.ServiceOption.IDEMPOTENT_POST);
     assertThat(factory.getOptions(), is(expected));
     assertThat(factory.getPeerNodeSelectorPath(), is(equalTo(ServiceUriPaths.NODE_SELECTOR_FOR_SYMMETRIC_REPLICATION)));

@@ -44,6 +44,7 @@ public class HostServiceFactoryTest {
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
         Service.ServiceOption.CONCURRENT_GET_HANDLING,
         Service.ServiceOption.FACTORY,
+        Service.ServiceOption.ON_DEMAND_LOAD,
         Service.ServiceOption.REPLICATION);
 
     assertThat(hostServiceFactory.getOptions(), is(expected));
