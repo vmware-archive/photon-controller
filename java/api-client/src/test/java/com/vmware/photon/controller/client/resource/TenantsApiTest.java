@@ -121,6 +121,40 @@ public class TenantsApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testListForPagination() throws IOException {
+    Tenant tenant1 = new Tenant();
+    tenant1.setId("tenant1");
+    tenant1.setName("tenant1");
+
+    Tenant tenant2 = new Tenant();
+    tenant2.setId("tenant2");
+    tenant2.setName("tenant2");
+
+    Tenant tenant3 = new Tenant();
+    tenant3.setId("tenant3");
+    tenant3.setName("tenant3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Tenant> tenantResourceList = new ResourceList<>(Arrays.asList(tenant1, tenant2), nextPageLink, null);
+    ResourceList<Tenant> tenantResourceListNextPage = new ResourceList<>(Arrays.asList(tenant3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(tenantResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(tenantResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    TenantsApi tenantsApi = new TenantsApi(restClient);
+
+    ResourceList<Tenant> response = tenantsApi.listByName("foo");
+    assertEquals(response.getItems().size(), tenantResourceList.getItems().size() + tenantResourceListNextPage
+        .getItems().size());
+    assertTrue(response.getItems().containsAll(tenantResourceList.getItems()));
+    assertTrue(response.getItems().containsAll(tenantResourceListNextPage.getItems()));
+  }
+
+  @Test
   public void testListAsync() throws IOException, InterruptedException {
     Tenant tenant1 = new Tenant();
     tenant1.setId("tenant1");
@@ -157,6 +191,55 @@ public class TenantsApiTest extends ApiTestBase {
 
     assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
 
+  }
+
+  @Test
+  public void testListAsyncForPagination() throws IOException, InterruptedException {
+    Tenant tenant1 = new Tenant();
+    tenant1.setId("tenant1");
+    tenant1.setName("tenant1");
+
+    Tenant tenant2 = new Tenant();
+    tenant2.setId("tenant2");
+    tenant2.setName("tenant2");
+
+    Tenant tenant3 = new Tenant();
+    tenant3.setId("tenant3");
+    tenant3.setName("tenant3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Tenant> tenantResourceList = new ResourceList<>(Arrays.asList(tenant1, tenant2), nextPageLink, null);
+    ResourceList<Tenant> tenantResourceListNextPage = new ResourceList<>(Arrays.asList(tenant3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(tenantResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(tenantResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    TenantsApi tenantsApi = new TenantsApi(restClient);
+
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    tenantsApi.listByNameAsync("foo", new FutureCallback<ResourceList<Tenant>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Tenant> result) {
+        assertEquals(result.getItems().size(), tenantResourceList.getItems().size() + tenantResourceListNextPage
+            .getItems().size());
+        assertTrue(result.getItems().containsAll(tenantResourceList.getItems()));
+        assertTrue(result.getItems().containsAll(tenantResourceListNextPage.getItems()));
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
   }
 
   @Test
@@ -287,6 +370,41 @@ public class TenantsApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testGetResourceTicketsForPagination() throws IOException {
+    ResourceTicket resourceTicket1 = new ResourceTicket();
+    resourceTicket1.setId("resourceTicket1");
+
+    ResourceTicket resourceTicket2 = new ResourceTicket();
+    resourceTicket2.setId("resourceTicket2");
+
+    ResourceTicket resourceTicket3 = new ResourceTicket();
+    resourceTicket3.setId("resourceTicket3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<ResourceTicket> resourceTicketResourceList =
+        new ResourceList<>(
+            Arrays.asList(resourceTicket1, resourceTicket2), nextPageLink, null);
+
+    ResourceList<ResourceTicket> resourceTicketResourceListNextPage =
+        new ResourceList<>(Arrays.asList(resourceTicket3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(resourceTicketResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(resourceTicketResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    TenantsApi tenantsApi = new TenantsApi(restClient);
+
+    ResourceList<ResourceTicket> response = tenantsApi.getResourceTickets("foo");
+    assertEquals(response.getItems().size(), resourceTicketResourceList.getItems().size() +
+        resourceTicketResourceListNextPage.getItems().size());
+    assertTrue(response.getItems().containsAll(resourceTicketResourceList.getItems()));
+    assertTrue(response.getItems().containsAll(resourceTicketResourceListNextPage.getItems()));
+  }
+
+  @Test
   public void testGetResourceTicketsAsync() throws IOException, InterruptedException {
     ResourceTicket resourceTicket1 = new ResourceTicket();
     resourceTicket1.setId("resourceTicket1");
@@ -311,6 +429,55 @@ public class TenantsApiTest extends ApiTestBase {
       @Override
       public void onSuccess(@Nullable ResourceList<ResourceTicket> result) {
         assertEquals(result.getItems(), resourceTicketResourceList.getItems());
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testGetResourceTicketsAsyncForPagination() throws IOException, InterruptedException {
+    ResourceTicket resourceTicket1 = new ResourceTicket();
+    resourceTicket1.setId("resourceTicket1");
+
+    ResourceTicket resourceTicket2 = new ResourceTicket();
+    resourceTicket2.setId("resourceTicket2");
+
+    ResourceTicket resourceTicket3 = new ResourceTicket();
+    resourceTicket3.setId("resourceTicket3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<ResourceTicket> resourceTicketResourceList =
+        new ResourceList<>(
+            Arrays.asList(resourceTicket1, resourceTicket2), nextPageLink, null);
+
+    ResourceList<ResourceTicket> resourceTicketResourceListNextPage =
+        new ResourceList<>(Arrays.asList(resourceTicket3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(resourceTicketResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(resourceTicketResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    TenantsApi tenantsApi = new TenantsApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    tenantsApi.getResourceTicketsAsync("foo", new FutureCallback<ResourceList<ResourceTicket>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<ResourceTicket> result) {
+        assertEquals(result.getItems().size(), resourceTicketResourceList.getItems().size() +
+            resourceTicketResourceListNextPage.getItems().size());
+        assertTrue(result.getItems().containsAll(resourceTicketResourceList.getItems()));
+        assertTrue(result.getItems().containsAll(resourceTicketResourceListNextPage.getItems()));
         latch.countDown();
       }
 
@@ -400,6 +567,38 @@ public class TenantsApiTest extends ApiTestBase {
   }
 
   @Test
+  public void testGetProjectsForPagination() throws IOException {
+    Project project1 = new Project();
+    project1.setId("project1");
+
+    Project project2 = new Project();
+    project2.setId("project2");
+
+    Project project3 = new Project();
+    project3.setId("project3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Project> projectResourceList = new ResourceList<>(Arrays.asList(project1, project2), nextPageLink,
+        null);
+    ResourceList<Project> projectResourceListNextPage = new ResourceList<>(Arrays.asList(project3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(projectResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(projectResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    TenantsApi tenantsApi = new TenantsApi(restClient);
+
+    ResourceList<Project> response = tenantsApi.getProjects("foo");
+    assertEquals(response.getItems().size(), projectResourceList.getItems().size() + projectResourceListNextPage
+        .getItems().size());
+    assertTrue(response.getItems().containsAll(projectResourceList.getItems()));
+    assertTrue(response.getItems().containsAll(projectResourceListNextPage.getItems()));
+  }
+
+  @Test
   public void testGetProjectsAsync() throws IOException, InterruptedException {
     Project project1 = new Project();
     project1.setId("project1");
@@ -423,6 +622,52 @@ public class TenantsApiTest extends ApiTestBase {
       @Override
       public void onSuccess(@Nullable ResourceList<Project> result) {
         assertEquals(result.getItems(), projectResourceList.getItems());
+        latch.countDown();
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testGetProjectsAsyncForPagination() throws IOException, InterruptedException {
+    Project project1 = new Project();
+    project1.setId("project1");
+
+    Project project2 = new Project();
+    project2.setId("project2");
+
+    Project project3 = new Project();
+    project3.setId("project3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Project> projectResourceList = new ResourceList<>(Arrays.asList(project1, project2), nextPageLink,
+        null);
+    ResourceList<Project> projectResourceListNextPage = new ResourceList<>(Arrays.asList(project3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(projectResourceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(projectResourceListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    TenantsApi tenantsApi = new TenantsApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    tenantsApi.getProjectsAsync("foo", new FutureCallback<ResourceList<Project>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Project> result) {
+        assertEquals(result.getItems().size(), projectResourceList.getItems().size() + projectResourceListNextPage
+            .getItems().size());
+        assertTrue(result.getItems().containsAll(projectResourceList.getItems()));
+        assertTrue(result.getItems().containsAll(projectResourceListNextPage.getItems()));
         latch.countDown();
       }
 

@@ -27,6 +27,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -114,9 +116,27 @@ public class TenantsApi extends ApiBase {
       path += "?name=" + name;
     }
 
+    ResourceList<Tenant> tenantResourceList = new ResourceList<>();
+    ResourceList<Tenant> resourceList = getTenantResourceList(path);
+    tenantResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getTenantResourceList(resourceList.getNextPageLink());
+      tenantResourceList.getItems().addAll(resourceList.getItems());
+    }
+
+    return tenantResourceList;
+  }
+
+  /**
+   * Get all tenants at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<Tenant> getTenantResourceList(String path) throws IOException {
     HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
     this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
-
     return this.restClient.parseHttpResponse(
         httpResponse,
         new TypeReference<ResourceList<Tenant>>() {
@@ -138,8 +158,33 @@ public class TenantsApi extends ApiBase {
       path += "?name=" + name;
     }
 
-    getObjectByPathAsync(path, responseCallback, new TypeReference<ResourceList<Tenant>>() {
-    });
+    ResourceList<Tenant> tenantResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<Tenant>> callback = new FutureCallback<ResourceList<Tenant>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Tenant> result) {
+        if (tenantResourceList.getItems() == null) {
+          tenantResourceList.setItems(result.getItems());
+        } else {
+          tenantResourceList.getItems().addAll(result.getItems());
+        }
+        if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
+          try {
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<Tenant>>() {});
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          responseCallback.onSuccess(tenantResourceList);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        responseCallback.onFailure(t);
+      }
+    };
+
+    getObjectByPathAsync(path, callback, new TypeReference<ResourceList<Tenant>>() {});
   }
 
   /**
@@ -215,9 +260,27 @@ public class TenantsApi extends ApiBase {
   public ResourceList<ResourceTicket> getResourceTickets(String tenantId) throws IOException {
     String path = String.format("%s/%s/resource-tickets", getBasePath(), tenantId);
 
+    ResourceList<ResourceTicket> resourceTicketResourceList = new ResourceList<>();
+    ResourceList<ResourceTicket> resourceList = getResourceTicketResourceList(path);
+    resourceTicketResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getResourceTicketResourceList(resourceList.getNextPageLink());
+      resourceTicketResourceList.getItems().addAll(resourceList.getItems());
+    }
+
+    return resourceTicketResourceList;
+  }
+
+  /**
+   * Get all resourceTickets at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<ResourceTicket> getResourceTicketResourceList(String path) throws IOException {
     HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
     this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
-
     return this.restClient.parseHttpResponse(
         httpResponse,
         new TypeReference<ResourceList<ResourceTicket>>() {
@@ -237,8 +300,33 @@ public class TenantsApi extends ApiBase {
       throws IOException {
     String path = String.format("%s/%s/resource-tickets", getBasePath(), tenantId);
 
-    getObjectByPathAsync(path, responseCallback, new TypeReference<ResourceList<ResourceTicket>>() {
-    });
+    ResourceList<ResourceTicket> resourceTicketResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<ResourceTicket>> callback = new FutureCallback<ResourceList<ResourceTicket>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<ResourceTicket> result) {
+        if (resourceTicketResourceList.getItems() == null) {
+          resourceTicketResourceList.setItems(result.getItems());
+        } else {
+          resourceTicketResourceList.getItems().addAll(result.getItems());
+        }
+        if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
+          try {
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<ResourceTicket>>() {});
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          responseCallback.onSuccess(resourceTicketResourceList);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        responseCallback.onFailure(t);
+      }
+    };
+
+    getObjectByPathAsync(path, callback, new TypeReference<ResourceList<ResourceTicket>>() {});
   }
 
   /**
@@ -284,9 +372,27 @@ public class TenantsApi extends ApiBase {
   public ResourceList<Project> getProjects(String tenantId) throws IOException {
     String path = String.format("%s/%s/projects", getBasePath(), tenantId);
 
+    ResourceList<Project> projectResourceList = new ResourceList<>();
+    ResourceList<Project> resourceList = getProjectResourceList(path);
+    projectResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getProjectResourceList(resourceList.getNextPageLink());
+      projectResourceList.getItems().addAll(resourceList.getItems());
+    }
+
+    return projectResourceList;
+  }
+
+  /**
+   * Get all projects at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<Project> getProjectResourceList(String path) throws IOException {
     HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
     this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
-
     return this.restClient.parseHttpResponse(
         httpResponse,
         new TypeReference<ResourceList<Project>>() {
@@ -305,7 +411,32 @@ public class TenantsApi extends ApiBase {
       throws IOException {
     String path = String.format("%s/%s/projects", getBasePath(), tenantId);
 
-    getObjectByPathAsync(path, responseCallback, new TypeReference<ResourceList<Project>>() {
-    });
+    ResourceList<Project> projectResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<Project>> callback = new FutureCallback<ResourceList<Project>>() {
+      @Override
+      public void onSuccess(@Nullable ResourceList<Project> result) {
+        if (projectResourceList.getItems() == null) {
+          projectResourceList.setItems(result.getItems());
+        } else {
+          projectResourceList.getItems().addAll(result.getItems());
+        }
+        if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
+          try {
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<Project>>() {});
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          responseCallback.onSuccess(projectResourceList);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        responseCallback.onFailure(t);
+      }
+    };
+
+    getObjectByPathAsync(path, callback, new TypeReference<ResourceList<Project>>() {});
   }
 }
