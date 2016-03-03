@@ -94,6 +94,7 @@ public class DeployerModule extends AbstractModule {
 
   public static final String DEPLOYER_SERVICE_NAME = "deployer";
   public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
+  public static final String HOUSEKEEPER_SERVICE_NAME = "housekeeper";
   public static final String CLUSTER_SCRIPTS_DIRECTORY = "clusters";
   /**
    * The blocking queue associated with the thread pool executor service

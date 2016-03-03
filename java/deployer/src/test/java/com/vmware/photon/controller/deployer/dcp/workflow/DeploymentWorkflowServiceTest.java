@@ -1119,7 +1119,7 @@ public class DeploymentWorkflowServiceTest {
       Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
       List<T> states = new ArrayList<>();
       for (String documentLink : documentLinks) {
-        states.add((T) multiHostEnvironment.getServiceState(documentLink, classType));
+        states.add(multiHostEnvironment.getServiceState(documentLink, classType));
       }
 
       return states;
