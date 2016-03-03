@@ -35,15 +35,14 @@ class TestLogDecorators(unittest.TestCase):
                     vm_info="vm_info_1", vm_stat="vm_stat_1")
 
         assert_that(dummy._logger.info.call_args_list,
-                    is_([call('vim_client_timeout: foo_1: took 1000')]))
+                    is_([call('foo_1: took 1000')]))
 
         assert_that(dummy._logger.debug.call_args_list,
-                    is_([call('vim_client_timeout: foo_2: '
-                         'vm_id_1 vm_id_2 took 1000')]))
+                    is_([call('foo_2: vm_id_1 vm_id_2 took 1000')]))
 
         assert_that(dummy._logger.warn.call_args_list,
-                    is_([call('vim_client_timeout: foo_3: vm_id_1 vm_id_2 '
-                        'vm_stat:vm_stat_1 vm_info:vm_info_1 took 1000')]))
+                    is_([call('foo_3: vm_id_1 vm_id_2 vm_stat:'
+                        'vm_stat_1 vm_info:vm_info_1 took 1000')]))
 
 
 class DummyClass(object):

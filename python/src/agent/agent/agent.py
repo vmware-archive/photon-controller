@@ -202,16 +202,11 @@ class BootstrapPoller(threading.Thread):
         self.setDaemon(True)
 
     def run(self):
-        count = 0
         while True:
             if (self._config.reboot_required):
                 self._logger.info("Shutting down agent to update config")
                 os.kill(os.getpid(), signal.SIGINT)
             time.sleep(self._config.bootstrap_poll_frequency)
-
-            # temporary logging to help debug agent hang
-            self._logger.info("BootstrapPoller thread alive %d", count)
-            count += 1
 
 
 def main():

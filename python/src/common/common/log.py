@@ -189,18 +189,13 @@ def log_duration_with(log_level="info"):
 
                     tmp_ret_str = "{0}: {1}{2}took {3}"
 
-                    ret_str = tmp_ret_str.format(
+                    return tmp_ret_str.format(
                         func.__name__,
                         prepare_arg_str(args, lambda k, _: str(k)),
                         prepare_arg_str(
                             kwargs,
                             lambda k, d: str(k) + ":" + str(d[k])),
                         end - start)
-
-                    # temporary logging to help debug agent hang
-                    if end - start > 60:
-                        ret_str = "vim_client_timeout: " + ret_str
-                    return ret_str
 
                 getattr(self._logger, log_level)(gen_str())
 
