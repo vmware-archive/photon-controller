@@ -806,8 +806,13 @@ class EsxImageManager(ImageManager):
         """ Fills a temp image directory with a disk from a VM,
             then installs directory in the shared image folder.
         """
-        dst_vmdk_path = os_datastore_path(datastore_id,
-                                          "%s/%s.vmdk" % (tmp_dir, image_id))
+        dst_parent_dir = os_datastore_path(datastore_id, tmp_dir)
+        if os.path.exists(dst_parent_dir):
+            self._logger.debug("Parent directory %s exists" % dst_parent_dir)
+        else:
+            mkdir_p(dst_parent_dir)
+
+        dst_vmdk_path = os.path.join(dst_parent_dir, "%s.vmdk" % image_id)
         if os.path.exists(dst_vmdk_path):
             self._logger.warning(
                 "Unexpected disk %s present, overwriting" % dst_vmdk_path)
