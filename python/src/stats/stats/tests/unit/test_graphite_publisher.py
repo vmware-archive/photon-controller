@@ -29,20 +29,20 @@ class TestGraphitePublisher(unittest.TestCase):
         self.assertRaises(
             NotImplementedError,
             graphite_publisher.GraphitePublisher,
-            host_id="hostid", carbon_host="1.1.1.1", carbon_port=2003,
+            hostname="hostname", carbon_host="1.1.1.1", carbon_port=2003,
             use_pickle_format=False)
 
     @patch("pickle.dumps", return_value="picklemsg")
     @patch("struct.pack", return_value="packed_header")
     def test_build_pickle_message(self, _pack, _dumps):
-        host_id = "fake-id"
+        hostname = "fake-hostname"
         stats = {"key1": [(1000000, 1), (1000020, 2)]}
         pub = graphite_publisher.GraphitePublisher(
-            host_id=host_id, carbon_host="10.10.10.10", carbon_port=2004, host_tags="tag")
+            hostname=hostname, carbon_host="10.10.10.10", carbon_port=2004, host_tags="tag")
 
         result = pub._build_pickled_data_msg(stats)
-        expected_data = [('photon.fake-id.tag.key1', (1000000, 1)),
-                         ('photon.fake-id.tag.key1', (1000020, 2))]
+        expected_data = [('photon.fake-hostname.tag.key1', (1000000, 1)),
+                         ('photon.fake-hostname.tag.key1', (1000020, 2))]
         _dumps.assert_called_once_with(expected_data, protocol=2)
         _pack.assert_called_once_with("!L", len("picklemsg"))
         assert_that(result, is_("packed_header" + "picklemsg"))
@@ -53,7 +53,7 @@ class TestGraphitePublisher(unittest.TestCase):
         assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags(" , "), is_(""))
         assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags("abc"), is_(".abc"))
         assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags(" abc "), is_(".abc"))
-        assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags("abc,xyz"), is_(".abc.xyz"))
+        assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags("abc,xyz.zzz"), is_(".abc.xyz-zzz"))
         assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags(" xyz, abc "), is_(".abc.xyz"))
         assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags(" xyz, abc, mno "), is_(".abc.mno.xyz"))
 
@@ -63,10 +63,10 @@ class TestGraphitePublisher(unittest.TestCase):
     @patch("socket.socket.sendall")
     @patch("socket.socket.close")
     def test_publish(self, _close, _sendall, _connect, _build_msg):
-        host_id = "fake-id"
+        hostname = "fake-hostname"
         stats = {"key1": [(1000000, 1), (1000020, 2)]}
         pub = graphite_publisher.GraphitePublisher(
-            host_id=host_id, carbon_host="10.10.10.10", carbon_port=2004)
+            hostname=hostname, carbon_host="10.10.10.10", carbon_port=2004)
 
         pub.publish(stats)
 

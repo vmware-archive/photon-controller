@@ -139,9 +139,6 @@ class PerfManagerCollector(Collector):
                 self._counter_to_metric_map[c.key] = metric_name
 
         self._update_selected_metrics(self._collection_level)
-
-        self._logger.info("Collector initialized")
-
         self._initialized = True
 
     def _get_timestamps(self, sample_info_csv):
@@ -211,7 +208,7 @@ class PerfManagerCollector(Collector):
     def _get_host_stats(self, stats, vm_stat_prefix_map):
         results = {}
         host = self.get_host_system()
-        timestamp = time.mktime(datetime.now().timetuple())
+        timestamp = int(time.mktime(datetime.now().timetuple()))
 
         if self.host_cpu_usage_metric_name in self._selected_metric_names:
             results[self.host_cpu_usage_metric_name] = [(timestamp, self._host_cpu_usage(host))]
@@ -243,12 +240,12 @@ class PerfManagerCollector(Collector):
     def _host_cpu_usage(self, host):
         overall_cpu_usage = host.summary.quickStats.overallCpuUsage
         total_cpu = host.summary.hardware.cpuMhz * host.summary.hardware.numCpuCores
-        return ((overall_cpu_usage * 100) / float(total_cpu))
+        return (overall_cpu_usage * 100) / float(total_cpu)
 
     def _host_mem_usage(self, host):
         overall_memory_usage = host.summary.quickStats.overallMemoryUsage
         total_memory = host.summary.hardware.memorySize / 1024 / 1024
-        return ((overall_memory_usage * 100) / float(total_memory))
+        return (overall_memory_usage * 100) / float(total_memory)
 
     def collect(self, since=None):
         if not self._initialized:
