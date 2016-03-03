@@ -64,14 +64,14 @@ class StatsCollector(object):
         # XXX List of collectors are hard coded for now.
         pm_collector = PerfManagerCollector()
         self.register_collector(pm_collector)
+        self._logger.info("Stats collector configured")
 
     def collect(self):
         for c in self._collectors:
-            self._logger.debug("Collecting from %s" % str(c))
             since = self._last_publish_ts
             self._last_publish_ts = datetime.now()
             metrics = c.collect(since=since)
             for key in metrics.keys():
-                self._logger.debug(" %s -> %s" % (key, metrics[key]))
+                self._logger.debug("Metrics collected %s -> %s" % (key, metrics[key]))
                 for value_tuple in metrics[key]:
                     self._metric_cache.add(key, value_tuple[0], value_tuple[1])

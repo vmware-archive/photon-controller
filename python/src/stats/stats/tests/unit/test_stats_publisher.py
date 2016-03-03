@@ -29,7 +29,7 @@ class TestStatsPublisher(unittest.TestCase):
 
     def setUp(self):
         agent_config = MagicMock()
-        agent_config.host_id = "fake-id"
+        agent_config.hostname = "hostname"
         agent_config.stats_store_endpoint = "1.1.1.1"
         agent_config.stats_store_port = 1111
         agent_config.stats_host_tags = "abc"
@@ -62,7 +62,7 @@ class TestStatsPublisher(unittest.TestCase):
 
         publisher.configure_publishers()
 
-        _graphite_pub_cls.assert_called_once_with(host_id="fake-id",
+        _graphite_pub_cls.assert_called_once_with(hostname="hostname",
                                                   carbon_host='1.1.1.1',
                                                   carbon_port=1111,
                                                   host_tags="abc")
