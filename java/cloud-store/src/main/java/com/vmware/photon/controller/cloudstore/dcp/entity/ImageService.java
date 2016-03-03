@@ -46,6 +46,7 @@ public class ImageService extends StatefulService {
     super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
+    super.toggleOption(ServiceOption.ON_DEMAND_LOAD, true);
   }
 
   @Override

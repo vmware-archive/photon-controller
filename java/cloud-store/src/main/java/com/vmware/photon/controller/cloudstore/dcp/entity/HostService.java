@@ -132,6 +132,7 @@ public class HostService extends StatefulService {
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
+    super.toggleOption(ServiceOption.ON_DEMAND_LOAD, true);
     super.toggleOption(ServiceOption.PERIODIC_MAINTENANCE, true);
     super.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(DEFAULT_MAINTENANCE_INTERVAL_MILLIS));
     this.lastHostMetadataUpdateTime = System.currentTimeMillis();
