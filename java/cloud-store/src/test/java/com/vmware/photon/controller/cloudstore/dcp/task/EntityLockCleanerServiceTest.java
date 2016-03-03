@@ -38,7 +38,6 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -169,7 +168,7 @@ public class EntityLockCleanerServiceTest {
           {"taskState", state},
           {"isSelfProgressionDisabled", false},
           {"danglingEntityLocks", 0},
-          {"releasedEntityLocks", 0}
+          {"deletedEntityLocks", 0}
       };
     }
 
@@ -283,7 +282,6 @@ public class EntityLockCleanerServiceTest {
     @AfterMethod
     public void tearDown() throws Throwable {
       if (machine != null) {
-        freeTestEnvironment(machine);
         machine.stop();
         machine = null;
       }
@@ -323,7 +321,7 @@ public class EntityLockCleanerServiceTest {
           (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
 
       assertThat(response.danglingEntityLocks, is(0));
-      assertThat(response.releasedEntityLocks, is(0));
+      assertThat(response.deletedEntityLocks, is(0));
     }
 
     /**
@@ -347,18 +345,15 @@ public class EntityLockCleanerServiceTest {
           (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
       assertThat(response.danglingEntityLocks,
           is(Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT)));
-      assertThat(response.releasedEntityLocks,
+      assertThat(response.deletedEntityLocks,
           is(Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT)));
 
-      verifyLockStatusAfterCleanup(machine, totalEntityLocks, danglingEntityLocks);
+      freeTestEnvironment(machine);
     }
 
     private void freeTestEnvironment(TestEnvironment machine) throws Throwable {
-      if (testSelfLinks != null) {
-        for (String selfLink : testSelfLinks) {
-          machine.deleteService(selfLink);
-        }
-        testSelfLinks.clear();
+      for (String selfLink : testSelfLinks) {
+        machine.deleteService(selfLink);
       }
     }
 
@@ -400,31 +395,10 @@ public class EntityLockCleanerServiceTest {
         // create associated entity lock
         EntityLockService.State entityLock = new EntityLockService.State();
         entityLock.entityId = "entity-id" + i;
-        entityLock.ownerId = ServiceUtils.getIDFromDocumentSelfLink(createdTask.documentSelfLink);
-        entityLock.isAvailable = false;
-        entityLock.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
+        entityLock.taskId = ServiceUtils.getIDFromDocumentSelfLink(createdTask.documentSelfLink);
         Operation entityLockOperation = env.sendPostAndWait(EntityLockServiceFactory.SELF_LINK, entityLock);
         EntityLockService.State createdEntityLock = entityLockOperation.getBody(EntityLockService.State.class);
         testSelfLinks.add(createdEntityLock.documentSelfLink);
-      }
-    }
-
-    private void verifyLockStatusAfterCleanup(TestEnvironment env,
-                                     int totalEntityLocks,
-                                     int danglingEntityLocks) throws Throwable {
-      Integer expectedNumberOfReleasedLocks =
-          Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT);
-
-      for (int i = 0; i < totalEntityLocks; i++) {
-        EntityLockService.State entityLock = env.getServiceState(
-            EntityLockServiceFactory.SELF_LINK + "/entity-id" + i ,
-            EntityLockService.State.class);
-        assertThat (entityLock, is(notNullValue()));
-        if (i < expectedNumberOfReleasedLocks) {
-          assertThat(entityLock.isAvailable, is(true));
-        } else {
-          assertThat(entityLock.isAvailable, is(false));
-        }
       }
     }
   }
