@@ -362,6 +362,21 @@ module EsxCloud
       end
     end
 
+    #wait for image seeding progress to be done, timeout 30 mins
+    def wait_for_image_seeding_progress_done
+      360.times do
+        done = image_seeding_progress_is_done EsxCloud::SystemSeeder.instance.image!.id
+        if done
+          return
+        end
+
+        puts "waiting for image seed progress to be done..."
+        sleep 5
+      end
+
+      raise TimeoutError.new
+    end
+
     private
 
     def get_image_path_dir(image_id)
@@ -369,6 +384,11 @@ module EsxCloud
       image_path = File.expand_path("images", image_path)
       image_path = File.expand_path(image_id[0,2], image_path)
       File.expand_path(image_id, image_path)
+    end
+
+    def image_seeding_progress_is_done(image_id)
+      image = EsxCloud::Image.find_by_id(image_id)
+      image.seeding_progress.eql? "100.0%"
     end
 
   end
