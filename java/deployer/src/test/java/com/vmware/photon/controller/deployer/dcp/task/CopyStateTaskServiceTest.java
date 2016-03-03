@@ -606,4 +606,58 @@ public class CopyStateTaskServiceTest {
       return result;
     }
   }
+
+  /**
+   * RecoverDataTest.
+   */
+  public class RecoverDataTest {
+
+    @DataProvider(name = "factoryLinks")
+    public Object[][] getFactoryLinks() {
+      return new Object[][]{
+          {"/esxcloud/cloudstore/flavors"},
+          {"/esxcloud/cloudstore/attached-disks"},
+          {"/esxcloud/cloudstore/datastores"},
+          {"/esxcloud/cloudstore/clusters"},
+          {"/esxcloud/cloudstore/deployments"},
+          {"/esxcloud/cloudstore/disks"},
+          {"/esxcloud/cloudstore/hosts"},
+          {"/esxcloud/cloudstore/images"},
+          {"/esxcloud/cloudstore/networks"},
+          {"/esxcloud/cloudstore/projects"},
+          {"/esxcloud/cloudstore/resource-tickets"},
+          {"/esxcloud/cloudstore/tenants"},
+          {"/esxcloud/cloudstore/tombstones"},
+          {"/esxcloud/cloudstore/vms"},
+          {"/esxcloud/cloudstore/portgroups"},
+      };
+    }
+
+    @Test(dataProvider = "factoryLinks")
+    public void executeTransfer(String factoryLink) throws Throwable {
+      CopyStateTaskService.State copyStateTaskServiceState = new CopyStateTaskService.State();
+      copyStateTaskServiceState.taskState = new TaskState();
+      copyStateTaskServiceState.taskState.stage = TaskState.TaskStage.CREATED;
+      copyStateTaskServiceState.controlFlags = 0;
+      copyStateTaskServiceState.sourceServers = new HashSet<>();
+      copyStateTaskServiceState.sourceServers.add(new Pair<>("10.144.121.10", 19000));
+      copyStateTaskServiceState.destinationPort = 19000;
+      copyStateTaskServiceState.destinationIp = "10.144.121.11";
+      copyStateTaskServiceState.factoryLink = factoryLink;
+      copyStateTaskServiceState.sourceFactoryLink = factoryLink;
+      copyStateTaskServiceState.performHostTransformation = false;
+      copyStateTaskServiceState.destinationServiceClassName = null;
+
+      TestEnvironment testCluster = new TestEnvironment.Builder().hostCount(1).build();
+
+      CopyStateTaskService.State finalState = testCluster.callServiceAndWaitForState(
+          CopyStateTaskFactoryService.SELF_LINK,
+          copyStateTaskServiceState,
+          CopyStateTaskService.State.class,
+          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FINISHED));
+    }
+  }
+
 }

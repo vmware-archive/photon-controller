@@ -47,8 +47,8 @@ import java.util.function.Supplier;
  */
 public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfoProvider> {
 
-  public static final int WAIT_ITERATION_SLEEP = 1;
-  public static final int WAIT_ITERATION_COUNT = 30000 / WAIT_ITERATION_SLEEP; // 30 seconds.
+  public static final int WAIT_ITERATION_SLEEP = 1000;
+  public static final int WAIT_ITERATION_COUNT = 60 * 5;
   public static final int MAINTENANCE_INTERVAL_MS = 500;
   public static final int TEST_NODE_GROUP_CONVERGENCE_SLEEP = 20;
   public static final int DEFAULT_MULTI_HOST_COUNT = 3;

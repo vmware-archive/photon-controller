@@ -183,11 +183,11 @@ public class CopyStateTaskService extends StatefulService {
 
     try {
       if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
-        String destinationTemplate = findDestinationServiceClassName(startState);
+//        String destinationTemplate = findDestinationServiceClassName(startState);
         State patchState = buildPatch(TaskState.TaskStage.STARTED, null);
-        if (destinationTemplate != null) {
-          patchState.destinationServiceClassName = destinationTemplate;
-        }
+//        if (destinationTemplate != null) {
+//          patchState.destinationServiceClassName = destinationTemplate;
+//        }
         sendStageProgressPatch(patchState);
       }
     } catch (Throwable t) {
@@ -323,13 +323,8 @@ public class CopyStateTaskService extends StatefulService {
     for (ServiceDocumentQueryResult result : results.values()) {
       ownerSelectedResults.addAll(
           result.documents.values().stream()
-          .filter(doc -> {
-            ServiceDocument serviceDoc = Utils.fromJson(doc, ServiceDocument.class);
-            return serviceDoc.documentOwner == null
-                || Objects.equal(serviceDoc.documentOwner, result.documentOwner);
-          })
-          .collect(Collectors.toList())
-        );
+              .collect(Collectors.toList())
+      );
     }
     QueryTaskUtils.logQueryResults(this, ownerSelectedResults.stream()
         .map(doc -> {
@@ -373,6 +368,8 @@ public class CopyStateTaskService extends StatefulService {
               .create(ownerSelectedResults.stream()
                   .map(document -> {
                     Object json = removeFactoryPathFromSelfLink(document, currentState.sourceFactoryLink);
+                    json = Utils.toJson(
+                        Utils.setJsonProperty(json, ServiceDocument.FIELD_NAME_OWNER, null));
                     return buildPostOperation(json, destinationFactoryURI, currentState);
                   }))
               .setCompletion((ops, exs) -> {
@@ -398,17 +395,12 @@ public class CopyStateTaskService extends StatefulService {
 
   private Operation buildPostOperation(Object document, URI uri, State currentState) {
     try {
-      Object documentWithRenamedFields = handleRenamedFields(document, currentState);
+      //Object documentWithRenamedFields = handleRenamedFields(document, currentState);
       Operation postOp = Operation
           .createPost(uri)
           .setUri(uri)
-          .setBody(documentWithRenamedFields)
+          .setBody(document)
           .forceRemote()
-              // PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE is a workaround needed
-              // because Xenon 0.7.0 does not allow POST to a previously deleted service
-              // we will need to implement an alternative solution using idempotent posts so that this workaround can
-              // be removed https://www.pivotaltracker.com/story/show/114425679
-          .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE)
           .setReferer(uri);
       return postOp;
     } catch (Throwable ex) {
