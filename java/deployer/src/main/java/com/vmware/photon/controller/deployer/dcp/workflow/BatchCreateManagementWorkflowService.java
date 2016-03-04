@@ -369,7 +369,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         OperationJoin.create(quorumUpdates)
           .setCompletion((os2, ts2) -> {
             if (ts2 != null && !ts2.isEmpty()) {
-              failTask(ts.values());
+              failTask(ts2.values());
               return;
             }
             // Wait until services have stabilized
@@ -483,7 +483,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       UpdateQuorumRequest patch = new UpdateQuorumRequest();
       patch.kind = UpdateQuorumRequest.KIND;
       patch.membershipQuorum = computeQuorum.applyAsInt(entry.getValue().size());
-      patch.isGroupUpdate = true;
+      patch.isGroupUpdate = false;
       for (Pair<String, Integer> address : entry.getValue()) {
         quorumUpdates.add(
           Operation.createPatch(
