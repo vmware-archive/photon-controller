@@ -39,6 +39,7 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
+import com.vmware.photon.controller.deployer.dcp.ContainersConfig.ContainerType;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.XenonConfig;
@@ -64,6 +65,7 @@ import com.vmware.photon.controller.deployer.service.client.HostServiceClientFac
 import com.vmware.photon.controller.deployer.service.client.ValidateHostTaskServiceClientFactory;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.AbstractModule;
@@ -80,6 +82,7 @@ import org.apache.http.ssl.SSLContexts;
 import javax.net.ssl.SSLContext;
 
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -96,6 +99,20 @@ public class DeployerModule extends AbstractModule {
   public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
   public static final String HOUSEKEEPER_SERVICE_NAME = "housekeeper";
   public static final String CLUSTER_SCRIPTS_DIRECTORY = "clusters";
+
+  public static final Map<ContainerType, String> XENON_SERVICES = ImmutableMap.<ContainerType, String>builder()
+      .put(ContainerType.CloudStore, DeployerModule.CLOUDSTORE_SERVICE_NAME)
+      .put(ContainerType.Deployer, DeployerModule.DEPLOYER_SERVICE_NAME)
+      .put(ContainerType.Housekeeper, DeployerModule.HOUSEKEEPER_SERVICE_NAME)
+      .build();
+
+  public static final Map<ContainerType, Integer> XENON_SERVICE_ZK_PORT_ADJUSTMENT
+    = ImmutableMap.<ContainerType, Integer>builder()
+      .put(ContainerType.CloudStore, 0)
+      .put(ContainerType.Deployer, 1)
+      .put(ContainerType.Housekeeper, 1)
+      .build();
+
   /**
    * The blocking queue associated with the thread pool executor service
    * controls the rejection policy for new work items: a bounded queue, such as

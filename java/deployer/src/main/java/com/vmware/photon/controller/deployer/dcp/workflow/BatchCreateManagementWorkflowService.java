@@ -31,14 +31,11 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig.ContainerType;
-import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
-import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
-import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
@@ -60,7 +57,6 @@ import com.vmware.xenon.services.common.QueryTask.Query;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -72,10 +68,8 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -88,7 +82,11 @@ import java.util.stream.Collectors;
  */
 public class BatchCreateManagementWorkflowService extends StatefulService {
 
-  private static final int WAIT_FOR_CONVERGANCE_DELAY = 100;
+  // at the beginning node groups can be switching between AVAILABLE and SYNCHRONIZING
+  // to ensure that the node group is stable we need to wait until the node group has
+  // settled
+  private static final int MINIMUM_SUCCESSFULL_CONVERGANCE_CHECKS = 30;
+  private static final int WAIT_FOR_CONVERGANCE_DELAY_MS = 100;
   private static final int WAIT_FOR_CONVERGENCE_MAX_RETRIES = 60;
 
   /**
@@ -343,38 +341,32 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   }
 
   private void waitForNodeGroupConvergance(State currentState) {
-    // get all container
-    Operation queryContainersOp = buildBroadcastKindQuery(ContainerService.State.class);
-    // get all container templates
-    Operation queryTemplatesOp =  buildBroadcastKindQuery(ContainerTemplateService.State.class);
-    // get all vms
-    Operation queryVmsOp = buildBroadcastKindQuery(VmService.State.class);
-
-    OperationJoin.create(queryContainersOp, queryTemplatesOp, queryVmsOp)
-      .setCompletion((os, ts) -> {
-        if (ts != null && !ts.isEmpty()) {
-          failTask(ts.values());
+    Query query = Query.Builder.create().addKindFieldClause(VmService.State.class).build();
+    Operation
+      .createPost(UriUtils.buildBroadcastRequestUri(
+          UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+      .setBody(QueryTask.Builder
+          .createDirectTask()
+          .addOptions(EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+          .setQuery(query)
+          .build())
+      .setCompletion((o, t) -> {
+        if (t != null) {
+          failTask(t);
           return;
         }
-        List<ContainerService.State> containers = QueryTaskUtils
-            .getBroadcastQueryDocuments(ContainerService.State.class, os.get(queryContainersOp.getId()));
-        List<ContainerTemplateService.State> templates = QueryTaskUtils
-            .getBroadcastQueryDocuments(ContainerTemplateService.State.class, os.get(queryTemplatesOp.getId()));
-        List<VmService.State> vms = QueryTaskUtils
-            .getBroadcastQueryDocuments(VmService.State.class, os.get(queryVmsOp.getId()));
+        List<VmService.State> vms = QueryTaskUtils.getBroadcastQueryDocuments(VmService.State.class, o);
 
-        // Update Quorum on services
-        Map<ContainerType, List<Pair<String, Integer>>> xenonServiceToIp = mapXenonServices(vms, containers, templates);
-        List<Operation> quorumUpdates = getQuroumUpdateOperations(xenonServiceToIp, x -> x);
+        List<Operation> quorumUpdates = getQuroumUpdateOperations(vms, x -> x);
         OperationJoin.create(quorumUpdates)
-          .setCompletion((os2, ts2) -> {
-            if (ts2 != null && !ts2.isEmpty()) {
-              failTask(ts2.values());
+          .setCompletion((os, ts) -> {
+            if (ts != null && !ts.isEmpty()) {
+              failTask(ts.values());
               return;
             }
             // Wait until services have stabilized
-            List<Operation> nodeGroupStatusChecks = getNodeGroupStateOperations(xenonServiceToIp);
-            checkNodeGroupStatus(nodeGroupStatusChecks, xenonServiceToIp, 0, 0);
+            List<Operation> nodeGroupStatusChecks = getNodeGroupStateOperations(vms);
+            checkNodeGroupStatus(nodeGroupStatusChecks, vms, 0, 0);
           })
           .sendWith(BatchCreateManagementWorkflowService.this);
 
@@ -384,7 +376,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
 
   private void checkNodeGroupStatus(
       List<Operation> nodeGroupStatusChecks,
-      Map<ContainerType, List<Pair<String, Integer>>> xenonServiceToIp,
+      List<VmService.State> vms,
       int conssecutiveSuccesses,
       int tries) {
     OperationJoin.create(nodeGroupStatusChecks)
@@ -395,12 +387,12 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         }
         if (allServicesAvailable(os)) {
           int currentSuccess = conssecutiveSuccesses + 1;
-          if (currentSuccess > 30) {
-            resetQuorum(xenonServiceToIp);
+          if (currentSuccess > MINIMUM_SUCCESSFULL_CONVERGANCE_CHECKS) {
+            resetQuorum(vms);
           } else {
             getHost().schedule(() -> {
-              checkNodeGroupStatus(nodeGroupStatusChecks, xenonServiceToIp, currentSuccess, tries);
-            }, WAIT_FOR_CONVERGANCE_DELAY, TimeUnit.MILLISECONDS);
+              checkNodeGroupStatus(nodeGroupStatusChecks, vms, currentSuccess, tries);
+            }, WAIT_FOR_CONVERGANCE_DELAY_MS, TimeUnit.MILLISECONDS);
           }
         } else {
           int currentTry = tries + 1;
@@ -410,15 +402,15 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
             return;
           }
           getHost().schedule(() -> {
-            checkNodeGroupStatus(nodeGroupStatusChecks, xenonServiceToIp, 0, currentTry);
-          }, WAIT_FOR_CONVERGANCE_DELAY, TimeUnit.MILLISECONDS);
+            checkNodeGroupStatus(nodeGroupStatusChecks, vms, 0, currentTry);
+          }, WAIT_FOR_CONVERGANCE_DELAY_MS, TimeUnit.MILLISECONDS);
         }
       })
       .sendWith(this);
   }
 
-  private void resetQuorum(Map<ContainerType, List<Pair<String, Integer>>> xenonServiceToIp) {
-    OperationJoin.create(getQuroumUpdateOperations(xenonServiceToIp, x -> x / 2 + 1))
+  private void resetQuorum(List<VmService.State> vms) {
+    OperationJoin.create(getQuroumUpdateOperations(vms, x -> x / 2 + 1))
       .setCompletion((os, ts) -> {
         if (ts != null && !ts.isEmpty()) {
           failTask(ts.values());
@@ -459,89 +451,62 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     return available;
   }
 
-  private List<Operation> getNodeGroupStateOperations(
-      Map<ContainerType, List<Pair<String, Integer>>> xenonServiceToIp) {
+  private List<Operation> getNodeGroupStateOperations(List<VmService.State> vms) {
 
     List<Operation> ops = new ArrayList<>();
-    for (Entry<ContainerType, List<Pair<String, Integer>>> e : xenonServiceToIp.entrySet()) {
-      for (Pair<String, Integer> address : e.getValue()) {
+    for (Map.Entry<ContainerType, String> entry : DeployerModule.XENON_SERVICES.entrySet()) {
+      Set<InetSocketAddress> remoteServers = getServerAddresses(vms, entry.getValue());
+      int portAdjustment = DeployerModule.XENON_SERVICE_ZK_PORT_ADJUSTMENT.getOrDefault(entry.getKey(), 0);
+      for (InetSocketAddress remoteService : remoteServers) {
         Operation op = Operation
             .createGet(
-                UriUtils.buildUri(address.getFirst(), address.getSecond(), ServiceUriPaths.DEFAULT_NODE_GROUP, null));
+                UriUtils.buildUri(
+                    remoteService.getAddress().getHostAddress(),
+                    remoteService.getPort() + portAdjustment,
+                    ServiceUriPaths.DEFAULT_NODE_GROUP,
+                    null));
         ops.add(op);
       }
     }
     return ops;
   }
 
+  private Set<InetSocketAddress> getServerAddresses(List<VmService.State> vms, String serviceName) {
+    String zookeeperQuorum = MiscUtils.generateReplicaList(
+        vms.stream()
+        .map(vm -> vm.ipAddress)
+        .collect(Collectors.toList()), DeploymentWorkflowService.ZOOKEEPER_PORT);
+    ZookeeperClient zookeeperClient
+      = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+    return zookeeperClient.getServers(zookeeperQuorum, serviceName);
+  }
+
   private List<Operation> getQuroumUpdateOperations(
-      Map<ContainerType, List<Pair<String, Integer>>> xenonServiceToIp,
+      List<VmService.State> vms,
       IntUnaryOperator computeQuorum) {
 
     List<Operation> quorumUpdates = new ArrayList<>();
-    for (Entry<ContainerType, List<Pair<String, Integer>>> entry : xenonServiceToIp.entrySet()) {
-      UpdateQuorumRequest patch = new UpdateQuorumRequest();
-      patch.kind = UpdateQuorumRequest.KIND;
-      patch.membershipQuorum = computeQuorum.applyAsInt(entry.getValue().size());
-      patch.isGroupUpdate = false;
-      for (Pair<String, Integer> address : entry.getValue()) {
+
+    UpdateQuorumRequest patch = new UpdateQuorumRequest();
+    patch.kind = UpdateQuorumRequest.KIND;
+    patch.isGroupUpdate = false;
+
+    for (Map.Entry<ContainerType, String> entry : DeployerModule.XENON_SERVICES.entrySet()) {
+      Set<InetSocketAddress> remoteServers = getServerAddresses(vms, entry.getValue());
+      patch.membershipQuorum = computeQuorum.applyAsInt(remoteServers.size());
+      int portAdjustment = DeployerModule.XENON_SERVICE_ZK_PORT_ADJUSTMENT.getOrDefault(entry.getKey(), 0);
+      for (InetSocketAddress remoteService : remoteServers) {
         quorumUpdates.add(
-          Operation.createPatch(
-              UriUtils.buildUri(address.getFirst(), address.getSecond(), ServiceUriPaths.DEFAULT_NODE_GROUP, null))
-            .setBody(patch)
-        );
+            Operation.createPatch(
+                UriUtils.buildUri(
+                    remoteService.getAddress().getHostAddress(),
+                    remoteService.getPort() + portAdjustment,
+                    ServiceUriPaths.DEFAULT_NODE_GROUP, null))
+              .setBody(patch)
+              );
       }
     }
     return quorumUpdates;
-  }
-
-  private Map<ContainerType, List<Pair<String, Integer>>> mapXenonServices(
-      List<VmService.State> vms,
-      List<ContainerService.State> containers,
-      List<ContainerTemplateService.State> templates) {
-
-    Map<ContainerType, String> xenonServices = ImmutableMap.<ContainerType, String>builder()
-        .put(ContainerType.CloudStore, DeployerModule.CLOUDSTORE_SERVICE_NAME)
-        .put(ContainerType.Deployer, DeployerModule.DEPLOYER_SERVICE_NAME)
-        .put(ContainerType.Housekeeper, DeployerModule.HOUSEKEEPER_SERVICE_NAME)
-        .build();
-    Map<ContainerType, List<Pair<String, Integer>>> map = new HashMap<>();
-
-    String zookeeperQuorum = MiscUtils.generateReplicaList(
-        vms.stream()
-          .map(vm -> vm.ipAddress)
-          .collect(Collectors.toList()), DeploymentWorkflowService.ZOOKEEPER_PORT);
-
-    ZookeeperClient zookeeperClient
-      = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-    for (Map.Entry<ContainerType, String> entry : xenonServices.entrySet()) {
-      Set<InetSocketAddress> remoteServers = zookeeperClient.getServers(zookeeperQuorum, entry.getValue());
-      List<Pair<String, Integer>> serverAddresses = remoteServers.stream()
-          .map(s -> {
-            int adjustment = 1;
-            if (entry.getKey() == ContainerType.CloudStore) {
-              adjustment = 0;
-            }
-            return new Pair<String, Integer>(s.getAddress().getHostAddress(), s.getPort() + adjustment);
-          })
-          .collect(Collectors.toList());
-      map.put(entry.getKey(), serverAddresses);
-    }
-    return map;
-  }
-
-  private Operation buildBroadcastKindQuery(Class<? extends ServiceDocument> type) {
-    Query query = Query.Builder.create().addKindFieldClause(type)
-        .build();
-    return Operation
-      .createPost(UriUtils.buildBroadcastRequestUri(
-          UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-
-      .setBody(QueryTask.Builder
-          .createDirectTask()
-          .addOptions(EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
-          .setQuery(query)
-          .build());
   }
 
   /**
