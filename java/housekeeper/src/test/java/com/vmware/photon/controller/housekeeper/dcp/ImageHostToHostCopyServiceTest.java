@@ -807,8 +807,8 @@ public class ImageHostToHostCopyServiceTest {
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
       int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
       copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-      createHostService("datastore0-id");
-      createHostService("datastore1-id");
+      createHostService("datastore0-id", HostState.READY);
+      createHostService("datastore1-id", HostState.READY);
       createDatastoreService("datastore0-id", "datastore0", true);
       createDatastoreService("datastore1-id", "datastore1", true);
       createDatastoreService("local-datastore-id", "local-datastore", false);
@@ -881,8 +881,8 @@ public class ImageHostToHostCopyServiceTest {
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
       int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
       copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-      createHostService("datastore0-id");
-      createHostService("datastore1-id");
+      createHostService("datastore0-id", HostState.READY);
+      createHostService("datastore1-id", HostState.READY);
       createDatastoreService("datastore0-id", "datastore0", true);
       createDatastoreService("datastore1-id", "datastore1", true);
       createDatastoreService("local-datastore-id", "local-datastore", false);
@@ -962,8 +962,8 @@ public class ImageHostToHostCopyServiceTest {
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
       int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
       copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-      createHostService("datastore0-id");
-      createHostService("datastore1-id");
+      createHostService("datastore0-id", HostState.READY);
+      createHostService("datastore1-id", HostState.READY);
       createDatastoreService("datastore0-id", "datastore0", true);
       createDatastoreService("datastore1-id", "datastore1", true);
       createDatastoreService("local-datastore-id", "local-datastore", false);
@@ -1042,8 +1042,8 @@ public class ImageHostToHostCopyServiceTest {
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
       int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
       copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-      createHostService("datastore0-id");
-      createHostService("datastore1-id");
+      createHostService("datastore0-id", HostState.READY);
+      createHostService("datastore1-id", HostState.READY);
       createDatastoreService("datastore0-id", "datastore0", true);
       createDatastoreService("datastore1-id", "datastore1", true);
       createDatastoreService("local-datastore-id", "local-datastore", false);
@@ -1094,8 +1094,8 @@ public class ImageHostToHostCopyServiceTest {
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
       int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
       copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-      createHostService("datastore0-id");
-      createHostService("datastore1-id");
+      createHostService("datastore0-id", HostState.READY);
+      createHostService("datastore1-id", HostState.READY);
       createDatastoreService("datastore0-id", "datastore0", true);
       createDatastoreService("datastore1-id", "datastore1", true);
       createDatastoreService("local-datastore-id", "local-datastore", false);
@@ -1141,7 +1141,8 @@ public class ImageHostToHostCopyServiceTest {
 
       cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
-      createHostService("datastore1-id");
+      createHostService("datastore1-id", HostState.READY);
+      createHostService("datastore0-id", HostState.ERROR);
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -1176,7 +1177,8 @@ public class ImageHostToHostCopyServiceTest {
 
       cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
-      createHostService("datastore0-id");
+      createHostService("datastore0-id", HostState.READY);
+      createHostService("datastore1-id", HostState.ERROR);
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -1211,8 +1213,8 @@ public class ImageHostToHostCopyServiceTest {
 
       cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
-      createHostService("datastore0-id");
-      createHostService("datastore1-id");
+      createHostService("datastore0-id", HostState.READY);
+      createHostService("datastore1-id", HostState.READY);
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -1255,8 +1257,8 @@ public class ImageHostToHostCopyServiceTest {
 
       cloudStoreHelper = new CloudStoreHelper();
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
-      createHostService("datastore0-id");
-      createHostService("datastore1-id");
+      createHostService("datastore0-id", HostState.READY);
+      createHostService("datastore1-id", HostState.READY);
 
       // Call Service.
       ImageHostToHostCopyService.State response = machine.callServiceAndWaitForState(
@@ -1332,7 +1334,7 @@ public class ImageHostToHostCopyServiceTest {
       return result.getBody(ImageService.State.class);
     }
 
-    private HostService.State createHostService(String reportedImageDatastore) throws Throwable {
+    private HostService.State createHostService(String reportedImageDatastore, HostState hostState) throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
@@ -1343,7 +1345,7 @@ public class ImageHostToHostCopyServiceTest {
           HostServiceFactory.SELF_LINK);
 
       HostService.State state = new HostService.State();
-      state.state = HostState.READY;
+      state.state = hostState;
       state.hostAddress = "0.0.0.0";
       state.userName = "test-name";
       state.password = "test-password";
