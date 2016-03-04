@@ -112,9 +112,6 @@ class FakeImageManager(ImageManager):
     def get_image_manifest(self, image_id):
         return ImageType.CLOUD, ImageReplication.EAGER
 
-    def image_size(self, image_id):
-        return self._disk_manager.disk_size(self._image_datastore, image_id)
-
     def mark_unused(self, image_scanner):
         return
 
