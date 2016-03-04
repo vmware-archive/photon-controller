@@ -34,6 +34,19 @@ class PerfManagerCollector(Collector):
         [
             host_cpu_usage_metric_name,
             host_mem_usage_metric_name,
+            "net.usage",
+            "net.packetsRx",
+            "net.packetsTx",
+            "net.droppedRx",
+            "net.droppedTx",
+            "net.transmitted",
+            "disk.maxTotalLatency",
+            "disk.numberRead",
+            "disk.numberWrite",
+            "datastore.numberReadAveraged",
+            "datastore.numberWriteAveraged",
+            "storageAdapter.numberReadAveraged",
+            "storageAdapter.numberWriteAveraged"
         ],
         # level 2
         [
