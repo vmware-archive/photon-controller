@@ -17,7 +17,6 @@ import time
 import unittest
 
 from hamcrest import *  # noqa
-from host.hypervisor.placement_manager import NoSuchResourceException
 from mock import MagicMock
 from mock import patch
 from mock import call
@@ -495,19 +494,3 @@ class TestEsxImageManager(unittest.TestCase):
                           "ds1", "foo")
         _exists.assert_called_once("/vmfs/volumes/ds1/foo")
         self.assertFalse(_rmtree.called)
-
-    def test_image_size(self):
-        self.ds_manager.image_datastores.return_value = ["ds1", "ds2"]
-        with patch("host.hypervisor.esx.image_manager.os_vmdk_flat_path"
-                   "") as image_path:
-            tmpdir = file_util.mkdtemp(delete=True)
-            image_path.return_value = tmpdir
-
-            size = self.image_manager.image_size("image_id")
-            self.assertTrue(size > 0)
-
-    def test_image_size_not_exist(self):
-        self.ds_manager.image_datastores.return_value = ["ds1", "ds2"]
-        self.assertRaises(NoSuchResourceException,
-                          self.image_manager.image_size,
-                          "image_id")
