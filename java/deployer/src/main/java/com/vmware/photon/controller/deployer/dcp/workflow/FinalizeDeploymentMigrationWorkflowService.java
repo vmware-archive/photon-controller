@@ -468,7 +468,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         List<CopyStateTaskService.State> documents =
             QueryTaskUtils.getBroadcastQueryDocuments(CopyStateTaskService.State.class, op);
         List<CopyStateTaskService.State> runningServices = documents.stream()
-            .filter((d) -> d.taskState.stage == TaskStage.CREATED && d.taskState.stage == TaskStage.STARTED)
+            .filter((d) -> d.taskState.stage == TaskStage.CREATED || d.taskState.stage == TaskStage.STARTED)
             .collect(Collectors.toList());
         if (runningServices.isEmpty()) {
           handler.handle(op,  t);
@@ -627,7 +627,8 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         Map<String, Long> lastUpdateTimes = new HashMap<>();
         queryDocuments.stream().forEach((state) -> {
           long currentLatestUpdateTime = lastUpdateTimes.getOrDefault(state.sourceFactoryLink, 0L);
-          Long latestUpdateTime = Math.max(state.lastDocumentUpdateTimeEpoc, currentLatestUpdateTime);
+          long lastUpdates = state.lastDocumentUpdateTimeEpoc == null ? 0 : state.lastDocumentUpdateTimeEpoc;
+          Long latestUpdateTime = Math.max(lastUpdates, currentLatestUpdateTime);
           lastUpdateTimes.put(state.sourceFactoryLink, latestUpdateTime);
         });
 
