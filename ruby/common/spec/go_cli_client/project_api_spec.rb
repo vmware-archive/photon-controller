@@ -41,7 +41,7 @@ describe EsxCloud::GoCliClient do
         }
     }
 
-    expect(@api_client).to receive(:find_tenant_by_id).with("foo").and_return(tenant)
+    expect(client).to receive(:find_tenant_by_id).with("foo").and_return(tenant)
 
     expect(client).to receive(:run_cli).with("project create -t 't1' -n 'p1' -r 'bar' -l 'a b c, d e f'").and_return(project_id)
     expect(client).to receive(:find_project_by_id).with(project_id).and_return(project)
