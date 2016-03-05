@@ -40,7 +40,7 @@ describe EsxCloud::GoCliClient do
         ]
     }
 
-    expect(@api_client).to receive(:find_tenant_by_id).with(tenant_id).and_return(tenant)
+    expect(client).to receive(:find_tenant_by_id).with(tenant_id).and_return(tenant)
 
     expect(client).to receive(:run_cli).with("resource-ticket create -t '#{tenant_name}' -n 'rt' -l 'a b c, d e f'").and_return(ticket_id)
     expect(client).to receive(:find_resource_ticket_by_id).with(ticket_id).and_return(ticket)
@@ -56,7 +56,7 @@ describe EsxCloud::GoCliClient do
     result = "id1	rt1	a:b:c,d:e:f
               id2	rt2	a:b:c,d:e:f"
 
-    expect(@api_client).to receive(:find_tenant_by_id).with(tenant_id).and_return(tenant)
+    expect(client).to receive(:find_tenant_by_id).with(tenant_id).and_return(tenant)
     expect(client).to receive(:run_cli).with("resource-ticket list -t '#{tenant_name}'").and_return(result)
     expect(client).to receive(:get_resource_ticket_list_from_response).with(result).and_return(tickets)
 
@@ -70,7 +70,7 @@ describe EsxCloud::GoCliClient do
     ticket = double(EsxCloud::ResourceTicket)
     result = "id1	rt1	a:b:c,d:e:f"
 
-    expect(@api_client).to receive(:find_tenant_by_id).with(tenant_id).and_return(tenant)
+    expect(client).to receive(:find_tenant_by_id).with(tenant_id).and_return(tenant)
     expect(client).to receive(:run_cli).with("resource-ticket show 'rt1' -t '#{tenant_name}'").and_return(result)
     expect(client).to receive(:get_resource_ticket_from_response).with(result,tenant_id).and_return(ticket)
     client.find_resource_ticket_by_name(tenant_id, "rt1").should == ticket

@@ -26,23 +26,35 @@ describe EsxCloud::GoCliClient do
   }
 
   it "creates a tenant" do
-    tenant = double(EsxCloud::Tenant)
-    tenants = double(EsxCloud::ProjectList, :items => [tenant])
-    spec = { :name => "t1" }
-    expect(client).to receive(:run_cli).with("tenant create 't1'")
-    expect(client).to receive(:find_tenants_by_name).and_return(tenants)
+    tenant_id = double("tenantID")
+    tenant = double(EsxCloud::Tenant, :id => tenant_id)
+    spec = { name: "t1" }
+    expect(client).to receive(:run_cli).with("tenant create 't1'").and_return(tenant_id)
+    expect(client).to receive(:find_tenant_by_id).with(tenant_id).and_return(tenant)
     client.create_tenant(spec).should == tenant
   end
 
   it "finds tenant by id" do
-    tenant = double(EsxCloud::Tenant)
-    expect(@api_client).to receive(:find_tenant_by_id).with("foo").and_return(tenant)
-    client.find_tenant_by_id("foo").should == tenant
+    tenant_id = double("tenantID")
+    tenant_hash = { "id"=>"tenantID",
+                    "name"=>"tenant1",
+                    "securityGroups"=>[{"name"=>"tenant\\a", "inherited"=>false},
+                                       {"name"=>"tenant\\b", "inherited"=>false}]
+                   }
+    tenant = EsxCloud::Tenant.create_from_hash tenant_hash
+    result = "tenantID tenant1 tenant\\a:false,tenant\\b:false"
+    expect(client).to receive(:run_cli).with("tenant show #{tenant_id}").and_return(result)
+    expect(client).to receive(:get_tenant_from_response).with(result).and_return(tenant)
+    client.find_tenant_by_id(tenant_id).should == tenant
   end
 
   it "finds all tenants" do
     tenants = double(EsxCloud::TenantList)
-    expect(@api_client).to receive(:find_all_tenants).and_return(tenants)
+    result ="t1 tenant1
+             t2 tenant2"
+    expect(client).to receive(:run_cli).with("tenant list").and_return(result)
+    expect(client).to receive(:get_tenant_list_from_response).with(result).and_return(tenants)
+
     client.find_all_tenants.should == tenants
   end
 
@@ -72,12 +84,12 @@ describe EsxCloud::GoCliClient do
     client.get_tenant_tasks("foo", "a").should == tasks
   end
 
-  xit "sets tenant security groups" do
+  it "sets tenant security groups" do
     tenant_id = "t1"
     security_groups = ["adminGroup1", "adminGroup2"]
     payload = {items: security_groups}
     expect(client).to receive(:run_cli).with(
-        "tenant set_security_groups #{tenant_id} " + security_groups.join(","))
+        "tenant set_security_groups '#{tenant_id}' " + "'" + security_groups.join(",")+"'")
     client.set_tenant_security_groups(tenant_id, payload)
   end
 end
