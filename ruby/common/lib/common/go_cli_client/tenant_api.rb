@@ -18,8 +18,8 @@ module EsxCloud
         cmd = "tenant create '#{payload[:name]}'"
         security_groups = payload[:securityGroups]
         cmd += " -s '#{security_groups.join(",")}'" if security_groups
-        run_cli(cmd)
-        find_tenants_by_name(payload[:name]).items[0]
+        tenant_id = run_cli(cmd)
+        find_tenant_by_id(tenant_id)
       end
 
       # @param [String] id
@@ -42,12 +42,14 @@ module EsxCloud
       # @param [String] id
       # @return [Tenant]
       def find_tenant_by_id(id)
-        @api_client.find_tenant_by_id(id)
+        result = run_cli("tenant show #{id}")
+        get_tenant_from_response(result)
       end
 
       # @return [TenantList]
       def find_all_tenants
-        @api_client.find_all_tenants
+        result = run_cli("tenant list")
+        get_tenant_list_from_response(result)
       end
 
       # @param [String] name
@@ -71,7 +73,49 @@ module EsxCloud
       # @param [String] id
       # @param [Hash] payload
       def set_tenant_security_groups(id, payload)
-        @api_client.set_tenant_security_groups(id, payload)
+        cmd = "tenant set_security_groups '#{id}' '#{payload[:items].join(",")}'"
+        run_cli(cmd)
+      end
+
+      private
+
+      def get_tenant_from_response(result)
+        result.slice! "\n"
+        values = result.split("\t", -1)
+        tenant_hash = Hash.new
+        tenant_hash["id"]             = values[0] unless values[0] == ""
+        tenant_hash["name"]           = values[1] unless values[1] == ""
+        tenant_hash["securityGroups"] = getSecurityGroups(values[2])
+
+        Tenant.create_from_hash(tenant_hash)
+      end
+
+      def get_tenant_list_from_response(result)
+        tenants = result.split("\n").map do |tenant_info|
+          get_tenant_details tenant_info.split("\t")[0]
+        end
+        TenantList.new(tenants.compact)
+      end
+
+      def get_tenant_details(tenant_id)
+        begin
+          find_tenant_by_id tenant_id
+        rescue EsxCloud::CliError => e
+          raise() unless e.message.include? "NotFound"
+          nil
+        end
+      end
+
+      def getSecurityGroups(result)
+        securityGroups = Array.new
+        if result.to_s != ''
+          securityGroups = result.split(",").map do |securityGroup|
+            attributes = securityGroup.split(":")
+            {"name" => attributes[0], "inherited" => to_boolean(attributes[1])}
+          end
+        end
+
+        securityGroups
       end
     end
   end
