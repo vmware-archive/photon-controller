@@ -47,7 +47,8 @@ module EsxCloud
 
       # @return [TenantList]
       def find_all_tenants
-        @api_client.find_all_tenants
+        result = run_cli("tenant list")
+        get_tenant_list_from_response(result)
       end
 
       # @param [String] name
@@ -71,7 +72,26 @@ module EsxCloud
       # @param [String] id
       # @param [Hash] payload
       def set_tenant_security_groups(id, payload)
-        @api_client.set_tenant_security_groups(id, payload)
+        cmd = "tenant set_security_groups '#{id}' '#{payload[:items].join(",")}'"
+        run_cli(cmd)
+      end
+
+      private
+
+      def get_tenant_list_from_response(result)
+        tenants = result.split("\n").map do |tenant_info|
+          get_tenant_details tenant_info.split("\t")[0]
+        end
+        TenantList.new(tenants.compact)
+      end
+
+      def get_tenant_details(tenant_id)
+        begin
+          find_tenant_by_id tenant_id
+        rescue EsxCloud::CliError => e
+          raise() unless e.message.include? "NotFound"
+          nil
+        end
       end
     end
   end

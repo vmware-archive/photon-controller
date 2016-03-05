@@ -42,7 +42,11 @@ describe EsxCloud::GoCliClient do
 
   it "finds all tenants" do
     tenants = double(EsxCloud::TenantList)
-    expect(@api_client).to receive(:find_all_tenants).and_return(tenants)
+    result ="t1 tenant1
+             t2 tenant2"
+    expect(client).to receive(:run_cli).with("tenant list").and_return(result)
+    expect(client).to receive(:get_tenant_list_from_response).with(result).and_return(tenants)
+
     client.find_all_tenants.should == tenants
   end
 
