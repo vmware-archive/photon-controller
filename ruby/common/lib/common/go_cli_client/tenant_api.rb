@@ -47,7 +47,8 @@ module EsxCloud
 
       # @return [TenantList]
       def find_all_tenants
-        @api_client.find_all_tenants
+        result = run_cli("tenant list")
+        get_tenant_list_from_response(result)
       end
 
       # @param [String] name
@@ -59,7 +60,8 @@ module EsxCloud
       # @param [String] id
       # @return [TaskList]
       def get_tenant_tasks(id, state = nil)
-        @api_client.get_tenant_tasks(id, state)
+        result = run_cli("tenant tasks '#{id}' -s '#{state}'")
+        get_tenant_taskList_from_response(result)
       end
 
       # @param [String] id
@@ -71,7 +73,24 @@ module EsxCloud
       # @param [String] id
       # @param [Hash] payload
       def set_tenant_security_groups(id, payload)
-        @api_client.set_tenant_security_groups(id, payload)
+        cmd = "tenant set_security_groups '#{id}' '#{payload[:items].join(",")}'"
+        run_cli(cmd)
+      end
+
+      private
+
+      def get_tenant_list_from_response(result)
+        tenants = result.split("\n").drop(1).map do |tenant_info|
+          find_tenant_by_id(tenant_info.split("\t")[0])
+        end
+        TenantList.new(tenants)
+      end
+
+      def get_tenant_taskList_from_response(result)
+        tasks = result.split("\n").drop(1).map do |task_info|
+          find_task_by_id(task_info.split("\t")[0])
+        end
+        TaskList.new(tasks)
       end
     end
   end
