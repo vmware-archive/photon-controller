@@ -370,7 +370,7 @@ module EsxCloud
           return
         end
 
-        puts "waiting for image seed progress to be done..."
+        puts "waiting for image #{EsxCloud::SystemSeeder.instance.image!.id} seeding to be done..."
         sleep 5
       end
 
@@ -388,6 +388,7 @@ module EsxCloud
 
     def image_seeding_progress_is_done(image_id)
       image = EsxCloud::Image.find_by_id(image_id)
+      logger.debug "image #{image.id} seeding progress #{image.seeding_progress}"
       image.seeding_progress.eql? "100.0%"
     end
 
