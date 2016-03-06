@@ -303,6 +303,18 @@ public class MockHelper {
     };
   }
 
+  public static Answer<Task> mockCreateVmAsync(String taskId, String entityId, String state) {
+    return mockCreateVmAsync(TestHelper.createTask(taskId, entityId, state));
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<Task> mockCreateVmAsync(Task returnValue) {
+    return (invocation) -> {
+      ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(returnValue);
+      return null;
+    };
+  }
+
   public static Answer<Task> mockGetTaskAsync(String taskId, String entityId, String state) {
     return mockGetTaskAsync(TestHelper.createTask(taskId, entityId, state));
   }
@@ -310,6 +322,18 @@ public class MockHelper {
   public static Answer<Task> mockGetTaskAsync(Task returnValue) {
     return (invocation) -> {
       ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(returnValue);
+      return null;
+    };
+  }
+
+  public static Answer<Task> mockSetMetadataAsync(String taskId, String entityId, String state) {
+    return mockSetMetadataAsync(TestHelper.createTask(taskId, entityId, state));
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<Task> mockSetMetadataAsync(Task returnValue) {
+    return (invocation) -> {
+      ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(returnValue);
       return null;
     };
   }
