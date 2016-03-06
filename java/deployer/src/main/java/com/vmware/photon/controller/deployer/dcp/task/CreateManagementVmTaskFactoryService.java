@@ -18,12 +18,11 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
 /**
- * This class implements a DCP micro-service which provides a factory for
- * {@link CreateManagementVmTaskService} instances.
+ * This class implements a Xenon service which provides a factory for {@link CreateManagementVmTaskService} instances.
  */
 public class CreateManagementVmTaskFactoryService extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/create-management-vm";
+  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/deployer/tasks/create-management-vm";
 
   public CreateManagementVmTaskFactoryService() {
     super(CreateManagementVmTaskService.State.class);

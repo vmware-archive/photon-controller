@@ -605,6 +605,7 @@ public class CreateManagementVmWorkflowServiceTest {
       TestHelper.setContainersConfig(deployerConfig);
       deployerContext = deployerConfig.getDeployerContext();
       containersConfig = deployerConfig.getContainersConfig();
+      TestHelper.setContainersConfig(deployerConfig);
 
       scriptDirectory = new File(deployerContext.getScriptDirectory());
       scriptLogDirectory = new File(deployerContext.getScriptLogDirectory());
@@ -812,10 +813,10 @@ public class CreateManagementVmWorkflowServiceTest {
       startState.vmServiceLink = vmServiceState.documentSelfLink;
       startState.ntpEndpoint = "1.2.3.4";
 
-      ContainerTemplateService.State containerTemplateSavedState1 = TestHelper.createContainerTemplateService
-          (machine, ContainersConfig.ContainerType.Chairman);
-      ContainerTemplateService.State containerTemplateSavedState2 = TestHelper.createContainerTemplateService
-          (machine, ContainersConfig.ContainerType.Deployer);
+      ContainerTemplateService.State containerTemplateSavedState1 = TestHelper.createContainerTemplateService(machine,
+          containersConfig.getContainerSpecs().get(ContainersConfig.ContainerType.Chairman.name()));
+      ContainerTemplateService.State containerTemplateSavedState2 = TestHelper.createContainerTemplateService(machine,
+          containersConfig.getContainerSpecs().get(ContainersConfig.ContainerType.Deployer.name()));
       TestHelper.createContainerService(machine, containerTemplateSavedState1, vmServiceState);
       TestHelper.createContainerService(machine, containerTemplateSavedState2, vmServiceState);
     }
