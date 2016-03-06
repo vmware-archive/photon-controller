@@ -78,7 +78,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -641,6 +640,7 @@ public class BatchCreateManagementWorkflowServiceTest {
       TestHelper.setContainersConfig(deployerConfig);
       containersConfig = deployerConfig.getContainersConfig();
       deployerContext = deployerConfig.getDeployerContext();
+      TestHelper.setContainersConfig(deployerConfig);
 
       scriptDirectory = new File(deployerContext.getScriptDirectory());
       scriptLogDirectory = new File(deployerContext.getScriptLogDirectory());
@@ -853,9 +853,16 @@ public class BatchCreateManagementWorkflowServiceTest {
       VmService.State vmServiceState = TestHelper.createVmService(machine, vmServiceStartState);
       for (ContainersConfig.ContainerType containerType : ContainersConfig.ContainerType.values()) {
 
-        ContainerTemplateService.State containerTemplateSavedState =
-            TestHelper.createContainerTemplateService(machine, containerType);
+        //
+        // Lightwave and the load balancer can't be placed on the same VM, so skip Lightwave here.
+        //
 
+        if (containerType == ContainersConfig.ContainerType.Lightwave) {
+          continue;
+        }
+
+        ContainerTemplateService.State containerTemplateSavedState = TestHelper.createContainerTemplateService(machine,
+            containersConfig.getContainerSpecs().get(containerType.name()));
         TestHelper.createContainerService(machine, containerTemplateSavedState, vmServiceState);
       }
     }
