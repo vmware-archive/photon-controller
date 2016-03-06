@@ -340,10 +340,10 @@ public class CreateManagementVmWorkflowService extends StatefulService {
    */
   private CreateManagementVmTaskService.State createVmTaskState(final State currentState) {
     CreateManagementVmTaskService.State state = new CreateManagementVmTaskService.State();
-    state.taskState = new com.vmware.xenon.common.TaskState();
+    state.taskState = new CreateManagementVmTaskService.TaskState();
     state.taskState.stage = TaskState.TaskStage.CREATED;
     state.vmServiceLink = currentState.vmServiceLink;
-    state.queryCreateVmTaskInterval = currentState.taskPollDelay;
+    state.taskPollDelay = currentState.taskPollDelay;
     return state;
   }
 
