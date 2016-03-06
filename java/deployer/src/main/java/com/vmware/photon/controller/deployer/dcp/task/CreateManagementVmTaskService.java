@@ -21,20 +21,19 @@ import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.VmMetadata;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
-import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.Positive;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -42,55 +41,59 @@ import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
-import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
-import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * This class implements a DCP micro-service which performs the task of creating
- * a VM.
+ * This class implements a Xenon task service which creates a management VM.
  */
 public class CreateManagementVmTaskService extends StatefulService {
 
   private static final String CONTAINERS_METADATA_PREFIX = "CONTAINER_";
 
   /**
-   * This class defines the document state associated with a single
-   * {@link CreateVmTaskService}
-   * instance.
+   * This class defines the state of a {@link CreateManagementVmTaskService} task.
    */
-  public static class State extends ServiceDocument {
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
-     * This value represents control flags influencing the behavior of the task.
+     * This class defines the possible sub-stages for a task.
      */
-    @Immutable
-    @DefaultInteger(0)
-    public Integer controlFlags;
+    public enum SubStage {
+      CREATE_VM,
+      WAIT_FOR_VM_CREATION,
+      UPDATE_METADATA,
+      WAIT_FOR_METADATA_UPDATE,
+    }
+
+    /**
+     * This value defines the sub-stage of the current task.
+     */
+    public SubStage subStage;
+  }
+
+  /**
+   * This class defines the document state associated with a {@link CreateManagementVmTaskService} task.
+   */
+  public static class State extends ServiceDocument {
 
     /**
      * This value represents the state of the current task.
@@ -99,41 +102,92 @@ public class CreateManagementVmTaskService extends StatefulService {
     public TaskState taskState;
 
     /**
-     * This value represents the link of the VM service document.
+     * This value represents the control flags for the current task.
+     */
+    @DefaultInteger(value = 0)
+    public Integer controlFlags;
+
+    /**
+     * This value represents the document self-link of the parent task service to be notified when
+     * the current task completes. If this value is not specified, then no notification will be sent
+     * on completion.
+     */
+    @Immutable
+    public String parentTaskServiceLink;
+
+    /**
+     * This value represents the body of the patch message to be sent to the parent task service on
+     * successful completion. If this value is not specified, then the patch body will contain a
+     * simple {@link TaskServiceState} indicating successful completion.
+     */
+    @Immutable
+    public String parentPatchBody;
+
+    /**
+     * This value represents the document self-link of the {@link VmService} to be created.
      */
     @NotNull
     @Immutable
     public String vmServiceLink;
 
     /**
-     * This value represents the interval between querying the state of the
-     * create VM task.
+     * This value represents the delay, in milliseconds, to use when polling a child task.
      */
-    @Immutable
-    public Integer queryCreateVmTaskInterval;
+    @Positive
+    public Integer taskPollDelay;
+
+    /**
+     * This value represents the ID of the API-level task to create the VM.
+     */
+    @WriteOnce
+    public String createVmTaskId;
+
+    /**
+     * This value represents the number of polling iterations which have been performed by the
+     * current task while waiting for the VM to be created. It is informational only.
+     */
+    @DefaultInteger(value = 0)
+    public Integer createVmPollCount;
+
+    /**
+     * This value represents the ID of the API-level VM object created by the current task.
+     */
+    @WriteOnce
+    public String vmId;
+
+    /**
+     * This value represents the ID of the API-level task to update the VM metadata.
+     */
+    @WriteOnce
+    public String updateVmMetadataTaskId;
+
+    /**
+     * This value represents the number of polling iterations which have been performed by the
+     * current task while waiting for the VM metadata to be updated. It is informational only.
+     */
+    @DefaultInteger(value = 0)
+    public Integer updateVmMetadataPollCount;
   }
 
   public CreateManagementVmTaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
   @Override
-  public void handleStart(Operation start) {
-    ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
-    State startState = start.getBody(State.class);
+  public void handleStart(Operation startOp) {
+    ServiceUtils.logTrace(this, "Handling start operation");
+    State startState = startOp.getBody(State.class);
     InitializationUtils.initialize(startState);
 
-    if (null == startState.queryCreateVmTaskInterval) {
-      startState.queryCreateVmTaskInterval = HostUtils.getDeployerContext(this).getTaskPollDelay();
+    if (startState.taskPollDelay == null) {
+      startState.taskPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
     }
 
     validateState(startState);
 
-    if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
+    if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
+      startState.taskState.subStage = TaskState.SubStage.CREATE_VM;
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -141,630 +195,524 @@ public class CreateManagementVmTaskService extends StatefulService {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
     }
 
-    start.setBody(startState).complete();
+    startOp.setBody(startState).complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
-        ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
-      } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage, (Throwable) null));
+        ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
+      } else if (startState.taskState.stage == TaskState.TaskStage.STARTED) {
+        sendStageProgressPatch(startState.taskState.stage, startState.taskState.subStage);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method is called when a patch operation is performed on the current service.
-   *
-   * @param patch Supplies the patch operation object.
-   */
   @Override
-  public void handlePatch(Operation patch) {
-    ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
-    State startState = getState(patch);
-    State patchState = patch.getBody(State.class);
-    validatePatchState(startState, patchState);
-    PatchUtils.patchState(startState, patchState);
-    validateState(startState);
-    patch.complete();
+  public void handlePatch(Operation patchOp) {
+    ServiceUtils.logTrace(this, "Handling patch operation");
+    State currentState = getState(patchOp);
+    State patchState = patchOp.getBody(State.class);
+    validatePatch(currentState, patchState);
+    PatchUtils.patchState(currentState, patchState);
+    validateState(currentState);
+    patchOp.complete();
 
     try {
-      if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
-        ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
-      } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        processStartedStage(startState);
+      if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
+        ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
+      } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
+        processStartedStage(currentState);
+      } else {
+        notifyParentTask(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method validates a state object for internal consistency.
-   *
-   * @param currentState Supplies current state object.
-   */
-  protected void validateState(State currentState) {
+  private void validateState(State currentState) {
     ValidationUtils.validateState(currentState);
-    ValidationUtils.validateTaskStage(currentState.taskState);
+    validateTaskState(currentState.taskState);
   }
 
-  /**
-   * This method checks a patch object for validity against a document state object.
-   *
-   * @param currentState Supplies the start state object.
-   * @param patchState   Supplies the patch state object.
-   */
-  protected void validatePatchState(State currentState, State patchState) {
-    checkState(!TaskUtils.finalTaskStages.contains(currentState.taskState.stage));
-
+  private void validatePatch(State currentState, State patchState) {
     ValidationUtils.validatePatch(currentState, patchState);
-    ValidationUtils.validateTaskStage(patchState.taskState);
-
-    checkNotNull(currentState.taskState.stage);
-    checkNotNull(patchState.taskState.stage);
-
-    checkState(patchState.taskState.stage.ordinal() > TaskState.TaskStage.CREATED.ordinal());
-    checkState(patchState.taskState.stage.ordinal() >= currentState.taskState.stage.ordinal());
+    validateTaskState(patchState.taskState);
+    validateTaskStageProgression(currentState.taskState, patchState.taskState);
   }
 
-  /**
-   * This method performs document state updates in response to an operation which
-   * sets the state to STARTED.
-   *
-   * @param currentState Supplies the current state object.
-   */
-  private void processStartedStage(final State currentState) throws Throwable {
-
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
+  private void validateTaskState(TaskState taskState) {
+    ValidationUtils.validateTaskStage(taskState);
+    switch (taskState.stage) {
+      case CREATED:
+      case FINISHED:
+      case FAILED:
+      case CANCELLED:
+        checkState(taskState.subStage == null);
+        break;
+      case STARTED:
+        checkState(taskState.subStage != null);
+        switch (taskState.subStage) {
+          case CREATE_VM:
+          case WAIT_FOR_VM_CREATION:
+          case UPDATE_METADATA:
+          case WAIT_FOR_METADATA_UPDATE:
+            break;
+          default:
+            throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
         }
+    }
+  }
 
-        try {
-          VmService.State vmState = operation.getBody(VmService.State.class);
-          processStartedStage(currentState, vmState);
+  private void validateTaskStageProgression(TaskState currentState, TaskState patchState) {
+    ValidationUtils.validateTaskStageProgression(currentState, patchState);
+    if (currentState.subStage != null && patchState.subStage != null) {
+      checkState(patchState.subStage.ordinal() >= currentState.subStage.ordinal());
+    }
+  }
 
-        } catch (Throwable t) {
-          failTask(t);
+  private void processStartedStage(State currentState) throws Throwable {
+    switch (currentState.taskState.subStage) {
+      case CREATE_VM:
+        processCreateVmSubStage(currentState);
+        break;
+      case WAIT_FOR_VM_CREATION:
+        processWaitForVmCreationSubStage(currentState);
+        break;
+      case UPDATE_METADATA:
+        processUpdateMetadataSubStage(currentState);
+        break;
+      case WAIT_FOR_METADATA_UPDATE:
+        processWaitForMetadataUpdateSubStage(currentState);
+        break;
+    }
+  }
+
+  private void notifyParentTask(State currentState) {
+
+    if (currentState.parentTaskServiceLink == null) {
+      ServiceUtils.logInfo(this, "Skipping parent task notification");
+      return;
+    }
+
+    Operation patchOp = Operation.createPatch(this, currentState.parentTaskServiceLink);
+    switch (currentState.taskState.stage) {
+      case FINISHED:
+        if (currentState.parentPatchBody != null) {
+          patchOp.setBody(currentState.parentPatchBody);
+          break;
         }
-      }
-    };
+        // Fall through
+      case FAILED:
+      case CANCELLED:
+        TaskServiceState patchState = new TaskServiceState();
+        patchState.taskState = currentState.taskState;
+        patchOp.setBody(patchState);
+        break;
+      default:
+        throw new IllegalStateException("Unexpected state: " + currentState.taskState.stage);
+    }
 
-    Operation getOperation = Operation
-        .createGet(UriUtils.buildUri(getHost(), currentState.vmServiceLink))
-        .setCompletion(completionHandler);
-    sendRequest(getOperation);
+    sendRequest(patchOp);
   }
 
-  /**
-   * This method performs document state updates in response to an operation which
-   * sets the state to STARTED.
-   *
-   * @param currentState Supplies the current state object.
-   * @param vmState      Supplies the state object of the VmService entity.
-   */
-  private void processStartedStage(final State currentState, final VmService.State vmState) {
+  //
+  // CREATE_VM sub-stage methods
+  //
 
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(vmState.hostServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
+  private void processCreateVmSubStage(State currentState) {
 
-                  try {
-                    HostService.State hostState = completedOp.getBody(HostService.State.class);
-                    processStartedStage(currentState, vmState, hostState);
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            ));
+    sendRequest(Operation
+        .createGet(this, currentState.vmServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                processCreateVmSubStage(currentState, o.getBody(VmService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
-  private void processStartedStage(final State currentState, final VmService.State vmState, final HostService.State
-      hostState) {
-    Operation imageGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.imageServiceLink);
-    Operation vmFlavorGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.vmFlavorServiceLink);
-    Operation diskFlavorGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.diskFlavorServiceLink);
-    Operation projectGetOperation = HostUtils.getCloudStoreHelper(this).createGet(vmState.projectServiceLink);
+  private void processCreateVmSubStage(State currentState, VmService.State vmState) {
+
+    CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
+    Operation diskFlavorGetOp = cloudStoreHelper.createGet(vmState.diskFlavorServiceLink);
+    Operation hostGetOp = cloudStoreHelper.createGet(vmState.hostServiceLink);
+    Operation vmFlavorGetOp = cloudStoreHelper.createGet(vmState.vmFlavorServiceLink);
 
     OperationJoin
-        .create(
-            Arrays.asList(imageGetOperation, projectGetOperation, vmFlavorGetOperation, diskFlavorGetOperation))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
+        .create(diskFlavorGetOp, hostGetOp, vmFlavorGetOp)
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
 
-          try {
-            ImageService.State imageState = ops.get(imageGetOperation.getId()).getBody(ImageService.State.class);
-            ProjectService.State projectState = ops.get(projectGetOperation.getId()).getBody(
-                ProjectService.State.class);
-            FlavorService.State vmFlavorState = ops.get(vmFlavorGetOperation.getId()).getBody(FlavorService.State
-                .class);
-
-            FlavorService.State diskFlavorState = ops.get(diskFlavorGetOperation.getId()).getBody(FlavorService.State
-                .class);
-
-            processStartedStage(
-                currentState,
-                vmState,
-                hostState,
-                imageState,
-                projectState,
-                vmFlavorState,
-                diskFlavorState);
-
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
+              try {
+                processCreateVmSubStage(currentState, vmState,
+                    ops.get(diskFlavorGetOp.getId()).getBody(FlavorService.State.class),
+                    ops.get(hostGetOp.getId()).getBody(HostService.State.class),
+                    ops.get(vmFlavorGetOp.getId()).getBody(FlavorService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
         .sendWith(this);
   }
 
-  /**
-   * This method performs document state updates in response to an operation which
-   * sets the state to STARTED.
-   *
-   * @param currentState    Supplies the current state object.
-   * @param vmState         Supplies the state object of the VmService entity.
-   * @param hostState       Supplies the state object of the HostService entity.
-   * @param projectState    Supplies the state object of the ProjectService entity.
-   * @param imageState      Supplies the state object of the Image Service entity.
-   * @param projectState    Supplies the state object of the Project Service entity.
-   * @param vmFlavorState   Supplies the state object of the FlavorService entity.
-   * @param diskFlavorState Supplies the state object of the FlavorService entity.
-   */
-  private void processStartedStage(final State currentState,
-                                   final VmService.State vmState, final HostService.State hostState,
-                                   final ImageService.State imageState, final ProjectService.State projectState,
-                                   final FlavorService.State vmFlavorState, final FlavorService.State diskFlavorState)
-      throws IOException {
+  private void processCreateVmSubStage(State currentState,
+                                       VmService.State vmState,
+                                       FlavorService.State diskFlavorState,
+                                       HostService.State hostState,
+                                       FlavorService.State vmFlavorState)
+      throws Throwable {
 
-    final Service service = this;
+    AttachedDiskCreateSpec bootDiskCreateSpec = new AttachedDiskCreateSpec();
+    bootDiskCreateSpec.setName(vmState.name + "-bootdisk");
+    bootDiskCreateSpec.setBootDisk(true);
+    bootDiskCreateSpec.setFlavor(diskFlavorState.name);
+    bootDiskCreateSpec.setKind(EphemeralDisk.KIND);
 
-    FutureCallback<CreateVmTaskService.State> callback = new FutureCallback<CreateVmTaskService.State>() {
-      @Override
-      public void onSuccess(@Nullable CreateVmTaskService.State result) {
-        switch (result.taskState.stage) {
-          case FINISHED:
-            updateVmId(currentState, result.vmId);
-            break;
-          case CANCELLED:
-            TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, (ServiceErrorResponse) null));
-            break;
-          case FAILED:
-            ServiceErrorResponse failed = new ServiceErrorResponse();
-            failed.message = String.format(
-                "CreateVmTaskService failed to create the vm. documentSelfLink: %s. failureReason: %s",
-                result.documentSelfLink,
-                result.taskState.failure.message);
-            TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FAILED, failed));
-            break;
-        }
-      }
+    LocalitySpec hostLocalitySpec = new LocalitySpec();
+    hostLocalitySpec.setId(hostState.hostAddress);
+    hostLocalitySpec.setKind("host");
 
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
+    LocalitySpec datastoreLocalitySpec = new LocalitySpec();
+    checkState(hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_DATASTORE));
+    datastoreLocalitySpec.setId(hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_DATASTORE));
+    datastoreLocalitySpec.setKind("datastore");
 
-    CreateVmTaskService.State startState = new CreateVmTaskService.State();
-    startState.projectId = ServiceUtils.getIDFromDocumentSelfLink(projectState.documentSelfLink);
-    startState.vmCreateSpec = composeVmCreateSpec(vmState, hostState, imageState, vmFlavorState, diskFlavorState);
-    startState.queryCreateVmTaskInterval = currentState.queryCreateVmTaskInterval;
+    LocalitySpec portGroupLocalitySpec = new LocalitySpec();
+    checkState(hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_PORTGROUP));
+    portGroupLocalitySpec.setId(hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_PORTGROUP));
+    portGroupLocalitySpec.setKind("portGroup");
 
-    TaskUtils.startTaskAsync(
-        this,
-        CreateVmTaskFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        CreateVmTaskService.State.class,
-        HostUtils.getDeployerContext(this).getTaskPollDelay(),
-        callback);
+    VmCreateSpec vmCreateSpec = new VmCreateSpec();
+    vmCreateSpec.setName(vmState.name);
+    vmCreateSpec.setFlavor(vmFlavorState.name);
+    vmCreateSpec.setSourceImageId(ServiceUtils.getIDFromDocumentSelfLink(vmState.imageServiceLink));
+    vmCreateSpec.setEnvironment(new HashMap<>());
+    vmCreateSpec.setAttachedDisks(Collections.singletonList(bootDiskCreateSpec));
+    vmCreateSpec.setAffinities(Arrays.asList(hostLocalitySpec, datastoreLocalitySpec, portGroupLocalitySpec));
+
+    HostUtils.getApiClient(this)
+        .getProjectApi()
+        .createVmAsync(ServiceUtils.getIDFromDocumentSelfLink(vmState.projectServiceLink), vmCreateSpec,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processCreateVmTaskResult(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
   }
 
+  private void processCreateVmTaskResult(State currentState, Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_VM_CREATION, null);
+        patchState.createVmTaskId = task.getId();
+        patchState.createVmPollCount = 1;
+        sendStageProgressPatch(patchState);
+        break;
+      case "COMPLETED":
+        updateVmId(currentState, task.getEntity().getId());
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
 
-  /**
-   * Updates the vm associated to the vmServiceLink with the vm Identifier.
-   *
-   * @param currentState
-   * @param vmId
-   */
-  private void updateVmId(final State currentState, String vmId) {
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-        queryContainers(currentState);
-      }
-    };
+  //
+  // WAIT_FOR_VM sub-stage routines
+  //
+
+  private void processWaitForVmCreationSubStage(State currentState) throws Throwable {
+
+    HostUtils.getApiClient(this)
+        .getTasksApi()
+        .getTaskAsync(currentState.createVmTaskId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processVmCreationTaskResult(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+  }
+
+  private void processVmCreationTaskResult(State currentState, Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        getHost().schedule(
+            () -> {
+              State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_VM_CREATION, null);
+              patchState.createVmPollCount = currentState.createVmPollCount + 1;
+              TaskUtils.sendSelfPatch(this, patchState);
+            },
+            currentState.taskPollDelay, TimeUnit.MILLISECONDS);
+        break;
+      case "COMPLETED":
+        updateVmId(currentState, task.getEntity().getId());
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  private void updateVmId(State currentState, String vmId) {
 
     VmService.State vmPatchState = new VmService.State();
     vmPatchState.vmId = vmId;
-    Operation patchOperation = Operation
-        .createPatch(UriUtils.buildUri(getHost(), currentState.vmServiceLink))
-        .setBody(vmPatchState)
-        .setCompletion(completionHandler);
-
-    sendRequest(patchOperation);
-  }
-
-  /**
-   * This method retrieves the container templates of all the containers
-   * that are running on this VM.
-   *
-   * @param currentState Supplies the current state object.
-   */
-  private void queryContainers(final State currentState) {
-
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ContainerService.State.class));
-
-    QueryTask.Query nameClause = new QueryTask.Query()
-        .setTermPropertyName(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK)
-        .setTermMatchValue(currentState.vmServiceLink);
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(nameClause);
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
     sendRequest(Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(CreateManagementVmTaskService.this, documentLinks);
-              checkState(documentLinks.size() > 0);
-              getContainerTemplates(currentState, documentLinks);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        }));
-  }
-
-  private void getContainerTemplates(final State currentState, Collection<String> documentLinks) {
-
-    OperationJoin
-        .create(documentLinks.stream().map(documentLink -> Operation.createGet(this, documentLink)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
-
-          try {
-            Set<String> containerTemplateServiceLinks = ops.values().stream()
-                .map(operation -> operation.getBody(ContainerService.State.class).containerTemplateServiceLink)
-                .collect(Collectors.toSet());
-            loadNamesFromTemplates(currentState, containerTemplateServiceLinks);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  /**
-   * This method retrieves the names of the containers from the set of
-   * container templates and generates the vm metadata.
-   *
-   * @param currentState  Supplies the current state object.
-   * @param templateLinks Supplies a set of container template links.
-   */
-  private void loadNamesFromTemplates(final State currentState, Set<String> templateLinks) {
-
-    if (templateLinks.isEmpty()) {
-      throw new XenonRuntimeException("Template links set is empty");
-    }
-
-    OperationJoin
-        .create(templateLinks.stream()
-            .map(templateLink -> Operation.createGet(this, templateLink)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
-
-          try {
-            Map<String, String> metadata = new HashMap<>();
-            ops.values().stream().forEach(getOperation -> {
-              ContainerTemplateService.State containerTemplateState = getOperation.getBody(
-                  ContainerTemplateService.State.class);
-              if (containerTemplateState.portBindings != null) {
-                for (Integer port : containerTemplateState.portBindings.keySet()) {
-                  metadata.put(CONTAINERS_METADATA_PREFIX + port.toString(), containerTemplateState.name);
-                }
+        .createPatch(this, currentState.vmServiceLink)
+        .setBody(vmPatchState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
               }
-            });
 
-            getVmId(currentState, metadata);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
+              try {
+                State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPDATE_METADATA, null);
+                patchState.vmId = vmId;
+                sendStageProgressPatch(patchState);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  //
+  // UPDATE_METADATA sub-stage routines
+  //
+
+  private void processUpdateMetadataSubStage(State currentState) {
+
+    QueryTask containerQueryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerService.State.class)
+            .addFieldClause(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK, currentState.vmServiceLink)
+            .build())
+        .addOptions(EnumSet.of(
+            QueryTask.QuerySpecification.QueryOption.BROADCAST,
+            QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(containerQueryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                processUpdateMetadataSubStage(currentState, o.getBody(QueryTask.class).results.documents);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processUpdateMetadataSubStage(State currentState, Map<String, Object> containerDocuments) {
+
+    OperationJoin
+        .create(containerDocuments.values().stream()
+            .map((containerDocument) -> Utils.fromJson(containerDocument, ContainerService.State.class))
+            .map((containerState) -> containerState.containerTemplateServiceLink)
+            .distinct()
+            .map((templateServiceLink) -> Operation.createGet(this, templateServiceLink)))
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
+
+              try {
+                updateMetadata(currentState, ops.values().stream()
+                    .map((op) -> op.getBody(ContainerTemplateService.State.class))
+                    .map(this::getPortMappings)
+                    .flatMap((portMap) -> portMap.entrySet().stream())
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
         .sendWith(this);
   }
 
-  /**
-   * This method retrieves the vmId from the vm service link.
-   *
-   * @param currentState Supplies the current state object.
-   * @param metadata     Supplies the metadata map for vm.
-   */
-  private void getVmId(final State currentState, final Map<String, String> metadata) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-
-        try {
-          VmService.State vmState = operation.getBody(VmService.State.class);
-          setVmMetadata(currentState, vmState.vmId, metadata);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    Operation getOperation = Operation
-        .createGet(UriUtils.buildUri(getHost(), currentState.vmServiceLink))
-        .setCompletion(completionHandler);
-
-    sendRequest(getOperation);
+  private Map<String, String> getPortMappings(ContainerTemplateService.State templateState) {
+    return templateState.portBindings.values().stream()
+        .collect(Collectors.toMap(
+            (portBinding) -> CONTAINERS_METADATA_PREFIX + portBinding,
+            (portBinding) -> templateState.name));
   }
 
-  /**
-   * This method sets the metadata by making an async call to the setMetadata api.
-   *
-   * @param currentState Supplies the current state object.
-   * @param vmId         Supplies the vm id returned by API-FE during vm creation.
-   * @param metadata     Supplies the metadata map for vm.
-   */
-  private void setVmMetadata(final State currentState, final String vmId, final Map<String, String> metadata) throws
-      IOException {
+  private void updateMetadata(State currentState, Map<String, String> metadata) throws Throwable {
 
     VmMetadata vmMetadata = new VmMetadata();
     vmMetadata.setMetadata(metadata);
 
-    HostUtils.getApiClient(this).getVmApi().setMetadataAsync(
-        vmId,
-        vmMetadata,
-        new FutureCallback<Task>() {
-          @Override
-          public void onSuccess(@Nullable Task result) {
-            try {
-              if (null == result) {
-                failTask(new IllegalStateException("setMetadataAsync returned null"));
-                return;
-              }
-
-              processSetMetadataTask(currentState, result);
-            } catch (Throwable e) {
-              failTask(e);
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        });
-  }
-
-  /**
-   * This method is the completion handler for the setMetadataTask.
-   *
-   * @param currentState Supplies the current state object.
-   * @param task         Supplies the task object.
-   */
-  private void processSetMetadataTask(final State currentState, final Task task) {
-    switch (task.getState().toUpperCase()) {
-      case "QUEUED":
-      case "STARTED":
-        scheduleSetMetadataTaskCall(this, currentState, task.getId());
-        break;
-      case "ERROR":
-        throw new RuntimeException(ApiUtils.getErrors(task));
-      case "COMPLETED":
-        TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, (Throwable) null));
-        break;
-      default:
-        throw new RuntimeException("Unknown task state: " + task.getState());
-    }
-  }
-
-  /**
-   * This method polls the status of the set metadata task.
-   *
-   * @param service      Supplies the DCP micro-service instance.
-   * @param currentState Supplies the current state object.
-   * @param taskId       Supplies the ID of the create VM task.
-   */
-  private void scheduleSetMetadataTaskCall(final Service service, final State currentState, final String taskId) {
-
-    Runnable runnable = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          HostUtils.getApiClient(service).getTasksApi().getTaskAsync(
-              taskId,
-              new FutureCallback<Task>() {
-                @Override
-                public void onSuccess(Task result) {
-                  ServiceUtils.logInfo(service, "GetTask API call returned task %s", result.toString());
-                  try {
-                    processSetMetadataTask(currentState, result);
-                  } catch (Throwable throwable) {
-                    failTask(throwable);
-                  }
-                }
-
-                @Override
-                public void onFailure(Throwable t) {
+    HostUtils.getApiClient(this)
+        .getVmApi()
+        .setMetadataAsync(currentState.vmId, vmMetadata,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processSetMetadataResult(task);
+                } catch (Throwable t) {
                   failTask(t);
                 }
               }
-          );
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
 
-    getHost().schedule(runnable, currentState.queryCreateVmTaskInterval, TimeUnit.MILLISECONDS);
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
   }
 
-  /**
-   * This method creates a VmCreateSpec object for creating an VM.
-   *
-   * @param vmState         Supplies the state object of the VmService entity.
-   * @param hostState       Supplies the state object of the HostService entity.
-   * @param imageState      Supplies the state object of the ImageService entity.
-   * @param vmFlavorState   Supplies the state object of the FlavorService entity.
-   * @param diskFlavorState Supplies the state object of the FlavorService entity.
-   * @return Returns the VmCreateSpec object.
-   */
-  private VmCreateSpec composeVmCreateSpec(final VmService.State vmState,
-                                           final HostService.State hostState,
-                                           final ImageService.State imageState,
-                                           final FlavorService.State vmFlavorState,
-                                           final FlavorService.State diskFlavorState) {
-
-    // Craft the VM creation spec.
-    VmCreateSpec spec = new VmCreateSpec();
-    spec.setName(vmState.name);
-    spec.setFlavor(vmFlavorState.name);
-
-    spec.setSourceImageId(ServiceUtils.getIDFromDocumentSelfLink(imageState.documentSelfLink));
-
-    List<AttachedDiskCreateSpec> attachedDisks = new ArrayList<>();
-
-    AttachedDiskCreateSpec bootDisk = new AttachedDiskCreateSpec();
-    bootDisk.setName(vmState.name + "-bootdisk");
-    bootDisk.setBootDisk(true);
-    bootDisk.setFlavor(diskFlavorState.name);
-    bootDisk.setKind(EphemeralDisk.KIND);
-    attachedDisks.add(bootDisk);
-
-    spec.setAttachedDisks(attachedDisks);
-
-    Map<String, String> environment = new HashMap<>();
-    spec.setEnvironment(environment);
-
-    List<LocalitySpec> affinities = new ArrayList<>();
-
-    LocalitySpec hostSpec = new LocalitySpec();
-    hostSpec.setId(hostState.hostAddress);
-    hostSpec.setKind("host");
-    affinities.add(hostSpec);
-
-    LocalitySpec datastoreSpec = new LocalitySpec();
-    datastoreSpec.setId(hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_DATASTORE));
-    datastoreSpec.setKind("datastore");
-    affinities.add(datastoreSpec);
-
-    LocalitySpec portGroupSpec = new LocalitySpec();
-    portGroupSpec.setId(hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_PORTGROUP));
-    portGroupSpec.setKind("portGroup");
-    affinities.add(portGroupSpec);
-
-    spec.setAffinities(affinities);
-
-    return spec;
+  private void processSetMetadataResult(Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_METADATA_UPDATE, null);
+        patchState.updateVmMetadataTaskId = task.getId();
+        patchState.updateVmMetadataPollCount = 1;
+        sendStageProgressPatch(patchState);
+        break;
+      case "COMPLETED":
+        sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
   }
 
-  /**
-   * This method applies a patch to a state object.
-   *
-   * @param startState Supplies the start state object.
-   * @param patchState Supplies the patch state object.
-   */
-  private State applyPatch(State startState, State patchState) {
-    if (patchState.taskState != null) {
-      if (patchState.taskState.stage != startState.taskState.stage) {
-        ServiceUtils.logInfo(this, "Moving to stage %s", patchState.taskState.stage);
-      }
+  //
+  // WAIT_FOR_METADATA_UPDATE sub-stage methods
+  //
 
-      startState.taskState = patchState.taskState;
+  private void processWaitForMetadataUpdateSubStage(State currentState) throws Throwable {
+
+    HostUtils.getApiClient(this)
+        .getTasksApi()
+        .getTaskAsync(currentState.updateVmMetadataTaskId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processMetadataUpdateTaskResult(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+  }
+
+  private void processMetadataUpdateTaskResult(State currentState, Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        getHost().schedule(
+            () -> {
+              State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_METADATA_UPDATE,
+                  null);
+              patchState.updateVmMetadataPollCount = currentState.updateVmMetadataPollCount + 1;
+              TaskUtils.sendSelfPatch(this, patchState);
+            },
+            currentState.taskPollDelay, TimeUnit.MILLISECONDS);
+        break;
+      case "COMPLETED":
+        sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  //
+  // Utility routines
+  //
+
+  private void sendStageProgressPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
+    sendStageProgressPatch(buildPatch(taskStage, subStage, null));
+  }
+
+  private void sendStageProgressPatch(State patchState) {
+    ServiceUtils.logTrace(this, "Sending self-patch to stage %s:%s", patchState.taskState.stage,
+        patchState.taskState.subStage);
+    TaskUtils.sendSelfPatch(this, patchState);
+  }
+
+  private void failTask(Throwable failure) {
+    ServiceUtils.logSevere(this, failure);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failure));
+  }
+
+  private void failTask(Collection<Throwable> failures) {
+    ServiceUtils.logSevere(this, failures);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
+  }
+
+  @VisibleForTesting
+  protected static State buildPatch(TaskState.TaskStage taskStage,
+                                    TaskState.SubStage subStage,
+                                    @Nullable Throwable failure) {
+    State patchState = new State();
+    patchState.taskState = new TaskState();
+    patchState.taskState.stage = taskStage;
+    patchState.taskState.subStage = subStage;
+    if (failure != null) {
+      patchState.taskState.failure = Utils.toServiceErrorResponse(failure);
     }
 
-    return startState;
-  }
-
-  /**
-   * This method builds a state object which can be used to submit a stage
-   * progress self-patch.
-   *
-   * @param stage Supplies the stage that the current service instance is moving to.
-   * @param e     Supplies the exception that the current service instance encountered if any.
-   * @return Returns a patch state object that the current service instance is moving to.
-   */
-  @VisibleForTesting
-  protected State buildPatch(TaskState.TaskStage stage, @Nullable Throwable e) {
-    return buildPatch(stage, (e != null) ? Utils.toServiceErrorResponse(e) : null);
-  }
-
-  /**
-   * This method builds a state object which can be used to submit a stage
-   * progress self-patch.
-   *
-   * @param stage         Supplies the stage that the current service instance is moving to.
-   * @param errorResponse Supplies the {@link ServiceErrorResponse} response object
-   * @return Returns a patch state object that the current service instance is moving to.
-   */
-  private State buildPatch(TaskState.TaskStage stage, @Nullable ServiceErrorResponse errorResponse) {
-    State state = new State();
-    state.taskState = new TaskState();
-    state.taskState.stage = stage;
-    state.taskState.failure = errorResponse;
-    return state;
-  }
-
-  /**
-   * This method sends a patch operation to the current service instance
-   * to moved to the FAILED state in response to the specified exception.
-   *
-   * @param e Supplies the exception that the current service instance encountered.
-   */
-  private void failTask(Throwable e) {
-    ServiceUtils.logSevere(this, e);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, e));
-  }
-
-  private void failTask(Map<Long, Throwable> exs) {
-    exs.values().forEach(e -> ServiceUtils.logSevere(this, e));
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, exs.values().iterator().next()));
+    return patchState;
   }
 }
