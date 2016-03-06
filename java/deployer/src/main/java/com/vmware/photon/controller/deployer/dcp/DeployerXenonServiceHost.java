@@ -52,7 +52,6 @@ import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskFactoryServic
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteContainerTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteVmTaskFactoryService;
@@ -167,7 +166,6 @@ public class DeployerXenonServiceHost
       CreateManagementVmTaskFactoryService.class,
       CreateVmSpecLayoutTaskFactoryService.class,
       CreateVmSpecTaskFactoryService.class,
-      CreateVmTaskFactoryService.class,
       DeleteAgentTaskFactoryService.class,
       DeleteContainerTaskFactoryService.class,
       DeleteVmTaskFactoryService.class,
