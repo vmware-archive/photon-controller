@@ -15,7 +15,24 @@ module EsxCloud
 
       # @return [AuthInfo]
       def get_auth_info
-        @api_client.get_auth_info
+        result = run_cli("auth show")
+        get_auth_info_from_response(result)
+      end
+
+      private
+      def get_auth_info_from_response(result)
+        result.slice! "\n"
+        values = result.split("\t")
+        auth_hash = Hash.new
+        auth_hash["enabled"]  = to_boolean(values[0])
+        auth_hash["endpoint"] = values[1] unless values[1] == ""
+        auth_hash["port"]     = values[2].to_i unless values[2] == ""
+
+        AuthInfo.create_from_hash(auth_hash)
+      end
+
+      def to_boolean(str)
+        str == "true"
       end
 
     end
