@@ -17,6 +17,7 @@ import time
 import uuid
 
 from functools import wraps
+from pprint import pformat
 
 from common.lock_vm import ConcurrentVmOperation
 from common.service_name import ServiceName
@@ -58,14 +59,17 @@ def log_request(func=None, log_level=logging.INFO):
             request_id.value.append(request_id_value)
 
             try:
-                if no_request_id:
-                    self._logger.log(log_level, "%s no tracing", str(request))
-                else:
-                    self._logger.log(log_level, "%s", str(request))
+                self._logger.log(log_level, "%s\n%s",
+                                 type(request).__name__,
+                                 pformat(vars(request), indent=2))
+
                 response = func(self, request)
+
                 end = time.time()
-                self._logger.log(log_level, "result:%d [Duration:%f] %s",
-                                 response.result, end - start, str(response))
+                self._logger.log(log_level, "result:%d [Duration:%f] %s\n%s",
+                                 response.result, end - start,
+                                 type(response).__name__,
+                                 pformat(vars(response), indent=2))
                 return response
             finally:
                 request_id.value.pop()
@@ -108,7 +112,8 @@ def error_handler(response_class, result_code_class):
                 return response
             except:
                 exception = sys.exc_info()
-                self._logger.warning("Error calling %s" % str(request),
+                self._logger.warning("Error calling %s" %
+                                     pformat(vars(request), indent=2),
                                      exc_info=exception)
                 response = response_class()
                 response.result = result_code_class.SYSTEM_ERROR
