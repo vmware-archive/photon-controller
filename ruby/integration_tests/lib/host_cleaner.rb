@@ -21,7 +21,7 @@ module EsxCloud
         puts "cleaning vms on host #{server}"
         Net::SSH.start(server, user_name, password: password) do |ssh|
           dirty_vms = ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1, $2}'`;do echo $id;done")
-          ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1}'`;do vim-cmd vmsvc/power.off $id && vim-cmd vmsvc/unregister $id ;done")
+          ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1}'`;do vim-cmd vmsvc/power.off $id || vim-cmd vmsvc/unregister $id ;done")
 
           datastore_dir = "/vmfs/volumes/#{EsxCloud::TestHelpers.get_datastore_name}/"
           rm_cmd = "rm -rf #{datastore_dir}"
