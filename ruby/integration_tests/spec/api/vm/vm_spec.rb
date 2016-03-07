@@ -56,61 +56,6 @@ describe "vm", management: true, image: true do
     end
   end
 
-  it "should create a vm with multiple nics on different networks", disable_for_cli_test: true, single_vm_port_group: true  do
-    begin
-      network1 = EsxCloud::SystemSeeder.instance.network!
-
-      pg2 = EsxCloud::TestHelpers.get_vm_port_group2
-      spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "VM Network2", [pg2])
-      network2 = EsxCloud::Config.client.create_network(spec.to_hash)
-
-      vm_name = random_name("vm-")
-      create_vm(@project, name: vm_name, networks: [network1.id, network2.id])
-
-      vms = client.find_vms_by_name(@project.id, vm_name).items
-      expect(vms.size).to eq 1
-      vm = vms[0]
-
-      networks = client.get_vm_networks(vm.id).network_connections
-      network_ids = networks.map { |n| n.network }
-      network_ids.should =~ [network1.id, network2.id]
-    ensure
-      ignoring_all_errors { vm.delete if vm }
-      ignoring_all_errors { network2.delete if network2 }
-    end
-  end
-
-  it "should fail to delete vm with persistent disk attached" do
-    persistent_disk = @project.create_disk(
-        name: random_name("disk-"),
-        kind: "persistent-disk",
-        flavor: @seeder.persistent_disk_flavor!.name,
-        capacity_gb: 2,
-        boot_disk: false)
-
-    vm_name = random_name("vm-")
-    vm = create_vm(@project, name: vm_name,
-        affinities: [{id: persistent_disk.id, kind: "disk"}])
-    vm.name.should == vm_name
-
-    vm.attach_disk(persistent_disk.id)
-
-    begin
-      vm.delete
-      fail("Fail to delete vm with persistent disk attached")
-    rescue EsxCloud::ApiError => e
-      e.response_code.should == 400
-      e.errors.size.should == 1
-      e.errors[0].code.should == "PersistentDiskAttached"
-      e.errors[0].message.should match /Disk [\w\-#\/]+ is attached to [\w\-#\/]+/
-    rescue EsxCloud::CliError => e
-      e.output.should match /Disk [\w\-#\/]+ is attached to [\w\-#\/]+/
-    ensure
-      vm.detach_disk(persistent_disk.id)
-      vm.delete
-    end
-  end
-
   it "should fail to delete vm powered on" do
     vm_name = random_name("vm-")
     vm = create_vm(@project, name: vm_name)
@@ -232,7 +177,6 @@ describe "vm", management: true, image: true do
   end
 
   context "when attributes are specified in VmCreateSpec" do
-
     context "when valid attributes are specified in VmCreateSpec" do
       let(:vm_name) { random_name("vm-") }
 
@@ -258,6 +202,61 @@ describe "vm", management: true, image: true do
       context "when affinities are specified" do
         before(:all) do
           wait_for_image_seeding_progress_is_done
+        end
+
+        it "should fail to delete vm with persistent disk attached" do
+          persistent_disk = @project.create_disk(
+              name: random_name("disk-"),
+              kind: "persistent-disk",
+              flavor: @seeder.persistent_disk_flavor!.name,
+              capacity_gb: 2,
+              boot_disk: false)
+
+          vm_name = random_name("vm-")
+          vm = create_vm(@project, name: vm_name,
+              affinities: [{id: persistent_disk.id, kind: "disk"}])
+          vm.name.should == vm_name
+
+          vm.attach_disk(persistent_disk.id)
+
+          begin
+            vm.delete
+            fail("Fail to delete vm with persistent disk attached")
+          rescue EsxCloud::ApiError => e
+            e.response_code.should == 400
+            e.errors.size.should == 1
+            e.errors[0].code.should == "PersistentDiskAttached"
+            e.errors[0].message.should match /Disk [\w\-#\/]+ is attached to [\w\-#\/]+/
+          rescue EsxCloud::CliError => e
+            e.output.should match /Disk [\w\-#\/]+ is attached to [\w\-#\/]+/
+          ensure
+            vm.detach_disk(persistent_disk.id)
+            vm.delete
+          end
+        end
+
+        it "should create a vm with multiple nics on different networks", disable_for_cli_test: true, single_vm_port_group: true  do
+          begin
+            network1 = EsxCloud::SystemSeeder.instance.network!
+
+            pg2 = EsxCloud::TestHelpers.get_vm_port_group2
+            spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "VM Network2", [pg2])
+            network2 = EsxCloud::Config.client.create_network(spec.to_hash)
+
+            vm_name = random_name("vm-")
+            create_vm(@project, name: vm_name, networks: [network1.id, network2.id])
+
+            vms = client.find_vms_by_name(@project.id, vm_name).items
+            expect(vms.size).to eq 1
+            vm = vms[0]
+
+            networks = client.get_vm_networks(vm.id).network_connections
+            network_ids = networks.map { |n| n.network }
+            network_ids.should =~ [network1.id, network2.id]
+          ensure
+            ignoring_all_errors { vm.delete if vm }
+            ignoring_all_errors { network2.delete if network2 }
+          end
         end
 
         it "can pass one disk affinity" do
