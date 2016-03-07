@@ -32,7 +32,9 @@ import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceHelper;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.CopyImageResponse;
@@ -144,6 +146,7 @@ public class ImageHostToHostCopyService extends StatefulService {
         case FAILED:
         case FINISHED:
         case CANCELLED:
+          sendTaskSchedulerServicePatch();
           break;
         default:
           throw new IllegalStateException(
@@ -561,6 +564,15 @@ public class ImageHostToHostCopyService extends StatefulService {
       updateDocumentsAndTriggerCopy(current, isEagerCopy);
     });
     sendRequest(imageQuery);
+  }
+
+  /**
+   * Sends post request to trigger TaskSchedulerService.
+   */
+  private void sendTaskSchedulerServicePatch() {
+    TaskSchedulerService.State s = new TaskSchedulerService.State();
+    TaskSchedulerServiceHelper.sendPatchToOwner(this, getHost(), HousekeeperXenonServiceHost
+        .getTaskSchedulerImageHostToHostServiceUri(), s, UriUtils.buildUri(getHost(), getSelfLink()));
   }
 
   /**

@@ -33,15 +33,11 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.xenon.services.common.QueryTask;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * Class TaskSchedulerService: periodically starts new services based on the threshold of how many services
  * can be running simultaneously.
  */
 public class TaskSchedulerService extends StatefulService {
-
-  private static final long OWNER_SELECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
   /**
    * Default constructor.
@@ -102,35 +98,31 @@ public class TaskSchedulerService extends StatefulService {
   public void handleMaintenance(Operation post) {
     post.complete();
 
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation op, Throwable failure) {
-        if (null != failure) {
-          // query failed so abort and retry next time
-          logFailure(failure);
-          return;
-        }
-
-        NodeSelectorService.SelectOwnerResponse rsp = op.getBody(NodeSelectorService.SelectOwnerResponse.class);
-        if (!getHost().getId().equals(rsp.ownerNodeId)) {
-          ServiceUtils.logInfo(TaskSchedulerService.this,
-              "Host[%s]: Not owner of scheduler [%s] (Owner Info [%s])",
-              getHost().getId(), getSelfLink(), Utils.toJson(rsp));
-          return;
-        }
-
-        State state = new State();
-        sendSelfPatch(state);
+    Operation.CompletionHandler handler = (Operation op, Throwable failure) -> {
+      if (null != failure) {
+        // query failed so abort and retry next time
+        logFailure(failure);
+        return;
       }
+
+      NodeSelectorService.SelectOwnerResponse rsp = op.getBody(NodeSelectorService.SelectOwnerResponse.class);
+      if (!getHost().getId().equals(rsp.ownerNodeId)) {
+        ServiceUtils.logInfo(TaskSchedulerService.this,
+            "Host[%s]: Not owner of scheduler [%s] (Owner Info [%s])",
+            getHost().getId(), getSelfLink(), Utils.toJson(rsp));
+        return;
+      }
+
+      State state = new State();
+      sendSelfPatch(state);
     };
 
     Operation selectOwnerOp = Operation
         .createPost(null)
-        .setExpiration(ServiceUtils.computeExpirationTime(OWNER_SELECTION_TIMEOUT))
+        .setExpiration(ServiceUtils.computeExpirationTime(TaskSchedulerServiceHelper.OWNER_SELECTION_TIMEOUT))
         .setCompletion(handler);
     getHost().selectOwner(null, getSelfLink(), selectOwnerOp);
   }
-
 
   /**
    * Initialize state with defaults.
