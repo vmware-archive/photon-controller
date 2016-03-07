@@ -81,6 +81,8 @@ class GraphitePublisher(Publisher):
                 sock.close()
             else:
                 self._logger.debug("No metrics to send")
+            return True
         except:
             self._logger.critical(
                 "Could not connect with endpoint: %s:%s" % (self._carbon_host, str(self._carbon_port)))
+            return False
