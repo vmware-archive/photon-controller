@@ -97,6 +97,37 @@ class TestStatsPublisher(unittest.TestCase):
         self._mock_db.get_values_since.assert_called_once_with(1000020, "key1")
         mock_graphite_publisher.publish.assert_called_once_with(metrics)
 
+    @patch('stats.stats_publisher.Periodic')
+    @patch('stats.stats_publisher.GraphitePublisher')
+    def test_publish_failure_intervals(self, _graphite_pub_cls, _periodic_cls):
+        failed_try_count = 5
+        mock_thread = MagicMock()
+        _periodic_cls.return_value = mock_thread
+        publisher = StatsPublisher(self._mock_db, failed_try_count, 1)
+        publisher._publisher_thread = MagicMock()
+        mock_graphite_publisher = MagicMock()
+        mock_graphite_publisher.publish = MagicMock()
+        mock_graphite_publisher.publish.return_value = False
+        _graphite_pub_cls.return_value = mock_graphite_publisher
+        publisher.configure_publishers()
+
+        for i in range(failed_try_count):
+            metrics = {"key1": [(1000000, 1), (1000020, 2)]}
+            self._mock_db.get_keys.return_value = metrics.keys()
+            self._mock_db.get_values_since.return_value = metrics["key1"]
+            assert_that(publisher.failed_count, is_(i))
+            publisher.publish()
+
+        assert_that(publisher.failed_count, is_(0))
+
+        # After fail_count cycle through, it should get incremented on next failure again.
+        publisher.publish()
+        assert_that(publisher.failed_count, is_(1))
+
+        # Successful publish should reset the failed_count to 0
+        mock_graphite_publisher.publish.return_value = True
+        publisher.publish()
+        assert_that(publisher.failed_count, is_(0))
 
 if __name__ == '__main__':
     unittest.main()

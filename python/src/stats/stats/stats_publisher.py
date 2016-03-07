@@ -21,11 +21,18 @@ from .graphite_publisher import GraphitePublisher
 
 class StatsPublisher(object):
     DEFAULT_PUBLISH_INTERVAL_SECS = 20.0
+    DEFAULT_PUBLISH_TRY_COUNT = 10
+    DEFAULT_FAILED_PUBLISH_INTERVAL_SECS = 10 * 60
 
-    def __init__(self, tsdb):
+    def __init__(self, tsdb,
+                 publish_try_count=DEFAULT_PUBLISH_TRY_COUNT,
+                 failed_publish_interval_secs=DEFAULT_FAILED_PUBLISH_INTERVAL_SECS):
         self._logger = logging.getLogger(__name__)
         self._db = tsdb
         self._last_seen_ts = 0
+        self.failed_count = 0
+        self.publish_try_count = publish_try_count
+        self.failed_publish_interval_secs = failed_publish_interval_secs
 
         # XXX plugin configuration should be decoupled from agent_config arg
         # parsing
@@ -80,6 +87,21 @@ class StatsPublisher(object):
                 latest_ts = max(latest_ts, max([x[0] for x in values]))
 
         self._last_seen_ts = latest_ts
-        if retrieved_stats:
-            for publisher in self._publishers:
-                publisher.publish(retrieved_stats)
+        if retrieved_stats and len(self._publishers) > 0:
+            # Use first publisher by default for now
+            publisher = self._publishers[0]
+            published = publisher.publish(retrieved_stats)
+            if not published:
+                self.failed_count += 1
+                self._logger.critical(
+                    "Publisher failed to publish stats, failed_count:%s" % str(self.failed_count))
+            elif self.failed_count > 0:
+                self.failed_count = 0
+                self._publisher_thread.update_wait_interval(self.DEFAULT_PUBLISH_INTERVAL_SECS)
+
+        if self.failed_count >= self.publish_try_count:
+            self.failed_count = 0
+            self._logger.critical(
+                "Too many failed attempts to publish stats. Publisher will sleep for %s seconds now" %
+                str(self.failed_publish_interval_secs))
+            self._publisher_thread.update_wait_interval(self.failed_publish_interval_secs)

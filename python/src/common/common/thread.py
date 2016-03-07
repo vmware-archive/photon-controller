@@ -126,6 +126,9 @@ class Periodic(Stoppable):
         self._periodic_fn = periodic_fn
         self._interval_secs = interval_secs
 
+    def update_wait_interval(self, interval_secs):
+        self._interval_secs = interval_secs
+
     def run(self):
         while not self.stopped():
             self._periodic_fn()
