@@ -29,7 +29,7 @@ public class UpgradeUtils {
       // uris for beta 1
       .put("/esxcloud/cloudstore/flavors", "/photon/cloudstore/flavors")
       .put("/esxcloud/cloudstore/images", "/photon/cloudstore/images")
-//      .put("/esxcloud/cloudstore/hosts", "/photon/cloudstore/hosts")
+      .put("/esxcloud/cloudstore/hosts", "/photon/cloudstore/hosts")
       .put("/esxcloud/cloudstore/networks", "/photon/cloudstore/networks")
       .put("/esxcloud/cloudstore/datastores", "/photon/cloudstore/datastores")
       .put("/provisioning/esxcloud/portgroups", "/photon/cloudstore/portgroups")
