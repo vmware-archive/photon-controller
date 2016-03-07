@@ -126,6 +126,13 @@ public class HousekeeperXenonServiceHost
   }
 
   /**
+   * Get TaskScheduler for ImageHostToHostService service uri.
+   */
+  public static String getTaskSchedulerImageHostToHostServiceUri() {
+    return IMAGE_TRANSFER_SCHEDULER_SERVICE;
+  }
+
+  /**
    * Get ImageSeederService Sync trigger service uri.
    */
   public static String getImageSeederSyncServiceUri() {

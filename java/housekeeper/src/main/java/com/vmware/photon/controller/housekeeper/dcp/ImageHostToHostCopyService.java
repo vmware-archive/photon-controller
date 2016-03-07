@@ -32,6 +32,7 @@ import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
@@ -564,6 +565,18 @@ public class ImageHostToHostCopyService extends StatefulService {
   }
 
   /**
+   * Sends post request to trigger TaskSchedulerService.
+   */
+  private void sendTaskSchedulerServicePatch() {
+    TaskSchedulerService.State s = new TaskSchedulerService.State();
+    Operation patch = Operation
+        .createPatch(UriUtils.buildUri(getHost(), HousekeeperXenonServiceHost
+            .getTaskSchedulerImageHostToHostServiceUri()))
+        .setBody(s);
+    sendRequest(patch);
+  }
+
+  /**
    * Sends post request to imageToImageDatastoreMappingService to
    * create a document with imageId and destination datastore.
    *
@@ -620,7 +633,15 @@ public class ImageHostToHostCopyService extends StatefulService {
       State s = this.buildPatch(TaskState.TaskStage.FINISHED, null, null);
       Operation progress = Operation
           .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
-          .setBody(s);
+          .setBody(s)
+          .setCompletion(
+              (op, t) -> {
+                if (t != null) {
+                  failTask(t);
+                }
+                sendTaskSchedulerServicePatch();
+              }
+          );
 
       if (isEagerCopy) {
         operationSequence = operationSequence

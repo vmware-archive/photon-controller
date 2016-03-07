@@ -102,9 +102,7 @@ public class TaskSchedulerService extends StatefulService {
   public void handleMaintenance(Operation post) {
     post.complete();
 
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation op, Throwable failure) {
+    Operation.CompletionHandler handler = (Operation op, Throwable failure) -> {
         if (null != failure) {
           // query failed so abort and retry next time
           logFailure(failure);
@@ -121,8 +119,7 @@ public class TaskSchedulerService extends StatefulService {
 
         State state = new State();
         sendSelfPatch(state);
-      }
-    };
+      };
 
     Operation selectOwnerOp = Operation
         .createPost(null)
@@ -130,7 +127,6 @@ public class TaskSchedulerService extends StatefulService {
         .setCompletion(handler);
     getHost().selectOwner(null, getSelfLink(), selectOwnerOp);
   }
-
 
   /**
    * Initialize state with defaults.
