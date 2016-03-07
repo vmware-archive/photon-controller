@@ -93,10 +93,11 @@ class TestDecorators(unittest.TestCase):
         dummy.foo(DummyRequest("101010"))
         assert_that(dummy._logger.log.call_args_list,
                     is_([
-                        call(logging.INFO, "%s no tracing", "101010"),
-                        call(logging.INFO, "result:%d [Duration:%f] %s",
+                        call(logging.INFO, "%s\n%s", "DummyRequest",
+                             "{ 'value': '101010'}"),
+                        call(logging.INFO, "result:%d [Duration:%f] %s\n%s",
                              DummyResultCode.OK, 1000,
-                             "DummyResponse(result:0)")
+                             "DummyResponse", "{ 'result': 0}")
                         ]))
 
     def test_nested_log_request(self):

@@ -15,7 +15,6 @@ import logging
 import os
 import sys
 import time
-import traceback
 from functools import wraps
 from logging.handlers import RotatingFileHandler
 from logging.handlers import SysLogHandler
@@ -201,50 +200,3 @@ def log_duration_with(log_level="info"):
 
         return f
     return decorator
-
-
-class log_wrapper(logging.Logger):
-    """ Wrapper to log multi-line/exceptions better.
-
-        This wrapper class is a bit of a hack to avoid a problem with
-        multi-line logs including exception logs. With the default log class
-        multi-line log messages don't get the log prefixes attached to each
-        line but rather they are only attached to the first line and subsequent
-        lines are printed as is. This class overwrites the _log function of the
-        logging.Logger class and handles multi-line message/exceptions
-        differently by prepending a log prefix to each line.
-        See https://www.pivotaltracker.com/story/show/59457362 for motivation.
-    """
-    def __init__(self, name=None, level=logging.NOTSET):
-        logging.Logger.__init__(self, name, level)
-
-    def _log(self, level, msg, args, exc_info=None, extra=None):
-        if args:
-            fmt_msg = msg % args
-        else:
-            fmt_msg = "%s" % (msg)
-        (fn, lno, func) = self.findCaller()
-        for l in fmt_msg.splitlines():
-            record = self.makeRecord(self.name, level,
-                                     fn, lno, l.strip(os.linesep),
-                                     None, None, func, extra)
-            self.handle(record)
-        if exc_info:
-            if not isinstance(exc_info, tuple):
-                exc_info = sys.exc_info()
-            (tp, val, tb) = exc_info
-            for entry in traceback.format_exception(tp, val, tb):
-                for l in entry.splitlines():
-                    record = self.makeRecord(self.name, level,
-                                             fn, lno, l.strip(os.linesep),
-                                             None, None, func, None)
-                    self.handle(record)
-
-
-# This overwrites globals in the logging module. They will remain the same for
-# every logging import once common.log has been included.
-logging.setLoggerClass(log_wrapper)
-logging.root = log_wrapper("root", logging.WARNING)
-logging.Logger.root = logging.root
-logging.Logger.manager = logging.Manager(logging.root)
-logging.raiseExceptions = False
