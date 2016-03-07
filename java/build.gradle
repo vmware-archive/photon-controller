@@ -32,8 +32,9 @@ subprojects {
   apply plugin: 'idea'
   apply plugin: 'java'
 
-  sourceCompatibility = 1.8
-  targetCompatibility = 1.8
+  def requiredJavaVersion = JavaVersion.VERSION_1_8;
+  sourceCompatibility = requiredJavaVersion
+  targetCompatibility = requiredJavaVersion
   uploadArchives.enabled = false
 
   buildscript {
@@ -76,6 +77,15 @@ subprojects {
       sourceDirs += file('build/generated-sources/main')
     }
   }
+
+  task checkJavaVersion << {
+    def installedJavaVersion = JavaVersion.current();
+    if (installedJavaVersion != requiredJavaVersion)
+      throw new IllegalStateException("Unsupported Java version; required is " + requiredJavaVersion
+        + ", but found " + installedJavaVersion);
+  }
+
+  compileJava.dependsOn(checkJavaVersion);
 
   test {
     useTestNG()
