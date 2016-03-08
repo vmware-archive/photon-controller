@@ -363,8 +363,15 @@ public class ProvisionAgentTaskService extends StatefulService {
       statsPluginConfig.setStats_store_port(deploymentState.statsStorePort);
     }
 
-    statsPluginConfig.setStats_host_tags(
-        hostState.usageTags != null ? Joiner.on(",").skipNulls().join(hostState.usageTags) : null);
+    if (hostState.usageTags != null) {
+      // Agent accepts stats' tags as comma separated string.
+      // Concatenate usageTags as one tag for stats so that they could be
+      // queried easily. For example, user can query all metrics
+      // having tag equal to 'MGMT-CLOUD' or '*MGMT*'.
+      List<String> usageTagList = new ArrayList<>(hostState.usageTags);
+      Collections.sort(usageTagList);
+      statsPluginConfig.setStats_host_tags(Joiner.on("-").skipNulls().join(usageTagList));
+    }
 
     try {
       AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);

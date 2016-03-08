@@ -24,8 +24,8 @@ from stats.collector import Collector
 
 
 class PerfManagerCollector(Collector):
-    host_cpu_usage_metric_name = "host.cpu.usage"
-    host_mem_usage_metric_name = "host.mem.usage"
+    host_cpu_usage_metric_name = "cpu.cpuUsagePercentage"
+    host_mem_usage_metric_name = "mem.memoryUsagePercentage"
 
     metric_names = [
         # level 0 => collect nothing
@@ -34,15 +34,35 @@ class PerfManagerCollector(Collector):
         [
             host_cpu_usage_metric_name,
             host_mem_usage_metric_name,
+            "cpu.totalmhz",
+            "cpu.usage",
+            "cpu.usagemhz",
+            "cpu.swapwait",
+            "mem.usage",
+            "mem.totalmb",
+            "mem.sysUsage",
+            "mem.swapout",
+            "mem.swapin",
+            "mem.swapused",
+            "mem.heapfree",
             "net.usage",
             "net.packetsRx",
             "net.packetsTx",
             "net.droppedRx",
             "net.droppedTx",
+            "net.errorsRx",
+            "net.errorsTx",
+            "net.bytesRx",
+            "net.bytesTx",
             "net.transmitted",
+            "disk.usage",
             "disk.maxTotalLatency",
             "disk.numberRead",
             "disk.numberWrite",
+            "disk.commandsAborted",
+            "disk.busResets",
+            "disk.kernelReadLatency",
+            "disk.kernelWriteLatency",
             "datastore.numberReadAveraged",
             "datastore.numberWriteAveraged",
             "storageAdapter.numberReadAveraged",
