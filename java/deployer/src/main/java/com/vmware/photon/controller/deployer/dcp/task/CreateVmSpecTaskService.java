@@ -166,32 +166,29 @@ public class CreateVmSpecTaskService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(CreateVmSpecTaskService.this, documentLinks);
-              if (0 != documentLinks.size()) {
-                sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-              } else {
-                getVmIpAddress(currentState);
-              }
-            } catch (Throwable t) {
-              failTask(t);
+          try {
+            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
+            QueryTaskUtils.logQueryResults(CreateVmSpecTaskService.this, documentLinks);
+            if (0 != documentLinks.size()) {
+              sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+            } else {
+              getHostEntity(currentState);
             }
+          } catch (Throwable t) {
+            failTask(t);
           }
         });
 
     sendRequest(queryPostOperation);
   }
 
-  public void getVmIpAddress(final State currentState) {
+  public void getHostEntity(final State currentState) {
 
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
@@ -211,16 +208,13 @@ public class CreateVmSpecTaskService extends StatefulService {
 
   public void createVmService(final State currentState, HostService.State hostState) {
 
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-
-        sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+    final Operation.CompletionHandler completionHandler = (operation, throwable) -> {
+      if (null != throwable) {
+        failTask(throwable);
+        return;
       }
+
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED);
     };
 
     checkState(hostState.metadata != null, "HostService cannot have null metadata");

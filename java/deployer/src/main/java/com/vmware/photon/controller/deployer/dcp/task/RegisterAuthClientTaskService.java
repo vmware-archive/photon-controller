@@ -279,9 +279,7 @@ public class RegisterAuthClientTaskService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
+        .setCompletion((operation, throwable) -> {
             if (null != throwable) {
               failTask(throwable);
               return;
@@ -295,7 +293,6 @@ public class RegisterAuthClientTaskService extends StatefulService {
             } catch (Throwable t) {
               failTask(t);
             }
-          }
         });
 
     sendRequest(queryPostOperation);
@@ -321,9 +318,7 @@ public class RegisterAuthClientTaskService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
+        .setCompletion((operation, throwable) -> {
             if (null != throwable) {
               failTask(throwable);
               return;
@@ -337,7 +332,6 @@ public class RegisterAuthClientTaskService extends StatefulService {
             } catch (Throwable t) {
               failTask(t);
             }
-          }
         });
 
     sendRequest(queryPostOperation);
@@ -347,9 +341,7 @@ public class RegisterAuthClientTaskService extends StatefulService {
 
     Operation getOperation = Operation
         .createGet(this, containerServiceLink)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
+        .setCompletion((operation, throwable) -> {
             if (null != throwable) {
               failTask(throwable);
               return;
@@ -361,7 +353,6 @@ public class RegisterAuthClientTaskService extends StatefulService {
             } catch (Throwable t) {
               failTask(t);
             }
-          }
         });
 
     sendRequest(getOperation);
@@ -371,9 +362,7 @@ public class RegisterAuthClientTaskService extends StatefulService {
 
     Operation getOperation = Operation
         .createGet(this, vmServiceLink)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
+        .setCompletion((operation, throwable) -> {
             if (null != throwable) {
               failTask(throwable);
               return;
@@ -385,7 +374,6 @@ public class RegisterAuthClientTaskService extends StatefulService {
             } catch (Throwable t) {
               failTask(t);
             }
-          }
         });
 
     sendRequest(getOperation);

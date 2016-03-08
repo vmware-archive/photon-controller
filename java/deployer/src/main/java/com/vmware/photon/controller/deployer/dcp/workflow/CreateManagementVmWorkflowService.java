@@ -519,7 +519,7 @@ public class CreateManagementVmWorkflowService extends StatefulService {
         new FutureCallback<VmService.State>() {
           @Override
           public void onSuccess(@Nullable VmService.State state) {
-            startVm(currentState, state);
+            startVm(state);
           }
 
           @Override
@@ -531,10 +531,8 @@ public class CreateManagementVmWorkflowService extends StatefulService {
 
   /**
    * This method starts a vm.
-   *
-   * @param currentState Supplies the current state object.
    */
-  private void startVm(final State currentState, VmService.State vmState) {
+  private void startVm(VmService.State vmState) {
     try {
       HostUtils.getApiClient(this).getVmApi().performStartOperationAsync(
           vmState.vmId,
@@ -618,9 +616,7 @@ public class CreateManagementVmWorkflowService extends StatefulService {
    */
   private void getVmState(final State currentState, final FutureCallback<VmService.State> callback) {
 
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
+    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
         if (null != throwable) {
           callback.onFailure(throwable);
           return;
@@ -632,7 +628,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
         } catch (Throwable t) {
           callback.onFailure(t);
         }
-      }
     };
 
     Operation getOperation = Operation

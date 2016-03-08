@@ -414,9 +414,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
+        .setCompletion((operation, throwable) -> {
             if (null != throwable) {
               failTask(throwable);
               return;
@@ -430,7 +428,6 @@ public class DeprovisionHostWorkflowService extends StatefulService {
             } else {
               updateZookeeperMapAndHostService(currentState, vmServiceStates, ignoreError);
             }
-          }
         });
 
     sendRequest(queryPostOperation);

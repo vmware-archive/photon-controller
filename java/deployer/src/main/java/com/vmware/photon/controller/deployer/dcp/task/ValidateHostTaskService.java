@@ -256,9 +256,7 @@ public class ValidateHostTaskService extends StatefulService {
     CloudStoreHelper cloudStoreHelper = ((DeployerXenonServiceHost) getHost()).getCloudStoreHelper();
     URI uri = cloudStoreHelper.getCloudStoreURI(null);
 
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
+    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
         if (null != throwable) {
           failTask(throwable);
           return;
@@ -275,7 +273,6 @@ public class ValidateHostTaskService extends StatefulService {
         } catch (Throwable t) {
           failTask(t);
         }
-      }
     };
 
     Operation queryOperation = Operation

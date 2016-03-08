@@ -278,9 +278,7 @@ public class CreateIsoTaskService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
+        .setCompletion((operation, throwable) -> {
             if (null != throwable) {
               failTask(throwable);
               return;
@@ -293,7 +291,6 @@ public class CreateIsoTaskService extends StatefulService {
             } catch (Throwable t) {
               failTask(t);
             }
-          }
         });
 
     sendRequest(queryPostOperation);
@@ -318,21 +315,18 @@ public class CreateIsoTaskService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(CreateIsoTaskService.this, documentLinks);
-              getContainerEntities(currentState, documentLinks);
-            } catch (Throwable t) {
-              failTask(t);
-            }
+          try {
+            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
+            QueryTaskUtils.logQueryResults(CreateIsoTaskService.this, documentLinks);
+            getContainerEntities(currentState, documentLinks);
+          } catch (Throwable t) {
+            failTask(t);
           }
         });
 
@@ -398,9 +392,7 @@ public class CreateIsoTaskService extends StatefulService {
 
   private void getContainerTemplate(String mustacheDirectory, ContainerService.State containerService,
                                     FutureCallback<ContainerService.State> callback) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
+    final Operation.CompletionHandler completionHandler = (operation, throwable) -> {
         if (null != throwable) {
           failTask(throwable);
           return;
@@ -408,7 +400,6 @@ public class CreateIsoTaskService extends StatefulService {
 
         ContainerTemplateService.State templateState = operation.getBody(ContainerTemplateService.State.class);
         applyMustacheParameters(mustacheDirectory, containerService, templateState.name, callback);
-      }
     };
 
     Operation getOperation = Operation

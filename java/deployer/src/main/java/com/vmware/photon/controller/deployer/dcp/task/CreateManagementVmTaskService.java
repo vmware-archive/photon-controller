@@ -217,21 +217,18 @@ public class CreateManagementVmTaskService extends StatefulService {
    */
   private void processStartedStage(final State currentState) throws Throwable {
 
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
+      if (null != throwable) {
+        failTask(throwable);
+        return;
+      }
 
-        try {
-          VmService.State vmState = operation.getBody(VmService.State.class);
-          processStartedStage(currentState, vmState);
+      try {
+        VmService.State vmState = operation.getBody(VmService.State.class);
+        processStartedStage(currentState, vmState);
 
-        } catch (Throwable t) {
-          failTask(t);
-        }
+      } catch (Throwable t) {
+        failTask(t);
       }
     };
 
@@ -319,7 +316,6 @@ public class CreateManagementVmTaskService extends StatefulService {
    * @param currentState    Supplies the current state object.
    * @param vmState         Supplies the state object of the VmService entity.
    * @param hostState       Supplies the state object of the HostService entity.
-   * @param projectState    Supplies the state object of the ProjectService entity.
    * @param imageState      Supplies the state object of the Image Service entity.
    * @param projectState    Supplies the state object of the Project Service entity.
    * @param vmFlavorState   Supplies the state object of the FlavorService entity.
@@ -383,15 +379,12 @@ public class CreateManagementVmTaskService extends StatefulService {
    * @param vmId
    */
   private void updateVmId(final State currentState, String vmId) {
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-        queryContainers(currentState);
+    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
+      if (null != throwable) {
+        failTask(throwable);
+        return;
       }
+      queryContainers(currentState);
     };
 
     VmService.State vmPatchState = new VmService.State();
@@ -430,22 +423,19 @@ public class CreateManagementVmTaskService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(CreateManagementVmTaskService.this, documentLinks);
-              checkState(documentLinks.size() > 0);
-              getContainerTemplates(currentState, documentLinks);
-            } catch (Throwable t) {
-              failTask(t);
-            }
+          try {
+            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
+            QueryTaskUtils.logQueryResults(CreateManagementVmTaskService.this, documentLinks);
+            checkState(documentLinks.size() > 0);
+            getContainerTemplates(currentState, documentLinks);
+          } catch (Throwable t) {
+            failTask(t);
           }
         }));
   }
@@ -521,20 +511,17 @@ public class CreateManagementVmTaskService extends StatefulService {
    * @param metadata     Supplies the metadata map for vm.
    */
   private void getVmId(final State currentState, final Map<String, String> metadata) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+    final Operation.CompletionHandler completionHandler = (operation, throwable) -> {
+      if (null != throwable) {
+        failTask(throwable);
+        return;
+      }
 
-        try {
-          VmService.State vmState = operation.getBody(VmService.State.class);
-          setVmMetadata(currentState, vmState.vmId, metadata);
-        } catch (Throwable t) {
-          failTask(t);
-        }
+      try {
+        VmService.State vmState = operation.getBody(VmService.State.class);
+        setVmMetadata(currentState, vmState.vmId, metadata);
+      } catch (Throwable t) {
+        failTask(t);
       }
     };
 
@@ -614,9 +601,7 @@ public class CreateManagementVmTaskService extends StatefulService {
    */
   private void scheduleSetMetadataTaskCall(final Service service, final State currentState, final String taskId) {
 
-    Runnable runnable = new Runnable() {
-      @Override
-      public void run() {
+    Runnable runnable = () -> {
         try {
           HostUtils.getApiClient(service).getTasksApi().getTaskAsync(
               taskId,
@@ -640,7 +625,6 @@ public class CreateManagementVmTaskService extends StatefulService {
         } catch (Throwable t) {
           failTask(t);
         }
-      }
     };
 
     getHost().schedule(runnable, currentState.queryCreateVmTaskInterval, TimeUnit.MILLISECONDS);

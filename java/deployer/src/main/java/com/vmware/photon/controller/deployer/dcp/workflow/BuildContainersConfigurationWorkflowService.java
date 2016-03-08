@@ -234,22 +234,19 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(BuildContainersConfigurationWorkflowService.this, documentLinks);
-              checkState(documentLinks.size() >= 1);
-              buildConfiguration(currentState, documentLinks.iterator());
-            } catch (Throwable t) {
-              failTask(t);
-            }
+          try {
+            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
+            QueryTaskUtils.logQueryResults(BuildContainersConfigurationWorkflowService.this, documentLinks);
+            checkState(documentLinks.size() >= 1);
+            buildConfiguration(currentState, documentLinks.iterator());
+          } catch (Throwable t) {
+            failTask(t);
           }
         });
 

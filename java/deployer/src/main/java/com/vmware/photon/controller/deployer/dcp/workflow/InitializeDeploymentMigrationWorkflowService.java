@@ -411,9 +411,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
   }
 
   private void uploadVibs(State currentState) {
-    Operation.CompletionHandler getHostsHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
+    Operation.CompletionHandler getHostsHandler = (operation, throwable) -> {
         if (null != throwable) {
           failTask(throwable);
           return;
@@ -442,7 +440,6 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         } catch (Throwable t) {
           failTask(t);
         }
-      }
     };
 
     HostUtils.getCloudStoreHelper(this)

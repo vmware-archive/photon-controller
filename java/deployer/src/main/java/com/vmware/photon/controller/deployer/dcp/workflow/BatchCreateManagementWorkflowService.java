@@ -337,12 +337,12 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         createContainers(currentState);
         break;
       case WAIT_FOR_NODE_GROUP_CONVERGANCE:
-        waitForNodeGroupConvergance(currentState);
+        waitForNodeGroupConvergance();
         break;
     }
   }
 
-  private void waitForNodeGroupConvergance(State currentState) {
+  private void waitForNodeGroupConvergance() {
     // get all container
     Operation queryContainersOp = buildBroadcastKindQuery(ContainerService.State.class);
     // get all container templates
@@ -560,7 +560,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         } else if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
           TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null));
         } else {
-          updateVmServices(currentState, ImageServiceFactory.SELF_LINK + "/" + result.imageId);
+          updateVmServices(ImageServiceFactory.SELF_LINK + "/" + result.imageId);
         }
       }
 
@@ -598,10 +598,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     return state;
   }
 
-  /**
-   * @param currentState
-   */
-  private void updateVmServices(final State currentState, final String imageServiceLink) {
+  private void updateVmServices(final String imageServiceLink) {
 
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -617,9 +614,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
+        .setCompletion((operation, throwable) -> {
             if (null != throwable) {
               failTask(throwable);
               return;
@@ -629,17 +624,16 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
               NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
               Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
               QueryTaskUtils.logQueryResults(BatchCreateManagementWorkflowService.this, documentLinks);
-              updateVmStates(currentState, documentLinks, imageServiceLink);
+              updateVmStates(documentLinks, imageServiceLink);
             } catch (Throwable t) {
               failTask(t);
             }
-          }
         });
 
     sendRequest(queryPostOperation);
   }
 
-  private void updateVmStates(State currentState, Set<String> documentLinks, String imageServiceLink) {
+  private void updateVmStates(Set<String> documentLinks, String imageServiceLink) {
 
     if (documentLinks.isEmpty()) {
       throw new XenonRuntimeException("Document links set is empty");
@@ -655,13 +649,13 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
           if (null != exs && !exs.isEmpty()) {
             failTask(exs.values());
           } else {
-            updateDeploymentState(currentState, imageServiceLink);
+            updateDeploymentState(imageServiceLink);
           }
         })
         .sendWith(this);
   }
 
-  private void updateDeploymentState(State currentState, String imageServiceLink) {
+  private void updateDeploymentState(String imageServiceLink) {
     DeploymentService.State deploymentService = new DeploymentService.State();
     deploymentService.imageId = ServiceUtils.getIDFromDocumentSelfLink(imageServiceLink);
     MiscUtils.updateDeploymentState(this, deploymentService, (operation, throwable) -> {
@@ -734,9 +728,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
+        .setCompletion((operation, throwable) -> {
             if (null != throwable) {
               failTask(throwable);
               return;
@@ -749,7 +741,6 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
             } catch (Throwable t) {
               failTask(t);
             }
-          }
         });
 
     sendRequest(queryPostOperation);

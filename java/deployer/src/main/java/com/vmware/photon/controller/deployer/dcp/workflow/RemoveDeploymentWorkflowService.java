@@ -752,9 +752,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
 
 
   private Operation.CompletionHandler createCompletionHandlerForDeleteDCPEntities(boolean isCloudStoreEntity) {
-    return new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
+    return (operation, throwable) -> {
         if (null != throwable) {
           failTask(throwable);
           return;
@@ -769,7 +767,6 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
         } catch (Throwable t) {
           failTask(t);
         }
-      }
     };
   }
 

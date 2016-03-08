@@ -88,7 +88,6 @@ public class CreateContainerSpecTaskService extends StatefulService {
     /**
      * VM service link for non-replicated service.
      */
-    @Nullable
     @Immutable
     public String singletonVmServiceLink;
   }
@@ -238,21 +237,18 @@ public class CreateContainerSpecTaskService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(CreateContainerSpecTaskService.this, documentLinks);
-              getExistingContainers(currentState, containerTemplateServiceState, documentLinks);
-            } catch (Throwable t) {
-              failTask(t);
-            }
+          try {
+            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
+            QueryTaskUtils.logQueryResults(CreateContainerSpecTaskService.this, documentLinks);
+            getExistingContainers(currentState, containerTemplateServiceState, documentLinks);
+          } catch (Throwable t) {
+            failTask(t);
           }
         });
 
@@ -325,21 +321,18 @@ public class CreateContainerSpecTaskService extends StatefulService {
     final AtomicInteger pendingResponses = new AtomicInteger(containersToCreate.size());
     final List<Throwable> failures = new ArrayList<>();
 
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation completedOp, Throwable failure) {
-        if (failure != null) {
-          synchronized (failures) {
-            failures.add(failure);
-          }
+    Operation.CompletionHandler handler = (Operation completedOp, Throwable failure) -> {
+      if (failure != null) {
+        synchronized (failures) {
+          failures.add(failure);
         }
+      }
 
-        if (0 == pendingResponses.decrementAndGet()) {
-          if (failures.size() > 0) {
-            failTask(failures.get(0));
-          } else {
-            sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-          }
+      if (0 == pendingResponses.decrementAndGet()) {
+        if (failures.size() > 0) {
+          failTask(failures.get(0));
+        } else {
+          sendStageProgressPatch(TaskState.TaskStage.FINISHED);
         }
       }
     };

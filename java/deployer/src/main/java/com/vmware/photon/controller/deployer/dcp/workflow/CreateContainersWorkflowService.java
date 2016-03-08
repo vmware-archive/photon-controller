@@ -51,7 +51,6 @@ import static com.google.common.base.Preconditions.checkState;
 import javax.annotation.Nullable;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -618,11 +617,6 @@ public class CreateContainersWorkflowService extends StatefulService {
   private void failTask(Throwable failure) {
     ServiceUtils.logSevere(this, failure);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failure));
-  }
-
-  private void failTask(Collection<Throwable> failures) {
-    ServiceUtils.logSevere(this, failures);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
   }
 
   @VisibleForTesting

@@ -195,9 +195,7 @@ public class DeleteContainerTaskService extends StatefulService {
    * @param currentState
    */
   private void processGetContainerService(final State currentState) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
+    final Operation.CompletionHandler completionHandler = (operation, throwable) -> {
         if (null != throwable) {
           failTask(throwable);
           return;
@@ -209,7 +207,6 @@ public class DeleteContainerTaskService extends StatefulService {
         } catch (Throwable t) {
           failTask(t);
         }
-      }
     };
 
     Operation getOperation = Operation
@@ -226,9 +223,7 @@ public class DeleteContainerTaskService extends StatefulService {
    * @param currentState
    */
   private void processGetVmIp(final State currentState, final ContainerService.State containerState) {
-    final Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
+    final Operation.CompletionHandler completionHandler = (operation, throwable) -> {
         if (null != throwable) {
           failTask(throwable);
           return;
@@ -240,7 +235,6 @@ public class DeleteContainerTaskService extends StatefulService {
         } catch (Throwable t) {
           failTask(t);
         }
-      }
     };
 
     Operation getOperation = Operation

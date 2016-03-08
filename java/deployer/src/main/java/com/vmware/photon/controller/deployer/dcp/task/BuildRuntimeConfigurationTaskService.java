@@ -580,22 +580,19 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(BuildRuntimeConfigurationTaskService.this, documentLinks);
-              checkState(1 == documentLinks.size());
-              queryContainersForTemplate(documentLinks.iterator().next(), containerType, callback);
-            } catch (Throwable t) {
-              failTask(t);
-            }
+          try {
+            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
+            QueryTaskUtils.logQueryResults(BuildRuntimeConfigurationTaskService.this, documentLinks);
+            checkState(1 == documentLinks.size());
+            queryContainersForTemplate(documentLinks.iterator().next(), containerType, callback);
+          } catch (Throwable t) {
+            failTask(t);
           }
         });
 
@@ -625,9 +622,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
+        .setCompletion((operation, throwable) -> {
             if (null != throwable) {
               failTask(throwable);
               return;
@@ -640,7 +635,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
             } catch (Throwable t) {
               failTask(t);
             }
-          }
         });
 
     sendRequest(queryPostOperation);
@@ -832,9 +826,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
                                                    final ContainerService.State containerState) {
     final Service service = this;
 
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
+    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
         if (null != throwable) {
           failTask(throwable);
           return;
@@ -842,7 +834,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
         State selfPatchState = buildPatch(TaskState.TaskStage.FINISHED, null);
         TaskUtils.sendSelfPatch(service, selfPatchState);
-      }
     };
 
     ContainerService.State patchState = new ContainerService.State();

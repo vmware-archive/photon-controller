@@ -160,20 +160,17 @@ public class CreateFlavorTaskService extends StatefulService {
 
     ServiceUtils.logInfo(this, "Querying VmService state at %s", currentState.vmServiceLink);
 
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
+    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
+      if (null != throwable) {
+        failTask(throwable);
+        return;
+      }
 
-        try {
-          VmService.State vmState = operation.getBody(VmService.State.class);
-          getHostEntity(currentState, vmState);
-        } catch (Throwable t) {
-          failTask(t);
-        }
+      try {
+        VmService.State vmState = operation.getBody(VmService.State.class);
+        getHostEntity(currentState, vmState);
+      } catch (Throwable t) {
+        failTask(t);
       }
     };
 
@@ -245,21 +242,18 @@ public class CreateFlavorTaskService extends StatefulService {
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
 
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(CreateFlavorTaskService.this, documentLinks);
-              getContainerEntities(currentState, vmState, hostState, documentLinks);
-            } catch (Throwable t) {
-              failTask(t);
-            }
+          try {
+            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
+            QueryTaskUtils.logQueryResults(CreateFlavorTaskService.this, documentLinks);
+            getContainerEntities(currentState, vmState, hostState, documentLinks);
+          } catch (Throwable t) {
+            failTask(t);
           }
         });
 
@@ -467,9 +461,7 @@ public class CreateFlavorTaskService extends StatefulService {
     vmPatchState.diskFlavorServiceLink = FlavorServiceFactory.SELF_LINK + "/" + diskFlavorServiceId;
     final Service service = this;
 
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
+    Operation.CompletionHandler completionHandler = (operation, throwable) -> {
         if (throwable != null) {
           failTask(throwable);
           return;
@@ -480,7 +472,6 @@ public class CreateFlavorTaskService extends StatefulService {
         } catch (Throwable t) {
           failTask(t);
         }
-      }
     };
 
     Operation postOperation = Operation
