@@ -71,6 +71,8 @@ import org.apache.commons.io.FileUtils;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+import javax.annotation.Nullable;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -616,6 +618,174 @@ public class TestHelper {
   //
   // Utility routines
   //
+
+  public static Object[][] getValidStageTransitions(@Nullable Class<? extends Enum> subStages) {
+
+    if (subStages == null) {
+
+      //
+      // N.B. Tasks without defined sub-stages must allow these default stage transitions.
+      //
+
+      return new Object[][]{
+          {TaskState.TaskStage.CREATED, TaskState.TaskStage.STARTED},
+          {TaskState.TaskStage.CREATED, TaskState.TaskStage.FINISHED},
+          {TaskState.TaskStage.CREATED, TaskState.TaskStage.FAILED},
+          {TaskState.TaskStage.CREATED, TaskState.TaskStage.CANCELLED},
+          {TaskState.TaskStage.STARTED, TaskState.TaskStage.STARTED},
+          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FINISHED},
+          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FAILED},
+          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CANCELLED},
+      };
+    }
+
+    if (!subStages.isEnum() || subStages.getEnumConstants().length == 0) {
+      throw new IllegalStateException("Class " + subStages.getName() + " is not a valid enum");
+    }
+
+    //
+    // Add the normal task stage progression transitions.
+    //
+
+    Enum[] enumConstants = subStages.getEnumConstants();
+    List<Object[]> validStageTransitions = new ArrayList<>();
+    validStageTransitions.add(new Object[]
+        {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.STARTED, enumConstants[0]});
+
+    for (int i = 0; i < enumConstants.length - 1; i++) {
+      validStageTransitions.add(new Object[]
+          {TaskState.TaskStage.STARTED, enumConstants[i], TaskState.TaskStage.STARTED, enumConstants[i + 1]});
+    }
+
+    //
+    // N.B. The transition to the final FINISHED stage is handled below.
+    //
+    // Add transitions to the terminal task stages.
+    //
+
+    validStageTransitions.add(new Object[]
+        {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.FINISHED, null});
+    validStageTransitions.add(new Object[]
+        {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.FAILED, null});
+    validStageTransitions.add(new Object[]
+        {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CANCELLED, null});
+
+    for (int i = 0; i < enumConstants.length; i++) {
+      validStageTransitions.add(new Object[]
+          {TaskState.TaskStage.STARTED, enumConstants[i], TaskState.TaskStage.FINISHED, null});
+      validStageTransitions.add(new Object[]
+          {TaskState.TaskStage.STARTED, enumConstants[i], TaskState.TaskStage.FAILED, null});
+      validStageTransitions.add(new Object[]
+          {TaskState.TaskStage.STARTED, enumConstants[i], TaskState.TaskStage.CANCELLED, null});
+    }
+
+    Object[][] returnValue = new Object[validStageTransitions.size()][4];
+    for (int i = 0; i < validStageTransitions.size(); i++) {
+      returnValue[i][0] = validStageTransitions.get(i)[0];
+      returnValue[i][1] = validStageTransitions.get(i)[1];
+      returnValue[i][2] = validStageTransitions.get(i)[2];
+      returnValue[i][3] = validStageTransitions.get(i)[3];
+    }
+
+    return returnValue;
+  }
+
+  public static Object[][] getInvalidStageTransitions(@Nullable Class<? extends Enum> subStages) {
+
+    if (subStages == null) {
+
+      //
+      // N.B. Tasks without sub-stages must reject these default stage transitions.
+      //
+
+      return new Object[][]{
+          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, null, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.STARTED, null},
+          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.STARTED, null},
+          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.STARTED, null},
+          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CANCELLED, null},
+      };
+    }
+
+    if (!subStages.isEnum() || subStages.getEnumConstants().length == 0) {
+      throw new IllegalStateException("Class " + subStages.getName() + " is not a valid enum");
+    }
+
+    List<Object[]> invalidStageTransitions = new ArrayList<>();
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CREATED, null});
+
+    Enum[] enumConstants = subStages.getEnumConstants();
+    for (int i = 0; i < enumConstants.length; i++) {
+      invalidStageTransitions.add(new Object[]
+          {TaskState.TaskStage.STARTED, enumConstants[i], TaskState.TaskStage.CREATED, null});
+      for (int j = 0; j < i; j++) {
+        invalidStageTransitions.add(new Object[]
+            {TaskState.TaskStage.STARTED, enumConstants[i], TaskState.TaskStage.STARTED, enumConstants[j]});
+      }
+    }
+
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CREATED, null});
+    for (int i = 0; i < enumConstants.length; i++) {
+      invalidStageTransitions.add(new Object[]
+          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.STARTED, enumConstants[i]});
+    }
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FINISHED, null});
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FAILED, null});
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CANCELLED, null});
+
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CREATED, null});
+    for (int i = 0; i < enumConstants.length; i++) {
+      invalidStageTransitions.add(new Object[]
+          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.STARTED, enumConstants[i]});
+    }
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FINISHED, null});
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FAILED, null});
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CANCELLED, null});
+
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CREATED, null});
+    for (int i = 0; i < enumConstants.length; i++) {
+      invalidStageTransitions.add(new Object[]
+          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.STARTED, enumConstants[i]});
+    }
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.FINISHED, null});
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.FAILED, null});
+    invalidStageTransitions.add(new Object[]
+        {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CANCELLED, null});
+
+    Object[][] returnValue = new Object[invalidStageTransitions.size()][4];
+    for (int i = 0; i < invalidStageTransitions.size(); i++) {
+      returnValue[i][0] = invalidStageTransitions.get(i)[0];
+      returnValue[i][1] = invalidStageTransitions.get(i)[1];
+      returnValue[i][2] = invalidStageTransitions.get(i)[2];
+      returnValue[i][3] = invalidStageTransitions.get(i)[3];
+    }
+
+    return returnValue;
+  }
 
   public static Object[][] toDataProvidersList(List<?> list) {
     Object[][] objects = new Object[list.size()][1];

@@ -61,7 +61,7 @@ public class ServiceConfigurator {
 
   public void applyDynamicParameters(String mustacheDir, ContainersConfig.ContainerType containerType,
                                             final Map<String, ?> dynamicParameters) {
-    File configDir = new File(mustacheDir + ServiceFileConstants.CONTAINER_CONFIG_ROOT_DIRS.get(containerType));
+    File configDir = new File(mustacheDir, ServiceFileConstants.CONTAINER_CONFIG_ROOT_DIRS.get(containerType));
     Collection<File> files = FileUtils.listFiles(configDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
     files.stream().forEach(file -> applyMustacheParameters(file, dynamicParameters));
   }
