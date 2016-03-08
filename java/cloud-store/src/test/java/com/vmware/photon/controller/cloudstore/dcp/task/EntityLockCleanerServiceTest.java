@@ -19,13 +19,18 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.COMPLETED;
 import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.ERROR;
 import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.QUEUED;
@@ -38,16 +43,19 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 /**
  * Tests {@link EntityLockCleanerService}.
@@ -129,7 +137,7 @@ public class EntityLockCleanerServiceTest {
       EntityLockCleanerService.State savedState = host.getServiceState(EntityLockCleanerService.State.class);
       assertThat(savedState.documentSelfLink, is(BasicServiceHost.SERVICE_URI));
       assertEquals(savedState.entityLockDeleteWatermarkTimeInMicros,
-              (Long) EntityLockCleanerService.DEFAULT_DELETE_WATERMARK_TIME_MILLIS);
+          (Long) EntityLockCleanerService.DEFAULT_DELETE_WATERMARK_TIME_MILLIS);
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
           is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
               new BigDecimal(TimeUnit.SECONDS.toMicros(10)))));
@@ -282,6 +290,7 @@ public class EntityLockCleanerServiceTest {
     @AfterMethod
     public void tearDown() throws Throwable {
       if (machine != null) {
+        freeTestEnvironment(machine);
         machine.stop();
         machine = null;
       }
@@ -348,12 +357,16 @@ public class EntityLockCleanerServiceTest {
       assertThat(response.deletedEntityLocks,
           is(Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT)));
 
-      freeTestEnvironment(machine);
+      verifyLockStatusAfterCleanup(machine, totalEntityLocks, danglingEntityLocks, hostCount);
     }
 
     private void freeTestEnvironment(TestEnvironment machine) throws Throwable {
-      for (String selfLink : testSelfLinks) {
-        machine.deleteService(selfLink);
+      try {
+        for (String selfLink : testSelfLinks) {
+          machine.deleteService(selfLink);
+        }
+      } finally {
+        testSelfLinks.clear();
       }
     }
 
@@ -396,9 +409,61 @@ public class EntityLockCleanerServiceTest {
         EntityLockService.State entityLock = new EntityLockService.State();
         entityLock.entityId = "entity-id" + i;
         entityLock.taskId = ServiceUtils.getIDFromDocumentSelfLink(createdTask.documentSelfLink);
+        entityLock.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
         Operation entityLockOperation = env.sendPostAndWait(EntityLockServiceFactory.SELF_LINK, entityLock);
         EntityLockService.State createdEntityLock = entityLockOperation.getBody(EntityLockService.State.class);
-        testSelfLinks.add(createdEntityLock.documentSelfLink);
+        if (i >= danglingEntityLocks) {
+          testSelfLinks.add(createdEntityLock.documentSelfLink);
+        }
+      }
+    }
+
+    private void verifyLockStatusAfterCleanup(TestEnvironment env,
+                                              int totalEntityLocks,
+                                              int danglingEntityLocks,
+                                              int hostCount) throws Throwable {
+      Integer expectedNumberOfReleasedLocks =
+          Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT);
+
+      if (hostCount > 1 && expectedNumberOfReleasedLocks > 0) {
+        Integer expectedNumberOfValidLocksRemaining = totalEntityLocks - expectedNumberOfReleasedLocks;
+
+        QueryTask.Query kindClause = new QueryTask.Query()
+            .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+            .setTermMatchValue(Utils.buildKind(EntityLockService.State.class));
+
+        QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+        spec.query.addBooleanClause(kindClause);
+
+        QueryTask queryTask = QueryTask.create(spec)
+            .setDirect(true);
+
+        ServiceHostUtils.waitForQuery((ServiceHost) machine.getHosts()[0],
+            BasicServiceHost.REFERRER,
+            queryTask,
+            new Predicate<QueryTask>() {
+              @Override
+              public boolean test(QueryTask queryTask) {
+                return queryTask.results.documentLinks.size() == expectedNumberOfValidLocksRemaining;
+              }
+            });
+      }
+
+      for (int i = 0; i < totalEntityLocks; i++) {
+        if (i < expectedNumberOfReleasedLocks) {
+          try {
+            URI uri = UriUtils.buildUri(machine.getHosts()[0], EntityLockServiceFactory.SELF_LINK + "/entity-id" + i);
+            Operation op = Operation.createGet(uri);
+            op.addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING); // this will make sure tests are not slow
+            machine.sendRequestAndWait(op, machine.getHosts()[0]);
+            fail("GET for entity lock should have failed");
+          } catch (DocumentNotFoundException ignored) {
+          }
+        } else {
+          EntityLockService.State state = env.getServiceState(EntityLockServiceFactory.SELF_LINK + "/entity-id" + i,
+              EntityLockService.State.class);
+          assertThat(state, is(notNullValue()));
+        }
       }
     }
   }
