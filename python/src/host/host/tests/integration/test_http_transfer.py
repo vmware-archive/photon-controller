@@ -122,8 +122,9 @@ class TestHttpTransfer(unittest.TestCase):
     @patch('os.path.exists', return_value=True)
     def test_get_streamoptimized_image_stream(self, _exists):
         image_id = "ttylinux"
+        shadow_vm_id = self.http_transferer._create_shadow_vm()
         lease, url = self.http_transferer._get_image_stream_from_shadow_vm(
-            image_id, self.image_datastore)
+            image_id, self.image_datastore, shadow_vm_id)
         try:
             with tempfile.NamedTemporaryFile(delete=True) as downloaded_file:
                 # see if we can download without errors

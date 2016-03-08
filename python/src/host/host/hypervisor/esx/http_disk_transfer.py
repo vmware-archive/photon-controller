@@ -33,7 +33,7 @@ from gen.host.ttypes import ServiceType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import EsxVmConfig
+from host.hypervisor.esx.vm_config import EsxVmConfig, SHADOW_VM_NAME_PREFIX
 from host.hypervisor.esx.vm_config import os_image_manifest_path
 from host.hypervisor.esx.vm_config import os_metadata_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
@@ -212,7 +212,6 @@ class HttpNfcTransferer(HttpTransferer):
     def __init__(self, vim_client, image_datastores, host_name="localhost"):
         super(HttpNfcTransferer, self).__init__(vim_client)
         self.lock = threading.Lock()
-        self._shadow_vm_id = "shadow_%s" % self._vim_client.host_uuid
         self._lease_url_host_name = host_name
         self._image_datastores = image_datastores
         self._vm_config = EsxVmConfig(self._vim_client)
@@ -264,14 +263,14 @@ class HttpNfcTransferer(HttpTransferer):
             host = host.replace("*", actual_host)
         return "%s://%s%s" % (protocol, host, selector)
 
-    def _export_shadow_vm(self):
+    def _export_shadow_vm(self, shadow_vm_id):
         """ Initiates the Export VM operation.
 
         The lease created as part of ExportVM contains, among other things,
         the url to the stream-optimized disk of the image currently associated
         with the VM being exported.
         """
-        vm = self._vim_client.get_vm_obj_in_cache(self._shadow_vm_id)
+        vm = self._vim_client.get_vm_obj_in_cache(shadow_vm_id)
         lease = vm.ExportVm()
         self._wait_for_lease(lease)
         return lease, self._get_disk_url_from_lease(lease)
@@ -280,42 +279,49 @@ class HttpNfcTransferer(HttpTransferer):
         # The datastore in which the shadow VM will be created.
         return self._image_datastores[0]
 
-    def _ensure_shadow_vm(self):
-        """ Creates a shadow vm specifically for use by this host if absent.
+    def _create_shadow_vm(self):
+        """ Creates a shadow vm specifically for use by this host.
 
         The shadow VM created is used to facilitate host-to-host transfer
         of any image accessible on this host to another datastore not directly
         accessible from this host.
         """
-        vm_id = self._shadow_vm_id
-        if self._vm_manager.has_vm(vm_id):
-            self._logger.debug("shadow vm exists")
-            return
-
+        shadow_vm_id = SHADOW_VM_NAME_PREFIX + str(uuid.uuid1())
         spec = self._vm_config.create_spec(
-            vm_id=vm_id, datastore=self._get_shadow_vm_datastore(),
+            vm_id=shadow_vm_id, datastore=self._get_shadow_vm_datastore(),
             memory=32, cpus=1)
         try:
-            self._vm_manager.create_vm(vm_id, spec)
+            self._vm_manager.create_vm(shadow_vm_id, spec)
         except Exception:
-            self._logger.exception("Error creating vm with id %s" % vm_id)
+            self._logger.exception("Error creating vm with id %s" %
+                                   shadow_vm_id)
             raise
+        return shadow_vm_id
 
-    def _configure_shadow_vm_with_disk(self, image_id, image_datastore):
+    def _delete_shadow_vm(self, shadow_vm_id):
+        try:
+            self._vm_manager.delete_vm(shadow_vm_id, force=True)
+        except Exception:
+            self._logger.exception("Error deleting vm with id %s" %
+                                   shadow_vm_id)
+
+    def _configure_shadow_vm_with_disk(self, image_id, image_datastore,
+                                       shadow_vm_id):
         """ Reconfigures the shadow vm to contain only one image disk. """
         try:
             spec = self._vm_manager.update_vm_spec()
-            info = self._vm_manager.get_vm_config(self._shadow_vm_id)
+            info = self._vm_manager.get_vm_config(shadow_vm_id)
             self._vm_manager.remove_all_disks(spec, info)
             self._vm_manager.add_disk(spec, image_datastore, image_id, info,
                                       disk_is_image=True)
-            self._vm_manager.update_vm(self._shadow_vm_id, spec)
+            self._vm_manager.update_vm(shadow_vm_id, spec)
         except Exception:
             self._logger.exception(
                 "Error configuring shadow vm with image %s" % image_id)
             raise
 
-    def _get_image_stream_from_shadow_vm(self, image_id, image_datastore):
+    def _get_image_stream_from_shadow_vm(self, image_id, image_datastore,
+                                         shadow_vm_id):
         """ Obtain a handle to the streamOptimized disk from shadow vm.
 
         The stream-optimized disk is obtained via configuring a shadow
@@ -323,10 +329,9 @@ class HttpNfcTransferer(HttpTransferer):
         reconfigured shadow VM.
 
         """
-
-        self._ensure_shadow_vm()
-        self._configure_shadow_vm_with_disk(image_id, image_datastore)
-        lease, disk_url = self._export_shadow_vm()
+        self._configure_shadow_vm_with_disk(image_id, image_datastore,
+                                            shadow_vm_id)
+        lease, disk_url = self._export_shadow_vm(shadow_vm_id)
         disk_url = self._ensure_host_in_url(disk_url,
                                             self._lease_url_host_name)
         return lease, disk_url
@@ -398,35 +403,8 @@ class HttpNfcTransferer(HttpTransferer):
             self._logger.exception("Failed to read metadata")
             raise
 
-    @lock_non_blocking
-    def send_image_to_host(self, image_id, image_datastore,
-                           destination_image_id, destination_datastore,
-                           host, port, intermediate_file_path=None):
-        manifest, metadata = self._read_metadata(image_datastore, image_id)
-
-        read_lease, disk_url = self._get_image_stream_from_shadow_vm(
-            image_id, image_datastore)
-
-        # Save stream-optimized disk to a unique path locally for now.
-        # TODO(vui): Switch to chunked transfers to handle not knowing content
-        # length in the full streaming mode.
-
-        if intermediate_file_path:
-            tmp_path = intermediate_file_path
-        else:
-            tmp_path = "/vmfs/volumes/%s/%s_transfer.vmdk" % (
-                self._get_shadow_vm_datastore(),
-                self._shadow_vm_id)
-        try:
-            self.download_file(disk_url, tmp_path)
-        finally:
-            read_lease.Complete()
-
-        if destination_image_id is None:
-            destination_image_id = image_id
-        spec = self._create_import_vm_spec(
-            destination_image_id, destination_datastore)
-
+    def _send_image(self, tmp_path, manifest, metadata, spec,
+                    destination_image_id, destination_datastore, host, port):
         agent_client, vim_client = self._get_remote_connections(host, port)
         try:
             write_lease, disk_url = self._get_url_from_import_vm(vim_client,
@@ -451,5 +429,44 @@ class HttpNfcTransferer(HttpTransferer):
         finally:
             agent_client.close()
             vim_client.disconnect()
+        return imported_vm_name
+
+    @lock_non_blocking
+    def send_image_to_host(self, image_id, image_datastore,
+                           destination_image_id, destination_datastore,
+                           host, port, intermediate_file_path=None):
+        manifest, metadata = self._read_metadata(image_datastore, image_id)
+
+        shadow_vm_id = self._create_shadow_vm()
+        try:
+            read_lease, disk_url =\
+                self._get_image_stream_from_shadow_vm(
+                    image_id, image_datastore, shadow_vm_id)
+
+            # Save stream-optimized disk to a unique path locally for now.
+            # TODO(vui): Switch to chunked transfers to handle not knowing
+            # content length in the full streaming mode.
+
+            if intermediate_file_path:
+                tmp_path = intermediate_file_path
+            else:
+                tmp_path = "/vmfs/volumes/%s/%s_transfer.vmdk" % (
+                    self._get_shadow_vm_datastore(),
+                    shadow_vm_id)
+            try:
+                self.download_file(disk_url, tmp_path)
+            finally:
+                read_lease.Complete()
+
+            if destination_image_id is None:
+                destination_image_id = image_id
+            spec = self._create_import_vm_spec(
+                destination_image_id, destination_datastore)
+
+            imported_vm_name = self._send_image(
+                tmp_path, manifest, metadata, spec, destination_image_id,
+                destination_datastore, host, port)
+        finally:
+            self._delete_shadow_vm(shadow_vm_id)
 
         return imported_vm_name
