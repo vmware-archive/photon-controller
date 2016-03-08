@@ -48,7 +48,6 @@ import com.vmware.photon.controller.deployer.dcp.task.CreateContainerSpecLayoutT
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerSpecTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecTaskFactoryService;
@@ -162,7 +161,6 @@ public class DeployerXenonServiceHost
       CreateContainerSpecTaskFactoryService.class,
       CreateContainerTaskFactoryService.class,
       CreateFlavorTaskFactoryService.class,
-      CreateIsoTaskFactoryService.class,
       CreateManagementVmTaskFactoryService.class,
       CreateVmSpecLayoutTaskFactoryService.class,
       CreateVmSpecTaskFactoryService.class,
