@@ -114,6 +114,7 @@ public class CreateManagementVmTaskService extends StatefulService {
       WAIT_FOR_ATTACH_ISO,
       START_VM,
       WAIT_FOR_VM_START,
+      WAIT_FOR_DOCKER,
     }
 
     /**
@@ -248,6 +249,28 @@ public class CreateManagementVmTaskService extends StatefulService {
      */
     @DefaultInteger(value = 0)
     public Integer startVmPollCount;
+
+    /**
+     * This value represents the IP address of the Docker endpoint on the remote VM.
+     */
+    @WriteOnce
+    public String dockerEndpointAddress;
+
+    /**
+     * This value represents the maximum number of polling iterations to perform while waiting for
+     * the Docker daemon to come up on the remote machine.
+     */
+    @DefaultInteger(value = 600)
+    @Positive
+    @Immutable
+    public Integer maxDockerPollIterations;
+
+    /**
+     * This value represents the number of polling iterations which have been performed by the
+     * current task while waiting for the Docker daemon to come up on the remote machine.
+     */
+    @DefaultInteger(value = 0)
+    public Integer dockerPollIterations;
   }
 
   public CreateManagementVmTaskService() {
@@ -343,6 +366,7 @@ public class CreateManagementVmTaskService extends StatefulService {
           case WAIT_FOR_ATTACH_ISO:
           case START_VM:
           case WAIT_FOR_VM_START:
+          case WAIT_FOR_DOCKER:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -382,6 +406,9 @@ public class CreateManagementVmTaskService extends StatefulService {
         break;
       case WAIT_FOR_VM_START:
         processWaitForVmStartSubStage(currentState);
+        break;
+      case WAIT_FOR_DOCKER:
+        processWaitForDockerSubStage(currentState);
         break;
     }
   }
@@ -1160,7 +1187,9 @@ public class CreateManagementVmTaskService extends StatefulService {
             currentState.taskPollDelay, TimeUnit.MILLISECONDS);
         break;
       case "COMPLETED":
-        sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
+        patchState.dockerPollIterations = 1;
+        sendStageProgressPatch(patchState);
         break;
       case "ERROR":
         throw new IllegalStateException(ApiUtils.getErrors(task));
@@ -1208,12 +1237,81 @@ public class CreateManagementVmTaskService extends StatefulService {
             currentState.taskPollDelay, TimeUnit.MILLISECONDS);
         break;
       case "COMPLETED":
-        sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
+        patchState.dockerPollIterations = 1;
+        sendStageProgressPatch(patchState);
         break;
       case "ERROR":
         throw new IllegalStateException(ApiUtils.getErrors(task));
       default:
         throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  //
+  // WAIT_FOR_DOCKER sub-stage routines
+  //
+
+  private void processWaitForDockerSubStage(State currentState) {
+
+    if (currentState.dockerEndpointAddress == null) {
+
+      sendRequest(Operation
+          .createGet(this, currentState.vmServiceLink)
+          .setCompletion(
+              (o, e) -> {
+                if (e != null) {
+                  failTask(e);
+                  return;
+                }
+
+                try {
+                  State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
+                  patchState.dockerEndpointAddress = o.getBody(VmService.State.class).ipAddress;
+                  TaskUtils.sendSelfPatch(this, patchState);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }));
+
+      return;
+    }
+
+    //
+    // N.B. The Docker API call is performed on a separate thread because it is blocking. This
+    // behavior can be removed if and when an asynchronous version of this call is added to the
+    // client library.
+    //
+
+    HostUtils.getListeningExecutorService(this).submit(
+        () -> {
+          try {
+            String dockerInfo = HostUtils.getDockerProvisionerFactory(this)
+                .create(currentState.dockerEndpointAddress)
+                .getInfo();
+
+            ServiceUtils.logInfo(this, "Received Docker status response: " + dockerInfo);
+            sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+          } catch (Throwable t) {
+            processFailedDockerPollingInterval(currentState, t);
+          }
+        });
+  }
+
+  private void processFailedDockerPollingInterval(State currentState, Throwable failure) {
+    if (currentState.dockerPollIterations >= currentState.maxDockerPollIterations) {
+      ServiceUtils.logSevere(this, failure);
+      failTask(new IllegalStateException("The docker endpoint on VM " + currentState.dockerEndpointAddress +
+          " failed to become ready after " + currentState.dockerPollIterations + " polling iterations"));
+    } else {
+      ServiceUtils.logTrace(this, failure);
+      getHost().schedule(
+          () -> {
+            State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
+            patchState.dockerPollIterations = currentState.dockerPollIterations + 1;
+            TaskUtils.sendSelfPatch(this, patchState);
+          },
+          currentState.taskPollDelay, TimeUnit.MILLISECONDS);
     }
   }
 

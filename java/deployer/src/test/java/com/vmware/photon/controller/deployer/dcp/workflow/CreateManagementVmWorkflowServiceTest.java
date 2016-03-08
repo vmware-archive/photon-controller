@@ -181,7 +181,6 @@ public class CreateManagementVmWorkflowServiceTest {
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.CREATE_VM},
-          {TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.WAIT_FOR_DOCKER},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
@@ -330,16 +329,10 @@ public class CreateManagementVmWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.CREATE_VM},
           {TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.CREATE_VM,
-              TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.WAIT_FOR_DOCKER},
-          {TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.WAIT_FOR_DOCKER,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.CREATE_VM,
               TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.WAIT_FOR_DOCKER,
-              TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.CREATE_VM,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.WAIT_FOR_DOCKER,
               TaskState.TaskStage.CANCELLED, null},
       };
     }
@@ -397,20 +390,9 @@ public class CreateManagementVmWorkflowServiceTest {
       return new Object[][]{
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.CREATE_VM},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.WAIT_FOR_DOCKER},
-
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.CREATE_VM},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.WAIT_FOR_DOCKER},
-
           {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.CREATE_VM},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.WAIT_FOR_DOCKER},
-
-          {TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.WAIT_FOR_DOCKER,
               TaskState.TaskStage.STARTED, CreateManagementVmWorkflowService.TaskState.SubStage.CREATE_VM},
       };
     }
@@ -700,7 +682,8 @@ public class CreateManagementVmWorkflowServiceTest {
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString("Could not connect to Docker!"));
+      assertThat(finalState.taskState.failure.message,
+          containsString("The docker endpoint on VM 1.1.1.1 failed to become ready after 600 polling iterations"));
     }
 
     @DataProvider(name = "hostCounts")
