@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+# Copyright (c) 2016 VMware, Inc. All Rights Reserved.
+
+from eccli.format import print_request
+from eccli.format import print_response
+from eccli.format import print_result
+from eccli.optparser import default_parser
+from eccli.thrift import get_client
+
+from gen.host.ttypes import GetResourcesRequest
+
+parser = default_parser(usage="eccli-resources [options]",
+                        add_help=True)
+(options, args) = parser.parse_args()
+
+if not options.host:
+    parser.print_help()
+    exit(1)
+
+request = GetResourcesRequest()
+
+print_request(request)
+client = get_client(options, "Host")
+response = client.get_resources(request)
+print_response(response)
+
+for r in response.resources:
+    if r.vm:
+        print_result("VM: %s" % r.vm.id, False)
+    if r.disks:
+        for d in r.disks:
+            print_result("Disk: %s" % d.id, False)
+    print("\n")
