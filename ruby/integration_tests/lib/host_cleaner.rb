@@ -19,7 +19,7 @@ module EsxCloud
 
       def clean_vms_on_real_host(server, user_name, password)
         puts "cleaning vms on host #{server}"
-        Net::SSH.start(server, user_name, password: password) do |ssh|
+        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
           dirty_vms = ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1, $2}'`;do echo $id;done")
           ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1}'`;do (vim-cmd vmsvc/power.off $id || true) && vim-cmd vmsvc/unregister $id ;done")
           ssh.exec!("tmp=`mktemp` && vim-cmd vmsvc/getallvms 2>$tmp && for id in `awk '{print $4}' $tmp | sed \"s/'//g\"`;do (vim-cmd vmsvc/power.off $id || true) && vim-cmd vmsvc/unregister $id ;done")
@@ -37,7 +37,7 @@ module EsxCloud
 
       def remove_vms(server, user_name, password)
         puts "cleaning vms on host #{server}"
-        Net::SSH.start(server, user_name, password: password) do |ssh|
+        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
           dirty_vms = ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1, $2}'`;do echo $id;done")
           ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1}'`;do vim-cmd vmsvc/power.off $id && vim-cmd vmsvc/unregister $id ;done")
           dirty_vms
@@ -46,21 +46,21 @@ module EsxCloud
 
       def reboot_host(server, user_name, password)
         puts "rebooting host #{server}"
-        Net::SSH.start(server, user_name, password: password) do |ssh|
+        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
           ssh.exec!("reboot")
         end
       end
 
       def uninstall_vib(server, user_name, password, vib_name)
         puts "deleting vib #{vib_name} from #{server}"
-        Net::SSH.start(server, user_name, password: password) do |ssh|
+        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
           ssh.exec!("esxcli software vib remove -f -n #{vib_name} | echo #{vib_name}")
         end
       end
 
       def clean_datastores(server, user_name, password, folders = ["disks", "deleted_images", "images", "tmp_images", "vms"])
         puts "cleaning datastores on #{server}"
-        Net::SSH.start(server, user_name, password: password) do |ssh|
+        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
           folders.each do |folder|
             ssh.exec!("for ds in `df | awk '{print $6}' | grep -v Mounted`; do rm -rf $ds/#{folder}; done")
           end
