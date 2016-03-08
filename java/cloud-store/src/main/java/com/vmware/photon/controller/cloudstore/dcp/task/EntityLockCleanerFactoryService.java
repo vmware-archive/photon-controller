@@ -23,7 +23,7 @@ import com.vmware.xenon.common.Service;
  */
 public class EntityLockCleanerFactoryService extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/entity-lock-cleaners";
+  public static final String SELF_LINK = ServiceUriPaths.CLOUDSTORE_GROOMERS_ROOT + "/entity-lock-cleaners";
 
   public EntityLockCleanerFactoryService() {
     super(EntityLockCleanerService.State.class);

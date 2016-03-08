@@ -23,7 +23,7 @@ import com.vmware.xenon.common.Service;
  */
 public class TombstoneCleanerFactoryService extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/tombstone-entity-cleaners";
+  public static final String SELF_LINK = ServiceUriPaths.CLOUDSTORE_GROOMERS_ROOT + "/tombstone-entity-cleaners";
 
   public TombstoneCleanerFactoryService() {
     super(TombstoneCleanerService.State.class);
