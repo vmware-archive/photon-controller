@@ -1875,7 +1875,8 @@ class HostHandler(Host.Iface):
                 TransferImageResultCode.DESTINATION_ALREADY_EXIST,
                 "Image disk already exists",
                 TransferImageResponse())
-        except:
+        except Exception as e:
+            self._logger.exception(str(e))
             return self._error_response(
                 TransferImageResultCode.SYSTEM_ERROR,
                 str(sys.exc_info()[1]),
