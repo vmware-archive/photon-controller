@@ -16,6 +16,7 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.xenon.common.Operation;
@@ -51,6 +52,15 @@ public class EntityLockService extends StatefulService {
     }
   }
 
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.logInfo(this, "Deleting EntityLockService %s", getSelfLink());
+    State currentState = getState(deleteOperation);
+    currentState.documentExpirationTimeMicros = currentState.onDeleteDocumentExpirationTimeMicros;
+    setState(deleteOperation, currentState);
+    deleteOperation.complete();
+  }
+
   /**
    * Validate the service state for coherence.
    *
@@ -72,5 +82,8 @@ public class EntityLockService extends StatefulService {
     @NotBlank
     @Immutable
     public String taskId;
+
+    @DefaultLong(ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS)
+    public Long onDeleteDocumentExpirationTimeMicros;
   }
 }
