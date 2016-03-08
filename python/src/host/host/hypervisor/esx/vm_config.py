@@ -43,6 +43,7 @@ DEFAULT_NIC_CONTROLLER_CLASS = vim.vm.device.VirtualE1000
 METADATA_FILE_EXT = "ecv"
 MANIFEST_FILE_EXT = "manifest"
 DEFAULT_VMX_VERSION = "vmx-10"
+SHADOW_VM_NAME_PREFIX = "shadow_"
 
 diskAdapterType = vim.VirtualDiskManager.VirtualDiskAdapterType
 
