@@ -43,7 +43,6 @@ describe "migrate finalize", upgrade: true do
       upgrade_cloudstore_map = {
           "/esxcloud/cloudstore/datastores" => "/photon/cloudstore/datastores",
           "/esxcloud/cloudstore/hosts" => "/photon/cloudstore/hosts",
-          "/esxcloud/cloudstore/entity-locks" => "/photon/cloudstore/entity-locks",
           "/esxcloud/cloudstore/attached-disks" => "/photon/cloudstore/attached-disks",
           "/esxcloud/cloudstore/flavors" => "/photon/cloudstore/flavors",
           "/esxcloud/cloudstore/images" => "/photon/cloudstore/images",
@@ -56,7 +55,6 @@ describe "migrate finalize", upgrade: true do
           "/esxcloud/cloudstore/disks" => "/photon/cloudstore/disks",
           "/photon/cloudstore/datastores" => "/photon/cloudstore/datastores",
           "/photon/cloudstore/hosts" => "/photon/cloudstore/hosts",
-          "/photon/cloudstore/entity-locks" => "/photon/cloudstore/entity-locks",
           "/photon/cloudstore/attached-disks" => "/photon/cloudstore/attached-disks",
           "/photon/cloudstore/flavors" => "/photon/cloudstore/flavors",
           "/photon/cloudstore/images" => "/photon/cloudstore/images",
