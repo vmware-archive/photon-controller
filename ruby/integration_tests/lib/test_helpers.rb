@@ -389,7 +389,7 @@ module EsxCloud
     def image_seeding_progress_is_done(image_id)
       image = EsxCloud::Image.find_by_id(image_id)
       logger.debug "image #{image.id} seeding progress #{image.seeding_progress}"
-      image.seeding_progress.eql? "100.0%"
+      image.seeding_progress.eql? "100%"
     end
 
   end
