@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -24,18 +23,15 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
-import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.WaitForDockerTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.WaitForDockerTaskService;
-import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -44,8 +40,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
-
-import java.io.IOException;
 
 /**
  * This class implements a DCP service representing the creation of a management vm.
@@ -67,7 +61,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
      */
     public enum SubStage {
       CREATE_VM,
-      START_VM,
       WAIT_FOR_DOCKER,
     }
   }
@@ -208,7 +201,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
       checkState(null != currentState.taskState.subStage, "Sub-stage cannot be null in STARTED stage.");
       switch (currentState.taskState.subStage) {
         case CREATE_VM:
-        case START_VM:
         case WAIT_FOR_DOCKER:
           break;
         default:
@@ -273,9 +265,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
       case CREATE_VM:
         createVm(currentState);
         break;
-      case START_VM:
-        getVmStateToStartVm(currentState);
-        break;
       case WAIT_FOR_DOCKER:
         waitForDocker(currentState);
         break;
@@ -293,7 +282,7 @@ public class CreateManagementVmWorkflowService extends StatefulService {
         new FutureCallback<CreateManagementVmTaskService.State>() {
           @Override
           public void onSuccess(@Nullable CreateManagementVmTaskService.State result) {
-            sendProgressPatch(result.taskState, TaskState.TaskStage.STARTED, TaskState.SubStage.START_VM);
+            sendProgressPatch(result.taskState, TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER);
           }
 
           @Override
@@ -330,75 +319,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
   }
 
   /**
-   * /**
-   * Gets the {@link VmService.State} object for the vm being started and proceeds to starting the VM.
-   *
-   * @param currentState
-   */
-  private void getVmStateToStartVm(final State currentState) {
-    getVmState(
-        currentState,
-        new FutureCallback<VmService.State>() {
-          @Override
-          public void onSuccess(@Nullable VmService.State state) {
-            startVm(currentState, state);
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        });
-  }
-
-  /**
-   * This method starts a vm.
-   *
-   * @param currentState Supplies the current state object.
-   */
-  private void startVm(final State currentState, VmService.State vmState) {
-    try {
-      HostUtils.getApiClient(this).getVmApi().performStartOperationAsync(
-          vmState.vmId,
-          new FutureCallback<Task>() {
-            @Override
-            public void onSuccess(@Nullable Task result) {
-              processTask(result,
-                  buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER));
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-              failTask(t);
-            }
-          }
-      );
-    } catch (IOException e) {
-      failTask(e);
-    }
-  }
-
-  private void processTask(Task task, final State patchState) {
-    ApiUtils.pollTaskAsync(
-        task,
-        HostUtils.getApiClient(this),
-        this,
-        HostUtils.getDeployerContext(this).getTaskPollDelay(),
-        new FutureCallback<Task>() {
-          @Override
-          public void onSuccess(@Nullable Task result) {
-            TaskUtils.sendSelfPatch(CreateManagementVmWorkflowService.this, patchState);
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        }
-    );
-  }
-
-  /**
    * This method uses the {@link WaitForDockerTaskService} to wait for Docker to initialize on the VM.
    *
    * @param currentState Supplies the current state object.
@@ -431,37 +351,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
         WaitForDockerTaskService.State.class,
         currentState.taskPollDelay,
         futureCallback);
-  }
-
-  /**
-   * Gets the {@link VmService.State} object for the vm being created and proceeds to creating the ISO.
-   *
-   * @param currentState
-   */
-  private void getVmState(final State currentState, final FutureCallback<VmService.State> callback) {
-
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          callback.onFailure(throwable);
-          return;
-        }
-
-        try {
-          VmService.State vmState = operation.getBody(VmService.State.class);
-          callback.onSuccess(vmState);
-        } catch (Throwable t) {
-          callback.onFailure(t);
-        }
-      }
-    };
-
-    Operation getOperation = Operation
-        .createGet(UriUtils.buildUri(getHost(), currentState.vmServiceLink))
-        .setCompletion(completionHandler);
-
-    sendRequest(getOperation);
   }
 
   /**

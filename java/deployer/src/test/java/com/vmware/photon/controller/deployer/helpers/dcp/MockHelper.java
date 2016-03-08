@@ -315,6 +315,18 @@ public class MockHelper {
     };
   }
 
+  public static Answer<Task> mockPerformStartOperationAsync(String taskId, String entityId, String state) {
+    return mockPerformStartOperationAsync(TestHelper.createTask(taskId, entityId, state));
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<Task> mockPerformStartOperationAsync(Task returnValue) {
+    return (invocation) -> {
+      ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(returnValue);
+      return null;
+    };
+  }
+
   public static Answer<Task> mockGetTaskAsync(String taskId, String entityId, String state) {
     return mockGetTaskAsync(TestHelper.createTask(taskId, entityId, state));
   }
