@@ -45,6 +45,15 @@ module EsxCloud
         DiskList.create_from_json(response.body)
       end
 
+      # @param [String] project_id
+      # @return [DiskList]
+      def find_all_disks_pagination(project_id)
+        response = @http_client.getAll("/projects/#{project_id}/disks?pageSize=1")
+        check_response("Find all Disks for project '#{project_id}'", response, 200)
+
+        DiskList.create_from_json(response.body)
+      end
+
       # @param [String] id
       # @return [Disk]
       def find_disk_by_id(id)

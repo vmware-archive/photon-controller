@@ -58,6 +58,12 @@ module EsxCloud
         @api_client.find_all_disks(project_id)
       end
 
+      # @param [String] project_id
+      # @return [DiskList]
+      def find_all_disks_pagination(project_id)
+        @api_client.find_all_disks_pagination(project_id)
+      end
+
       # @param [String] id
       # @return [Disk]
       def find_disk_by_id(id)

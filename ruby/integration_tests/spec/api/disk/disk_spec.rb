@@ -120,6 +120,11 @@ describe "disk", management: true do
     disks = client.find_all_disks(@project.id).items
     disks.size.should == 2
 
+    if ENV["DRIVER"] != "gocli"
+      disks = client.find_all_disks_pagination(@project.id).items
+      disks.size.should == 2
+    end
+
     disks.each do |disk|
       disk.name.should == disk_name
     end
