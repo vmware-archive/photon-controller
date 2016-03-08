@@ -157,7 +157,7 @@ finally:
 
 # create image
 request = CreateImageRequest()
-request.image_id = str(uuid.uuid1())
+request.image_id = image_id
 request.datastore = options.datastore
 request.tmp_image_path = os.path.join(
         tmp_image_folder_os_path(options.datastore), image_id)

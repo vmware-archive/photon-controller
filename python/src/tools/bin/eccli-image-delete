@@ -19,7 +19,7 @@ parser.add_option("-f", "--force",
                   action="store_true", dest="force",
                   help="force delete")
 parser.add_option("-t", "--tombstone",
-                  action="store_true", dest="force",
+                  action="store_true", dest="tombstone",
                   help="Mark image as tombstone")
 (options, args) = parser.parse_args()
 
@@ -33,6 +33,8 @@ client = get_client(options)
 request = DeleteImageRequest()
 ds, image = options.image.split(':')
 request.image = Image(image, Datastore(ds))
+request.force = options.force
+request.tombstone = options.tombstone
 
 print_request(request)
 response = client.delete_image(request)
