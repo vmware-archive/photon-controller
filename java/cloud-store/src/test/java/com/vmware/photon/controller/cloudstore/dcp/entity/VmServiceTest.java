@@ -337,7 +337,7 @@ public class VmServiceTest {
     }
 
     /**
-     * Test expiration of deleted document.
+     * Test default expiration is not applied if it is already specified in current state.
      *
      * @throws Throwable
      */
@@ -380,7 +380,7 @@ public class VmServiceTest {
     }
 
     /**
-     * Test expiration of deleted document.
+     * Test default expiration is not applied if it is already specified in delete operation state.
      *
      * @throws Throwable
      */
@@ -422,7 +422,7 @@ public class VmServiceTest {
     }
 
     /**
-     * Test expiration of deleted document.
+     * Test expiration of deleted document using default value.
      *
      * @throws Throwable
      */
