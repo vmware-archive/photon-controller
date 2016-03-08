@@ -444,6 +444,46 @@ public class CreateManagementVmTaskServiceTest {
       doReturn(vmApi).when(apiClient).getVmApi();
       vmId = UUID.randomUUID().toString();
 
+      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
+          .when(projectApi)
+          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
+          .when(vmApi)
+          .setMetadataAsync(anyString(), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      doReturn(TestHelper.createTask("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "QUEUED"))
+          .when(vmApi)
+          .uploadAndAttachIso(anyString(), anyString());
+
+      doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("UPLOAD_AND_ATTACH_ISO_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockPerformStartOperationAsync("START_VM_TASK_ID", vmId, "QUEUED"))
+          .when(vmApi)
+          .performStartOperationAsync(anyString(), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockGetTaskAsync("START_VM_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("START_VM_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("START_VM_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("START_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
       doReturn(new ServiceConfigurator()).when(serviceConfiguratorFactory).create();
 
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, FlavorService.State.class);
@@ -513,36 +553,6 @@ public class CreateManagementVmTaskServiceTest {
     @Test
     public void testSuccess() throws Throwable {
 
-      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .when(projectApi)
-          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .when(vmApi)
-          .setMetadataAsync(anyString(), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      doReturn(TestHelper.createTask("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "QUEUED"))
-          .when(vmApi)
-          .uploadAndAttachIso(anyString(), anyString());
-
-      doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("UPLOAD_AND_ATTACH_ISO_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
       CreateManagementVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateManagementVmTaskFactoryService.SELF_LINK,
@@ -561,6 +571,8 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.vmConfigDirectory, notNullValue());
       assertThat(finalState.attachIsoTaskId, is("UPLOAD_AND_ATTACH_ISO_TASK_ID"));
       assertThat(finalState.attachIsoPollCount, is(3));
+      assertThat(finalState.startVmTaskId, is("START_VM_TASK_ID"));
+      assertThat(finalState.startVmPollCount, is(3));
 
       ArgumentCaptor<VmCreateSpec> createSpecCaptor = ArgumentCaptor.forClass(VmCreateSpec.class);
 
@@ -606,6 +618,14 @@ public class CreateManagementVmTaskServiceTest {
       verify(tasksApi, times(3)).getTaskAsync(
           eq("UPLOAD_AND_ATTACH_ISO_TASK_ID"),
           Matchers.<FutureCallback<Task>>any());
+
+      verify(vmApi).performStartOperationAsync(
+          eq(vmId),
+          Matchers.<FutureCallback<Task>>any());
+
+      verify(tasksApi, times(3)).getTaskAsync(
+          eq("START_VM_TASK_ID"),
+          Matchers.<FutureCallback<Task>>any());
     }
 
     @Test
@@ -623,6 +643,10 @@ public class CreateManagementVmTaskServiceTest {
           .when(vmApi)
           .uploadAndAttachIso(anyString(), anyString());
 
+      doAnswer(MockHelper.mockPerformStartOperationAsync("START_VM_TASK_ID", vmId, "COMPLETED"))
+          .when(vmApi)
+          .performStartOperationAsync(anyString(), Matchers.<FutureCallback<Task>>any());
+
       CreateManagementVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateManagementVmTaskFactoryService.SELF_LINK,
@@ -639,6 +663,8 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.updateVmMetadataPollCount, is(0));
       assertThat(finalState.serviceConfigDirectory, notNullValue());
       assertThat(finalState.vmConfigDirectory, notNullValue());
+      assertThat(finalState.startVmTaskId, nullValue());
+      assertThat(finalState.startVmPollCount, is(0));
 
       ArgumentCaptor<VmCreateSpec> createSpecCaptor = ArgumentCaptor.forClass(VmCreateSpec.class);
 
@@ -672,6 +698,10 @@ public class CreateManagementVmTaskServiceTest {
       verify(vmApi).uploadAndAttachIso(
           eq(vmId),
           eq(Paths.get(finalState.vmConfigDirectory, "config.iso").toString()));
+
+      verify(vmApi).performStartOperationAsync(
+          eq(vmId),
+          Matchers.<FutureCallback<Task>>any());
     }
 
     private VmCreateSpec getExpectedCreateSpec() {
@@ -717,10 +747,6 @@ public class CreateManagementVmTaskServiceTest {
 
     @Test
     public void testCreateVmFailure() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .when(projectApi)
-          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
 
       doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
           .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
@@ -790,10 +816,6 @@ public class CreateManagementVmTaskServiceTest {
     @Test
     public void testCreateVmExceptionInGetTaskCall() throws Throwable {
 
-      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .when(projectApi)
-          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
       doThrow(new IOException("I/O exception during getTaskAsync call"))
           .when(tasksApi)
           .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
@@ -815,20 +837,6 @@ public class CreateManagementVmTaskServiceTest {
 
     @Test
     public void testSetMetadataFailure() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .when(projectApi)
-          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .when(vmApi)
-          .setMetadataAsync(eq(vmId), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
 
       doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
           .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "STARTED"))
@@ -856,16 +864,6 @@ public class CreateManagementVmTaskServiceTest {
     @Test
     public void testSetMetadataFailureNoTaskPolling() throws Throwable {
 
-      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .when(projectApi)
-          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
       doAnswer(MockHelper.mockSetMetadataAsync(failedTask))
           .when(vmApi)
           .setMetadataAsync(eq(vmId), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
@@ -889,16 +887,6 @@ public class CreateManagementVmTaskServiceTest {
 
     @Test
     public void testSetMetadataExceptionInSetMetadataCall() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .when(projectApi)
-          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
 
       doThrow(new IOException("I/O exception during setMetadataAsync call"))
           .when(vmApi)
@@ -924,20 +912,6 @@ public class CreateManagementVmTaskServiceTest {
     @Test
     public void testSetMetadataExceptionInGetTaskCall() throws Throwable {
 
-      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .when(projectApi)
-          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .when(vmApi)
-          .setMetadataAsync(eq(vmId), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
-
       doThrow(new IOException("I/O exception during getTaskAsync call"))
           .when(tasksApi)
           .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
@@ -961,26 +935,6 @@ public class CreateManagementVmTaskServiceTest {
 
     @Test
     public void testAttachIsoFailureInServiceConfig() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .when(projectApi)
-          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .when(vmApi)
-          .setMetadataAsync(anyString(), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
 
       ServiceConfigurator serviceConfigurator = mock(ServiceConfigurator.class);
       doReturn(serviceConfigurator).when(serviceConfiguratorFactory).create();
@@ -1010,26 +964,6 @@ public class CreateManagementVmTaskServiceTest {
     @Test
     public void testAttachIsoFailureInScriptRunner() throws Throwable {
 
-      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .when(projectApi)
-          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .when(vmApi)
-          .setMetadataAsync(anyString(), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
       TestHelper.createFailScriptFile(deployerConfig.getDeployerContext(), "esx-create-vm-iso");
 
       CreateManagementVmTaskService.State finalState =
@@ -1053,30 +987,6 @@ public class CreateManagementVmTaskServiceTest {
 
     @Test
     public void testAttachIsoFailure() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .when(projectApi)
-          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .when(vmApi)
-          .setMetadataAsync(anyString(), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      doReturn(TestHelper.createTask("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "QUEUED"))
-          .when(vmApi)
-          .uploadAndAttachIso(anyString(), anyString());
 
       doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "QUEUED"))
           .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "STARTED"))
@@ -1108,26 +1018,6 @@ public class CreateManagementVmTaskServiceTest {
     @Test
     public void testAttachIsoFailureNoPolling() throws Throwable {
 
-      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .when(projectApi)
-          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .when(vmApi)
-          .setMetadataAsync(anyString(), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
       doReturn(failedTask)
           .when(vmApi)
           .uploadAndAttachIso(anyString(), anyString());
@@ -1149,6 +1039,121 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.updateVmMetadataPollCount, is(3));
       assertThat(finalState.serviceConfigDirectory, notNullValue());
       assertThat(finalState.vmConfigDirectory, notNullValue());
+    }
+
+    @Test
+    public void testStartVmFailure() throws Throwable {
+
+      doAnswer(MockHelper.mockGetTaskAsync("START_VM_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("START_VM_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync(failedTask))
+          .when(tasksApi)
+          .getTaskAsync(eq("START_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      CreateManagementVmTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateManagementVmTaskFactoryService.SELF_LINK,
+              startState,
+              CreateManagementVmTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
+      assertThat(finalState.createVmPollCount, is(3));
+      assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
+      assertThat(finalState.updateVmMetadataPollCount, is(3));
+      assertThat(finalState.serviceConfigDirectory, notNullValue());
+      assertThat(finalState.vmConfigDirectory, notNullValue());
+      assertThat(finalState.startVmTaskId, is("START_VM_TASK_ID"));
+      assertThat(finalState.startVmPollCount, is(3));
+    }
+
+    @Test
+    public void testStartVmFailureNoTaskPolling() throws Throwable {
+
+      doAnswer(MockHelper.mockPerformStartOperationAsync(failedTask))
+          .when(vmApi)
+          .performStartOperationAsync(anyString(), Matchers.<FutureCallback<Task>>any());
+
+      CreateManagementVmTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateManagementVmTaskFactoryService.SELF_LINK,
+              startState,
+              CreateManagementVmTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
+      assertThat(finalState.createVmPollCount, is(3));
+      assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
+      assertThat(finalState.updateVmMetadataPollCount, is(3));
+      assertThat(finalState.serviceConfigDirectory, notNullValue());
+      assertThat(finalState.vmConfigDirectory, notNullValue());
+      assertThat(finalState.startVmTaskId, nullValue());
+      assertThat(finalState.startVmPollCount, is(0));
+    }
+
+    @Test
+    public void testStartVmFailureExceptionDuringStartVmCall() throws Throwable {
+
+      doThrow(new IOException("I/O exception during performStartOperationAsync call"))
+          .when(vmApi)
+          .performStartOperationAsync(anyString(), Matchers.<FutureCallback<Task>>any());
+
+      CreateManagementVmTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateManagementVmTaskFactoryService.SELF_LINK,
+              startState,
+              CreateManagementVmTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message,
+          containsString("I/O exception during performStartOperationAsync call"));
+      assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
+      assertThat(finalState.createVmPollCount, is(3));
+      assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
+      assertThat(finalState.updateVmMetadataPollCount, is(3));
+      assertThat(finalState.serviceConfigDirectory, notNullValue());
+      assertThat(finalState.vmConfigDirectory, notNullValue());
+      assertThat(finalState.startVmTaskId, nullValue());
+      assertThat(finalState.startVmPollCount, is(0));
+    }
+
+    @Test
+    public void testStartVmFailureExceptionDuringGetTaskCall() throws Throwable {
+
+      doThrow(new IOException("I/O exception during getTaskAsync call"))
+          .when(tasksApi)
+          .getTaskAsync(eq("START_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      CreateManagementVmTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateManagementVmTaskFactoryService.SELF_LINK,
+              startState,
+              CreateManagementVmTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("I/O exception during getTaskAsync call"));
+      assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
+      assertThat(finalState.createVmPollCount, is(3));
+      assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
+      assertThat(finalState.updateVmMetadataPollCount, is(3));
+      assertThat(finalState.serviceConfigDirectory, notNullValue());
+      assertThat(finalState.vmConfigDirectory, notNullValue());
+      assertThat(finalState.startVmTaskId, is("START_VM_TASK_ID"));
+      assertThat(finalState.startVmPollCount, is(1));
     }
   }
 
