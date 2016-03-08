@@ -112,6 +112,8 @@ public class CreateManagementVmTaskService extends StatefulService {
       WAIT_FOR_METADATA_UPDATE,
       ATTACH_ISO,
       WAIT_FOR_ATTACH_ISO,
+      START_VM,
+      WAIT_FOR_VM_START,
     }
 
     /**
@@ -233,6 +235,19 @@ public class CreateManagementVmTaskService extends StatefulService {
      */
     @DefaultInteger(value = 0)
     public Integer attachIsoPollCount;
+
+    /**
+     * This value represents the ID of the API-level task to power on the VM.
+     */
+    @WriteOnce
+    public String startVmTaskId;
+
+    /**
+     * This value represents the number of polling iterations which have been performed by the
+     * current task while waiting for the VM to be powered on. It is informational only.
+     */
+    @DefaultInteger(value = 0)
+    public Integer startVmPollCount;
   }
 
   public CreateManagementVmTaskService() {
@@ -326,6 +341,8 @@ public class CreateManagementVmTaskService extends StatefulService {
           case WAIT_FOR_METADATA_UPDATE:
           case ATTACH_ISO:
           case WAIT_FOR_ATTACH_ISO:
+          case START_VM:
+          case WAIT_FOR_VM_START:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -359,6 +376,12 @@ public class CreateManagementVmTaskService extends StatefulService {
         break;
       case WAIT_FOR_ATTACH_ISO:
         processWaitForAttachIsoSubStage(currentState);
+        break;
+      case START_VM:
+        processStartVmSubStage(currentState);
+        break;
+      case WAIT_FOR_VM_START:
+        processWaitForVmStartSubStage(currentState);
         break;
     }
   }
@@ -1038,7 +1061,7 @@ public class CreateManagementVmTaskService extends StatefulService {
       case "COMPLETED":
         FileUtils.deleteDirectory(Paths.get(currentState.serviceConfigDirectory).toFile());
         FileUtils.deleteDirectory(Paths.get(currentState.vmConfigDirectory).toFile());
-        sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.START_VM);
         break;
       case "ERROR":
         throw new IllegalStateException(ApiUtils.getErrors(task));
@@ -1088,6 +1111,103 @@ public class CreateManagementVmTaskService extends StatefulService {
       case "COMPLETED":
         FileUtils.deleteDirectory(Paths.get(currentState.serviceConfigDirectory).toFile());
         FileUtils.deleteDirectory(Paths.get(currentState.vmConfigDirectory).toFile());
+        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.START_VM);
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  //
+  // START_VM sub-stage routines
+  //
+
+  private void processStartVmSubStage(State currentState) throws Throwable {
+
+    HostUtils.getApiClient(this)
+        .getVmApi()
+        .performStartOperationAsync(currentState.vmId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processPerformStartOperationTaskResult(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+  }
+
+  private void processPerformStartOperationTaskResult(State currentState, Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        getHost().schedule(
+            () -> {
+              State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_VM_START, null);
+              patchState.startVmTaskId = task.getId();
+              patchState.startVmPollCount = 1;
+              sendStageProgressPatch(patchState);
+            },
+            currentState.taskPollDelay, TimeUnit.MILLISECONDS);
+        break;
+      case "COMPLETED":
+        sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  //
+  // WAIT_FOR_VM_START sub-stage routines
+  //
+
+  private void processWaitForVmStartSubStage(State currentState) throws Throwable {
+
+    HostUtils.getApiClient(this)
+        .getTasksApi()
+        .getTaskAsync(currentState.startVmTaskId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processWaitForVmStartTaskResult(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+  }
+
+  private void processWaitForVmStartTaskResult(State currentState, Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        getHost().schedule(
+            () -> {
+              State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_VM_START, null);
+              patchState.startVmPollCount = currentState.startVmPollCount + 1;
+              TaskUtils.sendSelfPatch(this, patchState);
+            },
+            currentState.taskPollDelay, TimeUnit.MILLISECONDS);
+        break;
+      case "COMPLETED":
         sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
         break;
       case "ERROR":
