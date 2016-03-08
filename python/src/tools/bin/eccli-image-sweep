@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+# Copyright (c) 2015 VMware, Inc. All Rights Reserved.
+import sys
+from time import sleep
+
+from eccli.format import print_request
+from eccli.format import print_response
+from eccli.optparser import default_parser
+from eccli.thrift import get_client
+from gen.host.ttypes import GetInactiveImagesRequest, \
+    GetMonitoredImagesResultCode, GetDeletedImagesRequest
+from gen.host.ttypes import StartImageSweepRequest
+
+parser = default_parser(usage="eccli-image-sweep [options]",
+                        add_help=True)
+parser.add_option("-d", "--datastore",
+                  action="store", type="string", dest="datastore",
+                  help="datastore to scan")
+(options, args) = parser.parse_args()
+
+if not options.datastore:
+    parser.print_help()
+    exit(1)
+
+client = get_client(options)
+
+get_request = GetInactiveImagesRequest()
+get_request.datastore_id = options.datastore
+print_request(get_request)
+get_response = client.get_inactive_images(get_request)
+print_response(get_response)
+if get_response.result != GetMonitoredImagesResultCode.OK:
+    sys.exit(1)
+
+sweep_request = StartImageSweepRequest()
+sweep_request.datastore_id = options.datastore
+sweep_request.image_descs = get_response.image_descs
+print_request(sweep_request)
+sweep_response = client.start_image_sweep(sweep_request)
+print_response(sweep_response)
+
+chk_request = GetDeletedImagesRequest()
+chk_request.datastore_id = options.datastore
+print_request(chk_request)
+while True:
+    chk_response = client.get_deleted_images(chk_request)
+    if chk_response.result !=\
+        GetMonitoredImagesResultCode.OPERATION_IN_PROGRESS:
+        print_response(chk_response)
+        break
+    sleep(1)
