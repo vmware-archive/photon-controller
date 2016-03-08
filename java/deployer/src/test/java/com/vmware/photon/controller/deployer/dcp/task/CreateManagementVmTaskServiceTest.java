@@ -35,6 +35,8 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
+import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ApiTestUtils;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
@@ -54,6 +56,9 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import org.apache.commons.io.FileUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 import org.testng.annotations.AfterClass;
@@ -65,6 +70,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -75,15 +81,18 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -173,6 +182,8 @@ public class CreateManagementVmTaskServiceTest {
           {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION},
           {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA},
           {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE},
+          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.ATTACH_ISO},
+          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_ATTACH_ISO},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
@@ -327,51 +338,7 @@ public class CreateManagementVmTaskServiceTest {
 
     @DataProvider(name = "ValidStageTransitions")
     public Object[][] getValidStageTransitions() {
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE,
-              TaskState.TaskStage.FINISHED, null},
-
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE,
-              TaskState.TaskStage.FINISHED, null},
-
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE,
-              TaskState.TaskStage.FAILED, null},
-
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE,
-              TaskState.TaskStage.CANCELLED, null},
-      };
+      return TestHelper.getValidStageTransitions(CreateManagementVmTaskService.TaskState.SubStage.class);
     }
 
     @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
@@ -394,85 +361,7 @@ public class CreateManagementVmTaskServiceTest {
 
     @DataProvider(name = "InvalidStageTransitions")
     public Object[][] getInvalidStageTransitions() {
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.CREATED, null},
-
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM,
-              TaskState.TaskStage.CREATED, null},
-
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM},
-
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION},
-
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION},
-          {TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA},
-
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.CREATE_VM},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_VM_CREATION},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.UPDATE_METADATA},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, CreateManagementVmTaskService.TaskState.SubStage.WAIT_FOR_METADATA_UPDATE},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.CANCELLED, null},
-      };
+      return TestHelper.getInvalidStageTransitions(CreateManagementVmTaskService.TaskState.SubStage.class);
     }
 
     @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = XenonRuntimeException.class)
@@ -511,7 +400,9 @@ public class CreateManagementVmTaskServiceTest {
     private ApiClientFactory apiClientFactory;
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerConfig deployerConfig;
+    private ListeningExecutorService listeningExecutorService;
     private ProjectApi projectApi;
+    private ServiceConfiguratorFactory serviceConfiguratorFactory;
     private CreateManagementVmTaskService.State startState;
     private TasksApi tasksApi;
     private TestEnvironment testEnvironment;
@@ -524,13 +415,20 @@ public class CreateManagementVmTaskServiceTest {
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       deployerConfig = ConfigBuilder.build(DeployerConfig.class, this.getClass().getResource("/config.yml").getPath());
       TestHelper.setContainersConfig(deployerConfig);
+      listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
+      serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
 
       testEnvironment = new TestEnvironment.Builder()
           .apiClientFactory(apiClientFactory)
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
           .deployerContext(deployerConfig.getDeployerContext())
           .hostCount(1)
+          .listeningExecutorService(listeningExecutorService)
+          .serviceConfiguratorFactory(serviceConfiguratorFactory)
           .build();
+
+      FileUtils.copyDirectory(Paths.get(this.getClass().getResource("/configurations/").getPath()).toFile(),
+          Paths.get(deployerConfig.getDeployerContext().getConfigDirectory()).toFile());
     }
 
     @BeforeMethod
@@ -545,6 +443,8 @@ public class CreateManagementVmTaskServiceTest {
       vmApi = mock(VmApi.class);
       doReturn(vmApi).when(apiClient).getVmApi();
       vmId = UUID.randomUUID().toString();
+
+      doReturn(new ServiceConfigurator()).when(serviceConfiguratorFactory).create();
 
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, FlavorService.State.class);
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
@@ -583,10 +483,18 @@ public class CreateManagementVmTaskServiceTest {
       startState.vmServiceLink = vmState.documentSelfLink;
       startState.controlFlags = null;
       startState.taskPollDelay = 10;
+
+      FileUtils.copyDirectory(Paths.get(this.getClass().getResource("/scripts/").getPath()).toFile(),
+          Paths.get(deployerConfig.getDeployerContext().getScriptDirectory()).toFile());
+      Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "esx-create-vm-iso").toFile()
+          .setExecutable(true, true);
+      Paths.get(deployerConfig.getDeployerContext().getScriptLogDirectory()).toFile().mkdirs();
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
+      FileUtils.deleteDirectory(Paths.get(deployerConfig.getDeployerContext().getScriptDirectory()).toFile());
+      FileUtils.deleteDirectory(Paths.get(deployerConfig.getDeployerContext().getScriptLogDirectory()).toFile());
       TestHelper.deleteServicesOfType(cloudStoreEnvironment, FlavorService.State.class);
       TestHelper.deleteServicesOfType(cloudStoreEnvironment, HostService.State.class);
       TestHelper.deleteServicesOfType(testEnvironment, ContainerService.State.class);
@@ -596,8 +504,10 @@ public class CreateManagementVmTaskServiceTest {
 
     @AfterClass
     public void tearDownClass() throws Throwable {
+      FileUtils.deleteDirectory(Paths.get(deployerConfig.getDeployerContext().getConfigDirectory()).toFile());
       testEnvironment.stop();
       cloudStoreEnvironment.stop();
+      listeningExecutorService.shutdown();
     }
 
     @Test
@@ -623,6 +533,16 @@ public class CreateManagementVmTaskServiceTest {
           .when(tasksApi)
           .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
 
+      doReturn(TestHelper.createTask("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "QUEUED"))
+          .when(vmApi)
+          .uploadAndAttachIso(anyString(), anyString());
+
+      doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("UPLOAD_AND_ATTACH_ISO_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
       CreateManagementVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateManagementVmTaskFactoryService.SELF_LINK,
@@ -637,6 +557,10 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.vmId, is(vmId));
       assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
       assertThat(finalState.updateVmMetadataPollCount, is(3));
+      assertThat(finalState.serviceConfigDirectory, notNullValue());
+      assertThat(finalState.vmConfigDirectory, notNullValue());
+      assertThat(finalState.attachIsoTaskId, is("UPLOAD_AND_ATTACH_ISO_TASK_ID"));
+      assertThat(finalState.attachIsoPollCount, is(3));
 
       ArgumentCaptor<VmCreateSpec> createSpecCaptor = ArgumentCaptor.forClass(VmCreateSpec.class);
 
@@ -653,6 +577,9 @@ public class CreateManagementVmTaskServiceTest {
 
       ArgumentCaptor<VmMetadata> metadataCaptor = ArgumentCaptor.forClass(VmMetadata.class);
 
+      VmService.State vmState = testEnvironment.getServiceState(startState.vmServiceLink, VmService.State.class);
+      assertThat(vmState.vmId, is(vmId));
+
       verify(vmApi).setMetadataAsync(
           eq(vmId),
           metadataCaptor.capture(),
@@ -664,8 +591,21 @@ public class CreateManagementVmTaskServiceTest {
           eq("SET_METADATA_TASK_ID"),
           Matchers.<FutureCallback<Task>>any());
 
-      VmService.State vmState = testEnvironment.getServiceState(startState.vmServiceLink, VmService.State.class);
-      assertThat(vmState.vmId, is(vmId));
+      assertTrue(FileUtils.contentEquals(
+          Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
+          Paths.get(this.getClass().getResource("/fixtures/user-data.yml").getPath()).toFile()));
+
+      assertTrue(FileUtils.contentEquals(
+          Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "meta-data").toFile(),
+          Paths.get(this.getClass().getResource("/fixtures/meta-data.yml").getPath()).toFile()));
+
+      verify(vmApi).uploadAndAttachIso(
+          eq(vmId),
+          eq(Paths.get(finalState.vmConfigDirectory, "config.iso").toString()));
+
+      verify(tasksApi, times(3)).getTaskAsync(
+          eq("UPLOAD_AND_ATTACH_ISO_TASK_ID"),
+          Matchers.<FutureCallback<Task>>any());
     }
 
     @Test
@@ -678,6 +618,10 @@ public class CreateManagementVmTaskServiceTest {
       doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "COMPLETED"))
           .when(vmApi)
           .setMetadataAsync(anyString(), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
+
+      doReturn(TestHelper.createTask("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "COMPLETED"))
+          .when(vmApi)
+          .uploadAndAttachIso(anyString(), anyString());
 
       CreateManagementVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -693,6 +637,8 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.vmId, is(vmId));
       assertThat(finalState.updateVmMetadataTaskId, nullValue());
       assertThat(finalState.updateVmMetadataPollCount, is(0));
+      assertThat(finalState.serviceConfigDirectory, notNullValue());
+      assertThat(finalState.vmConfigDirectory, notNullValue());
 
       ArgumentCaptor<VmCreateSpec> createSpecCaptor = ArgumentCaptor.forClass(VmCreateSpec.class);
 
@@ -703,6 +649,9 @@ public class CreateManagementVmTaskServiceTest {
 
       assertThat(createSpecCaptor.getValue(), is(getExpectedCreateSpec()));
 
+      VmService.State vmState = testEnvironment.getServiceState(startState.vmServiceLink, VmService.State.class);
+      assertThat(vmState.vmId, is(vmId));
+
       ArgumentCaptor<VmMetadata> captor = ArgumentCaptor.forClass(VmMetadata.class);
 
       verify(vmApi).setMetadataAsync(
@@ -712,8 +661,17 @@ public class CreateManagementVmTaskServiceTest {
 
       assertThat(captor.getValue().getMetadata(), is(getExpectedMetadata()));
 
-      VmService.State vmState = testEnvironment.getServiceState(startState.vmServiceLink, VmService.State.class);
-      assertThat(vmState.vmId, is(vmId));
+      assertTrue(FileUtils.contentEquals(
+          Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
+          Paths.get(this.getClass().getResource("/fixtures/user-data.yml").getPath()).toFile()));
+
+      assertTrue(FileUtils.contentEquals(
+          Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "meta-data").toFile(),
+          Paths.get(this.getClass().getResource("/fixtures/meta-data.yml").getPath()).toFile()));
+
+      verify(vmApi).uploadAndAttachIso(
+          eq(vmId),
+          eq(Paths.get(finalState.vmConfigDirectory, "config.iso").toString()));
     }
 
     private VmCreateSpec getExpectedCreateSpec() {
@@ -1000,6 +958,198 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
       assertThat(finalState.updateVmMetadataPollCount, is(1));
     }
+
+    @Test
+    public void testAttachIsoFailureInServiceConfig() throws Throwable {
+
+      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
+          .when(projectApi)
+          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
+          .when(vmApi)
+          .setMetadataAsync(anyString(), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      ServiceConfigurator serviceConfigurator = mock(ServiceConfigurator.class);
+      doReturn(serviceConfigurator).when(serviceConfiguratorFactory).create();
+
+      doThrow(new RuntimeException("Runtime exception during config directory copy"))
+          .when(serviceConfigurator)
+          .copyDirectory(anyString(), anyString());
+
+      CreateManagementVmTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateManagementVmTaskFactoryService.SELF_LINK,
+              startState,
+              CreateManagementVmTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message,
+          containsString("Runtime exception during config directory copy"));
+      assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
+      assertThat(finalState.createVmPollCount, is(3));
+      assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
+      assertThat(finalState.updateVmMetadataPollCount, is(3));
+    }
+
+    @Test
+    public void testAttachIsoFailureInScriptRunner() throws Throwable {
+
+      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
+          .when(projectApi)
+          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
+          .when(vmApi)
+          .setMetadataAsync(anyString(), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      TestHelper.createFailScriptFile(deployerConfig.getDeployerContext(), "esx-create-vm-iso");
+
+      CreateManagementVmTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateManagementVmTaskFactoryService.SELF_LINK,
+              startState,
+              CreateManagementVmTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("Creating the configuration ISO for VM " +
+          vmId + " failed with exit code 1"));
+      assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
+      assertThat(finalState.createVmPollCount, is(3));
+      assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
+      assertThat(finalState.updateVmMetadataPollCount, is(3));
+      assertThat(finalState.serviceConfigDirectory, notNullValue());
+    }
+
+    @Test
+    public void testAttachIsoFailure() throws Throwable {
+
+      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
+          .when(projectApi)
+          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
+          .when(vmApi)
+          .setMetadataAsync(anyString(), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      doReturn(TestHelper.createTask("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "QUEUED"))
+          .when(vmApi)
+          .uploadAndAttachIso(anyString(), anyString());
+
+      doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_AND_ATTACH_ISO_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync(failedTask))
+          .when(tasksApi)
+          .getTaskAsync(eq("UPLOAD_AND_ATTACH_ISO_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      CreateManagementVmTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateManagementVmTaskFactoryService.SELF_LINK,
+              startState,
+              CreateManagementVmTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
+      assertThat(finalState.createVmPollCount, is(3));
+      assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
+      assertThat(finalState.updateVmMetadataPollCount, is(3));
+      assertThat(finalState.serviceConfigDirectory, notNullValue());
+      assertThat(finalState.vmConfigDirectory, notNullValue());
+      assertThat(finalState.attachIsoTaskId, is("UPLOAD_AND_ATTACH_ISO_TASK_ID"));
+      assertThat(finalState.attachIsoPollCount, is(3));
+    }
+
+    @Test
+    public void testAttachIsoFailureNoPolling() throws Throwable {
+
+      doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
+          .when(projectApi)
+          .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("CREATE_VM_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockSetMetadataAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
+          .when(vmApi)
+          .setMetadataAsync(anyString(), any(VmMetadata.class), Matchers.<FutureCallback<Task>>any());
+
+      doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("SET_METADATA_TASK_ID", vmId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("SET_METADATA_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      doReturn(failedTask)
+          .when(vmApi)
+          .uploadAndAttachIso(anyString(), anyString());
+
+      CreateManagementVmTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateManagementVmTaskFactoryService.SELF_LINK,
+              startState,
+              CreateManagementVmTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
+      assertThat(finalState.createVmPollCount, is(3));
+      assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
+      assertThat(finalState.updateVmMetadataPollCount, is(3));
+      assertThat(finalState.serviceConfigDirectory, notNullValue());
+      assertThat(finalState.vmConfigDirectory, notNullValue());
+    }
   }
 
   private CreateManagementVmTaskService.State buildValidStartState(
@@ -1008,6 +1158,7 @@ public class CreateManagementVmTaskServiceTest {
 
     CreateManagementVmTaskService.State startState = new CreateManagementVmTaskService.State();
     startState.vmServiceLink = "VM_SERVICE_LINK";
+    startState.ntpEndpoint = "NTP_ENDPOINT";
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
 
     if (taskStage != null) {

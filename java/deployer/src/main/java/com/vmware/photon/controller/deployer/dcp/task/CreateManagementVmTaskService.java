@@ -34,11 +34,17 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
+import com.vmware.photon.controller.deployer.configuration.LoadBalancerServer;
+import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
+import com.vmware.photon.controller.deployer.configuration.ZookeeperServer;
+import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
+import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
@@ -48,26 +54,48 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFutureTask;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.net.util.SubnetUtils;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class implements a Xenon task service which creates a management VM.
  */
 public class CreateManagementVmTaskService extends StatefulService {
 
-  private static final String CONTAINERS_METADATA_PREFIX = "CONTAINER_";
+  @VisibleForTesting
+  public static final String SCRIPT_NAME = "esx-create-vm-iso";
+
+  private static final TypeToken loadBalancerTypeToken = new TypeToken<ArrayList<LoadBalancerServer>>() {
+  };
+
+  private static final TypeToken zookeeperTypeToken = new TypeToken<ArrayList<ZookeeperServer>>() {
+  };
 
   /**
    * This class defines the state of a {@link CreateManagementVmTaskService} task.
@@ -82,6 +110,8 @@ public class CreateManagementVmTaskService extends StatefulService {
       WAIT_FOR_VM_CREATION,
       UPDATE_METADATA,
       WAIT_FOR_METADATA_UPDATE,
+      ATTACH_ISO,
+      WAIT_FOR_ATTACH_ISO,
     }
 
     /**
@@ -131,6 +161,12 @@ public class CreateManagementVmTaskService extends StatefulService {
     public String vmServiceLink;
 
     /**
+     * This value represents the NTP endpoint for the current deployment.
+     */
+    @Immutable
+    public String ntpEndpoint;
+
+    /**
      * This value represents the delay, in milliseconds, to use when polling a child task.
      */
     @Positive
@@ -167,6 +203,36 @@ public class CreateManagementVmTaskService extends StatefulService {
      */
     @DefaultInteger(value = 0)
     public Integer updateVmMetadataPollCount;
+
+    /**
+     * This value represents the path on the local file system of the working directory which is
+     * used by the current task to generate the container configuration information for the VM. It
+     * is informational only.
+     */
+    @WriteOnce
+    public String serviceConfigDirectory;
+
+    /**
+     * This value represents the path on the local file system of the configuration ISO which was
+     * generated for the VM. It is informational only.
+     */
+    @WriteOnce
+    public String vmConfigDirectory;
+
+    /**
+     * This value represents the ID of the API-level task to upload and attach the settings ISO to
+     * the VM.
+     */
+    @WriteOnce
+    public String attachIsoTaskId;
+
+    /**
+     * This value represents the number of polling iterations which have been performed by the
+     * current task while waiting for the settings ISO to be attached to the VM. It is informational
+     * only.
+     */
+    @DefaultInteger(value = 0)
+    public Integer attachIsoPollCount;
   }
 
   public CreateManagementVmTaskService() {
@@ -258,6 +324,8 @@ public class CreateManagementVmTaskService extends StatefulService {
           case WAIT_FOR_VM_CREATION:
           case UPDATE_METADATA:
           case WAIT_FOR_METADATA_UPDATE:
+          case ATTACH_ISO:
+          case WAIT_FOR_ATTACH_ISO:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -285,6 +353,12 @@ public class CreateManagementVmTaskService extends StatefulService {
         break;
       case WAIT_FOR_METADATA_UPDATE:
         processWaitForMetadataUpdateSubStage(currentState);
+        break;
+      case ATTACH_ISO:
+        processAttachIsoSubStage(currentState);
+        break;
+      case WAIT_FOR_ATTACH_ISO:
+        processWaitForAttachIsoSubStage(currentState);
         break;
     }
   }
@@ -554,9 +628,7 @@ public class CreateManagementVmTaskService extends StatefulService {
     OperationJoin
         .create(containerDocuments.values().stream()
             .map((containerDocument) -> Utils.fromJson(containerDocument, ContainerService.State.class))
-            .map((containerState) -> containerState.containerTemplateServiceLink)
-            .distinct()
-            .map((templateServiceLink) -> Operation.createGet(this, templateServiceLink)))
+            .map((containerState) -> Operation.createGet(this, containerState.containerTemplateServiceLink)))
         .setCompletion(
             (ops, exs) -> {
               if (exs != null && !exs.isEmpty()) {
@@ -580,7 +652,7 @@ public class CreateManagementVmTaskService extends StatefulService {
   private Map<String, String> getPortMappings(ContainerTemplateService.State templateState) {
     return templateState.portBindings.values().stream()
         .collect(Collectors.toMap(
-            (portBinding) -> CONTAINERS_METADATA_PREFIX + portBinding,
+            (portBinding) -> "CONTAINER_" + portBinding,
             (portBinding) -> templateState.name));
   }
 
@@ -619,7 +691,7 @@ public class CreateManagementVmTaskService extends StatefulService {
         sendStageProgressPatch(patchState);
         break;
       case "COMPLETED":
-        sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.ATTACH_ISO);
         break;
       case "ERROR":
         throw new IllegalStateException(ApiUtils.getErrors(task));
@@ -668,6 +740,354 @@ public class CreateManagementVmTaskService extends StatefulService {
             currentState.taskPollDelay, TimeUnit.MILLISECONDS);
         break;
       case "COMPLETED":
+        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.ATTACH_ISO);
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  //
+  // ATTACH_ISO sub-stage routines
+  //
+
+  private void processAttachIsoSubStage(State currentState) {
+    if (currentState.serviceConfigDirectory == null) {
+      processContainerConfig(currentState);
+    } else if (currentState.vmConfigDirectory == null) {
+      processConfigIso(currentState);
+    } else {
+      callAttachIso(currentState);
+    }
+  }
+
+  private void processContainerConfig(State currentState) {
+
+    QueryTask containerQueryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerService.State.class)
+            .addFieldClause(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK, currentState.vmServiceLink)
+            .build())
+        .addOptions(EnumSet.of(
+            QueryTask.QuerySpecification.QueryOption.BROADCAST,
+            QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(containerQueryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                processContainerConfig(currentState, o.getBody(QueryTask.class).results.documents);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processContainerConfig(State currentState, Map<String, Object> containerDocuments) {
+
+    Map<String, ContainerService.State> containerStates = containerDocuments.entrySet().stream()
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            (entry) -> Utils.fromJson(entry.getValue(), ContainerService.State.class)));
+
+    Map<String, Operation> templateOperationMap = containerStates.entrySet().stream()
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            (entry) -> Operation.createGet(this, entry.getValue().containerTemplateServiceLink)));
+
+    OperationJoin
+        .create(templateOperationMap.values())
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
+
+              try {
+                processContainerConfig(currentState, containerStates, templateOperationMap.keySet().stream()
+                    .collect(Collectors.toMap(
+                        (containerServiceLink) -> containerServiceLink,
+                        (containerServiceLink) -> ops.get(templateOperationMap.get(containerServiceLink).getId())
+                            .getBody(ContainerTemplateService.State.class))));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+        .sendWith(this);
+  }
+
+  private void processContainerConfig(State currentState,
+                                      Map<String, ContainerService.State> containerStates,
+                                      Map<String, ContainerTemplateService.State> templateStates) throws Throwable {
+
+    Path serviceConfigDirectoryPath = Files.createTempDirectory("mustache-" + currentState.vmId).toAbsolutePath();
+    ServiceUtils.logInfo(this, "Created service config directory: " + serviceConfigDirectoryPath.toString());
+    ServiceConfigurator serviceConfigurator = HostUtils.getServiceConfiguratorFactory(this).create();
+    serviceConfigurator.copyDirectory(HostUtils.getDeployerContext(this).getConfigDirectory(),
+        serviceConfigDirectoryPath.toString());
+
+    for (ContainerService.State containerState : containerStates.values()) {
+      Map<String, Object> dynamicParameters = new HashMap<>();
+      if (containerState.dynamicParameters != null) {
+        dynamicParameters.putAll(containerState.dynamicParameters);
+      }
+
+      dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_LOADBALANCER_SERVERS,
+          (k, v) -> new Gson().fromJson(v.toString(), loadBalancerTypeToken.getType()));
+      dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_HTTP_SERVERS,
+          (k, v) -> new Gson().fromJson(v.toString(), loadBalancerTypeToken.getType()));
+      dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_HTTPS_SERVERS,
+          (k, v) -> new Gson().fromJson(v.toString(), loadBalancerTypeToken.getType()));
+      dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM,
+          (k, v) -> new Gson().fromJson(v.toString(), zookeeperTypeToken.getType()));
+
+      serviceConfigurator.applyDynamicParameters(serviceConfigDirectoryPath.toString(),
+          ContainersConfig.ContainerType.valueOf(templateStates.get(containerState.documentSelfLink).name),
+          dynamicParameters);
+    }
+
+    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.ATTACH_ISO, null);
+    patchState.serviceConfigDirectory = serviceConfigDirectoryPath.toString();
+    TaskUtils.sendSelfPatch(this, patchState);
+  }
+
+  private void processConfigIso(State currentState) {
+
+    sendRequest(Operation
+        .createGet(this, currentState.vmServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                processConfigIso(currentState, o.getBody(VmService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processConfigIso(State currentState, VmService.State vmState) {
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(vmState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                processConfigIso(currentState, vmState, o.getBody(HostService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processConfigIso(State currentState,
+                                VmService.State vmState,
+                                HostService.State hostState)
+      throws Throwable {
+
+    checkState(hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_GATEWAY));
+    checkState(hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP));
+    checkState(hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_NETMASK));
+    checkState(hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_DNS_SERVER));
+
+    String gateway = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_GATEWAY);
+    String ipAddress = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP);
+    String netmask = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_NETMASK);
+    String dnsEndpointList = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_DNS_SERVER);
+    if (!Strings.isNullOrEmpty(dnsEndpointList)) {
+      dnsEndpointList = Stream.of(dnsEndpointList.split(","))
+          .map((dnsServer) -> "DNS=" + dnsServer + "\n")
+          .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append).toString();
+    }
+
+    DeployerContext deployerContext = HostUtils.getDeployerContext(this);
+    String scriptDirectory = deployerContext.getScriptDirectory();
+
+    String userDataConfigFileContent =
+        new String(Files.readAllBytes(Paths.get(scriptDirectory, "user-data.template")), StandardCharsets.UTF_8)
+            .replace("$GATEWAY", gateway)
+            .replace("$ADDRESS", new SubnetUtils(ipAddress, netmask).getInfo().getCidrSignature())
+            .replace("$DNS", dnsEndpointList);
+
+    if (currentState.ntpEndpoint != null) {
+      userDataConfigFileContent = userDataConfigFileContent.replace("$NTP", currentState.ntpEndpoint);
+    }
+
+    String metadataConfigFileContent =
+        new String(Files.readAllBytes(Paths.get(scriptDirectory, "meta-data.template")), StandardCharsets.UTF_8)
+            .replace("$INSTANCE_ID", vmState.name)
+            .replace("$LOCAL_HOSTNAME", vmState.name);
+
+    Path vmConfigDirectoryPath = Files.createTempDirectory("iso-" + currentState.vmId).toAbsolutePath();
+    Path userDataConfigFilePath = vmConfigDirectoryPath.resolve("user-data.yml");
+    Files.write(userDataConfigFilePath, userDataConfigFileContent.getBytes(StandardCharsets.UTF_8));
+    Path metadataConfigFilePath = vmConfigDirectoryPath.resolve("meta-data.yml");
+    Files.write(metadataConfigFilePath, metadataConfigFileContent.getBytes(StandardCharsets.UTF_8));
+    Path isoFilePath = vmConfigDirectoryPath.resolve("config.iso");
+
+    List<String> command = new ArrayList<>();
+    command.add("./" + SCRIPT_NAME);
+    command.add(isoFilePath.toAbsolutePath().toString());
+    command.add(userDataConfigFilePath.toAbsolutePath().toString());
+    command.add(metadataConfigFilePath.toAbsolutePath().toString());
+    command.add(currentState.serviceConfigDirectory);
+
+    File scriptLogFile = new File(deployerContext.getScriptLogDirectory(), SCRIPT_NAME + "-" + vmState.vmId + "-" +
+        ServiceUtils.getIDFromDocumentSelfLink(currentState.documentSelfLink) + ".log");
+
+    ScriptRunner scriptRunner = new ScriptRunner.Builder(command, deployerContext.getScriptTimeoutSec())
+        .directory(deployerContext.getScriptDirectory())
+        .redirectOutput(ProcessBuilder.Redirect.to(scriptLogFile))
+        .build();
+
+    ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(scriptRunner);
+    HostUtils.getListeningExecutorService(this).submit(futureTask);
+    Futures.addCallback(futureTask,
+        new FutureCallback<Integer>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull Integer result) {
+            try {
+              if (result != 0) {
+                logScriptErrorAndFail(currentState, result, scriptLogFile);
+              } else {
+                State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.ATTACH_ISO, null);
+                patchState.vmConfigDirectory = vmConfigDirectoryPath.toAbsolutePath().toString();
+                TaskUtils.sendSelfPatch(CreateManagementVmTaskService.this, patchState);
+              }
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        });
+  }
+
+  private void logScriptErrorAndFail(State currentState, Integer result, File scriptLogFile) throws Throwable {
+    ServiceUtils.logSevere(this, SCRIPT_NAME + " returned " + result.toString());
+    ServiceUtils.logSevere(this, "Script output: " + FileUtils.readFileToString(scriptLogFile));
+    failTask(new IllegalStateException("Creating the configuration ISO for VM " + currentState.vmId +
+        " failed with exit code " + result.toString()));
+  }
+
+  private void callAttachIso(State currentState) {
+
+    //
+    // N.B. The uploadAndAttachIso call is performed on a separate thread because it is blocking.
+    // This behavior can be removed if and when an asynchronous version of this call is added to
+    // the Java API client library.
+    //
+
+    ListenableFutureTask<Task> futureTask = ListenableFutureTask.create(
+        () -> HostUtils.getApiClient(this)
+            .getVmApi()
+            .uploadAndAttachIso(currentState.vmId,
+                Paths.get(currentState.vmConfigDirectory, "config.iso").toAbsolutePath().toString()));
+
+    HostUtils.getListeningExecutorService(this).submit(futureTask);
+    Futures.addCallback(futureTask,
+        new FutureCallback<Task>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+            try {
+              processAttachIsoTaskResult(currentState, task);
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        });
+  }
+
+  private void processAttachIsoTaskResult(State currentState, Task task) throws Throwable {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_ATTACH_ISO, null);
+        patchState.attachIsoTaskId = task.getId();
+        patchState.attachIsoPollCount = 1;
+        sendStageProgressPatch(patchState);
+        break;
+      case "COMPLETED":
+        FileUtils.deleteDirectory(Paths.get(currentState.serviceConfigDirectory).toFile());
+        FileUtils.deleteDirectory(Paths.get(currentState.vmConfigDirectory).toFile());
+        sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  //
+  // WAIT_FOR_ATTACH_ISO sub-stage routines
+  //
+
+  private void processWaitForAttachIsoSubStage(State currentState) throws Throwable {
+
+    HostUtils.getApiClient(this)
+        .getTasksApi()
+        .getTaskAsync(currentState.attachIsoTaskId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processWaitForAttachIsoSubStage(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+  }
+
+  private void processWaitForAttachIsoSubStage(State currentState, Task task) throws Throwable {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        getHost().schedule(
+            () -> {
+              State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_ATTACH_ISO, null);
+              patchState.attachIsoPollCount = currentState.attachIsoPollCount + 1;
+              TaskUtils.sendSelfPatch(this, patchState);
+            },
+            currentState.taskPollDelay, TimeUnit.MILLISECONDS);
+        break;
+      case "COMPLETED":
+        FileUtils.deleteDirectory(Paths.get(currentState.serviceConfigDirectory).toFile());
+        FileUtils.deleteDirectory(Paths.get(currentState.vmConfigDirectory).toFile());
         sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
         break;
       case "ERROR":

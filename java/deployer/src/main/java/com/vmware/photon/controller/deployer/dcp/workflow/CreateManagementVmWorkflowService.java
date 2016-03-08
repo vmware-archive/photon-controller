@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -25,10 +24,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
-import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.WaitForDockerTaskFactoryService;
@@ -43,17 +39,13 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import com.google.common.util.concurrent.FutureCallback;
-import org.apache.commons.net.util.SubnetUtils;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
 import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.HashMap;
 
 /**
  * This class implements a DCP service representing the creation of a management vm.
@@ -75,7 +67,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
      */
     public enum SubStage {
       CREATE_VM,
-      CREATE_ISO,
       START_VM,
       WAIT_FOR_DOCKER,
     }
@@ -112,11 +103,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
      */
     @Immutable
     public Integer childPollInterval;
-
-    /**
-     * The iso filename of the created network iso.
-     */
-    public String isoFile;
 
     /**
      * This value represents the interval, in milliseconds, to use when polling
@@ -221,7 +207,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
     if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
       checkState(null != currentState.taskState.subStage, "Sub-stage cannot be null in STARTED stage.");
       switch (currentState.taskState.subStage) {
-        case CREATE_ISO:
         case CREATE_VM:
         case START_VM:
         case WAIT_FOR_DOCKER:
@@ -274,7 +259,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
         ServiceUtils.logInfo(this, "Moving to stage %s:%s", patchState.taskState.stage, patchState.taskState.subStage);
       }
       startState.taskState = patchState.taskState;
-      startState.isoFile = patchState.isoFile;
     }
     return startState;
   }
@@ -288,9 +272,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
     switch (currentState.taskState.subStage) {
       case CREATE_VM:
         createVm(currentState);
-        break;
-      case CREATE_ISO:
-        getVmStateToCreateIso(currentState);
         break;
       case START_VM:
         getVmStateToStartVm(currentState);
@@ -312,7 +293,7 @@ public class CreateManagementVmWorkflowService extends StatefulService {
         new FutureCallback<CreateManagementVmTaskService.State>() {
           @Override
           public void onSuccess(@Nullable CreateManagementVmTaskService.State result) {
-            sendProgressPatch(result.taskState, TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_ISO);
+            sendProgressPatch(result.taskState, TaskState.TaskStage.STARTED, TaskState.SubStage.START_VM);
           }
 
           @Override
@@ -343,172 +324,13 @@ public class CreateManagementVmWorkflowService extends StatefulService {
     state.taskState = new CreateManagementVmTaskService.TaskState();
     state.taskState.stage = TaskState.TaskStage.CREATED;
     state.vmServiceLink = currentState.vmServiceLink;
+    state.ntpEndpoint = currentState.ntpEndpoint;
     state.taskPollDelay = currentState.taskPollDelay;
     return state;
   }
 
   /**
-   * Gets the {@link VmService.State} object for the vm being created and proceeds to creating the ISO.
-   *
-   * @param currentState
-   */
-  private void getVmStateToCreateIso(final State currentState) {
-    getVmState(
-        currentState,
-        new FutureCallback<VmService.State>() {
-          @Override
-          public void onSuccess(@Nullable VmService.State state) {
-            getHostStateToCreateIso(currentState, state);
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        });
-  }
-
-  /**
-   * Gets the {@link HostService.State} object for the vm being created and proceeds to creating the ISO.
-   *
-   * @param currentState
-   * @param vmState
-   */
-  private void getHostStateToCreateIso(final State currentState, final VmService.State vmState) {
-
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(vmState.hostServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
-
-                  try {
-                    HostService.State hostState = completedOp.getBody(HostService.State.class);
-                    createIso(currentState, vmState, hostState);
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            ));
-  }
-
-  /**
-   * Creats the network iso.
-   *
-   * @param currentState Supplies the current state object.
-   */
-  private void createIso(
-      final State currentState, final VmService.State vmState, final HostService.State hostState) {
-
-    FutureCallback<CreateIsoTaskService.State> callback = new FutureCallback<CreateIsoTaskService.State>() {
-      @Override
-      public void onSuccess(@Nullable CreateIsoTaskService.State result) {
-        sendProgressPatch(result.taskState, TaskState.TaskStage.STARTED, TaskState.SubStage.START_VM);
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-    CreateIsoTaskService.State startState = createCreateIsoTaskServiceStartState(currentState, vmState, hostState);
-
-    TaskUtils.startTaskAsync(
-        this,
-        CreateIsoTaskFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        CreateIsoTaskService.State.class,
-        currentState.taskPollDelay,
-        callback);
-  }
-
-  /**
-   * This method creates a valid start state for the {@link CreateIsoTaskService}.
-   *
-   * @param currentState
-   * @param vmState
-   * @param hostState
-   * @return
-   */
-  private CreateIsoTaskService.State createCreateIsoTaskServiceStartState(
-      State currentState, final VmService.State vmState, final HostService.State hostState) {
-    CreateIsoTaskService.State state = new CreateIsoTaskService.State();
-    state.taskState = new com.vmware.xenon.common.TaskState();
-    state.taskState.stage = TaskState.TaskStage.CREATED;
-    state.vmId = vmState.vmId;
-
-    state.userDataTemplate = createCloudInitUserDataTemplate(currentState, hostState);
-    state.metaDataTemplate = createCloudInitMetaDataTemplate(vmState);
-    state.placeConfigFilesInISO = true;
-
-    return state;
-  }
-
-  /**
-   * Creates the template for cloud init's user-data file that is later on used by {@link CreateIsoTaskService}.
-   *
-   * @param currentState
-   * @param hostState    Supplies the {@link HostService.State} object.
-   * @return
-   * @throws IOException
-   */
-  private CreateIsoTaskService.FileTemplate createCloudInitUserDataTemplate(
-      State currentState, HostService.State hostState) {
-
-    CreateIsoTaskService.FileTemplate template = new CreateIsoTaskService.FileTemplate();
-    template.parameters = new HashMap();
-
-    DeployerContext deployerContext = HostUtils.getDeployerContext(this);
-    template.filePath = Paths.get(deployerContext.getScriptDirectory(), "user-data.template").toString();
-
-    String gateway = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_GATEWAY);
-    template.parameters.put("$GATEWAY", gateway);
-
-    String ip = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP);
-    String netMask = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_NETMASK);
-    template.parameters.put("$ADDRESS", new SubnetUtils(ip, netMask).getInfo().getCidrSignature());
-
-    String dnsList = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_DNS_SERVER);
-    StringBuilder dnsServerBuilder = new StringBuilder();
-    if (!Strings.isNullOrEmpty(dnsList)) {
-      for (String dnsServer : dnsList.split(",")) {
-        dnsServerBuilder.append("DNS=");
-        dnsServerBuilder.append(dnsServer);
-        dnsServerBuilder.append("\n");
-      }
-    }
-    template.parameters.put("$DNS", dnsServerBuilder.toString());
-    template.parameters.put("$NTP", currentState.ntpEndpoint);
-    return template;
-  }
-
-  /**
-   * Creates the template for cloud init's meta-data file that is later on used by {@link CreateIsoTaskService}.
-   *
-   * @param vmState Supplies the {@link VmService.State} object.
-   * @return
-   * @throws IOException
-   */
-  private CreateIsoTaskService.FileTemplate createCloudInitMetaDataTemplate(
-      VmService.State vmState) {
-
-    CreateIsoTaskService.FileTemplate template = new CreateIsoTaskService.FileTemplate();
-    template.parameters = new HashMap();
-
-    DeployerContext deployerContext = HostUtils.getDeployerContext(this);
-    template.filePath = Paths.get(deployerContext.getScriptDirectory(), "meta-data.template").toString();
-
-    template.parameters.put("$INSTANCE_ID", vmState.name);
-    template.parameters.put("$LOCAL_HOSTNAME", vmState.name);
-    return template;
-  }
-
-  /**
+   * /**
    * Gets the {@link VmService.State} object for the vm being started and proceeds to starting the VM.
    *
    * @param currentState
