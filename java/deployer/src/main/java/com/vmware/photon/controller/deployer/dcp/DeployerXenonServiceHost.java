@@ -63,7 +63,6 @@ import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskFactoryServ
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.WaitForDockerTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AllocateResourcesWorkflowFactoryService;
@@ -175,7 +174,6 @@ public class DeployerXenonServiceHost
       UploadImageTaskFactoryService.class,
       UploadVibTaskFactoryService.class,
       ValidateHostTaskFactoryService.class,
-      WaitForDockerTaskFactoryService.class,
       TaskSchedulerServiceFactory.class,
 
       // Workflow services
