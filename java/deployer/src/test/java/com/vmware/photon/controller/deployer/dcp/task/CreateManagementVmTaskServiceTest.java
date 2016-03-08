@@ -44,6 +44,8 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
+import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
@@ -400,6 +402,8 @@ public class CreateManagementVmTaskServiceTest {
     private ApiClientFactory apiClientFactory;
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerConfig deployerConfig;
+    private DockerProvisioner dockerProvisioner;
+    private DockerProvisionerFactory dockerProvisionerFactory;
     private ListeningExecutorService listeningExecutorService;
     private ProjectApi projectApi;
     private ServiceConfiguratorFactory serviceConfiguratorFactory;
@@ -414,6 +418,7 @@ public class CreateManagementVmTaskServiceTest {
       apiClientFactory = mock(ApiClientFactory.class);
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       deployerConfig = ConfigBuilder.build(DeployerConfig.class, this.getClass().getResource("/config.yml").getPath());
+      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       TestHelper.setContainersConfig(deployerConfig);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
@@ -422,6 +427,7 @@ public class CreateManagementVmTaskServiceTest {
           .apiClientFactory(apiClientFactory)
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
           .deployerContext(deployerConfig.getDeployerContext())
+          .dockerProvisionerFactory(dockerProvisionerFactory)
           .hostCount(1)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
@@ -486,6 +492,15 @@ public class CreateManagementVmTaskServiceTest {
 
       doReturn(new ServiceConfigurator()).when(serviceConfiguratorFactory).create();
 
+      dockerProvisioner = mock(DockerProvisioner.class);
+      doReturn(dockerProvisioner).when(dockerProvisionerFactory).create(anyString());
+
+      doThrow(new RuntimeException("Runtime exception during first DockerProvisioner.getInfo call"))
+          .doThrow(new RuntimeException("Runtime exception during the second DockerProvisioner.getInfo call"))
+          .doReturn("DOCKER_STATUS")
+          .when(dockerProvisioner)
+          .getInfo();
+
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, FlavorService.State.class);
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
       TestHelper.assertNoServicesOfType(testEnvironment, ContainerService.State.class);
@@ -523,6 +538,7 @@ public class CreateManagementVmTaskServiceTest {
       startState.vmServiceLink = vmState.documentSelfLink;
       startState.controlFlags = null;
       startState.taskPollDelay = 10;
+      startState.maxDockerPollIterations = 3;
 
       FileUtils.copyDirectory(Paths.get(this.getClass().getResource("/scripts/").getPath()).toFile(),
           Paths.get(deployerConfig.getDeployerContext().getScriptDirectory()).toFile());
@@ -573,6 +589,7 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.attachIsoPollCount, is(3));
       assertThat(finalState.startVmTaskId, is("START_VM_TASK_ID"));
       assertThat(finalState.startVmPollCount, is(3));
+      assertThat(finalState.dockerPollIterations, is(3));
 
       ArgumentCaptor<VmCreateSpec> createSpecCaptor = ArgumentCaptor.forClass(VmCreateSpec.class);
 
@@ -647,6 +664,10 @@ public class CreateManagementVmTaskServiceTest {
           .when(vmApi)
           .performStartOperationAsync(anyString(), Matchers.<FutureCallback<Task>>any());
 
+      doReturn("DOCKER_STATUS")
+          .when(dockerProvisioner)
+          .getInfo();
+
       CreateManagementVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateManagementVmTaskFactoryService.SELF_LINK,
@@ -665,6 +686,7 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.vmConfigDirectory, notNullValue());
       assertThat(finalState.startVmTaskId, nullValue());
       assertThat(finalState.startVmPollCount, is(0));
+      assertThat(finalState.dockerPollIterations, is(1));
 
       ArgumentCaptor<VmCreateSpec> createSpecCaptor = ArgumentCaptor.forClass(VmCreateSpec.class);
 
@@ -1154,6 +1176,36 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.vmConfigDirectory, notNullValue());
       assertThat(finalState.startVmTaskId, is("START_VM_TASK_ID"));
       assertThat(finalState.startVmPollCount, is(1));
+    }
+
+    @Test
+    public void testWaitForDockerFailure() throws Throwable {
+
+      doThrow(new RuntimeException("Runtime exception during DockerProvisioner getInfo call"))
+          .when(dockerProvisioner)
+          .getInfo();
+
+      CreateManagementVmTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateManagementVmTaskFactoryService.SELF_LINK,
+              startState,
+              CreateManagementVmTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message,
+          containsString("The docker endpoint on VM ipAddress failed to become ready after 3 polling iterations"));
+      assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
+      assertThat(finalState.createVmPollCount, is(3));
+      assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
+      assertThat(finalState.updateVmMetadataPollCount, is(3));
+      assertThat(finalState.serviceConfigDirectory, notNullValue());
+      assertThat(finalState.vmConfigDirectory, notNullValue());
+      assertThat(finalState.startVmTaskId, is("START_VM_TASK_ID"));
+      assertThat(finalState.startVmPollCount, is(3));
+      assertThat(finalState.dockerPollIterations, is(3));
     }
   }
 
