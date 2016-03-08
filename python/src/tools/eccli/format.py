@@ -28,6 +28,9 @@ def print_response(response):
     print "\n"
 
 
-def print_result(result):
-    print "\n\033[33m***** %s *****\033[37m" % result
-    print "\n"
+def print_result(result, margin=True):
+    if margin:
+        print "\n"
+    print "\033[33m***** %s *****\033[37m" % result
+    if margin:
+        print "\n"
