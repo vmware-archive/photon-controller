@@ -23,6 +23,8 @@ public class ServiceUriPaths extends com.vmware.xenon.services.common.ServiceUri
 
   public static final String CLOUDSTORE_ROOT = SERVICES_ROOT + "/cloudstore";
 
+  public static final String CLOUDSTORE_GROOMERS_ROOT = CLOUDSTORE_ROOT + "/groomers";
+
   public static final String CLUSTERMANAGER_ROOT = SERVICES_ROOT + "/clustermanager";
 
   public static final String BARE_METAL_PROVISIONER_ROOT = SERVICES_ROOT + "/bmp";

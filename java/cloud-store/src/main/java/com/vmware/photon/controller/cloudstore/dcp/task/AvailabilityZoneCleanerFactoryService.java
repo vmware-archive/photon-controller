@@ -22,7 +22,8 @@ import com.vmware.xenon.common.Service;
  */
 public class AvailabilityZoneCleanerFactoryService extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/availability-zone-entity-cleaners";
+  public static final String SELF_LINK =
+      ServiceUriPaths.CLOUDSTORE_GROOMERS_ROOT + "/availability-zone-entity-cleaners";
 
   public AvailabilityZoneCleanerFactoryService() {
     super(AvailabilityZoneCleanerService.State.class);
