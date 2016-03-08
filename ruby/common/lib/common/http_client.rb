@@ -155,6 +155,36 @@ module EsxCloud
       HttpResponse.new(response.status, response.body, response.headers)
     end
 
+
+    # @param [String] path
+    # @param [Hash] params
+    # @param [Hash] headers
+
+    def getAll(path, params = nil, headers = {})
+      completeList = []
+
+      response = get(path, params, headers)
+      return HttpResponse.new(response.status, response.body, response.headers) unless response.code == 200
+
+      body = JSON.parse(response.body)
+      completeList.concat(body["items"])
+
+      while body["nextPageLink"] != nil && body["nextPageLink"] != ""
+        response = get(body["nextPageLink"], nil, headers)
+        return HttpResponse.new(response.status, response.body, response.headers) unless response.code == 200
+
+        body = JSON.parse(response.body)
+        completeList.concat(body["items"])
+      end
+
+      resourceList = {
+          "items" => completeList,
+          "nextPageLink" => nil,
+          "previousPageLink" => nil,
+      }
+      HttpResponse.new(200, resourceList.to_json, response.headers)
+    end
+
     # @param [String] path
     # @param [Hash] params
     # @param [Hash] headers
