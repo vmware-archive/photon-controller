@@ -13,10 +13,6 @@
 
 package com.vmware.photon.controller.provisioner;
 
-import com.vmware.photon.controller.common.clients.AgentControlClient;
-import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
-import com.vmware.photon.controller.common.clients.HostClient;
-import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
@@ -43,14 +39,6 @@ public class ProvisionerModule extends AbstractModule {
     bindConstant().annotatedWith(ProvisionerConfig.Port.class).to(provisionerConfig.getPort());
     bindConstant().annotatedWith(ProvisionerConfig.StoragePath.class).to(provisionerConfig.getStoragePath());
     bind(BuildInfo.class).toInstance(BuildInfo.get(ProvisionerConfig.class));
-
-    install(new FactoryModuleBuilder()
-        .implement(HostClient.class, HostClient.class)
-        .build(HostClientFactory.class));
-
-    install(new FactoryModuleBuilder()
-        .implement(AgentControlClient.class, AgentControlClient.class)
-        .build(AgentControlClientFactory.class));
 
     install(new FactoryModuleBuilder()
         .implement(ServiceConfig.class, ServiceConfig.class)

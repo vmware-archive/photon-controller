@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 public class Main {
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
-  private static final long retryIntervalMsec = TimeUnit.SECONDS.toMillis(30);
+  private static final long retryIntervalMilliSec = TimeUnit.SECONDS.toMillis(30);
 
   public static void main(String[] args) throws Throwable {
     LoggingFactory.bootstrap();
@@ -107,7 +107,7 @@ public class Main {
                                             int port) {
     InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress, port);
     ServiceNode serviceNode = serviceNodeFactory.createSimple("provisioner", registrationSocketAddress);
-    ServiceNodeUtils.joinService(serviceNode, retryIntervalMsec);
+    ServiceNodeUtils.joinService(serviceNode, retryIntervalMilliSec);
   }
 
 }
