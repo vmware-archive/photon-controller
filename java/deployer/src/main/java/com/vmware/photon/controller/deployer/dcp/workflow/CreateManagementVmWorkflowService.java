@@ -25,8 +25,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskService;
-import com.vmware.photon.controller.deployer.dcp.task.WaitForDockerTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.WaitForDockerTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -61,7 +59,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
      */
     public enum SubStage {
       CREATE_VM,
-      WAIT_FOR_DOCKER,
     }
   }
 
@@ -201,7 +198,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
       checkState(null != currentState.taskState.subStage, "Sub-stage cannot be null in STARTED stage.");
       switch (currentState.taskState.subStage) {
         case CREATE_VM:
-        case WAIT_FOR_DOCKER:
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage.toString());
@@ -265,9 +261,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
       case CREATE_VM:
         createVm(currentState);
         break;
-      case WAIT_FOR_DOCKER:
-        waitForDocker(currentState);
-        break;
     }
   }
 
@@ -282,7 +275,7 @@ public class CreateManagementVmWorkflowService extends StatefulService {
         new FutureCallback<CreateManagementVmTaskService.State>() {
           @Override
           public void onSuccess(@Nullable CreateManagementVmTaskService.State result) {
-            sendProgressPatch(result.taskState, TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER);
+            sendProgressPatch(result.taskState, TaskState.TaskStage.FINISHED, null);
           }
 
           @Override
@@ -316,41 +309,6 @@ public class CreateManagementVmWorkflowService extends StatefulService {
     state.ntpEndpoint = currentState.ntpEndpoint;
     state.taskPollDelay = currentState.taskPollDelay;
     return state;
-  }
-
-  /**
-   * This method uses the {@link WaitForDockerTaskService} to wait for Docker to initialize on the VM.
-   *
-   * @param currentState Supplies the current state object.
-   */
-  private void waitForDocker(State currentState) {
-
-    FutureCallback<WaitForDockerTaskService.State> futureCallback =
-        new FutureCallback<WaitForDockerTaskService.State>() {
-          @Override
-          public void onSuccess(@Nullable WaitForDockerTaskService.State result) {
-            sendProgressPatch(result.taskState, TaskState.TaskStage.FINISHED, null);
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-
-    WaitForDockerTaskService.State startState = new WaitForDockerTaskService.State();
-    startState.vmServiceLink = currentState.vmServiceLink;
-    startState.delayInterval = currentState.childPollInterval;
-    startState.pollInterval = currentState.childPollInterval;
-
-    TaskUtils.startTaskAsync(
-        this,
-        WaitForDockerTaskFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        WaitForDockerTaskService.State.class,
-        currentState.taskPollDelay,
-        futureCallback);
   }
 
   /**
