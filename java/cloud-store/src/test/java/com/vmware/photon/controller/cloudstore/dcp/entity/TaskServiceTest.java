@@ -18,7 +18,10 @@ import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.joda.time.DateTime;
 import org.testng.annotations.AfterMethod;
@@ -34,6 +37,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 
 /**
  * Tests {@link TaskService}.
@@ -265,6 +269,167 @@ public class TaskServiceTest {
       assertThat(taskState.steps.get(0).warnings.get(0).code,
           is(testState.steps.get(0).warnings.get(0).code));
       assertThat(taskState.steps.get(0).endTime, is(stepUpdate.step.endTime));
+    }
+  }
+
+  /**
+   * Tests for the handleDelete method.
+   */
+  public class HandleDeleteTest {
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      service = new TaskService();
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          TaskServiceFactory.SELF_LINK,
+          10, 10);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient.start();
+
+      testState = new TaskService.State();
+      testState.entityId = UUID.randomUUID().toString();
+      testState.entityKind = UUID.randomUUID().toString();
+
+      host.startServiceSynchronously(new TaskServiceFactory(), null);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      service = null;
+      dcpRestClient.stop();
+    }
+
+    /**
+     * Test expiration of deleted document.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
+      testState.documentExpirationTimeMicros = Long.MAX_VALUE;
+      Operation result = dcpRestClient.post(TaskServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      TaskService.State createdState = result.getBody(TaskService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(testState.documentExpirationTimeMicros));
+
+      TaskService.State savedState =
+          host.getServiceState(TaskService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(testState.documentExpirationTimeMicros));
+
+      TaskService.State deleteState = new TaskService.State();
+      deleteState.documentExpirationTimeMicros = 0;
+      result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(TaskService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 1;
+            }
+          });
+    }
+
+    /**
+     * Test expiration of deleted document.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
+      Operation result = dcpRestClient.post(TaskServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      TaskService.State createdState = result.getBody(TaskService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(0L));
+
+      TaskService.State savedState =
+          host.getServiceState(TaskService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(0L));
+
+      TaskService.State deleteState = new TaskService.State();
+      deleteState.documentExpirationTimeMicros = Long.MAX_VALUE;
+      result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(TaskService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 1;
+            }
+          });
+    }
+
+    /**
+     * Test expiration of deleted document.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDeleteWithDefaultExpiration() throws Throwable {
+      Operation result = dcpRestClient.post(TaskServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      TaskService.State createdState = result.getBody(TaskService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(0L));
+
+      TaskService.State savedState =
+          host.getServiceState(TaskService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(0L));
+
+      result = dcpRestClient.delete(createdState.documentSelfLink, new EntityLockService.State());
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(TaskService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 0;
+            }
+          });
     }
   }
 }

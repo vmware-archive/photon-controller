@@ -136,6 +136,32 @@ public class TaskService extends StatefulService {
     }
   }
 
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.logInfo(this, "Deleting TaskService %s", getSelfLink());
+    State currentState = getState(deleteOperation);
+    if (currentState.documentExpirationTimeMicros <= 0) {
+      currentState.documentExpirationTimeMicros = ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS;
+    }
+
+    if (deleteOperation.hasBody()) {
+      State deleteState = deleteOperation.getBody(State.class);
+      if (deleteState.documentExpirationTimeMicros > 0) {
+        currentState.documentExpirationTimeMicros = deleteState.documentExpirationTimeMicros;
+      }
+    }
+
+    if (currentState.documentExpirationTimeMicros > 0) {
+      ServiceUtils.logInfo(this,
+          "Expiring TaskService %s in %s micros",
+          getSelfLink(),
+          currentState.documentExpirationTimeMicros);
+    }
+
+    setState(deleteOperation, currentState);
+    deleteOperation.complete();
+  }
+
   /**
    * Validate the service state for coherence.
    *
