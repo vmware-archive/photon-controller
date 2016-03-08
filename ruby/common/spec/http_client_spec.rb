@@ -149,6 +149,57 @@ describe EsxCloud::HttpClient do
     response.get_header("k2").should == "v2"
   end
 
+  it "get all through pagination" do
+    first_page = {
+        "items" => ["item1", "item2"],
+        "nextPageLink" => "/next-page",
+        "previousPageLink" => nil,
+    }
+    first_page_response = double(Faraday::Response,
+                                 :status => 200,
+                                 :body => first_page.to_json,
+                                 :headers => {"k2" => "v2"})
+
+    first_page_request = double
+    expect(@conn).to receive(:get).and_yield(first_page_request).and_return(first_page_response)
+    expect(first_page_request).to receive(:url).with("/path")
+    expect(first_page_request).to receive(:headers=)
+                                      .with("k1" => "v1",
+                                            "Content-Type" => "application/json",
+                                            "Accept" => "application/json")
+    expect(first_page_request).to receive(:params=).with("foo" => "bar")
+
+    second_page = {
+        "items" => ["item3"],
+        "nextPageLink" => nil,
+        "previousPageLink" => nil,
+    }
+    second_page_response = double(Faraday::Response,
+                                 :status => 200,
+                                 :body => second_page.to_json,
+                                 :headers => {"k2" => "v2"})
+
+    second_page_request = double
+    expect(@conn).to receive(:get).and_yield(second_page_request).and_return(second_page_response)
+    expect(second_page_request).to receive(:url).with("/next-page")
+    expect(second_page_request).to receive(:headers=)
+                                     .with("k1" => "v1",
+                                           "Content-Type" => "application/json",
+                                           "Accept"=>"application/json")
+
+
+    response = client.getAll("/path", {"foo" => "bar"}, {"k1" => "v1"})
+
+    expect(response).to be_a(EsxCloud::HttpResponse)
+    expect(response.code).to be(200)
+    expect(JSON.parse(response.body)).to eq({
+                                                "items" => ["item1", "item2", "item3"],
+                                                "nextPageLink" => nil,
+                                                "previousPageLink" => nil,
+                                            })
+    expect(response.get_header("k2")).to eq("v2")
+  end
+
   it "performs DELETE" do
     expect(@conn).to receive(:delete).and_yield(@faraday_request).and_return(@faraday_response)
     expect(@faraday_request).to receive(:url).with("/path")
