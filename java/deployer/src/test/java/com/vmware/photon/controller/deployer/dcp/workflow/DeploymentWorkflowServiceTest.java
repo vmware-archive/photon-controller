@@ -43,7 +43,7 @@ import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateIsoTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -766,7 +766,8 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME,
+          true);
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
@@ -842,7 +843,8 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, false);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME,
+          true);
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
@@ -872,7 +874,8 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, false);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME,
+          true);
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
@@ -902,7 +905,8 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateIsoTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME,
+          true);
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, false);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
