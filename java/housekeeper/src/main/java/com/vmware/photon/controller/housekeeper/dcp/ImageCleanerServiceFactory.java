@@ -22,7 +22,7 @@ import com.vmware.xenon.common.Service;
  */
 public class ImageCleanerServiceFactory extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/image-cleaners";
+  public static final String SELF_LINK = ServiceUriPaths.HOUSEKEEPER_ROOT + "/image-cleaners";
 
   public ImageCleanerServiceFactory() {
     super(ImageCleanerService.State.class);
