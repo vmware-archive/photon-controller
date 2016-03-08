@@ -50,6 +50,7 @@ public class ServiceUtils {
    * Default expiration time for this service is 1 days.
    */
   public static final long DEFAULT_DOC_EXPIRATION_TIME = TimeUnit.DAYS.toMillis(1);
+  public static final long DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS = 1L;
   private static Random randomGenerator = new Random(System.currentTimeMillis());
 
   /**
