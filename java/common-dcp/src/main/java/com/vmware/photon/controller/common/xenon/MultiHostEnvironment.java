@@ -357,7 +357,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
    * @return
    * @throws Throwable
    */
-  private Operation sendRequestAndWait(Operation op, ServiceHost host) throws Throwable {
+  public Operation sendRequestAndWait(Operation op, ServiceHost host) throws Throwable {
     return ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
   }
 
