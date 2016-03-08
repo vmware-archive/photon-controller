@@ -1,8 +1,4 @@
 #cloud-config
-bootcmd:
-  - rm -f /etc/systemd/network/*.network
-  - systemctl stop systemd-networkd
-
 write_files:
   - content: |
         en_name=$(ip addr show label "en*" | head -n 1 | sed 's/^[0-9]*: \(en.*\): .*/\1/')
@@ -19,20 +15,6 @@ write_files:
         [Route]
         Gateway=$GATEWAY
         EOF
-        ip addr flush label "$en_name"
-        systemctl restart systemd-networkd
-        IP=`grep Address= /etc/systemd/network/10-dhcp-${en_name}.network | sed 's/.*=\.*//' | sed 's/\/.*//'`
-        echo $IP
-        C_IP=`ifconfig $en_name | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
-        while [ "$IP" != "$C_IP" ]
-        do
-          ip add flush label "$en_name"
-          systemctl restart systemd-networkd
-          C_IP=`ifconfig $en_name | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
-          echo $C_IP
-          sleep 1
-        done
-        ping -q -c 4 $GATEWAY
     owner: root:root
     permissions: 0644
     path: /tmp/init-network.sh
@@ -50,7 +32,6 @@ write_files:
         if [ -n "$ntp" ]
         then
           echo "NTP=$ntp" >> /etc/systemd/timesyncd.conf
-          systemctl restart systemd-timesyncd
         fi
     owner: root:root
     permissions: 0644
@@ -63,13 +44,10 @@ runcmd:
   - cp -r /tmp/config/mustache/ /etc/esxcloud/
   - chmod +x /etc/esxcloud/*/*/run.sh
   - umount /tmp/config
+  - rm -f /etc/systemd/network/*.network
   - sh /tmp/init-network.sh
   - sh /tmp/update-hostname.sh
   - sh /tmp/update-ntp.sh $NTP
   - sed -i 's/ExecStart.*/ExecStart=\/bin\/docker -d -s overlay -H tcp:\/\/0.0.0.0:2375 -H unix:\/\/\/var\/run\/docker.sock/g' /lib/systemd/system/docker.service
-  - systemctl daemon-reload
   - systemctl enable docker
-  - systemctl start docker
-  - systemctl stop docker
-  - iptables-save | grep -v -- 'DOCKER' | iptables-restore
-  - systemctl start docker
+  - reboot
