@@ -13,6 +13,8 @@
 """ Contains the implementation code for ESX VM operations."""
 import logging
 from operator import itemgetter
+
+from host.hypervisor.esx.http_disk_transfer import SHADOW_VM_NAME_PREFIX
 from host.hypervisor.vm_utils import parse_vmdk
 from host.hypervisor.image_scanner import waste_time
 
@@ -496,7 +498,10 @@ class EsxVmManager(VmManager):
             # Vms in cache might include half updated record, e.g. with
             # None memory_mb, for a short time windows. Those Vms in cache
             # could be excluded from total used memory.
-            if vm.memory_mb:
+            if vm.name.startswith(SHADOW_VM_NAME_PREFIX):
+                # skip shadow vm, because we never power it on
+                self._logger.info("skip shadow vm: %s" % vm.name)
+            elif vm.memory_mb:
                 memory += vm.memory_mb
 
         # This indicates that no values were retrieved from the cache.
@@ -516,7 +521,10 @@ class EsxVmManager(VmManager):
 
         cpu_count = 0
         for vm in vms:
-            if vm.num_cpu:
+            if vm.name.startswith(SHADOW_VM_NAME_PREFIX):
+                # skip shadow vm, because we never power it on
+                self._logger.info("skip shadow vm: %s" % vm.name)
+            elif vm.num_cpu:
                 cpu_count += vm.num_cpu
 
         # This indicates that no values were retrieved from the cache.
