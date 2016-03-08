@@ -22,7 +22,7 @@ import com.vmware.xenon.common.Service;
  */
 public class ImageReplicatorServiceFactory extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/image-replicators";
+  public static final String SELF_LINK = ServiceUriPaths.HOUSEKEEPER_ROOT + "/image-replicators";
 
   public ImageReplicatorServiceFactory() {
     super(ImageReplicatorService.State.class);

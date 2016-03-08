@@ -22,7 +22,7 @@ import com.vmware.xenon.common.Service;
  */
 public class ImageSeederSyncTriggerServiceFactory extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/image-seeder-sync-triggers";
+  public static final String SELF_LINK = ServiceUriPaths.HOUSEKEEPER_ROOT + "/image-seeder-sync-triggers";
 
   public ImageSeederSyncTriggerServiceFactory() {
     super(ImageSeederSyncTriggerService.State.class);

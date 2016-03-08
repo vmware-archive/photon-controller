@@ -21,7 +21,7 @@ import com.vmware.xenon.common.Service;
  * Implements a factory to create ImageDatastoreSweeperService instances.
  */
 public class ImageDatastoreSweeperServiceFactory extends FactoryService {
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/image-datastore-sweepers";
+  public static final String SELF_LINK = ServiceUriPaths.HOUSEKEEPER_ROOT + "/image-datastore-sweepers";
 
   /**
    * Default constructor.

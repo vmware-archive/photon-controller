@@ -22,7 +22,7 @@ import com.vmware.xenon.common.Service;
  */
 public class ImageHostToHostCopyServiceFactory extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/image-host-to-host-copiers";
+  public static final String SELF_LINK = ServiceUriPaths.HOUSEKEEPER_ROOT + "/image-host-to-host-copiers";
 
   public ImageHostToHostCopyServiceFactory() {
     super(ImageHostToHostCopyService.State.class);
