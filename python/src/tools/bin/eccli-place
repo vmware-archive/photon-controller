@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # Copyright (c) 2015 VMware, Inc. All Rights Reserved.
-import sys
-
-from common.photon_thrift.direct_client import DirectClient
 
 from eccli.format import print_request, print_result
 from eccli.format import print_response
@@ -37,7 +34,7 @@ elif options.disks:
     resource.disks = createDisksResource()
 else:
     parser.print_help()
-    sys.exit(1)
+    exit(1)
 
 # place
 place_request = PlaceRequest()
@@ -47,7 +44,7 @@ client = get_client(options, "Host")
 place_response = client.place(place_request)
 print_response(place_response)
 if place_response.result != PlaceResultCode.OK:
-    sys.exit(1)
+    exit(1)
 
 # reserve
 reserve_request = ReserveRequest()

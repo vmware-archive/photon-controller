@@ -9,7 +9,7 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
-
+import os
 from optparse import OptionParser, BadOptionError
 
 
@@ -26,10 +26,14 @@ class KnownOptionParser(OptionParser):
 
 
 def default_parser(usage, add_help=True):
+    default_host = "localhost"
+    if os.environ["ECCLI_HOST"]:
+        default_host = os.environ["ECCLI_HOST"]
+
     parser = KnownOptionParser(usage, add_help_option=add_help)
-    parser.add_option("-H", "--host", default="localhost",
+    parser.add_option("-H", "--host", default=default_host,
                       action="store", type="string", dest="host",
-                      help="host address [default: %default]")
+                      help="host address; load default from env($ECCLI_HOST)")
     parser.add_option("-p", "--port", default="8835",
                       action="store", type="int", dest="port",
                       help="host port [default: %default]")
