@@ -181,7 +181,7 @@ public class CreateIsoTaskService extends StatefulService {
 
     if (startState.documentExpirationTimeMicros <= 0) {
       startState.documentExpirationTimeMicros =
-          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
     }
 
     start.setBody(startState).complete();

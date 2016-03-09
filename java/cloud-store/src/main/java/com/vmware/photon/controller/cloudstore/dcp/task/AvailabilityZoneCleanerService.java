@@ -96,7 +96,7 @@ public class AvailabilityZoneCleanerService extends StatefulService {
 
     if (current.documentExpirationTimeMicros <= 0) {
       current.documentExpirationTimeMicros =
-          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
     }
   }
 
