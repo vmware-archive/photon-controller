@@ -23,9 +23,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -73,6 +77,24 @@ public class OperationUtils {
       logger.warn("Exception retrieving local host address", e);
     }
     return null;
+  }
+
+  public static List<String> getLocalHostIpAddresses() {
+    List<String> localHostIpAddresses = new ArrayList<>();
+    // get all ip addresses of all the network interfaces of the local host
+    try {
+      Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+      while (interfaces != null && interfaces.hasMoreElements()) {
+        Enumeration<InetAddress> inetAddresses = interfaces.nextElement().getInetAddresses();
+        while (inetAddresses != null && inetAddresses.hasMoreElements()) {
+          localHostIpAddresses.add(inetAddresses.nextElement().getHostAddress());
+        }
+      }
+    } catch (Exception e) {
+      logger.warn("Failed to get the network interfaces on the local host, will use a random cloudstore instance: " +
+          e.getMessage());
+    }
+    return localHostIpAddresses;
   }
 
   public static Operation handleCompletedOperation(Operation requestedOperation, Operation completedOperation)

@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -79,7 +78,7 @@ public class XenonRestClient implements XenonClient {
   private NettyHttpServiceClient client;
   private ServerSet serverSet;
   private URI localHostUri;
-  private InetAddress localHostInetAddress;
+  private List<String> localHostIpAddresses;
 
   @Inject
   public XenonRestClient(ServerSet serverSet, ExecutorService executor) {
@@ -98,7 +97,7 @@ public class XenonRestClient implements XenonClient {
     }
 
     this.localHostUri = OperationUtils.getLocalHostUri();
-    this.localHostInetAddress = OperationUtils.getLocalHostInetAddress();
+    this.localHostIpAddresses = OperationUtils.getLocalHostIpAddresses();
   }
 
   @Override
@@ -674,11 +673,10 @@ public class XenonRestClient implements XenonClient {
   }
 
   public URI getServiceUri(String path) {
-
     //check if any of the hosts are available locally
     java.util.Optional<InetSocketAddress> localInetSocketAddress =
         this.serverSet.getServers().stream().filter(
-            (InetSocketAddress i) -> i.getAddress().equals(this.localHostInetAddress))
+            (InetSocketAddress i) -> localHostIpAddresses.contains(i.getAddress().getHostAddress()))
             .findFirst();
 
     InetSocketAddress selectedInetSocketAddress;
