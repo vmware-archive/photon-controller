@@ -24,9 +24,13 @@ public class ServicePortConstants {
 
   public static final int HOUSEKEEPER_PORT = 16000;
 
-  public static final int LOADBALANCER_HTTP_PORT = 8080;
+  public static final int LOADBALANCER_API_HTTP_PORT = 28080;
 
-  public static final int LOADBALANCER_HTTPS_PORT = 443;
+  public static final int LOADBALANCER_API_HTTPS_PORT = 443;
+
+  public static final int LOADBALANCER_MGMT_UI_HTTP_PORT = 80;
+
+  public static final int LOADBALANCER_MGMT_UI_HTTPS_PORT = 4343;
 
   public static final int MANAGEMENT_API_PORT = 9000;
 
@@ -37,4 +41,8 @@ public class ServicePortConstants {
   public static final int CLOUD_STORE_PORT = 19000;
 
   public static final int LIGHTWAVE_PORT = 443;
+
+  public static final int MANAGEMENT_UI_HTTP_PORT = 20000;
+
+  public static final int MANAGEMENT_UI_HTTPS_PORT = 20001;
 }

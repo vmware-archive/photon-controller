@@ -20,9 +20,13 @@ class ApiClientHelper
     end
 
     def management(args = nil)
-      protocol = args.nil? ? "https" : args[:protocol] || "https"
+      protocol = args[:protocol] unless args.nil?
       address = args[:address] unless args.nil?
-      port = args.nil? ? (ENV["API_FE_PORT"] || "443") : (args[:port] || ENV["API_FE_PORT"] || "443").strip
+      port = args[:port] unless args.nil?
+
+      protocol ||= ENV["ENABLE_AUTH"] ? "https" : "http"
+      port ||= ENV["ENABLE_AUTH"] ? "443" : "28080"
+
       setup_client(protocol, address, port)
     end
 

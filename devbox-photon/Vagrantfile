@@ -44,7 +44,7 @@ Vagrant.configure("2") do |config|
 
   BASE_SERVICE_PORT_MAP = {
       :zookeeper      => "-p 2181:2181 -p 2188:2188 -p 3188:3188",
-      :haproxy        => "-p 443:443 -p 8080:8080 -p 8088:8088"
+      :haproxy        => "-p 28080:28080 -p 443:443 -p 80:80 -p 4343:4343 -p 8088:8088"
   }
 
   # ================ VM DEFINITIONS ================
@@ -64,9 +64,6 @@ Vagrant.configure("2") do |config|
         "https://bintray.com/artifact/download/photon-controller/public/35/resource/photon-devbox.box"
 
     unless ENV["NO_PORT_FORWARDING"]
-      # Load Balancer
-      photon.vm.network :forwarded_port, guest: 8080, host: 9180,
-          auto_correct: true
       # APIFE
       photon.vm.network :forwarded_port, guest: 9000, host: 9080,
           auto_correct: true
@@ -92,7 +89,7 @@ Vagrant.configure("2") do |config|
       # Load Balancer
       photon.vm.network :forwarded_port, guest: 443, host: 9089,
           auto_correct: true
-      photon.vm.network :forwarded_port, guest: 8080, host: 9090,
+      photon.vm.network :forwarded_port, guest: 28080, host: 9090,
           auto_correct: true
     end
   end
@@ -286,13 +283,16 @@ Vagrant.configure("2") do |config|
   #
   # HAProxy
   #
-  dynamic_params += "\n,  \"LOAD_BALANCER_SERVERS\": [ { \"serverName\": \"devbox-management-api\", \"serverAddress\": \"#{network_ip}:9000\" } ]"
+  if ENV["ENABLE_AUTH"] && ENV["ENABLE_AUTH"] == "true"
+    dynamic_params += "\n, \"APIFE_PORT\" : \"443\""
+    dynamic_params += "\n, \"LOADBALANCER_API_PORT_SELECTOR\" : \"true\""
+  else
+    dynamic_params += "\n, \"APIFE_PORT\" : \"28080\""
+  end
 
-  #
-  # Mgmt UI
-  #
+  dynamic_params += "\n,  \"LOAD_BALANCER_SERVERS\": [ { \"serverName\": \"devbox-management-api\", \"serverAddress\": \"#{network_ip}:9000\" } ]"
   dynamic_params += "\n,  \"MGMT_UI_HTTP_SERVERS\": [ { \"serverName\": \"devbox-management-ui-http\", \"serverAddress\": \"#{network_ip}:80\" } ]"
-  dynamic_params += "\n,  \"MGMT_UI_HTTPS_SERVERS\": [ { \"serverName\": \"devbox-management-ui-https\", \"serverAddress\": \"#{network_ip}:4343\" } ]"
+  dynamic_params += "\n,  \"MGMT_UI_HTTPS_SERVERS\": [ { \"serverName\": \"devbox-management-ui-https\", \"serverAddress\": \"#{network_ip}:443\" } ]"
 
   #
   # Zookeeper
