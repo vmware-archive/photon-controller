@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Copyright (c) 2015 VMware, Inc. All Rights Reserved.
-from common.photon_thrift.direct_client import DirectClient
 
 from eccli.concurrency import run_concurrency
 from eccli.format import print_request

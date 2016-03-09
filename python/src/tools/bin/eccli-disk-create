@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # Copyright (c) 2016 VMware, Inc. All Rights Reserved.
-import sys
-
-from common.photon_thrift.direct_client import DirectClient
 
 from eccli.format import print_request, print_result
 from eccli.format import print_response
