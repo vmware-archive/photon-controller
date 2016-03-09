@@ -34,6 +34,10 @@ import com.vmware.photon.controller.deployer.dcp.ContainersConfig.ContainerType;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
+import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorService;
+import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
@@ -62,7 +66,6 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -77,9 +80,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
 
@@ -92,7 +93,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   private static final int WAIT_FOR_CONVERGENCE_MAX_RETRIES = 60;
 
   /**
-   * This class defines the state of a {@link CreateManagementVmWorkflowService} task.
+   * This class defines the state of a {@link BatchCreateManagementWorkflowService} task.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
 
@@ -718,96 +719,80 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         callback);
   }
 
-  private void createVms(final State currentState) {
+  private void createVms(State currentState) {
 
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(VmService.State.class));
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(VmService.State.class)
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
 
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query = kindClause;
-    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(BatchCreateManagementWorkflowService.this, documentLinks);
-              createVms(currentState, documentLinks);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        });
-
-    sendRequest(queryPostOperation);
-  }
-
-  private void createVms(State currentState, Collection<String> documentLinks) {
-
-    final AtomicInteger latch = new AtomicInteger(documentLinks.size());
-    final Service service = this;
-    final Map<String, Throwable> exceptions = new ConcurrentHashMap<>();
-    for (final String documentLink : documentLinks) {
-
-      FutureCallback<CreateManagementVmWorkflowService.State> futureCallback =
-          new FutureCallback<CreateManagementVmWorkflowService.State>() {
-            @Override
-            public void onSuccess(@Nullable CreateManagementVmWorkflowService.State state) {
-              if (state.taskState.stage != TaskState.TaskStage.FINISHED) {
-                exceptions.put(documentLink, new RuntimeException("CreateManagementWorkFlow did not finish."));
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
               }
 
-              if (0 == latch.decrementAndGet()) {
-                if (0 == exceptions.size()) {
-                  TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.STARTED,
-                      TaskState.SubStage.CREATE_CONTAINERS));
-                } else {
-                  failTask(exceptions.values());
+              try {
+                createVms(currentState, o.getBody(QueryTask.class).results.documentLinks);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void createVms(State currentState, List<String> vmServiceLinks) {
+
+    ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
+    startState.parentTaskLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_CONTAINERS));
+    startState.pendingCompletionCount = vmServiceLinks.size();
+    startState.errorThreshold = 0.0;
+
+    sendRequest(Operation
+        .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                createVms(currentState, vmServiceLinks, o.getBody(ServiceDocument.class).documentSelfLink);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void createVms(State currentState,
+                         List<String> vmServiceLinks,
+                         String aggregatorServiceLink) {
+
+    for (String vmServiceLink : vmServiceLinks) {
+      CreateManagementVmTaskService.State startState = new CreateManagementVmTaskService.State();
+      startState.parentTaskServiceLink = aggregatorServiceLink;
+      startState.vmServiceLink = vmServiceLink;
+      startState.ntpEndpoint = currentState.ntpEndpoint;
+      startState.taskPollDelay = currentState.childPollInterval;
+
+      sendRequest(Operation
+          .createPost(this, CreateManagementVmTaskFactoryService.SELF_LINK)
+          .setBody(startState)
+          .setCompletion(
+              (o, e) -> {
+                if (e != null) {
+                  failTask(e);
                 }
-              }
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-              exceptions.put(documentLink, throwable);
-              if (0 == latch.decrementAndGet()) {
-                failTask(exceptions.values());
-              }
-            }
-          };
-
-      CreateManagementVmWorkflowService.State startState = createVmWorkflowState(currentState, documentLink);
-
-      TaskUtils.startTaskAsync(
-          this,
-          CreateManagementVmWorkflowFactoryService.SELF_LINK,
-          startState,
-          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-          CreateManagementVmWorkflowService.State.class,
-          currentState.taskPollDelay,
-          futureCallback);
+              }));
     }
-  }
-
-  private CreateManagementVmWorkflowService.State createVmWorkflowState(State currentState, String vmServiceLink) {
-    CreateManagementVmWorkflowService.State state = new CreateManagementVmWorkflowService.State();
-    state.vmServiceLink = vmServiceLink;
-    state.childPollInterval = currentState.childPollInterval;
-    state.ntpEndpoint = currentState.ntpEndpoint;
-    return state;
   }
 
   /**
