@@ -15,13 +15,15 @@ package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.EphemeralDisk;
+import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.LocalitySpec;
+import com.vmware.photon.controller.api.QuotaLineItem;
+import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.VmMetadata;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -44,11 +46,14 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -79,6 +84,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -106,6 +112,10 @@ public class CreateManagementVmTaskService extends StatefulService {
      * This class defines the possible sub-stages for a task.
      */
     public enum SubStage {
+      CREATE_VM_FLAVOR,
+      WAIT_FOR_VM_FLAVOR,
+      CREATE_DISK_FLAVOR,
+      WAIT_FOR_DISK_FLAVOR,
       CREATE_VM,
       WAIT_FOR_VM_CREATION,
       UPDATE_METADATA,
@@ -174,6 +184,59 @@ public class CreateManagementVmTaskService extends StatefulService {
      */
     @Positive
     public Integer taskPollDelay;
+
+    /**
+     * This value represents the number of vCPUs with which the VM will be created. It is
+     * informational only.
+     */
+    @WriteOnce
+    public Integer cpuCount;
+
+    /**
+     * This value represents the amount of memory, in MB, with which the VM will be created. It is
+     * informational only.
+     */
+    @WriteOnce
+    public Long memoryMb;
+
+    /**
+     * This value represents the ID of the API-level task to create the VM flavor.
+     */
+    @WriteOnce
+    public String createVmFlavorTaskId;
+
+    /**
+     * This value represents the number of polling iterations which have been performed by the
+     * current task while waiting for the VM flavor to be created. It is informational only.
+     */
+    @DefaultInteger(value = 0)
+    public Integer createVmFlavorPollCount;
+
+    /**
+     * This value represents the name of the API-level VM flavor object created by the current task.
+     */
+    @WriteOnce
+    public String vmFlavorId;
+
+    /**
+     * This value represents the ID of the API-level task to create the disk flavor.
+     */
+    @WriteOnce
+    public String createDiskFlavorTaskId;
+
+    /**
+     * This value represents the number of polling iterations which have been performed by the
+     * current task while waiting for the disk flavor to be created. It is informational only.
+     */
+    @DefaultInteger(value = 0)
+    public Integer createDiskFlavorPollCount;
+
+    /**
+     * This value represents the ID of the API-level disk flavor object created by the current
+     * task.
+     */
+    @WriteOnce
+    public String diskFlavorId;
 
     /**
      * This value represents the ID of the API-level task to create the VM.
@@ -291,7 +354,7 @@ public class CreateManagementVmTaskService extends StatefulService {
 
     if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.CREATE_VM;
+      startState.taskState.subStage = TaskState.SubStage.CREATE_VM_FLAVOR;
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -358,6 +421,10 @@ public class CreateManagementVmTaskService extends StatefulService {
       case STARTED:
         checkState(taskState.subStage != null);
         switch (taskState.subStage) {
+          case CREATE_VM_FLAVOR:
+          case WAIT_FOR_VM_FLAVOR:
+          case CREATE_DISK_FLAVOR:
+          case WAIT_FOR_DISK_FLAVOR:
           case CREATE_VM:
           case WAIT_FOR_VM_CREATION:
           case UPDATE_METADATA:
@@ -383,6 +450,18 @@ public class CreateManagementVmTaskService extends StatefulService {
 
   private void processStartedStage(State currentState) throws Throwable {
     switch (currentState.taskState.subStage) {
+      case CREATE_VM_FLAVOR:
+        processCreateVmFlavorSubStage(currentState);
+        break;
+      case WAIT_FOR_VM_FLAVOR:
+        processWaitForVmFlavorSubStage(currentState);
+        break;
+      case CREATE_DISK_FLAVOR:
+        processCreateDiskFlavorSubStage(currentState);
+        break;
+      case WAIT_FOR_DISK_FLAVOR:
+        processWaitForDiskFlavorSubStage(currentState);
+        break;
       case CREATE_VM:
         processCreateVmSubStage(currentState);
         break;
@@ -442,6 +521,462 @@ public class CreateManagementVmTaskService extends StatefulService {
   }
 
   //
+  // CREATE_VM_FLAVOR sub-stage methods
+  //
+
+  private void processCreateVmFlavorSubStage(State currentState) {
+
+    if (currentState.cpuCount == null) {
+
+      //
+      // Compute the resource requirements of the VM.
+      //
+
+      computeVmFlavorRequirements(currentState);
+
+    } else {
+
+      //
+      // Create the VM flavor.
+      //
+      createVmFlavor(currentState);
+    }
+  }
+
+  private void computeVmFlavorRequirements(State currentState) {
+
+    sendRequest(Operation
+        .createGet(this, currentState.vmServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                computeVmFlavorRequirements(currentState, o.getBody(VmService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void computeVmFlavorRequirements(State currentState, VmService.State vmState) {
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(vmState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                computeVmFlavorRequirements(currentState, vmState, o.getBody(HostService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void computeVmFlavorRequirements(State currentState,
+                                           VmService.State vmState,
+                                           HostService.State hostState) {
+
+    //
+    // If the user has specified override values for the management VM flavor, then attempt to
+    // honor them. Otherwise, try to compute the management VM size as a factor of the host size;
+    // if this fails, then fall back to using the resource requirements specified by the service
+    // containers placed on the VM.
+    //
+
+    if (hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE) &&
+        hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_MB_OVERWRITE) &&
+        hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE)) {
+
+      int cpuCount = Integer.parseInt(
+          hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE));
+      long memoryMb = Long.parseLong(
+          hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_MB_OVERWRITE));
+
+      ServiceUtils.logInfo(this, "Found flavor override values for VM %s: %d vCPUs, %d MB memory",
+          vmState.name, cpuCount, memoryMb);
+
+      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_VM_FLAVOR, null);
+      patchState.cpuCount = cpuCount;
+      patchState.memoryMb = memoryMb;
+      TaskUtils.sendSelfPatch(this, patchState);
+      return;
+
+    } else if (hostState.cpuCount != null && hostState.memoryMb != null) {
+
+      int cpuCount = MiscUtils.getAdjustedManagementHostCpu(hostState);
+      long memoryMb = MiscUtils.getAdjustedManagementHostMemory(hostState);
+
+      ServiceUtils.logInfo(this, "Computed flavor values for VM %s from host size: %d vCPUs, %d MB memory",
+          vmState.name, cpuCount, memoryMb);
+
+      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_VM_FLAVOR, null);
+      patchState.cpuCount = cpuCount;
+      patchState.memoryMb = memoryMb;
+      TaskUtils.sendSelfPatch(this, patchState);
+      return;
+    }
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerService.State.class)
+            .addFieldClause(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK, currentState.vmServiceLink)
+            .build())
+        .addOptions(EnumSet.of(
+            QueryTask.QuerySpecification.QueryOption.BROADCAST,
+            QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                getContainersForVmFlavor(o.getBody(QueryTask.class).results.documents);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void getContainersForVmFlavor(Map<String, Object> containerDocuments) {
+
+    OperationJoin
+        .create(containerDocuments.values().stream()
+            .map((containerDocument) -> Utils.fromJson(containerDocument, ContainerService.State.class))
+            .map((containerState) -> containerState.containerTemplateServiceLink)
+            .map((templateServiceLink) -> Operation.createGet(this, templateServiceLink)))
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
+
+              try {
+                getTemplatesForVmFlavor(ops.values());
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+        .sendWith(this);
+  }
+
+  private void getTemplatesForVmFlavor(Collection<Operation> templateOps) {
+
+    Set<ContainerTemplateService.State> templateStates = templateOps.stream()
+        .map((op) -> op.getBody(ContainerTemplateService.State.class))
+        .collect(Collectors.toSet());
+
+    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_VM_FLAVOR, null);
+    patchState.cpuCount = templateStates.stream().mapToInt((templateState) -> templateState.cpuCount).max().orElse(0);
+    patchState.memoryMb = templateStates.stream().mapToLong((templateState) -> templateState.memoryMb).sum();
+    TaskUtils.sendSelfPatch(this, patchState);
+  }
+
+  private void createVmFlavor(State currentState) {
+
+    sendRequest(Operation
+        .createGet(this, currentState.vmServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                createVmFlavor(currentState, o.getBody(VmService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void createVmFlavor(State currentState, VmService.State vmState) throws Throwable {
+
+    List<QuotaLineItem> vmCost = new ArrayList<>();
+    vmCost.add(new QuotaLineItem("vm", 1.0, QuotaUnit.COUNT));
+    vmCost.add(new QuotaLineItem("vm.flavor." + vmState.name, 1.0, QuotaUnit.COUNT));
+    vmCost.add(new QuotaLineItem("vm.cpu", currentState.cpuCount, QuotaUnit.COUNT));
+    vmCost.add(new QuotaLineItem("vm.memory", currentState.memoryMb, QuotaUnit.MB));
+    vmCost.add(new QuotaLineItem("vm.cost", 1.0, QuotaUnit.COUNT));
+
+    FlavorCreateSpec vmFlavorCreateSpec = new FlavorCreateSpec();
+    vmFlavorCreateSpec.setName("mgmt-vm-" + vmState.name);
+    vmFlavorCreateSpec.setKind("vm");
+    vmFlavorCreateSpec.setCost(vmCost);
+
+    HostUtils.getApiClient(this)
+        .getFlavorApi()
+        .createAsync(vmFlavorCreateSpec,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processCreateVmFlavorTaskResult(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+  }
+
+  private void processCreateVmFlavorTaskResult(State currentState, Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_VM_FLAVOR, null);
+        patchState.createVmFlavorTaskId = task.getId();
+        patchState.createVmFlavorPollCount = 1;
+        sendStageProgressPatch(patchState);
+        break;
+      case "COMPLETED":
+        updateVmFlavorId(currentState, task.getEntity().getId());
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  //
+  // WAIT_FOR_VM_FLAVOR sub-stage methods
+  //
+
+  private void processWaitForVmFlavorSubStage(State currentState) throws Throwable {
+
+    HostUtils.getApiClient(this)
+        .getTasksApi()
+        .getTaskAsync(currentState.createVmFlavorTaskId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processVmFlavorCreationTaskResult(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+  }
+
+  private void processVmFlavorCreationTaskResult(State currentState, Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        getHost().schedule(
+            () -> {
+              State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_VM_FLAVOR, null);
+              patchState.createVmFlavorPollCount = currentState.createVmFlavorPollCount + 1;
+              TaskUtils.sendSelfPatch(this, patchState);
+            },
+            currentState.taskPollDelay, TimeUnit.MILLISECONDS);
+        break;
+      case "COMPLETED":
+        updateVmFlavorId(currentState, task.getEntity().getId());
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  private void updateVmFlavorId(State currentState, String vmFlavorId) {
+
+    VmService.State vmPatchState = new VmService.State();
+    vmPatchState.vmFlavorServiceLink = UriUtils.buildUriPath(FlavorServiceFactory.SELF_LINK, vmFlavorId);
+
+    State selfPatchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_DISK_FLAVOR, null);
+    selfPatchState.vmFlavorId = vmFlavorId;
+
+    OperationSequence
+        .create(Operation.createPatch(this, currentState.vmServiceLink).setBody(vmPatchState))
+        .next(Operation.createPatch(this, getSelfLink()).setBody(selfPatchState))
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+              }
+            })
+        .sendWith(this);
+  }
+
+  //
+  // CREATE_DISK_FLAVOR sub-stage methods
+  //
+
+  private void processCreateDiskFlavorSubStage(State currentState) {
+
+    sendRequest(Operation
+        .createGet(this, currentState.vmServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                processCreateDiskFlavorSubStage(currentState, o.getBody(VmService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processCreateDiskFlavorSubStage(State currentState, VmService.State vmState) throws Throwable {
+
+    //
+    // N.B. Disk size requirements are currently ignored for boot disks, so this value is not
+    // specified here.
+    //
+
+    List<QuotaLineItem> diskCost = new ArrayList<>();
+    diskCost.add(new QuotaLineItem("ephemeral-disk", 1.0, QuotaUnit.COUNT));
+    diskCost.add(new QuotaLineItem("ephemeral-disk.flavor." + vmState.name, 1.0, QuotaUnit.COUNT));
+    diskCost.add(new QuotaLineItem("ephemeral-disk.cost", 1.0, QuotaUnit.COUNT));
+
+    FlavorCreateSpec diskFlavorCreateSpec = new FlavorCreateSpec();
+    diskFlavorCreateSpec.setName("mgmt-vm-disk-" + vmState.name);
+    diskFlavorCreateSpec.setKind("ephemeral-disk");
+    diskFlavorCreateSpec.setCost(diskCost);
+
+    HostUtils.getApiClient(this)
+        .getFlavorApi()
+        .createAsync(diskFlavorCreateSpec,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processCreateDiskFlavorTaskResult(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+  }
+
+  private void processCreateDiskFlavorTaskResult(State currentState, Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DISK_FLAVOR, null);
+        patchState.createDiskFlavorTaskId = task.getId();
+        patchState.createDiskFlavorPollCount = 1;
+        sendStageProgressPatch(patchState);
+        break;
+      case "COMPLETED":
+        updateDiskFlavorId(currentState, task.getEntity().getId());
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  //
+  // WAIT_FOR_DISK_FLAVOR sub-stage methods
+  //
+
+  private void processWaitForDiskFlavorSubStage(State currentState) throws Throwable {
+
+    HostUtils.getApiClient(this)
+        .getTasksApi()
+        .getTaskAsync(currentState.createDiskFlavorTaskId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processDiskFlavorCreationTaskResult(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+  }
+
+  private void processDiskFlavorCreationTaskResult(State currentState, Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        getHost().schedule(
+            () -> {
+              State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DISK_FLAVOR,
+                  null);
+              patchState.createDiskFlavorPollCount = currentState.createDiskFlavorPollCount + 1;
+              TaskUtils.sendSelfPatch(this, patchState);
+            },
+            currentState.taskPollDelay, TimeUnit.MILLISECONDS);
+        break;
+      case "COMPLETED":
+        updateDiskFlavorId(currentState, task.getEntity().getId());
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state:" + task.getState());
+    }
+  }
+
+  private void updateDiskFlavorId(State currentState, String diskFlavorId) {
+
+    VmService.State vmPatchState = new VmService.State();
+    vmPatchState.diskFlavorServiceLink = UriUtils.buildUriPath(FlavorServiceFactory.SELF_LINK, diskFlavorId);
+
+    State selfPatchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_VM, null);
+    selfPatchState.diskFlavorId = diskFlavorId;
+
+    OperationSequence
+        .create(Operation.createPatch(this, currentState.vmServiceLink).setBody(vmPatchState))
+        .next(Operation.createPatch(this, getSelfLink()).setBody(selfPatchState))
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+              }
+            })
+        .sendWith(this);
+  }
+
+  //
   // CREATE_VM sub-stage methods
   //
 
@@ -466,43 +1001,32 @@ public class CreateManagementVmTaskService extends StatefulService {
 
   private void processCreateVmSubStage(State currentState, VmService.State vmState) {
 
-    CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
-    Operation diskFlavorGetOp = cloudStoreHelper.createGet(vmState.diskFlavorServiceLink);
-    Operation hostGetOp = cloudStoreHelper.createGet(vmState.hostServiceLink);
-    Operation vmFlavorGetOp = cloudStoreHelper.createGet(vmState.vmFlavorServiceLink);
-
-    OperationJoin
-        .create(diskFlavorGetOp, hostGetOp, vmFlavorGetOp)
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(vmState.hostServiceLink)
         .setCompletion(
-            (ops, exs) -> {
-              if (exs != null && !exs.isEmpty()) {
-                failTask(exs.values());
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
                 return;
               }
 
               try {
-                processCreateVmSubStage(currentState, vmState,
-                    ops.get(diskFlavorGetOp.getId()).getBody(FlavorService.State.class),
-                    ops.get(hostGetOp.getId()).getBody(HostService.State.class),
-                    ops.get(vmFlavorGetOp.getId()).getBody(FlavorService.State.class));
+                processCreateVmSubStage(currentState, vmState, o.getBody(HostService.State.class));
               } catch (Throwable t) {
                 failTask(t);
               }
-            })
-        .sendWith(this);
+            }));
   }
 
   private void processCreateVmSubStage(State currentState,
                                        VmService.State vmState,
-                                       FlavorService.State diskFlavorState,
-                                       HostService.State hostState,
-                                       FlavorService.State vmFlavorState)
+                                       HostService.State hostState)
       throws Throwable {
 
     AttachedDiskCreateSpec bootDiskCreateSpec = new AttachedDiskCreateSpec();
     bootDiskCreateSpec.setName(vmState.name + "-bootdisk");
     bootDiskCreateSpec.setBootDisk(true);
-    bootDiskCreateSpec.setFlavor(diskFlavorState.name);
+    bootDiskCreateSpec.setFlavor("mgmt-vm-disk-" + vmState.name);
     bootDiskCreateSpec.setKind(EphemeralDisk.KIND);
 
     LocalitySpec hostLocalitySpec = new LocalitySpec();
@@ -521,7 +1045,7 @@ public class CreateManagementVmTaskService extends StatefulService {
 
     VmCreateSpec vmCreateSpec = new VmCreateSpec();
     vmCreateSpec.setName(vmState.name);
-    vmCreateSpec.setFlavor(vmFlavorState.name);
+    vmCreateSpec.setFlavor("mgmt-vm-" + vmState.name);
     vmCreateSpec.setSourceImageId(ServiceUtils.getIDFromDocumentSelfLink(vmState.imageServiceLink));
     vmCreateSpec.setEnvironment(new HashMap<>());
     vmCreateSpec.setAttachedDisks(Collections.singletonList(bootDiskCreateSpec));
