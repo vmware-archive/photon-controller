@@ -26,7 +26,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
@@ -67,7 +67,7 @@ public class HostDcpBackend implements HostBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(HostDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
   private final TaskBackend taskBackend;
   private final EntityLockBackend entityLockBackend;
   private final DeploymentBackend deploymentBackend;
@@ -75,7 +75,7 @@ public class HostDcpBackend implements HostBackend {
   private final AvailabilityZoneBackend availabilityZoneBackend;
 
   @Inject
-  public HostDcpBackend(ApiFeDcpRestClient dcpClient, TaskBackend taskBackend,
+  public HostDcpBackend(ApiFeXenonRestClient dcpClient, TaskBackend taskBackend,
                         EntityLockBackend entityLockBackend, DeploymentBackend deploymentBackend,
                         TombstoneBackend tombstoneBackend, AvailabilityZoneBackend availabilityZoneBackend) {
     this.dcpClient = dcpClient;

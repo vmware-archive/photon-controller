@@ -38,7 +38,7 @@ import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.steps.ImageSeedingProgressCheckStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
@@ -103,7 +103,7 @@ public class VmDcpBackend implements VmBackend {
   private static final Logger logger = LoggerFactory.getLogger(VmDcpBackend.class);
   private static final int GB_TO_BYTE_CONVERSION_RATIO = 1024 * 1024 * 1024;
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
 
   private final ResourceTicketBackend resourceTicketBackend;
   private final ProjectBackend projectBackend;
@@ -117,7 +117,7 @@ public class VmDcpBackend implements VmBackend {
   private final TombstoneBackend tombstoneBackend;
 
   @Inject
-  public VmDcpBackend(ApiFeDcpRestClient dcpClient, ResourceTicketBackend resourceTicketBackend,
+  public VmDcpBackend(ApiFeXenonRestClient dcpClient, ResourceTicketBackend resourceTicketBackend,
                       ProjectBackend projectBackend,
                       AttachedDiskBackend attachedDiskBackend,
                       ImageBackend imageBackend,

@@ -15,7 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Datastore;
 import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.exceptions.external.DatastoreNotFoundException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
@@ -44,7 +44,7 @@ import java.util.concurrent.Executors;
 public class DatastoreDcpBackendTest {
 
   private DatastoreService.State createDatastore(
-      ApiFeDcpRestClient dcpClient, String type, Set<String> tags) {
+      ApiFeXenonRestClient dcpClient, String type, Set<String> tags) {
     DatastoreService.State datastore = new DatastoreService.State();
     datastore.id = UUID.randomUUID().toString();
     datastore.name = datastore.id;
@@ -65,7 +65,7 @@ public class DatastoreDcpBackendTest {
    */
   public class ToApiRepresentationTest {
 
-    private ApiFeDcpRestClient dcpClient;
+    private ApiFeXenonRestClient dcpClient;
 
     private DatastoreBackend datastoreBackend;
 
@@ -84,7 +84,7 @@ public class DatastoreDcpBackendTest {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
 
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpClient = new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1));
 
       datastoreBackend = new DatastoreDcpBackend(dcpClient);
     }
@@ -120,7 +120,7 @@ public class DatastoreDcpBackendTest {
    */
   public class FilterTest {
 
-    private ApiFeDcpRestClient dcpClient;
+    private ApiFeXenonRestClient dcpClient;
 
     private DatastoreBackend datastoreBackend;
 
@@ -139,7 +139,7 @@ public class DatastoreDcpBackendTest {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
 
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpClient = new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1));
 
       datastoreBackend = new DatastoreDcpBackend(dcpClient);
 

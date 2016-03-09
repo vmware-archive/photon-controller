@@ -18,7 +18,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupNotFoundException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.PortGroupService;
@@ -40,10 +40,10 @@ public class PortGroupDcpBackend implements PortGroupBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(PortGroupDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
 
   @Inject
-  public PortGroupDcpBackend(ApiFeDcpRestClient dcpClient) {
+  public PortGroupDcpBackend(ApiFeXenonRestClient dcpClient) {
     this.dcpClient = dcpClient;
     this.dcpClient.start();
   }

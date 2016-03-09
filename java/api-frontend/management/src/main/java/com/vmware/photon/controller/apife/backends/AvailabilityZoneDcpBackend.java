@@ -21,7 +21,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
@@ -54,11 +54,11 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(AvailabilityZoneDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
   private final TaskBackend taskBackend;
 
   @Inject
-  public AvailabilityZoneDcpBackend(ApiFeDcpRestClient dcpClient, TaskBackend taskBackend) {
+  public AvailabilityZoneDcpBackend(ApiFeXenonRestClient dcpClient, TaskBackend taskBackend) {
     this.dcpClient = dcpClient;
     this.taskBackend = taskBackend;
     this.dcpClient.start();

@@ -28,7 +28,7 @@ import com.vmware.photon.controller.apife.backends.ResourceTicketBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TombstoneBackend;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
@@ -112,7 +112,7 @@ public class DiskCreateStepCmdTest extends PowerMockTestCase {
     when(taskCommand.lookupAgentId(anyString())).thenReturn(agentId);
 
     diskBackend = spy(new DiskDcpBackend(
-        mock(ApiFeDcpRestClient.class),
+        mock(ApiFeXenonRestClient.class),
         mock(ProjectBackend.class),
         mock(FlavorBackend.class),
         mock(ResourceTicketBackend.class),

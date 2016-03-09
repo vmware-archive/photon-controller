@@ -15,7 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
@@ -45,7 +45,7 @@ public class BackendHelpers {
    * @return
    * @throws ExternalException
    */
-  public static boolean isImageSeedingDone(ApiFeDcpRestClient dcpRestClient,
+  public static boolean isImageSeedingDone(ApiFeXenonRestClient dcpRestClient,
                                            String imageId) throws ExternalException {
 
     try {
@@ -64,7 +64,7 @@ public class BackendHelpers {
    * @param imageId
    * @return
    */
-  public static List<String> getSeededImageDatastores(ApiFeDcpRestClient dcpRestClient,
+  public static List<String> getSeededImageDatastores(ApiFeXenonRestClient dcpRestClient,
                                                       String imageId) throws ExternalException {
 
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();

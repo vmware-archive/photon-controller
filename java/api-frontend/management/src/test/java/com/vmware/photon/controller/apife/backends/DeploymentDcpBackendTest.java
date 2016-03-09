@@ -27,7 +27,7 @@ import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -79,14 +79,14 @@ import java.util.concurrent.Executors;
  */
 public class DeploymentDcpBackendTest {
 
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
   private static DeploymentCreateSpec deploymentCreateSpec;
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
@@ -159,7 +159,7 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private DeploymentBackend deploymentBackend;
@@ -172,7 +172,7 @@ public class DeploymentDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
     }
 
@@ -251,7 +251,7 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private DeploymentBackend deploymentBackend;
@@ -263,7 +263,7 @@ public class DeploymentDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
@@ -342,7 +342,7 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private DeploymentBackend deploymentBackend;
@@ -357,7 +357,7 @@ public class DeploymentDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
@@ -490,7 +490,7 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private DeploymentBackend deploymentBackend;
@@ -499,7 +499,7 @@ public class DeploymentDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
@@ -581,7 +581,7 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private DeploymentBackend deploymentBackend;
@@ -590,7 +590,7 @@ public class DeploymentDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
@@ -645,7 +645,7 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private DeploymentBackend deploymentBackend;
@@ -654,7 +654,7 @@ public class DeploymentDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
@@ -711,7 +711,7 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     private DeploymentEntity entity;
 
@@ -720,7 +720,7 @@ public class DeploymentDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
@@ -756,7 +756,7 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     private DeploymentEntity entity;
 
@@ -768,7 +768,7 @@ public class DeploymentDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
@@ -811,7 +811,7 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private DeploymentBackend deploymentBackend;
@@ -824,7 +824,7 @@ public class DeploymentDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
@@ -902,7 +902,7 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private DeploymentBackend deploymentBackend;
@@ -914,7 +914,7 @@ public class DeploymentDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
@@ -989,21 +989,21 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private DeploymentBackend deploymentBackend;
 
     private DeploymentEntity entity;
     private BasicServiceHost host2;
-    private ApiFeDcpRestClient dcpClient2;
+    private ApiFeXenonRestClient dcpClient2;
 
     @Inject
     private TaskBackend taskBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
@@ -1022,7 +1022,7 @@ public class DeploymentDcpBackendTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host2.getPreferredAddress(), host2.getPort()));
-      ApiFeDcpRestClient dcpClient2 = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      ApiFeXenonRestClient dcpClient2 = new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1));
       dcpClient2.start();
 
       DeploymentService.State deployment2 = new DeploymentService.State();
@@ -1123,14 +1123,14 @@ public class DeploymentDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private DeploymentBackend deploymentBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
     }
 
     @AfterMethod
@@ -1215,7 +1215,7 @@ public class DeploymentDcpBackendTest {
     @Inject
     private BasicServiceHost serviceHost;
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
     @Inject
     private DeploymentBackend deploymentBackend;
 
@@ -1224,7 +1224,7 @@ public class DeploymentDcpBackendTest {
 
     @BeforeClass
     public void beforeClassSetup() throws Throwable {
-      commonHostAndClientSetup(serviceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(serviceHost, apiFeXenonRestClient);
     }
 
     @BeforeMethod

@@ -25,7 +25,7 @@ import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -60,15 +60,15 @@ import java.util.UUID;
 @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
 public class VmDiskBackendTest {
 
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
 
   private static String projectId;
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
@@ -135,7 +135,7 @@ public class VmDiskBackendTest {
   private BasicServiceHost basicServiceHost;
 
   @Inject
-  private ApiFeDcpRestClient apiFeDcpRestClient;
+  private ApiFeXenonRestClient apiFeXenonRestClient;
 
   @Inject
   private TenantDcpBackend tenantDcpBackend;
@@ -154,7 +154,7 @@ public class VmDiskBackendTest {
 
   @BeforeMethod()
   public void setUp() throws Throwable {
-    commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+    commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
     commonDataSetup(
         tenantDcpBackend,
         resourceTicketDcpBackend,

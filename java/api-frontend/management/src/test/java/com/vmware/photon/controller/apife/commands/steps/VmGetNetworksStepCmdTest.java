@@ -21,7 +21,7 @@ import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -84,7 +84,7 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
   private HostClient hostClient;
 
   @Mock
-  private ApiFeDcpRestClient dcpClient;
+  private ApiFeXenonRestClient dcpClient;
 
   @Mock
   private RootSchedulerClient rootSchedulerClient;

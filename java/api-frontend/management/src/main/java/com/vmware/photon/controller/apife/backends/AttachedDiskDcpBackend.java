@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.EphemeralDisk;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
@@ -42,11 +42,11 @@ import java.util.List;
 public class AttachedDiskDcpBackend implements AttachedDiskBackend {
   private static final Logger logger = LoggerFactory.getLogger(AttachedDiskDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
   private final DiskBackend diskBackend;
 
   @Inject
-  public AttachedDiskDcpBackend(ApiFeDcpRestClient dcpClient, DiskBackend diskBackend) {
+  public AttachedDiskDcpBackend(ApiFeXenonRestClient dcpClient, DiskBackend diskBackend) {
     this.dcpClient = dcpClient;
     this.diskBackend = diskBackend;
     this.dcpClient.start();

@@ -24,7 +24,7 @@ import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
@@ -141,7 +141,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   @Mock
   AttachedDiskBackend attachedDiskBackend;
   @Mock
-  ApiFeDcpRestClient dcpClient;
+  ApiFeXenonRestClient dcpClient;
   @Mock
   private RootSchedulerClient rootSchedulerClient;
   @Mock

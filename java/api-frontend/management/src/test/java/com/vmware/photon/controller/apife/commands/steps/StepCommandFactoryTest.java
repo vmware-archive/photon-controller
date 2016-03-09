@@ -16,7 +16,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.DcpBackendTestModule;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.CommandTestModule;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandTest;
@@ -39,7 +39,7 @@ import static org.hamcrest.Matchers.is;
 @Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
 public class StepCommandFactoryTest {
 
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
 
   @Inject
@@ -53,7 +53,7 @@ public class StepCommandFactoryTest {
   private BasicServiceHost basicServiceHost;
 
   @Inject
-  private ApiFeDcpRestClient apiFeDcpRestClient;
+  private ApiFeXenonRestClient apiFeXenonRestClient;
 
   @AfterClass
   public static void afterClassCleanup() throws Throwable {
@@ -71,7 +71,7 @@ public class StepCommandFactoryTest {
   @BeforeMethod
   public void setUp() throws Exception {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     step = new StepEntity();
     step.setId("Step ID");

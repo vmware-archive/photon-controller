@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.Datastore;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.exceptions.external.DatastoreNotFoundException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
@@ -41,10 +41,10 @@ public class DatastoreDcpBackend implements DatastoreBackend{
 
   private static final Logger logger = LoggerFactory.getLogger(DatastoreDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
 
   @Inject
-  public DatastoreDcpBackend(ApiFeDcpRestClient dcpClient) {
+  public DatastoreDcpBackend(ApiFeXenonRestClient dcpClient) {
     this.dcpClient = dcpClient;
     this.dcpClient.start();
   }
