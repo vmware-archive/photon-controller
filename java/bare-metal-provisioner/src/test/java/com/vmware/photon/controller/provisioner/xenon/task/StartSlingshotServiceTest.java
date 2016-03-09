@@ -99,7 +99,8 @@ public class StartSlingshotServiceTest {
       assertThat(savedState.taskInfo, notNullValue());
       assertThat(savedState.taskInfo.stage, is(TaskState.TaskStage.CREATED));
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
-          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(
+                  ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
     }
 

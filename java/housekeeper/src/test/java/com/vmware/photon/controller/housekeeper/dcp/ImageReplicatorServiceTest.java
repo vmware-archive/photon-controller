@@ -180,7 +180,8 @@ public class ImageReplicatorServiceTest {
       assertThat(savedState.taskInfo.subStage, is(ImageReplicatorService.TaskState.SubStage.TRIGGER_COPIES));
       assertThat(savedState.queryPollDelay, is(10000));
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
-          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(
+                  ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
     }
 
@@ -201,7 +202,8 @@ public class ImageReplicatorServiceTest {
       assertThat(savedState.taskInfo.stage, is(ImageReplicatorService.TaskState.TaskStage.STARTED));
       assertThat(savedState.taskInfo.subStage, is(ImageReplicatorService.TaskState.SubStage.TRIGGER_COPIES));
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
-          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(
+                  ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
     }
 
@@ -230,7 +232,8 @@ public class ImageReplicatorServiceTest {
       assertThat(savedState.taskInfo.stage, is(stage));
       assertThat(savedState.taskInfo.subStage, is(subStage));
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
-          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(
+                  ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
     }
 
@@ -402,12 +405,12 @@ public class ImageReplicatorServiceTest {
       return new Object[][]{
           {
               -10L,
-              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10))
           },
           {
               0L,
-              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10))
           },
           {

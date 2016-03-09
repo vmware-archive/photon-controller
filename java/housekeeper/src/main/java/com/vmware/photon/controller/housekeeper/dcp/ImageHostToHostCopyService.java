@@ -103,7 +103,8 @@ public class ImageHostToHostCopyService extends StatefulService {
       }
 
       if (s.documentExpirationTimeMicros <= 0) {
-        s.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+        s.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
+            ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
       }
 
       validateState(s);

@@ -120,7 +120,7 @@ public class StartSlingshotService extends StatefulService {
 
       if (state.documentExpirationTimeMicros <= 0) {
         state.documentExpirationTimeMicros =
-            ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
+            ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
       }
 
       validateState(state);
