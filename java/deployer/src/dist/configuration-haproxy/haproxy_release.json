@@ -8,7 +8,7 @@
   "useHostNetwork": true,
   "containerImage": "esxcloud/haproxy",
   "portBindings": {
-    "8080": 8080,
+    "28080": 28080,
     "443": 443,
     "80": 80,
     "4343": 4343
@@ -17,9 +17,6 @@
     "/var/log": "/var/log"
   },
   "dynamicParameters": {
-    "LOG_DIRECTORY": "/var/log",
-    "LOAD_BALANCER_HTTPS_PORT" : 443,
-    "MANAGEMENT_UI_HTTP_PORT" : 80,
-    "MANAGEMENT_UI_HTTPS_PORT" : 4343
+    "LOG_DIRECTORY": "/var/log"
   }
 }

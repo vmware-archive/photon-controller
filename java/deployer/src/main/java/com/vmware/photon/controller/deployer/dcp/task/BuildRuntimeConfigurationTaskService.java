@@ -79,7 +79,10 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
   public static final String ENV_LOADBALANCER_SERVERS = "LOAD_BALANCER_SERVERS";
   public static final String ENV_LOADBALANCER_IP = "APIFE_IP";
-  public static final String ENV_LOADBALANCER_PORT = "APIFE_PORT";
+  public static final String ENV_LOADBALANCER_API_PORT = "APIFE_PORT";
+  public static final String ENV_LOADBALANCER_MGMT_UI_HTTP_PORT = "MANAGEMENT_UI_HTTP_PORT";
+  public static final String ENV_LOADBALANCER_MGMT_UI_HTTPS_PORT = "MANAGEMENT_UI_HTTPS_PORT";
+  public static final String ENV_LOADBALANCER_API_PORT_SELECTOR = "LOADBALANCER_API_PORT_SELECTOR";
 
   public static final String ENV_ZOOKEEPER_QUORUM_URL = "ZOOKEEPER_QUORUM";
   public static final String ENV_ESX_HOST = "ESX_HOST";
@@ -338,9 +341,9 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     }
 
     // Set load balancer port
-    int loadBalancerPort = deploymentState.oAuthEnabled ? ServicePortConstants.LOADBALANCER_HTTPS_PORT :
-        ServicePortConstants.LOADBALANCER_HTTP_PORT;
-    containerState.dynamicParameters.put(ENV_LOADBALANCER_PORT, String.valueOf(loadBalancerPort));
+    int loadBalancerPort = deploymentState.oAuthEnabled ? ServicePortConstants.LOADBALANCER_API_HTTPS_PORT :
+        ServicePortConstants.LOADBALANCER_API_HTTP_PORT;
+    containerState.dynamicParameters.put(ENV_LOADBALANCER_API_PORT, String.valueOf(loadBalancerPort));
 
     String vmIpAddress = vmState.ipAddress;
     ContainersConfig.ContainerType containerType = ContainersConfig.ContainerType.valueOf(templateState.name);
@@ -765,6 +768,15 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         for (Map.Entry<String, String> entry : serverPortMap.entrySet()) {
           List<LoadBalancerServer> serverList = generateServerList(ipList, entry.getValue());
           containerState.dynamicParameters.put(entry.getKey(), new Gson().toJson(serverList));
+        }
+
+        containerState.dynamicParameters.put(ENV_LOADBALANCER_MGMT_UI_HTTP_PORT,
+            String.valueOf(ServicePortConstants.LOADBALANCER_MGMT_UI_HTTP_PORT));
+        containerState.dynamicParameters.put(ENV_LOADBALANCER_MGMT_UI_HTTPS_PORT,
+            String.valueOf(ServicePortConstants.LOADBALANCER_MGMT_UI_HTTPS_PORT));
+
+        if (deploymentState.oAuthEnabled) {
+          containerState.dynamicParameters.put(ENV_LOADBALANCER_API_PORT_SELECTOR, "true");
         }
         break;
 

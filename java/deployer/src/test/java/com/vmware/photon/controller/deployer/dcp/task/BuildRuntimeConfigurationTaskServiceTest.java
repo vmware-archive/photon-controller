@@ -538,9 +538,9 @@ public class BuildRuntimeConfigurationTaskServiceTest {
 
       if (containerType == ContainersConfig.ContainerType.Deployer) {
         assertTrue(containerService.dynamicParameters.containsKey(BuildRuntimeConfigurationTaskService
-            .ENV_LOADBALANCER_PORT));
+            .ENV_LOADBALANCER_API_PORT));
         String apifePort = containerService.dynamicParameters.get(BuildRuntimeConfigurationTaskService
-            .ENV_LOADBALANCER_PORT);
+            .ENV_LOADBALANCER_API_PORT);
         assertThat(apifePort, is("443"));
       }
 
@@ -604,7 +604,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
       List<String> deployerList = new ArrayList<String>();
       deployerList.add(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM_URL);
       deployerList.add(BuildRuntimeConfigurationTaskService.ENV_LOADBALANCER_IP);
-      deployerList.add(BuildRuntimeConfigurationTaskService.ENV_LOADBALANCER_PORT);
+      deployerList.add(BuildRuntimeConfigurationTaskService.ENV_LOADBALANCER_API_PORT);
       deployerList.add(BuildRuntimeConfigurationTaskService.ENV_SHARED_SECRET);
 
       List<String> zookeeperList = new ArrayList<String>();
