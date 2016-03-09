@@ -268,7 +268,8 @@ public class ImageDatastoreSweeperServiceTest {
       assertThat(savedState.taskState.subStage, is(ImageDatastoreSweeperService.TaskState.SubStage.GET_HOST_INFO));
 
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
-          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(
+                  ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10)))));
 
       assertThat(savedState.hostPollIntervalMilliSeconds, is(ImageDatastoreSweeperService.DEFAULT_HOST_POLL_INTERVAL));
@@ -382,12 +383,12 @@ public class ImageDatastoreSweeperServiceTest {
       return new Object[][]{
           {
               -10L,
-              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10))
           },
           {
               0L,
-              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.MINUTES.toMicros(10))
           },
           {
