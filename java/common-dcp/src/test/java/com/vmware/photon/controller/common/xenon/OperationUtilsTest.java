@@ -17,6 +17,8 @@ import com.vmware.xenon.common.Operation;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -50,6 +52,14 @@ public class OperationUtilsTest {
             public void handle(Operation operation, Throwable throwable) {
             }
           });
+    }
+
+    /**
+     * Tests that the method returns a list of local host ip addresses.
+     */
+    @Test
+    public void testGetLocalHostIpAddresses() {
+      assertThat(OperationUtils.getLocalHostIpAddresses().size(), greaterThan(0));
     }
 
     /**
