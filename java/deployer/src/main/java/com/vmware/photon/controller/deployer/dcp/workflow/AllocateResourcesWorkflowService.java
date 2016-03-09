@@ -19,7 +19,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
-import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -29,19 +29,14 @@ import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateTenantResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateTenantResourcesTaskService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
-import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
-import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -54,8 +49,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class implements a DCP service representing the workflow of allocating resources.
@@ -76,7 +69,6 @@ public class AllocateResourcesWorkflowService extends StatefulService {
      * This enum represents the possible sub-states for this task.
      */
     public enum SubStage {
-      CREATE_FLAVORS,
       ALLOCATE_TENANT_RESOURCES,
       UPDATE_VMS
     }
@@ -106,12 +98,6 @@ public class AllocateResourcesWorkflowService extends StatefulService {
      */
     @Positive
     public Integer taskPollDelay;
-
-    /**
-     * This value represents the service links of the VmService entities which have not
-     * been assigned to a project.
-     */
-    public List<String> vmServiceLinks;
 
     /**
      * This value represents ID of the allocated tenant entity.
@@ -161,7 +147,7 @@ public class AllocateResourcesWorkflowService extends StatefulService {
 
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.CREATE_FLAVORS;
+      startState.taskState.subStage = TaskState.SubStage.ALLOCATE_TENANT_RESOURCES;
     }
 
     start.setBody(startState).complete();
@@ -216,7 +202,6 @@ public class AllocateResourcesWorkflowService extends StatefulService {
 
     if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
       switch (currentState.taskState.subStage) {
-        case CREATE_FLAVORS:
         case ALLOCATE_TENANT_RESOURCES:
         case UPDATE_VMS:
           break;
@@ -267,114 +252,13 @@ public class AllocateResourcesWorkflowService extends StatefulService {
    */
   private void processStartedState(final State currentState) throws Throwable {
     switch (currentState.taskState.subStage) {
-      case CREATE_FLAVORS:
-        queryVms(currentState);
-        break;
       case ALLOCATE_TENANT_RESOURCES:
         allocateTenantResources(currentState);
         break;
       case UPDATE_VMS:
         updateVms(currentState);
+        break;
     }
-  }
-
-  private void queryVms(final State currentState) {
-
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(VmService.State.class));
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query = kindClause;
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(AllocateResourcesWorkflowService.this, documentLinks);
-              if (documentLinks.isEmpty()) {
-                throw new RuntimeException("Found 0 vms");
-              } else {
-                createFlavors(currentState, new ArrayList<>(documentLinks));
-              }
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        });
-
-    sendRequest(queryPostOperation);
-  }
-
-  private void createFlavors(final State currentState, final List<String> vmServiceLinks) {
-    ServiceUtils.logInfo(this, "Creating flavor entities");
-    final AtomicInteger pendingCreates = new AtomicInteger(vmServiceLinks.size());
-    final Service service = this;
-
-    FutureCallback<CreateFlavorTaskService.State> callback =
-        new FutureCallback<CreateFlavorTaskService.State>() {
-          @Override
-          public void onSuccess(@Nullable CreateFlavorTaskService.State result) {
-            if (result.taskState.stage == TaskState.TaskStage.FAILED) {
-              State state = buildPatch(TaskState.TaskStage.FAILED, null, null);
-              state.taskState.failure = result.taskState.failure;
-              TaskUtils.sendSelfPatch(service, state);
-              return;
-            }
-
-            if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
-              TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-              return;
-            }
-
-            if (0 == pendingCreates.decrementAndGet()) {
-              State state = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.ALLOCATE_TENANT_RESOURCES, null);
-              state.vmServiceLinks = vmServiceLinks;
-              TaskUtils.sendSelfPatch(service, state);
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-
-    for (String vmServiceLink : vmServiceLinks) {
-
-      CreateFlavorTaskService.State createFlavorState =
-          generateCreateFlavorTaskServiceState(currentState, vmServiceLink);
-
-      TaskUtils.startTaskAsync(
-          this,
-          CreateFlavorTaskFactoryService.SELF_LINK,
-          createFlavorState,
-          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-          CreateFlavorTaskService.State.class,
-          currentState.taskPollDelay,
-          callback);
-    }
-  }
-
-  private CreateFlavorTaskService.State generateCreateFlavorTaskServiceState(State currentState, String vmServiceLink) {
-    CreateFlavorTaskService.State state = new CreateFlavorTaskService.State();
-    state.taskState = new com.vmware.xenon.common.TaskState();
-    state.taskState.stage = TaskState.TaskStage.CREATED;
-    state.vmServiceLink = vmServiceLink;
-    state.queryTaskInterval = currentState.taskPollDelay;
-    return state;
   }
 
   private void allocateTenantResources(State currentState) {
@@ -423,35 +307,102 @@ public class AllocateResourcesWorkflowService extends StatefulService {
         });
   }
 
-  private void updateVms(final State currentState) {
+  private void updateVms(State currentState) {
 
-    VmService.State patchState = new VmService.State();
-    patchState.projectServiceLink = ProjectServiceFactory.SELF_LINK + "/" + currentState.projectId;
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(VmService.State.class)
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                updateVms(currentState, o.getBody(QueryTask.class).results.documentLinks);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void updateVms(State currentState, List<String> vmServiceLinks) {
+
+    VmService.State vmPatchState = new VmService.State();
+    vmPatchState.projectServiceLink = UriUtils.buildUriPath(ProjectServiceFactory.SELF_LINK, currentState.projectId);
 
     OperationJoin
-        .create(currentState.vmServiceLinks.stream()
-            .map(vmServiceLink -> Operation.createPatch(this, vmServiceLink).setBody(patchState)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-          } else {
-            updateDeploymentState(currentState);
-          }
-        })
+        .create(vmServiceLinks.stream()
+            .map((vmServiceLink) -> Operation.createPatch(this, vmServiceLink).setBody(vmPatchState)))
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
+
+              try {
+                updateDeploymentState(currentState);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
         .sendWith(this);
   }
 
-  private void updateDeploymentState(final State currentState) {
-    DeploymentService.State deploymentService = new DeploymentService.State();
-    deploymentService.projectId = currentState.projectId;
-    MiscUtils.updateDeploymentState(this, deploymentService, (operation, throwable) -> {
-      if (throwable != null) {
-        failTask(throwable);
-        return;
-      }
+  private void updateDeploymentState(State currentState) {
 
-      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-    });
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(DeploymentService.State.class)
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createPost(ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                List<String> documentLinks = o.getBody(QueryTask.class).results.documentLinks;
+                checkState(documentLinks.size() == 1);
+                updateDeploymentState(currentState, documentLinks.get(0));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void updateDeploymentState(State currentState, String deploymentServiceLink) {
+
+    DeploymentService.State deploymentPatchState = new DeploymentService.State();
+    deploymentPatchState.projectId = currentState.projectId;
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createPatch(deploymentServiceLink)
+        .setBody(deploymentPatchState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              } else {
+                sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+              }
+            }));
   }
 
   private State applyPatch(State startState, State patchState) {
@@ -459,10 +410,6 @@ public class AllocateResourcesWorkflowService extends StatefulService {
         || patchState.taskState.subStage != startState.taskState.subStage) {
       ServiceUtils.logInfo(this, "Moving to stage %s:%s", patchState.taskState.stage, patchState.taskState.subStage);
       startState.taskState = patchState.taskState;
-    }
-
-    if (null != patchState.vmServiceLinks) {
-      startState.vmServiceLinks = patchState.vmServiceLinks;
     }
 
     if (null != patchState.tenantId) {
@@ -490,9 +437,9 @@ public class AllocateResourcesWorkflowService extends StatefulService {
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, e));
   }
 
-  private void failTask(Map<Long, Throwable> exs) {
-    exs.values().forEach(e -> ServiceUtils.logSevere(this, e));
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, exs.values().iterator().next()));
+  private void failTask(Collection<Throwable> exs) {
+    ServiceUtils.logSevere(this, exs);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, exs.iterator().next()));
   }
 
   @VisibleForTesting
