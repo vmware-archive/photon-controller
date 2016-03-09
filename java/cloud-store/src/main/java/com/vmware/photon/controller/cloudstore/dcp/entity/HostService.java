@@ -460,7 +460,7 @@ public class HostService extends StatefulService {
       boolean allVmResourceOverwrite = true;
       for (String key : Arrays.asList(
           State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE,
-          State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_GB_OVERWIRTE,
+          State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_MB_OVERWRITE,
           State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE)) {
         boolean overwrite = currentState.metadata.containsKey(key);
         allVmResourceOverwrite = allVmResourceOverwrite && overwrite;
@@ -524,8 +524,8 @@ public class HostService extends StatefulService {
     public static final String METADATA_KEY_NAME_MANAGEMENT_PORTGROUP = "MANAGEMENT_PORTGROUP";
     public static final String METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE =
         "MANAGEMENT_VM_CPU_COUNT_OVERWRITE";
-    public static final String METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_GB_OVERWIRTE =
-        "MANAGEMENT_VM_MEMORY_GB_OVERWRITE";
+    public static final String METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_MB_OVERWRITE =
+        "MANAGEMENT_VM_MEMORY_MB_OVERWRITE";
     public static final String METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE =
         "MANAGEMENT_VM_DISK_GB_OVERWRITE";
     public static final String METADATA_KEY_NAME_ALLOWED_SERVICES = "METADATA_KEY_NAME_ALLOWED_SERVICES";
