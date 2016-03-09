@@ -42,11 +42,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -641,10 +644,25 @@ public class XenonRestClient implements XenonClient {
 
   public URI getServiceUri(String path) {
 
+    List<String> localIpAddresses = new ArrayList<>();
+    // get all ip addresses of all the network interfaces
+    try {
+      Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+      while (interfaces != null && interfaces.hasMoreElements()) {
+        Enumeration<InetAddress> inetAddresses = interfaces.nextElement().getInetAddresses();
+        while (inetAddresses != null && inetAddresses.hasMoreElements()) {
+          localIpAddresses.add(inetAddresses.nextElement().getHostAddress());
+        }
+      }
+    } catch (Exception e) {
+      logger.warn("Failed to get the network interfaces on the host, will use a random cloudstore instance: " +
+          e.getMessage());
+    }
+
     //check if any of the hosts are available locally
     java.util.Optional<InetSocketAddress> localInetSocketAddress =
         this.serverSet.getServers().stream().filter(
-            (InetSocketAddress i) -> i.getAddress().equals(this.localHostInetAddress))
+            (InetSocketAddress i) -> localIpAddresses.contains(i.getAddress().getHostAddress()))
             .findFirst();
 
     InetSocketAddress selectedInetSocketAddress;
