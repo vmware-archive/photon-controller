@@ -14,7 +14,7 @@ require "spec_helper"
 describe "service registration", zookeeper: true  do
   let(:client) { ApiClientHelper.zookeeper }
 
-  ["chairman", "root-scheduler"].each do |service|
+  ["chairman"].each do |service|
     it "has one '#{service}' node registered" do
       service_nodes = client.get_children(path: "/services/#{service}")[:children]
       expect(service_nodes).to_not be_nil
@@ -22,7 +22,7 @@ describe "service registration", zookeeper: true  do
     end
   end
 
-  ["housekeeper", "cloudstore", "apife"].each do |service|
+  ["housekeeper", "cloudstore", "apife", "root-scheduler"].each do |service|
     it "has at least one '#{service}' node registered" do
       service_nodes = client.get_children(path: "/services/#{service}")[:children]
       expect(service_nodes).to_not be_nil
