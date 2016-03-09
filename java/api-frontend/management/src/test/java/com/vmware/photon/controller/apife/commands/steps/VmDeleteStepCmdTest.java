@@ -20,7 +20,7 @@ import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
@@ -67,7 +67,7 @@ import java.util.List;
 public class VmDeleteStepCmdTest extends PowerMockTestCase {
 
   @Mock
-  private ApiFeDcpRestClient dcpClient;
+  private ApiFeXenonRestClient dcpClient;
 
   @Mock
   private RootSchedulerClient rootSchedulerClient;

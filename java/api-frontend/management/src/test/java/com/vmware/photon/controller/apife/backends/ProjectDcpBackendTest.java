@@ -24,7 +24,7 @@ import com.vmware.photon.controller.api.ResourceTicketReservation;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
@@ -67,13 +67,13 @@ import java.util.stream.Collectors;
  */
 public class ProjectDcpBackendTest {
 
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
@@ -122,7 +122,7 @@ public class ProjectDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private ProjectBackend projectBackend;
@@ -138,7 +138,7 @@ public class ProjectDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),
@@ -256,7 +256,7 @@ public class ProjectDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private ProjectBackend projectBackend;
@@ -273,7 +273,7 @@ public class ProjectDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),
@@ -391,7 +391,7 @@ public class ProjectDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private ProjectBackend projectBackend;
@@ -408,7 +408,7 @@ public class ProjectDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),
@@ -488,7 +488,7 @@ public class ProjectDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private ProjectBackend projectBackend;
@@ -502,7 +502,7 @@ public class ProjectDcpBackendTest {
 
     @BeforeMethod
     public void setup() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),

@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
@@ -39,10 +39,10 @@ public class EntityLockDcpBackend implements EntityLockBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(EntityLockDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
 
   @Inject
-  public EntityLockDcpBackend(ApiFeDcpRestClient dcpClient) {
+  public EntityLockDcpBackend(ApiFeXenonRestClient dcpClient) {
     this.dcpClient = dcpClient;
     this.dcpClient.start();
   }

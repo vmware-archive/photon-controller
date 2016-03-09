@@ -15,7 +15,7 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
@@ -55,7 +55,7 @@ public class BackendHelpersTest {
   public class ImageSeedingCheckerTest {
 
     private BasicServiceHost host;
-    private ApiFeDcpRestClient dcpClient;
+    private ApiFeXenonRestClient dcpClient;
 
     @BeforeClass
     public void beforeClassSetup() throws Throwable {
@@ -64,7 +64,7 @@ public class BackendHelpersTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(128));
+      dcpClient = new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(128));
       dcpClient.start();
     }
 

@@ -21,7 +21,7 @@ import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.SecurityGroupEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -62,7 +62,7 @@ import java.util.stream.Collectors;
  */
 public class TenantDcpBackendTest {
 
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
 
   @Test
@@ -70,9 +70,9 @@ public class TenantDcpBackendTest {
   }
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
@@ -118,7 +118,7 @@ public class TenantDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TenantBackend tenantBackend;
@@ -132,7 +132,7 @@ public class TenantDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       spec = new TenantCreateSpec();
       spec.setName("t1");
@@ -228,7 +228,7 @@ public class TenantDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TenantBackend tenantBackend;
@@ -237,7 +237,7 @@ public class TenantDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       spec = new TenantCreateSpec();
       spec.setName("t1");
     }
@@ -303,7 +303,7 @@ public class TenantDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TenantBackend tenantBackend;
@@ -315,7 +315,7 @@ public class TenantDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       spec = new TenantCreateSpec();
       spec.setName("t1");
     }
@@ -369,7 +369,7 @@ public class TenantDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TenantBackend tenantBackend;
@@ -378,7 +378,7 @@ public class TenantDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       TenantCreateSpec spec = new TenantCreateSpec();
       spec.setName("t1");
 

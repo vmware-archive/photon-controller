@@ -16,7 +16,7 @@ package com.vmware.photon.controller.apife.backends;
 import com.vmware.photon.controller.api.PortGroup;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupNotFoundException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.PortGroupService;
@@ -45,7 +45,7 @@ import java.util.concurrent.Executors;
 public class PortGroupDcpBackendTest {
 
   private PortGroupService.State createPortGroup(
-      ApiFeDcpRestClient dcpClient, String name, List<UsageTag> usageTags) {
+      ApiFeXenonRestClient dcpClient, String name, List<UsageTag> usageTags) {
     PortGroupService.State portGroup = new PortGroupService.State();
     portGroup.name = name;
     portGroup.usageTags = usageTags;
@@ -63,7 +63,7 @@ public class PortGroupDcpBackendTest {
    */
   public class ToApiRepresentationTest {
 
-    private ApiFeDcpRestClient dcpClient;
+    private ApiFeXenonRestClient dcpClient;
 
     private PortGroupBackend portGroupBackend;
 
@@ -81,7 +81,7 @@ public class PortGroupDcpBackendTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpClient = new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1));
 
       portGroupBackend = new PortGroupDcpBackend(dcpClient);
     }
@@ -117,7 +117,7 @@ public class PortGroupDcpBackendTest {
    */
   public class FilterTest {
 
-    private ApiFeDcpRestClient dcpClient;
+    private ApiFeXenonRestClient dcpClient;
 
     private PortGroupBackend portGroupBackend;
 
@@ -135,7 +135,7 @@ public class PortGroupDcpBackendTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpClient = new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpClient = new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1));
 
       portGroupBackend = new PortGroupDcpBackend(dcpClient);
 

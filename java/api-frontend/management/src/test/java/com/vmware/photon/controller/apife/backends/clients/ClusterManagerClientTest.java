@@ -76,7 +76,7 @@ public class ClusterManagerClientTest {
     @Mock
     private ClusterManagerDcpRestClient clusterManagerDcpRestClient;
     @Mock
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
     private ClusterManagerClient clusterManagerClient;
 
     @BeforeMethod
@@ -88,17 +88,17 @@ public class ClusterManagerClientTest {
       when(clusterManagerDcpRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
           .thenReturn(operation);
 
-      when(apiFeDcpRestClient.post(any(String.class), any(ClusterService.State.class)))
+      when(apiFeXenonRestClient.post(any(String.class), any(ClusterService.State.class)))
           .thenReturn(null);
 
       List<ClusterConfigurationService.State> clusterConfigurations = new ArrayList<>();
       ClusterConfigurationService.State clusterConfiguration = new ClusterConfigurationService.State();
       clusterConfiguration.imageId = "imageId";
       clusterConfigurations.add(clusterConfiguration);
-      when(apiFeDcpRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
+      when(apiFeXenonRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
           .thenReturn(clusterConfigurations);
 
-      clusterManagerClient = new ClusterManagerClient(clusterManagerDcpRestClient, apiFeDcpRestClient);
+      clusterManagerClient = new ClusterManagerClient(clusterManagerDcpRestClient, apiFeXenonRestClient);
     }
 
     private static ClusterCreateSpec buildCreateSpec(boolean hasContainerNetwork) {
@@ -174,7 +174,7 @@ public class ClusterManagerClientTest {
     @Mock
     private ClusterManagerDcpRestClient clusterManagerDcpRestClient;
     @Mock
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
     private ClusterManagerClient clusterManagerClient;
 
     @BeforeMethod
@@ -186,17 +186,17 @@ public class ClusterManagerClientTest {
       when(clusterManagerDcpRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
           .thenReturn(operation);
 
-      when(apiFeDcpRestClient.post(any(String.class), any(ClusterService.State.class)))
+      when(apiFeXenonRestClient.post(any(String.class), any(ClusterService.State.class)))
           .thenReturn(null);
 
       List<ClusterConfigurationService.State> clusterConfigurations = new ArrayList<>();
       ClusterConfigurationService.State clusterConfiguration = new ClusterConfigurationService.State();
       clusterConfiguration.imageId = "imageId";
       clusterConfigurations.add(clusterConfiguration);
-      when(apiFeDcpRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
+      when(apiFeXenonRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
           .thenReturn(clusterConfigurations);
 
-      clusterManagerClient = new ClusterManagerClient(clusterManagerDcpRestClient, apiFeDcpRestClient);
+      clusterManagerClient = new ClusterManagerClient(clusterManagerDcpRestClient, apiFeXenonRestClient);
     }
 
     private static ClusterCreateSpec buildCreateSpec(boolean hasZookeeper) {
@@ -269,7 +269,7 @@ public class ClusterManagerClientTest {
     @Mock
     private ClusterManagerDcpRestClient clusterManagerDcpRestClient;
     @Mock
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
     private ClusterManagerClient clusterManagerClient;
 
     @BeforeMethod
@@ -281,17 +281,17 @@ public class ClusterManagerClientTest {
       when(clusterManagerDcpRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
           .thenReturn(operation);
 
-      when(apiFeDcpRestClient.post(any(String.class), any(ClusterService.State.class)))
+      when(apiFeXenonRestClient.post(any(String.class), any(ClusterService.State.class)))
           .thenReturn(null);
 
       List<ClusterConfigurationService.State> clusterConfigurations = new ArrayList<>();
       ClusterConfigurationService.State clusterConfiguration = new ClusterConfigurationService.State();
       clusterConfiguration.imageId = "imageId";
       clusterConfigurations.add(clusterConfiguration);
-      when(apiFeDcpRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
+      when(apiFeXenonRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
           .thenReturn(clusterConfigurations);
 
-      clusterManagerClient = new ClusterManagerClient(clusterManagerDcpRestClient, apiFeDcpRestClient);
+      clusterManagerClient = new ClusterManagerClient(clusterManagerDcpRestClient, apiFeXenonRestClient);
     }
 
     private static ClusterCreateSpec buildCreateSpec(boolean hasEtcd) {
@@ -365,13 +365,13 @@ public class ClusterManagerClientTest {
     @Mock
     private ClusterManagerDcpRestClient clusterManagerDcpRestClient;
     @Mock
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
     private ClusterManagerClient clusterManagerClient;
     private ClusterService.State clusterDocument;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      clusterManagerClient = new ClusterManagerClient(clusterManagerDcpRestClient, apiFeDcpRestClient);
+      clusterManagerClient = new ClusterManagerClient(clusterManagerDcpRestClient, apiFeXenonRestClient);
       clusterDocument = buildClusterDocument();
     }
 
@@ -400,7 +400,7 @@ public class ClusterManagerClientTest {
 
     @Test
     public void testSuccess() throws DocumentNotFoundException, ExternalException {
-      when(apiFeDcpRestClient.get(any(String.class))).thenReturn(buildOperation());
+      when(apiFeXenonRestClient.get(any(String.class))).thenReturn(buildOperation());
 
       Cluster cluster = clusterManagerClient.getCluster(clusterId);
 
@@ -416,7 +416,7 @@ public class ClusterManagerClientTest {
 
     @Test(expectedExceptions = ClusterNotFoundException.class)
     public void testException() throws DocumentNotFoundException, ClusterNotFoundException {
-      when(apiFeDcpRestClient.get(any(String.class)))
+      when(apiFeXenonRestClient.get(any(String.class)))
           .thenThrow(mock(DocumentNotFoundException.class));
 
       clusterManagerClient.getCluster(clusterId);
@@ -437,7 +437,7 @@ public class ClusterManagerClientTest {
       Operation queryResult = new Operation();
       queryResult.setBody(queryResponse);
 
-      when(apiFeDcpRestClient.postToBroadcastQueryService(any(QueryTask.QuerySpecification.class)))
+      when(apiFeXenonRestClient.postToBroadcastQueryService(any(QueryTask.QuerySpecification.class)))
           .thenReturn(queryResult);
 
       ClusterService.State clusterDocument = new ClusterService.State();
@@ -458,7 +458,7 @@ public class ClusterManagerClientTest {
       serviceDocumentQueryResult.documents = new HashMap<>();
       serviceDocumentQueryResult.documents.put(clusterDocument.documentSelfLink, clusterDocument);
 
-      when(apiFeDcpRestClient.queryDocuments(anyObject(), anyObject(),
+      when(apiFeXenonRestClient.queryDocuments(anyObject(), anyObject(),
           eq(Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)), eq(true)))
           .thenReturn(serviceDocumentQueryResult);
 
@@ -498,7 +498,7 @@ public class ClusterManagerClientTest {
       serviceDocumentQueryResult.documents.put(clusterDocument.documentSelfLink, clusterDocument);
 
       String pageLink = UUID.randomUUID().toString();
-      doReturn(serviceDocumentQueryResult).when(apiFeDcpRestClient).queryDocumentPage(pageLink);
+      doReturn(serviceDocumentQueryResult).when(apiFeXenonRestClient).queryDocumentPage(pageLink);
 
       ResourceList<Cluster> clusters = clusterManagerClient.getClustersPages(pageLink);
       assertEquals(clusters.getItems().size(), 1);

@@ -29,7 +29,7 @@ import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.builders.AttachedDiskCreateSpecBuilder;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.ClusterManagerClient;
 import com.vmware.photon.controller.apife.commands.CommandTestModule;
 import com.vmware.photon.controller.apife.commands.steps.ClusterDeleteStepCmd;
@@ -75,13 +75,13 @@ import java.util.stream.Collectors;
  * Tests {@link ClusterBackend}.
  */
 public class ClusterBackendTest {
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
@@ -145,7 +145,7 @@ public class ClusterBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TaskBackend taskBackend;
@@ -159,7 +159,7 @@ public class ClusterBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       clusterManagerClient = mock(ClusterManagerClient.class);
       clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmBackend);
     }
@@ -284,7 +284,7 @@ public class ClusterBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TaskBackend taskBackend;
@@ -297,7 +297,7 @@ public class ClusterBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       clusterManagerClient = mock(ClusterManagerClient.class);
       clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmDcpBackend);
     }
@@ -360,7 +360,7 @@ public class ClusterBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TaskBackend taskBackend;
@@ -373,7 +373,7 @@ public class ClusterBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       clusterManagerClient = mock(ClusterManagerClient.class);
       clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmDcpBackend);
     }
@@ -446,7 +446,7 @@ public class ClusterBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TaskBackend taskBackend;
@@ -459,7 +459,7 @@ public class ClusterBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       clusterManagerClient = mock(ClusterManagerClient.class);
       clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmBackend);
     }
@@ -518,7 +518,7 @@ public class ClusterBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     private ClusterBackend clusterBackend;
 
@@ -551,7 +551,7 @@ public class ClusterBackendTest {
 
     @BeforeMethod()
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "vmware");
 
       QuotaLineItem ticketLimit = new QuotaLineItem("vm.cost", 100, QuotaUnit.COUNT);

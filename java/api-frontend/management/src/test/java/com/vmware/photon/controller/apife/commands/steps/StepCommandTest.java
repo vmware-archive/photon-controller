@@ -19,7 +19,7 @@ import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.DcpBackendTestModule;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -47,7 +47,7 @@ import java.util.UUID;
 @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
 public class StepCommandTest {
 
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
 
   protected String reservationId = "r-00";
@@ -64,7 +64,7 @@ public class StepCommandTest {
   private BasicServiceHost basicServiceHost;
 
   @Inject
-  private ApiFeDcpRestClient apiFeDcpRestClient;
+  private ApiFeXenonRestClient apiFeXenonRestClient;
 
   @AfterClass
   public static void afterClassCleanup() throws Throwable {
@@ -82,7 +82,7 @@ public class StepCommandTest {
   @BeforeMethod
   public void setUp() throws Exception {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     taskCommand = mock(TaskCommand.class);
 

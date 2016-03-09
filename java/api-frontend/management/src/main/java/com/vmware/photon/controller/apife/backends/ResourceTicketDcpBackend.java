@@ -22,7 +22,7 @@ import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
@@ -62,12 +62,12 @@ public class ResourceTicketDcpBackend implements ResourceTicketBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(ResourceTicketDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
   private final TenantBackend tenantBackend;
   private final TaskBackend taskBackend;
 
   @Inject
-  public ResourceTicketDcpBackend(ApiFeDcpRestClient dcpClient,
+  public ResourceTicketDcpBackend(ApiFeXenonRestClient dcpClient,
                                   TenantBackend tenantBackend,
                                   TaskBackend taskBackend) {
     this.dcpClient = dcpClient;

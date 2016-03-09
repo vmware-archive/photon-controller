@@ -42,13 +42,13 @@ import java.util.concurrent.TimeoutException;
  * This class allows for injection of CloudStoreServerSet and executor specific to API-FE
  */
 @Singleton
-public class ApiFeDcpRestClient extends XenonRestClient {
+public class ApiFeXenonRestClient extends XenonRestClient {
 
-  private static final Logger logger = LoggerFactory.getLogger(ApiFeDcpRestClient.class);
+  private static final Logger logger = LoggerFactory.getLogger(ApiFeXenonRestClient.class);
 
   @Inject
-  public ApiFeDcpRestClient(@CloudStoreServerSet ServerSet serverSet,
-                            @BackendTaskExecutor ExecutorService executor) {
+  public ApiFeXenonRestClient(@CloudStoreServerSet ServerSet serverSet,
+                              @BackendTaskExecutor ExecutorService executor) {
     super(serverSet, executor);
   }
 
