@@ -1,7 +1,7 @@
-# hierarchical or flat. default to hierarchical
-mode: hierachical
-# memory or dcp. default to memory
-constraintChecker: memory
+# hierarchical or flat. default to flat
+mode: flat
+# memory or dcp. default to dcp
+constraintChecker: dcp
 # Refresh interval for in-memory constraint checker cache in seconds.
 refreshIntervalSec: 30
 bind: "0.0.0.0"
