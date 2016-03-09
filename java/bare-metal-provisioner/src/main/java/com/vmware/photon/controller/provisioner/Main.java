@@ -49,7 +49,7 @@ public class Main {
   public static void main(String[] args) throws Throwable {
     LoggingFactory.bootstrap();
 
-    ArgumentParser parser = ArgumentParsers.newArgumentParser("Provisioner")
+    ArgumentParser parser = ArgumentParsers.newArgumentParser("Bare-Metal-Provisioner")
         .defaultHelp(true)
         .description("Photon Controller Bare Metal Provisioner");
     parser.addArgument("file").help("configuration file");
@@ -58,7 +58,7 @@ public class Main {
 
     ProvisionerConfig provisionerConfig = getConfig(namespace);
 
-    new LoggingFactory(provisionerConfig.getLogging(), "provisioner").configure();
+    new LoggingFactory(provisionerConfig.getLogging(), "bare-metal-provisioner").configure();
 
     Injector injector = Guice.createInjector(
         new ProvisionerModule(provisionerConfig),
@@ -106,7 +106,7 @@ public class Main {
   private static void registerWithZookeeper(ServiceNodeFactory serviceNodeFactory, String registrationIpAddress,
                                             int port) {
     InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress, port);
-    ServiceNode serviceNode = serviceNodeFactory.createSimple("provisioner", registrationSocketAddress);
+    ServiceNode serviceNode = serviceNodeFactory.createSimple("bare-metal-provisioner", registrationSocketAddress);
     ServiceNodeUtils.joinService(serviceNode, retryIntervalMilliSec);
   }
 

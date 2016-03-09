@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.FileUtils;
@@ -89,6 +90,7 @@ public class StartSlingshotService extends StatefulService {
     /**
      * Flag that controls if we should self patch to make forward progress.
      */
+    @DefaultBoolean(value = false)
     public Boolean isSelfProgressionDisabled;
 
     /**

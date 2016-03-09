@@ -31,6 +31,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -295,20 +296,20 @@ public class StartSlingshotServiceTest {
       }
    }
 
-//    @Test
-//    public void testEndToEndSuccess() throws Throwable {
-//      StartSlingshotService.State startState = buildValidStartupState();
-//      startState.isSelfProgressionDisabled = false;
-//      StartSlingshotService.State saveState = testEnvironment.callServiceAndWaitForState(
-//          StartSlingshotFactoryService.SELF_LINK,
-//          startState, StartSlingshotService.State.class,
-//          state -> TaskState.TaskStage.CREATED.ordinal() < state.taskInfo.stage.ordinal());
-//
-//      assertThat(saveState.processServiceSelfLink != null, is(true));
-//
-//      List<Long> pids = TestEnvironment.findUnixProcessIds("-e", StartSlingshotService.getBinaryBasename());
-//      assertThat(pids != null, is(true));
-//      assertThat(pids.size() == 1, is(true));
-//    }
+    @Test
+    public void testEndToEndSuccess() throws Throwable {
+      StartSlingshotService.State startState = buildValidStartupState();
+      startState.isSelfProgressionDisabled = false;
+      StartSlingshotService.State saveState = testEnvironment.callServiceAndWaitForState(
+          StartSlingshotFactoryService.SELF_LINK,
+          startState, StartSlingshotService.State.class,
+          state -> TaskState.TaskStage.CREATED.ordinal() < state.taskInfo.stage.ordinal());
+
+      assertThat(saveState.processServiceSelfLink != null, is(true));
+
+      List<Long> pids = TestEnvironment.findUnixProcessIds("-e", StartSlingshotService.getBinaryBasename());
+      assertThat(pids != null, is(true));
+      assertThat(pids.size() == 1, is(true));
+    }
   }
 }
