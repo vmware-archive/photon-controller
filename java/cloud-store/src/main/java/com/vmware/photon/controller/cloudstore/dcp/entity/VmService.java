@@ -77,6 +77,30 @@ public class VmService extends StatefulService {
     }
   }
 
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.logInfo(this, "Deleting EntityLockService %s", getSelfLink());
+    State currentState = getState(deleteOperation);
+    Long expirationToApply = 0L;
+    if (currentState.documentExpirationTimeMicros <= 0) {
+      expirationToApply = ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS;
+    }
+
+    if (deleteOperation.hasBody()) {
+      State deleteState = deleteOperation.getBody(State.class);
+      if (deleteState.documentExpirationTimeMicros > 0) {
+       expirationToApply = deleteState.documentExpirationTimeMicros;
+      }
+      currentState = deleteState;
+    }
+
+    currentState.documentExpirationTimeMicros = expirationToApply;
+    setState(deleteOperation, currentState);
+    deleteOperation.complete();
+  }
+
+
+
   /**
    * Validate the service state for coherence.
    *
