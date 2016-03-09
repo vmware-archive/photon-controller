@@ -17,17 +17,17 @@ module EsxCloud
 
     class << self
 
-      def clean_vms_on_real_host(server, user_name, password)
-        puts "cleaning vms on host #{server}"
-        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
-          dirty_vms = ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1, $2}'`;do echo $id;done")
-          ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1}'`;do (vim-cmd vmsvc/power.off $id || true) && vim-cmd vmsvc/unregister $id ;done")
-          ssh.exec!("tmp=`mktemp` && vim-cmd vmsvc/getallvms 2>$tmp && for id in `awk '{print $4}' $tmp | sed \"s/'//g\"`;do (vim-cmd vmsvc/power.off $id || true) && vim-cmd vmsvc/unregister $id ;done")
+      DATASTORE_DIRS_TO_DELETE = ["disks", "deleted_images", "images", "tmp_images", "vms", "tmp_uploads"]
 
+      def clean_vms_on_real_host(server, user_name, password)
+        dirty_vms = remove_vms server, user_name, password
+
+        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
           datastore_dir = "/vmfs/volumes/#{EsxCloud::TestHelpers.get_datastore_name}/"
           rm_cmd = "rm -rf #{datastore_dir}"
+
           puts "cleaning folders under #{datastore_dir}"
-          ["vms/*", "disks/*", "images/*", "tmp_uploads/*"].each do |folder_prefix|
+          DATASTORE_DIRS_TO_DELETE.each do |folder_prefix|
             ssh.exec!(rm_cmd + folder_prefix)
           end
 
@@ -39,7 +39,8 @@ module EsxCloud
         puts "cleaning vms on host #{server}"
         Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
           dirty_vms = ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1, $2}'`;do echo $id;done")
-          ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1}'`;do vim-cmd vmsvc/power.off $id && vim-cmd vmsvc/unregister $id ;done")
+          ssh.exec!("for id in `vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1}'`;do (vim-cmd vmsvc/power.off $id || true) && vim-cmd vmsvc/unregister $id ;done")
+          ssh.exec!("tmp=`mktemp` && vim-cmd vmsvc/getallvms 2>$tmp && for id in `awk '{print $4}' $tmp | sed \"s/'//g\"`;do (vim-cmd vmsvc/power.off $id || true) && vim-cmd vmsvc/unregister $id ;done")
           dirty_vms
         end
       end
@@ -58,7 +59,7 @@ module EsxCloud
         end
       end
 
-      def clean_datastores(server, user_name, password, folders = ["disks", "deleted_images", "images", "tmp_images", "vms"])
+      def clean_datastores(server, user_name, password, folders = DATASTORE_DIRS_TO_DELETE)
         puts "cleaning datastores on #{server}"
         Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
           folders.each do |folder|
