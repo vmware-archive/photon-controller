@@ -22,6 +22,7 @@ import com.vmware.photon.controller.provisioner.xenon.entity.DhcpSubnetServiceFa
 import com.vmware.photon.controller.provisioner.xenon.task.StartSlingshotFactoryService;
 import com.vmware.photon.controller.provisioner.xenon.task.StartSlingshotService;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.inject.Inject;
 import org.slf4j.Logger;
@@ -43,7 +44,10 @@ public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoPr
       DhcpConfigurationServiceFactory.class,
       DhcpLeaseServiceFactory.class,
       DhcpSubnetServiceFactory.class,
+
       StartSlingshotFactoryService.class,
+      // Discovery
+      RootNamespaceService.class,
   };
 
   @Inject
@@ -71,6 +75,7 @@ public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoPr
 
     // Start all the factories
     ServiceHostUtils.startServices(this, FACTORY_SERVICES);
+    logger.info("Started factory services");
 
     this.addPrivilegedService(StartSlingshotService.class);
 
@@ -80,7 +85,8 @@ public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoPr
   @Override
   public boolean isReady() {
     return
-        checkServiceAvailable(DhcpConfigurationServiceFactory.SELF_LINK)
+        checkServiceAvailable(RootNamespaceService.SELF_LINK)
+        && checkServiceAvailable(DhcpConfigurationServiceFactory.SELF_LINK)
         && checkServiceAvailable(DhcpLeaseServiceFactory.SELF_LINK)
         && checkServiceAvailable(DhcpSubnetServiceFactory.SELF_LINK)
 
