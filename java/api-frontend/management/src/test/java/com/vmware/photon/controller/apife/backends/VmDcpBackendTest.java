@@ -41,7 +41,7 @@ import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.steps.ImageSeedingProgressCheckStepCmd;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
@@ -108,7 +108,7 @@ import java.util.stream.Collectors;
  */
 public class VmDcpBackendTest {
 
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
   private static String projectId;
   private static VmCreateSpec vmCreateSpec;
@@ -121,9 +121,9 @@ public class VmDcpBackendTest {
   }
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
@@ -255,7 +255,7 @@ public class VmDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private VmDcpBackend vmDcpBackend;
@@ -286,7 +286,7 @@ public class VmDcpBackendTest {
     @BeforeMethod
     public void setUp() throws Throwable {
 
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup(
           tenantDcpBackend,
           resourceTicketDcpBackend,
@@ -542,7 +542,7 @@ public class VmDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private VmDcpBackend vmDcpBackend;
@@ -567,7 +567,7 @@ public class VmDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       commonDataSetup(
           tenantDcpBackend,
@@ -647,7 +647,7 @@ public class VmDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private VmDcpBackend vmDcpBackend;
@@ -684,7 +684,7 @@ public class VmDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup(
           tenantDcpBackend,
           resourceTicketDcpBackend,
@@ -946,7 +946,7 @@ public class VmDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private VmDcpBackend vmDcpBackend;
@@ -981,7 +981,7 @@ public class VmDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup(
           tenantDcpBackend,
           resourceTicketDcpBackend,
@@ -1061,7 +1061,7 @@ public class VmDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private VmDcpBackend vmDcpBackend;
@@ -1093,7 +1093,7 @@ public class VmDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup(
           tenantDcpBackend,
           resourceTicketDcpBackend,

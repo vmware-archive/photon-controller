@@ -30,7 +30,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
@@ -75,7 +75,7 @@ import java.util.UUID;
  */
 public class HostDcpBackendTest {
 
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
 
   @Test
@@ -83,9 +83,9 @@ public class HostDcpBackendTest {
   }
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
@@ -159,7 +159,7 @@ public class HostDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private HostBackend hostBackend;
@@ -175,7 +175,7 @@ public class HostDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       hostCreateSpec = new HostCreateSpec();
       hostCreateSpec.setUsername("user");
       hostCreateSpec.setPassword("password");
@@ -295,7 +295,7 @@ public class HostDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private HostBackend hostBackend;
@@ -310,7 +310,7 @@ public class HostDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       DeploymentCreateSpec deploymentCreateSpec = getDeploymentCreateSpec();
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
@@ -428,7 +428,7 @@ public class HostDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private HostBackend hostBackend;
@@ -443,7 +443,7 @@ public class HostDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       hostCreateSpec = new HostCreateSpec();
       hostCreateSpec.setUsername("user");
@@ -550,7 +550,7 @@ public class HostDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private HostBackend hostBackend;
@@ -565,7 +565,7 @@ public class HostDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       hostCreateSpec = new HostCreateSpec();
       hostCreateSpec.setUsername("user");
@@ -666,7 +666,7 @@ public class HostDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private HostBackend hostBackend;
@@ -687,7 +687,7 @@ public class HostDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       hostCreateSpec = new HostCreateSpec();
       hostCreateSpec.setUsername("user");

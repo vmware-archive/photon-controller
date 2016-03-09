@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.TombstoneEntity;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactory;
@@ -36,10 +36,10 @@ public class TombstoneDcpBackend implements TombstoneBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(TombstoneDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
 
   @Inject
-  public TombstoneDcpBackend(ApiFeDcpRestClient dcpClient) {
+  public TombstoneDcpBackend(ApiFeXenonRestClient dcpClient) {
     this.dcpClient = dcpClient;
     this.dcpClient.start();
   }

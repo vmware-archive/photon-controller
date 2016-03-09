@@ -71,10 +71,10 @@ public class ClusterManagerClient {
   public static final String EXTENDED_PROPERTY_ETCD_IP3          = "etcd_ip3";
 
   private ClusterManagerDcpRestClient dcpClient;
-  private ApiFeDcpRestClient apiFeDcpClient;
+  private ApiFeXenonRestClient apiFeDcpClient;
 
   @Inject
-  public ClusterManagerClient(ClusterManagerDcpRestClient dcpClient, ApiFeDcpRestClient apiFeDcpClient)
+  public ClusterManagerClient(ClusterManagerDcpRestClient dcpClient, ApiFeXenonRestClient apiFeDcpClient)
       throws URISyntaxException {
     this.dcpClient = dcpClient;
     this.dcpClient.start();

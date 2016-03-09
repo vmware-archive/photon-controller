@@ -25,7 +25,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
 import com.vmware.photon.controller.apife.entities.IsoEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
@@ -70,13 +70,13 @@ public class TaskDcpBackendTest {
   private static VmEntity vmEntity;
   private static ProjectEntity projectEntity;
 
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
@@ -126,14 +126,14 @@ public class TaskDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TaskBackend taskBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
     }
 
@@ -303,7 +303,7 @@ public class TaskDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TaskBackend taskBackend;
@@ -314,7 +314,7 @@ public class TaskDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
     }
 
@@ -433,14 +433,14 @@ public class TaskDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TaskBackend taskBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
     }
 
@@ -610,14 +610,14 @@ public class TaskDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TaskBackend taskBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
     }
 
@@ -651,7 +651,7 @@ public class TaskDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TaskBackend taskBackend;
@@ -661,7 +661,7 @@ public class TaskDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
     }
 
@@ -754,7 +754,7 @@ public class TaskDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TaskBackend taskBackend;
@@ -764,7 +764,7 @@ public class TaskDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
     }
 
@@ -845,7 +845,7 @@ public class TaskDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private TaskBackend taskBackend;
@@ -855,7 +855,7 @@ public class TaskDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
     }
 

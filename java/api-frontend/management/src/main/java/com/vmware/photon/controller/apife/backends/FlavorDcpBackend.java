@@ -24,7 +24,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
@@ -59,14 +59,14 @@ public class FlavorDcpBackend implements FlavorBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(FlavorDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
   private final TaskBackend taskBackend;
   private final VmBackend vmBackend;
   private final DiskBackend diskBackend;
   private final TombstoneBackend tombstoneBackend;
 
   @Inject
-  public FlavorDcpBackend(ApiFeDcpRestClient dcpClient, TaskBackend taskBackend, VmBackend vmBackend,
+  public FlavorDcpBackend(ApiFeXenonRestClient dcpClient, TaskBackend taskBackend, VmBackend vmBackend,
                           DiskBackend diskBackend, TombstoneBackend tombstoneBackend) {
     this.dcpClient = dcpClient;
     this.taskBackend = taskBackend;

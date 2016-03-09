@@ -21,7 +21,7 @@ import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.IsoEntity;
@@ -49,13 +49,13 @@ import java.util.UUID;
  */
 public class EntityLockDcpBackendTest {
 
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
@@ -105,7 +105,7 @@ public class EntityLockDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private EntityLockDcpBackend entityLockDcpBackend;
@@ -114,7 +114,7 @@ public class EntityLockDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       taskEntity = new TaskEntity();
       taskEntity.setId("task-id");
@@ -213,7 +213,7 @@ public class EntityLockDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private EntityLockDcpBackend entityLockDcpBackend;
@@ -222,7 +222,7 @@ public class EntityLockDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       taskEntity = new TaskEntity();
       taskEntity.setId("task-id");

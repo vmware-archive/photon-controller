@@ -30,7 +30,7 @@ import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.DiskStateChecks;
@@ -73,7 +73,7 @@ public class DiskDcpBackend implements DiskBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(DiskDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
   private final ProjectBackend projectBackend;
   private final ResourceTicketBackend resourceTicketBackend;
   private final TaskBackend taskBackend;
@@ -83,7 +83,7 @@ public class DiskDcpBackend implements DiskBackend {
   private final TombstoneBackend tombstoneBackend;
 
   @Inject
-  public DiskDcpBackend(ApiFeDcpRestClient dcpClient, ProjectBackend projectBackend, FlavorBackend flavorBackend,
+  public DiskDcpBackend(ApiFeXenonRestClient dcpClient, ProjectBackend projectBackend, FlavorBackend flavorBackend,
                         ResourceTicketBackend resourceTicketBackend, TaskBackend taskBackend,
                         EntityLockBackend entityLockBackend, AttachedDiskBackend attachedDiskBackend,
                         TombstoneBackend tombstoneBackend) {

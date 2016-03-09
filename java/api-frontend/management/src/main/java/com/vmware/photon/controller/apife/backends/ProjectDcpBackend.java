@@ -24,7 +24,7 @@ import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
@@ -65,7 +65,7 @@ import java.util.stream.Collectors;
 public class ProjectDcpBackend implements ProjectBackend {
   private static final Logger logger = LoggerFactory.getLogger(ProjectDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
   private final TaskBackend taskBackend;
   private final TenantBackend tenantBackend;
   private final ResourceTicketBackend resourceTicketBackend;
@@ -74,7 +74,7 @@ public class ProjectDcpBackend implements ProjectBackend {
   private final TombstoneBackend tombstoneBackend;
 
   @Inject
-  public ProjectDcpBackend(ApiFeDcpRestClient dcpClient, TaskBackend taskBackend, TenantBackend tenantBackend,
+  public ProjectDcpBackend(ApiFeXenonRestClient dcpClient, TaskBackend taskBackend, TenantBackend tenantBackend,
                            ResourceTicketBackend resourceTicketBackend, VmBackend vmBackend, DiskBackend diskBackend,
                            TombstoneBackend tombstoneBackend) {
     this.dcpClient = dcpClient;

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -62,7 +62,7 @@ public class DcpBackendTestModule extends AbstractModule {
 
   @Provides
   @Singleton
-  ApiFeDcpRestClient getApiFeDcpRestClient(BasicServiceHost host) {
+  ApiFeXenonRestClient getApiFeDcpRestClient(BasicServiceHost host) {
     StaticServerSet serverSet = new StaticServerSet(
         new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
     //since all our cloud store calls are synchronous we should only need one thread to handle them
@@ -70,6 +70,6 @@ public class DcpBackendTestModule extends AbstractModule {
     //instance of this module then the host and the rest client singleton instance will
     //be shared. To address this scenario I am setting the thread pool to be 4 assuming
     //that there are 4 cores present in the machine executing the tests.
-    return new ApiFeDcpRestClient(serverSet, Executors.newFixedThreadPool(128));
+    return new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(128));
   }
 }

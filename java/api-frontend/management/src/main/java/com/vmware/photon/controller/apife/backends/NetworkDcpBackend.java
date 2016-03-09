@@ -21,7 +21,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -60,7 +60,7 @@ public class NetworkDcpBackend implements NetworkBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(NetworkDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
 
   private final TaskBackend taskBackend;
   private final VmBackend vmBackend;
@@ -68,7 +68,7 @@ public class NetworkDcpBackend implements NetworkBackend {
 
   @Inject
   public NetworkDcpBackend(
-      ApiFeDcpRestClient dcpClient,
+      ApiFeXenonRestClient dcpClient,
       TaskBackend taskBackend,
       VmBackend vmBackend,
       TombstoneBackend tombstoneBackend) {

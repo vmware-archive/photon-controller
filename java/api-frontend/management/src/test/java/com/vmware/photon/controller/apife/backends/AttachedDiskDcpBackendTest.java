@@ -26,7 +26,7 @@ import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.ResourceTicketReservation;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -56,13 +56,13 @@ import java.util.UUID;
  */
 public class AttachedDiskDcpBackendTest {
 
-  private static ApiFeDcpRestClient dcpClient;
+  private static ApiFeXenonRestClient dcpClient;
   private static BasicServiceHost host;
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeDcpRestClient apiFeDcpRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeDcpRestClient;
+    dcpClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
@@ -112,7 +112,7 @@ public class AttachedDiskDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private AttachedDiskBackend attachedDiskBackend;
@@ -138,7 +138,7 @@ public class AttachedDiskDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),
@@ -256,7 +256,7 @@ public class AttachedDiskDcpBackendTest {
     private BasicServiceHost basicServiceHost;
 
     @Inject
-    private ApiFeDcpRestClient apiFeDcpRestClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
     private AttachedDiskBackend attachedDiskBackend;
@@ -287,7 +287,7 @@ public class AttachedDiskDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeDcpRestClient);
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
       QuotaLineItem[] tenantTicketLimits = {
           new QuotaLineItem("vm", 100, QuotaUnit.COUNT),

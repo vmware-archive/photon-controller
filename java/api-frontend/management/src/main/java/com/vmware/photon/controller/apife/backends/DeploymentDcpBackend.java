@@ -25,7 +25,7 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.StatsInfo;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.steps.DeploymentInitializeMigrationStepCmd;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
@@ -65,14 +65,14 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(DeploymentDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
   private final TaskBackend taskBackend;
   private final EntityLockBackend entityLockBackend;
   private final TenantBackend tenantBackend;
   private final TombstoneBackend tombstoneBackend;
 
   @Inject
-  public DeploymentDcpBackend(ApiFeDcpRestClient dcpClient,
+  public DeploymentDcpBackend(ApiFeXenonRestClient dcpClient,
                               TaskBackend taskBackend,
                               EntityLockBackend entityLockBackend,
                               TombstoneBackend tombstoneBackend,

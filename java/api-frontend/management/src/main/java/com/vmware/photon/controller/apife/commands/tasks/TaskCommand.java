@@ -18,7 +18,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTas
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.BaseCommand;
 import com.vmware.photon.controller.apife.commands.steps.StepCommand;
 import com.vmware.photon.controller.apife.commands.steps.StepCommandFactory;
@@ -70,7 +70,7 @@ public class TaskCommand extends BaseCommand {
   private TaskEntity task;
   private Resource resource;
   private String reservation;
-  private ApiFeDcpRestClient dcpClient;
+  private ApiFeXenonRestClient dcpClient;
   private RootSchedulerClient rootSchedulerClient;
   private HostClient hostClient;
   private HousekeeperClient housekeeperClient;
@@ -78,7 +78,7 @@ public class TaskCommand extends BaseCommand {
   private EntityLockBackend entityLockBackend;
 
   @Inject
-  public TaskCommand(ApiFeDcpRestClient dcpClient,
+  public TaskCommand(ApiFeXenonRestClient dcpClient,
                      RootSchedulerClient rootSchedulerClient,
                      HostClient hostClient,
                      HousekeeperClient housekeeperClient,

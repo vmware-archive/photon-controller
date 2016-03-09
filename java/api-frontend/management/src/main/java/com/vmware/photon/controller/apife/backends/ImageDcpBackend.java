@@ -24,7 +24,7 @@ import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
@@ -76,7 +76,7 @@ public class ImageDcpBackend implements ImageBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(ImageDcpBackend.class);
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
 
   private final VmBackend vmBackend;
 
@@ -87,7 +87,7 @@ public class ImageDcpBackend implements ImageBackend {
   private final TombstoneBackend tombstoneBackend;
 
   @Inject
-  public ImageDcpBackend(ApiFeDcpRestClient dcpClient, VmBackend vmBackend,
+  public ImageDcpBackend(ApiFeXenonRestClient dcpClient, VmBackend vmBackend,
                          TaskBackend taskBackend,
                          EntityLockBackend entityLockBackend,
                          TombstoneBackend tombstoneBackend) {

@@ -21,7 +21,7 @@ import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.StepErrorBaseEntity;
 import com.vmware.photon.controller.apife.entities.StepErrorEntity;
@@ -68,13 +68,13 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
-  private final ApiFeDcpRestClient dcpClient;
+  private final ApiFeXenonRestClient dcpClient;
 
   private final EntityLockBackend entityLockBackend;
 
   @Inject
   public TaskDcpBackend(
-      ApiFeDcpRestClient dcpClient,
+      ApiFeXenonRestClient dcpClient,
       EntityLockBackend entityLockBackend) {
     this.dcpClient = dcpClient;
     this.entityLockBackend = entityLockBackend;

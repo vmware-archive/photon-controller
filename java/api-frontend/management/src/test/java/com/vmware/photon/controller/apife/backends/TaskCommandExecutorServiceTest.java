@@ -16,7 +16,7 @@ package com.vmware.photon.controller.apife.backends;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.OutOfThreadPoolWorkerException;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeDcpRestClient;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.common.clients.DeployerClient;
@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TaskCommandExecutorServiceTest {
   private static final Logger logger = LoggerFactory.getLogger(TaskCommandExecutorServiceTest.class);
-  private ApiFeDcpRestClient dcpClient = mock(ApiFeDcpRestClient.class);
+  private ApiFeXenonRestClient dcpClient = mock(ApiFeXenonRestClient.class);
   private RootSchedulerClient rootSchedulerClient = mock(RootSchedulerClient.class);
   private HousekeeperClient housekeeperClient = mock(HousekeeperClient.class);
   private DeployerClient deployerClient = mock(DeployerClient.class);
@@ -136,8 +136,12 @@ public class TaskCommandExecutorServiceTest {
     private volatile boolean done = false;
 
     @Inject
-    public TestTaskCommand(ApiFeDcpRestClient dcpClient, RootSchedulerClient rootSchedulerClient, HostClient hostClient,
-                           HousekeeperClient housekeeperClient, DeployerClient deployerClient, TaskEntity task,
+    public TestTaskCommand(ApiFeXenonRestClient dcpClient,
+                           RootSchedulerClient rootSchedulerClient,
+                           HostClient hostClient,
+                           HousekeeperClient housekeeperClient,
+                           DeployerClient deployerClient,
+                           TaskEntity task,
                            CountDownLatch countDownLatch) {
       super(dcpClient, rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task);
       this.countDownLatch = countDownLatch;
