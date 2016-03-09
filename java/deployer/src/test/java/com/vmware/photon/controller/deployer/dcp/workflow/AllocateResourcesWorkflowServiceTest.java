@@ -13,13 +13,11 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
-import com.vmware.photon.controller.client.resource.FlavorApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -167,7 +165,6 @@ public class AllocateResourcesWorkflowServiceTest {
     public Object[][] getValidStartStages() {
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
           {TaskState.TaskStage.STARTED, AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES},
           {TaskState.TaskStage.STARTED, AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS},
           {TaskState.TaskStage.FINISHED, null},
@@ -194,7 +191,7 @@ public class AllocateResourcesWorkflowServiceTest {
     public Object[][] getStartStagesWhichTransitionToStarted() {
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
+          {TaskState.TaskStage.STARTED, AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES},
       };
     }
 
@@ -299,10 +296,6 @@ public class AllocateResourcesWorkflowServiceTest {
           {TaskState.TaskStage.CREATED,
               null,
               TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
-          {TaskState.TaskStage.CREATED,
-              null,
-              TaskState.TaskStage.STARTED,
               AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES},
           {TaskState.TaskStage.CREATED,
               null,
@@ -318,31 +311,6 @@ public class AllocateResourcesWorkflowServiceTest {
               null},
           {TaskState.TaskStage.CREATED,
               null,
-              TaskState.TaskStage.CANCELLED,
-              null},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
-              TaskState.TaskStage.FINISHED,
-              null},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
-              TaskState.TaskStage.FAILED,
-              null},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
               TaskState.TaskStage.CANCELLED,
               null},
 
@@ -414,27 +382,14 @@ public class AllocateResourcesWorkflowServiceTest {
               null},
 
           {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
-              TaskState.TaskStage.CREATED,
-              null},
-
-          {TaskState.TaskStage.STARTED,
               AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES,
               TaskState.TaskStage.CREATED,
               null},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
 
           {TaskState.TaskStage.STARTED,
               AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS,
               TaskState.TaskStage.CREATED,
               null},
-          {TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
           {TaskState.TaskStage.STARTED,
               AllocateResourcesWorkflowService.TaskState.SubStage.UPDATE_VMS,
               TaskState.TaskStage.STARTED,
@@ -444,10 +399,6 @@ public class AllocateResourcesWorkflowServiceTest {
               null,
               TaskState.TaskStage.CREATED,
               null},
-          {TaskState.TaskStage.FINISHED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
           {TaskState.TaskStage.FINISHED,
               null,
               TaskState.TaskStage.STARTED,
@@ -473,10 +424,6 @@ public class AllocateResourcesWorkflowServiceTest {
               null,
               TaskState.TaskStage.CREATED,
               null},
-          {TaskState.TaskStage.FAILED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS},
           {TaskState.TaskStage.FAILED,
               null,
               TaskState.TaskStage.STARTED,
@@ -507,7 +454,7 @@ public class AllocateResourcesWorkflowServiceTest {
       AllocateResourcesWorkflowService.State patchState =
           allocateResourcesWorkflowService.buildPatch(
               TaskState.TaskStage.STARTED,
-              AllocateResourcesWorkflowService.TaskState.SubStage.CREATE_FLAVORS,
+              AllocateResourcesWorkflowService.TaskState.SubStage.ALLOCATE_TENANT_RESOURCES,
               null);
 
       Field declaredField = patchState.getClass().getDeclaredField(attributeName);
@@ -546,7 +493,6 @@ public class AllocateResourcesWorkflowServiceTest {
     private ApiClientFactory apiClientFactory;
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
-    private FlavorApi flavorApi;
     private AllocateResourcesWorkflowService.State startState;
     private TasksApi tasksApi;
     private TenantsApi tenantsApi;
@@ -604,16 +550,10 @@ public class AllocateResourcesWorkflowServiceTest {
 
       ApiClient apiClient = mock(ApiClient.class);
       doReturn(apiClient).when(apiClientFactory).create();
-      flavorApi = mock(FlavorApi.class);
-      doReturn(flavorApi).when(apiClient).getFlavorApi();
       tasksApi = mock(TasksApi.class);
       doReturn(tasksApi).when(apiClient).getTasksApi();
       tenantsApi = mock(TenantsApi.class);
       doReturn(tenantsApi).when(apiClient).getTenantsApi();
-
-      doAnswer(MockHelper.mockCreateFlavorAsync("FLAVOR_TASK_ID", "FLAVOR_ID", "COMPLETED"))
-          .when(flavorApi)
-          .createAsync(any(FlavorCreateSpec.class), Matchers.<FutureCallback<Task>>any());
 
       doAnswer(MockHelper.mockCreateTenantAsync("TENANT_TASK_ID", "TENANT_ID", "COMPLETED"))
           .when(tenantsApi)
@@ -663,28 +603,6 @@ public class AllocateResourcesWorkflowServiceTest {
         VmService.State state = testEnvironment.getServiceState(vmState.documentSelfLink, VmService.State.class);
         assertThat(state.projectServiceLink, is(ProjectServiceFactory.SELF_LINK + "/PROJECT_ID"));
       }
-    }
-
-    @Test
-    public void testCreateFlavorFailure() throws Throwable {
-
-      Task failedTask = ApiTestUtils.createFailingTask(1, 1, "errorCode", "errorMessage");
-
-      doAnswer(MockHelper.mockCreateFlavorAsync(failedTask))
-          .when(flavorApi)
-          .createAsync(any(FlavorCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      AllocateResourcesWorkflowService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateResourcesWorkflowFactoryService.SELF_LINK,
-              startState,
-              AllocateResourcesWorkflowService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(failedTask)));
     }
 
     @Test

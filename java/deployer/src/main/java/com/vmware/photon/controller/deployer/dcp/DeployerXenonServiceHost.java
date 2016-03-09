@@ -47,7 +47,6 @@ import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskFactor
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerSpecLayoutTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerSpecTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecTaskFactoryService;
@@ -71,7 +70,6 @@ import com.vmware.photon.controller.deployer.dcp.workflow.BuildContainersConfigu
 import com.vmware.photon.controller.deployer.dcp.workflow.BulkProvisionHostsWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateContainersWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementPlaneLayoutWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.dcp.workflow.CreateManagementVmWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.FinalizeDeploymentMigrationWorkflowFactoryService;
@@ -159,7 +157,6 @@ public class DeployerXenonServiceHost
       CreateContainerSpecLayoutTaskFactoryService.class,
       CreateContainerSpecTaskFactoryService.class,
       CreateContainerTaskFactoryService.class,
-      CreateFlavorTaskFactoryService.class,
       CreateManagementVmTaskFactoryService.class,
       CreateVmSpecLayoutTaskFactoryService.class,
       CreateVmSpecTaskFactoryService.class,
@@ -185,7 +182,6 @@ public class DeployerXenonServiceHost
       BulkProvisionHostsWorkflowFactoryService.class,
       CreateContainersWorkflowFactoryService.class,
       CreateManagementPlaneLayoutWorkflowFactoryService.class,
-      CreateManagementVmWorkflowFactoryService.class,
       DeploymentWorkflowFactoryService.class,
       DeprovisionHostWorkflowFactoryService.class,
       FinalizeDeploymentMigrationWorkflowFactoryService.class,

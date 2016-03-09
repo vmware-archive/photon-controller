@@ -31,6 +31,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
@@ -39,8 +40,8 @@ import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFa
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.CreateFlavorTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
@@ -66,7 +67,6 @@ import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -164,6 +164,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     /**
      * This value represents the management vm that is created on the host.
      */
+    @WriteOnce
     public String vmServiceLink;
 
     @Immutable
@@ -837,149 +838,140 @@ public class AddManagementHostWorkflowService extends StatefulService {
     }
   }
 
-  private void processCreateManagementPlane(final State currentState, DeploymentService.State deploymentService)
-      throws Throwable {
+  private void processCreateManagementPlane(State currentState, DeploymentService.State deploymentState) {
+
     if (currentState.hostServiceLink == null) {
-      TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(
-          TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER, null));
+
+      //
+      // If this operation is being performed as part of a larger deployment operation, then
+      // management plane VMs will be created elsewhere (?). Skip to the next stage.
+      //
+
+      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
+          null));
+
+    } else if (currentState.vmServiceLink == null) {
+
+      //
+      // Create the management plane VM (singular).
+      //
+
+      createManagementPlaneVms(currentState, deploymentState);
+
     } else {
-      createManagementVmsAndContainersOnHost(currentState, deploymentService);
+
+      //
+      // Create the containers which were assigned to the new management plane VM.
+      //
+
+      processCreateServiceContainers(currentState, deploymentState);
     }
   }
 
-  private void createManagementVmsAndContainersOnHost(final State currentState,
-                                                      DeploymentService.State deploymentService) {
-    ServiceUtils.logInfo(this, "Creating Management VMs and containers on host");
+  private void createManagementPlaneVms(State currentState, DeploymentService.State deploymentState) {
 
-    // Query the VM entities created for the host
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(VmService.State.class));
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(VmService.State.class)
+            .addFieldClause(VmService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
+            .build())
+        .build();
 
-    QueryTask.Query hostServiceLinkClause = new QueryTask.Query()
-        .setTermPropertyName(VmService.State.FIELD_NAME_HOST_SERVICE_LINK)
-        .setTermMatchValue(currentState.hostServiceLink);
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(hostServiceLinkClause);
-
-    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
         .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(AddManagementHostWorkflowService.this, documentLinks);
-              createFlavorAndSetLinks(currentState, deploymentService, documentLinks);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        });
-
-    sendRequest(queryPostOperation);
-  }
-
-
-  private void createFlavorAndSetLinks(State currentState,
-                                       DeploymentService.State deploymentService,
-                                       Collection<String> documentLinks) {
-
-    final AtomicInteger latch = new AtomicInteger(documentLinks.size());
-
-    for (String documentLink : documentLinks) {
-
-      TaskUtils.startTaskAsync(this,
-          CreateFlavorTaskFactoryService.SELF_LINK,
-          generateCreateFlavorTaskServiceState(currentState, documentLink),
-          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-          CreateFlavorTaskService.State.class,
-          currentState.taskPollDelay,
-          new FutureCallback<CreateFlavorTaskService.State>() {
-            @Override
-            public void onSuccess(@Nullable CreateFlavorTaskService.State state) {
-              switch (state.taskState.stage) {
-                case FINISHED:
-                  updateVmLinks(currentState, deploymentService, documentLink, latch);
-                  break;
-                case FAILED:
-                  State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                  patchState.taskState.failure = state.taskState.failure;
-                  TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, patchState);
-                  break;
-                case CANCELLED:
-                  TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this,
-                      buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-                  break;
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
               }
-            }
 
-            @Override
-            public void onFailure(Throwable throwable) {
-              failTask(throwable);
-            }
-          });
-    }
+              try {
+                List<String> documentLinks = o.getBody(QueryTask.class).results.documentLinks;
+                checkState(documentLinks.size() == 1);
+                setImageAndFlavorLinks(currentState, deploymentState, documentLinks.get(0));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
-  private void updateVmLinks(State currentState,
-                             DeploymentService.State deploymentService,
-                             String vmServiceLink,
-                             AtomicInteger latch) {
+  private void setImageAndFlavorLinks(State currentState,
+                                      DeploymentService.State deploymentState,
+                                      String vmServiceLink) {
 
     VmService.State vmPatchState = new VmService.State();
-    vmPatchState.imageServiceLink = ImageServiceFactory.SELF_LINK + "/" + deploymentService.imageId;
-    vmPatchState.projectServiceLink = ProjectServiceFactory.SELF_LINK + "/" + deploymentService.projectId;
+    vmPatchState.imageServiceLink = UriUtils.buildUriPath(ImageServiceFactory.SELF_LINK, deploymentState.imageId);
+    vmPatchState.projectServiceLink = UriUtils.buildUriPath(ProjectServiceFactory.SELF_LINK,
+        deploymentState.projectId);
 
-    Operation
+    sendRequest(Operation
         .createPatch(this, vmServiceLink)
         .setBody(vmPatchState)
-        .setCompletion((completedOp, failure) -> {
-          if (null != failure) {
-            failTask(failure);
-            return;
-          }
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
 
-          try {
-            createManagementVm(currentState, deploymentService, vmServiceLink, latch);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
+              try {
+                createManagementVm(currentState, deploymentState, vmServiceLink);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
   private void createManagementVm(State currentState,
-                                  DeploymentService.State deploymentService,
-                                  String vmServiceLink,
-                                  AtomicInteger latch) {
+                                  DeploymentService.State deploymentState,
+                                  String vmServiceLink) {
 
-    TaskUtils.startTaskAsync(this,
-        CreateManagementVmWorkflowFactoryService.SELF_LINK,
-        createVmWorkflowState(currentState, deploymentService, vmServiceLink),
+    State selfPatchBody = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_MANAGEMENT_PLANE, null);
+    selfPatchBody.vmServiceLink = vmServiceLink;
+
+    CreateManagementVmTaskService.State startState = new CreateManagementVmTaskService.State();
+    startState.parentTaskServiceLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(selfPatchBody);
+    startState.vmServiceLink = vmServiceLink;
+    startState.ntpEndpoint = deploymentState.ntpEndpoint;
+    startState.taskPollDelay = currentState.taskPollDelay;
+
+    sendRequest(Operation
+        .createPost(this, CreateManagementVmTaskFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              }
+            }));
+  }
+
+  private void processCreateServiceContainers(State currentState, DeploymentService.State deploymentState) {
+
+    CreateContainersWorkflowService.State startState = new CreateContainersWorkflowService.State();
+    startState.deploymentServiceLink = currentState.deploymentServiceLink;
+    startState.isAuthEnabled = deploymentState.oAuthEnabled;
+    startState.isNewDeployment = currentState.isNewDeployment;
+    startState.vmServiceLink = currentState.vmServiceLink;
+    startState.taskPollDelay = currentState.taskPollDelay;
+
+    TaskUtils.startTaskAsync(
+        this,
+        CreateContainersWorkflowFactoryService.SELF_LINK,
+        startState,
         (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        CreateManagementPlaneLayoutWorkflowService.State.class,
+        CreateContainersWorkflowService.State.class,
         currentState.taskPollDelay,
-        new FutureCallback<CreateManagementPlaneLayoutWorkflowService.State>() {
+        new FutureCallback<CreateContainersWorkflowService.State>() {
           @Override
-          public void onSuccess(@Nullable CreateManagementPlaneLayoutWorkflowService.State state) {
+          public void onSuccess(@Nullable CreateContainersWorkflowService.State state) {
             switch (state.taskState.stage) {
               case FINISHED:
-                if (0 == latch.decrementAndGet()) {
-                  createContainers(currentState, vmServiceLink, deploymentService);
-                }
+                TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this,
+                    buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER, null));
                 break;
               case FAILED:
                 State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
@@ -998,74 +990,6 @@ public class AddManagementHostWorkflowService extends StatefulService {
             failTask(throwable);
           }
         });
-  }
-
-  private CreateManagementVmWorkflowService.State createVmWorkflowState(State currentState,
-                                                                        DeploymentService.State deploymentService,
-                                                                        String vmServiceLink) {
-
-    CreateManagementVmWorkflowService.State state = new CreateManagementVmWorkflowService.State();
-    state.vmServiceLink = vmServiceLink;
-    state.ntpEndpoint = deploymentService.ntpEndpoint;
-    state.childPollInterval = currentState.childPollInterval;
-    return state;
-  }
-
-  private CreateFlavorTaskService.State generateCreateFlavorTaskServiceState(State currentState,
-                                                                             String vmServiceLink) {
-
-    CreateFlavorTaskService.State state = new CreateFlavorTaskService.State();
-    state.taskState = new com.vmware.xenon.common.TaskState();
-    state.taskState.stage = TaskState.TaskStage.CREATED;
-    state.vmServiceLink = vmServiceLink;
-    state.queryTaskInterval = currentState.taskPollDelay;
-    return state;
-  }
-
-  private void createContainers(State currentState, String vmServiceLink, DeploymentService.State deploymentService) {
-    final Service service = this;
-
-    FutureCallback<CreateContainersWorkflowService.State> callback = new
-        FutureCallback<CreateContainersWorkflowService.State>() {
-          @Override
-          public void onSuccess(@Nullable CreateContainersWorkflowService.State result) {
-            switch (result.taskState.stage) {
-              case FINISHED:
-                State finishedPatchState = buildPatch(
-                    TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER, null);
-                finishedPatchState.vmServiceLink = vmServiceLink;
-                TaskUtils.sendSelfPatch(service, finishedPatchState);
-                break;
-              case FAILED:
-                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                patchState.taskState.failure = result.taskState.failure;
-                TaskUtils.sendSelfPatch(service, patchState);
-                break;
-              case CANCELLED:
-                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-                break;
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-    CreateContainersWorkflowService.State startState = new CreateContainersWorkflowService.State();
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.isAuthEnabled = deploymentService.oAuthEnabled;
-    startState.isNewDeployment = currentState.isNewDeployment;
-    startState.vmServiceLink = vmServiceLink;
-    startState.taskPollDelay = currentState.taskPollDelay;
-    TaskUtils.startTaskAsync(
-        this,
-        CreateContainersWorkflowFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        CreateContainersWorkflowService.State.class,
-        currentState.taskPollDelay,
-        callback);
   }
 
   private void getDeployment(final State currentState) {
