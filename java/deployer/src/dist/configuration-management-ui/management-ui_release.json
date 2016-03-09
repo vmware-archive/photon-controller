@@ -9,10 +9,11 @@
   "containerImage": "esxcloud/management_ui",
   "portBindings": {
     "80": 20000,
-    "4343": 20001
+    "443": 20001
   },
   "volumeBindings": {
   },
   "dynamicParameters": {
+    "MGMT_UI_HTTPS_PORT_ON_LB" : 4343
   }
 }
