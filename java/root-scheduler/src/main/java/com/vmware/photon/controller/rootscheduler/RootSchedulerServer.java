@@ -102,7 +102,7 @@ public class RootSchedulerServer {
     // Need to re-fetch local port in case it was 0
     InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress,
         transport.getServerSocket().getLocalPort());
-    serviceNode = serviceNodeFactory.createLeader("root-scheduler", registrationSocketAddress);
+    serviceNode = serviceNodeFactory.createSimple("root-scheduler", registrationSocketAddress);
     if (rootSchedulerService instanceof ServiceNodeEventHandler) {
       server.setServerEventHandler(thriftFactory.create((ServiceNodeEventHandler) rootSchedulerService, serviceNode));
     }
