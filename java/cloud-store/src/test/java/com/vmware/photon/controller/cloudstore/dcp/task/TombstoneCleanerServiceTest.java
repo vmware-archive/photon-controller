@@ -133,7 +133,8 @@ public class TombstoneCleanerServiceTest {
       assertThat(savedState.tombstoneExpirationAgeMillis, is(startState.tombstoneExpirationAgeMillis));
 
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
-          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+          is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(
+                  ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.SECONDS.toMicros(10)))));
     }
 
@@ -231,12 +232,12 @@ public class TombstoneCleanerServiceTest {
       return new Object[][]{
           {
               -10L,
-              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.SECONDS.toMicros(10))
           },
           {
               0L,
-              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME)),
+              new BigDecimal(ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
               new BigDecimal(TimeUnit.SECONDS.toMicros(10))
           },
           {

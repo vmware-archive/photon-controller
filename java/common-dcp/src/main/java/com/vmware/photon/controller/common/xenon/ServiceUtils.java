@@ -49,7 +49,7 @@ public class ServiceUtils {
   /**
    * Default expiration time for this service is 1 days.
    */
-  public static final long DEFAULT_DOC_EXPIRATION_TIME = TimeUnit.DAYS.toMillis(1);
+  public static final long DEFAULT_DOC_EXPIRATION_TIME_MICROS = TimeUnit.DAYS.toMicros(1);
   public static final long DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS = 1L;
   private static Random randomGenerator = new Random(System.currentTimeMillis());
 
@@ -131,13 +131,13 @@ public class ServiceUtils {
   }
 
   /**
-   * From the current time, adding the given number of milliseconds.
+   * From the current time, adding the given number of microseconds.
    *
-   * @param duration The number of milliseconds to extend.
-   * @return (current time + milliSecs) in microseconds
+   * @param durationMicros The number of microseconds to extend.
+   * @return (current time + microseconds) in microseconds
    */
-  public static long computeExpirationTime(long duration) {
-    return Utils.getNowMicrosUtc() + TimeUnit.MILLISECONDS.toMicros(duration);
+  public static long computeExpirationTime(long durationMicros) {
+    return Utils.getNowMicrosUtc() + durationMicros;
   }
 
   /**
