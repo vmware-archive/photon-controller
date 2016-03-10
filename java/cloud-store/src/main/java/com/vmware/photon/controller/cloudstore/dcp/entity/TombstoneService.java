@@ -39,7 +39,7 @@ public class TombstoneService extends StatefulService {
 
   @Override
   public void handleStart(Operation startOperation) {
-    ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Starting TombstoneService %s", getSelfLink());
     try {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
@@ -55,7 +55,7 @@ public class TombstoneService extends StatefulService {
 
   @Override
   public void handlePatch(Operation patchOperation) {
-    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Patching TombstoneService %s", getSelfLink());
     try {
       State currentState = getState(patchOperation);
       State patchState = patchOperation.getBody(State.class);
@@ -71,6 +71,34 @@ public class TombstoneService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       patchOperation.fail(t);
     }
+  }
+
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.logInfo(this, "Deleting TombstoneService %s", getSelfLink());
+    State currentState = getState(deleteOperation);
+    if (currentState.documentExpirationTimeMicros <= 0) {
+      currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
+          ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS);
+    }
+
+    if (deleteOperation.hasBody()) {
+      State deleteState = deleteOperation.getBody(State.class);
+      if (deleteState.documentExpirationTimeMicros > 0) {
+        currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
+            deleteState.documentExpirationTimeMicros);
+      }
+    }
+
+    if (currentState.documentExpirationTimeMicros > 0) {
+      ServiceUtils.logInfo(this,
+          "Expiring TombstoneService %s in %d micros",
+          getSelfLink(),
+          currentState.documentExpirationTimeMicros);
+    }
+
+    setState(deleteOperation, currentState);
+    deleteOperation.complete();
   }
 
   /**

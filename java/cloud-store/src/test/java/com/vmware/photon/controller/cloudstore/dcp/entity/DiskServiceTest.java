@@ -24,6 +24,9 @@ import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -45,6 +48,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 
 /**
  * Tests {@link DiskService}.
@@ -331,4 +335,170 @@ public class DiskServiceTest {
       assertThat(result.capacityGb, is(2));
     }
   }
+
+  /**
+   * Tests for the handleDelete method.
+   */
+  public class HandleDeleteTest {
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      service = new DiskService();
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          DiskServiceFactory.SELF_LINK,
+          10, 10);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient.start();
+
+      testState = new DiskService.State();
+      testState.projectId = "project-id";
+      testState.diskType = DiskType.PERSISTENT;
+      testState.name = "disk-name";
+      testState.state = DiskState.CREATING;
+      testState.capacityGb = 2;
+      testState.flavorId = "flavor-id";
+
+      host.startServiceSynchronously(new DiskServiceFactory(), null);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      service = null;
+      dcpRestClient.stop();
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in current state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
+      testState.documentExpirationTimeMicros = Long.MAX_VALUE;
+      Operation result = dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      DiskService.State createdState = result.getBody(DiskService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(testState.documentExpirationTimeMicros));
+
+      DiskService.State savedState =
+          host.getServiceState(DiskService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(testState.documentExpirationTimeMicros));
+
+      DiskService.State deleteState = new DiskService.State();
+      deleteState.documentExpirationTimeMicros = 0;
+      result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(DiskService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 1;
+            }
+          });
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in delete operation state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
+      Operation result = dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      DiskService.State createdState = result.getBody(DiskService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(0L));
+
+      DiskService.State savedState =
+          host.getServiceState(DiskService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(0L));
+
+      DiskService.State deleteState = new DiskService.State();
+      deleteState.documentExpirationTimeMicros = Long.MAX_VALUE;
+      result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(DiskService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 1;
+            }
+          });
+    }
+
+    /**
+     * Test expiration of deleted document using default value.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDeleteWithDefaultExpiration() throws Throwable {
+      Operation result = dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      DiskService.State createdState = result.getBody(DiskService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(0L));
+
+      DiskService.State savedState =
+          host.getServiceState(DiskService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(0L));
+
+      result = dcpRestClient.delete(createdState.documentSelfLink, null);
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(DiskService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 0;
+            }
+          });
+    }
+  }
+
 }

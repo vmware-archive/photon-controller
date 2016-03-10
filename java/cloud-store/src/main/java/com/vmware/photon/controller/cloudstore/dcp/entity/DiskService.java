@@ -62,7 +62,7 @@ public class DiskService extends StatefulService {
 
   @Override
   public void handlePatch(Operation patchOperation) {
-    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Patching DiskService %s", getSelfLink());
     State currentState = getState(patchOperation);
     State patchState = patchOperation.getBody(State.class);
 
@@ -77,6 +77,34 @@ public class DiskService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       patchOperation.fail(t);
     }
+  }
+
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.logInfo(this, "Deleting DiskService %s", getSelfLink());
+    State currentState = getState(deleteOperation);
+    if (currentState.documentExpirationTimeMicros <= 0) {
+      currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
+          ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS);
+    }
+
+    if (deleteOperation.hasBody()) {
+      State deleteState = deleteOperation.getBody(State.class);
+      if (deleteState.documentExpirationTimeMicros > 0) {
+        currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
+            deleteState.documentExpirationTimeMicros);
+      }
+    }
+
+    if (currentState.documentExpirationTimeMicros > 0) {
+      ServiceUtils.logInfo(this,
+          "Expiring DiskService %s in %d micros",
+          getSelfLink(),
+          currentState.documentExpirationTimeMicros);
+    }
+
+    setState(deleteOperation, currentState);
+    deleteOperation.complete();
   }
 
   /**

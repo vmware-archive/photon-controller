@@ -13,11 +13,16 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -28,13 +33,17 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
 import java.util.EnumSet;
+import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 
 /**
  * Tests {@link TombstoneService}.
  */
 public class TombstoneServiceTest {
 
+  private XenonRestClient dcpRestClient;
   private BasicServiceHost host;
   private TombstoneService service;
 
@@ -222,4 +231,166 @@ public class TombstoneServiceTest {
       };
     }
   }
+
+  /**
+   * Tests for the handleDelete method.
+   */
+  public class HandleDeleteTest {
+
+    TombstoneService.State testState;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      service = new TombstoneService();
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          TombstoneServiceFactory.SELF_LINK,
+          10, 10);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient.start();
+
+      testState = buildValidStartState();
+      host.startServiceSynchronously(new TombstoneServiceFactory(), null);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      service = null;
+      dcpRestClient.stop();
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in current state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
+      testState.documentExpirationTimeMicros = Long.MAX_VALUE;
+      Operation result = dcpRestClient.post(TombstoneServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      TombstoneService.State createdState = result.getBody(TombstoneService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(testState.documentExpirationTimeMicros));
+
+      TombstoneService.State savedState =
+          host.getServiceState(TombstoneService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(testState.documentExpirationTimeMicros));
+
+      TombstoneService.State deleteState = new TombstoneService.State();
+      deleteState.documentExpirationTimeMicros = 0;
+      result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(TombstoneService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 1;
+            }
+          });
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in delete operation state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
+      Operation result = dcpRestClient.post(TombstoneServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      TombstoneService.State createdState = result.getBody(TombstoneService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(0L));
+
+      TombstoneService.State savedState =
+          host.getServiceState(TombstoneService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(0L));
+
+      TombstoneService.State deleteState = new TombstoneService.State();
+      deleteState.documentExpirationTimeMicros = Long.MAX_VALUE;
+      result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(TombstoneService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 1;
+            }
+          });
+    }
+
+    /**
+     * Test expiration of deleted document using default value.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDeleteWithDefaultExpiration() throws Throwable {
+      Operation result = dcpRestClient.post(TombstoneServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      TombstoneService.State createdState = result.getBody(TombstoneService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(0L));
+
+      TombstoneService.State savedState =
+          host.getServiceState(TombstoneService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(0L));
+
+      result = dcpRestClient.delete(createdState.documentSelfLink, null);
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(TombstoneService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 0;
+            }
+          });
+    }
+  }
+
 }
