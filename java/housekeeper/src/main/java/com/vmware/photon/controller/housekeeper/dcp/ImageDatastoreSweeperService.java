@@ -504,11 +504,21 @@ public class ImageDatastoreSweeperService extends StatefulService {
                 updateReplicatedDatastoreCount(descriptor.getImage_id(),
                     (operation, throwable) -> {
                       if (throwable != null) {
-                        logWarning("Image update replicated datastore count failed for image .",
+                        logWarning("Image update replicated datastore count failed for image %s.",
                             descriptor.getImage_id());
                       }
                     }
                 );
+                if (current.isImageDatastore) {
+                  deleteImageToImageDatastoreMapping(current, descriptor.getImage_id(),
+                      (operation, throwable) -> {
+                        if (throwable != null) {
+                          logWarning(" Deleting ImageToImageDatastoreMappingService failed for image %s, " +
+                                  "image datastore %s.",
+                              descriptor.getImage_id(), current.datastore);
+                        }
+                      });
+                }
               }
 
               if (current.isSelfProgressionDisabled) {
@@ -560,7 +570,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
     spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     sendRequest(
-        ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+        getCloudStoreHelper()
             .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
             .setBody(QueryTask.create(spec).setDirect(true))
             .setCompletion(
@@ -643,9 +653,26 @@ public class ImageDatastoreSweeperService extends StatefulService {
     datastoreCountRequest.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT;
 
     sendRequest(
-        ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
+        getCloudStoreHelper()
             .createPatch(ServiceUriPaths.CLOUDSTORE_ROOT + "/images/" + imageId)
             .setBody(datastoreCountRequest)
+            .setCompletion(completionHandler));
+  }
+
+  /**
+   * Delete the corresponding ImageToImageDatastoreMappingService Cloudstore.
+   *
+   * @param current
+   * @param imageId
+   * @param completionHandler
+   */
+  private void deleteImageToImageDatastoreMapping(final State current, String imageId,
+                                                  Operation.CompletionHandler completionHandler) {
+    sendRequest(
+        getCloudStoreHelper()
+            .createDelete(ServiceUriPaths.CLOUDSTORE_ROOT + "/images-to-image-datastore-mapping/" + imageId + "_" +
+                current.datastore)
+            .setBody("{}")
             .setCompletion(completionHandler));
   }
 
