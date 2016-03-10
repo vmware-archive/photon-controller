@@ -27,3 +27,6 @@ tags
 
 tmp/
 ruby/common/test_files/deployment/dcmap.yml
+
+*.gem
+*.box
