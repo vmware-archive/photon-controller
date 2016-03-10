@@ -15,29 +15,30 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
-import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.QueryTask;
 
 import org.joda.time.DateTime;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
+import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.UUID;
 import java.util.concurrent.Executors;
-import java.util.function.Predicate;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests {@link TaskService}.
@@ -314,7 +315,7 @@ public class TaskServiceTest {
      */
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
-      testState.documentExpirationTimeMicros = Long.MAX_VALUE;
+      testState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(Integer.MAX_VALUE);
       Operation result = dcpRestClient.post(TaskServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
 
@@ -330,24 +331,13 @@ public class TaskServiceTest {
       result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
       assertThat(result.getStatusCode(), is(200));
 
-      QueryTask.Query kindClause = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(TaskService.State.class));
-
-      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
-      spec.query.addBooleanClause(kindClause);
-      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
-
-      QueryTask queryTask = QueryTask.create(spec)
-          .setDirect(true);
-
-      host.waitForQuery(queryTask,
-          new Predicate<QueryTask>() {
-            @Override
-            public boolean test(QueryTask queryTask) {
-              return queryTask.results.documentLinks.size() == 1;
-            }
-          });
+      TaskService.State deletedState = result.getBody(TaskService.State.class);
+      assertThat(deletedState.documentExpirationTimeMicros, not(0L));
+      assertThat(new BigDecimal(deletedState.documentExpirationTimeMicros),
+          is(closeTo(
+              new BigDecimal(
+                  ServiceUtils.computeExpirationTime(Integer.MAX_VALUE)),
+              new BigDecimal(TimeUnit.MINUTES.toMicros(1)))));
     }
 
     /**
@@ -368,28 +358,17 @@ public class TaskServiceTest {
       assertThat(savedState.documentExpirationTimeMicros, is(0L));
 
       TaskService.State deleteState = new TaskService.State();
-      deleteState.documentExpirationTimeMicros = Long.MAX_VALUE;
+      deleteState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(Integer.MAX_VALUE);
       result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
       assertThat(result.getStatusCode(), is(200));
 
-      QueryTask.Query kindClause = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(TaskService.State.class));
-
-      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
-      spec.query.addBooleanClause(kindClause);
-      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
-
-      QueryTask queryTask = QueryTask.create(spec)
-          .setDirect(true);
-
-      host.waitForQuery(queryTask,
-          new Predicate<QueryTask>() {
-            @Override
-            public boolean test(QueryTask queryTask) {
-              return queryTask.results.documentLinks.size() == 1;
-            }
-          });
+      TaskService.State deletedState = result.getBody(TaskService.State.class);
+      assertThat(deletedState.documentExpirationTimeMicros, not(0L));
+      assertThat(new BigDecimal(deletedState.documentExpirationTimeMicros),
+          is(closeTo(
+              new BigDecimal(
+                  ServiceUtils.computeExpirationTime(Integer.MAX_VALUE)),
+              new BigDecimal(TimeUnit.MINUTES.toMicros(1)))));
     }
 
     /**
@@ -411,25 +390,13 @@ public class TaskServiceTest {
 
       result = dcpRestClient.delete(createdState.documentSelfLink, new TaskService.State());
       assertThat(result.getStatusCode(), is(200));
-
-      QueryTask.Query kindClause = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(TaskService.State.class));
-
-      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
-      spec.query.addBooleanClause(kindClause);
-      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
-
-      QueryTask queryTask = QueryTask.create(spec)
-          .setDirect(true);
-
-      host.waitForQuery(queryTask,
-          new Predicate<QueryTask>() {
-            @Override
-            public boolean test(QueryTask queryTask) {
-              return queryTask.results.documentLinks.size() == 0;
-            }
-          });
+      TaskService.State deletedState = result.getBody(TaskService.State.class);
+      assertThat(deletedState.documentExpirationTimeMicros, not(0L));
+      assertThat(new BigDecimal(deletedState.documentExpirationTimeMicros),
+          is(closeTo(
+              new BigDecimal(
+                  ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS)),
+              new BigDecimal(TimeUnit.MINUTES.toMicros(1)))));
     }
   }
 }

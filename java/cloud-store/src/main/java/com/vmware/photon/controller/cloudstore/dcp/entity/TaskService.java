@@ -148,14 +148,13 @@ public class TaskService extends StatefulService {
     if (deleteOperation.hasBody()) {
       State deleteState = deleteOperation.getBody(State.class);
       if (deleteState.documentExpirationTimeMicros > 0) {
-        currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
-            deleteState.documentExpirationTimeMicros);
+        currentState.documentExpirationTimeMicros = deleteState.documentExpirationTimeMicros;
       }
     }
 
     if (currentState.documentExpirationTimeMicros > 0) {
       ServiceUtils.logInfo(this,
-          "Expiring TaskService %s in %d micros",
+          "Expiring TaskService %s at %d micros",
           getSelfLink(),
           currentState.documentExpirationTimeMicros);
     }

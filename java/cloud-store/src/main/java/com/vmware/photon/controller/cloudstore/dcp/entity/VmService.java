@@ -89,14 +89,13 @@ public class VmService extends StatefulService {
     if (deleteOperation.hasBody()) {
       State deleteState = deleteOperation.getBody(State.class);
       if (deleteState.documentExpirationTimeMicros > 0) {
-        currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
-            deleteState.documentExpirationTimeMicros);
+        currentState.documentExpirationTimeMicros = deleteState.documentExpirationTimeMicros;
       }
     }
 
     if (currentState.documentExpirationTimeMicros > 0) {
       ServiceUtils.logInfo(this,
-          "Expiring VmService %s in %d micros",
+          "Expiring VmService %s at %d micros",
           getSelfLink(),
           currentState.documentExpirationTimeMicros);
     }

@@ -50,7 +50,9 @@ public class ServiceUtils {
    * Default expiration time for this service is 1 days.
    */
   public static final long DEFAULT_DOC_EXPIRATION_TIME = TimeUnit.DAYS.toMillis(1);
-  public static final long DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS = 1L;
+  // Keep the expiration large enough to allow Xenon to replicate the DELETEs to all nodes first
+  // and also to allow time for debugging deleted documents for live site incidents.
+  public static final long DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS = TimeUnit.DAYS.toMicros(30);
   private static Random randomGenerator = new Random(System.currentTimeMillis());
 
   /**
