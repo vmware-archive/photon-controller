@@ -94,6 +94,11 @@ Vagrant.configure("2") do |config|
           auto_correct: true
       photon.vm.network :forwarded_port, guest: 8080, host: 9090,
           auto_correct: true
+
+      # Graphite web interface port
+      photon.vm.network :forwarded_port, guest: 8000, host: 8000
+      # Graphite carbon-cache pickle receiver (stats endpoint for agent)
+      photon.vm.network :forwarded_port, guest: 2004, host: 2004
     end
   end
 
@@ -173,6 +178,7 @@ Vagrant.configure("2") do |config|
     config.vm.synced_folder ".", "/vagrant", :extra => "dmode=777,fmode=666"
   end
   config.vm.synced_folder "#{Dir.home}/.gradle/#{ENV["JOB_NAME"] || "devbox-local"}", "/gradle", create: true
+  config.vm.synced_folder "stats_data", "/stats_data", mount_options: ["dmode=777,fmode=777"]
 
   #
   # Provided for convenience only; don't take a strong dependency on it
@@ -621,6 +627,47 @@ Vagrant.configure("2") do |config|
         --entrypoint /bin/bash #{image_name} /etc/esxcloud/run.sh
     EOS
   end
+
+  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    set -ex
+    docker pull samsaffron/graphite
+    mkdir -p $HOME/graphite/conf
+
+    # Storage aggregation config for Graphite. Without xFilesFactor set here,
+    # Graphite will drop stats data that is too infrequent for the default setting.
+    cat <<'EOM' > $HOME/graphite/conf/storage-aggregation.conf
+[photon]
+pattern = ^photon\..*
+xFilesFactor = 0
+EOM
+
+    out=$HOME/graphite/start-graphite
+    cat <<'EOM' > $out
+# See for details: https://github.com/SamSaffron/graphite_docker
+#
+# 80: the graphite web interface
+# 3000: the grafana web interface
+# 2003: the carbon-cache line receiver (the standard graphite protocol)
+# 2004: the carbon-cache pickle receiver
+# 7002: the carbon-cache query port (used by the web interface)
+# 8125: the statsd UDP port
+# 8126: the statsd management port
+
+docker run \
+  -v /stats_data/graphite:/data \
+  -v $HOME/graphite/conf/storage-aggregation.conf:/var/lib/graphite/conf/storage-aggregation.conf \
+  -p 8000:80 \
+  -p 3000:3000 \
+  -p 2003:2003 \
+  -p 2004:2004 \
+  -p 7002:7002 \
+  -p 8125:8125/udp \
+  -p 8126:8126 \
+  -d samsaffron/graphite
+EOM
+    chmod +x $out
+    $out
+  EOS
 
   config.vm.provision :shell, :inline => <<-EOS
     set +e

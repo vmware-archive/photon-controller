@@ -6,23 +6,23 @@ fi
 
 function checkenv ()
 {
-  for var in $@
+  for var in "$@"
   do
-    if [ -z "$(printenv $var)" ]
+    if [ -z "$(printenv "$var")" ]
       then
-        echo Cannot run test. $var is not defined.
-        echo This list of properties must be defined. $@
+        echo Cannot run test. "$var" is not defined.
+        echo This list of properties must be defined. "$@"
         exit 1
     fi
   done
 }
 
-source $(dirname $BASH_SOURCE)/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 # Define any custom config process
 if [ -n "$CUSTOM_TEST_CONFIG" ]; then
-    echo Using custom settings in $CUSTOM_TEST_CONFIG
-    source $CUSTOM_TEST_CONFIG
+    echo Using custom settings in "$CUSTOM_TEST_CONFIG"
+    source "$CUSTOM_TEST_CONFIG"
 else
     echo No CUSTOM_TEST_CONFIG to override default test behavior
 fi
@@ -30,7 +30,7 @@ fi
 env
 
 # environment checks
-if [ -z "NO_TESTENVCHECK" ]; then
+if [ -z "$NO_TESTENVCHECK" ]; then
   # Auths
   if [ -n "$ENABLE_AUTH" ]; then
     echo "auth enabled"
@@ -54,7 +54,7 @@ if [ -z "NO_TESTENVCHECK" ]; then
     PHOTON_AUTH_SERVER_TENANT\
     PHOTON_SWAGGER_LOGIN_URL\
     PHOTON_SWAGGER_LOGOUT_URL"
-    checkenv $envlist
+    checkenv "$envlist"
   fi
 
   # Cluster mgr
@@ -70,7 +70,7 @@ if [ -z "NO_TESTENVCHECK" ]; then
     KUBERNETES_IMAGE\
     MESOS_IMAGE\
     SWARM_IMAGE"
-    checkenv $envlist
+    checkenv "$envlist"
   fi
 
   # get the image/iso file
@@ -82,7 +82,7 @@ if [ -z "NO_TESTENVCHECK" ]; then
     ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE\
     ESXCLOUD_ISO_FILE\
     MGMT_IMAGE"
-    checkenv $envlist
+    checkenv "$envlist"
   fi
 
   # general must have
@@ -103,86 +103,76 @@ if [ -z "NO_TESTENVCHECK" ]; then
   DEPLOYER_ADDRESS\
   ZOOKEEPER_ADDRESS\
   ZOOKEEPER_PORT"
-  checkenv $envlist
+  checkenv "$envlist"
 fi
 
-cd $TESTS
+cd "$TESTS"
 
 # verify that no objects were left over at the beginning of the run
-if [ -n "$DEVBOX" ]
-then
+if [ -n "$DEVBOX" ]; then
   bundle exec rake clean_vms_on_real_host
 fi
 
-if [ "$DEPLOYER_TEST" ]
-then
+if [ "$DEPLOYER_TEST" ]; then
   bundle exec rake deployer
   bundle exec rake clean_vms_on_real_host
-else
-  bundle exec rake zookeeper
-
-  # API tests
-  bundle exec rake esxcloud:authorization
-
-  # run tests using API & CLI drivers in subshells
-  if [ -n "$NO_PARALLEL" ]
-  then
-    export DRIVER=api
-    bundle exec rake esxcloud:api
-
-    if [ -z "$DISABLE_CLI_TESTS" ]
-    then
-      export DRIVER=cli
-      bundle exec rake esxcloud:cli
-
-      export DRIVER=gocli
-      bundle exec rake esxcloud:gocli
-    fi
-  else
-    pids=[]
-    (
-        export DRIVER=api
-        bundle exec rake esxcloud:api
-    ) &
-    pids[0]=$!
-
-    if [ -z "$DISABLE_CLI_TESTS" ]
-    then
-      (
-          export DRIVER=cli
-          bundle exec rake esxcloud:cli
-
-          # Don't run gocli in parallel now due to the agent capacity
-          export DRIVER=gocli
-          bundle exec rake esxcloud:gocli
-      ) &
-      pids[1]=$!
-    fi
-
-    for pid in ${pids[*]}; do wait $pid; done;
-  fi
-
-  # re-set the driver to API
-  export DRIVER=api
-
-  # run life_cycle tests
-  bundle exec rake esxcloud:life_cycle
-
-  # run the housekeeper integration test
-  if [ -n "$DISABLE_HOUSEKEEPER" ]; then
-    bundle exec rake housekeeper
-  fi
-
-  if [ -z "$DISABLE_CLUSTER_INTEGRATION" ]; then
-    env
-    bundle exec parallel_rspec -o '--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow' -- spec/api/cluster/*_spec.rb
-  fi
-
-  # run the availability zone integration test
-  if [ "$PROMOTE" = true ] && [ -z "$UPTIME" ]; then
-    bundle exec rake availabilityzone
-  fi
-
-  # verify that no objects were left over at the end of the run
-  bundle exec rake esxcloud:validate
+  exit $?
 fi
+
+bundle exec rake zookeeper
+
+# API tests
+bundle exec rake esxcloud:authorization
+
+if [ -z "$DISABLE_CLI_TESTS" ]; then
+  drivers=(api cli)
+else
+  drivers=(api)
+fi
+
+pids=[]
+for driver in "${drivers[@]}"; do
+  DRIVER="${driver}" bundle exec rake "esxcloud:${driver}" & pids+=($!)
+  if [ -n "$NO_PARALLEL" ]; then
+    # The last value we just put into $pids
+    wait "${pids[-1]}"
+  fi
+done
+
+# Wait for parallel tests, will do nothing if not parallel
+for pid in "${pids[@]}"; do wait "$pid"; done
+
+# Don't run gocli tests in parallel
+if [ -z "$DISABLE_CLI_TESTS" ]; then
+  DRIVER=gocli bundle exec rake esxcloud:gocli
+fi
+
+# Make sure driver is set to API for remaining tests
+export DRIVER=api
+
+# run life_cycle tests
+bundle exec rake esxcloud:life_cycle
+
+# run the housekeeper integration test
+if [ -n "$DISABLE_HOUSEKEEPER" ]; then
+  bundle exec rake housekeeper
+fi
+
+if [ -z "$DISABLE_CLUSTER_INTEGRATION" ]; then
+  env
+  bundle exec parallel_rspec -o '--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow' -- spec/api/cluster/*_spec.rb
+fi
+
+# run the availability zone integration test
+if [ "$PROMOTE" = "true" ] && [ -z "$UPTIME" ]; then
+  bundle exec rake availabilityzone
+fi
+
+# Disable in promote until graphite story is figured out for promote
+# Only run when REAL_AGENT is defined
+if [ "$PROMOTE" != "true" ] && [ ! -z "$REAL_AGENT" ]; then
+  bundle exec rake agent:stats
+fi
+
+# verify that no objects were left over at the end of the run
+bundle exec rake esxcloud:validate

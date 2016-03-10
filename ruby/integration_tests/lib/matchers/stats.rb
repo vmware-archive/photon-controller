@@ -1,4 +1,4 @@
-# Copyright 2015 VMware, Inc. All Rights Reserved.
+# Copyright 2016 VMware, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -9,19 +9,18 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED. See the License for the
 # specific language governing permissions and limitations under the License.
 
-source "http://rubygems.org"
+require 'rspec/expectations'
 
-gem 'ipaddress', '~> 0.8.0'
-gem 'netaddr', '~> 1.5.0'
-gem "faraday", "~>0.8.7"
-gem "json", "~>1.8"
-gem "rake", "~>10"
-gem "rspec", "~>2.14"
-gem "rspec_junit_formatter", "~>0.1.6"
-gem "zookeeper", "~>1.4.9"
-gem "net-ssh", "~>2.9.2"
-gem "net-sftp", "~>2.1.2"
-gem "net-ping", "~>1.7.6"
-gem "parallel_tests", "~>1.7.0"
-gem "thrift", "~>0.9.2"
-gem "pry"
+RSpec::Matchers.define :have_graphite_data do
+  match do |stats|
+    hasValue = 
+      stats != nil &&
+      stats.first != nil &&
+      stats.first["datapoints"] != nil
+    # Filter non-null data
+    false if !hasValue
+    data = stats.first["datapoints"].select { |x| x.first != nil }
+    expect(data).to have_at_least(1).things
+    data.length > 0
+  end
+end
