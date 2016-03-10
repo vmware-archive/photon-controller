@@ -40,8 +40,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
-import com.vmware.photon.controller.common.xenon.exceptions.XenonException;
-import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.zookeeper.DataDictionary;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.resource.gen.Datastore;
@@ -58,6 +56,7 @@ import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.xenon.common.Utils;
 
+import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.thrift.TException;
@@ -175,6 +174,9 @@ public class ChairmanService implements Chairman.Iface {
    * to true.
    */
   void setDatastoreState(List<Datastore> datastores, List<String> imageDatastores) throws Throwable {
+
+    Preconditions.checkState(datastores == null || imageDatastores != null);
+
     if (datastores != null) {
       // Create datastore documents.
       for (Datastore datastore : datastores) {
@@ -184,22 +186,14 @@ public class ChairmanService implements Chairman.Iface {
         datastoreState.name = datastore.getName();
         datastoreState.type = datastore.getType().toString();
         datastoreState.tags = datastore.getTags();
-        datastoreState.isImageDatastore = false;
+        datastoreState.isImageDatastore = imageDatastores.stream()
+            .anyMatch((imageDatastoreId) -> imageDatastoreId.equals(datastore.getId()));
+
         try {
           dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, datastoreState);
-        } catch (XenonException | XenonRuntimeException ex) {
-          logger.debug("Ignoring datastore document creation failure", ex);
+        } catch (Throwable t) {
+          logger.error("Failed to set datastore state: ", Utils.toJsonHtml(datastoreState), Utils.toString(t));
         }
-      }
-    }
-
-    if (imageDatastores != null) {
-      // Set isImageDatastore flag to true.
-      for (String datastoreId : imageDatastores) {
-        String link = DatastoreServiceFactory.getDocumentLink(datastoreId);
-        DatastoreService.State datastoreState = new DatastoreService.State();
-        datastoreState.isImageDatastore = true;
-        dcpRestClient.patch(link, datastoreState);
       }
     }
   }

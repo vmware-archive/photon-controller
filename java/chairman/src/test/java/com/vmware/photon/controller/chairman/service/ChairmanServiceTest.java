@@ -275,8 +275,6 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     ds2.type = "SHARED_VMFS";
     ds2.tags = new LinkedHashSet<>();
 
-    String dsLink1 = DatastoreServiceFactory.getDocumentLink(ds1.id);
-    String dsLink2 = DatastoreServiceFactory.getDocumentLink(ds2.id);
     HostService.State hostState = new HostService.State();
     hostState.agentState = AgentState.MISSING;
     Operation result = mock(Operation.class);
@@ -301,34 +299,26 @@ public class ChairmanServiceTest extends PowerMockTestCase {
     verify(configDict).write(hostId, serialize(request.getConfig()));
     verify(missingDict).write(hostId, null);
 
-    // Verify that patch gets called with "READY" state.
+    // Verify that chairman attempted to create datastore documents.
     ArgumentCaptor<String> arg1 = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<ServiceDocument> arg2 = ArgumentCaptor.forClass(ServiceDocument.class);
-    verify(dcpRestClient, times(3)).patch(arg1.capture(), arg2.capture());
-    assertThat(arg1.getAllValues().get(0), is(link));
-    HostService.State newState = (HostService.State) (arg2.getAllValues().get(0));
+    verify(dcpRestClient, times(2)).post(arg1.capture(), arg2.capture());
+    assertThat(arg1.getAllValues(), contains(DatastoreServiceFactory.SELF_LINK, DatastoreServiceFactory.SELF_LINK));
+    DatastoreService.State actualDs1 = (DatastoreService.State) arg2.getAllValues().get(0);
+    verifyDatastore(ds1, actualDs1);
+    DatastoreService.State actualDs2 = (DatastoreService.State) arg2.getAllValues().get(1);
+    verifyDatastore(ds2, actualDs2);
+
+    // Verify that patch gets called with "READY" state.
+    arg1 = ArgumentCaptor.forClass(String.class);
+    arg2 = ArgumentCaptor.forClass(ServiceDocument.class);
+    verify(dcpRestClient).patch(arg1.capture(), arg2.capture());
+    assertThat(arg1.getValue(), is(link));
+    HostService.State newState = (HostService.State) arg2.getValue();
     assertThat(newState.agentState, is(AgentState.ACTIVE));
     assertThat(newState.reportedDatastores, containsInAnyOrder("ds1", "ds2"));
     assertThat(newState.reportedNetworks, containsInAnyOrder("nw1", "nw2"));
     assertThat(newState.reportedImageDatastores, containsInAnyOrder("ds1", "ds2"));
-
-    // Verify that the isImageDatastore flag gets set on ds1 and ds2.
-    assertThat(arg1.getAllValues().get(1), is(dsLink1));
-    DatastoreService.State newDsState = (DatastoreService.State) (arg2.getAllValues().get(1));
-    assertThat(newDsState.isImageDatastore, is(true));
-    assertThat(arg1.getAllValues().get(2), is(dsLink2));
-    newDsState = (DatastoreService.State) (arg2.getAllValues().get(2));
-    assertThat(newDsState.isImageDatastore, is(true));
-
-    // Verify that chairman attempted to create datastore documents.
-    arg1 = ArgumentCaptor.forClass(String.class);
-    arg2 = ArgumentCaptor.forClass(ServiceDocument.class);
-    verify(dcpRestClient, times(2)).post(arg1.capture(), arg2.capture());
-    DatastoreService.State actualDs1 = (DatastoreService.State) (arg2.getAllValues().get(0));
-    DatastoreService.State actualDs2 = (DatastoreService.State) (arg2.getAllValues().get(1));
-    assertThat(arg1.getAllValues(), contains(DatastoreServiceFactory.SELF_LINK, DatastoreServiceFactory.SELF_LINK));
-    verifyDatastore(ds1, actualDs1);
-    verifyDatastore(ds2, actualDs2);
   }
 
   void verifyDatastore(DatastoreService.State expected, DatastoreService.State actual) {
