@@ -68,8 +68,7 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
             #end
 
             #it "provisions a host" do
-            @host = EsxCloud::Host.create(@deployment.id, to_spec(@host))
-
+            @host = EsxCloud::Host.create(@deployment.id, @host.to_spec())
             expect(@host.state).to eq("READY")
             expect(host_is_reachable @host, @seeder).to be(true)
             #end
@@ -110,8 +109,7 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
             #end
 
             #it "provisions a host" do
-            @host = EsxCloud::Host.create(@deployment.id, to_spec(@host))
-
+            @host = EsxCloud::Host.create(@deployment.id, @host.to_spec())
             expect(@host.state).to eq("READY")
             expect(host_is_reachable @host, @seeder).to be(true)
             #end
@@ -370,14 +368,4 @@ def host_is_reachable(host, seeder)
     return false
   end
   return true
-end
-
-def to_spec(host)
-  EsxCloud::HostCreateSpec.new(
-      host.username,
-      host.password,
-      host.usage_tags,
-      host.address,
-      host.metadata,
-      host.availability_zone)
 end
