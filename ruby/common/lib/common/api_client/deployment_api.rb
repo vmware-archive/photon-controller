@@ -128,6 +128,16 @@ module EsxCloud
 
       # @param [String] deployment_id
       # @return [Deployment]
+      def pause_background_tasks(deployment_id)
+        response = @http_client.post("#{DEPLOYMENTS_ROOT}/#{deployment_id}/pause_background_tasks", nil)
+        check_response("Pause system background tasks '#{deployment_id}'", response, 201)
+
+        task = poll_response(response)
+        find_deployment_by_id(task.entity_id)
+      end
+
+      # @param [String] deployment_id
+      # @return [Deployment]
       def resume_system(deployment_id)
         response = @http_client.post("#{DEPLOYMENTS_ROOT}/#{deployment_id}/resume_system", nil)
         check_response("Resume system for deployment '#{deployment_id}'", response, 201)

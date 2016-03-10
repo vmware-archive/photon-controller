@@ -84,6 +84,7 @@ module EsxCloud
         EsxCloud::ApiRoute.new(:get, "/deployments/#{id}", 404, 200, 403, 403, 403),
         EsxCloud::ApiRoute.new(:get, "/deployments/#{id}/hosts", 404, 200, 403, 403, 403),
         EsxCloud::ApiRoute.new(:post, "/deployments/#{id}/pause_system", 404, 201, 403, 403, 403),
+        EsxCloud::ApiRoute.new(:post, "/deployments/#{id}/pause_background_tasks", 404, 201, 403, 403, 403),
         EsxCloud::ApiRoute.new(:post, "/deployments/#{id}/resume_system", 404, 201, 403, 403, 403),
         EsxCloud::ApiRoute.new(:post, "/deployments/#{id}/set_security_groups", 400, 400, 403, 403, 403),
         EsxCloud::ApiRoute.new(:get, "/deployments/#{id}/vms", 404, 200, 403, 403, 403),
