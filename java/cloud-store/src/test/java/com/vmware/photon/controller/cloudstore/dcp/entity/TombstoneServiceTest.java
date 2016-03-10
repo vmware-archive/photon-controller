@@ -13,7 +13,11 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -28,13 +32,17 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
 import java.util.EnumSet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests {@link TombstoneService}.
  */
 public class TombstoneServiceTest {
 
+  private XenonRestClient dcpRestClient;
   private BasicServiceHost host;
   private TombstoneService service;
 
@@ -222,4 +230,95 @@ public class TombstoneServiceTest {
       };
     }
   }
+
+  /**
+   * Tests for the handleDelete method.
+   */
+  public class HandleDeleteTest {
+
+    TombstoneService.State testState;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      service = new TombstoneService();
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          TombstoneServiceFactory.SELF_LINK,
+          10, 10);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient.start();
+
+      testState = buildValidStartState();
+      host.startServiceSynchronously(new TombstoneServiceFactory(), null);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      service = null;
+      dcpRestClient.stop();
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in current state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          TombstoneServiceFactory.SELF_LINK,
+          testState,
+          TombstoneService.State.class,
+          ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1)),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE));
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in delete operation state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          TombstoneServiceFactory.SELF_LINK,
+          testState,
+          TombstoneService.State.class,
+          ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1)),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE));
+    }
+
+    /**
+     * Test expiration of deleted document using default value.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDeleteWithDefaultExpiration() throws Throwable {
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          TombstoneServiceFactory.SELF_LINK,
+          testState,
+          TombstoneService.State.class,
+          0L,
+          0L,
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS));
+    }
+  }
+
 }

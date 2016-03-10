@@ -62,7 +62,7 @@ public class DiskService extends StatefulService {
 
   @Override
   public void handlePatch(Operation patchOperation) {
-    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Patching DiskService %s", getSelfLink());
     State currentState = getState(patchOperation);
     State patchState = patchOperation.getBody(State.class);
 
@@ -77,6 +77,11 @@ public class DiskService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       patchOperation.fail(t);
     }
+  }
+
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
   }
 
   /**

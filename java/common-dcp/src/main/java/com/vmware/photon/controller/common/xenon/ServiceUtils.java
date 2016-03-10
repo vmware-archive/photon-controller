@@ -280,9 +280,11 @@ public class ServiceUtils {
    */
   public static <T extends ServiceDocument> void expireDocumentOnDelete(
       Service service,
-      T currentState,
       Class<T> serviceDocumentType,
       Operation deleteOperation) {
+    ServiceUtils.logInfo(service, "Deleting Service %s", service.getSelfLink());
+
+    final ServiceDocument currentState = service.getState(deleteOperation);
 
     if (currentState.documentExpirationTimeMicros <= 0) {
       currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(

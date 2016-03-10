@@ -147,14 +147,14 @@ public class ServiceUtilsTest {
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       ServiceDocument currentState = new ServiceDocument();
       currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(Integer.MAX_VALUE);
-
+      when(service.getState(anyObject())).thenReturn(currentState);
 
       when(deleteOperation.hasBody()).thenReturn(true);
       ServiceDocument deleteState = new ServiceDocument();
       deleteState.documentExpirationTimeMicros = 0L;
       when(deleteOperation.getBody(ServiceDocument.class)).thenReturn(deleteState);
 
-      ServiceUtils.expireDocumentOnDelete(service, currentState, ServiceDocument.class, deleteOperation);
+      ServiceUtils.expireDocumentOnDelete(service, ServiceDocument.class, deleteOperation);
 
       ArgumentCaptor<ServiceDocument> stateArgument = ArgumentCaptor.forClass(ServiceDocument.class);
       ArgumentCaptor<Operation> operationArgument = ArgumentCaptor.forClass(Operation.class);
@@ -177,13 +177,14 @@ public class ServiceUtilsTest {
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       ServiceDocument currentState = new ServiceDocument();
       currentState.documentExpirationTimeMicros = 1L;
+      when(service.getState(anyObject())).thenReturn(currentState);
 
       when(deleteOperation.hasBody()).thenReturn(true);
       ServiceDocument deleteState = new ServiceDocument();
       deleteState.documentExpirationTimeMicros = Long.MAX_VALUE;
       when(deleteOperation.getBody(anyObject())).thenReturn(deleteState);
 
-      ServiceUtils.expireDocumentOnDelete(service, currentState, ServiceDocument.class, deleteOperation);
+      ServiceUtils.expireDocumentOnDelete(service, ServiceDocument.class, deleteOperation);
 
       ArgumentCaptor<ServiceDocument> stateArgument = ArgumentCaptor.forClass(ServiceDocument.class);
       ArgumentCaptor<Operation> operationArgument = ArgumentCaptor.forClass(Operation.class);
@@ -200,7 +201,9 @@ public class ServiceUtilsTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       ServiceDocument currentState = new ServiceDocument();
-      ServiceUtils.expireDocumentOnDelete(service, currentState, ServiceDocument.class, deleteOperation);
+      when(service.getState(anyObject())).thenReturn(currentState);
+
+      ServiceUtils.expireDocumentOnDelete(service, ServiceDocument.class, deleteOperation);
 
       ArgumentCaptor<ServiceDocument> stateArgument = ArgumentCaptor.forClass(ServiceDocument.class);
       ArgumentCaptor<Operation> operationArgument = ArgumentCaptor.forClass(Operation.class);
