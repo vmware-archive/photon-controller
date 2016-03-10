@@ -80,7 +80,7 @@ public class ImageService extends StatefulService {
 
   @Override
   public void handleStart(Operation startOperation) {
-    ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Starting ImageService %s", getSelfLink());
     try {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
@@ -97,7 +97,7 @@ public class ImageService extends StatefulService {
 
   @Override
   public void handlePatch(Operation patchOperation) {
-    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Patching ImageService %s", getSelfLink());
     try {
       State currentState = getState(patchOperation);
       State patchState = patchOperation.getBody(State.class);
@@ -113,6 +113,11 @@ public class ImageService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       patchOperation.fail(t);
     }
+  }
+
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
   }
 
   /**
