@@ -27,7 +27,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 import java.util.Arrays;
@@ -61,23 +60,7 @@ public class ImageSeedingProgressCheckStepCmdTest {
   }
 
   @Test
-  public void testImageSeedingFinished() throws ExternalException {
-    taskEntity.setTransientResources(ImageSeedingProgressCheckStepCmd.IMAGE_ID_KEY_NAME, imageId);
-    doReturn(true).when(imageBackend).isImageSeedingDone(imageId);
-
-    ImageSeedingProgressCheckStepCmd cmd = new ImageSeedingProgressCheckStepCmd(taskCommand, stepBackend, stepEntity,
-        imageBackend);
-    cmd.execute();
-
-    Object result = taskEntity.getTransientResources(ImageSeedingProgressCheckStepCmd.CANDIDATE_IMAGE_STORES_KEY_NAME);
-    assertThat(result, is(notNullValue()));
-
-    List<String> candidateImageDatastores = (List<String>) result;
-    assertThat(candidateImageDatastores.size(), is(0));
-  }
-
-  @Test
-  public void testImageSeedingInProgress() throws ExternalException {
+  public void testGetSeededImageDatastores() throws ExternalException {
     taskEntity.setTransientResources(ImageSeedingProgressCheckStepCmd.IMAGE_ID_KEY_NAME, imageId);
     doReturn(false).when(imageBackend).isImageSeedingDone(imageId);
 
@@ -96,21 +79,4 @@ public class ImageSeedingProgressCheckStepCmdTest {
     assertThat(CollectionUtils.isEqualCollection(candidateImageDatastores, expectedCandidates), is(true));
   }
 
-  @Test
-  public void testImageSeedingCheckException() throws ExternalException {
-    taskEntity.setTransientResources(ImageSeedingProgressCheckStepCmd.IMAGE_ID_KEY_NAME, imageId);
-
-    String expectedErrorMsg = "Failed to read replication status of image " + imageId;
-    doThrow(new ExternalException(expectedErrorMsg)).when(imageBackend).isImageSeedingDone(imageId);
-
-    ImageSeedingProgressCheckStepCmd cmd = new ImageSeedingProgressCheckStepCmd(taskCommand, stepBackend, stepEntity,
-        imageBackend);
-
-    cmd.execute();
-    Object result = taskEntity.getTransientResources(ImageSeedingProgressCheckStepCmd.CANDIDATE_IMAGE_STORES_KEY_NAME);
-    assertThat(result, is(notNullValue()));
-
-    List<String> candidateImageDatastores = (List<String>) result;
-    assertThat(candidateImageDatastores.size(), is(0));
-  }
 }

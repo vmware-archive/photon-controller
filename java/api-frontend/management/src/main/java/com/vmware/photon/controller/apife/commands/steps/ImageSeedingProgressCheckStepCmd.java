@@ -23,15 +23,13 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-
 /**
  * StepCommand for checking the progress of image seeding.
  * If image seeding is done, an empty list of candidate datastores
  * (available for reading images from) is put in the task context.
  * If image seeding is not finished, a filled list of candidate
  * datastores is saved in the task context.
- *
+ * <p>
  * The following steps can use these saved candidate datastores
  * to create constraints when creating VMs (as an example).
  */
@@ -56,20 +54,9 @@ public class ImageSeedingProgressCheckStepCmd extends StepCommand {
   protected void execute() throws ExternalException {
     TaskEntity taskEntity = stepEntity.getTask();
     String imageId = (String) taskEntity.getTransientResources(IMAGE_ID_KEY_NAME);
-    boolean imageSeedingDone = true;
 
-    //Best efforts to check if image seeding is done.
-    try {
-      imageSeedingDone = imageBackend.isImageSeedingDone(imageId);
-    } catch (Exception e) {
-      logger.warn("Best efforts checking image seeding progress failed, continue...");
-    }
-    if (imageSeedingDone) {
-      taskEntity.setTransientResources(CANDIDATE_IMAGE_STORES_KEY_NAME, new ArrayList<String>());
-    } else {
-      taskEntity.setTransientResources(CANDIDATE_IMAGE_STORES_KEY_NAME,
-          imageBackend.getSeededImageDatastores(imageId));
-    }
+    taskEntity.setTransientResources(CANDIDATE_IMAGE_STORES_KEY_NAME,
+        imageBackend.getSeededImageDatastores(imageId));
   }
 
   @Override
