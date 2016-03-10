@@ -261,4 +261,47 @@ public class ServiceUtils {
     Operation completedOperation = syncOp.awaitOperationCompletion();
     return OperationUtils.handleCompletedOperation(requestedOperation, completedOperation);
   }
+
+  /**
+   * This method will expire the document based on expiration duration provided.
+   * expiration provided is given this precedence:
+   * 1. Expiration provided in Delete operation if > 0
+   * 2. Expiration provided in the Current state if > 0
+   * 3. Expiration provided by ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS
+   * The method will complete the operation as well before returning so this should be
+   * the last operation in handleDelete implementation of a service.
+   *
+   * @param service
+   * @param serviceDocumentType
+   * @param deleteOperation
+   * @param <T>
+   */
+  public static <T extends ServiceDocument> void expireDocumentOnDelete(
+      Service service,
+      T currentState,
+      Class<T> serviceDocumentType,
+      Operation deleteOperation) {
+
+    if (currentState.documentExpirationTimeMicros <= 0) {
+      currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
+          ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS);
+    }
+
+    if (deleteOperation.hasBody()) {
+      T deleteState = deleteOperation.getBody(serviceDocumentType);
+      if (deleteState.documentExpirationTimeMicros > 0) {
+        currentState.documentExpirationTimeMicros = deleteState.documentExpirationTimeMicros;
+      }
+    }
+
+    if (currentState.documentExpirationTimeMicros > 0) {
+      ServiceUtils.logInfo(service,
+          "Expiring service %s at %d micros",
+          service.getSelfLink(),
+          currentState.documentExpirationTimeMicros);
+    }
+
+    service.setState(deleteOperation, currentState);
+    deleteOperation.complete();
+  }
 }
