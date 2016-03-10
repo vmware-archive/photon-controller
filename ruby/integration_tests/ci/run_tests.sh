@@ -177,6 +177,10 @@ else
     bundle exec rake availabilityzone
   fi
 
+  if [ ! -z "REAL_AGENT" ]; then
+    bundle exec rake agent:stats
+  fi
+
   # verify that no objects were left over at the end of the run
   bundle exec rake esxcloud:validate
 fi
