@@ -64,14 +64,20 @@ module EsxCloud
       # @param [String] tenant_id
       # @return [ResourceTicketList]
       def get_resource_ticket_list_from_response(result)
-        resource_tickets = Array.new
-        result.split("\n").map do |line|
-          resource_ticket_info = line.split("\t", -1)
-          next unless resource_ticket_info.size == 3
-          resource_tickets << find_resource_ticket_by_id(resource_ticket_info[0])
+        resource_tickets = result.split("\n").map do |resource_ticket_info|
+          get_resource_ticket_details resource_ticket_info.split("\t")[0]
         end
 
         ResourceTicketList.new(resource_tickets)
+      end
+
+      def get_resource_ticket_details(resource_ticket_id)
+        begin
+          find_resource_ticket_by_id resource_ticket_id
+        rescue EsxCloud::CliError => e
+          raise() unless e.message.include? "ResourceTicketNotFound"
+          nil
+        end
       end
 
       # @param [String] result

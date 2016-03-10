@@ -191,7 +191,7 @@ You can run 'cluster show bar' to see the state of the cluster."
     cluster_id = double("bar")
     vms = double(EsxCloud::VmList)
     result ="vmId1  vm1 READY
-vmId2  vm2 READY"
+             vmId2  vm2 READY"
     expect(client).to receive(:run_cli).with("cluster list_vms '#{cluster_id}'").and_return(result)
     expect(client).to receive(:get_vm_list_from_response).with(result).and_return(vms)
 

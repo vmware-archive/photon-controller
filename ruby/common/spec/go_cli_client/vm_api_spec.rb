@@ -129,10 +129,8 @@ describe EsxCloud::GoCliClient do
 
     vm = EsxCloud::Vm.create_from_hash(vm_hash)
     result = "vm1-id	vm1	STOPPED	core-100	image-id	10.146.36.28	datatstore1	a:b,c:d	tag1,tag2
-1
-disk1_id	disk1	ephemeral-disk	core-100	2	true
-1
-iso1_id	iso1-name	iso	10"
+              disk1_id	disk1	ephemeral-disk	core-100	2	true
+              iso1_id	iso1-name	iso	10"
 
     expect(client).to receive(:run_cli).with("vm show #{vm_id}").and_return(result)
     expect(client).to receive(:get_vm_from_response).with(result).and_return(vm)

@@ -80,8 +80,8 @@ module EsxCloud
       private
 
       def get_cluster_from_response(result)
-        values = result.split("\n", -1)
-        cluster_attributes = values[0].split("\t", -1)
+        result.slice! "\n"
+        cluster_attributes = result.split("\t", -1)
         cluster_hash = Hash.new
         cluster_hash["id"]                 = cluster_attributes[0] unless cluster_attributes[0] == ""
         cluster_hash["name"]               = cluster_attributes[1] unless cluster_attributes[1] == ""
