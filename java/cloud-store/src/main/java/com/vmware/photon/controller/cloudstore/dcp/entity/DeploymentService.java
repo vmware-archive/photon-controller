@@ -320,7 +320,6 @@ public class DeploymentService extends StatefulService {
     /**
      * This value represents whether Stats collection is enabled for the deployment.
      */
-    @Immutable
     @DefaultBoolean(value = false)
     public Boolean statsEnabled;
 
