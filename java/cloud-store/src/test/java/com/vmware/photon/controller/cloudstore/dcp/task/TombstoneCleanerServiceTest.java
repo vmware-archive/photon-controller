@@ -32,6 +32,8 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -55,8 +57,10 @@ public class TombstoneCleanerServiceTest {
   private BasicServiceHost host;
   private TombstoneCleanerService service;
 
-  private static final long SLEEP_TIME_MILLIS = 1;
-  private static final long MAX_ITERATIONS = 60000;
+  private static final long SLEEP_TIME_MILLIS = 1000;
+  private static final long MAX_ITERATIONS = 60;
+
+  private static final Logger logger = LoggerFactory.getLogger(TombstoneCleanerServiceTest.class);
 
   private TombstoneCleanerService.State buildValidStartupState() {
     TombstoneCleanerService.State state = new TombstoneCleanerService.State();
@@ -330,10 +334,17 @@ public class TombstoneCleanerServiceTest {
     private TombstoneCleanerService.State request;
 
     @BeforeMethod
-    public void setUp() throws Throwable {
+    public void setUp(Object[] testArgs) throws Throwable {
       // Build input.
       request = buildValidStartupState();
       request.isSelfProgressionDisabled = false;
+      int totalTombstones = (int) testArgs[0];
+      int staleTombstones = (int) testArgs[1];
+      int tasksPerTombstone = (int) testArgs[2];
+      int hostCount = (int) testArgs[3];
+
+      machine = TestEnvironment.create(hostCount);
+      seedTestEnvironment(machine, totalTombstones, staleTombstones, tasksPerTombstone);
     }
 
     @AfterMethod
@@ -365,9 +376,6 @@ public class TombstoneCleanerServiceTest {
     @Test(dataProvider = "Success")
     public void testSuccess(int totalTombstones, int staleTombstones, int tasksPerTombstone, int hostCount)
         throws Throwable {
-
-      machine = TestEnvironment.create(hostCount);
-      seedTestEnvironment(machine, totalTombstones, staleTombstones, tasksPerTombstone);
 
       TombstoneCleanerService.State response = machine.callServiceAndWaitForState(
           TombstoneCleanerFactoryService.SELF_LINK,
@@ -444,7 +452,15 @@ public class TombstoneCleanerServiceTest {
         ServiceHostUtils.waitForServiceState(
             ServiceDocumentQueryResult.class,
             serviceLink,
-            (ServiceDocumentQueryResult result) -> result.documentCount == count,
+            (ServiceDocumentQueryResult result) -> {
+              logger.info(
+                  "Host:[{}] Service:[{}] Document Count- Expected [{}], Actual [{}]",
+                  host.getUri(),
+                  serviceLink,
+                  count,
+                  result.documentCount);
+              return result.documentCount == count;
+            },
             host, SLEEP_TIME_MILLIS, MAX_ITERATIONS,
             null);
       }
