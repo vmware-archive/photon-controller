@@ -49,9 +49,7 @@ describe EsxCloud::GoCliClient do
                                 "defaultValue"=>"lsilogic"}]
                 }
     image = EsxCloud::Image.create_from_hash(image_hash)
-    result = "foo	image1	READY	4194417	EAGER	100.0%	100.0%
-              1
-              scsi0.virtualDev	lsilogic"
+    result = "foo	image1	READY	4194417	EAGER	100.0%	100.0%  scsi0.virtualDev:lsilogic"
     expect(client).to receive(:run_cli).with("image show #{image_id}").and_return(result)
     expect(client).to receive(:get_image_from_response).with(result).and_return(image)
 

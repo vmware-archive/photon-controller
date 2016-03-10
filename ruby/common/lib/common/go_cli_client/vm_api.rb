@@ -188,16 +188,8 @@ module EsxCloud
         vm_hash["datastore"]     = vm_attributes[6] unless vm_attributes[6] == ""
         vm_hash["metadata"]      = metadata_to_hash(vm_attributes[7])
         vm_hash["tags"]          = stringToArray(vm_attributes[8])
-        if values[1].include? ","
-          vm_hash["attachedDisks"] = getAttachedDisks(values[1])
-        else
-          vm_hash["attachedDisks"] = getAttachedDisks(values[2])
-        end
-        if values[3].include? ","
-          vm_hash["attachedIsos"]  = getAttachedISOs(values[3])
-        else
-          vm_hash["attachedIsos"]  = getAttachedISOs(values[4])
-        end
+        vm_hash["attachedDisks"] = getAttachedDisks(values[1])
+        vm_hash["attachedIsos"]  = getAttachedISOs(values[2])
 
         Vm.create_from_hash(vm_hash)
       end
@@ -278,16 +270,21 @@ module EsxCloud
         str == "true"
       end
 
-      # @param [String] result
-      # @return [VmList]
+
       def get_vm_list_from_response(result)
-        vms = Array.new
-        result.split("\n").map do |line|
-          vm_info = line.split("\t")
-          next unless vm_info.size > 1
-          vms << find_vm_by_id(vm_info[0])
+        vms = result.split("\n").map do |vm_info|
+          get_vm_details vm_info.split("\t")[0]
         end
         VmList.new(vms)
+      end
+
+      def get_vm_list_from_response(vm_id)
+        begin
+          find_vm_by_id vm_id
+        rescue EsxCloud::CliError => e
+          raise() unless e.message.include? "VmNotFound"
+          nil
+        end
       end
     end
   end

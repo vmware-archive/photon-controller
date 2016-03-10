@@ -53,8 +53,7 @@ describe EsxCloud::GoCliClient do
     tenant_name = double("t1_name")
     tenant = double(EsxCloud::Tenant, :name => tenant_name)
     tickets = double(EsxCloud::ResourceTicketList)
-    result = "2
-              id1	rt1	a:b:c,d:e:f
+    result = "id1	rt1	a:b:c,d:e:f
               id2	rt2	a:b:c,d:e:f"
 
     expect(@api_client).to receive(:find_tenant_by_id).with(tenant_id).and_return(tenant)
