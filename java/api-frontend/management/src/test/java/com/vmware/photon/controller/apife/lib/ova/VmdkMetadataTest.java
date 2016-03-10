@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 /**
  * Tests {@link VmdkMetadata}.
@@ -51,6 +52,37 @@ public class VmdkMetadataTest {
     File file = new File(VmdkMetadataTest.class.getResource("/vmdk/good.vmdk").getPath());
     fis = new BufferedInputStream(new FileInputStream(file));
     assertThat(VmdkMetadata.getSingleExtentSize(fis), is(4096));
+
+    // Ensure it works, even if the extent filename has a space in it.
+    file = new File(VmdkMetadataTest.class.getResource("/vmdk/good-space.vmdk").getPath());
+    fis = new BufferedInputStream(new FileInputStream(file));
+    assertThat(VmdkMetadata.getSingleExtentSize(fis), is(4096));
+  }
+
+  @DataProvider(name = "extents")
+  public Object[][] createDefault() {
+    return new Object[][] { { "RW 4096 SPARSE \"file.vmdk\"", 4, "4096", "file.vmdk" },
+        { "RW 4096 SPARSE \"file 2.vmdk\"", 4, "4096", "file 2.vmdk" },
+        { "  RW 4096 SPARSE \"file.vmdk\"", 4, "4096", "file.vmdk" },
+        { "  RW 4096 SPARSE \"file 2.vmdk\"", 4, "4096", "file 2.vmdk" },
+        { "RW 4096 SPARSE   \"file.vmdk\" 0", 5, "4096", "file.vmdk" },
+        { "RW 4096 SPARSE   \"file.vmdk\" 0", 5, "4096", "file.vmdk" }, };
+  }
+
+  /**
+   * The extractExtentFields() relies on a slightly complicated regular expression. We test the regular expression
+   * indirectly by testing extractExtentFields.
+   */
+  @Test(dataProvider = "extents")
+  public void testExtentTokenRegex(
+      String extentDescription,
+      int expectedNumberOfFields,
+      String expectedSize,
+      String expectedFilename) throws Exception {
+    List<String> extentFields = VmdkMetadata.extractExtentFields(extentDescription);
+    assertThat(extentFields.size(), is(expectedNumberOfFields));
+    assertThat(extentFields.get(1), is(expectedSize));
+    assertThat(extentFields.get(3), is(expectedFilename));
   }
 
   @Test(dataProvider = "BadVmdk")
