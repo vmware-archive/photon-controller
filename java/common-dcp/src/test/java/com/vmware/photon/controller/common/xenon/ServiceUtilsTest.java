@@ -154,7 +154,7 @@ public class ServiceUtilsTest {
       deleteState.documentExpirationTimeMicros = 0L;
       when(deleteOperation.getBody(ServiceDocument.class)).thenReturn(deleteState);
 
-      ServiceUtils.expireDocumentOnDelete(service, currentState, ServiceDocument.class, deleteOperation);
+      ServiceUtils.expireDocumentOnDelete(service, ServiceDocument.class, deleteOperation);
 
       ArgumentCaptor<ServiceDocument> stateArgument = ArgumentCaptor.forClass(ServiceDocument.class);
       ArgumentCaptor<Operation> operationArgument = ArgumentCaptor.forClass(Operation.class);
@@ -183,7 +183,7 @@ public class ServiceUtilsTest {
       deleteState.documentExpirationTimeMicros = Long.MAX_VALUE;
       when(deleteOperation.getBody(anyObject())).thenReturn(deleteState);
 
-      ServiceUtils.expireDocumentOnDelete(service, currentState, ServiceDocument.class, deleteOperation);
+      ServiceUtils.expireDocumentOnDelete(service, ServiceDocument.class, deleteOperation);
 
       ArgumentCaptor<ServiceDocument> stateArgument = ArgumentCaptor.forClass(ServiceDocument.class);
       ArgumentCaptor<Operation> operationArgument = ArgumentCaptor.forClass(Operation.class);
@@ -200,7 +200,7 @@ public class ServiceUtilsTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       ServiceDocument currentState = new ServiceDocument();
-      ServiceUtils.expireDocumentOnDelete(service, currentState, ServiceDocument.class, deleteOperation);
+      ServiceUtils.expireDocumentOnDelete(service, ServiceDocument.class, deleteOperation);
 
       ArgumentCaptor<ServiceDocument> stateArgument = ArgumentCaptor.forClass(ServiceDocument.class);
       ArgumentCaptor<Operation> operationArgument = ArgumentCaptor.forClass(Operation.class);
