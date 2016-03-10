@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.common.xenon.UpgradeUtils;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
@@ -112,7 +111,6 @@ public class DeployerContext {
   private String zookeeperQuorum;
 
   private Collection<Class<?>> migrationExecludedServices = ImmutableSet.<Class<?>>builder()
-      .add(DatastoreServiceFactory.class)
       .add(RootNamespaceService.class)
       .add(EntityLockServiceFactory.class)
       .build();
@@ -239,7 +237,7 @@ public class DeployerContext {
     this.zookeeperQuorum = zookeeperQuorum;
   }
 
-  public Set<Map.Entry<String, String>> getFactoryLinkMapEntries(){
+  public Set<Map.Entry<String, String>> getFactoryLinkMapEntries() {
     return UpgradeUtils.SOURCE_DESTINATION_MAP.entrySet();
   }
 
