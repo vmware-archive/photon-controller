@@ -21,7 +21,10 @@ import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -37,7 +40,9 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 
 /**
  * Tests {@link ImageService}.
@@ -499,4 +504,171 @@ public class ImageServiceTest {
       assertThat(patchedState.replicatedImageDatastore, is(5));
     }
   }
+
+  /**
+   * Tests for the handleDelete method.
+   */
+  public class HandleDeleteTest {
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      service = new ImageService();
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          ImageServiceFactory.SELF_LINK,
+          10, 10);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient.start();
+
+      testState = new ImageService.State();
+      testState.name = UUID.randomUUID().toString();
+      testState.state = ImageState.READY;
+      testState.replicationType = ImageReplicationType.EAGER;
+      testState.replicatedDatastore = 8;
+      testState.replicatedImageDatastore = 5;
+      testState.totalDatastore = 10;
+      testState.totalImageDatastore = 6;
+
+      host.startServiceSynchronously(new ImageServiceFactory(), null);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      service = null;
+      dcpRestClient.stop();
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in current state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
+      testState.documentExpirationTimeMicros = Long.MAX_VALUE;
+      Operation result = dcpRestClient.post(ImageServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      ImageService.State createdState = result.getBody(ImageService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(testState.documentExpirationTimeMicros));
+
+      ImageService.State savedState =
+          host.getServiceState(ImageService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(testState.documentExpirationTimeMicros));
+
+      ImageService.State deleteState = new ImageService.State();
+      deleteState.documentExpirationTimeMicros = 0;
+      result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(ImageService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 1;
+            }
+          });
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in delete operation state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
+      Operation result = dcpRestClient.post(ImageServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      ImageService.State createdState = result.getBody(ImageService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(0L));
+
+      ImageService.State savedState =
+          host.getServiceState(ImageService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(0L));
+
+      ImageService.State deleteState = new ImageService.State();
+      deleteState.documentExpirationTimeMicros = Long.MAX_VALUE;
+      result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(ImageService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 1;
+            }
+          });
+    }
+
+    /**
+     * Test expiration of deleted document using default value.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDeleteWithDefaultExpiration() throws Throwable {
+      Operation result = dcpRestClient.post(ImageServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+
+      ImageService.State createdState = result.getBody(ImageService.State.class);
+      assertThat(createdState.documentExpirationTimeMicros, is(0L));
+
+      ImageService.State savedState =
+          host.getServiceState(ImageService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.documentExpirationTimeMicros, is(0L));
+
+      result = dcpRestClient.delete(createdState.documentSelfLink, null);
+      assertThat(result.getStatusCode(), is(200));
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(ImageService.State.class));
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.INCLUDE_DELETED);
+
+      QueryTask queryTask = QueryTask.create(spec)
+          .setDirect(true);
+
+      host.waitForQuery(queryTask,
+          new Predicate<QueryTask>() {
+            @Override
+            public boolean test(QueryTask queryTask) {
+              return queryTask.results.documentLinks.size() == 0;
+            }
+          });
+    }
+  }
+
 }

@@ -51,6 +51,13 @@ public class AttachedDiskService extends StatefulService {
     }
   }
 
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.logInfo(this, "Deleting AttachedDiskService %s", getSelfLink());
+    State currentState = getState(deleteOperation);
+    ServiceUtils.expireDocumentOnDelete(this, currentState, State.class, deleteOperation);
+  }
+
   /**
    * Validate the service state for coherence.
    *

@@ -37,7 +37,7 @@ public class ImageToImageDatastoreMappingService extends StatefulService {
 
   @Override
   public void handleStart(Operation startOperation) {
-    ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Starting ImageToImageDatastoreMappingService %s", getSelfLink());
     try {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
@@ -50,6 +50,13 @@ public class ImageToImageDatastoreMappingService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       startOperation.fail(t);
     }
+  }
+
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.logInfo(this, "Deleting ImageToImageDatastoreMappingService %s", getSelfLink());
+    State currentState = getState(deleteOperation);
+    ServiceUtils.expireDocumentOnDelete(this, currentState, State.class, deleteOperation);
   }
 
   /**

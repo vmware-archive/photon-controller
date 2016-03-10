@@ -81,28 +81,7 @@ public class VmService extends StatefulService {
   public void handleDelete(Operation deleteOperation) {
     ServiceUtils.logInfo(this, "Deleting VmService %s", getSelfLink());
     State currentState = getState(deleteOperation);
-    if (currentState.documentExpirationTimeMicros <= 0) {
-      currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
-          ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS);
-    }
-
-    if (deleteOperation.hasBody()) {
-      State deleteState = deleteOperation.getBody(State.class);
-      if (deleteState.documentExpirationTimeMicros > 0) {
-        currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
-            deleteState.documentExpirationTimeMicros);
-      }
-    }
-
-    if (currentState.documentExpirationTimeMicros > 0) {
-      ServiceUtils.logInfo(this,
-          "Expiring VmService %s in %d micros",
-          getSelfLink(),
-          currentState.documentExpirationTimeMicros);
-    }
-
-    setState(deleteOperation, currentState);
-    deleteOperation.complete();
+    ServiceUtils.expireDocumentOnDelete(this, currentState, State.class, deleteOperation);
   }
 
 
