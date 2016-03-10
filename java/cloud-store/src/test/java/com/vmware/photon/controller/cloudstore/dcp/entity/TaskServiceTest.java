@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -26,13 +27,10 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
-import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -315,29 +313,15 @@ public class TaskServiceTest {
      */
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
-      testState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(Integer.MAX_VALUE);
-      Operation result = dcpRestClient.post(TaskServiceFactory.SELF_LINK, testState);
-      assertThat(result.getStatusCode(), is(200));
-
-      TaskService.State createdState = result.getBody(TaskService.State.class);
-      assertThat(createdState.documentExpirationTimeMicros, is(testState.documentExpirationTimeMicros));
-
-      TaskService.State savedState =
-          host.getServiceState(TaskService.State.class, createdState.documentSelfLink);
-      assertThat(savedState.documentExpirationTimeMicros, is(testState.documentExpirationTimeMicros));
-
-      TaskService.State deleteState = new TaskService.State();
-      deleteState.documentExpirationTimeMicros = 0;
-      result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
-      assertThat(result.getStatusCode(), is(200));
-
-      TaskService.State deletedState = result.getBody(TaskService.State.class);
-      assertThat(deletedState.documentExpirationTimeMicros, not(0L));
-      assertThat(new BigDecimal(deletedState.documentExpirationTimeMicros),
-          is(closeTo(
-              new BigDecimal(
-                  ServiceUtils.computeExpirationTime(Integer.MAX_VALUE)),
-              new BigDecimal(TimeUnit.MINUTES.toMicros(1)))));
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          TaskServiceFactory.SELF_LINK,
+          testState,
+          TaskService.State.class,
+          ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1)),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE));
     }
 
     /**
@@ -347,28 +331,15 @@ public class TaskServiceTest {
      */
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
-      Operation result = dcpRestClient.post(TaskServiceFactory.SELF_LINK, testState);
-      assertThat(result.getStatusCode(), is(200));
-
-      TaskService.State createdState = result.getBody(TaskService.State.class);
-      assertThat(createdState.documentExpirationTimeMicros, is(0L));
-
-      TaskService.State savedState =
-          host.getServiceState(TaskService.State.class, createdState.documentSelfLink);
-      assertThat(savedState.documentExpirationTimeMicros, is(0L));
-
-      TaskService.State deleteState = new TaskService.State();
-      deleteState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(Integer.MAX_VALUE);
-      result = dcpRestClient.delete(createdState.documentSelfLink, deleteState);
-      assertThat(result.getStatusCode(), is(200));
-
-      TaskService.State deletedState = result.getBody(TaskService.State.class);
-      assertThat(deletedState.documentExpirationTimeMicros, not(0L));
-      assertThat(new BigDecimal(deletedState.documentExpirationTimeMicros),
-          is(closeTo(
-              new BigDecimal(
-                  ServiceUtils.computeExpirationTime(Integer.MAX_VALUE)),
-              new BigDecimal(TimeUnit.MINUTES.toMicros(1)))));
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          TaskServiceFactory.SELF_LINK,
+          testState,
+          TaskService.State.class,
+          ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1)),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE));
     }
 
     /**
@@ -378,25 +349,15 @@ public class TaskServiceTest {
      */
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
-      Operation result = dcpRestClient.post(TaskServiceFactory.SELF_LINK, testState);
-      assertThat(result.getStatusCode(), is(200));
-
-      TaskService.State createdState = result.getBody(TaskService.State.class);
-      assertThat(createdState.documentExpirationTimeMicros, is(0L));
-
-      TaskService.State savedState =
-          host.getServiceState(TaskService.State.class, createdState.documentSelfLink);
-      assertThat(savedState.documentExpirationTimeMicros, is(0L));
-
-      result = dcpRestClient.delete(createdState.documentSelfLink, new TaskService.State());
-      assertThat(result.getStatusCode(), is(200));
-      TaskService.State deletedState = result.getBody(TaskService.State.class);
-      assertThat(deletedState.documentExpirationTimeMicros, not(0L));
-      assertThat(new BigDecimal(deletedState.documentExpirationTimeMicros),
-          is(closeTo(
-              new BigDecimal(
-                  ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS)),
-              new BigDecimal(TimeUnit.MINUTES.toMicros(1)))));
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          TaskServiceFactory.SELF_LINK,
+          testState,
+          TaskService.State.class,
+          0L,
+          0L,
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS));
     }
   }
 }
