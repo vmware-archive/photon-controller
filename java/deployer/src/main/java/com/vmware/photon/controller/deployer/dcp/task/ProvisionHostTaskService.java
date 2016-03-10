@@ -549,7 +549,7 @@ public class ProvisionHostTaskService extends StatefulService {
           try {
             GetConfigResponse response = getHostConfigCall.getResult();
             HostClient.ResponseValidator.checkGetConfigResponse(response);
-            processHostConfig(currentState, response.getHostConfig());
+            processHostConfig(currentState, hostState, response.getHostConfig());
           } catch (Throwable t) {
             failTask(t);
           }
@@ -565,7 +565,14 @@ public class ProvisionHostTaskService extends StatefulService {
     }
   }
 
-  private void processHostConfig(State currentState, HostConfig hostConfig) {
+  private void processHostConfig(State currentState,
+                                 HostService.State hostState,
+                                 HostConfig hostConfig) {
+
+    ServiceUtils.logInfo(this, "Received host config from agent " +
+        ServiceUtils.getIDFromDocumentSelfLink(currentState.hostServiceLink) + " [" + hostState.hostAddress + "]: " +
+        Utils.toJsonHtml(hostConfig));
+
     Set<String> reportedDataStores = null;
     Set<String> reportedImageDataStores = null;
     Set<String> reportedNetworks = null;
