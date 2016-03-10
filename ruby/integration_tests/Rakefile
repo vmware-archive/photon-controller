@@ -143,7 +143,7 @@ namespace "upgrade" do
   end
 end
 
-desc 'Generates code from Thirft files'
+desc 'Generates code from Thrift files'
 namespace "install" do
   task :thrift do |t|
     `rm -rf thrift`
@@ -211,6 +211,16 @@ desc 'Run integration test for availability zone'
 RSpec::Core::RakeTask.new(:availabilityzone) do |task|
   task.pattern = FileList['spec/availabilityzone/availability_zone_spec.rb']
   task.rspec_opts = "--tag availabilityzone --format RspecJunitFormatter --out reports/rspec-availabilityzone.xml --tag ~slow"
+end
+
+namespace "agent" do
+  desc "Agent stats integration tests"
+  RSpec::Core::RakeTask.new(:stats) do |task|
+    EsxCloud::Config.init
+    EsxCloud::Config.client = ApiClientHelper.management
+    task.pattern = FileList['spec/agent/stats_spec.rb']
+    task.rspec_opts = "--tag stats --format RspecJunitFormatter --out reports/rspec-stats.xml --tag ~slow"
+  end
 end
 
 desc 'Download esx logs'
