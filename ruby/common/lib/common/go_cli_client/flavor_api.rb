@@ -45,7 +45,9 @@ module EsxCloud
       # @param [String] kind
       # @return [FlavorList]
       def find_flavors_by_name_kind(name, kind)
-        @api_client.find_flavors_by_name_kind(name, kind)
+        result = run_cli("flavor list -n #{name} -k #{kind}")
+
+        get_flavor_list_from_response(result)
       end
 
       # @param [String] name
@@ -74,7 +76,7 @@ module EsxCloud
       # @return Flavor
       def get_flavor_from_response(result)
         result.slice! "\n"
-        values = result.split("\t")
+        values = result.split("\t", -1)
         flavor_hash = Hash.new
         flavor_hash["id"]    = values[0] unless values[0] == ""
         flavor_hash["name"]  = values[1] unless values[1] == ""
@@ -83,6 +85,13 @@ module EsxCloud
         flavor_hash["state"] = values[4] unless values[4] == ""
 
         Flavor.create_from_hash(flavor_hash)
+      end
+
+      def get_flavor_list_from_response(result)
+        flavors = result.split("\n").map do |flavor_info|
+          find_flavor_by_id(flavor_info.split("\t")[0])
+        end
+        FlavorList.new(flavors)
       end
 
       # @param [String] costs
@@ -96,6 +105,7 @@ module EsxCloud
         end
         costs_New
       end
+
     end
   end
 end

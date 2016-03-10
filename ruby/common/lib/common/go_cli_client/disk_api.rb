@@ -84,7 +84,7 @@ module EsxCloud
       # @return [Host]
       def get_disk_from_response(result)
         result.slice! "\n"
-        values = result.split("\t")
+        values = result.split("\t", -1)
         disk_hash = Hash.new
         disk_hash["id"]         = values[0] unless values[0] == ""
         disk_hash["name"]       = values[1] unless values[1] == ""

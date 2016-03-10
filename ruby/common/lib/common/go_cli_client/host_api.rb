@@ -141,7 +141,7 @@ module EsxCloud
       # @return [Host]
       def get_host_from_response(result)
         result.slice! "\n"
-        values = result.split("\t")
+        values = result.split("\t", -1)
         host_hash = Hash.new
         host_hash["id"]               = values[0] unless values[0] == ""
         host_hash["username"]         = values[1] unless values[1] == ""

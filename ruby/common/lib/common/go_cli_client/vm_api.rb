@@ -177,7 +177,7 @@ module EsxCloud
       # @return [Vm]
       def get_vm_from_response(result)
         values = result.split("\n")
-        vm_attributes = values[0].split("\t")
+        vm_attributes = values[0].split("\t", -1)
         vm_hash = Hash.new
         vm_hash["id"]            = vm_attributes[0] unless vm_attributes[0] == ""
         vm_hash["name"]          = vm_attributes[1] unless vm_attributes[1] == ""
@@ -188,8 +188,8 @@ module EsxCloud
         vm_hash["datastore"]     = vm_attributes[6] unless vm_attributes[6] == ""
         vm_hash["metadata"]      = metadata_to_hash(vm_attributes[7])
         vm_hash["tags"]          = string_to_array(vm_attributes[8])
-        vm_hash["attachedDisks"] = getAttachedDisks(values[2])
-        vm_hash["attachedIsos"]  = getAttachedISOs(values[4])
+        vm_hash["attachedDisks"] = getAttachedDisks(values[1])
+        vm_hash["attachedIsos"]  = getAttachedISOs(values[2])
 
         Vm.create_from_hash(vm_hash)
       end
@@ -206,7 +206,7 @@ module EsxCloud
       end
 
       def diskToHash(attachedDisk)
-        disk_attributes = attachedDisk.split("\t")
+        disk_attributes = attachedDisk.split("\t", -1)
         disk_hash = Hash.new
         disk_hash["id"]         = disk_attributes[0] unless disk_attributes[0] == ""
         disk_hash["name"]       = disk_attributes[1] unless disk_attributes[1] == ""
@@ -230,7 +230,7 @@ module EsxCloud
       end
 
       def isoToHash(attachedISO)
-        iso_attributes = attachedISO.split("\t")
+        iso_attributes = attachedISO.split("\t", -1)
         iso_hash = Hash.new
         iso_hash["id"]   = iso_attributes[0] unless iso_attributes[0] == ""
         iso_hash["name"] = iso_attributes[1] unless iso_attributes[1] == ""
@@ -262,6 +262,13 @@ module EsxCloud
           values = result.split(',')
         end
         values
+      end
+
+      def get_vm_list_from_response(result)
+        vms = result.split("\n").map do |vm_info|
+          find_vm_by_id(vm_info.split("\t")[0])
+        end
+        VmList.new(vms)
       end
     end
   end
