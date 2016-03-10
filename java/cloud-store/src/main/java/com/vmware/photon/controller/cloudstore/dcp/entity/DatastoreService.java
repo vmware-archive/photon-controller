@@ -25,6 +25,7 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.services.common.QueryTask;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Set;
 
@@ -59,6 +60,40 @@ public class DatastoreService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       startOperation.fail(t);
     }
+  }
+
+  @Override
+  public void handlePut(Operation putOperation) {
+    ServiceUtils.logInfo(this, "Handling put for service %s", getSelfLink());
+    if (!putOperation.hasBody()) {
+      putOperation.fail(new IllegalArgumentException("body is required"));
+      return;
+    }
+
+    State currentState = getState(putOperation);
+    State newState = putOperation.getBody(State.class);
+    if (ServiceDocument.equals(getDocumentTemplate().documentDescription, currentState, newState)) {
+      putOperation.setStatusCode(Operation.STATUS_CODE_NOT_MODIFIED);
+      putOperation.complete();
+      return;
+    }
+
+    try {
+      validateState(newState);
+      validatePut(currentState, newState);
+    } catch (IllegalStateException e) {
+      ServiceUtils.failOperationAsBadRequest(this, putOperation, e);
+      return;
+    }
+
+    setState(putOperation, newState);
+    putOperation.complete();
+  }
+
+  private void validatePut(State currentState, State newState) {
+    checkState(newState.id.equals(currentState.id));
+    checkState(newState.name.equals(currentState.name));
+    checkState(newState.type.equals(currentState.type));
   }
 
   @Override
