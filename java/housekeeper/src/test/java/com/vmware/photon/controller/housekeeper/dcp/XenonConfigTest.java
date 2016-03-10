@@ -30,20 +30,6 @@ public class XenonConfigTest {
   private XenonConfig xenonConfig;
 
   @Test
-  public void testBatchSize() throws BadConfigException {
-    xenonConfig = ConfigBuilder.build(Config.class,
-        XenonConfigTest.class.getResource("/config.yml").getPath()).getDcp();
-    assertThat(xenonConfig.getImageCopyBatchSize(), is(20));
-  }
-
-  @Test
-  public void testDefaultBatchSize() throws BadConfigException {
-    xenonConfig = ConfigBuilder.build(Config.class,
-        XenonConfigTest.class.getResource("/config_min.yml").getPath()).getDcp();
-    assertThat(xenonConfig.getImageCopyBatchSize(), is(5));
-  }
-
-  @Test
   public void testDcpStoragePath() throws BadConfigException {
     xenonConfig = ConfigBuilder.build(Config.class,
         XenonConfigTest.class.getResource("/config.yml").getPath()).getDcp();

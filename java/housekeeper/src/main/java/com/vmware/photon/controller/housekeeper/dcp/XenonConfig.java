@@ -16,7 +16,6 @@ package com.vmware.photon.controller.housekeeper.dcp;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.BindingAnnotation;
 import org.hibernate.validator.constraints.NotEmpty;
-import org.hibernate.validator.constraints.Range;
 
 import javax.validation.constraints.NotNull;
 
@@ -31,25 +30,11 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * Xenon configuration.
  */
 public class XenonConfig {
-  private static final int IMAGE_BATCHCOPY_SIZE = 5;
-
-  @NotNull
-  @Range(min = 0, max = 100)
-  @JsonProperty("image_copy_batch_size")
-  private int imageCopyBatchSize;
 
   @NotNull
   @NotEmpty
   @JsonProperty("storage_path")
   private String storagePath;
-
-  public XenonConfig() {
-    imageCopyBatchSize = IMAGE_BATCHCOPY_SIZE;
-  }
-
-  public int getImageCopyBatchSize() {
-    return imageCopyBatchSize;
-  }
 
   public String getStoragePath() {
     return storagePath;

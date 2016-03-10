@@ -121,7 +121,7 @@ public class ImageReplicatorTest {
       cloudStoreHelper.setServerSet(serverSet);
       doReturn(cloudStoreHelper)
           .when(dcpHost).getCloudStoreHelper();
-      replicator = spy(new ImageReplicator(dcpHost, minReqCopies));
+      replicator = spy(new ImageReplicator(dcpHost));
 
       LoggingUtils.setRequestId(null);
 
@@ -250,7 +250,7 @@ public class ImageReplicatorTest {
       injector = TestHelper.createInjector(configFilePath);
       HostClient hostClient = injector.getInstance(HostClient.class);
       dcpHost = spy(TestHost.create(hostClient));
-      replicator = spy(new ImageReplicator(dcpHost, 10));
+      replicator = spy(new ImageReplicator(dcpHost));
 
       LoggingUtils.setRequestId(null);
     }
@@ -321,70 +321,6 @@ public class ImageReplicatorTest {
       assertThat(response.getStatus().getCode(), is(ReplicateImageStatusCode.FAILED));
       assertThat(response.getStatus().getError(), is("Image replication failed. Error details: " + state
           .taskInfo.failure.message));
-    }
-
-    @Test
-    public void testReplicationMinimumCopiesDone() throws Throwable {
-      ImageReplicatorService.State state = new ImageReplicatorService.State();
-      state.taskInfo = new ImageReplicatorService.TaskState();
-      state.taskInfo.stage = ImageReplicatorService.TaskState.TaskStage.STARTED;
-      state.finishedCopies = minReqCopies;
-
-      String operationId = startTestReplicatorService(state);
-
-      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(operationId);
-      ReplicateImageStatusResponse response = replicator.getImageReplicationStatus(request);
-
-      assertThat(response.getStatus().getCode(), is(ReplicateImageStatusCode.FINISHED));
-    }
-
-    @Test
-    public void testReplicationBeforeMinRequiredCopiedWithFailures() throws Throwable {
-      ImageReplicatorService.State state = new ImageReplicatorService.State();
-      state.taskInfo = new ImageReplicatorService.TaskState();
-      state.taskInfo.stage = ImageReplicatorService.TaskState.TaskStage.STARTED;
-      //min required copies for replicator to return success is 10
-      state.finishedCopies = minReqCopies - 1;
-      state.failedOrCanceledCopies = 5;
-
-      String operationId = startTestReplicatorService(state);
-
-      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(operationId);
-      ReplicateImageStatusResponse response = replicator.getImageReplicationStatus(request);
-
-      assertThat(response.getStatus().getCode(), is(ReplicateImageStatusCode.IN_PROGRESS));
-    }
-
-    @Test
-    public void testReplicationAfterMinRequiredCopiedWithFailures() throws Throwable {
-      ImageReplicatorService.State state = new ImageReplicatorService.State();
-      state.taskInfo = new ImageReplicatorService.TaskState();
-      state.taskInfo.stage = ImageReplicatorService.TaskState.TaskStage.STARTED;
-      state.finishedCopies = minReqCopies;
-      state.failedOrCanceledCopies = 5;
-
-      String operationId = startTestReplicatorService(state);
-
-      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(operationId);
-      ReplicateImageStatusResponse response = replicator.getImageReplicationStatus(request);
-
-      assertThat(response.getStatus().getCode(), is(ReplicateImageStatusCode.FINISHED));
-    }
-
-    @Test
-    public void testReplicationAfterMinRequiredCopiedAndTaskFailed() throws Throwable {
-      ImageReplicatorService.State state = new ImageReplicatorService.State();
-      state.taskInfo = new ImageReplicatorService.TaskState();
-      state.taskInfo.stage = ImageReplicatorService.TaskState.TaskStage.FAILED;
-      state.finishedCopies = minReqCopies;
-      state.failedOrCanceledCopies = 5;
-
-      String operationId = startTestReplicatorService(state);
-
-      ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(operationId);
-      ReplicateImageStatusResponse response = replicator.getImageReplicationStatus(request);
-
-      assertThat(response.getStatus().getCode(), is(ReplicateImageStatusCode.FINISHED));
     }
 
     @Test

@@ -2,7 +2,6 @@ bind: "localhost"
 registrationAddress: "localhost"
 port: 16000
 dcp:
-  image_copy_batch_size: 20
   storage_path: "/tmp/dcp/housekeeper/"
 zookeeper:
   quorum: localhost:2181
