@@ -6,23 +6,23 @@ fi
 
 function checkenv ()
 {
-  for var in $@
+  for var in "$@"
   do
-    if [ -z "$(printenv $var)" ]
+    if [ -z "$(printenv "$var")" ]
       then
-        echo Cannot run test. $var is not defined.
-        echo This list of properties must be defined. $@
+        echo Cannot run test. "$var" is not defined.
+        echo This list of properties must be defined. "$@"
         exit 1
     fi
   done
 }
 
-source $(dirname $BASH_SOURCE)/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 # Define any custom config process
 if [ -n "$CUSTOM_TEST_CONFIG" ]; then
-    echo Using custom settings in $CUSTOM_TEST_CONFIG
-    source $CUSTOM_TEST_CONFIG
+    echo Using custom settings in "$CUSTOM_TEST_CONFIG"
+    source "$CUSTOM_TEST_CONFIG"
 else
     echo No CUSTOM_TEST_CONFIG to override default test behavior
 fi
@@ -30,7 +30,7 @@ fi
 env
 
 # environment checks
-if [ -z "NO_TESTENVCHECK" ]; then
+if [ -z "$NO_TESTENVCHECK" ]; then
   # Auths
   if [ -n "$ENABLE_AUTH" ]; then
     echo "auth enabled"
@@ -54,7 +54,7 @@ if [ -z "NO_TESTENVCHECK" ]; then
     PHOTON_AUTH_SERVER_TENANT\
     PHOTON_SWAGGER_LOGIN_URL\
     PHOTON_SWAGGER_LOGOUT_URL"
-    checkenv $envlist
+    checkenv "$envlist"
   fi
 
   # Cluster mgr
@@ -70,7 +70,7 @@ if [ -z "NO_TESTENVCHECK" ]; then
     KUBERNETES_IMAGE\
     MESOS_IMAGE\
     SWARM_IMAGE"
-    checkenv $envlist
+    checkenv "$envlist"
   fi
 
   # get the image/iso file
@@ -82,7 +82,7 @@ if [ -z "NO_TESTENVCHECK" ]; then
     ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE\
     ESXCLOUD_ISO_FILE\
     MGMT_IMAGE"
-    checkenv $envlist
+    checkenv "$envlist"
   fi
 
   # general must have
@@ -103,10 +103,10 @@ if [ -z "NO_TESTENVCHECK" ]; then
   DEPLOYER_ADDRESS\
   ZOOKEEPER_ADDRESS\
   ZOOKEEPER_PORT"
-  checkenv $envlist
+  checkenv "$envlist"
 fi
 
-cd $TESTS
+cd "$TESTS"
 
 # verify that no objects were left over at the beginning of the run
 if [ -n "$DEVBOX" ]
@@ -127,36 +127,21 @@ else
   # run tests using API & CLI drivers in subshells
   if [ -n "$NO_PARALLEL" ]
   then
-    export DRIVER=api
-    bundle exec rake esxcloud:api
-
-    export DRIVER=cli
-    bundle exec rake esxcloud:cli
-
-    export DRIVER=gocli
-    bundle exec rake esxcloud:gocli
+    DRIVER=api bundle exec rake esxcloud:api
+    DRIVER=cli bundle exec rake esxcloud:cli
+    DRIVER=gocli bundle exec rake esxcloud:gocli
   else
     pids=[]
-    (
-        export DRIVER=api
-        bundle exec rake esxcloud:api
-    ) &
-    pids[0]=$!
+    DRIVER=api bundle exec rake esxcloud:api & pids+=($!)
+    DRIVER=cli bundle exec rake esxcloud:cli & pids+=($!)
 
-    (
-        export DRIVER=cli
-        bundle exec rake esxcloud:cli
-    ) &
-    pids[1]=$!
+    for pid in ${pids[*]}; do wait "$pid"; done;
 
-    for pid in ${pids[*]}; do wait $pid; done;
-
-    # Don't run gocli in parrllel now due to the agent capacity
-    export DRIVER=gocli
-    bundle exec rake esxcloud:gocli
+    # Don't run gocli in parallel now due to the agent capacity
+    DRIVER=gocli bundle exec rake esxcloud:gocli
   fi
 
-  # re-set the driver to API
+  # Make sure driver is set to API for remaining tests
   export DRIVER=api
 
   # run life_cycle tests
@@ -173,8 +158,14 @@ else
   fi
 
   # run the availability zone integration test
-  if [ "$PROMOTE" = true ] && [ -z "$UPTIME" ]; then
+  if [ "$PROMOTE" = "true" ] && [ -z "$UPTIME" ]; then
     bundle exec rake availabilityzone
+  fi
+
+  # Disable in promote until graphite story is figured out for promote
+  # Only run when REAL_AGENT is defined
+  if [ "$PROMOTE" = "true" ] && [ ! -z "$REAL_AGENT" ]; then
+    bundle exec rake agent:stats
   fi
 
   # verify that no objects were left over at the end of the run

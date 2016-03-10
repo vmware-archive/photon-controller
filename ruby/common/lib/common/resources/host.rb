@@ -115,5 +115,15 @@ module EsxCloud
           @password == other.password && @availability_zone == other.availability_zone &&
           @usage_tags == other.usage_tags && @metadata == other.metadata && @esx_version == other.esx_version
     end
+
+    def to_spec()
+      EsxCloud::HostCreateSpec.new(
+        @username,
+        @password,
+        @usage_tags,
+        @address,
+        @metadata,
+        @availability_zone)
+    end
   end
 end
