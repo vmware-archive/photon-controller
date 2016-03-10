@@ -177,6 +177,13 @@ module EsxCloud
       EsxCloud::Host.create(deployment.id, spec)
     end
 
+    def delete_host(id)
+      EsxCloud::Host.enter_suspended_mode(id)
+      EsxCloud::Host.enter_maintenance_mode(id)
+      EsxCloud::Host.get_host_vms(id).items.each { |vm| vm.delete }
+      expect(EsxCloud::Host.delete(id)).to eq(true)
+    end
+
     def host_set_availability_zone(id, spec)
       EsxCloud::Host.host_set_availability_zone(id, spec)
     end

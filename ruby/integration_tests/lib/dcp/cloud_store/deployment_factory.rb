@@ -47,6 +47,7 @@ module EsxCloud
             .merge oauth_settings
             .merge syslog_settings
             .merge ntp_settings
+            .merge stats_settings
             .merge chairman_settings
             .merge document_self_link
             .merge @overrides
@@ -104,6 +105,14 @@ module EsxCloud
         def ntp_settings
           {
             ntpEndpoint: ENV["NTP_ENDPOINT"]
+          }
+        end
+
+        def stats_settings
+          {
+            statsStoreEndpoint: ENV["STATS_STORE_ENDPOINT"],
+            statsStorePort: ENV["STATS_STORE_PORT"],
+            statsEnabled: ENV["STATS_ENABLED"]
           }
         end
 
