@@ -139,7 +139,6 @@ class TestHttpTransfer(unittest.TestCase):
         info_mock = MagicMock()
         vm_mgr.update_vm_spec = MagicMock(return_value=spec_mock)
         vm_mgr.get_vm_config = MagicMock(return_value=info_mock)
-        vm_mgr.remove_all_disks = MagicMock()
         vm_mgr.add_disk = MagicMock()
 
         self.http_transferer._configure_shadow_vm_with_disk(
@@ -147,10 +146,26 @@ class TestHttpTransfer(unittest.TestCase):
 
         vm_mgr.update_vm_spec.assert_called_once_with()
         vm_mgr.get_vm_config.assert_called_once_with(self.shadow_vm_id)
-        vm_mgr.remove_all_disks.assert_called_once_with(spec_mock, info_mock)
         vm_mgr.add_disk.assert_called_once_with(
             spec_mock, image_datastore, image_id, info_mock,
             disk_is_image=True)
+
+    def test_delete_shadow_vm(self):
+        vm_mgr = self.http_transferer._vm_manager
+        vm_mgr.update_vm = MagicMock()
+        spec_mock = MagicMock()
+        info_mock = MagicMock()
+        vm_mgr.update_vm_spec = MagicMock(return_value=spec_mock)
+        vm_mgr.get_vm_config = MagicMock(return_value=info_mock)
+        vm_mgr.remove_all_disks = MagicMock()
+        vm_mgr.delete_vm = MagicMock()
+
+        self.http_transferer._delete_shadow_vm(self.shadow_vm_id)
+
+        vm_mgr.update_vm_spec.assert_called_once_with()
+        vm_mgr.get_vm_config.assert_called_once_with(self.shadow_vm_id)
+        vm_mgr.remove_all_disks.assert_called_once_with(spec_mock, info_mock)
+        vm_mgr.delete_vm.assert_called_once_with(self.shadow_vm_id, force=True)
 
     def test_get_image_stream_from_shadow_vm(self):
         image_id = "fake_image_id"

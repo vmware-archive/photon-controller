@@ -300,6 +300,13 @@ class HttpNfcTransferer(HttpTransferer):
 
     def _delete_shadow_vm(self, shadow_vm_id):
         try:
+            # detach disk so it is not deleted along with vm
+            spec = self._vm_manager.update_vm_spec()
+            info = self._vm_manager.get_vm_config(shadow_vm_id)
+            self._vm_manager.remove_all_disks(spec, info)
+            self._vm_manager.update_vm(shadow_vm_id, spec)
+
+            # delete the vm
             self._vm_manager.delete_vm(shadow_vm_id, force=True)
         except Exception:
             self._logger.exception("Error deleting vm with id %s" %
@@ -311,7 +318,6 @@ class HttpNfcTransferer(HttpTransferer):
         try:
             spec = self._vm_manager.update_vm_spec()
             info = self._vm_manager.get_vm_config(shadow_vm_id)
-            self._vm_manager.remove_all_disks(spec, info)
             self._vm_manager.add_disk(spec, image_datastore, image_id, info,
                                       disk_is_image=True)
             self._vm_manager.update_vm(shadow_vm_id, spec)
