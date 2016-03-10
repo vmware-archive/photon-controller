@@ -175,6 +175,7 @@ public class ChairmanService implements Chairman.Iface {
    * to true.
    */
   void setDatastoreState(List<Datastore> datastores, List<String> imageDatastores) throws Throwable {
+
     if (datastores != null) {
       // Create datastore documents.
       for (Datastore datastore : datastores) {
@@ -184,22 +185,14 @@ public class ChairmanService implements Chairman.Iface {
         datastoreState.name = datastore.getName();
         datastoreState.type = datastore.getType().toString();
         datastoreState.tags = datastore.getTags();
-        datastoreState.isImageDatastore = false;
+        datastoreState.isImageDatastore = (imageDatastores != null) &&
+            imageDatastores.stream().anyMatch((id) -> id.equals(datastore.getId()));
+
         try {
           dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, datastoreState);
         } catch (XenonException | XenonRuntimeException ex) {
-          logger.debug("Ignoring datastore document creation failure", ex);
+          logger.warn("Failed to set datastore state: ", Utils.toJsonHtml(datastoreState), Utils.toString(ex));
         }
-      }
-    }
-
-    if (imageDatastores != null) {
-      // Set isImageDatastore flag to true.
-      for (String datastoreId : imageDatastores) {
-        String link = DatastoreServiceFactory.getDocumentLink(datastoreId);
-        DatastoreService.State datastoreState = new DatastoreService.State();
-        datastoreState.isImageDatastore = true;
-        dcpRestClient.patch(link, datastoreState);
       }
     }
   }
