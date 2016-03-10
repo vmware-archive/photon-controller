@@ -130,11 +130,14 @@ else
     export DRIVER=api
     bundle exec rake esxcloud:api
 
-    export DRIVER=cli
-    bundle exec rake esxcloud:cli
+    if [ -z "$DISABLE_CLI_TESTS" ]
+    then
+      export DRIVER=cli
+      bundle exec rake esxcloud:cli
 
-    export DRIVER=gocli
-    bundle exec rake esxcloud:gocli
+      export DRIVER=gocli
+      bundle exec rake esxcloud:gocli
+    fi
   else
     pids=[]
     (
@@ -143,17 +146,20 @@ else
     ) &
     pids[0]=$!
 
-    (
-        export DRIVER=cli
-        bundle exec rake esxcloud:cli
-    ) &
-    pids[1]=$!
+    if [ -z "$DISABLE_CLI_TESTS" ]
+    then
+      (
+          export DRIVER=cli
+          bundle exec rake esxcloud:cli
+
+          # Don't run gocli in parallel now due to the agent capacity
+          export DRIVER=gocli
+          bundle exec rake esxcloud:gocli
+      ) &
+      pids[1]=$!
+    fi
 
     for pid in ${pids[*]}; do wait $pid; done;
-
-    # Don't run gocli in parrllel now due to the agent capacity
-    export DRIVER=gocli
-    bundle exec rake esxcloud:gocli
   fi
 
   # re-set the driver to API
