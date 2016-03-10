@@ -27,7 +27,9 @@ module EsxCloud
       # @param [String] id
       # @return [Deployment]
       def find_deployment_by_id(id)
-        @api_client.find_deployment_by_id(id)
+        cmd = "deployment show #{id}"
+        result = run_cli(cmd)
+        get_deployment_from_response(result)
       end
 
       # @return [DeploymentList]
@@ -80,13 +82,22 @@ module EsxCloud
       # @param [String] deployment_id
       # @return [Deployment]
       def pause_system(deployment_id)
-        @api_client.pause_system(deployment_id)
+        deployment_id = run_cli("deployment pause_system '#{deployment_id}'")
+        find_deployment_by_id(deployment_id)
+      end
+
+      # @param [String] deployment_id
+      # @return [Deployment]
+      def pause_background_tasks(deployment_id)
+        deployment_id = run_cli("deployment pause_background_tasks '#{deployment_id}'")
+        find_deployment_by_id(deployment_id)
       end
 
       # @param [String] deployment_id
       # @return [Deployment]
       def resume_system(deployment_id)
-        @api_client.resume_system(deployment_id)
+        deployment_id = run_cli("deployment resume_system '#{deployment_id}'")
+        find_deployment_by_id(deployment_id)
       end
 
       # @param [String] deployment_id
@@ -108,6 +119,65 @@ module EsxCloud
       def update_image_datastores(id, payload)
         cmd = "deployment update-image-datastores #{id} #{payload}"
         run_cli(cmd)
+      end
+
+      private
+
+      # @param [String] result
+      # @return [Deployment]
+      def get_deployment_from_response(result)
+        values = result.split("\n")
+        deployment_attributes = values[0].split("\t")
+
+        # go-cli output for "photon deployment show <id>"
+        # fixed-test-deployemnt-id	READY	datastore1	true	<syslogEndpoint>	<ntpEndpoint>	true
+        # true	<userName>	<password>	10.118.97.154	<tenant>	0	<securityGroups>
+        # false	<storeEndpoint>	0
+        # 0	0	0	0	0
+
+        index = 0
+        deployment_hash = Hash.new
+        deployment_hash["id"]                      = deployment_attributes[index] unless deployment_attributes[index] == ""
+        deployment_hash["state"]                   = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        deployment_hash["imageDatastores"]         = string_to_array(deployment_attributes[++index])
+        deployment_hash["useImageDatastoreForVms"] = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        deployment_hash["syslogEndpoint"]          = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        deployment_hash["ntpEndpoint"]             = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        deployment_hash["loadbalancerEnabled"]     = deployment_attributes[++index] unless deployment_attributes[index] == ""
+
+        authInfo_hash = Hash.new
+        authInfo_hash["enabled"]        = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        authInfo_hash["username"]       = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        authInfo_hash["password"]       = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        authInfo_hash["endpoint"]       = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        authInfo_hash["tenant"]         = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        authInfo_hash["port"]           = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        authInfo_hash["securityGroups"] = string_to_array(deployment_attributes[++index])
+        deployment_hash["auth"]         = authInfo_hash
+
+        statsInfo_hash = Hash.new
+        statsInfo_hash["enabled"]       = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        statsInfo_hash["storeEndpoint"] = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        statsInfo_hash["storePort"]     = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        deployment_hash["stats"]        = statsInfo_hash
+
+        migrationStatus_hash = Hash.new
+        migrationStatus_hash["completedCycles"]            = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        migrationStatus_hash["dataMigrationCycleProgress"] = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        migrationStatus_hash["dataMigrationCycleSize"]     = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        migrationStatus_hash["vibsUploaded"]               = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        migrationStatus_hash["vibsUploading"]              = deployment_attributes[++index] unless deployment_attributes[index] == ""
+        deployment_hash["migration"]                       = migrationStatus_hash
+
+        Deployment.create_from_hash(deployment_hash)
+      end
+
+      def string_to_array(result)
+        values = Array.new
+        if result.to_s != ''
+          values = result.split(',')
+        end
+        values
       end
     end
   end
