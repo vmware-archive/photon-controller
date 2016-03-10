@@ -106,7 +106,7 @@ public class HousekeeperService implements Housekeeper.Iface, ServiceNodeEventHa
 
   @VisibleForTesting
   protected ImageReplicator buildReplicator() {
-    return new ImageReplicator(dcpHost, dcpConfig.getImageCopyBatchSize());
+    return new ImageReplicator(dcpHost);
   }
 
   @Override

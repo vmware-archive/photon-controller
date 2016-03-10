@@ -91,7 +91,7 @@ public class HousekeeperServiceTest {
     @Test
     public void testInvocation() throws Throwable {
       ImageReplicator replicator = spy(new ImageReplicator(
-          injector.getInstance(HousekeeperXenonServiceHost.class), 10));
+          injector.getInstance(HousekeeperXenonServiceHost.class)));
       doReturn(replicator).when(service).buildReplicator();
 
       ReplicateImageResponse response = new ReplicateImageResponse(new ReplicateImageResult(ReplicateImageResultCode
@@ -104,7 +104,7 @@ public class HousekeeperServiceTest {
     @Test
     public void testInvocationWithGivenRequestId() throws Throwable {
       ImageReplicator replicator = spy(new ImageReplicator(
-          injector.getInstance(HousekeeperXenonServiceHost.class), 10));
+          injector.getInstance(HousekeeperXenonServiceHost.class)));
       doReturn(replicator).when(service).buildReplicator();
 
       ReplicateImageResponse response = new ReplicateImageResponse(new ReplicateImageResult(ReplicateImageResultCode

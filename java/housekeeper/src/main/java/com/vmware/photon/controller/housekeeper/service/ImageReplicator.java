@@ -58,13 +58,10 @@ public class ImageReplicator {
 
   private final ServiceHost dcpHost;
   private long dcpOperationTimeoutMicros;
-  private int minReqCopies;
 
-  public ImageReplicator(ServiceHost host,
-                         int minReqCopies) {
+  public ImageReplicator(ServiceHost host) {
     dcpHost = host;
     dcpOperationTimeoutMicros = OperationLatch.DEFAULT_OPERATION_TIMEOUT_MICROS;
-    this.minReqCopies = minReqCopies;
   }
 
   public void setDcpOperationTimeout(long milliseconds) {
@@ -228,17 +225,13 @@ public class ImageReplicator {
         break;
 
       case FAILED:
-        if (ServiceStateUtils.isMinimumCopiesComplete(state, this.minReqCopies)) {
-          result = new ReplicateImageStatus(ReplicateImageStatusCode.FINISHED);
+        logger.error("Image replication failed: {}", Utils.toJson(state));
+        result = new ReplicateImageStatus(ReplicateImageStatusCode.FAILED);
+        if (state.taskInfo != null && state.taskInfo.failure != null) {
+          result.setError(String.format("Image replication failed. Error details: %s",
+              state.taskInfo.failure.message));
         } else {
-          logger.error("Image replication failed: {}", Utils.toJson(state));
-          result = new ReplicateImageStatus(ReplicateImageStatusCode.FAILED);
-          if (state.taskInfo != null && state.taskInfo.failure != null) {
-            result.setError(String.format("Image replication failed. Error details: %s",
-                state.taskInfo.failure.message));
-          } else {
-            result.setError("Image replication failed.");
-          }
+          result.setError("Image replication failed.");
         }
         break;
 
@@ -247,11 +240,7 @@ public class ImageReplicator {
         break;
 
       case STARTED:
-        if (ServiceStateUtils.isMinimumCopiesComplete(state, this.minReqCopies)) {
-          result = new ReplicateImageStatus(ReplicateImageStatusCode.FINISHED);
-        } else {
-          result = new ReplicateImageStatus(ReplicateImageStatusCode.IN_PROGRESS);
-        }
+        result = new ReplicateImageStatus(ReplicateImageStatusCode.FINISHED);
         break;
 
       default:
