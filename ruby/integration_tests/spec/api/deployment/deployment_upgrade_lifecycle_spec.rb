@@ -21,9 +21,6 @@ describe "deployment upgrade lifecycle", life_cycle: true do
 
     after(:each) do
       client.resume_system(deployment.id)
-    end
-
-    after(:each) do
       items_to_cleanup.each do |item|
         item.delete unless item.nil?
       end
@@ -47,6 +44,8 @@ describe "deployment upgrade lifecycle", life_cycle: true do
               expect(e.errors.size).to eq 1
               expect(e.errors[0].code).to eq "SystemPaused"
               expect(e.errors[0].message).to match /System is paused/
+            rescue EsxCloud::CliError => e
+              e.output.should match("System is paused")
             end
           end
 
@@ -55,6 +54,65 @@ describe "deployment upgrade lifecycle", life_cycle: true do
           # testing that after resuming the system we accept posts again
           items_to_cleanup << create_tenant(name: random_name("tenant-"))
         end
+      end
+
+      it "should pause_background/resume system successfully" do
+        expect(client.find_all_api_deployments.items.size).to eq 1
+
+        client.pause_background_tasks(deployment.id)
+
+        # tests that POSTs are accepted while system is pause_background_tasks
+        tenant_name = random_name("tenant-")
+        tenant = create_tenant(:name => tenant_name)
+        tenant.name.should == tenant_name
+        validate_tenant(tenant_name)
+        items_to_cleanup << tenant
+
+        # resume system
+        client.resume_system(deployment.id)
+
+        # testing that after resuming the system we accept posts again
+        tenant_name = random_name("tenant-")
+        tenant = create_tenant(:name => tenant_name)
+        tenant.name.should == tenant_name
+        validate_tenant(tenant_name)
+        items_to_cleanup << tenant
+      end
+
+      it "should pause/pause_background/resume system successfully" do
+        expect(client.find_all_api_deployments.items.size).to eq 1
+
+        client.pause_system(deployment.id)
+        begin
+          items_to_cleanup << create_tenant(name: random_name("tenant-"))
+          fail("pause_system should fail")
+        rescue EsxCloud::ApiError => e
+          expect(e.response_code).to eq 403
+          expect(e.errors.size).to eq 1
+          expect(e.errors[0].code).to eq "SystemPaused"
+          expect(e.errors[0].message).to match /System is paused/
+        rescue EsxCloud::CliError => e
+          e.output.should match("System is paused")
+        end
+
+        client.pause_background_tasks(deployment.id)
+
+        # testing that after pause_background_tasks the system we accept posts
+        tenant_name = random_name("tenant-")
+        tenant = create_tenant(:name => tenant_name)
+        tenant.name.should == tenant_name
+        validate_tenant(tenant_name)
+        items_to_cleanup << tenant
+
+        # resume system
+        client.resume_system(deployment.id)
+
+        # testing that after resuming the system we accept posts again
+        tenant_name = random_name("tenant-")
+        tenant = create_tenant(:name => tenant_name)
+        tenant.name.should == tenant_name
+        validate_tenant(tenant_name)
+        items_to_cleanup << tenant
       end
     end
 
@@ -69,8 +127,31 @@ describe "deployment upgrade lifecycle", life_cycle: true do
           expect(e.errors.size).to eq 1
           expect(e.errors.first.code).to eq("DeploymentNotFound")
           expect(e.errors.first.message).to include(error_msg)
+        rescue EsxCloud::CliError => e
+          e.output.should match("DeploymentNotFound")
+        end
+      end
+
+      it "should fail to pause background tasks" do
+        error_msg = "Deployment #non-existing-deployment not found"
+        begin
+          client.pause_background_tasks("non-existing-deployment")
+          fail("pause background should fail when the deployment does not exist")
+        rescue EsxCloud::ApiError => e
+          expect(e.response_code).to eq 404
+          expect(e.errors.size).to eq 1
+          expect(e.errors.first.code).to eq("DeploymentNotFound")
+          expect(e.errors.first.message).to include(error_msg)
+        rescue EsxCloud::CliError => e
+          e.output.should match("DeploymentNotFound")
         end
       end
     end
+  end
+
+  def validate_tenant(tenant_name)
+    tenants = find_tenants_by_name(tenant_name)
+    tenants.items.size.should == 1
+    tenants.items[0].name.should == tenant_name
   end
 end
