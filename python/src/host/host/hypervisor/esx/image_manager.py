@@ -59,6 +59,8 @@ from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.disk_manager import DiskPathException
 from host.hypervisor.image_scanner import waste_time
+from host.hypervisor.placement_manager import NoSuchResourceException
+from host.hypervisor.placement_manager import ResourceType
 
 from common.log import log_duration
 
@@ -221,6 +223,23 @@ class EsxImageManager(ImageManager):
 
     def get_image_path(self, datastore_id, image_id):
         return os_vmdk_path(datastore_id, image_id, IMAGE_FOLDER_NAME)
+
+    def image_size(self, image_id):
+        for image_ds in self._ds_manager.image_datastores():
+            try:
+                image_path = os_vmdk_flat_path(image_ds, image_id,
+                                               IMAGE_FOLDER_NAME)
+                return os.path.getsize(image_path)
+            except os.error:
+                self._logger.info("Image %s not found in DataStore %s" %
+                                  (image_id, image_ds))
+
+        self._logger.warning("Failed to get image size:",
+                             exc_info=True)
+        # Failed to access shared image.
+        raise NoSuchResourceException(
+            ResourceType.IMAGE,
+            "Image does not exist.")
 
     def _load_json(self, metadata_path):
         if os.path.exists(metadata_path):

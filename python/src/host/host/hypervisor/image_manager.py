@@ -217,6 +217,10 @@ class ImageManager(object):
         pass
 
     @abc.abstractmethod
+    def image_size(self, image_id):
+        pass
+
+    @abc.abstractmethod
     def mark_unused(self, image_scanner, active_image_list):
         """Mark unused image as candidates for removal
         :param image_scanner: image_scanner

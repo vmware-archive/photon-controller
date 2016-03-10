@@ -342,15 +342,17 @@ class PlacementManager(object):
 
         # Try to find an image that is missing in the datastore where Vm is
         # placed. If there is a missing image, then apply the penalty.
-        inverse_ratio = 0
+        copy_size = 0
 
         for image in images:
             if not self._image_manager.check_image(image.image.id,
                                                    vm_placement.container_id):
-                inverse_ratio = 1
-                break
+                copy_size += self._image_manager.image_size(image.image.id)
 
-        return self._score(inverse_ratio, False, ResourceType.TRANSFER)
+        score = float(copy_size) / self.MAX_IMAGE_COPY_SIZE
+        if score > 1:
+            score = 1
+        return self._score(score, False, ResourceType.TRANSFER)
 
     """
     Compute utilization score for a vm, returns
