@@ -36,7 +36,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -63,6 +62,8 @@ public class XenonRestClient implements XenonClient {
 
   private static final long POST_OPERATION_EXPIRATION_MICROS = TimeUnit.SECONDS.toMicros(60);
   private long postOperationExpirationMicros = POST_OPERATION_EXPIRATION_MICROS;
+  private static final long PUT_OPERATION_EXPIRATION_MICROS = TimeUnit.SECONDS.toMicros(60);
+  private long putOperationExpirationMicros = PUT_OPERATION_EXPIRATION_MICROS;
   private static final long GET_OPERATION_EXPIRATION_MICROS = TimeUnit.SECONDS.toMicros(120);
   private long getOperationExpirationMicros = GET_OPERATION_EXPIRATION_MICROS;
   private static final long QUERY_OPERATION_EXPIRATION_MICROS = TimeUnit.SECONDS.toMicros(60);
@@ -141,6 +142,21 @@ public class XenonRestClient implements XenonClient {
     }
 
     return send(postOperation);
+  }
+
+  @Override
+  public Operation put(String serviceSelfLink, ServiceDocument body)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    URI serviceUri = getServiceUri(serviceSelfLink);
+
+    Operation putOperation = Operation
+        .createPut(serviceUri)
+        .setExpiration(Utils.getNowMicrosUtc() + getPutOperationExpirationMicros())
+        .setBody(body)
+        .setReferer(this.localHostUri)
+        .setContextId(LoggingUtils.getRequestId());
+
+    return send(putOperation);
   }
 
   @Override
@@ -599,6 +615,11 @@ public class XenonRestClient implements XenonClient {
   @VisibleForTesting
   protected long getPostOperationExpirationMicros() {
     return postOperationExpirationMicros;
+  }
+
+  @VisibleForTesting
+  protected long getPutOperationExpirationMicros() {
+    return putOperationExpirationMicros;
   }
 
   @VisibleForTesting
