@@ -259,16 +259,24 @@ class TestPlacementManager(unittest.TestCase):
 
         self.assertRaises(NoSuchResourceException, manager.place, vm, None)
 
-    def test_place_vm_non_existing_image(self):
-        manager = PMBuilder(ds_with_image=[]).build()
+    @parameterized.expand([
+        [0,         100],
+        [102 << 20, 90],
+        [204 << 20, 80],
+        [512 << 20, 50],
+        [1 << 30,   0],
+        [2 << 30,   0],
+    ])
+    def test_place_vm_non_existing_image(self, image_size, expected):
+        manager = PMBuilder(ds_with_image=[], image_size=image_size).build()
         image = DiskImage("disk_image",
                           DiskImage.COPY_ON_WRITE)
         disk = Disk(new_id(), DISK_FLAVOR, False, True, 1024, image)
         vm = Vm(new_id(), VM_FLAVOR,
                 State.STOPPED, None, None, [disk])
         score, placement_list = manager.place(vm, None)
-        # Image not on target datastore, so transfer score is 0
-        assert_that(score.transfer, is_(0))
+        # Image size is 2GB, 50% of 1GB, so transfer score is
+        assert_that(score.transfer, is_(expected))
         assert_that(placement_list, has_length(2))  # vm and disk
 
     def test_place_vm_in_no_image_datastore(self):
@@ -276,7 +284,8 @@ class TestPlacementManager(unittest.TestCase):
                   "datastore_id_2": (DatastoreInfo(8 * 1024, 0), set([])),
                   "datastore_id_3": (DatastoreInfo(16 * 1024, 0), set([]))}
         ds_with_image = ["datastore_id_1", "datastore_id_2"]
-        manager = PMBuilder(ds_map=ds_map, ds_with_image=ds_with_image).build()
+        manager = PMBuilder(ds_map=ds_map, ds_with_image=ds_with_image,
+                            image_size=100*1024*1024).build()
         total_storage = sum(t[0].total for t in ds_map.values())
 
         image = DiskImage("disk_image",
@@ -291,8 +300,8 @@ class TestPlacementManager(unittest.TestCase):
         score, placement_list = manager.place(vm, None)
 
         # disk1 and disk2 both take 1% space, so utilization score is 98
-        # image is not on datastore 3, so transfer score is 0
-        assert_that(score, is_(AgentPlacementScore(98, 0)))
+        # image takes 100MB, which is 10% of 1GB, so transfer score is 90
+        assert_that(score, is_(AgentPlacementScore(98, 90)))
         assert_that(placement_list, has_length(3))
         for placement in placement_list:
             assert_that(placement.container_id, is_("datastore_id_3"))
@@ -773,7 +782,8 @@ class PMBuilder(object):
     def __init__(self, total_mem=64*1024, image_id='image_id',
                  image_ds=['image_datastore'], mem_overcommit=1.0, ds_map=None,
                  ds_with_image=None, cpu_overcommit=None, im_ds_for_vm=False,
-                 ds_name_id_map=None, vm_networks=[], host_version="version1"):
+                 image_size=100*1024*1024, ds_name_id_map=None,
+                 vm_networks=[], host_version="version1"):
         self._logger = logging.getLogger(__name__)
         self.total_mem = total_mem
         self.host_version = host_version
@@ -790,6 +800,7 @@ class PMBuilder(object):
             self.ds_with_image = self.ds_map.keys()
         else:
             self.ds_with_image = ds_with_image
+        self.image_size = image_size
         self._ds_name_id_map = ds_name_id_map
         self.vm_networks = vm_networks
         self.image_datastores = [{"name": ds, "used_for_vms": im_ds_for_vm}
@@ -834,6 +845,7 @@ class PMBuilder(object):
         hypervisor.image_manager.get_image_id_from_disks.return_value = \
             self.image_id
         hypervisor.image_manager.check_image = self.check_image
+        hypervisor.image_manager.image_size.return_value = self.image_size
 
         hypervisor.vm_manager = MagicMock()
         hypervisor.vm_manager.get_used_memory_mb.return_value = 0
