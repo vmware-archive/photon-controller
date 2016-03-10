@@ -25,6 +25,7 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.services.common.QueryTask;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Set;
 
@@ -59,6 +60,31 @@ public class DatastoreService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       startOperation.fail(t);
     }
+  }
+
+  @Override
+  public void handlePut(Operation putOperation) {
+    ServiceUtils.logInfo(this, "Handling put for service %s", getSelfLink());
+    try {
+      State currentState = getState(putOperation);
+      validateState(currentState);
+      State newState = putOperation.getBody(State.class);
+      validatePut(currentState, newState);
+      super.setState(putOperation, newState);
+      validateState(newState);
+      putOperation.complete();
+    } catch (IllegalStateException t) {
+      ServiceUtils.failOperationAsBadRequest(this, putOperation, t);
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      putOperation.fail(t);
+    }
+  }
+
+  private void validatePut(State currentState, State newState) {
+    checkState(newState.id.equals(currentState.id));
+    checkState(newState.name.equals(currentState.name));
+    checkState(newState.type.equals(currentState.type));
   }
 
   @Override

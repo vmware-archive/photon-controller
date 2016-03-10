@@ -22,13 +22,16 @@ import com.vmware.xenon.common.Service;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.UUID;
@@ -51,6 +54,17 @@ public class DatastoreServiceTest {
     testState.tags = new HashSet<>(Arrays.asList("ds1-type"));
     testState.documentSelfLink = "/" + testState.id;
     return testState;
+  }
+
+  private DatastoreService.State getPutState(DatastoreService.State startState) {
+    DatastoreService.State newState = new DatastoreService.State();
+    newState.id = startState.id;
+    newState.name = startState.name;
+    newState.type = startState.type;
+    newState.tags = new HashSet<>(Collections.singleton("ds1-newtype"));
+    newState.isImageDatastore = true;
+    newState.documentSelfLink = "/" + newState.id;
+    return newState;
   }
 
   private void verifyDatastore(DatastoreService.State actual, DatastoreService.State expected) {
@@ -113,16 +127,143 @@ public class DatastoreServiceTest {
     @Test
     public void testStartState() throws Throwable {
       // Create a document and verify the result.
-      Operation startOperation = host.startServiceSynchronously(new DatastoreService(), testState,
-          testState.documentSelfLink);
-      assertThat(startOperation.getStatusCode(), is(200));
+      // Create a document.
+      host.startServiceSynchronously(new DatastoreServiceFactory(), null);
+      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+      DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
+      verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result again.
       DatastoreService.State savedState = host.getServiceState(DatastoreService.State.class,
-          testState.documentSelfLink);
+          createdState.documentSelfLink);
       verifyDatastore(savedState, testState);
     }
 
+    @Test
+    public void testValidIdempotentPostWithIdenticalState() throws Throwable {
+      // Create a document and verify the result.
+      host.startServiceSynchronously(new DatastoreServiceFactory(), null);
+      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+      DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
+      verifyDatastore(createdState, testState);
+
+      // Get the created document and verify the result again.
+      DatastoreService.State savedState = host.getServiceState(DatastoreService.State.class,
+          createdState.documentSelfLink);
+      verifyDatastore(savedState, testState);
+
+      // Post the document again and verify that it is translated to a PUT successfully.
+      Operation putOperation = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      assertThat(putOperation.getStatusCode(), is(200));
+
+      // Get the created document and verify the result again.
+      savedState = host.getServiceState(DatastoreService.State.class, createdState.documentSelfLink);
+      verifyDatastore(savedState, testState);
+    }
+
+    @Test
+    public void testValidIdempotentPost() throws Throwable {
+      // Create a document and verify the result.
+      host.startServiceSynchronously(new DatastoreServiceFactory(), null);
+      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+      DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
+      verifyDatastore(createdState, testState);
+
+      // Get the created document and verify the result again.
+      DatastoreService.State savedState = host.getServiceState(DatastoreService.State.class,
+          createdState.documentSelfLink);
+      verifyDatastore(savedState, testState);
+
+      // Post the document again and verify that it is translated to a PUT successfully.
+      DatastoreService.State newState = getPutState(createdState);
+      Operation putOperation = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, newState);
+      assertThat(putOperation.getStatusCode(), is(200));
+
+      // Get the created document and verify the result again.
+      savedState = host.getServiceState(DatastoreService.State.class, createdState.documentSelfLink);
+      verifyDatastore(savedState, newState);
+    }
+  }
+
+  /**
+   * This class implements tests for the handlePut method.
+   */
+  public class HandlePutTest {
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS, BasicServiceHost.BIND_PORT, null,
+          DatastoreServiceFactory.SELF_LINK, 10, 10);
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient.start();
+      testState = getTestState();
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      BasicServiceHost.destroy(host);
+      dcpRestClient.stop();
+    }
+
+    @Test
+    public void testPut() throws Throwable {
+      // Create a document.
+      host.startServiceSynchronously(new DatastoreServiceFactory(), null);
+      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+      DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
+      verifyDatastore(createdState, testState);
+
+      // Get the created document and verify the result.
+      result = dcpRestClient.get(createdState.documentSelfLink);
+      createdState = result.getBody(DatastoreService.State.class);
+      verifyDatastore(createdState, testState);
+
+      // Put a new version of the document.
+      DatastoreService.State newState = getPutState(createdState);
+      result = dcpRestClient.put(createdState.documentSelfLink, newState);
+      assertThat(result.getStatusCode(), is(200));
+
+      // Get the new document and verify the result.
+      result = dcpRestClient.get(createdState.documentSelfLink);
+      createdState = result.getBody(DatastoreService.State.class);
+      verifyDatastore(createdState, newState);
+    }
+
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = BadRequestException.class)
+    public void testPutInvalidField(String fieldName) throws Throwable {
+      // Create a document.
+      host.startServiceSynchronously(new DatastoreServiceFactory(), null);
+      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+      DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
+      verifyDatastore(createdState, testState);
+
+      // Get the created document and verify the result.
+      result = dcpRestClient.get(createdState.documentSelfLink);
+      createdState = result.getBody(DatastoreService.State.class);
+      verifyDatastore(createdState, testState);
+
+      // Put a new version of the document.
+      DatastoreService.State newState = getTestState();
+      Field declaredField = newState.getClass().getDeclaredField(fieldName);
+      declaredField.set(newState, "INVALID_VALUE");
+      dcpRestClient.put(createdState.documentSelfLink, newState);
+    }
+
+    @DataProvider(name = "ImmutableFieldNames")
+    public Object[][] getImmutableFieldNames() {
+      return new Object[][]{
+          {"id"},
+          {"name"},
+          {"type"},
+      };
+    }
   }
 
   /**
