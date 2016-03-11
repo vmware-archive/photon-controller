@@ -106,15 +106,18 @@ class HttpTransferer(object):
         selector = urlMatcher.group(3)
         return (protocol, host, selector)
 
-    def _get_response_data(self, src):
+    def _get_response_data(self, src, read_lease):
         counter = 0
         data = src.read(CHUNK_SIZE)
         while data:
             yield data
             counter += 1
-            if counter % 100 == 0:
-                self._logger.debug("Received %d kB." % (
-                    CHUNK_SIZE * counter / 1024))
+            if counter % 1024 == 0:  # every 64MB
+                progress = min(counter // 1024, 99)
+                # renew lease periodically, or it will timeout after 5 minutes.
+                read_lease.Progress(progress)
+                self._logger.debug("Received %d MB, Progress %d%%." %
+                                   (CHUNK_SIZE * counter // (1024 * 1024), progress))
             data = src.read(CHUNK_SIZE)
 
     def _get_cgi_ticket(self, host, port, url, http_op=HttpOp.GET):
@@ -126,8 +129,7 @@ class HttpTransferer(object):
             raise ValueError("No ticket")
         return response.ticket
 
-    def upload_stream(self, source_file_obj, file_size, url,
-                      ticket):
+    def upload_stream(self, source_file_obj, file_size, url, write_lease, ticket):
         protocol, host, selector = self._split_url(url)
         self._logger.debug("Upload file of size: %d\nTo URL:\n%s://%s%s\n" %
                            (file_size, protocol, host, selector))
@@ -151,9 +153,12 @@ class HttpTransferer(object):
 
                 conn.send(data)
                 counter += 1
-                if counter % 100 == 0:
-                    self._logger.debug("Sent %d kB." % (
-                        CHUNK_SIZE * counter / 1024))
+                if counter % 1024 == 0:  # every 64MB
+                    progress = min(counter // 1024, 99)
+                    # renew lease periodically, or it will timeout after 5 minutes.
+                    write_lease.Progress(progress)
+                    self._logger.debug("Sent %d MB, Progress %d%%" %
+                                       (CHUNK_SIZE * counter // (1024 * 1024), progress))
         except socket.error, e:
             err_str = str(e)
             self._logger.info("Upload failed: %s" % err_str)
@@ -167,10 +172,10 @@ class HttpTransferer(object):
 
         self._logger.debug("Upload of %s completed." % selector)
 
-    def upload_file(self, file_path, url, ticket=None):
+    def upload_file(self, file_path, url, write_lease, ticket=None):
         with open(file_path, "rb") as read_fp:
             file_size = os.stat(file_path).st_size
-            self.upload_stream(read_fp, file_size, url, ticket)
+            self.upload_stream(read_fp, file_size, url, write_lease, ticket)
 
     def get_download_stream(self, url, ticket):
         protocol, host, selector = self._split_url(url)
@@ -190,10 +195,10 @@ class HttpTransferer(object):
 
         return resp
 
-    def download_file(self, url, path, ticket=None):
+    def download_file(self, url, path, read_lease, ticket=None):
         read_fp = self.get_download_stream(url, ticket)
         with open(path, "wb") as file:
-            for data in self._get_response_data(read_fp):
+            for data in self._get_response_data(read_fp, read_lease):
                 file.write(data)
 
 
@@ -416,13 +421,9 @@ class HttpNfcTransferer(HttpTransferer):
             write_lease, disk_url = self._get_url_from_import_vm(vim_client,
                                                                  spec)
             try:
-                self.upload_file(tmp_path, disk_url)
+                self.upload_file(tmp_path, disk_url, write_lease)
             finally:
                 write_lease.Complete()
-                try:
-                    os.unlink(tmp_path)
-                except OSError:
-                    pass
 
             # TODO(vui): imported vm name should be made unique to remove
             # ambiguity during subsequent lookup
@@ -440,27 +441,20 @@ class HttpNfcTransferer(HttpTransferer):
     @lock_non_blocking
     def send_image_to_host(self, image_id, image_datastore,
                            destination_image_id, destination_datastore,
-                           host, port, intermediate_file_path=None):
+                           host, port):
         manifest, metadata = self._read_metadata(image_datastore, image_id)
 
         shadow_vm_id = self._create_shadow_vm()
+        tmp_path = "/vmfs/volumes/%s/%s_transfer.vmdk" % (
+            self._get_shadow_vm_datastore(), shadow_vm_id)
+
         try:
             read_lease, disk_url =\
                 self._get_image_stream_from_shadow_vm(
                     image_id, image_datastore, shadow_vm_id)
 
-            # Save stream-optimized disk to a unique path locally for now.
-            # TODO(vui): Switch to chunked transfers to handle not knowing
-            # content length in the full streaming mode.
-
-            if intermediate_file_path:
-                tmp_path = intermediate_file_path
-            else:
-                tmp_path = "/vmfs/volumes/%s/%s_transfer.vmdk" % (
-                    self._get_shadow_vm_datastore(),
-                    shadow_vm_id)
             try:
-                self.download_file(disk_url, tmp_path)
+                self.download_file(disk_url, tmp_path, read_lease)
             finally:
                 read_lease.Complete()
 
@@ -473,6 +467,10 @@ class HttpNfcTransferer(HttpTransferer):
                 tmp_path, manifest, metadata, spec, destination_image_id,
                 destination_datastore, host, port)
         finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
             self._delete_shadow_vm(shadow_vm_id)
 
         return imported_vm_name
