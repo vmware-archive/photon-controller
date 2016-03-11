@@ -59,6 +59,13 @@ public class ProvisionerConfig {
   @NotNull
   private LoggingConfiguration logging = new LoggingConfiguration();
 
+  private Boolean usePhotonDHCP;
+
+  @Range(min = 0, max = 65535)
+  private Integer goXenonHostPort;
+
+  private Integer goLogVerbosity;
+
   public ProvisionerConfig() {
     try {
       bind = InetAddress.getLocalHost().getHostAddress();
@@ -90,6 +97,22 @@ public class ProvisionerConfig {
 
   public ZookeeperConfig getZookeeper() {
     return zookeeper;
+  }
+
+  public Boolean getUsePhotonDHCP() {
+    if (usePhotonDHCP == null) {
+      return Boolean.FALSE;
+    } else {
+      return usePhotonDHCP;
+    }
+  }
+
+  public Integer getGoXenonHostPort() {
+    return goXenonHostPort;
+  }
+
+  public Integer getGoLogVerbosity() {
+    return goLogVerbosity;
   }
 
   /**
@@ -128,4 +151,30 @@ public class ProvisionerConfig {
   public @interface StoragePath {
   }
 
+  /**
+   * Bare metal provisioner is not enabled if DHCP is not enabled.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface UsePhotonDHCP {
+  }
+
+  /**
+   * Bare metal provisioner is not enabled if DHCP is not enabled.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface GoXenonHostPort {
+  }
+
+  /**
+   * Bare metal provisioner is not enabled if DHCP is not enabled.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface GoLogVerbosity {
+  }
 }

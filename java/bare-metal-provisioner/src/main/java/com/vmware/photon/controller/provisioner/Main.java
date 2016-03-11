@@ -90,6 +90,18 @@ public class Main {
     provisionerXenonHost.start();
 
     registerWithZookeeper(serviceNodeFactory, provisionerConfig.getRegistrationAddress(), provisionerConfig.getPort());
+
+    if (provisionerConfig.getUsePhotonDHCP()) {
+      logger.info("Photon Controller DHCP server is enabled. Will start Slingshot");
+      try {
+        provisionerXenonHost.startSlingshotService(provisionerConfig.getGoXenonHostPort(),
+            provisionerConfig.getGoLogVerbosity());
+      } catch (Throwable t) {
+        logger.error("Cannot run startSlingshotService", t);
+      }
+    } else {
+      logger.info("Photon Controller DHCP server is not enabled. Not running DHCP and BMP");
+    }
   }
 
   private static ProvisionerConfig getConfig(Namespace namespace) {

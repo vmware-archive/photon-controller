@@ -38,6 +38,7 @@ public class ProvisionerModule extends AbstractModule {
         .to(provisionerConfig.getRegistrationAddress());
     bindConstant().annotatedWith(ProvisionerConfig.Port.class).to(provisionerConfig.getPort());
     bindConstant().annotatedWith(ProvisionerConfig.StoragePath.class).to(provisionerConfig.getStoragePath());
+    bindConstant().annotatedWith(ProvisionerConfig.UsePhotonDHCP.class).to(provisionerConfig.getUsePhotonDHCP());
     bind(BuildInfo.class).toInstance(BuildInfo.get(ProvisionerConfig.class));
 
     install(new FactoryModuleBuilder()
