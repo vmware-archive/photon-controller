@@ -315,36 +315,34 @@ public class ImageDatastoreSweeperService extends StatefulService {
       Operation queryHostSet = buildHostQuery(current.datastore, current.isImageDatastore);
 
       OperationSequence.create(queryHostSet)
-        .setCompletion((operations, throwable) -> {
-          if (throwable != null) {
-            failTask(throwable.values().iterator().next());
-            return;
-          }
+          .setCompletion((operations, throwable) -> {
+                if (throwable != null) {
+                  failTask(throwable.values().iterator().next());
+                  return;
+                }
 
-          Operation op = operations.get(queryHostSet.getId());
-          NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
-          List<HostService.State> documentLinks = QueryTaskUtils
-                  .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
+                Operation op = operations.get(queryHostSet.getId());
+                NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
+                List<HostService.State> documentLinks = QueryTaskUtils
+                    .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
 
-          Set<String> hostSet = new HashSet<String>();
-          for (HostService.State state : documentLinks) {
-            hostSet.add(state.hostAddress);
-          }
+                Set<String> hostSet = new HashSet<>();
+                documentLinks.forEach(state -> hostSet.add(state.hostAddress));
 
-          checkState(hostSet.size() > 0, "Could not find any hosts for datastore '%s'.", current.datastore);
-          ServiceUtils.logInfo(this, "GetHostsForDatastore '%s' returned '%s'", current.datastore,
-                  Utils.toJson(hostSet));
+                checkState(hostSet.size() > 0, "Could not find any hosts for datastore '%s'.", current.datastore);
+                ServiceUtils.logInfo(this, "GetHostsForDatastore '%s' returned '%s'", current.datastore,
+                    Utils.toJson(hostSet));
 
-          if (current.isSelfProgressionDisabled) {
-            // not sending patch to move to next stage
-            return;
-          }
+                if (current.isSelfProgressionDisabled) {
+                  // not sending patch to move to next stage
+                  return;
+                }
 
-          State patch = this.buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.TRIGGER_SCAN, null);
-          patch.host = ServiceUtils.selectRandomItem(hostSet);
-          this.sendSelfPatch(patch);
-        }
-        ).sendWith(this);
+                State patch = this.buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.TRIGGER_SCAN, null);
+                patch.host = ServiceUtils.selectRandomItem(hostSet);
+                this.sendSelfPatch(patch);
+              }
+          ).sendWith(this);
     } catch (Exception e) {
       failTask(e);
     }
@@ -501,7 +499,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
               HostClient.ResponseValidator.checkGetDeletedImagesResponse(response);
 
               for (InactiveImageDescriptor descriptor : response.getImage_descs()) {
-                updateReplicatedDatastoreCount(descriptor.getImage_id(),
+                updateReplicatedDatastoreCount(current, descriptor.getImage_id(),
                     (operation, throwable) -> {
                       if (throwable != null) {
                         logWarning("Image update replicated datastore count failed for image %s.",
@@ -647,10 +645,15 @@ public class ImageDatastoreSweeperService extends StatefulService {
    * @param imageId
    * @param completionHandler
    */
-  private void updateReplicatedDatastoreCount(String imageId, Operation.CompletionHandler completionHandler) {
+  private void updateReplicatedDatastoreCount(final State current, String imageId,
+                                              Operation.CompletionHandler completionHandler) {
     ImageService.DatastoreCountRequest datastoreCountRequest = new ImageService.DatastoreCountRequest();
     datastoreCountRequest.amount = -1;
-    datastoreCountRequest.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT;
+    if (current.isImageDatastore) {
+      datastoreCountRequest.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_SEEDING_AND_REPLICATION_COUNT;
+    } else {
+      datastoreCountRequest.kind = ImageService.DatastoreCountRequest.Kind.ADJUST_REPLICATION_COUNT;
+    }
 
     sendRequest(
         ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
@@ -799,24 +802,24 @@ public class ImageDatastoreSweeperService extends StatefulService {
    */
   private Operation buildHostQuery(final String dataStore, final boolean isImageDatastore) {
     QueryTask.Query kindClause = new QueryTask.Query()
-            .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-            .setTermMatchValue(Utils.buildKind(HostService.State.class));
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(HostService.State.class));
 
     String fieldName = QueryTask.QuerySpecification.buildCollectionItemName(
-            HostService.State.FIELD_NAME_REPORTED_DATASTORES);
+        HostService.State.FIELD_NAME_REPORTED_DATASTORES);
 
     if (isImageDatastore) {
       fieldName = QueryTask.QuerySpecification.buildCollectionItemName(
-              HostService.State.FIELD_NAME_REPORTED_IMAGE_DATASTORES);
+          HostService.State.FIELD_NAME_REPORTED_IMAGE_DATASTORES);
     }
 
     QueryTask.Query datastoreClause = new QueryTask.Query()
-            .setTermPropertyName(fieldName)
-            .setTermMatchValue(dataStore);
+        .setTermPropertyName(fieldName)
+        .setTermMatchValue(dataStore);
 
     QueryTask.Query stateClause = new QueryTask.Query()
-            .setTermPropertyName("state")
-            .setTermMatchValue(HostState.READY.toString());
+        .setTermPropertyName("state")
+        .setTermMatchValue(HostState.READY.toString());
 
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(kindClause);
@@ -825,8 +828,8 @@ public class ImageDatastoreSweeperService extends StatefulService {
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     return getCloudStoreHelper()
-            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-            .setBody(QueryTask.create(querySpecification).setDirect(true));
+        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 
   /**
