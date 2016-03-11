@@ -26,28 +26,45 @@ describe EsxCloud::GoCliClient do
   }
 
   it "creates availability zone" do
-    availability_zone = double(EsxCloud::AvailabilityZone)
+    availability_zone_id ="foo"
+    availability_zone = double(EsxCloud::AvailabilityZone, :id => availability_zone_id)
     spec = { :name => "availabilityzone1"}
     payload = {name: "availabilityzone1"}
-    expect(@api_client).to receive(:create_availability_zone).with(payload).and_return(availability_zone)
+
+    expect(client).to receive(:run_cli).with("availability-zone create -n #{payload[:name]}").and_return(availability_zone_id)
+    expect(client).to receive(:find_availability_zone_by_id).with(availability_zone_id).and_return(availability_zone)
+
     client.create_availability_zone(spec).should == availability_zone
   end
 
   it "finds availability zone by id" do
-    availability_zone = double(EsxCloud::AvailabilityZone)
-    expect(@api_client).to receive(:find_availability_zone_by_id).with("foo").and_return(availability_zone)
-    client.find_availability_zone_by_id("foo").should == availability_zone
+    availability_zone_id ="foo"
+    availability_zone = double(EsxCloud::AvailabilityZone, :id => availability_zone_id)
+    result ="foo availabilityZone1 availabilityZone READY"
+
+    expect(client).to receive(:run_cli).with("availability-zone show #{availability_zone_id}").and_return(result)
+    expect(client).to receive(:get_availability_zone_from_response).with(result).and_return(availability_zone)
+
+    client.find_availability_zone_by_id(availability_zone_id).should == availability_zone
   end
 
   it "finds all availability zones" do
+
     availability_zones = double(EsxCloud::AvailabilityZoneList)
-    expect(@api_client).to receive(:find_all_availability_zones).and_return(availability_zones)
+    result = "foo availabilityZone1
+              bar availabilityZone2"
+
+    expect(client).to receive(:run_cli).with("availability-zone list").and_return(result)
+    expect(client).to receive(:get_availability_zones_list_from_response).with(result).and_return(availability_zones)
+
     client.find_all_availability_zones.should == availability_zones
   end
 
   it "deletes availability zone by id" do
-    expect(@api_client).to receive(:delete_availability_zone).with("foo").and_return(true)
-    client.delete_availability_zone("foo").should be_true
+    availability_zone_id ="foo"
+
+    expect(client).to receive(:run_cli).with("availability-zone delete '#{availability_zone_id}'")
+    client.delete_availability_zone(availability_zone_id).should be_true
   end
 
   it "gets availability zone tasks" do

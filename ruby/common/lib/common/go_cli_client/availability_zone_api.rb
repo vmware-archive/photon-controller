@@ -16,24 +16,32 @@ module EsxCloud
       # @param [Hash] payload
       # @return [AvailabilityZone]
       def create_availability_zone(payload)
-        @api_client.create_availability_zone(payload)
+        cmd = "availability-zone create -n #{payload[:name]}"
+        availability_zone_id = run_cli(cmd)
+
+        find_availability_zone_by_id(availability_zone_id)
       end
 
       # @param [String] id
       # @return AvailabilityZone
       def find_availability_zone_by_id(id)
-        @api_client.find_availability_zone_by_id(id)
+        result = run_cli("availability-zone show #{id}")
+
+        get_availability_zone_from_response(result)
       end
 
       # @return [AvailabilityZoneList]
       def find_all_availability_zones()
-        @api_client.find_all_availability_zones
+        result = run_cli("availability-zone list")
+
+        get_availability_zones_list_from_response(result)
       end
 
       # @param [String] id
       # @return [Boolean]
       def delete_availability_zone(id)
-        @api_client.delete_availability_zone(id)
+        run_cli("availability-zone delete '#{id}'")
+        true
       end
 
       # @param [String] id
@@ -41,6 +49,37 @@ module EsxCloud
       # @return [TaskList]
       def get_availability_zone_tasks(id, state = nil)
         @api_client.get_availability_zone_tasks(id, state)
+      end
+
+      private
+
+      def get_availability_zone_from_response(result)
+        result.slice! "\n"
+        values = result.split("\t", -1)
+        availability_zone_hash = Hash.new
+        availability_zone_hash["id"]    = values[0] unless values[0] == ""
+        availability_zone_hash["name"]  = values[1] unless values[1] == ""
+        availability_zone_hash["kind"]  = values[2] unless values[2] == ""
+        availability_zone_hash["state"] = values[3] unless values[3] == ""
+
+        AvailabilityZone.create_from_hash(availability_zone_hash)
+      end
+
+      def get_availability_zones_list_from_response(result)
+        availability_zones = result.split("\n").map do |availability_zone_info|
+          get_availability_zone_details availability_zone_info.split("\t")[0]
+        end
+
+        AvailabilityZoneList..new(availability_zones)
+      end
+
+      def get_availability_zone_details(availability_zone_id)
+        begin
+          find_availability_zone_by_id availability_zone_id
+        rescue EsxCloud::CliError => e
+          raise() unless e.message.include? "AvailabilityZoneNotFound"
+          nil
+        end
       end
     end
   end
