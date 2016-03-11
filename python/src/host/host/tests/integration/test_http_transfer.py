@@ -18,7 +18,7 @@ import tempfile
 import unittest
 
 from hamcrest import *  # noqa
-from mock import patch
+from mock import patch, MagicMock
 from nose.plugins.skip import SkipTest
 from testconfig import config
 
@@ -86,7 +86,7 @@ class TestHttpTransfer(unittest.TestCase):
         with tempfile.NamedTemporaryFile(delete=True) as local_file:
             self.assertRaises(TransferException,
                               self.http_transferer.download_file, url,
-                              local_file.name, ticket=ticket)
+                              local_file.name, MagicMock(), ticket=ticket)
 
     def test_upload_file_bad_destination(self):
         url = self._datastore_path_url("_missing__datastore_",
@@ -95,14 +95,14 @@ class TestHttpTransfer(unittest.TestCase):
             self.host, self.agent_port, url, http_op=HttpOp.PUT)
         self.assertRaises(
             TransferException, self.http_transferer.upload_file,
-            self.random_file, url, ticket=ticket)
+            self.random_file, url, MagicMock(), ticket=ticket)
 
     def test_raw_file_transfer_roundtrip(self):
         relpath = "_test_http_xfer_random.bin"
         url = self._datastore_path_url(self.image_datastore, relpath)
         ticket = self.http_transferer._get_cgi_ticket(
             self.host, self.agent_port, url, http_op=HttpOp.PUT)
-        self.http_transferer.upload_file(self.random_file, url, ticket=ticket)
+        self.http_transferer.upload_file(self.random_file, url, MagicMock(), ticket=ticket)
 
         self.remote_files_to_delete.append(
             self._remote_ds_path(self.image_datastore, relpath))
@@ -111,7 +111,7 @@ class TestHttpTransfer(unittest.TestCase):
             self.host, self.agent_port, url, http_op=HttpOp.GET)
         with tempfile.NamedTemporaryFile(delete=True) as downloaded_file:
             self.http_transferer.download_file(url, downloaded_file.name,
-                                               ticket=ticket)
+                                               MagicMock(), ticket=ticket)
             # check that file uploaded and immediately downloaded back is
             # identical to the source file used.
             assert_that(
@@ -128,7 +128,7 @@ class TestHttpTransfer(unittest.TestCase):
         try:
             with tempfile.NamedTemporaryFile(delete=True) as downloaded_file:
                 # see if we can download without errors
-                self.http_transferer.download_file(url, downloaded_file.name)
+                self.http_transferer.download_file(url, downloaded_file.name, lease)
                 # check that the first part of the file looks like that from a
                 # stream-optimized disk
                 with open(downloaded_file.name, 'rb') as f:
