@@ -130,7 +130,7 @@ public class TaskSchedulerServiceHelperTest {
     startState.taskInfo = new TaskState();
     startState.taskInfo.stage = stage;
     for (int i = 0; i < countInCreated; i++) {
-      Operation resultOp = environment.sendPostAndWait(TestServiceWithStageFactory.SELF_LINK, startState);
+      Operation resultOp = environment.sendPostAndWaitForReplication(TestServiceWithStageFactory.SELF_LINK, startState);
       assertThat(resultOp.getStatusCode(), is(200));
     }
   }
