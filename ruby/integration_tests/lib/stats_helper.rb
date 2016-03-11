@@ -10,10 +10,10 @@
 # specific language governing permissions and limitations under the License.
 
 require 'date'
-require 'net/http'
-require 'json'
-require 'fileutils'
 require 'dcp/cloud_store/cloud_store_client'
+require 'fileutils'
+require 'json'
+require 'net/http'
 
 # Helper module for stats integration tests
 module StatsHelper
@@ -25,7 +25,7 @@ module StatsHelper
   # or returns an empty result if no data available.
   def get_stats_from_graphite(endpoint, port, pattern)
     uri = URI.parse("http://#{endpoint}:#{port}/render?target=#{pattern}&format=json")
-    maxSeconds = 180
+    maxSeconds = 90
     start = Time.now
     sleep(5)
     begin
@@ -47,10 +47,19 @@ module StatsHelper
     return json.first["datapoints"].select { |x| x.first != nil }
   end
 
+  def start_graphite
+    `cd #{@@git_dir}/devbox-photon && vagrant ssh -c 'docker start graphite'`
+  end
 
-  def delete_graphite_data_devbox
+  def stop_graphite
+    `cd #{@@git_dir}/devbox-photon && vagrant ssh -c 'docker stop graphite'`
+  end
+
+  def delete_graphite_data
+    stop_graphite
     whisper_dir = File.join(@@git_dir, "devbox-photon", "stats_data", "graphite", "graphite", "whisper", "photon")
     FileUtils.rm_rf(whisper_dir)
+    start_graphite
   end
 
   # Patch deployment to set stats state
