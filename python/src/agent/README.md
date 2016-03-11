@@ -60,7 +60,6 @@ Follow python/README.md file to setup a virtualenv. Once the virtualenv is set
 up, run:
 
     nosetests --tc agent_remote_test.servers:10.36.7.32 \
-      --tc=agent_remote_test.chairman:10.20.116.212:13000 \
       --tc=agent_remote_test.datastores:datastore1 \
       agent.tests.integration.test_remote_agent:TestRemoteAgent
 

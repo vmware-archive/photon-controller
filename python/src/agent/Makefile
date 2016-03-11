@@ -19,9 +19,6 @@ endif
 ifdef ZOOKEEPER
 	TEST_OPTS += --tc=agent_remote_test.zookeeper:$(ZOOKEEPER)
 endif
-ifdef CHAIRMAN
-	TEST_OPTS += --tc=agent_remote_test.chairman:$(CHAIRMAN)
-endif
 ifdef SANITY
 	TESTS += agent/tests/integration/test_remote_agent.py:TestRemoteAgent.test_power_ops
 else
