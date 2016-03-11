@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.provisioner;
 
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import com.google.inject.BindingAnnotation;
@@ -59,6 +60,14 @@ public class ProvisionerConfig {
   @NotNull
   private LoggingConfiguration logging = new LoggingConfiguration();
 
+  @DefaultBoolean(value = false)
+  private Boolean usePhotonDHCP;
+
+  @Range(min = 0, max = 65535)
+  private Integer goXenonHostPort;
+
+  private Integer goLogVerbosity;
+
   public ProvisionerConfig() {
     try {
       bind = InetAddress.getLocalHost().getHostAddress();
@@ -90,6 +99,18 @@ public class ProvisionerConfig {
 
   public ZookeeperConfig getZookeeper() {
     return zookeeper;
+  }
+
+  public Boolean getUsePhotonDHCP() {
+    return usePhotonDHCP;
+  }
+
+  public Integer getGoXenonHostPort() {
+    return goXenonHostPort;
+  }
+
+  public Integer getGoLogVerbosity() {
+    return goLogVerbosity;
   }
 
   /**
@@ -128,4 +149,30 @@ public class ProvisionerConfig {
   public @interface StoragePath {
   }
 
+  /**
+   * Bare metal provisioner is not enabled if DHCP is not enabled.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface UsePhotonDHCP {
+  }
+
+  /**
+   * Bare metal provisioner is not enabled if DHCP is not enabled.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface GoXenonHostPort {
+  }
+
+  /**
+   * Bare metal provisioner is not enabled if DHCP is not enabled.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface GoLogVerbosity {
+  }
 }

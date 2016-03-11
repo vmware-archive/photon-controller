@@ -21,7 +21,9 @@ import com.vmware.photon.controller.provisioner.xenon.entity.DhcpLeaseServiceFac
 import com.vmware.photon.controller.provisioner.xenon.entity.DhcpSubnetServiceFactory;
 import com.vmware.photon.controller.provisioner.xenon.task.StartSlingshotFactoryService;
 import com.vmware.photon.controller.provisioner.xenon.task.StartSlingshotService;
+import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.inject.Inject;
@@ -39,6 +41,7 @@ import java.nio.file.Paths;
 public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoProvider {
   private static final Logger logger = LoggerFactory.getLogger(ProvisionerXenonHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
+  private static final String REFERRER_PATH = "/slingshot-service-control";
 
   public static final Class[] FACTORY_SERVICES = {
       DhcpConfigurationServiceFactory.class,
@@ -98,4 +101,28 @@ public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoPr
     return FACTORY_SERVICES;
   }
 
+  public void startSlingshotService(Integer httpPort, Integer goLogVerbosity) throws Throwable {
+    logger.info("Running startSlingshotService");
+    try {
+      StartSlingshotService.State state = new StartSlingshotService.State();
+      if (httpPort != null && httpPort > 0) {
+        state.httpPort = httpPort;
+      }
+      if (goLogVerbosity != null && goLogVerbosity > 0) {
+        state.glogVLevel = goLogVerbosity;
+      }
+      Operation post = Operation
+          .createPost(UriUtils.buildUri(this, StartSlingshotFactoryService.SELF_LINK, null))
+          .setBody(state);
+
+      Operation operation = ServiceHostUtils.sendRequestAndWait(this, post, REFERRER_PATH);
+      if (operation.getStatusCode() != Operation.STATUS_CODE_OK) {
+        logger.info("Slingshot service start failed");
+      }
+      logger.info("Started Slingshot service {} ",
+          operation.getBody(StartSlingshotService.State.class).documentSelfLink);
+    } catch (Throwable t) {
+      logger.error("Start Slingshot failed.", t);
+    }
+  }
 }

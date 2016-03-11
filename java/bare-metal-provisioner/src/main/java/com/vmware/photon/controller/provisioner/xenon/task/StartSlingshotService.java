@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.provisioner.xenon.task;
 
 
+import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
@@ -112,6 +113,7 @@ public class StartSlingshotService extends StatefulService {
       int gLogVLevel = 0;
 
       State state = startOperation.getBody(State.class);
+      InitializationUtils.initialize(state);
 
       if (state.taskInfo == null || state.taskInfo.stage == null) {
         state.taskInfo = new TaskState();
