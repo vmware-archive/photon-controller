@@ -303,14 +303,14 @@ class TestHttpTransfer(unittest.TestCase):
         expected_tmp_file = "/vmfs/volumes/%s/%s_transfer.vmdk" % (
             self.image_datastores[0], self.shadow_vm_id)
         xferer.download_file.assert_called_once_with(
-            from_url_mock, expected_tmp_file)
+            from_url_mock, expected_tmp_file, read_lease_mock)
         read_lease_mock.Complete.assert_called_once_with()
         xferer._create_import_vm_spec.assert_called_once_with(
             image_id, destination_datastore)
         xferer._get_url_from_import_vm.assert_called_once_with(
             vim_conn_mock, import_spec_mock)
         xferer.upload_file.assert_called_once_with(
-            expected_tmp_file, to_url_mock)
+            expected_tmp_file, to_url_mock, write_lease_mock)
         write_lease_mock.Complete.assert_called_once_with()
         xferer._delete_shadow_vm.assert_called_once_with(
             self.shadow_vm_id)
