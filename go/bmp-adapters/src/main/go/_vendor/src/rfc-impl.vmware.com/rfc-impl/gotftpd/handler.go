@@ -199,6 +199,7 @@ func ackValidator(blockNr uint16) packetValidator {
 
 func (s *session) serveRRQ(p *packetRRQ) {
 	rc, err := s.h.ReadFile(s.c, p.filename)
+
 	if err != nil {
 		switch err {
 		case os.ErrNotExist:

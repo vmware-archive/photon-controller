@@ -16,12 +16,16 @@ package com.vmware.photon.controller.provisioner.xenon;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.provisioner.ProvisionerConfig;
+import com.vmware.photon.controller.provisioner.xenon.entity.ComputeServiceFactory;
 import com.vmware.photon.controller.provisioner.xenon.entity.DhcpConfigurationServiceFactory;
 import com.vmware.photon.controller.provisioner.xenon.entity.DhcpLeaseServiceFactory;
 import com.vmware.photon.controller.provisioner.xenon.entity.DhcpSubnetServiceFactory;
+import com.vmware.photon.controller.provisioner.xenon.entity.DiskServiceFactory;
 import com.vmware.photon.controller.provisioner.xenon.task.StartSlingshotFactoryService;
 import com.vmware.photon.controller.provisioner.xenon.task.StartSlingshotService;
+import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.inject.Inject;
@@ -39,11 +43,15 @@ import java.nio.file.Paths;
 public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoProvider {
   private static final Logger logger = LoggerFactory.getLogger(ProvisionerXenonHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
+  private static final String REFERRER_PATH = "/slingshot-service-control";
 
   public static final Class[] FACTORY_SERVICES = {
       DhcpConfigurationServiceFactory.class,
       DhcpLeaseServiceFactory.class,
       DhcpSubnetServiceFactory.class,
+
+      ComputeServiceFactory.class,
+      DiskServiceFactory.class,
 
       StartSlingshotFactoryService.class,
       // Discovery
@@ -90,6 +98,8 @@ public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoPr
         && checkServiceAvailable(DhcpLeaseServiceFactory.SELF_LINK)
         && checkServiceAvailable(DhcpSubnetServiceFactory.SELF_LINK)
 
+        && checkServiceAvailable(ComputeServiceFactory.SELF_LINK)
+        && checkServiceAvailable(DiskServiceFactory.SELF_LINK)
         && checkServiceAvailable(StartSlingshotFactoryService.SELF_LINK);
   }
 
@@ -98,4 +108,26 @@ public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoPr
     return FACTORY_SERVICES;
   }
 
+  public void startSlingshotService(Integer slingshotLogVerbosity) throws Throwable {
+    logger.info("Running startSlingshotService");
+    try {
+      StartSlingshotService.State state = new StartSlingshotService.State();
+      state.httpPort = this.getPort() + 2;
+      if (slingshotLogVerbosity != null && slingshotLogVerbosity > 0) {
+        state.slingshotLogVLevel = slingshotLogVerbosity;
+      }
+      Operation post = Operation
+          .createPost(UriUtils.buildUri(this, StartSlingshotFactoryService.SELF_LINK, null))
+          .setBody(state);
+
+      Operation operation = ServiceHostUtils.sendRequestAndWait(this, post, REFERRER_PATH);
+      if (operation.getStatusCode() != Operation.STATUS_CODE_OK) {
+        logger.info("Slingshot service start failed");
+      }
+      logger.info("Started Slingshot service {} ",
+          operation.getBody(StartSlingshotService.State.class).documentSelfLink);
+    } catch (Throwable t) {
+      logger.error("Start Slingshot failed.", t);
+    }
+  }
 }

@@ -12,16 +12,16 @@ import (
 	"path"
 	"slingshot/types"
 
+	"fmt"
 	"golang.org/x/net/context"
-	"dcp/provisioning"
-	"github.com/pborman/uuid"
+	"github.com/golang/glog"
 )
 
 const (
-	CloudStorePath  = "/photon/cloudstore"
-	SubnetPath        = CloudStorePath + "/dhcp-subnets"
-	LeasePath         = CloudStorePath + "/dhcp-leases"
-	ConfigurationPath = CloudStorePath + "/dhcp-host-configuration"
+	BMPPath  = "/photon/bmp"
+	SubnetPath        = BMPPath + "/dhcp-subnets"
+	LeasePath         = BMPPath + "/dhcp-leases"
+	ConfigurationPath = BMPPath + "/dhcp-host-configuration"
 )
 
 type Client struct {
@@ -29,8 +29,7 @@ type Client struct {
 }
 
 func NewClient() *Client {
-	//return &Client{uri.Local()}
-	return &Client{uri.New("172.31.253.66", "19000")}
+	return &Client{uri.Local()}
 }
 
 // CreateSubnet creates a subnet.
@@ -60,6 +59,8 @@ func (b *Client) CreateSubnet(in types.Subnet) (*types.Subnet, error) {
 
 // ListSubnets returns a list of subnets.
 func (b *Client) ListSubnets() ([]types.Subnet, error) {
+	glog.Infof("Listing Subnets")
+
 	var subnets []types.Subnet
 
 	u := uri.Extend(b.URI, SubnetPath)
@@ -108,62 +109,49 @@ func (b *Client) LoadConfiguration(id string, configuration *types.Configuration
 }
 
 func (b *Client) LoadStatesFromConfiguration(c *types.Configuration) (*dcpProvisioning.ComputeState, *dcpProvisioning.DiskState, error) {
-//	computeReference, ok := c.Data["computeStateReference"]
-//	if !ok {
-//		return nil, nil, fmt.Errorf("missing attribute: computeStateReference")
-//	}
-//
-//	computeReferenceURI, err := uri.Parse(computeReference)
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//
-//	diskReference, ok := c.Data["diskStateReference"]
-//	if !ok {
-//		return nil, nil, fmt.Errorf("missing attribute: diskStateReference")
-//	}
-//
-//	diskReferenceURI, err := uri.Parse(diskReference)
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//
-//	// Send GETs in parallel
-//	ctx := context.TODO()
-//	computeOp := client.Send(operation.NewGet(ctx, computeReferenceURI))
-//	diskOp := client.Send(operation.NewGet(ctx, diskReferenceURI))
-//
-//	// Both states are needed so we can wait for them sequentially
-//	if err := computeOp.Wait(); err != nil {
-//		return nil, nil, err
-//	}
-//
-//	if err := diskOp.Wait(); err != nil {
-//		return nil, nil, err
-//	}
+	computeReference := c.ComputeStateReference
+	if computeReference == "" {
+		return nil, nil, fmt.Errorf("missing attribute: computeStateReference")
+	}
 
-//	var compute dcpProvisioning.ComputeState
-//	if err := computeOp.DecodeBody(&compute); err != nil {
-//		return nil, nil, err
-//	}
-//
-//	var disk dcpProvisioning.DiskState
-//	if err := diskOp.DecodeBody(&disk); err != nil {
-//		return nil, nil, err
-//	}
+	computeReferenceURI, err := uri.Parse(computeReference)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	compute := dcpProvisioning.ComputeState{
-			ID: uuid.New(),
-		}
+	diskReference := c.DiskStateReference
+	if diskReference == "" {
+		return nil, nil, fmt.Errorf("missing attribute: diskStateReference")
+	}
 
-	disk := dcpProvisioning.DiskState{
-			ID:       uuid.New(),
-			DiskType: provisioning.BootDeviceNetwork,
-		   SourceImageReference: "http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/userContent/tmp/serverimage.tar",
-			/*BootConfig: test.CoreosCloudConfig,
+	diskReferenceURI, err := uri.Parse(diskReference)
+	if err != nil {
+		return nil, nil, err
+	}
 
-			CustomizationServiceReference: uri.Extend(uri.Local(), provisioning.BootConfigServiceIso).String(),*/
-		}
+	// Send GETs in parallel
+	ctx := context.TODO()
+	computeOp := client.Send(operation.NewGet(ctx, computeReferenceURI))
+	diskOp := client.Send(operation.NewGet(ctx, diskReferenceURI))
+
+	// Both states are needed so we can wait for them sequentially
+	if err := computeOp.Wait(); err != nil {
+		return nil, nil, err
+	}
+
+	if err := diskOp.Wait(); err != nil {
+		return nil, nil, err
+	}
+
+	var compute dcpProvisioning.ComputeState
+	if err := computeOp.DecodeBody(&compute); err != nil {
+		return nil, nil, err
+	}
+
+	var disk dcpProvisioning.DiskState
+	if err := diskOp.DecodeBody(&disk); err != nil {
+		return nil, nil, err
+	}
 
 	return &compute, &disk, nil
 }
