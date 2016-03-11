@@ -14,14 +14,12 @@ import json
 import logging
 import os
 import threading
+from optparse import OptionParser
 
 import common
-
-from optparse import OptionParser
 from common.file_util import atomic_write_file
-from common.lock import locked
 from common.lock import lock_with
-from common.service_name import ServiceName
+from common.lock import locked
 from gen.common.ttypes import ServerAddress
 
 
@@ -264,11 +262,6 @@ class AgentConfig(object):
 
         # Persist the updates to the config file.
         self._persist_config()
-
-        # For simplicity mark for reboot when any configuration changes.
-        if (config_changed):
-            registrant = common.services.get(ServiceName.REGISTRANT)
-            registrant.trigger_chairman_update()
 
     @property
     @locked
