@@ -265,11 +265,6 @@ class AgentConfig(object):
         # Persist the updates to the config file.
         self._persist_config()
 
-        # For simplicity mark for reboot when any configuration changes.
-        if (config_changed):
-            registrant = common.services.get(ServiceName.REGISTRANT)
-            registrant.trigger_chairman_update()
-
     @property
     @locked
     def availability_zone(self):

@@ -24,15 +24,11 @@ class HostPlugin(common.plugin.Plugin):
         super(HostPlugin, self).__init__("Host")
 
     def init(self):
-        # Load agent config and registrant
+        # Load agent config
         config = common.services.get(ServiceName.AGENT_CONFIG)
-        registrant = common.services.get(ServiceName.REGISTRANT)
 
         # Create the hypervisor object
         hv = hypervisor.Hypervisor(config)
-
-        # When datastore/network changes on the host, let chairman know
-        hv.add_update_listener(registrant)
 
         # When configuration changes, notify hypervisor
         config.on_config_change(config.CPU_OVERCOMMIT,
