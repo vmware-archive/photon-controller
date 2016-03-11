@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 xenon:
   bindAddress: "0.0.0.0"
   port: 21000
@@ -10,6 +11,14 @@ xenon:
 {{^PEER_NODES}}
   - http://{{{REGISTRATION_ADDRESS}}}:21000
 {{/PEER_NODES}}
+=======
+bind: "0.0.0.0"
+registrationAddress: "{{{VM_IP}}}"
+port: 21000
+storagePath: "{{{BARE-METAL-PROVISIONER_XENON_STORAGE_PATH}}}"
+usePhotonDHCP: "{{{USE_PHOTON_DHCP}}}"
+slingshotLogVerbosity: "{{{GO_LOG_VERBOSITY}}}"
+>>>>>>> BMP: Make configuration file changes to enable/disable DHCP
 
 zookeeper:
   quorum: "{{{ZOOKEEPER_QUORUM}}}"

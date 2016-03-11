@@ -18,10 +18,19 @@ import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.inject.BindingAnnotation;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * This class implements configuration state for the bare-metal-provisioner service.
@@ -45,11 +54,46 @@ public class ProvisionerConfig {
     return checkNotNull(this.xenonConfig);
   }
 
+  private Boolean usePhotonDHCP;
+
+  private Integer slingshotLogVerbosity;
+
   public LoggingConfiguration getLogging() {
     return checkNotNull(logging);
   }
 
   public ZookeeperConfig getZookeeper() {
     return zookeeper;
+  }
+
+  public Boolean getUsePhotonDHCP() {
+    if (usePhotonDHCP == null) {
+      return Boolean.FALSE;
+    } else {
+      return usePhotonDHCP;
+    }
+  }
+
+  public Integer getSlingshotLogVerbosity() {
+    return slingshotLogVerbosity;
+  }
+
+
+  /**
+   * Bare metal provisioner is not enabled if DHCP is not enabled.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface UsePhotonDHCP {
+  }
+
+  /**
+   * Bare metal provisioner is not enabled if DHCP is not enabled.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface SlingshotLogVerbosity {
   }
 }

@@ -7,6 +7,7 @@ import (
 	"slingshot"
 
 	"golang.org/x/net/context"
+	"github.com/golang/glog"
 )
 
 type Service struct {
@@ -26,6 +27,7 @@ func NewService() host.Service {
 }
 
 func (s *Service) HandleStart(ctx context.Context, op *operation.Operation) {
+	glog.Infof("HandleStart dhcp_service")
 	state := &ServiceState{}
 	op.DecodeBody(state)
 
@@ -35,6 +37,7 @@ func (s *Service) HandleStart(ctx context.Context, op *operation.Operation) {
 		op.Fail(err)
 		return
 	}
+
 	if err := s.Server.Run(); err != nil {
 		op.Fail(err)
 		return

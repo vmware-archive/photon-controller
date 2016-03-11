@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.provisioner.xenon.entity;
 
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.provisioner.xenon.helpers.DhcpUtils;
 import com.vmware.photon.controller.provisioner.xenon.helpers.IPRange;
 import com.vmware.xenon.common.Operation;
@@ -197,7 +198,8 @@ public class DhcpSubnetService extends StatefulService {
      *   2. Find IP to assign to this lease
      *   3. Send POST to lease factory service to create new lease
      */
-
+    ServiceUtils.logInfo(this, "handleAcquireLeaseRequest for subnet %s id: %s", dhcpSubnetState.subnetAddress,
+        dhcpSubnetState.id);
     tryPatchLeaseState(dhcpSubnetState, body.mac, (op, ex) -> {
       if (ex == null) {
         // Lease was patched
@@ -211,8 +213,10 @@ public class DhcpSubnetService extends StatefulService {
         postLeaseState(subnetPatch, dhcpSubnetState, body);
         return;
       }
-
-      logWarning("error patching %s: %d", op.getUri(), op.getStatusCode());
+      ServiceUtils.logWarning(this, "error patching %s: %d  in handleAcquireLeaseRequest for subnet %s id: %s",
+          op.getUri(), op.getStatusCode(),
+          dhcpSubnetState.subnetAddress,
+          dhcpSubnetState.id);
       subnetPatch.fail(ex);
     });
   }
@@ -230,6 +234,7 @@ public class DhcpSubnetService extends StatefulService {
         .createPatch(
             UriUtils.extendUri(leaseFactory,
                 DhcpLeaseService.DhcpLeaseState.buildSelfLink(subnetState, mac)))
+        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE)
         .addRequestHeader(Operation.PRAGMA_HEADER, Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setBody(leasePatchBody)
         .setCompletion(handler);
@@ -257,7 +262,7 @@ public class DhcpSubnetService extends StatefulService {
         .setCompletion(
             (op, ex) -> {
               if (ex != null) {
-                logWarning("Error POSTing lease: %s", ex.getMessage());
+                ServiceUtils.logWarning(this, "Error POSTing lease: %s", ex.getMessage());
                 subnetPatch.fail(ex);
                 return;
               }
@@ -333,6 +338,8 @@ public class DhcpSubnetService extends StatefulService {
     URI leaseUri = UriUtils.buildUri(this.getHost(), DhcpLeaseServiceFactory.SELF_LINK + "/" +
         DhcpLeaseService.DhcpLeaseState.buildSelfLink(curSubnetState, body.mac));
 
+    ServiceUtils.logInfo(this, "handleReleaseLeaseRequest for leaseURI %s on Subnet %s", leaseUri.toString(),
+        curSubnetState.subnetAddress);
     // the lease expiration task is issuing the release request.  Since the task itself has supplied the IP
     // don't bother with a GET.
     if (body.ip != null) {

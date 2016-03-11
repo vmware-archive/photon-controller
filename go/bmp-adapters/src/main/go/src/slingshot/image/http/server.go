@@ -39,6 +39,7 @@ func NewServer(addr net.TCPAddr, h gotftpd.Handler) *Server {
 // Run starts the HTTP server, or returns an error when it cannot listen on the
 // configured address.
 func (s *Server) Run() error {
+	glog.Infof("Http server is starting on %s", &s.addr)
 	l, err := net.ListenTCP("tcp4", &s.addr)
 	if err != nil {
 		return err

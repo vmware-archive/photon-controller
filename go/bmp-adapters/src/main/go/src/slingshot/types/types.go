@@ -11,7 +11,7 @@ type AcquireLeaseRequest struct {
 
 func NewAcquireLeaseRequest(mac MAC) *AcquireLeaseRequest {
 	req := &AcquireLeaseRequest{
-		Kind: "com:vmware:photon:controller:cloudstore:dcp:entity:DhcpSubnetService:AcquireLeaseRequest",
+		Kind: "com:vmware:photon:controller:provisioner:xenon:entity:DhcpSubnetService:AcquireLeaseRequest",
 		MAC:  mac,
 	}
 
@@ -25,7 +25,7 @@ type ReleaseLeaseRequest struct {
 
 func NewReleaseLeaseRequest(mac MAC) *ReleaseLeaseRequest {
 	req := &ReleaseLeaseRequest{
-		Kind: "com:vmware:photon:controller:cloudstore:dcp:entity:DhcpSubnetService:ReleaseLeaseRequest",
+		Kind: "com:vmware:photon:controller:provisioner:xenon:entity:DhcpSubnetService:ReleaseLeaseRequest",
 		MAC:  mac,
 	}
 
@@ -68,5 +68,6 @@ type Configuration struct {
 
 	Routers     []IP              `json:"routerAddresses,omitempty"`
 	NameServers []IP              `json:"nameServerAddresses,omitempty"`
-	Data        map[string]string `json:"data,omitempty"`
+	ComputeStateReference string `json:"computeStateReference,omitempty"`
+	DiskStateReference string `json:"diskStateReference,omitempty"`
 }
