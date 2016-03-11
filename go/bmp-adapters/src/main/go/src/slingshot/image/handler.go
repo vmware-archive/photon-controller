@@ -97,7 +97,8 @@ func (h *boundHandler) GetHandler(ih imageHandler, ip net.IP, s *types.Subnet, l
 		IP:       l.IP.String(),
 		Netmask:  net.IP(s.Subnet.Mask).String(),
 		NextFile: ih.NextFile(),
-		Data:     c.Data,
+		ComputeStateReference:     c.ComputeStateReference,
+		DiskStateReference:     c.DiskStateReference,
 	}
 
 	for _, ip := range c.Routers {

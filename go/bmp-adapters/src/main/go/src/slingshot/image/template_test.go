@@ -96,13 +96,13 @@ func TestUserData(t *testing.T) {
 	upstream := &tftptest.Handler{}
 	m := newTemplateMap(upstream)
 
-	d := &data.V1{Data: map[string]string{"foo": "bar", "baz": "-1"}}
+	d := &data.V1{ComputeStateReference: "bar", DiskStateReference : "-1"}
 	h := m.Handler(d)
 
-	upstream.On("ReadFile", mock.Anything, "/hello.tmpl").Return(tftptest.NewReadCloser("foo {{ .Data.foo }} baz {{ .Data.baz }}"), nil)
+	upstream.On("ReadFile", mock.Anything, "/hello.tmpl").Return(tftptest.NewReadCloser("ComputeStateReference {{ .ComputeStateReference }} DiskStateReference {{ .DiskStateReference }}"), nil)
 	rc, err = h.ReadFile(gotftpd.ZeroConn, "/hello")
 	if assert.NoError(t, err) {
 		body, _ := ioutil.ReadAll(rc)
-		assert.Equal(t, "foo bar baz -1", string(body))
+		assert.Equal(t, "ComputeStateReference bar DiskStateReference -1", string(body))
 	}
 }

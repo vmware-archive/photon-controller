@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	dhcpv4 "rfc-impl.vmware.com/rfc-impl/godhcpv4"
+	"github.com/golang/glog"
 )
 
 type txnID string
@@ -208,8 +209,13 @@ func NewServer(addr net.UDPAddr, h Handler) *Server {
 		h:    h,
 	}
 
+	glog.Infof("Address passed to the new DHCP Server: %s", addr.IP.To4())
 	// Make sure the IP in the address is IPv4
 	d.addr.IP = d.addr.IP.To4()
+	d.addrToListenTo = d.addr
+	d.addressToBroadcast = net.UDPAddr{IP: d.addr.IP, Port: 255}
+	glog.Infof("Adjusted addrToListenTo:%s - addr: %s -addrToBroadcast:%s",
+		d.addrToListenTo.IP, d.addr.IP, d.addressToBroadcast.IP)
 
 	return &d
 }
@@ -235,6 +241,8 @@ func MyNewServer(addrToBroadcast net.UDPAddr, addrToListenTo net.UDPAddr,h Handl
 // configured address.
 func (d *Server) Run() error {
 	var err error
+	glog.Infof("DHCP server Run is called - addrToListenTo: %s - addr: %s - addrToBroadcast: %s", &d.addrToListenTo.IP,
+		&d.addr.IP, &d.addressToBroadcast.IP)
 	d.conn, err = net.ListenUDP("udp4", &d.addrToListenTo)
 
 	if err != nil {
@@ -247,6 +255,7 @@ func (d *Server) Run() error {
 	}
 
 	d.wg.Add(1)
+	glog.Infof("DHCP server Run opened a connection and will serve")
 
 	go func() {
 		dhcpv4.Serve(pconn, &d.addressToBroadcast, d)
