@@ -7,12 +7,15 @@ import (
 	"dcp/host"
 	"dcp/operation"
 	"dcp/provisioning"
+	"dcp/provisioning/image"
 	"dcp/uri"
 	"encoding/json"
 	"flag"
 	"os"
 	"os/signal"
 	"syscall"
+	"net/http"
+	"sync"
 
 	"golang.org/x/net/context"
 
@@ -33,27 +36,30 @@ func init() {
 }
 
 func main() {
-	services := []struct {
-		uri string
-		svc host.Service
-	}{
-		// Examples
-		{
-			"/core/examples",
-			host.NewFactoryServiceContext(&host.ExampleFactoryService{}),
-		},
-		// Examples
-		{
-			"/core/ping",
-			host.NewPingService(),
-		},
-	}
-
 	var err error
 
 	flag.Parse()
 
 	glog.Infof("Started with %s", os.Args[1:])
+
+	services := []struct {
+		uri string
+		svc host.Service
+	}{
+		// Boot config image generators
+		{
+			provisioning.BootConfigServiceIso,
+			image.NewBootConfigService(),
+		},
+		{
+			provisioning.BootConfigServiceTar,
+			image.NewBootConfigService(),
+		},
+		{
+			provisioning.BootConfigServiceFat,
+			image.NewBootConfigService(),
+		},
+	}
 
 	h := host.NewServiceHost()
 	err = h.Initialize(bindAddress.String())
@@ -90,6 +96,8 @@ func main() {
 	buf := bytes.NewBuffer(d)
 
 	startOp := op.NewPost(ctx, uri.Extend(uri.Empty(), provisioning.DhcpService), buf)
+	glog.Infof("provisioning.DhcpService %s", provisioning.DhcpService)
+
 	dhcpService := dhcp.NewService()
 	h.StartService(startOp, dhcpService)
 	if err := startOp.Wait(); err != nil {
@@ -98,7 +106,20 @@ func main() {
 		glog.Errorf("Error starting service: %s\n", err)
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go startFileServer(&wg)
+
 	start(h)
+}
+
+func startFileServer(wg *sync.WaitGroup) {
+	// File server
+	fs := http.FileServer(http.Dir("/etc/esxcloud/bare-metal-provisioner/images"))
+	http.Handle("/", fs)
+	glog.Infof("Started FileServer on port 70")
+	http.ListenAndServe(":70", nil)
+	wg.Done()
 }
 
 func start(h *host.ServiceHost) {

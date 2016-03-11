@@ -55,6 +55,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case "GET", "HEAD":
 		if err := h.get(w, req); err != nil {
+			glog.Infof("Serve HTTP get local %s failed %s", req.URL.Path, err)
 			h.fail(w, err)
 		}
 	default:

@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.provisioner.xenon.task;
 
 
+import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
@@ -79,7 +80,7 @@ public class StartSlingshotService extends StatefulService {
     /**
      * Glog v level.
      */
-    public int glogVLevel;
+    public int slingshotLogVLevel;
 
     /**
      * Start Slingshot service stage.
@@ -112,6 +113,7 @@ public class StartSlingshotService extends StatefulService {
       int gLogVLevel = 0;
 
       State state = startOperation.getBody(State.class);
+      InitializationUtils.initialize(state);
 
       if (state.taskInfo == null || state.taskInfo.stage == null) {
         state.taskInfo = new TaskState();
@@ -126,7 +128,7 @@ public class StartSlingshotService extends StatefulService {
       validateState(state);
 
       httpPort = state.httpPort;
-      gLogVLevel = state.glogVLevel;
+      gLogVLevel = state.slingshotLogVLevel;
 
       if (httpPort == 0) {
         httpPort = GO_DCP_HOST_PORT;
