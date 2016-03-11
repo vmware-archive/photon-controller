@@ -23,5 +23,4 @@ class ServiceName(Enum):
     STATE = 5
     MODE = 6
     HYPERVISOR = 7
-    REGISTRANT = 8
     VIM_CLIENT = 9
