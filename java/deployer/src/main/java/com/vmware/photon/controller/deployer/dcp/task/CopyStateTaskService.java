@@ -48,6 +48,7 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.NumericRange;
+import com.vmware.xenon.services.common.QueryTask.Query;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.base.Objects;
@@ -58,6 +59,7 @@ import java.net.URI;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -218,7 +220,7 @@ public class CopyStateTaskService extends StatefulService {
     }
     try {
       LinkedBlockingQueue<Pair<String, Integer>> queue = new LinkedBlockingQueue<>(currentState.sourceServers);
-      retrieveDocuments(currentState, queue, currentState.queryDocumentsChangedSinceEpoc);
+      retrieveDocuments(currentState, queue, new HashSet<>(), currentState.queryDocumentsChangedSinceEpoc);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(patchOperation)) {
@@ -230,6 +232,7 @@ public class CopyStateTaskService extends StatefulService {
   private void retrieveDocuments(
       final State currentState,
       Queue<Pair<String, Integer>> sourceServers,
+      Set<String> migratedDocuments,
       long lastUpdateQueryTime) {
 
     OperationJoin.create(
@@ -253,7 +256,7 @@ public class CopyStateTaskService extends StatefulService {
                 URI uri = convertToBaseUri(currentState, o);
                 return new AbstractMap.SimpleEntry<>(uri, qt.results.nextPageLink);
             }).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-          continueWithNextPage(nextPageLinks, currentState, lastUpdateQueryTime);
+          continueWithNextPage(nextPageLinks, currentState, migratedDocuments, lastUpdateQueryTime);
         })
       .sendWith(this);
   }
@@ -261,23 +264,71 @@ public class CopyStateTaskService extends StatefulService {
   private void continueWithNextPage(
       Map<URI, String> nextPageLinks,
       State currentState,
+      Set<String> migratedDocuments,
       long lastUpdateQueryTime) {
 
     if (!nextPageLinks.isEmpty()) {
-      retrieveNextPage(currentState, nextPageLinks, lastUpdateQueryTime);
+      retrieveNextPage(currentState, nextPageLinks, migratedDocuments, lastUpdateQueryTime);
     } else {
-      // if there are no more results in the querye continue with the next host
-      State patch = new State();
-      patch.taskState = new TaskState();
-      patch.taskState.stage = TaskState.TaskStage.FINISHED;
-      patch.lastDocumentUpdateTimeEpoc = lastUpdateQueryTime;
-      TaskUtils.sendSelfPatch(CopyStateTaskService.this, patch);
+      checkMigrationSuccess(currentState, migratedDocuments, lastUpdateQueryTime);
     }
+  }
+
+  private void checkMigrationSuccess(
+      State currentState, Collection<String> migratedDocuments,
+      long lastUpdateQueryTime) {
+
+    Query query = Query.Builder.create()
+        .addFieldClause(
+            ServiceDocument.FIELD_NAME_SELF_LINK,
+            currentState.factoryLink + "*",
+            QueryTask.QueryTerm.MatchType.WILDCARD)
+        .build();
+    URI destination = UriUtils.buildUri(
+        currentState.destinationProtocol,
+        currentState.destinationIp,
+        currentState.destinationPort,
+        null,
+        null);
+    Operation
+      .createPost(UriUtils.buildBroadcastRequestUri(
+          UriUtils.buildUri(destination, ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+          ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+      .setBody(QueryTask.Builder
+          .createDirectTask()
+          .setQuery(query)
+          .build())
+      .setCompletion((o, t) -> {
+        if (t != null) {
+          failTask(t);
+          return;
+        }
+        Set<String> broadcastQueryDocumentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(o);
+        broadcastQueryDocumentLinks = broadcastQueryDocumentLinks.stream()
+            .map(s -> s.replaceFirst(currentState.factoryLink, ""))
+            .map(s -> s.replaceFirst(currentState.sourceFactoryLink, ""))
+            .collect(Collectors.toSet());
+
+        if (broadcastQueryDocumentLinks.containsAll(migratedDocuments)) {
+          State patch = new State();
+          patch.taskState = new TaskState();
+          patch.taskState.stage = TaskState.TaskStage.FINISHED;
+          patch.lastDocumentUpdateTimeEpoc = lastUpdateQueryTime;
+          TaskUtils.sendSelfPatch(CopyStateTaskService.this, patch);
+        } else {
+          migratedDocuments.removeAll(broadcastQueryDocumentLinks);
+          failTask(
+              new Exception(
+                  "The following documents failed to migrate:\n- " + String.join("\n- ", migratedDocuments)));
+        }
+      })
+      .sendWith(this);;
   }
 
   private void retrieveNextPage(
       final State currentState,
       Map<URI, String> nextPageLinks,
+      Set<String> migratedDocuments,
       long lastUpdateQueryTime) {
 
     OperationJoin.create(
@@ -299,7 +350,7 @@ public class CopyStateTaskService extends StatefulService {
             return new AbstractMap.SimpleEntry<>(convertToBaseUri(currentState, o), qt.results);
           })
           .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-        storeDocuments(currentState, results, lastUpdateQueryTime);
+        storeDocuments(currentState, results, migratedDocuments, lastUpdateQueryTime);
       })
       .sendWith(this);
   }
@@ -307,12 +358,14 @@ public class CopyStateTaskService extends StatefulService {
   private void storeDocuments(
       final State currentState,
       Map<URI, ServiceDocumentQueryResult> results,
+      Set<String> migratedDocuments,
       long lastUpdateQueryTime) {
 
     if (results.isEmpty()) {
       continueWithNextPage(
           Collections.emptyMap(),
           currentState,
+          migratedDocuments,
           lastUpdateQueryTime);
       return;
     }
@@ -331,6 +384,12 @@ public class CopyStateTaskService extends StatefulService {
           .collect(Collectors.toList())
         );
     }
+
+    // record document links for post migration check
+    for (Object doc : ownerSelectedResults) {
+      migratedDocuments.add(extractId(doc, currentState.sourceFactoryLink));
+    }
+
     QueryTaskUtils.logQueryResults(this, ownerSelectedResults.stream()
         .map(doc -> {
           ServiceDocument serviceDoc = Utils.fromJson(doc, ServiceDocument.class);
@@ -355,6 +414,7 @@ public class CopyStateTaskService extends StatefulService {
         continueWithNextPage(
             pageLinks,
             currentState,
+            migratedDocuments,
             newLastUpdateTime);
       return;
     }
@@ -389,6 +449,7 @@ public class CopyStateTaskService extends StatefulService {
                 continueWithNextPage(
                     pageLinks,
                     currentState,
+                    migratedDocuments,
                     newLastUpdateTime);
               })
               .sendWith(this);

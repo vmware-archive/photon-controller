@@ -26,6 +26,7 @@ public class SampleService extends StatefulService {
 
   public SampleService() {
     super(State.class);
+    super.toggleOption(ServiceOption.PERSISTENCE, true);
   }
 
   @Override
