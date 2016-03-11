@@ -3,6 +3,8 @@ xenon:
   port: 21000
   registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
   storagePath: "{{{BARE-METAL-PROVISIONER_XENON_STORAGE_PATH}}}"
+  usePhotonDHCP: "{{{USE_PHOTON_DHCP}}}"
+  slingshotLogVerbosity: "{{{GO_LOG_VERBOSITY}}}"
   peerNodes:
 {{#PEER_NODES}}
   - http://{{peerAddress}}:{{peerPort}}

@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.provisioner.xenon.entity;
 
+import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.provisioner.xenon.helpers.DhcpUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
 import java.net.URI;
-import java.util.Map;
 
 /**
  * This class implements a Xenon micro-service which provides a plain data object
@@ -58,9 +58,14 @@ public class DhcpConfigurationService extends StatefulService {
     public String[] nameServerAddresses;
 
     /**
-     * User modifiable map passed to image templater.
+     * Link to the ComputeService (full path starting with http).
      */
-    public Map<String, String> data;
+    public String computeStateReference;
+
+    /**
+     * Link to the DiskService (full path starting with http).
+     */
+    public String diskStateReference;
   }
 
   public DhcpConfigurationService() {
@@ -84,30 +89,18 @@ public class DhcpConfigurationService extends StatefulService {
 
   @Override
   public void handlePatch(Operation patch) {
-    State curr = getState(patch);
-    State patchBody = patch.getBody(State.class);
+    State startState = getState(patch);
+    State patchState = patch.getBody(State.class);
 
-    curr.isEnabled = patchBody.isEnabled;
+    startState.isEnabled = patchState.isEnabled;
     try {
-      DhcpUtils.validate(patchBody);
-      if (patchBody.hostBootImageReference != null) {
-        curr.hostBootImageReference = patchBody.hostBootImageReference;
-      }
+      DhcpUtils.validate(patchState);
+      PatchUtils.patchState(startState, patchState);
 
-      if (patchBody.routerAddresses != null && patchBody.routerAddresses.length != 0) {
-        curr.routerAddresses = patchBody.routerAddresses;
-      }
-
-      if (patchBody.nameServerAddresses != null && patchBody.nameServerAddresses.length != 0) {
-        curr.nameServerAddresses = patchBody.nameServerAddresses;
-      }
-      if (patchBody.data != null) {
-        curr.data = patchBody.data;
-      }
     } catch (Throwable e) {
       patch.fail(e);
       return;
     }
-    patch.setBody(curr).complete();
+    patch.setBody(startState).complete();
   }
 }

@@ -25,7 +25,7 @@ import java.util.UUID;
  */
 public class DhcpSubnetServiceFactory extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/dhcp-subnets";
+  public static final String SELF_LINK = ServiceUriPaths.BARE_METAL_PROVISIONER_ROOT + "/dhcp-subnets";
 
   public DhcpSubnetServiceFactory() {
     super(DhcpSubnetService.DhcpSubnetState.class);

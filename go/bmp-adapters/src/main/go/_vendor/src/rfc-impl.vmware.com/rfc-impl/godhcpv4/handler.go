@@ -2,7 +2,6 @@ package dhcpv4
 
 import (
 	"net"
-	"fmt"
 
 	"golang.org/x/net/ipv4"
 )
@@ -56,8 +55,6 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 	req := r.Request()
 	addr := rw.addr
 	bcast := req.GetFlags()[0] & 128
-
-	fmt.Printf("\n ** Reply array to \n", byteArray[:])
 
 	// Broadcast the reply if the request packet has no address associated with
 	// it, or if the client explicitly asks for a broadcast reply.
