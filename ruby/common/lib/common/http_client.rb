@@ -174,7 +174,7 @@ module EsxCloud
         return HttpResponse.new(response.status, response.body, response.headers) unless response.code == 200
 
         body = JSON.parse(response.body)
-        completeList.concat(body["items"])
+        body["items"].each { |item| completeList << item unless completeList.include? item }
       end
 
       resourceList = {

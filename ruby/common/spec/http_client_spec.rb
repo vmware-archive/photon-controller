@@ -151,7 +151,7 @@ describe EsxCloud::HttpClient do
 
   it "get all through pagination" do
     first_page = {
-        "items" => ["item1", "item2"],
+        "items" => ["item1", "item2", JSON.parse("{\"id\": \"1234\"}")],
         "nextPageLink" => "/next-page",
         "previousPageLink" => nil,
     }
@@ -170,7 +170,7 @@ describe EsxCloud::HttpClient do
     expect(first_page_request).to receive(:params=).with("foo" => "bar")
 
     second_page = {
-        "items" => ["item3"],
+        "items" => ["item2", JSON.parse("{\"id\": \"1234\"}"), "item3", JSON.parse("{\"id\": \"2345\"}")],
         "nextPageLink" => nil,
         "previousPageLink" => nil,
     }
@@ -193,7 +193,13 @@ describe EsxCloud::HttpClient do
     expect(response).to be_a(EsxCloud::HttpResponse)
     expect(response.code).to be(200)
     expect(JSON.parse(response.body)).to eq({
-                                                "items" => ["item1", "item2", "item3"],
+                                                "items" => [
+                                                    "item1",
+                                                    "item2",
+                                                    { "id" => "1234" },
+                                                    "item3",
+                                                    { "id" => "2345" }
+                                                ],
                                                 "nextPageLink" => nil,
                                                 "previousPageLink" => nil,
                                             })
