@@ -141,7 +141,7 @@ module EsxCloud
       # @return [Host]
       def get_host_from_response(result)
         result.slice! "\n"
-        values = result.split("\t")
+        values = result.split("\t", -1)
         host_hash = Hash.new
         host_hash["id"]               = values[0] unless values[0] == ""
         host_hash["username"]         = values[1] unless values[1] == ""
@@ -156,17 +156,6 @@ module EsxCloud
         Host.create_from_hash(host_hash)
       end
 
-      # @param [String] metadata
-      # @return hash
-      def metadata_to_hash(metadata)
-        hash_new = Hash.new
-        if metadata.to_s != ''
-          metadata.split(',').each { |attribute|
-            values = attribute.split(':')
-            hash_new.merge!({ values[0] => values[1]})}
-        end
-        hash_new
-      end
     end
   end
 end
