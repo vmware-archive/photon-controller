@@ -64,19 +64,8 @@ Vagrant.configure("2") do |config|
       # APIFE
       photon.vm.network :forwarded_port, guest: 9000, host: 9080,
           auto_correct: true
-      # Graphite
-      photon.vm.network :forwarded_port, guest: 8082, host: 9082,
-          auto_correct: true
-      # Carbon (graphite db backend)
-      photon.vm.network :forwarded_port, guest: 2003, host: 9083,
-          auto_correct: true
-      photon.vm.network :forwarded_port, guest: 2004, host: 9084,
-          auto_correct: true
       # Zookeeper
       photon.vm.network :forwarded_port, guest: 2181, host: 9085,
-          auto_correct: true
-      # Chairman
-      photon.vm.network :forwarded_port, guest: 13000, host: 9086,
           auto_correct: true
       # Deployer
       photon.vm.network :forwarded_port, guest: 18000, host: 9088,
@@ -91,8 +80,18 @@ Vagrant.configure("2") do |config|
 
       # Graphite web interface port
       photon.vm.network :forwarded_port, guest: 8000, host: 8000
+      # Graphite carbon-cache line receiver
+      photon.vm.network :forwarded_port, guest: 2003, host: 2003
       # Graphite carbon-cache pickle receiver (stats endpoint for agent)
       photon.vm.network :forwarded_port, guest: 2004, host: 2004
+      # Grafana web interface
+      photon.vm.network :forwarded_port, guest: 3000, host: 3000
+      # Graphite carbon-cache query port
+      photon.vm.network :forwarded_port, guest: 7002, host: 7002
+      # statsd UDP port
+      photon.vm.network :forwarded_port, guest: 8125, host: 8125, protocol: 'udp'
+      # statsd management port
+      photon.vm.network :forwarded_port, guest: 8126, host: 8126
     end
   end
 
@@ -647,6 +646,7 @@ EOM
 # 8126: the statsd management port
 
 docker run \
+  --name graphite \
   -v /stats_data/graphite:/data \
   -v $HOME/graphite/conf/storage-aggregation.conf:/var/lib/graphite/conf/storage-aggregation.conf \
   -p 8000:80 \
