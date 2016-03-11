@@ -43,7 +43,6 @@ module EsxCloud
         end
 
         cluster_id = run_cli(cmd).split("\n")[0]
-
         find_cluster_by_id(cluster_id)
       end
 
@@ -80,16 +79,9 @@ module EsxCloud
 
       private
 
-      def get_vm_list_from_response(result)
-        vms = result.split("\n").drop(2).map do |vm_info|
-          find_vm_by_id(vm_info.split("\t")[0])
-        end
-        VmList.new(vms)
-      end
-
       def get_cluster_from_response(result)
-        values = result.split("\n")
-        cluster_attributes = values[0].split("\t")
+        values = result.split("\n", -1)
+        cluster_attributes = values[0].split("\t", -1)
         cluster_hash = Hash.new
         cluster_hash["id"]                 = cluster_attributes[0] unless cluster_attributes[0] == ""
         cluster_hash["name"]               = cluster_attributes[1] unless cluster_attributes[1] == ""

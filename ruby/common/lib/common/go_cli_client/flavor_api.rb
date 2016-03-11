@@ -74,7 +74,7 @@ module EsxCloud
       # @return Flavor
       def get_flavor_from_response(result)
         result.slice! "\n"
-        values = result.split("\t")
+        values = result.split("\t", -1)
         flavor_hash = Hash.new
         flavor_hash["id"]    = values[0] unless values[0] == ""
         flavor_hash["name"]  = values[1] unless values[1] == ""
