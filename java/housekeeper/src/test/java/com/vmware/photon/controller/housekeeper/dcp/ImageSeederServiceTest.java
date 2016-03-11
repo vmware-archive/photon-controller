@@ -761,8 +761,8 @@ public class ImageSeederServiceTest {
       createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
       assertThat(createdImageState.totalDatastore, is(3));
       assertThat(createdImageState.totalImageDatastore, is(3));
-      assertThat(createdImageState.replicatedDatastore, is(3));
-      assertThat(createdImageState.replicatedImageDatastore, is(3));
+      assertThat(createdImageState.replicatedDatastore, is(2));
+      assertThat(createdImageState.replicatedImageDatastore, is(2));
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);
@@ -858,8 +858,8 @@ public class ImageSeederServiceTest {
       state.name = "image-1";
       state.replicationType = ImageReplicationType.EAGER;
       state.state = ImageState.READY;
-      state.replicatedImageDatastore = 1;
-      state.replicatedDatastore = 1;
+      state.replicatedImageDatastore = 0;
+      state.replicatedDatastore = 0;
       state.totalImageDatastore = 3;
       state.totalDatastore = 3;
 
