@@ -66,8 +66,8 @@ module EsxCloud
       private
 
       def get_image_from_response(result)
-        values = result.split("\n")
-        image_attributes = values[0].split("\t")
+        values = result.split("\n", -1)
+        image_attributes = values[0].split("\t", -1)
         image_hash = Hash.new
         image_hash["id"]                  = image_attributes[0] unless image_attributes[0] == ""
         image_hash["name"]                = image_attributes[1] unless image_attributes[1] == ""
@@ -76,7 +76,11 @@ module EsxCloud
         image_hash["replicationType"]     = image_attributes[4] unless image_attributes[4] == ""
         image_hash["replicationProgress"] = image_attributes[5] unless image_attributes[5] == ""
         image_hash["seedingProgress"]     = image_attributes[6] unless image_attributes[6] == ""
-        image_hash["settings"]            = getSettings(values[1].to_i, values[2])
+        if image_attributes.size == 7
+          image_hash["settings"]          = getSettings(values[2],"\t")
+        else
+          image_hash["settings"]          = getSettings(image_attributes[7], ":")
+        end
 
         Image.create_from_hash(image_hash)
       end
@@ -98,19 +102,20 @@ module EsxCloud
         end
       end
 
-      def getSettings(settingCount, settings)
+      def getSettings(settings, delim)
         settings_new = Array.new
-        if settingCount > 0
+        if settings != "" and settings != nil
           settings_new = settings.split(",").map do |setting|
-            settingToHash(setting)
+            settingToHash(setting, delim)
           end
         end
 
         settings_new
       end
 
-      def settingToHash(setting)
-        setting_attribs = setting.split("\t")
+
+      def settingToHash(setting, delim)
+        setting_attribs = setting.split(delim, -1)
         settings_hash = Hash.new
         settings_hash["name"] = setting_attribs[0] unless setting_attribs[0] == ""
         settings_hash["defaultValue"] = setting_attribs[1] unless setting_attribs[1] == ""
