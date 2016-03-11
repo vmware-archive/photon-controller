@@ -18,41 +18,22 @@ import time
 import unittest
 import uuid
 
-from hamcrest import assert_that
-from hamcrest import equal_to
-from hamcrest import has_item
-from hamcrest import has_length
-from hamcrest import is_
-from hamcrest import not_none
-from kazoo.protocol.states import EventType
-
-from nose.plugins.skip import SkipTest
-
-from thrift.TSerialization import deserialize
-from thrift.transport import TTransport
-
-from common.photon_thrift.direct_client import DirectClient
 from agent.tests.common_helper_functions import RuntimeUtils
-from agent.tests.zookeeper_utils import wait_for
-from agent_common_tests import AgentCommonTests
-from agent_common_tests import new_id
-from agent_common_tests import stable_uuid
-from agent_common_tests import rpc_call
-from agent_common_tests import VmWrapper
-from gen.common.ttypes import ServerAddress
+from common.photon_thrift.direct_client import DirectClient
 from gen.agent import AgentControl
 from gen.agent.ttypes import AgentStatusCode
 from gen.agent.ttypes import ProvisionRequest
 from gen.agent.ttypes import ProvisionResultCode
+from gen.common.ttypes import ServerAddress
 from gen.host import Host
 from gen.host.ttypes import CopyImageResultCode
 from gen.host.ttypes import CreateImageRequest
 from gen.host.ttypes import CreateImageResultCode
 from gen.host.ttypes import CreateVmResultCode
-from gen.host.ttypes import DeleteImageRequest
-from gen.host.ttypes import DeleteImageResultCode
 from gen.host.ttypes import DeleteDirectoryRequest
 from gen.host.ttypes import DeleteDirectoryResultCode
+from gen.host.ttypes import DeleteImageRequest
+from gen.host.ttypes import DeleteImageResultCode
 from gen.host.ttypes import DeleteVmResultCode
 from gen.host.ttypes import GetConfigResultCode
 from gen.host.ttypes import GetDatastoresRequest
@@ -64,7 +45,6 @@ from gen.host.ttypes import GetMonitoredImagesResultCode
 from gen.host.ttypes import GetNetworksRequest
 from gen.host.ttypes import GetResourcesRequest
 from gen.host.ttypes import GetResourcesResultCode
-from gen.host.ttypes import HostConfig
 from gen.host.ttypes import HostMode
 from gen.host.ttypes import ImageInfoRequest
 from gen.host.ttypes import ImageInfoResultCode
@@ -72,7 +52,6 @@ from gen.host.ttypes import PowerVmOpResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
-from gen.host.ttypes import SetHostModeRequest
 from gen.host.ttypes import StartImageOperationResultCode
 from gen.host.ttypes import StartImageScanRequest
 from gen.host.ttypes import StartImageSweepRequest
@@ -82,30 +61,43 @@ from gen.resource.constants import LOCAL_VMFS_TAG
 from gen.resource.constants import NFS_TAG
 from gen.resource.constants import SHARED_VMFS_TAG
 from gen.resource.ttypes import CloneType
-from gen.resource.ttypes import ResourceConstraint
-from gen.resource.ttypes import ResourceConstraintType
 from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import DatastoreType
 from gen.resource.ttypes import Disk
 from gen.resource.ttypes import DiskImage
 from gen.resource.ttypes import Image
 from gen.resource.ttypes import ImageDatastore
+from gen.resource.ttypes import ResourceConstraint
+from gen.resource.ttypes import ResourceConstraintType
 from gen.roles.ttypes import ChildInfo
 from gen.roles.ttypes import Roles
 from gen.roles.ttypes import SchedulerRole
 from gen.scheduler.ttypes import ConfigureRequest
 from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import PlaceResultCode
+from hamcrest import assert_that
+from hamcrest import equal_to
+from hamcrest import has_item
+from hamcrest import has_length
+from hamcrest import is_
+from hamcrest import not_none
 from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import vmdk_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
+from nose.plugins.skip import SkipTest
+from pyVmomi import SoapStubAdapter, vim
 from pysdk import connect
 from pysdk import host
 from pysdk import task
-from pyVmomi import SoapStubAdapter, vim
 from scheduler.tests.base_kazoo_test import BaseKazooTestCase
+from thrift.transport import TTransport
 
+from agent_common_tests import AgentCommonTests
+from agent_common_tests import VmWrapper
+from agent_common_tests import new_id
+from agent_common_tests import rpc_call
+from agent_common_tests import stable_uuid
 
 logger = logging.getLogger(__name__)
 
@@ -1043,130 +1035,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
             network_system.RemoveVirtualSwitch(vswitchName=vswitch_name)
         except vim.fault.NotFound:
             pass
-
-    def test_register_unregister(self):
-        if not self._chairman_specified:
-            raise SkipTest("agent_remote_test.chairman is not specified")
-
-        self.set_up_kazoo_base()
-        self._zk_client = self._get_nonchroot_client()
-        self._zk_client.start()
-        self.runtime.start_chairman(self._chairman.host, self._chairman.port)
-        agent_id = self._get_agent_id()
-        host_registered = wait_for(EventType.CREATED, "/hosts",
-                                   agent_id, self._zk_client,
-                                   mem_fun="exists",
-                                   timeout=30)
-        assert_that(host_registered, equal_to(True))
-
-        self.host_client.set_host_mode(
-            SetHostModeRequest(HostMode.MAINTENANCE))
-        host_unregistered = wait_for(EventType.DELETED, "/hosts",
-                                     agent_id, self._zk_client)
-        assert_that(host_unregistered, equal_to(True))
-
-        self.host_client.set_host_mode(
-            SetHostModeRequest(HostMode.NORMAL))
-
-        host_registered = wait_for(EventType.CREATED, "/hosts",
-                                   agent_id, self._zk_client,
-                                   mem_fun="exists",
-                                   timeout=30)
-        assert_that(host_registered, equal_to(True))
-
-    def test_cached_networks(self):
-        if not self._chairman_specified:
-            raise SkipTest("agent_remote_test.chairman is not specified")
-
-        # start zookeeper and chairman
-        completed = threading.Event()
-        self.set_up_kazoo_base()
-        self._zk_client = self._get_nonchroot_client()
-        self._zk_client.start()
-        self.runtime.start_chairman(self._chairman.host, self._chairman.port)
-
-        # get the agent id
-        agent_id = self._get_agent_id()
-
-        # clean up portgroup and vswitch.
-        vswitch_name = "test_cached_networks_vswitch"
-        network_name = "test_cached_networks_network"
-        si = self.get_service_instance()
-        network_system = host.GetHostSystem(si).configManager.networkSystem
-        self._delete_network(network_system, network_name, vswitch_name)
-        # provision the host with a network that doesn't exist yet.
-        self.provision_hosts(mem_overcommit=1.0, vm_networks=[network_name],
-                             host_id=agent_id)
-        self.client_connections()
-
-        # wait until the network goes away
-        def wait_network_deleted(data, stat, event):
-            if not data:
-                # znode doesn't exist. keep watching.
-                return True
-            host_config = HostConfig()
-            deserialize(host_config, data)
-            for network in host_config.networks:
-                if network.id == network_name:
-                    return True
-            completed.set()
-            return False
-
-        self._zk_client.DataWatch("/hosts/%s" % agent_id, wait_network_deleted)
-        completed.wait(60)
-        self.assertTrue(completed.is_set())
-        completed.clear()
-
-        # make sure vm gets created without any network. it might take some
-        # time for the cache to get updated, so retry for some time.
-        network_updated = False
-        for i in xrange(0, 10):
-            vm_wrapper = VmWrapper(self.host_client)
-            vm_id = vm_wrapper.create().vm.id
-            result = vm_wrapper.get_network(vm_id=vm_id)
-            vm_wrapper.delete()
-            if len(result.network_info) == 0:
-                network_updated = True
-                break
-        assert_that(network_updated, is_(True))
-
-        # create a vswitch and a portgroup.
-        network_system.AddVirtualSwitch(vswitchName=vswitch_name)
-        port_group_spec = vim.host.PortGroup.Specification()
-        port_group_spec.name = network_name
-        port_group_spec.vlanId = 0
-        port_group_spec.vswitchName = vswitch_name
-        port_group_spec.policy = vim.host.NetworkPolicy()
-        network_system.AddPortGroup(portgrp=port_group_spec)
-
-        # wait until the network gets added
-        def wait_network_added(data, stat, event):
-            if data:
-                host_config = HostConfig()
-                deserialize(host_config, data)
-                for network in host_config.networks:
-                    if network.id == network_name:
-                        completed.set()
-                        return False
-            return True
-
-        self._zk_client.DataWatch("/hosts/%s" % agent_id, wait_network_added)
-        completed.wait(60)
-        self.assertTrue(completed.is_set())
-
-        # make sure vm gets created with "my_network". again, retry for some
-        # time since it might take some time for the cache to get updated.
-        network_updated = False
-        for i in xrange(0, 10):
-            vm_id = vm_wrapper.create().vm.id
-            result = vm_wrapper.get_network(vm_id=vm_id)
-            vm_wrapper.delete()
-            if len(result.network_info) == 1:
-                assert_that(result.network_info[0].network == network_name)
-                network_updated = True
-                break
-        assert_that(network_updated, is_(True))
-        self._delete_network(network_system, network_name, vswitch_name)
 
     def test_place_on_multiple_datastores(self):
         """ Test placement can actually place vm to datastores without image.

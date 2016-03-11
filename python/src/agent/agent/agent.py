@@ -39,7 +39,6 @@ from thrift.server import TNonblockingServer
 from thrift.transport import TSocket
 
 from .agent_config import AgentConfig
-from .chairman_registrant import ChairmanRegistrant
 import common
 import common.file_util
 from common.exclusive_set import ExclusiveSet
@@ -72,12 +71,6 @@ class Agent:
 
         # Setup the different thrift services and their handlers.
         self._initialize_thrift_service()
-
-        # Only register with the chairman if all the bootstrap config is
-        # available which includes things like availability zone and the
-        # chairman config itself.
-        if (self._config.bootstrap_ready):
-            self._registrant.start_register()
 
         # Start the bootstrap checker thread to handle config updates.
         self._logger.info("Starting the bootstrap config poll thread")
@@ -168,18 +161,12 @@ class Agent:
             ThreadPoolExecutor(self._config.workers))
         common.services.register(ThreadPoolExecutor, threadpool)
 
-        self._registrant = ChairmanRegistrant(self._config.chairman_list)
-        self._config.on_config_change(self._config.CHAIRMAN,
-                                      self._registrant.update_chairman_list)
-        common.services.register(ServiceName.REGISTRANT, self._registrant)
-
         state_json_file = os.path.join(
             self._config.options.config_path,
             self._config.DEFAULT_STATE_FILE)
         state = State(state_json_file)
 
         mode = Mode(state)
-        mode.on_change(self._registrant.trigger_chairman_update)
         common.services.register(ServiceName.MODE, mode)
 
     def _dump_threads(self, signum, frame):
