@@ -997,6 +997,24 @@ public class ImageDatastoreSweeperServiceTest {
             (QueryTask queryTask) ->
                 queryTask.results.documentLinks.size() == refImageParams[0] - deletedCloudStoreImages
         );
+
+        datastoreClause = new QueryTask.Query()
+            .setTermPropertyName("replicatedImageDatastore")
+            .setNumericRange(QueryTask.NumericRange.createEqualRange(0L));
+       kindClause = new QueryTask.Query()
+            .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+            .setTermMatchValue(Utils.buildKind(ImageService.State.class));
+
+        querySpecification = new QueryTask.QuerySpecification();
+        querySpecification.query.addBooleanClause(kindClause).addBooleanClause(datastoreClause);
+        querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+        query = QueryTask.create(querySpecification)
+            .setDirect(true);
+
+        machine.waitForQuery(query,
+            (QueryTask queryTask) ->
+                queryTask.results.documentLinks.size() == deletedCloudStoreImages
+        );
       }
     }
 
@@ -1281,6 +1299,7 @@ public class ImageDatastoreSweeperServiceTest {
         state.totalImageDatastore = 1;
         state.totalDatastore = 1;
         state.replicatedDatastore = 1;
+        state.replicatedImageDatastore = 1;
 
         Operation op = cloudStoreHelper
             .createPost(ImageServiceFactory.SELF_LINK)
