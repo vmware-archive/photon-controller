@@ -21,7 +21,6 @@ func Path(compute *provisioning.ComputeState, u uri.URI) string {
 
 func Download(ctx context.Context, compute *provisioning.ComputeState, disk *provisioning.DiskState) (string, error) {
 	if disk.CustomizationServiceReference == "" {
-		glog.Infof("Downloading image from: %s", disk.SourceImageReference)
 		return filecache.Download(disk.SourceImageReference)
 	}
 

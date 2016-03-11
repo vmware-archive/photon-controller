@@ -50,6 +50,7 @@ func (h *ServiceHost) Initialize(tcpAddr string) error {
 }
 
 func (h *ServiceHost) Start() error {
+	glog.Infof("Starting service host %s", h.tcpListener.Addr())
 	return http.Serve(h.tcpListener, h)
 }
 
@@ -73,6 +74,7 @@ func (h *ServiceHost) TCPAddr() (*net.TCPAddr, error) {
 func (h *ServiceHost) setURI() error {
 	addr, err := h.TCPAddr()
 	if err != nil {
+		glog.Infof("setURI err %s", err)
 		return err
 	}
 
@@ -207,6 +209,7 @@ func (h *ServiceHost) StartService(op *operation.Operation, s Service) {
 	// The selflink is expected to be either set on the service externally
 	// (before starting the service), or as the URI path on the operation.
 	selfLink := s.SelfLink()
+
 	if selfLink == "" {
 		// Prefix path with / to make sure it is absolute.
 		// The clean function removes double /'s and the trailing /, if any.
@@ -231,6 +234,7 @@ func (h *ServiceHost) StartService(op *operation.Operation, s Service) {
 		return
 	}
 
+	glog.Infof("Start service async %s %s", h.URI(), h.tcpListener.Addr())
 	// Start service asynchronously.
 	go h.startService(op, s)
 }
@@ -252,7 +256,6 @@ func (h *ServiceHost) startService(op *operation.Operation, s Service) {
 
 	// Stuff may happen between the started and available stages.
 	// This separation is kept here for parity with the Java DCP implementation.
-
 	if err := s.SetStage(StageAvailable); err != nil {
 		op.Fail(err)
 		return

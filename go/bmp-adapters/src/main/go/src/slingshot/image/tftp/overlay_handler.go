@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"rfc-impl.vmware.com/rfc-impl/gotftpd"
+	"github.com/golang/glog"
 )
 
 type OverlayHandler []gotftpd.Handler
@@ -17,6 +18,7 @@ func (hs OverlayHandler) ReadFile(c gotftpd.Conn, filename string) (gotftpd.Read
 		if err != os.ErrNotExist {
 			return rc, err
 		}
+		glog.Infof("Reading filename %s is OK", filename)
 	}
 
 	// All handlers returned a not found error.

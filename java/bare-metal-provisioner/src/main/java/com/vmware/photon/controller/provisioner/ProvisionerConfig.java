@@ -59,6 +59,10 @@ public class ProvisionerConfig {
   @NotNull
   private LoggingConfiguration logging = new LoggingConfiguration();
 
+  private Boolean usePhotonDHCP;
+
+  private Integer slingshotLogVerbosity;
+
   public ProvisionerConfig() {
     try {
       bind = InetAddress.getLocalHost().getHostAddress();
@@ -90,6 +94,18 @@ public class ProvisionerConfig {
 
   public ZookeeperConfig getZookeeper() {
     return zookeeper;
+  }
+
+  public Boolean getUsePhotonDHCP() {
+    if (usePhotonDHCP == null) {
+      return Boolean.FALSE;
+    } else {
+      return usePhotonDHCP;
+    }
+  }
+
+  public Integer getSlingshotLogVerbosity() {
+    return slingshotLogVerbosity;
   }
 
   /**
@@ -128,4 +144,21 @@ public class ProvisionerConfig {
   public @interface StoragePath {
   }
 
+  /**
+   * Bare metal provisioner is not enabled if DHCP is not enabled.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface UsePhotonDHCP {
+  }
+
+  /**
+   * Bare metal provisioner is not enabled if DHCP is not enabled.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface SlingshotLogVerbosity {
+  }
 }

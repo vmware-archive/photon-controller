@@ -9,5 +9,6 @@ type V1 struct {
 	Routers     []string
 	NameServers []string
 	NextFile    string
-	Data        map[string]string
+	ComputeStateReference   string
+	DiskStateReference string
 }

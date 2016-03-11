@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.provisioner.xenon.entity;
 
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.provisioner.xenon.helpers.DhcpUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -146,7 +147,7 @@ public class DhcpLeaseService extends StatefulService {
         .createGet(this.getUri())
         .setCompletion((o, e) -> {
           if (e != null) {
-            logWarning(e.toString());
+            ServiceUtils.logWarning(this, e.toString());
             return;
           }
           DhcpLeaseState lease = o.getBody(DhcpLeaseState.class);
@@ -173,7 +174,7 @@ public class DhcpLeaseService extends StatefulService {
               .setCompletion(
                   (op, ep) -> {
                     if (ep != null) {
-                      logWarning("Lease release failed w/ "
+                      ServiceUtils.logWarning(this, "Lease release failed w/ "
                           + ep.toString());
                       return;
                     }
