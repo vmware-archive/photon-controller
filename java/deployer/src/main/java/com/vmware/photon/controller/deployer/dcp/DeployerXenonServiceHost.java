@@ -64,7 +64,6 @@ import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.dcp.workflow.AllocateResourcesWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.BatchCreateManagementWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.BuildContainersConfigurationWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.BulkProvisionHostsWorkflowFactoryService;
@@ -176,7 +175,6 @@ public class DeployerXenonServiceHost
       // Workflow services
       AddCloudHostWorkflowFactoryService.class,
       AddManagementHostWorkflowFactoryService.class,
-      AllocateResourcesWorkflowFactoryService.class,
       BatchCreateManagementWorkflowFactoryService.class,
       BuildContainersConfigurationWorkflowFactoryService.class,
       BulkProvisionHostsWorkflowFactoryService.class,

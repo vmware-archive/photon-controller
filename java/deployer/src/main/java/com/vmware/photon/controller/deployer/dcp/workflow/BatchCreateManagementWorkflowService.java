@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.api.QuotaLineItem;
+import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -34,6 +36,8 @@ import com.vmware.photon.controller.deployer.dcp.ContainersConfig.ContainerType;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
+import com.vmware.photon.controller.deployer.dcp.task.AllocateTenantResourcesTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.AllocateTenantResourcesTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
@@ -74,6 +78,7 @@ import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -676,47 +681,25 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     });
   }
 
-  private void allocateResources(final State currentState) {
-    final Service service = this;
+  private void allocateResources(State currentState) {
 
-    FutureCallback<AllocateResourcesWorkflowService.State> callback =
-        new FutureCallback<AllocateResourcesWorkflowService.State>() {
-          @Override
-          public void onSuccess(@Nullable AllocateResourcesWorkflowService.State result) {
-
-            switch (result.taskState.stage) {
-              case FINISHED:
-                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.CREATE_VMS));
-                break;
-              case FAILED:
-                State patchState = buildPatch(TaskState.TaskStage.FAILED, null);
-                patchState.taskState.failure = result.taskState.failure;
-                TaskUtils.sendSelfPatch(service, patchState);
-                break;
-              case CANCELLED:
-                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null));
-                break;
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-
-    AllocateResourcesWorkflowService.State startState = new AllocateResourcesWorkflowService.State();
+    AllocateTenantResourcesTaskService.State startState = new AllocateTenantResourcesTaskService.State();
+    startState.parentTaskServiceLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_VMS));
     startState.taskPollDelay = currentState.taskPollDelay;
+    startState.deploymentServiceLink = currentState.deploymentServiceLink;
+    startState.quotaLineItems = Collections.singletonList(
+        new QuotaLineItem("vm.count", Integer.MAX_VALUE, QuotaUnit.COUNT));
 
-    TaskUtils.startTaskAsync(
-        this,
-        AllocateResourcesWorkflowFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        AllocateResourcesWorkflowService.State.class,
-        currentState.taskPollDelay,
-        callback);
+    sendRequest(Operation
+        .createPost(this, AllocateTenantResourcesTaskFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              }
+            }));
   }
 
   private void createVms(State currentState) {
