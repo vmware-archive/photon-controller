@@ -36,7 +36,7 @@ describe "tenant", management: true do
       tenant_name = random_name("tenant-")
       tenant = create_tenant(:name => tenant_name, :security_groups => ["tenant\\adminGroup1", "tenant\\adminGroup2"])
       tenant.name.should == tenant_name
-      tenant.security_groups.should =~ [{"name"=>"tenant\\adminGroup1", "inherited"=>false},
+      tenant.security_groups.should include *[{"name"=>"tenant\\adminGroup1", "inherited"=>false},
                                         {"name"=>"tenant\\adminGroup2", "inherited"=>false}]
 
       tenants = find_tenants_by_name(tenant_name)
@@ -174,7 +174,7 @@ describe "tenant", management: true do
       client.set_tenant_security_groups(tenant.id, security_groups)
 
       retrieved_tenant = find_tenant_by_id(tenant.id)
-      retrieved_tenant.security_groups.should =~ [{"name"=>"tenant\\adminGroup1", "inherited"=>false},
+      retrieved_tenant.security_groups.should include *[{"name"=>"tenant\\adminGroup1", "inherited"=>false},
                                                   {"name"=>"tenant\\adminGroup2", "inherited"=>false}]
     ensure
       tenant.delete
