@@ -9,6 +9,8 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED. See the License for the
 # specific language governing permissions and limitations under the License.
 
+require "rspec"
+
 gemfile = File.expand_path("../../Gemfile", __FILE__)
 
 if File.exists?(gemfile)
