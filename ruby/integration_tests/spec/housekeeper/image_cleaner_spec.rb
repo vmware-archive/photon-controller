@@ -12,7 +12,7 @@
 require_relative "spec_helper_housekeeper"
 
 describe "Image Cleaner", housekeeper: true do
-  let(:service_link) { "/provisioning/esxcloud/image-cleaners" }
+  let(:service_link) { "/photon/housekeeper/image-cleaners" }
   let(:client) { EsxCloud::Dcp::HouskeeperClient.instance }
   let(:task_completion_stages) { ["FINISHED", "FAILED", "CANCELLED"] }
 
@@ -31,8 +31,8 @@ describe "Image Cleaner", housekeeper: true do
 
   def run_task(payload)
     task = client.post service_link, payload
-    task = client.poll_task(task["documentSelfLink"], 10, 100) do
-    |b| task_completion_stages.include? b["taskInfo"]["stage"]
+    task = client.poll_task(task["documentSelfLink"], 10, 100) do |b|
+      task_completion_stages.include? b["taskInfo"]["stage"]
     end
     EsxCloud::Config.logger.debug "Image Cleaner Task: #{task.inspect}"
     task
