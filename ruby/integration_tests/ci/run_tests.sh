@@ -127,36 +127,53 @@ else
   # run tests using API & CLI drivers in subshells
   if [ -n "$NO_PARALLEL" ]
   then
-    export DRIVER=api
-    bundle exec rake esxcloud:api
+    if [ -z "$DISABLE_API_TESTS" ]
+    then
+      export DRIVER=api
+      bundle exec rake esxcloud:api
+    fi
 
     if [ -z "$DISABLE_CLI_TESTS" ]
     then
-      export DRIVER=cli
-      bundle exec rake esxcloud:cli
+
+      if [ -z "$DISABLE_RUBY_CLI_TESTS" ]
+      then
+        export DRIVER=cli
+        bundle exec rake esxcloud:cli
+      fi
 
       export DRIVER=gocli
       bundle exec rake esxcloud:gocli
     fi
   else
     pids=[]
-    (
-        export DRIVER=api
-        bundle exec rake esxcloud:api
-    ) &
-    pids[0]=$!
+    pids_idx=0
+
+    if [ -z "$DISABLE_API_TESTS" ]
+    then
+      (
+          export DRIVER=api
+          bundle exec rake esxcloud:api
+      ) &
+      pids[$pids_idx]=$!
+      pids_idx=$((pids_idx + 1))
+    fi
 
     if [ -z "$DISABLE_CLI_TESTS" ]
     then
       (
-          export DRIVER=cli
-          bundle exec rake esxcloud:cli
+          if [ -z "$DISABLE_RUBY_CLI_TESTS" ]
+          then
+            export DRIVER=cli
+            bundle exec rake esxcloud:cli
+          fi
 
           # Don't run gocli in parallel now due to the agent capacity
           export DRIVER=gocli
           bundle exec rake esxcloud:gocli
       ) &
-      pids[1]=$!
+      pids[$pids_idx]=$!
+      pids_idx=$((pids_idx + 1))
     fi
 
     for pid in ${pids[*]}; do wait $pid; done;
