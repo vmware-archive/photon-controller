@@ -135,13 +135,6 @@ else
 
     if [ -z "$DISABLE_CLI_TESTS" ]
     then
-
-      if [ -z "$DISABLE_RUBY_CLI_TESTS" ]
-      then
-        export DRIVER=cli
-        bundle exec rake esxcloud:cli
-      fi
-
       export DRIVER=gocli
       bundle exec rake esxcloud:gocli
     fi
@@ -162,13 +155,6 @@ else
     if [ -z "$DISABLE_CLI_TESTS" ]
     then
       (
-          if [ -z "$DISABLE_RUBY_CLI_TESTS" ]
-          then
-            export DRIVER=cli
-            bundle exec rake esxcloud:cli
-          fi
-
-          # Don't run gocli in parallel now due to the agent capacity
           export DRIVER=gocli
           bundle exec rake esxcloud:gocli
       ) &
