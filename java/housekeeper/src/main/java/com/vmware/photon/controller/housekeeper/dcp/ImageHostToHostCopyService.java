@@ -766,7 +766,8 @@ public class ImageHostToHostCopyService extends StatefulService {
    */
   private Operation buildImageQuery(final State current) {
     return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
-        .createGet(ImageServiceFactory.SELF_LINK + "/" + current.image);
+        .createGet(ImageServiceFactory.SELF_LINK + "/" + current.image)
+        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING);
   }
 
   /**
