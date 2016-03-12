@@ -164,6 +164,17 @@ public class ServiceHostUtils {
     }
   }
 
+  public static void setQuorumSize(ServiceHost serviceHost, int quorumSize, String referrer) throws Throwable {
+    NodeGroupService.UpdateQuorumRequest updateQuorumRequest = NodeGroupService.UpdateQuorumRequest.create(false);
+    updateQuorumRequest.setMembershipQuorum(quorumSize);
+
+    Operation updateQuorumOp = Operation
+        .createPatch(UriUtils.buildUri(serviceHost, ServiceUriPaths.DEFAULT_NODE_GROUP))
+        .setBody(updateQuorumRequest);
+
+    sendRequestAndWait(serviceHost, updateQuorumOp, referrer);
+  }
+
   /**
    * Retrieves the state for a particular node group on the host.
    *
