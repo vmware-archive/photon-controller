@@ -21,6 +21,8 @@ import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
@@ -358,6 +360,16 @@ public class TestHelper {
         DeploymentServiceFactory.SELF_LINK,
         startState,
         DeploymentService.State.class);
+  }
+
+  public static DatastoreService.State createDatastoreService(
+      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment,
+      DatastoreService.State startState) throws Throwable {
+
+    return testEnvironment.callServiceSynchronously(
+        DatastoreServiceFactory.SELF_LINK,
+        startState,
+        DatastoreService.State.class);
   }
 
   public static HostService.State createHostService(

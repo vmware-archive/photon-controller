@@ -53,6 +53,7 @@ public class DatastoreServiceTest {
     testState.type = "ds1-type";
     testState.tags = new HashSet<>(Arrays.asList("ds1-type"));
     testState.documentSelfLink = "/" + testState.id;
+    testState.isImageDatastore = false;
     return testState;
   }
 

@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.AuthInfo;
 import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.NetworkConnection;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
@@ -25,6 +26,7 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.DeploymentApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
@@ -53,6 +55,7 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.photon.controller.resource.gen.DatastoreType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -101,6 +104,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -151,6 +155,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       if (TaskState.TaskStage.STARTED == startStage) {
         switch (startSubStage) {
           case STOP_MIGRATE_TASKS:
+          case DATA_ADJUSTMENT:
           case REINSTALL_AGENTS:
           case MIGRATE_FINAL:
           case RESUME_DESTINATION_SYSTEM:
@@ -187,6 +192,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           break;
         case RESUME_DESTINATION_SYSTEM:
         case MIGRATE_FINAL:
+        case DATA_ADJUSTMENT:
         case REINSTALL_AGENTS:
           // fall through
         case STOP_MIGRATE_TASKS:
@@ -928,6 +934,31 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     @Test
     public void testSuccess() throws Throwable {
       createTestEnvironment();
+      // create images and datastores in the old management plane
+      TestHelper.createImageService(sourceCloudStore);
+
+      DatastoreService.State datastore = new DatastoreService.State();
+      datastore.name = "ds-name";
+      datastore.id =  "ds-name1";
+      datastore.documentSelfLink = datastore.id;
+      datastore.type = DatastoreType.LOCAL_VMFS.name();
+      TestHelper.createDatastoreService(sourceCloudStore, datastore);
+
+      DatastoreService.State nonImageDataStore = new DatastoreService.State();
+      nonImageDataStore.name = "ds-other-name";
+      nonImageDataStore.id =  "ds-other-name1";
+      nonImageDataStore.documentSelfLink = nonImageDataStore.id;
+      nonImageDataStore.type = DatastoreType.LOCAL_VMFS.name();
+      TestHelper.createDatastoreService(sourceCloudStore, nonImageDataStore);
+
+      DeploymentService.State deployment = new DeploymentService.State();
+      deployment.imageDataStoreNames = new HashSet<>();
+      deployment.imageDataStoreNames.add(datastore.name);
+      deployment.state = DeploymentState.READY;
+      deployment.imageDataStoreUsedForVMs = Boolean.TRUE;
+      TestHelper.createDeploymentService(sourceCloudStore, deployment);
+
+
       mockApiClient(true);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
@@ -946,8 +977,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
               startState,
               FinalizeDeploymentMigrationWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
+        TestHelper.assertTaskStateFinished(finalState.taskState);
 
       //Make sure that the host is in destination
       Set<String> hosts = getDocuments(HostService.State.class, destinationCloudStore);
