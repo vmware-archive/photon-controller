@@ -67,7 +67,7 @@ export DRIVER=api
 bundle exec rake esxcloud:life_cycle
 
 # run the housekeeper integration test
-if [ -n "$DISABLE_HOUSEKEEPER" ]; then
+if [ -z "$DISABLE_HOUSEKEEPER" ]; then
   bundle exec rake housekeeper
 fi
 
