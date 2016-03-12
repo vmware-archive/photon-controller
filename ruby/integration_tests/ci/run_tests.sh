@@ -132,9 +132,6 @@ else
 
     if [ -z "$DISABLE_CLI_TESTS" ]
     then
-      export DRIVER=cli
-      bundle exec rake esxcloud:cli
-
       export DRIVER=gocli
       bundle exec rake esxcloud:gocli
     fi
@@ -149,10 +146,6 @@ else
     if [ -z "$DISABLE_CLI_TESTS" ]
     then
       (
-          export DRIVER=cli
-          bundle exec rake esxcloud:cli
-
-          # Don't run gocli in parallel now due to the agent capacity
           export DRIVER=gocli
           bundle exec rake esxcloud:gocli
       ) &
