@@ -84,19 +84,31 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
       waitForHostReady(host);
     }
 
-    // join peer node group
-    H host = hosts[0];
-    for (int i = 1; i < hosts.length; i++) {
-      H peerHost = hosts[i];
-      ServiceHostUtils.joinNodeGroup(peerHost, host.getUri().getHost(), host.getPort());
-    }
+    if (hosts.length > 1) {
 
-    ServiceHostUtils.waitForNodeGroupConvergence(
-        hosts,
-        ServiceUriPaths.DEFAULT_NODE_GROUP,
-        ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
-        // Since the default sleep time is 200 we will use a shorter time for tests
-        MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);
+      // join peer node group
+      H host = hosts[0];
+      for (int i = 1; i < hosts.length; i++) {
+        H peerHost = hosts[i];
+        ServiceHostUtils.joinNodeGroup(peerHost, host.getUri().getHost(), host.getPort());
+      }
+
+      // set quorum
+      for (int i = 0; i < hosts.length; i++) {
+        ServiceHostUtils.setQuorumSize(hosts[i], hosts.length, null);
+      }
+
+      // wait for hosts to reach AVAILABLE state
+      ServiceHostUtils.waitForNodeGroupConvergence(
+          hosts,
+          ServiceUriPaths.DEFAULT_NODE_GROUP,
+          ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
+          // Since the default sleep time is 200 we will use a shorter time for tests
+          MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);
+
+      // wait for factories to be synchronized
+      Thread.sleep(2 * MAINTENANCE_INTERVAL_MS);
+    }
   }
 
   /**
