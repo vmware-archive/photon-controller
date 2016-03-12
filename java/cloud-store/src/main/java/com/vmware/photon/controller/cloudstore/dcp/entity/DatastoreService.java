@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.Operation;
@@ -182,6 +183,7 @@ public class DatastoreService extends StatefulService {
      * need to keep this field up-to-date, it must be cleaned up by a background
      * job..
      */
-    public boolean isImageDatastore;
+    @DefaultBoolean(value = false)
+    public Boolean isImageDatastore;
   }
 }
