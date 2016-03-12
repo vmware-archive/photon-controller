@@ -17,18 +17,26 @@ import com.vmware.photon.controller.api.ProjectCreateSpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
+import com.vmware.photon.controller.api.ResourceTicketReservation;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.Constants;
+import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
-import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.TaskUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
+import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ApiTestUtils;
+import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -41,6 +49,8 @@ import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.util.concurrent.FutureCallback;
 import org.mockito.Matchers;
@@ -55,17 +65,21 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.testng.Assert.fail;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.UUID;
 
@@ -95,16 +109,13 @@ public class AllocateTenantResourcesTaskServiceTest {
 
     @Test
     public void testServiceOptions() {
-      assertThat(allocateTenantResourcesTaskService.getOptions(), is(EnumSet.of(
-          Service.ServiceOption.CONCURRENT_GET_HANDLING,
-          Service.ServiceOption.OWNER_SELECTION,
-          Service.ServiceOption.PERSISTENCE,
-          Service.ServiceOption.REPLICATION)));
+      assertThat(allocateTenantResourcesTaskService.getOptions(), is(EnumSet.noneOf(Service.ServiceOption.class)));
     }
   }
 
   /**
-   * This class implements tests for the handleStart method.
+   * This class implements tests for the {@link AllocateTenantResourcesTaskService#handleStart(Operation)}
+   * method.
    */
   public class HandleStartTest {
 
@@ -139,16 +150,26 @@ public class AllocateTenantResourcesTaskServiceTest {
     public void testValidStartState(TaskState.TaskStage startStage,
                                     AllocateTenantResourcesTaskService.TaskState.SubStage startSubStage)
         throws Throwable {
+
       AllocateTenantResourcesTaskService.State startState = buildValidStartState(startStage, startSubStage);
       Operation op = testHost.startServiceSynchronously(allocateTenantResourcesTaskService, startState);
       assertThat(op.getStatusCode(), is(200));
 
       AllocateTenantResourcesTaskService.State serviceState =
           testHost.getServiceState(AllocateTenantResourcesTaskService.State.class);
+
+      if (startStage == null) {
+        assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.CREATED));
+      } else {
+        assertThat(serviceState.taskState.stage, is(startStage));
+      }
+
+      assertThat(serviceState.taskState.subStage, is(startSubStage));
       assertThat(serviceState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
+      assertThat(serviceState.deploymentServiceLink, is("DEPLOYMENT_SERVICE_LINK"));
       assertThat(serviceState.quotaLineItems, is(Arrays.asList(
-          new QuotaLineItem("vm.count", 1, QuotaUnit.COUNT),
-          new QuotaLineItem("disk.count", 1, QuotaUnit.COUNT))));
+          new QuotaLineItem("vm.count", 1.0, QuotaUnit.COUNT),
+          new QuotaLineItem("disk.count", 1.0, QuotaUnit.COUNT))));
     }
 
     @DataProvider(name = "ValidStartStages")
@@ -165,30 +186,6 @@ public class AllocateTenantResourcesTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "TransitionalStartStages")
-    public void testTransitionalStartState(TaskState.TaskStage startStage,
-                                           AllocateTenantResourcesTaskService.TaskState.SubStage startSubStage)
-        throws Throwable {
-      AllocateTenantResourcesTaskService.State startState = buildValidStartState(startStage, startSubStage);
-      Operation op = testHost.startServiceSynchronously(allocateTenantResourcesTaskService, startState);
-      assertThat(op.getStatusCode(), is(200));
-
-      AllocateTenantResourcesTaskService.State serviceState =
-          testHost.getServiceState(AllocateTenantResourcesTaskService.State.class);
-      assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(serviceState.taskState.subStage,
-          is(AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT));
-    }
-
-    @DataProvider(name = "TransitionalStartStages")
-    public Object[][] getTransitionalStartStages() {
-      return new Object[][]{
-          {null, null},
-          {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT},
-      };
-    }
-
     @Test(dataProvider = "TerminalStartStages")
     public void testTerminalStartStage(TaskState.TaskStage startStage,
                                        AllocateTenantResourcesTaskService.TaskState.SubStage startSubStage)
@@ -200,6 +197,7 @@ public class AllocateTenantResourcesTaskServiceTest {
 
       AllocateTenantResourcesTaskService.State serviceState =
           testHost.getServiceState(AllocateTenantResourcesTaskService.State.class);
+
       assertThat(serviceState.taskState.stage, is(startStage));
       assertThat(serviceState.taskState.subStage, is(startSubStage));
       assertThat(serviceState.controlFlags, is(0));
@@ -214,7 +212,7 @@ public class AllocateTenantResourcesTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = XenonRuntimeException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = BadRequestException.class)
     public void testInvalidStartStateMissingRequiredFieldName(String fieldName) throws Throwable {
       AllocateTenantResourcesTaskService.State startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -229,7 +227,7 @@ public class AllocateTenantResourcesTaskServiceTest {
               AllocateTenantResourcesTaskService.State.class, NotNull.class));
     }
 
-    @Test(dataProvider = "PositiveFieldNames", expectedExceptions = XenonRuntimeException.class)
+    @Test(dataProvider = "PositiveFieldNames", expectedExceptions = BadRequestException.class)
     public void testInvalidStartStateRequiredFieldNegative(String fieldName) throws Throwable {
       AllocateTenantResourcesTaskService.State startState = buildValidStartState(null, null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -246,7 +244,8 @@ public class AllocateTenantResourcesTaskServiceTest {
   }
 
   /**
-   * This class implements tests for the handlePatch method.
+   * This class implements tests for the {@link AllocateTenantResourcesTaskService#handlePatch(Operation)}
+   * method.
    */
   public class HandlePatchTest {
 
@@ -279,17 +278,21 @@ public class AllocateTenantResourcesTaskServiceTest {
                                          TaskState.TaskStage patchStage,
                                          AllocateTenantResourcesTaskService.TaskState.SubStage patchSubStage)
         throws Throwable {
+
       AllocateTenantResourcesTaskService.State startState = buildValidStartState(startStage, startSubStage);
       Operation op = testHost.startServiceSynchronously(allocateTenantResourcesTaskService, startState);
       assertThat(op.getStatusCode(), is(200));
 
-      Operation patchOp = testHost.sendRequestAndWait(Operation
+      Operation patchOp = Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
-          .setBody(AllocateTenantResourcesTaskService.buildPatch(patchStage, patchSubStage, null)));
-      assertThat(patchOp.getStatusCode(), is(200));
+          .setBody(AllocateTenantResourcesTaskService.buildPatch(patchStage, patchSubStage));
+
+      op = testHost.sendRequestAndWait(patchOp);
+      assertThat(op.getStatusCode(), is(200));
 
       AllocateTenantResourcesTaskService.State serviceState =
           testHost.getServiceState(AllocateTenantResourcesTaskService.State.class);
+
       assertThat(serviceState.taskState.stage, is(patchStage));
       assertThat(serviceState.taskState.subStage, is(patchSubStage));
       assertThat(serviceState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
@@ -297,225 +300,33 @@ public class AllocateTenantResourcesTaskServiceTest {
 
     @DataProvider(name = "ValidStageTransitions")
     public Object[][] getValidStageTransitions() {
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT},
-          {TaskState.TaskStage.CREATED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET},
-          {TaskState.TaskStage.CREATED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT},
-          {TaskState.TaskStage.CREATED,
-              null,
-              TaskState.TaskStage.FINISHED,
-              null},
-          {TaskState.TaskStage.CREATED,
-              null,
-              TaskState.TaskStage.FAILED,
-              null},
-          {TaskState.TaskStage.CREATED,
-              null,
-              TaskState.TaskStage.CANCELLED,
-              null},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.FINISHED,
-              null},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.FAILED,
-              null},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.CANCELLED,
-              null},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET,
-              TaskState.TaskStage.FINISHED,
-              null},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET,
-              TaskState.TaskStage.FAILED,
-              null},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET,
-              TaskState.TaskStage.CANCELLED,
-              null},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT,
-              TaskState.TaskStage.FINISHED,
-              null},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.FAILED,
-              null},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.CANCELLED,
-              null},
-      };
+      return TestHelper.getValidStageTransitions(AllocateTenantResourcesTaskService.TaskState.SubStage.class);
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = BadRequestException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
                                            AllocateTenantResourcesTaskService.TaskState.SubStage startSubStage,
                                            TaskState.TaskStage patchStage,
                                            AllocateTenantResourcesTaskService.TaskState.SubStage patchSubStage)
         throws Throwable {
+
       AllocateTenantResourcesTaskService.State startState = buildValidStartState(startStage, startSubStage);
       Operation op = testHost.startServiceSynchronously(allocateTenantResourcesTaskService, startState);
       assertThat(op.getStatusCode(), is(200));
 
-      testHost.sendRequestAndWait(Operation
+      Operation patchOp = Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
-          .setBody(AllocateTenantResourcesTaskService.buildPatch(patchStage, patchSubStage, null)));
+          .setBody(AllocateTenantResourcesTaskService.buildPatch(patchStage, patchSubStage));
+
+      testHost.sendRequestAndWait(patchOp);
     }
 
     @DataProvider(name = "InvalidStageTransitions")
     public Object[][] getInvalidStageTransitions() {
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED,
-              null,
-              TaskState.TaskStage.CREATED,
-              null},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT,
-              TaskState.TaskStage.CREATED,
-              null},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET,
-              TaskState.TaskStage.CREATED,
-              null},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT},
-
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT,
-              TaskState.TaskStage.CREATED,
-              null},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT},
-          {TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET},
-
-          {TaskState.TaskStage.FINISHED,
-              null,
-              TaskState.TaskStage.CREATED,
-              null},
-          {TaskState.TaskStage.FINISHED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT},
-          {TaskState.TaskStage.FINISHED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET},
-          {TaskState.TaskStage.FINISHED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT},
-          {TaskState.TaskStage.FINISHED,
-              null,
-              TaskState.TaskStage.FINISHED,
-              null},
-          {TaskState.TaskStage.FINISHED,
-              null,
-              TaskState.TaskStage.FAILED,
-              null},
-          {TaskState.TaskStage.FINISHED,
-              null,
-              TaskState.TaskStage.CANCELLED,
-              null},
-
-          {TaskState.TaskStage.FAILED,
-              null,
-              TaskState.TaskStage.CREATED,
-              null},
-          {TaskState.TaskStage.FAILED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT},
-          {TaskState.TaskStage.FAILED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET},
-          {TaskState.TaskStage.FAILED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT},
-          {TaskState.TaskStage.FAILED,
-              null,
-              TaskState.TaskStage.FINISHED,
-              null},
-          {TaskState.TaskStage.FAILED,
-              null,
-              TaskState.TaskStage.FAILED,
-              null},
-          {TaskState.TaskStage.FAILED,
-              null,
-              TaskState.TaskStage.CANCELLED,
-              null},
-
-          {TaskState.TaskStage.CANCELLED,
-              null,
-              TaskState.TaskStage.CREATED,
-              null},
-          {TaskState.TaskStage.CANCELLED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT},
-          {TaskState.TaskStage.CANCELLED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET},
-          {TaskState.TaskStage.CANCELLED,
-              null,
-              TaskState.TaskStage.STARTED,
-              AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT},
-          {TaskState.TaskStage.CANCELLED,
-              null,
-              TaskState.TaskStage.FINISHED,
-              null},
-          {TaskState.TaskStage.CANCELLED,
-              null,
-              TaskState.TaskStage.FAILED,
-              null},
-          {TaskState.TaskStage.CANCELLED,
-              null,
-              TaskState.TaskStage.CANCELLED,
-              null},
-      };
+      return TestHelper.getInvalidStageTransitions(AllocateTenantResourcesTaskService.TaskState.SubStage.class);
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = XenonRuntimeException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = BadRequestException.class)
     public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
       AllocateTenantResourcesTaskService.State startState = buildValidStartState(null, null);
       Operation op = testHost.startServiceSynchronously(allocateTenantResourcesTaskService, startState);
@@ -566,7 +377,7 @@ public class AllocateTenantResourcesTaskServiceTest {
             .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
             .setBody(patchState));
         fail("Overwriting a field with the WriteOnce annotation is expected to fail");
-      } catch (XenonRuntimeException e) {
+      } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString(fieldName));
       }
     }
@@ -580,517 +391,19 @@ public class AllocateTenantResourcesTaskServiceTest {
   }
 
   /**
-   * This class implements tests for the CREATE_TENANT sub-stage.
+   * This class implements end-to-end tests for the {@link AllocateTenantResourcesTaskService}
+   * task.
    */
-  public class CreateTenantTest {
+  public class EndToEndTest {
 
-    private ApiClient apiClient;
+    private final Task failedTask = ApiTestUtils.createFailingTask(2, 1, "errorCode", "errorMessage");
+
     private ApiClientFactory apiClientFactory;
-    private String entityId;
-    private AllocateTenantResourcesTaskService.State startState;
-    private String taskId;
-    private TasksApi tasksApi;
-    private TenantsApi tenantsApi;
-    private TestEnvironment testEnvironment;
-
-    @BeforeClass
-    public void setUpClass() throws Throwable {
-      apiClientFactory = mock(ApiClientFactory.class);
-
-      testEnvironment = new TestEnvironment.Builder()
-          .apiClientFactory(apiClientFactory)
-          .hostCount(1)
-          .build();
-
-      startState = buildValidStartState(TaskState.TaskStage.STARTED,
-          AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT);
-      startState.controlFlags = ControlFlags.CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION;
-      startState.taskPollDelay = 10;
-    }
-
-    @BeforeMethod
-    public void setUpTest() {
-      apiClient = mock(ApiClient.class);
-      doReturn(apiClient).when(apiClientFactory).create();
-      tasksApi = mock(TasksApi.class);
-      doReturn(tasksApi).when(apiClient).getTasksApi();
-      tenantsApi = mock(TenantsApi.class);
-      doReturn(tenantsApi).when(apiClient).getTenantsApi();
-      entityId = UUID.randomUUID().toString();
-      taskId = UUID.randomUUID().toString();
-    }
-
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      testEnvironment.stop();
-    }
-
-    @Test
-    public void testSuccess() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateTenantAsync(taskId, entityId, "COMPLETED"))
-          .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(finalState.taskState.subStage,
-          is(AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET));
-      assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
-      assertThat(finalState.tenantId, is(entityId));
-    }
-
-    @Test
-    public void testSuccessAfterPolling() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateTenantAsync(taskId, entityId, "QUEUED"))
-          .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(finalState.taskState.subStage,
-          is(AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET));
-      assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
-      assertThat(finalState.tenantId, is(entityId));
-    }
-
-    @Test(dataProvider = "TaskFailureResponses")
-    public void testCreateTenantFailure(Task response) throws Throwable {
-
-      doAnswer(MockHelper.mockCreateTenantAsync(response))
-          .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(response)));
-    }
-
-    @Test
-    public void testCreateTenantException() throws Throwable {
-
-      doThrow(new IOException("IO exception during createAsync call"))
-          .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("IO exception during createAsync call"));
-    }
-
-    @Test
-    public void testCreateTenantUnknownTaskStatus() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateTenantAsync(taskId, entityId, "UNKNOWN"))
-          .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("Unknown task state: UNKNOWN"));
-    }
-
-    @Test(dataProvider = "TaskFailureResponses")
-    public void testGetTaskFailure(Task response) throws Throwable {
-
-      doAnswer(MockHelper.mockCreateTenantAsync(taskId, entityId, "QUEUED"))
-          .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync(response))
-          .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(response)));
-    }
-
-    @Test
-    public void testGetTaskException() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateTenantAsync(taskId, entityId, "QUEUED"))
-          .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
-
-      doThrow(new IOException("IO exception during getTaskAsync call"))
-          .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("IO exception during getTaskAsync call"));
-    }
-
-    @Test
-    public void testGetTaskUnknownTaskStatus() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateTenantAsync(taskId, entityId, "QUEUED"))
-          .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "UNKNOWN"))
-          .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_TENANT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("Unknown task state: UNKNOWN"));
-    }
-
-    @DataProvider(name = "TaskFailureResponses")
-    public Object[][] getTaskFailureResponses() {
-      return new Object[][]{
-          {ApiTestUtils.createFailingTask(0, 1, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(0, 2, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(2, 1, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(2, 2, "errorCode", "errorMessage")},
-      };
-    }
-  }
-
-  /**
-   * This class implements tests for the CREATE_RESOURCE_TICKET sub-stage.
-   */
-  public class CreateResourceTicketTest {
-
-    private ApiClient apiClient;
-    private ApiClientFactory apiClientFactory;
-    private String entityId;
-    private AllocateTenantResourcesTaskService.State startState;
-    private String taskId;
-    private TasksApi tasksApi;
-    private String tenantId;
-    private TenantsApi tenantsApi;
-    private TestEnvironment testEnvironment;
-
-    @BeforeClass
-    public void setUpClass() throws Throwable {
-      apiClientFactory = mock(ApiClientFactory.class);
-
-      testEnvironment = new TestEnvironment.Builder()
-          .apiClientFactory(apiClientFactory)
-          .hostCount(1)
-          .build();
-
-      startState = buildValidStartState(TaskState.TaskStage.STARTED,
-          AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET);
-      startState.controlFlags = ControlFlags.CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION;
-      startState.taskPollDelay = 10;
-    }
-
-    @BeforeMethod
-    public void setUpTest() {
-      apiClient = mock(ApiClient.class);
-      doReturn(apiClient).when(apiClientFactory).create();
-      tasksApi = mock(TasksApi.class);
-      doReturn(tasksApi).when(apiClient).getTasksApi();
-      tenantsApi = mock(TenantsApi.class);
-      doReturn(tenantsApi).when(apiClient).getTenantsApi();
-      entityId = UUID.randomUUID().toString();
-      taskId = UUID.randomUUID().toString();
-      tenantId = UUID.randomUUID().toString();
-      startState.tenantId = tenantId;
-    }
-
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      testEnvironment.stop();
-    }
-
-    @Test
-    public void testSuccess() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateResourceTicketAsync(taskId, entityId, "COMPLETED"))
-          .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
-              Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(finalState.taskState.subStage,
-          is(AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT));
-      assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
-      assertThat(finalState.resourceTicketId, is(entityId));
-    }
-
-    @Test
-    public void testSuccessAfterPolling() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateResourceTicketAsync(taskId, entityId, "QUEUED"))
-          .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
-              Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(finalState.taskState.subStage,
-          is(AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT));
-      assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
-      assertThat(finalState.resourceTicketId, is(entityId));
-    }
-
-    @Test(dataProvider = "TaskFailureResponses")
-    public void testCreateResourceTicketFailure(Task response) throws Throwable {
-
-      doAnswer(MockHelper.mockCreateResourceTicketAsync(response))
-          .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
-              Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(response)));
-    }
-
-    @Test
-    public void testCreateResourceTicketException() throws Throwable {
-
-      doThrow(new IOException("IO exception during createResourceTicketAsync call"))
-          .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
-              Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("IO exception during createResourceTicketAsync call"));
-    }
-
-    @Test
-    public void testCreateResourceTicketUnknownTaskStatus() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateResourceTicketAsync(taskId, entityId, "UNKNOWN"))
-          .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
-              Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("Unknown task state: UNKNOWN"));
-    }
-
-    @Test(dataProvider = "TaskFailureResponses")
-    public void testGetTaskFailure(Task response) throws Throwable {
-
-      doAnswer(MockHelper.mockCreateResourceTicketAsync(taskId, entityId, "QUEUED"))
-          .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
-              Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync(response))
-          .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(response)));
-    }
-
-    @Test
-    public void testGetTaskException() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateResourceTicketAsync(taskId, entityId, "QUEUED"))
-          .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
-              Matchers.<FutureCallback<Task>>any());
-
-      doThrow(new IOException("IO exception during getTaskAsync call"))
-          .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("IO exception during getTaskAsync call"));
-    }
-
-    @Test
-    public void testGetTaskUnknownTaskStatus() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateResourceTicketAsync(taskId, entityId, "QUEUED"))
-          .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
-              Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "UNKNOWN"))
-          .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_RESOURCE_TICKET);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("Unknown task state: UNKNOWN"));
-    }
-
-    @DataProvider(name = "TaskFailureResponses")
-    public Object[][] getTaskFailureResponses() {
-      return new Object[][]{
-          {ApiTestUtils.createFailingTask(0, 1, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(0, 2, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(2, 1, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(2, 2, "errorCode", "errorMessage")},
-      };
-    }
-  }
-
-  /**
-   * This class implements tests for the CREATE_PROJECT sub-stage.
-   */
-  public class CreateProjectTest {
-
-    private ApiClient apiClient;
-    private ApiClientFactory apiClientFactory;
-    private String entityId;
+    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private DeployerContext deployerContext;
+    private String projectId;
     private String resourceTicketId;
     private AllocateTenantResourcesTaskService.State startState;
-    private String taskId;
     private TasksApi tasksApi;
     private String tenantId;
     private TenantsApi tenantsApi;
@@ -1099,494 +412,552 @@ public class AllocateTenantResourcesTaskServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+
+      deployerContext = ConfigBuilder.build(DeployerConfig.class,
+          this.getClass().getResource("/config.yml").getPath()).getDeployerContext();
 
       testEnvironment = new TestEnvironment.Builder()
           .apiClientFactory(apiClientFactory)
+          .cloudServerSet(cloudStoreEnvironment.getServerSet())
+          .deployerContext(deployerContext)
           .hostCount(1)
           .build();
-
-      startState = buildValidStartState(TaskState.TaskStage.STARTED,
-          AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT);
-      startState.controlFlags = ControlFlags.CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION;
-      startState.taskPollDelay = 10;
     }
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      apiClient = mock(ApiClient.class);
+      ApiClient apiClient = mock(ApiClient.class);
       doReturn(apiClient).when(apiClientFactory).create();
       tasksApi = mock(TasksApi.class);
       doReturn(tasksApi).when(apiClient).getTasksApi();
       tenantsApi = mock(TenantsApi.class);
       doReturn(tenantsApi).when(apiClient).getTenantsApi();
-      entityId = UUID.randomUUID().toString();
-      taskId = UUID.randomUUID().toString();
+
+      projectId = UUID.randomUUID().toString();
       resourceTicketId = UUID.randomUUID().toString();
-      startState.resourceTicketId = resourceTicketId;
       tenantId = UUID.randomUUID().toString();
-      startState.tenantId = tenantId;
-    }
 
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      testEnvironment.stop();
-    }
-
-    @Test
-    public void testSuccess() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateProjectAsync(taskId, entityId, "COMPLETED"))
+      doAnswer(MockHelper.mockCreateTenantAsync("CREATE_TENANT_TASK_ID", tenantId, "QUEUED"))
           .when(tenantsApi)
-          .createProjectAsync(eq(tenantId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+          .createAsync(anyString(), Matchers.<FutureCallback<Task>>any());
 
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FINISHED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
-      assertThat(finalState.projectId, is(entityId));
-    }
-
-    @Test
-    public void testSuccessAfterPolling() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateProjectAsync(taskId, entityId, "QUEUED"))
-          .when(tenantsApi)
-          .createProjectAsync(eq(tenantId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "COMPLETED"))
+      doAnswer(MockHelper.mockGetTaskAsync("CREATE_TENANT_TASK_ID", tenantId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_TENANT_TASK_ID", tenantId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_TENANT_TASK_ID", tenantId, "COMPLETED"))
           .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
+          .getTaskAsync(eq("CREATE_TENANT_TASK_ID"), Matchers.<FutureCallback<Task>>any());
 
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FINISHED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
-      assertThat(finalState.projectId, is(entityId));
-    }
-
-    @Test(dataProvider = "TaskFailureResponses")
-    public void testCreateProjectFailure(Task response) throws Throwable {
-
-      doAnswer(MockHelper.mockCreateProjectAsync(response))
+      doAnswer(MockHelper.mockCreateResourceTicketAsync("CREATE_RESOURCE_TICKET_TASK_ID", resourceTicketId, "QUEUED"))
           .when(tenantsApi)
-          .createProjectAsync(eq(tenantId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
+              Matchers.<FutureCallback<Task>>any());
 
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(response)));
-    }
-
-    @Test
-    public void testCreateProjectException() throws Throwable {
-
-      doThrow(new IOException("IO exception during createProjectAsync call"))
-          .when(tenantsApi)
-          .createProjectAsync(eq(tenantId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("IO exception during createProjectAsync call"));
-    }
-
-    @Test
-    public void testCreateProjectUnknownTaskStatus() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateProjectAsync(taskId, entityId, "UNKNOWN"))
-          .when(tenantsApi)
-          .createProjectAsync(eq(tenantId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("Unknown task state: UNKNOWN"));
-    }
-
-    @Test(dataProvider = "TaskFailureResponses")
-    public void testGetTaskFailure(Task response) throws Throwable {
-
-      doAnswer(MockHelper.mockCreateProjectAsync(taskId, entityId, "QUEUED"))
-          .when(tenantsApi)
-          .createProjectAsync(eq(tenantId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync(response))
+      doAnswer(MockHelper.mockGetTaskAsync("CREATE_RESOURCE_TICKET_TASK_ID", resourceTicketId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_RESOURCE_TICKET_TASK_ID", resourceTicketId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_RESOURCE_TICKET_TASK_ID", resourceTicketId, "COMPLETED"))
           .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
+          .getTaskAsync(eq("CREATE_RESOURCE_TICKET_TASK_ID"), Matchers.<FutureCallback<Task>>any());
 
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(response)));
-    }
-
-    @Test
-    public void testGetTaskException() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateProjectAsync(taskId, entityId, "QUEUED"))
+      doAnswer(MockHelper.mockCreateProjectAsync("CREATE_PROJECT_TASK_ID", projectId, "QUEUED"))
           .when(tenantsApi)
-          .createProjectAsync(eq(tenantId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+          .createProjectAsync(anyString(), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
 
-      doThrow(new IOException("IO exception during getTaskAsync call"))
+      doAnswer(MockHelper.mockGetTaskAsync("CREATE_PROJECT_TASK_ID", projectId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_PROJECT_TASK_ID", projectId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_PROJECT_TASK_ID", projectId, "COMPLETED"))
           .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
+          .getTaskAsync(eq("CREATE_PROJECT_TASK_ID"), Matchers.<FutureCallback<Task>>any());
 
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT);
+      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DeploymentService.State.class);
+      TestHelper.assertNoServicesOfType(testEnvironment, VmService.State.class);
 
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("IO exception during getTaskAsync call"));
-    }
+      DeploymentService.State deploymentState = TestHelper.createDeploymentService(cloudStoreEnvironment);
 
-    @Test
-    public void testGetTaskUnknownTaskStatus() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateProjectAsync(taskId, entityId, "QUEUED"))
-          .when(tenantsApi)
-          .createProjectAsync(eq(tenantId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync(taskId, entityId, "UNKNOWN"))
-          .when(tasksApi)
-          .getTaskAsync(eq(taskId), Matchers.<FutureCallback<Task>>any());
-
-      AllocateTenantResourcesTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
-              startState,
-              AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.subStage !=
-                  AllocateTenantResourcesTaskService.TaskState.SubStage.CREATE_PROJECT);
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("Unknown task state: UNKNOWN"));
-    }
-
-    @DataProvider(name = "TaskFailureResponses")
-    public Object[][] getTaskFailureResponses() {
-      return new Object[][]{
-          {ApiTestUtils.createFailingTask(0, 1, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(0, 2, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(2, 1, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(2, 2, "errorCode", "errorMessage")},
-      };
-    }
-  }
-
-  /**
-   * This class implements end-to-end tests for the task.
-   */
-  public class EndToEndTest {
-
-    private ApiClient apiClient;
-    private ApiClientFactory apiClientFactory;
-    private String projectEntityId;
-    private String projectTaskId;
-    private String resourceTicketEntityId;
-    private String resourceTicketTaskId;
-    private AllocateTenantResourcesTaskService.State startState;
-    private TasksApi tasksApi;
-    private String tenantEntityId;
-    private TenantsApi tenantsApi;
-    private String tenantTaskId;
-    private TestEnvironment testEnvironment;
-
-    @BeforeClass
-    public void setUpClass() throws Throwable {
-      apiClientFactory = mock(ApiClientFactory.class);
-
-      testEnvironment = new TestEnvironment.Builder()
-          .apiClientFactory(apiClientFactory)
-          .hostCount(1)
-          .build();
+      for (int i = 0; i < 3; i++) {
+        TestHelper.createVmService(testEnvironment);
+      }
 
       startState = buildValidStartState(null, null);
+      startState.deploymentServiceLink = deploymentState.documentSelfLink;
       startState.controlFlags = null;
-      startState.taskPollDelay = 10;
     }
 
-    @BeforeMethod
-    public void setUpTest() {
-      apiClient = mock(ApiClient.class);
-      doReturn(apiClient).when(apiClientFactory).create();
-      tasksApi = mock(TasksApi.class);
-      doReturn(tasksApi).when(apiClient).getTasksApi();
-      tenantsApi = mock(TenantsApi.class);
-      doReturn(tenantsApi).when(apiClient).getTenantsApi();
-      projectEntityId = UUID.randomUUID().toString();
-      projectTaskId = UUID.randomUUID().toString();
-      resourceTicketEntityId = UUID.randomUUID().toString();
-      resourceTicketTaskId = UUID.randomUUID().toString();
-      tenantEntityId = UUID.randomUUID().toString();
-      tenantTaskId = UUID.randomUUID().toString();
+    @AfterMethod
+    public void tearDownTest() throws Throwable {
+      TestHelper.deleteServicesOfType(cloudStoreEnvironment, DeploymentService.State.class);
+      TestHelper.deleteServicesOfType(testEnvironment, VmService.State.class);
     }
 
     @AfterClass
     public void tearDownClass() throws Throwable {
       testEnvironment.stop();
+      cloudStoreEnvironment.stop();
     }
 
     @Test
     public void testSuccess() throws Throwable {
 
-      doAnswer(MockHelper.mockCreateTenantAsync(tenantTaskId, tenantEntityId, "COMPLETED"))
-          .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockCreateResourceTicketAsync(resourceTicketTaskId, resourceTicketEntityId, "COMPLETED"))
-          .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantEntityId), any(ResourceTicketCreateSpec.class),
-              Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockCreateProjectAsync(projectTaskId, projectEntityId, "COMPLETED"))
-          .when(tenantsApi)
-          .createProjectAsync(eq(tenantEntityId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
       AllocateTenantResourcesTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               AllocateTenantResourcesTaskFactoryService.SELF_LINK,
               startState,
               AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.stage != TaskState.TaskStage.STARTED);
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.controlFlags, is(0));
-      assertThat(finalState.tenantId, is(tenantEntityId));
-      assertThat(finalState.resourceTicketId, is(resourceTicketEntityId));
-      assertThat(finalState.projectId, is(projectEntityId));
+      assertThat(finalState.createTenantTaskId, is("CREATE_TENANT_TASK_ID"));
+      assertThat(finalState.createTenantPollCount, is(3));
+      assertThat(finalState.tenantId, is(tenantId));
+      assertThat(finalState.createResourceTicketTaskId, is("CREATE_RESOURCE_TICKET_TASK_ID"));
+      assertThat(finalState.createResourceTicketPollCount, is(3));
+      assertThat(finalState.resourceTicketId, is(resourceTicketId));
+      assertThat(finalState.createProjectTaskId, is("CREATE_PROJECT_TASK_ID"));
+      assertThat(finalState.createProjectPollCount, is(3));
+      assertThat(finalState.projectId, is(projectId));
+
+      verify(tenantsApi).createAsync(
+          eq(Constants.TENANT_NAME),
+          Matchers.<FutureCallback<Task>>any());
+
+      verify(tasksApi, times(3)).getTaskAsync(
+          eq("CREATE_TENANT_TASK_ID"),
+          Matchers.<FutureCallback<Task>>any());
+
+      verify(tenantsApi).createResourceTicketAsync(
+          eq(tenantId),
+          eq(getExpectedResourceTicketCreateSpec()),
+          Matchers.<FutureCallback<Task>>any());
+
+      verify(tasksApi, times(3)).getTaskAsync(
+          eq("CREATE_RESOURCE_TICKET_TASK_ID"),
+          Matchers.<FutureCallback<Task>>any());
+
+      verify(tenantsApi).createProjectAsync(
+          eq(tenantId),
+          eq(getExpectedProjectCreateSpec()),
+          Matchers.<FutureCallback<Task>>any());
+
+      QueryTask queryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(QueryTask.Query.Builder.create()
+              .addKindFieldClause(VmService.State.class)
+              .build())
+          .addOptions(EnumSet.of(
+              QueryTask.QuerySpecification.QueryOption.BROADCAST,
+              QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+          .build();
+
+      QueryTask result = testEnvironment.sendQueryAndWait(queryTask);
+      for (Object vmDocument : result.results.documents.values()) {
+        VmService.State vmState = Utils.fromJson(vmDocument, VmService.State.class);
+        assertThat(vmState.projectServiceLink, is(UriUtils.buildUriPath(ProjectServiceFactory.SELF_LINK, projectId)));
+      }
+
+      DeploymentService.State deploymentState = cloudStoreEnvironment.getServiceState(finalState.deploymentServiceLink,
+          DeploymentService.State.class);
+      assertThat(deploymentState.projectId, is(projectId));
     }
 
     @Test
-    public void testSuccessAfterPolling() throws Throwable {
+    public void testSuccessNoTaskPolling() throws Throwable {
 
-      doAnswer(MockHelper.mockCreateTenantAsync(tenantTaskId, tenantEntityId, "QUEUED"))
+      doAnswer(MockHelper.mockCreateTenantAsync("CREATE_TENANT_TASK_ID", tenantId, "COMPLETED"))
           .when(tenantsApi)
           .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
 
-      doAnswer(MockHelper.mockGetTaskAsync(tenantTaskId, tenantEntityId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(tenantTaskId, tenantEntityId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(tenantTaskId, tenantEntityId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq(tenantTaskId), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockCreateResourceTicketAsync(resourceTicketTaskId, resourceTicketEntityId, "QUEUED"))
+      doAnswer(MockHelper.mockCreateResourceTicketAsync("CREATE_RESOURCE_TICKET_TASK_ID", resourceTicketId,
+          "COMPLETED"))
           .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantEntityId), any(ResourceTicketCreateSpec.class),
+          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
               Matchers.<FutureCallback<Task>>any());
 
-      doAnswer(MockHelper.mockGetTaskAsync(resourceTicketTaskId, resourceTicketEntityId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(resourceTicketTaskId, resourceTicketEntityId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(resourceTicketTaskId, resourceTicketEntityId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq(resourceTicketTaskId), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockCreateProjectAsync(projectTaskId, projectEntityId, "QUEUED"))
+      doAnswer(MockHelper.mockCreateProjectAsync("CREATE_PROJECT_TASK_ID", projectId, "COMPLETED"))
           .when(tenantsApi)
-          .createProjectAsync(eq(tenantEntityId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync(projectTaskId, projectEntityId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(projectTaskId, projectEntityId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(projectTaskId, projectEntityId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq(projectTaskId), Matchers.<FutureCallback<Task>>any());
+          .createProjectAsync(eq(tenantId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
 
       AllocateTenantResourcesTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               AllocateTenantResourcesTaskFactoryService.SELF_LINK,
               startState,
               AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.stage != TaskState.TaskStage.STARTED);
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.controlFlags, is(0));
-      assertThat(finalState.tenantId, is(tenantEntityId));
-      assertThat(finalState.resourceTicketId, is(resourceTicketEntityId));
-      assertThat(finalState.projectId, is(projectEntityId));
+      assertThat(finalState.createTenantTaskId, nullValue());
+      assertThat(finalState.createTenantPollCount, is(0));
+      assertThat(finalState.tenantId, is(tenantId));
+      assertThat(finalState.createResourceTicketTaskId, nullValue());
+      assertThat(finalState.createResourceTicketPollCount, is(0));
+      assertThat(finalState.resourceTicketId, is(resourceTicketId));
+      assertThat(finalState.createProjectTaskId, nullValue());
+      assertThat(finalState.createProjectPollCount, is(0));
+      assertThat(finalState.projectId, is(projectId));
+
+      verify(tenantsApi).createAsync(
+          eq(Constants.TENANT_NAME),
+          Matchers.<FutureCallback<Task>>any());
+
+      verify(tenantsApi).createResourceTicketAsync(
+          eq(tenantId),
+          eq(getExpectedResourceTicketCreateSpec()),
+          Matchers.<FutureCallback<Task>>any());
+
+      verify(tenantsApi).createProjectAsync(
+          eq(tenantId),
+          eq(getExpectedProjectCreateSpec()),
+          Matchers.<FutureCallback<Task>>any());
+
+      QueryTask queryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(QueryTask.Query.Builder.create()
+              .addKindFieldClause(VmService.State.class)
+              .build())
+          .addOptions(EnumSet.of(
+              QueryTask.QuerySpecification.QueryOption.BROADCAST,
+              QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+          .build();
+
+      QueryTask result = testEnvironment.sendQueryAndWait(queryTask);
+      for (Object vmDocument : result.results.documents.values()) {
+        VmService.State vmState = Utils.fromJson(vmDocument, VmService.State.class);
+        assertThat(vmState.projectServiceLink, is(UriUtils.buildUriPath(ProjectServiceFactory.SELF_LINK, projectId)));
+      }
+
+      DeploymentService.State deploymentState = cloudStoreEnvironment.getServiceState(finalState.deploymentServiceLink,
+          DeploymentService.State.class);
+      assertThat(deploymentState.projectId, is(projectId));
     }
 
-    @Test(dataProvider = "TaskFailureResponses")
-    public void testCreateTenantFailure(Task response) throws Throwable {
+    private ResourceTicketCreateSpec getExpectedResourceTicketCreateSpec() {
+      ResourceTicketCreateSpec createSpec = new ResourceTicketCreateSpec();
+      createSpec.setName(Constants.RESOURCE_TICKET_NAME);
+      createSpec.setLimits(Arrays.asList(
+          new QuotaLineItem("vm.count", 1, QuotaUnit.COUNT),
+          new QuotaLineItem("disk.count", 1, QuotaUnit.COUNT)));
 
-      doAnswer(MockHelper.mockCreateTenantAsync(tenantTaskId, tenantEntityId, "QUEUED"))
-          .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
+      return createSpec;
+    }
 
-      doAnswer(MockHelper.mockCreateTenantAsync(tenantTaskId, tenantEntityId, "QUEUED"))
-          .doAnswer(MockHelper.mockCreateTenantAsync(tenantTaskId, tenantEntityId, "STARTED"))
-          .doAnswer(MockHelper.mockCreateTenantAsync(response))
+    private ProjectCreateSpec getExpectedProjectCreateSpec() {
+      ResourceTicketReservation reservation = new ResourceTicketReservation();
+      reservation.setName(Constants.RESOURCE_TICKET_NAME);
+      reservation.setLimits(Collections.singletonList(new QuotaLineItem("subdivide.percent", 100.0, QuotaUnit.COUNT)));
+
+      ProjectCreateSpec createSpec = new ProjectCreateSpec();
+      createSpec.setName(Constants.PROJECT_NAME);
+      createSpec.setResourceTicket(reservation);
+      return createSpec;
+    }
+
+    @Test
+    public void testCreateTenantFailure() throws Throwable {
+
+      doAnswer(MockHelper.mockCreateTenantAsync("CREATE_TENANT_TASK_ID", tenantId, "QUEUED"))
+          .doAnswer(MockHelper.mockCreateTenantAsync("CREATE_TENANT_TASK_ID", tenantId, "STARTED"))
+          .doAnswer(MockHelper.mockCreateTenantAsync(failedTask))
           .when(tasksApi)
-          .getTaskAsync(eq(tenantTaskId), Matchers.<FutureCallback<Task>>any());
+          .getTaskAsync(eq("CREATE_TENANT_TASK_ID"), Matchers.<FutureCallback<Task>>any());
 
       AllocateTenantResourcesTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               AllocateTenantResourcesTaskFactoryService.SELF_LINK,
               startState,
               AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.stage != TaskState.TaskStage.STARTED);
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(response)));
-      assertThat(finalState.controlFlags, is(0));
-      assertThat(finalState.tenantId, nullValue());
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.createTenantTaskId, is("CREATE_TENANT_TASK_ID"));
+      assertThat(finalState.createTenantPollCount, is(3));
     }
 
-    @Test(dataProvider = "TaskFailureResponses")
-    public void testCreateResourceTicketFailure(Task response) throws Throwable {
+    @Test
+    public void testCreateTenantFailureNoTaskPolling() throws Throwable {
 
-      doAnswer(MockHelper.mockCreateTenantAsync(tenantTaskId, tenantEntityId, "QUEUED"))
+      doAnswer(MockHelper.mockCreateTenantAsync(failedTask))
           .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
+          .createAsync(anyString(), Matchers.<FutureCallback<Task>>any());
 
-      doAnswer(MockHelper.mockGetTaskAsync(tenantTaskId, tenantEntityId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(tenantTaskId, tenantEntityId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(tenantTaskId, tenantEntityId, "COMPLETED"))
+      AllocateTenantResourcesTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
+              startState,
+              AllocateTenantResourcesTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.createTenantTaskId, nullValue());
+      assertThat(finalState.createTenantPollCount, is(0));
+    }
+
+    @Test
+    public void testCreateTenantFailureExceptionInCreateTenantCall() throws Throwable {
+
+      doThrow(new IOException("I/O exception during tenants API createAsync call"))
+          .when(tenantsApi)
+          .createAsync(anyString(), Matchers.<FutureCallback<Task>>any());
+
+      AllocateTenantResourcesTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
+              startState,
+              AllocateTenantResourcesTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message,
+          containsString("I/O exception during tenants API createAsync call"));
+      assertThat(finalState.createTenantTaskId, nullValue());
+      assertThat(finalState.createTenantPollCount, is(0));
+    }
+
+    @Test
+    public void testCreateTenantFailureExceptionInGetTaskCall() throws Throwable {
+
+      doThrow(new IOException("I/O exception during getTaskAsync call"))
           .when(tasksApi)
-          .getTaskAsync(eq(tenantTaskId), Matchers.<FutureCallback<Task>>any());
+          .getTaskAsync(eq("CREATE_TENANT_TASK_ID"), Matchers.<FutureCallback<Task>>any());
 
-      doAnswer(MockHelper.mockCreateResourceTicketAsync(resourceTicketTaskId, resourceTicketEntityId, "QUEUED"))
+      AllocateTenantResourcesTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
+              startState,
+              AllocateTenantResourcesTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("I/O exception during getTaskAsync call"));
+      assertThat(finalState.createTenantTaskId, is("CREATE_TENANT_TASK_ID"));
+      assertThat(finalState.createTenantPollCount, is(1));
+    }
+
+    @Test
+    public void testCreateResourceTicketFailure() throws Throwable {
+
+      doAnswer(MockHelper.mockGetTaskAsync("CREATE_RESOURCE_TICKET_TASK_ID", resourceTicketId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_RESOURCE_TICKET_TASK_ID", resourceTicketId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync(failedTask))
+          .when(tasksApi)
+          .getTaskAsync(eq("CREATE_RESOURCE_TICKET_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      AllocateTenantResourcesTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
+              startState,
+              AllocateTenantResourcesTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.createTenantTaskId, is("CREATE_TENANT_TASK_ID"));
+      assertThat(finalState.createTenantPollCount, is(3));
+      assertThat(finalState.tenantId, is(tenantId));
+      assertThat(finalState.createResourceTicketTaskId, is("CREATE_RESOURCE_TICKET_TASK_ID"));
+      assertThat(finalState.createResourceTicketPollCount, is(3));
+    }
+
+    @Test
+    public void testCreateResourceTicketFailureNoTaskPolling() throws Throwable {
+
+      doAnswer(MockHelper.mockCreateResourceTicketAsync(failedTask))
           .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantEntityId), any(ResourceTicketCreateSpec.class),
+          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
               Matchers.<FutureCallback<Task>>any());
 
-      doAnswer(MockHelper.mockGetTaskAsync(resourceTicketTaskId, resourceTicketEntityId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(resourceTicketTaskId, resourceTicketEntityId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(response))
-          .when(tasksApi)
-          .getTaskAsync(eq(resourceTicketTaskId), Matchers.<FutureCallback<Task>>any());
-
       AllocateTenantResourcesTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               AllocateTenantResourcesTaskFactoryService.SELF_LINK,
               startState,
               AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.stage != TaskState.TaskStage.STARTED);
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(response)));
-      assertThat(finalState.controlFlags, is(0));
-      assertThat(finalState.tenantId, is(tenantEntityId));
-      assertThat(finalState.resourceTicketId, nullValue());
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.createTenantTaskId, is("CREATE_TENANT_TASK_ID"));
+      assertThat(finalState.createTenantPollCount, is(3));
+      assertThat(finalState.tenantId, is(tenantId));
+      assertThat(finalState.createResourceTicketTaskId, nullValue());
+      assertThat(finalState.createResourceTicketPollCount, is(0));
     }
 
-    @Test(dataProvider = "TaskFailureResponses")
-    public void testCreateProjectFailure(Task response) throws Throwable {
+    @Test
+    public void testCreateResourceTicketFailureExceptionInCreateResourceTicketCall() throws Throwable {
 
-      doAnswer(MockHelper.mockCreateTenantAsync(tenantTaskId, tenantEntityId, "QUEUED"))
+      doThrow(new IOException("I/O exception in createResourceTicketAsync call"))
           .when(tenantsApi)
-          .createAsync(eq(Constants.TENANT_NAME), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync(tenantTaskId, tenantEntityId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(tenantTaskId, tenantEntityId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(tenantTaskId, tenantEntityId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq(tenantTaskId), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockCreateResourceTicketAsync(resourceTicketTaskId, resourceTicketEntityId, "QUEUED"))
-          .when(tenantsApi)
-          .createResourceTicketAsync(eq(tenantEntityId), any(ResourceTicketCreateSpec.class),
+          .createResourceTicketAsync(eq(tenantId), any(ResourceTicketCreateSpec.class),
               Matchers.<FutureCallback<Task>>any());
 
-      doAnswer(MockHelper.mockGetTaskAsync(resourceTicketTaskId, resourceTicketEntityId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(resourceTicketTaskId, resourceTicketEntityId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(resourceTicketTaskId, resourceTicketEntityId, "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq(resourceTicketTaskId), Matchers.<FutureCallback<Task>>any());
+      AllocateTenantResourcesTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
+              startState,
+              AllocateTenantResourcesTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
-      doAnswer(MockHelper.mockCreateProjectAsync(projectTaskId, projectEntityId, "QUEUED"))
-          .when(tenantsApi)
-          .createProjectAsync(eq(tenantEntityId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message,
+          containsString("I/O exception in createResourceTicketAsync call"));
+      assertThat(finalState.createTenantTaskId, is("CREATE_TENANT_TASK_ID"));
+      assertThat(finalState.createTenantPollCount, is(3));
+      assertThat(finalState.tenantId, is(tenantId));
+      assertThat(finalState.createResourceTicketTaskId, nullValue());
+      assertThat(finalState.createResourceTicketPollCount, is(0));
+    }
 
-      doAnswer(MockHelper.mockGetTaskAsync(projectTaskId, projectEntityId, "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(projectTaskId, projectEntityId, "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(response))
+    @Test
+    public void testCreateResourceTicketFailureExceptionInGetTaskCall() throws Throwable {
+
+      doThrow(new IOException("I/O exception in getTaskAsync call"))
           .when(tasksApi)
-          .getTaskAsync(eq(projectTaskId), Matchers.<FutureCallback<Task>>any());
+          .getTaskAsync(eq("CREATE_RESOURCE_TICKET_TASK_ID"), Matchers.<FutureCallback<Task>>any());
 
       AllocateTenantResourcesTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               AllocateTenantResourcesTaskFactoryService.SELF_LINK,
               startState,
               AllocateTenantResourcesTaskService.State.class,
-              (state) -> state.taskState.stage != TaskState.TaskStage.STARTED);
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is(ApiUtils.getErrors(response)));
-      assertThat(finalState.controlFlags, is(0));
-      assertThat(finalState.tenantId, is(tenantEntityId));
-      assertThat(finalState.resourceTicketId, is(resourceTicketEntityId));
-      assertThat(finalState.projectId, nullValue());
+      assertThat(finalState.taskState.failure.message, containsString("I/O exception in getTaskAsync call"));
+      assertThat(finalState.createTenantTaskId, is("CREATE_TENANT_TASK_ID"));
+      assertThat(finalState.createTenantPollCount, is(3));
+      assertThat(finalState.tenantId, is(tenantId));
+      assertThat(finalState.createResourceTicketTaskId, is("CREATE_RESOURCE_TICKET_TASK_ID"));
+      assertThat(finalState.createResourceTicketPollCount, is(1));
     }
 
-    @DataProvider(name = "TaskFailureResponses")
-    public Object[][] getTaskFailureResponses() {
-      return new Object[][]{
-          {ApiTestUtils.createFailingTask(0, 1, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(2, 2, "errorCode", "errorMessage")},
-      };
+    @Test
+    public void testCreateProjectFailure() throws Throwable {
+
+      doAnswer(MockHelper.mockGetTaskAsync("CREATE_PROJECT_TASK_ID", projectId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_PROJECT_TASK_ID", projectId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync(failedTask))
+          .when(tasksApi)
+          .getTaskAsync(eq("CREATE_PROJECT_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      AllocateTenantResourcesTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
+              startState,
+              AllocateTenantResourcesTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.createTenantTaskId, is("CREATE_TENANT_TASK_ID"));
+      assertThat(finalState.createTenantPollCount, is(3));
+      assertThat(finalState.tenantId, is(tenantId));
+      assertThat(finalState.createResourceTicketTaskId, is("CREATE_RESOURCE_TICKET_TASK_ID"));
+      assertThat(finalState.createResourceTicketPollCount, is(3));
+      assertThat(finalState.resourceTicketId, is(resourceTicketId));
+      assertThat(finalState.createProjectTaskId, is("CREATE_PROJECT_TASK_ID"));
+      assertThat(finalState.createProjectPollCount, is(3));
+    }
+
+    @Test
+    public void testCreateProjectFailureNoTaskPolling() throws Throwable {
+
+      doAnswer(MockHelper.mockCreateProjectAsync(failedTask))
+          .when(tenantsApi)
+          .createProjectAsync(eq(tenantId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+
+      AllocateTenantResourcesTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
+              startState,
+              AllocateTenantResourcesTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.createTenantTaskId, is("CREATE_TENANT_TASK_ID"));
+      assertThat(finalState.createTenantPollCount, is(3));
+      assertThat(finalState.tenantId, is(tenantId));
+      assertThat(finalState.createResourceTicketTaskId, is("CREATE_RESOURCE_TICKET_TASK_ID"));
+      assertThat(finalState.createResourceTicketPollCount, is(3));
+      assertThat(finalState.resourceTicketId, is(resourceTicketId));
+      assertThat(finalState.createProjectTaskId, nullValue());
+      assertThat(finalState.createProjectPollCount, is(0));
+    }
+
+    @Test
+    public void testCreateProjectFailureExceptionInCreateProjectCall() throws Throwable {
+
+      doThrow(new IOException("I/O exception in createProjectAsync call"))
+          .when(tenantsApi)
+          .createProjectAsync(eq(tenantId), any(ProjectCreateSpec.class), Matchers.<FutureCallback<Task>>any());
+
+      AllocateTenantResourcesTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
+              startState,
+              AllocateTenantResourcesTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("I/O exception in createProjectAsync call"));
+      assertThat(finalState.createTenantTaskId, is("CREATE_TENANT_TASK_ID"));
+      assertThat(finalState.createTenantPollCount, is(3));
+      assertThat(finalState.tenantId, is(tenantId));
+      assertThat(finalState.createResourceTicketTaskId, is("CREATE_RESOURCE_TICKET_TASK_ID"));
+      assertThat(finalState.createResourceTicketPollCount, is(3));
+      assertThat(finalState.resourceTicketId, is(resourceTicketId));
+      assertThat(finalState.createProjectTaskId, nullValue());
+      assertThat(finalState.createProjectPollCount, is(0));
+    }
+
+    @Test
+    public void testCreateProjectFailureExceptionInGetTaskCall() throws Throwable {
+
+      doThrow(new IOException("I/O exception in getTaskAsync call"))
+          .when(tasksApi)
+          .getTaskAsync(eq("CREATE_PROJECT_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      AllocateTenantResourcesTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              AllocateTenantResourcesTaskFactoryService.SELF_LINK,
+              startState,
+              AllocateTenantResourcesTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("I/O exception in getTaskAsync call"));
+      assertThat(finalState.createTenantTaskId, is("CREATE_TENANT_TASK_ID"));
+      assertThat(finalState.createTenantPollCount, is(3));
+      assertThat(finalState.tenantId, is(tenantId));
+      assertThat(finalState.createResourceTicketTaskId, is("CREATE_RESOURCE_TICKET_TASK_ID"));
+      assertThat(finalState.createResourceTicketPollCount, is(3));
+      assertThat(finalState.resourceTicketId, is(resourceTicketId));
+      assertThat(finalState.createProjectTaskId, is("CREATE_PROJECT_TASK_ID"));
+      assertThat(finalState.createProjectPollCount, is(1));
     }
   }
 
@@ -1596,6 +967,7 @@ public class AllocateTenantResourcesTaskServiceTest {
 
     AllocateTenantResourcesTaskService.State startState = new AllocateTenantResourcesTaskService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    startState.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
     startState.quotaLineItems = new ArrayList<>(Arrays.asList(
         new QuotaLineItem("vm.count", 1, QuotaUnit.COUNT),
         new QuotaLineItem("disk.count", 1, QuotaUnit.COUNT)));
