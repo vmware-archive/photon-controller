@@ -59,7 +59,7 @@ describe "project", management: true do
             security_groups: ["tenant\\adminGroup1", "tenant\\adminGroup2"])
 
         project.name.should == project_name
-        project.security_groups.should =~ [{"name"=>"tenant\\adminGroup1", "inherited"=>false},
+        project.security_groups.should include *[{"name"=>"tenant\\adminGroup1", "inherited"=>false},
                                            {"name"=>"tenant\\adminGroup2", "inherited"=>false}]
         task_list = client.get_project_tasks(project.id, "COMPLETED").items
         task_list.size.should == 1
@@ -93,7 +93,7 @@ describe "project", management: true do
           project_name = random_name("project-")
 
           retrieved_tenant = find_tenant_by_id(@seeder.tenant!.id)
-          retrieved_tenant.security_groups.should =~ [{"name"=>"tenant\\adminGroup2", "inherited"=>false},
+          retrieved_tenant.security_groups.should include *[{"name"=>"tenant\\adminGroup2", "inherited"=>false},
                                                       {"name"=>"tenant\\adminGroup3", "inherited"=>false}]
           project = @seeder.tenant!.create_project(
               name: project_name,
@@ -102,7 +102,7 @@ describe "project", management: true do
               security_groups: ["tenant\\adminGroup1", "tenant\\adminGroup2"])
 
           project.name.should == project_name
-          project.security_groups.should =~ [{"name"=>"tenant\\adminGroup2", "inherited"=>true},
+          project.security_groups.should include *[{"name"=>"tenant\\adminGroup2", "inherited"=>true},
                                              {"name"=>"tenant\\adminGroup3", "inherited"=>true},
                                              {"name"=>"tenant\\adminGroup1", "inherited"=>false}]
           task_list = client.get_project_tasks(project.id, "COMPLETED").items
@@ -196,7 +196,7 @@ describe "project", management: true do
         client.set_project_security_groups(project.id, security_groups)
 
         retrieved_project = find_project_by_id(project.id)
-        retrieved_project.security_groups.should =~ [{"name"=>"tenant\\adminGroup1", "inherited"=>false},
+        retrieved_project.security_groups.should include *[{"name"=>"tenant\\adminGroup1", "inherited"=>false},
                                                      {"name"=>"tenant\\adminGroup2", "inherited"=>false}]
       ensure
         project.delete unless project.nil?
@@ -220,7 +220,7 @@ describe "project", management: true do
         client.set_project_security_groups(project.id, security_groups)
 
         retrieved_project = find_project_by_id(project.id)
-        retrieved_project.security_groups.should =~ [{"name"=>"tenant\\adminGroup1", "inherited"=>false},
+        retrieved_project.security_groups.should include *[{"name"=>"tenant\\adminGroup1", "inherited"=>false},
                                                      {"name"=>"tenant\\adminGroup2", "inherited"=>false}]
 
         tenant_security_groups = {items: ["tenant\\adminGroup2", "tenant\\adminGroup3"]}
@@ -228,11 +228,11 @@ describe "project", management: true do
         client.set_tenant_security_groups(@seeder.tenant!.id, tenant_security_groups)
 
         retrieved_tenant = find_tenant_by_id(@seeder.tenant!.id)
-        retrieved_tenant.security_groups.should =~ [{"name"=>"tenant\\adminGroup2", "inherited"=>false},
+        retrieved_tenant.security_groups.should include *[{"name"=>"tenant\\adminGroup2", "inherited"=>false},
                                                     {"name"=>"tenant\\adminGroup3", "inherited"=>false}]
 
         retrieved_project = find_project_by_id(project.id)
-        retrieved_project.security_groups.should =~ [{"name"=>"tenant\\adminGroup2", "inherited"=>true},
+        retrieved_project.security_groups.should include *[{"name"=>"tenant\\adminGroup2", "inherited"=>true},
                                                      {"name"=>"tenant\\adminGroup3", "inherited"=>true},
                                                      {"name"=>"tenant\\adminGroup1", "inherited"=>false}]
       ensure
