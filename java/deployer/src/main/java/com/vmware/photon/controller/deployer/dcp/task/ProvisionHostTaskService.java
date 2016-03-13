@@ -601,6 +601,7 @@ public class ProvisionHostTaskService extends StatefulService {
         datastoreStartState.tags = datastore.getTags();
         datastoreStartState.type = datastore.getType().name();
         datastoreStartState.documentSelfLink = datastore.getId();
+        datastoreStartState.isImageDatastore = false;
 
         if (hostConfig.isSetImage_datastore_ids()
             && hostConfig.getImage_datastore_ids() != null

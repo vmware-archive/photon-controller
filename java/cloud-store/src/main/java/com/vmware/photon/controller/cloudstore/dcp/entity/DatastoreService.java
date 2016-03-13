@@ -183,6 +183,7 @@ public class DatastoreService extends StatefulService {
      * need to keep this field up-to-date, it must be cleaned up by a background
      * job..
      */
+    @NotNull
     @DefaultBoolean(value = false)
     public Boolean isImageDatastore;
   }

@@ -141,6 +141,34 @@ public class DatastoreServiceTest {
       verifyDatastore(savedState, testState);
     }
 
+    /**
+     * Tests that exception is raised for all fields that expect a positive value.
+     *
+     * @param fieldName
+     * @throws Throwable
+     */
+    @Test(dataProvider = "NotNullableFields",
+        expectedExceptions = BadRequestException.class,
+        expectedExceptionsMessageRegExp = ".* cannot be null")
+    public void testNotNullableFields(String fieldName) throws Throwable {
+      DatastoreService.State startState = getTestState();
+
+      Field fieldObj = startState.getClass().getField(fieldName);
+      fieldObj.set(startState, null);
+
+      host.startServiceSynchronously(new DatastoreServiceFactory(), null);
+      dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, startState);
+    }
+
+    @DataProvider(name = "NotNullableFields")
+    public Object[][] getNotNullableFieldsParams() {
+      return new Object[][]{
+          {"id"},
+          {"name"},
+          {"type"}
+      };
+    }
+
     @Test
     public void testValidIdempotentPostWithIdenticalState() throws Throwable {
       // Create a document and verify the result.
@@ -263,6 +291,40 @@ public class DatastoreServiceTest {
           {"id"},
           {"name"},
           {"type"},
+      };
+    }
+
+    @Test(
+        dataProvider = "NotNullFieldNames",
+        expectedExceptions = BadRequestException.class,
+        expectedExceptionsMessageRegExp = ".* cannot be null")
+    public void testPutNotNullField(String fieldName) throws Throwable {
+      // Create a document.
+      host.startServiceSynchronously(new DatastoreServiceFactory(), null);
+      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(200));
+      DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
+      verifyDatastore(createdState, testState);
+
+      // Get the created document and verify the result.
+      result = dcpRestClient.get(createdState.documentSelfLink);
+      createdState = result.getBody(DatastoreService.State.class);
+      verifyDatastore(createdState, testState);
+
+      // Put a new version of the document.
+      DatastoreService.State newState = getTestState();
+      Field declaredField = newState.getClass().getDeclaredField(fieldName);
+      declaredField.set(newState, null);
+      dcpRestClient.put(createdState.documentSelfLink, newState);
+    }
+
+    @DataProvider(name = "NotNullFieldNames")
+    public Object[][] getNotNullFieldNames() {
+      return new Object[][]{
+          {"id"},
+          {"name"},
+          {"type"},
+          {"isImageDatastore"},
       };
     }
   }
