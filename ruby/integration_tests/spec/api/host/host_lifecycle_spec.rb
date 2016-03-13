@@ -16,6 +16,10 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
 
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance
+
+    # seed the image on all image datastores
+    @seeder.image!
+    wait_for_image_seeding_progress_is_done
   end
 
   describe "provisioning", order: :defined do
