@@ -362,9 +362,9 @@ module EsxCloud
       end
     end
 
-    #wait for image seeding progress to be done, timeout 30 mins
+    #wait for image seeding progress to be done, timeout 90 mins
     def wait_for_image_seeding_progress_is_done
-      360.times do
+      1080.times do
         done = image_seeding_progress_is_done EsxCloud::SystemSeeder.instance.image!.id
         if done
           return
