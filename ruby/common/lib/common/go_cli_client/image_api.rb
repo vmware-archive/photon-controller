@@ -40,7 +40,6 @@ module EsxCloud
       # @return [Image]
       def find_image_by_id(id)
         result = run_cli("image show #{id}")
-
         get_image_from_response(result)
       end
 
@@ -84,9 +83,19 @@ module EsxCloud
 
       def get_image_list_from_response(result)
         images = result.split("\n").drop(1).map do |image_info|
-          find_image_by_id(image_info.split("\t")[0])
+          get_image_details image_info.split("\t")[0]
         end
-        ImageList.new(images)
+
+        ImageList.new(images.compact)
+      end
+
+      def get_image_details(image_id)
+        begin
+          find_image_by_id image_id
+        rescue EsxCloud::CliError => e
+          raise() unless e.message.include? "ImageNotFound"
+          nil
+        end
       end
 
       def getSettings(settingCount, settings)
