@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
 import com.google.common.base.Objects.ToStringHelper;
@@ -40,6 +41,8 @@ public class DeploymentEntity extends BaseEntity {
   private String statsStoreEndpoint;
 
   private Integer statsStorePort;
+
+  private StatsStoreType statsStoreType;
 
   private boolean authEnabled;
 
@@ -133,6 +136,14 @@ public class DeploymentEntity extends BaseEntity {
 
   public void setStatsStorePort(Integer statsStorePort) {
     this.statsStorePort = statsStorePort;
+  }
+
+  public StatsStoreType getStatsStoreType() {
+    return this.statsStoreType;
+  }
+
+  public void setStatsStoreType(StatsStoreType statsStoreType) {
+    this.statsStoreType = statsStoreType;
   }
 
   public boolean getAuthEnabled() {
@@ -263,6 +274,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getStatsEnabled(), other.getStatsEnabled())
         && Objects.equals(this.getStatsStoreEndpoint(), other.getStatsStoreEndpoint())
         && Objects.equals(this.getStatsStorePort(), other.getStatsStorePort())
+        && Objects.equals(this.getStatsStoreType(), other.getStatsStoreType())
         && Objects.equals(this.getAuthEnabled(), other.getAuthEnabled())
         && Objects.equals(this.getOauthEndpoint(), other.getOauthEndpoint())
         && Objects.equals(this.getOauthPort(), other.getOauthPort())
@@ -288,6 +300,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("statsEnabled", this.getStatsEnabled())
         .add("statsStoreEndpoint", this.getStatsStoreEndpoint())
         .add("statsStorePort", this.getStatsStorePort())
+        .add("statsStoreType", this.getStatsStoreType())
         .add("authEnabled", this.getAuthEnabled())
         .add("oauthEndpoint", this.getOauthEndpoint())
         .add("oauthPort", this.getOauthPort())

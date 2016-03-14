@@ -19,6 +19,7 @@ struct StatsPluginConfig {
   2: optional string stats_store_endpoint
   3: optional i32 stats_store_port
   4: optional string stats_host_tags
+  5: optional StatsStoreType stats_store_type
 }
 
 // Stats request: change the collection level of the stats collector
@@ -26,6 +27,10 @@ struct SetCollectionLevelRequest {
   1: required i32 level
 
   99: optional string tracing_info
+}
+
+enum StatsStoreType {
+  GRAPHITE = 0
 }
 
 enum SetCollectionLevelResultCode {

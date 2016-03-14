@@ -54,6 +54,7 @@ public class DeploymentTest {
     deployment.setStats(new StatsInfoBuilder()
         .storeEndpoint("10.146.64.111")
         .storePort(2004).enabled(true)
+        .storeType(StatsStoreType.GRAPHITE)
         .build());
     deployment.setAuth(new AuthInfoBuilder()
         .enabled(true)
@@ -144,7 +145,7 @@ public class DeploymentTest {
       String expectedString =
           "Deployment{id=id, Kind=deployment, imageDatastores=image-datastore1,image-datastore2, " +
               "syslogEndpoint=0.0.0.1, stats=StatsInfo{enabled=true, storeEndpoint=10.146.64.111, " +
-              "storePort=2004}, " +
+              "storePort=2004, storeType=GRAPHITE}, " +
               "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, " +
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443," +
               " tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, loadBalancerEnabled=true," +
