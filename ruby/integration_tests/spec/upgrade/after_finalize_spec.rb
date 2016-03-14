@@ -86,6 +86,34 @@ describe "migrate finalize", upgrade: true do
         expect(destination_set.superset?(source_set)).to eq true
       end
     end
+
+    it "should have created new entities for each factory" do
+      exclude_factories = %w(/photon/cloudstore/entity-locks /photon/cloudstore/cluster-configurations)
+      destination_uri = URI.parse(ApiClientHelper.endpoint(nil, nil, nil))
+
+      cs =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(
+          destination_uri.host, nil)
+      cs_installer = EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(
+          ENV["OVA_IP"] || fail("OVA_IP not set"), nil)
+
+      empty_factories = []
+
+      get_cloudstore_factories(cs).each do |factory|
+        next if exclude_factories.include? factory
+        installer_set = parse_id_set(cs_installer.get factory)
+        managemet_set = parse_id_set(cs.get factory)
+
+        migrated_set = managemet_set.select { |id| !installer_set.include? id }
+
+        empty_factories << factory if migrated_set.count == 0
+      end
+
+      if empty_factories.count != 0
+        puts "factories without data:"
+        puts empty_factories
+      end
+      expect(empty_factories.count).to be == 0
+    end
   end
 
   describe "#old plane state" do
@@ -160,6 +188,11 @@ describe "migrate finalize", upgrade: true do
     it "should be able to create new tenant with entities" do
       EsxCloud::ManagementPlaneSeeder.populate
     end
+  end
+
+  def get_cloudstore_factories(cloud_store)
+    response = cloud_store.get("/")
+    response["documentLinks"].select { |link|  link.include? "/photon/" }
   end
 
   def get_all_hosts(cloud_store_client, uri)
