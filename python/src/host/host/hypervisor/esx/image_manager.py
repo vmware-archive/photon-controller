@@ -13,6 +13,7 @@
 """Temporary hack to deploy demo image from vib to datastore"""
 
 import errno
+import glob
 import gzip
 import json
 import logging
@@ -37,8 +38,12 @@ from gen.resource.ttypes import ImageReplication
 from gen.resource.ttypes import ImageType
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
-from host.hypervisor.esx.vm_config import datastore_to_os_path, \
-    metadata_filename, manifest_filename
+from host.hypervisor.esx.vm_config import datastore_to_os_path
+from host.hypervisor.esx.vm_config import metadata_filename
+from host.hypervisor.esx.vm_config import manifest_filename
+from host.hypervisor.esx.vm_config import SUPPORT_VSAN
+from host.hypervisor.esx.vm_config import os_datastore_path_pattern
+from host.hypervisor.esx.vm_config import COMPOND_PATH_SEPARATOR
 from host.hypervisor.esx.vm_config import vmdk_add_suffix
 from host.hypervisor.esx.vm_config import image_directory_path
 from host.hypervisor.esx.vm_config import os_datastore_path
@@ -99,7 +104,6 @@ class EsxImageManager(ImageManager):
     @log_duration
     def check_image(self, image_id, datastore):
         image_dir = os_vmdk_path(datastore, image_id, IMAGE_FOLDER_NAME)
-
         try:
             return os.path.exists(image_dir)
         except:
@@ -594,23 +598,32 @@ class EsxImageManager(ImageManager):
         """
         image_ids = []
 
-        # image_folder is /vmfs/volumes/${datastore}/images
-        image_folder = os_datastore_path(datastore, IMAGE_FOLDER_NAME)
-
-        if not os.path.exists(image_folder):
-            raise DatastoreNotFoundException()
-
-        # prefix is the 2-digit prefix of image id
-        for prefix in os.listdir(image_folder):
-            # outer path is something like
-            # /vmfs/volumes/${datastore}/images/${image_id}[0:2]
-            outer_path = os.path.join(image_folder, prefix)
-            if not os.path.isdir(outer_path):
-                continue
-
-            for image_id in os.listdir(outer_path):
+        if SUPPORT_VSAN:
+            # image_folder is /vmfs/volumes/${datastore}/images_*
+            image_folder_pattern = os_datastore_path_pattern(datastore,
+                                                             IMAGE_FOLDER_NAME)
+            for dir in glob.glob(image_folder_pattern):
+                image_id = dir.split(COMPOND_PATH_SEPARATOR)[1]
                 if self.check_image(image_id, datastore):
                     image_ids.append(image_id)
+        else:
+            # image_folder is /vmfs/volumes/${datastore}/images
+            image_folder = os_datastore_path(datastore, IMAGE_FOLDER_NAME)
+
+            if not os.path.exists(image_folder):
+                raise DatastoreNotFoundException()
+
+            # prefix is the 2-digit prefix of image id
+            for prefix in os.listdir(image_folder):
+                # outer path is something like
+                # /vmfs/volumes/${datastore}/images/${image_id}[0:2]
+                outer_path = os.path.join(image_folder, prefix)
+                if not os.path.isdir(outer_path):
+                    continue
+
+                for image_id in os.listdir(outer_path):
+                    if self.check_image(image_id, datastore):
+                        image_ids.append(image_id)
 
         return image_ids
 
@@ -745,10 +758,15 @@ class EsxImageManager(ImageManager):
         The image path looks something like this:
 
             /vmfs/volumes/datastore1/images/tt/ttylinux/ttylinux.vmdk
+            or with SUPPORT_VSAN:
+            /vmfs/volumes/datastore1/images_ttylinux/ttylinux.vmdk
 
         This method returns "ttylinux" with this input.
         """
-        return image_path.split(os.sep)[6]
+        if SUPPORT_VSAN:
+            return image_path.split(os.sep)[4].split(COMPOND_PATH_SEPARATOR)[1]
+        else:
+            return image_path.split(os.sep)[6]
 
     def _gc_image_dir(self, datastore_id, image_id):
         """

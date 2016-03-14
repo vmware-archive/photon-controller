@@ -45,6 +45,10 @@ MANIFEST_FILE_EXT = "manifest"
 DEFAULT_VMX_VERSION = "vmx-10"
 SHADOW_VM_NAME_PREFIX = "shadow_"
 
+SUPPORT_VSAN = False
+COMPOND_PATH_SEPARATOR = '_'
+VMFS_VOLUMNS = "/vmfs/volumes"
+
 diskAdapterType = vim.VirtualDiskManager.VirtualDiskAdapterType
 
 controller_to_disk_adapter_map = {
@@ -91,7 +95,11 @@ def string_to_bool(string_val):
 
 
 def os_datastore_path(datastore, folder):
-    return os.path.join("/vmfs/volumes", datastore, folder)
+    return os.path.join(VMFS_VOLUMNS, datastore, folder)
+
+
+def os_datastore_path_pattern(datastore, folder_prefix):
+    return os.path.join(VMFS_VOLUMNS, datastore, folder_prefix) + COMPOND_PATH_SEPARATOR + "*"
 
 
 def datastore_path(datastore, folder):
@@ -99,15 +107,15 @@ def datastore_path(datastore, folder):
 
 
 def os_vmx_path(datastore, vm_id):
-    return "/vmfs/volumes/%s/%s" % (datastore, partial_vmx_path(vm_id))
+    return "%s/%s/%s" % (VMFS_VOLUMNS, datastore, partial_vmx_path(vm_id))
 
 
 def datastore_to_os_path(datastore_path):
-    if datastore_path.startswith("/vmfs/volumes"):
+    if datastore_path.startswith(VMFS_VOLUMNS):
         return datastore_path
 
     spl = datastore_path.split('[', 1)[1].split(']', 1)
-    return os.path.join("/vmfs/volumes", spl[0], spl[1].strip())
+    return os.path.join(VMFS_VOLUMNS, spl[0], spl[1].strip())
 
 
 def os_to_datastore_path(os_path):
@@ -116,20 +124,33 @@ def os_to_datastore_path(os_path):
     return "[] %s" % os_path
 
 
+def compond_path_join(s1, s2, s3=None):
+    if SUPPORT_VSAN:
+        dir = s1 + COMPOND_PATH_SEPARATOR + s2
+        if s3:
+            dir += COMPOND_PATH_SEPARATOR + s3
+        return dir
+    else:
+        if s3:
+            return os.path.join(s1, s2, s3)
+        else:
+            return os.path.join(s1, s2)
+
+
 def os_vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME):
-    return os.path.join(os_datastore_path(datastore, folder),
-                        partial_vmdk_path(disk_id))
+    return compond_path_join(os_datastore_path(datastore, folder),
+                             partial_vmdk_path(disk_id))
 
 
 def os_vmdk_flat_path(datastore, disk_id, folder=IMAGE_FOLDER_NAME):
     """ Return the path for the flat vmdk file """
-    return os.path.join(os_datastore_path(datastore, folder),
-                        partial_flat_vmdk_path(disk_id))
+    return compond_path_join(os_datastore_path(datastore, folder),
+                             partial_flat_vmdk_path(disk_id))
 
 
 def vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME):
-    return os.path.join(datastore_path(datastore, folder),
-                        partial_vmdk_path(disk_id))
+    return compond_path_join(datastore_path(datastore, folder),
+                             partial_vmdk_path(disk_id))
 
 
 def vmdk_add_suffix(pathname):
@@ -143,9 +164,9 @@ def vmx_add_suffix(vm_id):
 def tmp_image_path(datastore, image_id):
     """ Datastore path to the temporary location to copy the image to. """
 
+    subdir = compond_path_join(TMP_IMAGE_FOLDER_NAME, str(uuid.uuid4()))
     return os.path.join(
-        datastore_path(datastore, TMP_IMAGE_FOLDER_NAME),
-        str(uuid.uuid4()), "%s.vmdk" % image_id)
+        datastore_path(datastore, subdir), "%s.vmdk" % image_id)
 
 
 def tmp_image_folder_os_path(datastore):
@@ -155,13 +176,13 @@ def tmp_image_folder_os_path(datastore):
 
 
 def os_metadata_path(datastore, disk_id, folder=DISK_FOLDER_NAME):
-    return os.path.join(os_datastore_path(datastore, folder),
-                        partial_path(disk_id, disk_id, METADATA_FILE_EXT))
+    return compond_path_join(os_datastore_path(datastore, folder),
+                             partial_path(disk_id, disk_id, METADATA_FILE_EXT))
 
 
 def os_image_manifest_path(image_datastore, image_id):
-    return os.path.join(os_datastore_path(image_datastore, IMAGE_FOLDER_NAME),
-                        partial_path(image_id, image_id, MANIFEST_FILE_EXT))
+    return compond_path_join(os_datastore_path(image_datastore, IMAGE_FOLDER_NAME),
+                             partial_path(image_id, image_id, MANIFEST_FILE_EXT))
 
 
 def image_directory_path(datastore, image_id):
@@ -171,16 +192,19 @@ def image_directory_path(datastore, image_id):
 
     where $image_id_prefix is the first two characters of image_id.
     """
-    return os.path.join(os_datastore_path(datastore, IMAGE_FOLDER_NAME),
-                        _disk_path(image_id))
+    return compond_path_join(os_datastore_path(datastore, IMAGE_FOLDER_NAME),
+                             _disk_path(image_id))
 
 
 def _disk_path(disk_id):
-    return os.path.join(disk_id[0:2], disk_id)
+    if SUPPORT_VSAN:
+        return disk_id
+    else:
+        return os.path.join(disk_id[0:2], disk_id)
 
 
 def partial_vmx_path(vm_id):
-    return os.path.join(VM_FOLDER_NAME, vm_id[0:2], vm_id,
+    return os.path.join(compond_path_join(VM_FOLDER_NAME, _disk_path(vm_id)),
                         vmx_add_suffix(vm_id))
 
 
@@ -283,7 +307,7 @@ def get_root_disk(disk_files):
 
 
 def _root_folder(path):
-    return re.sub('^\[.*\] ', '', path).split('/')[0]
+    return re.sub('^\[.*\] ', '', path).split('/')[0].split(COMPOND_PATH_SEPARATOR)[0]
 
 
 class EsxVmConfigSpec(vim.vm.ConfigSpec):
@@ -361,9 +385,11 @@ class EsxVmConfig(object):
         """
         if disk_id:
             if with_vm:
-                vm_folder = cfg_spec.files.vmPathName
-                vmdk_file = os.path.join(vm_folder, cfg_spec.name,
-                                         "%s.vmdk" % disk_id)
+                if SUPPORT_VSAN:
+                    vm_folder = cfg_spec.files.vmPathName
+                else:
+                    vm_folder = compond_path_join(cfg_spec.files.vmPathName, cfg_spec.name)
+                vmdk_file = os.path.join(vm_folder, "%s.vmdk" % disk_id)
             else:
                 vmdk_file = vmdk_path(datastore, disk_id,
                                       folder=disk_root_folder)
@@ -737,8 +763,11 @@ class EsxVmConfig(object):
         :type env: dictionary
         :rtype: EsxVmConfigSpec
         """
-        vm_path = datastore_path(datastore,
-                                 os.path.join(VM_FOLDER_NAME, vm_id[0:2]))
+        if SUPPORT_VSAN:
+            vm_path = datastore_path(datastore, compond_path_join(VM_FOLDER_NAME, vm_id))
+        else:
+            vm_path = datastore_path(datastore, os.path.join(VM_FOLDER_NAME, vm_id[0:2]))
+
         filled_metadata = {}
         meta_config = metadata.get("configuration") if metadata else {}
         if meta_config:
@@ -768,7 +797,7 @@ class EsxVmConfig(object):
         id of the image disk we we planning to send over via this import.
         """
         vm_path = datastore_path(datastore,
-                                 os.path.join(TMP_IMAGE_FOLDER_NAME, vm_id))
+                                 compond_path_join(TMP_IMAGE_FOLDER_NAME, vm_id))
         spec = EsxVmConfigSpec(image_id, "otherGuest", memory, cpus, vm_path,
                                None)
         return spec
@@ -889,7 +918,7 @@ class EsxVmConfig(object):
     def disk_matcher(self, datastore, disk_id):
         # device.backing.fileName is always in the form of:
         # '[ds_name] disks/disk_id[0:2]/disk_id/disk_id.vmdk'
-        path = os.path.join(DISK_FOLDER_NAME, partial_vmdk_path(disk_id))
+        path = compond_path_join(DISK_FOLDER_NAME, partial_vmdk_path(disk_id))
         return lambda device: device.backing.fileName.endswith(path)
 
     def get_device(self, devices, device_type, **kwargs):
