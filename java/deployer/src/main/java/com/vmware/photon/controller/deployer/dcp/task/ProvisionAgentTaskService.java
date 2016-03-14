@@ -34,6 +34,7 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.stats.plugin.gen.StatsPluginConfig;
+import com.vmware.photon.controller.stats.plugin.gen.StatsStoreType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
@@ -361,6 +362,10 @@ public class ProvisionAgentTaskService extends StatefulService {
 
     if (deploymentState.statsStorePort != null) {
       statsPluginConfig.setStats_store_port(deploymentState.statsStorePort);
+    }
+
+    if (deploymentState.statsStoreType != null) {
+      statsPluginConfig.setStats_store_type(StatsStoreType.findByValue(deploymentState.statsStoreType.ordinal()));
     }
 
     if (hostState.usageTags != null) {

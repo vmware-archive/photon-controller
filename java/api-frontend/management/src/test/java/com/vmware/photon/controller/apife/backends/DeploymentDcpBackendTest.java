@@ -22,6 +22,7 @@ import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.StatsInfo;
+import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
@@ -132,6 +133,7 @@ public class DeploymentDcpBackendTest {
         .enabled(true)
         .storeEndpoint("10.146.64.111")
         .storePort(2004)
+        .storeType(StatsStoreType.GRAPHITE)
         .build());
     deploymentCreateSpec.setUseImageDatastoreForVms(true);
     deploymentCreateSpec.setAuth(new AuthInfoBuilder()
@@ -216,6 +218,7 @@ public class DeploymentDcpBackendTest {
       assertThat(deployment.getStatsEnabled(), is(true));
       assertThat(deployment.getStatsStoreEndpoint(), is("10.146.64.111"));
       assertThat(deployment.getStatsStorePort(), is(2004));
+      assertThat(deployment.getStatsStoreType(), is(StatsStoreType.GRAPHITE));
       assertThat(deployment.getUseImageDatastoreForVms(), is(true));
       assertThat(deployment.getAuthEnabled(), is(true));
       assertThat(deployment.getOauthEndpoint(), is("10.146.64.236"));
@@ -1035,6 +1038,7 @@ public class DeploymentDcpBackendTest {
         deployment2.statsEnabled = stats.getEnabled();
         deployment2.statsStoreEndpoint = stats.getStoreEndpoint();
         deployment2.statsStorePort = stats.getStorePort();
+        deployment2.statsStoreType = stats.getStoreType();
       }
       deployment2.imageDataStoreUsedForVMs = deploymentCreateSpec.isUseImageDatastoreForVms();
       deployment2.oAuthEnabled = deploymentCreateSpec.getAuth().getEnabled();

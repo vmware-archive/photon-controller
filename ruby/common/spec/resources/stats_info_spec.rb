@@ -16,17 +16,20 @@ describe EsxCloud::StatsInfo do
   let(:stats_info) {
     $stats_info = EsxCloud::StatsInfo.new(true,
                                         "http://foo",
-                                        "8080");
+                                        "8080",
+                                        "GRAPHITE");
   }
 
   let(:stats_info_in_hash) {
     $stats_info_in_hash = {'enabled' => true,
                           'storeEndpoint' => "http://foo",
-                          'storePort' => "8080"}
+                          'storePort' => "8080",
+                          'storeType' => "GRAPHITE"}
   }
 
   let(:stats_info_in_json) {
-    $stats_info_in_json = '{ "enabled": true, "storeEndpoint": "http://foo", "storePort": "8080"}'
+    $stats_info_in_json = '{ "enabled": true, "storeEndpoint": "http://foo",'\
+                          '"storePort": "8080", "storeType": "GRAPHITE"}'
   }
 
   it "can be retrieved from Config" do
@@ -57,18 +60,21 @@ describe EsxCloud::StatsInfo do
   it "can be hashed properly" do
     expect(stats_info.to_hash).to eq({:enabled=>true,
                                      :storeEndpoint=>"http://foo",
-                                     :storePort=>"8080"})
+                                     :storePort=>"8080",
+                                     :storeType=>"GRAPHITE"})
   end
 
   it "can be compared correctly" do
     stats_info_equal = EsxCloud::StatsInfo.new(true,
                                              "http://foo",
-                                             "8080")
+                                             "8080",
+                                             "GRAPHITE")
     expect(stats_info).to eq(stats_info_equal)
 
     stats_info_not_equal = EsxCloud::StatsInfo.new(true,
                                                  "http://bar",
-                                                 "8080")
+                                                 "8080",
+                                                 "GRAPHITE")
     expect(stats_info).not_to eq(stats_info_not_equal)
   end
 
@@ -79,7 +85,7 @@ describe EsxCloud::StatsInfo do
     expect(stats_info_from_json.enabled).to eq(false)
     expect(stats_info_from_json.storeEndpoint).to be_nil
     expect(stats_info_from_json.storePort).to be_nil
-
+    expect(stats_info_from_json.storeType).to be_nil
   end
 
 end

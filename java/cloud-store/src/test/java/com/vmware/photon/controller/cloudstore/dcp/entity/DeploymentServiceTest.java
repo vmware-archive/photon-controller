@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -159,6 +160,7 @@ public class DeploymentServiceTest {
       final String lotusLogoutEndpoint = "https://lotusLogout";
       final String statsStoreEndpoint = "https://stats";
       final Integer statsStorePort = 2000;
+      final StatsStoreType statsStoreType = StatsStoreType.GRAPHITE;
 
       DeploymentService.State startState = buildServiceStartState();
       Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
@@ -172,6 +174,7 @@ public class DeploymentServiceTest {
 
       patchState.statsStoreEndpoint = statsStoreEndpoint;
       patchState.statsStorePort = statsStorePort;
+      patchState.statsStoreType = statsStoreType;
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
@@ -188,6 +191,7 @@ public class DeploymentServiceTest {
       assertTrue(currentState.statsEnabled);
       assertThat(currentState.statsStoreEndpoint, is(statsStoreEndpoint));
       assertThat(currentState.statsStorePort, is(statsStorePort));
+      assertThat(currentState.statsStoreType, is(statsStoreType));
     }
 
     @Test(expectedExceptions = BadRequestException.class)

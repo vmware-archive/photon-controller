@@ -52,6 +52,11 @@ public class StatsInfo {
   @NotNull(groups = {StatsEnabled.class})
   private Integer storePort;
 
+  @JsonProperty
+  @ApiModelProperty(value = "This property specifies the stats store type.",
+      allowableValues = StatsStoreType.ALLOWABLE_VALUES, required = false)
+  private StatsStoreType storeType;
+
   public boolean getEnabled() {
     return this.enabled;
   }
@@ -76,6 +81,14 @@ public class StatsInfo {
     this.storePort = port;
   }
 
+  public StatsStoreType getStoreType() {
+    return storeType;
+  }
+
+  public void setStoreType(StatsStoreType type) {
+    this.storeType = type;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -89,7 +102,8 @@ public class StatsInfo {
 
     return Objects.equals(this.getEnabled(), other.getEnabled())
         && Objects.equals(this.getStoreEndpoint(), other.getStoreEndpoint())
-        && Objects.equals(this.getStorePort(), other.getStorePort());
+        && Objects.equals(this.getStorePort(), other.getStorePort())
+        && Objects.equals(this.getStoreType(), other.getStoreType());
   }
 
   @Override
@@ -98,7 +112,8 @@ public class StatsInfo {
         super.hashCode(),
         this.getEnabled(),
         this.getStoreEndpoint(),
-        this.getStorePort());
+        this.getStorePort(),
+        this.getStoreType());
   }
 
   @Override
@@ -110,6 +125,7 @@ public class StatsInfo {
     return com.google.common.base.Objects.toStringHelper(this)
         .add("enabled", this.getEnabled())
         .add("storeEndpoint", this.getStoreEndpoint())
-        .add("storePort", this.getStorePort());
+        .add("storePort", this.getStorePort())
+        .add("storeType", this.getStoreType());
   }
 }
