@@ -53,6 +53,7 @@ from host.hypervisor.esx.vm_config import get_image_base_disk
 from host.hypervisor.esx.vm_config import get_root_disk
 from host.hypervisor.esx.vm_config import is_persistent_disk
 from host.hypervisor.esx.vm_config import os_datastore_path
+from host.hypervisor.esx.vm_config import SUPPORT_VSAN
 from host.hypervisor.esx.vm_config import vmdk_id
 from host.hypervisor.esx.folder import VM_FOLDER_NAME
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
@@ -254,11 +255,12 @@ class EsxVmManager(VmManager):
         # has to be created has not been well exercised and is known to be
         # racy and not informative on failures. So be defensive and proactively
         # create the intermediate directory ("/vmfs/volumes/<dsid>/vms/xy").
-        vm_parent_dir = datastore_to_os_path(create_spec.files.vmPathName)
-        if os.path.exists(vm_parent_dir):
-            self._logger.debug("Parent directory %s exists" % vm_parent_dir)
-        else:
-            mkdir_p(vm_parent_dir)
+        if not SUPPORT_VSAN:
+            vm_parent_dir = datastore_to_os_path(create_spec.files.vmPathName)
+            if os.path.exists(vm_parent_dir):
+                self._logger.debug("Parent directory %s exists" % vm_parent_dir)
+            else:
+                mkdir_p(vm_parent_dir)
 
         task = folder.CreateVm(create_spec, resource_pool, None)
         self.vim_client.wait_for_task(task)
