@@ -691,6 +691,9 @@ public class ServiceHostUtilsTest {
    * Tests for deleting services.
    */
   public class DeleteServicesTest {
+
+    private static final String FACTORY_LINK = "/photon/example";
+
     private BasicServiceHost host;
 
     @BeforeMethod
@@ -710,6 +713,10 @@ public class ServiceHostUtilsTest {
     @Test
     public void testDeleteAllDocuments() throws Throwable {
 
+      /**
+       * Create some {@link ExampleService} documents using the standard factory path.
+       */
+
       host.startServiceSynchronously(ExampleService.createFactory(), null, ExampleService.FACTORY_LINK);
 
       ExampleService.ExampleServiceState exampleServiceState1 = new ExampleService.ExampleServiceState();
@@ -726,10 +733,16 @@ public class ServiceHostUtilsTest {
 
       assertThat(savedState.name, is(exampleServiceState1.name));
 
+      /**
+       * Create some {@link ExampleService} documents using a Photon-specific factory path.
+       */
+
+      host.startServiceSynchronously(ExampleService.createFactory(), null, FACTORY_LINK);
+
       ExampleService.ExampleServiceState exampleServiceState2 = new ExampleService.ExampleServiceState();
       exampleServiceState2.name = UUID.randomUUID().toString();
 
-      createOperation = Operation.createPost(UriUtils.buildUri(host, ExampleService.FACTORY_LINK))
+      createOperation = Operation.createPost(UriUtils.buildUri(host, FACTORY_LINK))
           .setBody(exampleServiceState2);
 
       result = host.sendRequestAndWait(createOperation);
@@ -739,17 +752,32 @@ public class ServiceHostUtilsTest {
 
       assertThat(savedState.name, is(exampleServiceState2.name));
 
+      /**
+       * Assert that all documents created using the Photon-specific factory path are deleted, and
+       * that all documents created using the regular factory path are not deleted.
+       */
+
       ServiceHostUtils.deleteAllDocuments(host, "test-host");
 
       ServiceHostUtils.waitForServiceState(
           ServiceDocumentQueryResult.class,
-          ExampleService.FACTORY_LINK,
-          (ServiceDocumentQueryResult queryResult) -> queryResult.documentCount == 0,
-          host, SLEEP_TIME_MILLIS, MAX_ITERATIONS,
+          FACTORY_LINK,
+          (queryResult) -> queryResult.documentCount == 0,
+          host,
+          SLEEP_TIME_MILLIS,
+          MAX_ITERATIONS,
           null);
+
+      ServiceDocumentQueryResult queryResult = ServiceHostUtils.getServiceState(host, ServiceDocumentQueryResult.class,
+          ExampleService.FACTORY_LINK, "test-host");
+      assertThat(queryResult.documentCount, is(1L));
 
       // try again with no documents in host
       ServiceHostUtils.deleteAllDocuments(host, "test-host");
+
+      queryResult = ServiceHostUtils.getServiceState(host, ServiceDocumentQueryResult.class,
+          ExampleService.FACTORY_LINK, "test-host");
+      assertThat(queryResult.documentCount, is(1L));
     }
   }
 }
