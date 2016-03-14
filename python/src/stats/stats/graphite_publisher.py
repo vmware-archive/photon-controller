@@ -32,10 +32,6 @@ class GraphitePublisher(Publisher):
         hostname = hostname.replace(".", "-")
         self._host_metric_prefix = "photon." + hostname + tags
 
-        if not use_pickle_format:
-            # Not supporting plain text format for now.
-            raise NotImplementedError
-
     @staticmethod
     def get_sensitized_tags(host_tags):
         tags = ""
@@ -57,18 +53,29 @@ class GraphitePublisher(Publisher):
         # where stats is a nested list of tuples of the form
         # [(metric_key, (ts, value)), ... ]
 
-        message = None
         metric_list = []
         for metric in stats.keys():
             metric_key = "%s.%s" % (self._host_metric_prefix, metric)
             metric_list += [(metric_key, tup) for tup in stats[metric]]
 
-        if len(metric_list) > 1:
-            payload = pickle.dumps(metric_list, protocol=2)
-            header = struct.pack("!L", len(payload))
-            message = header + payload
+        if len(metric_list) <= 0:
+            return None
+
+        if self._use_pickle:
+            message = self.to_pickle_format(metric_list)
+        else:
+            message = self.to_lines_format(metric_list)
 
         return message
+
+    def to_pickle_format(self, metric_list):
+        payload = pickle.dumps(metric_list, protocol=2)
+        header = struct.pack("!L", len(payload))
+        return header + payload
+
+    def to_lines_format(self, metric_list):
+        lines = map(lambda x: "%s %s %d" % (x[0], str(x[1][1]), x[1][0]), metric_list)
+        return '\n'.join(lines) + '\n'
 
     def publish(self, stats):
         try:
