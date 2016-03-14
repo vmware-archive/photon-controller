@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.api.builders;
 
 import com.vmware.photon.controller.api.StatsInfo;
+import com.vmware.photon.controller.api.StatsStoreType;
 
 
 /**
@@ -26,6 +27,8 @@ public class StatsInfoBuilder {
   private String storeEndpoint;
 
   private Integer storePort;
+
+  private StatsStoreType storeType;
 
   public StatsInfoBuilder() {
     this.enabled = false;
@@ -46,11 +49,17 @@ public class StatsInfoBuilder {
     return this;
   }
 
+  public StatsInfoBuilder storeType(StatsStoreType storeType) {
+    this.storeType = storeType;
+    return this;
+  }
+
   public StatsInfo build() {
     StatsInfo stats = new StatsInfo();
     stats.setEnabled(this.enabled);
     stats.setStoreEndpoint(this.storeEndpoint);
     stats.setStorePort(this.storePort);
+    stats.setStoreType(this.storeType);
     return stats;
   }
 }

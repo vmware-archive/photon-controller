@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
@@ -694,6 +695,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
       deploymentStartState.statsEnabled = true;
       deploymentStartState.statsStoreEndpoint = "2.3.4.5";
       deploymentStartState.statsStorePort = 8081;
+      deploymentStartState.statsStoreType = StatsStoreType.GRAPHITE;
       deploymentStartState.ntpEndpoint = "5.6.7.8";
       deploymentStartState.state = DeploymentState.CREATING;
 

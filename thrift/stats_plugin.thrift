@@ -14,11 +14,16 @@
 namespace java com.vmware.photon.controller.stats.plugin.gen
 namespace py gen.stats.plugin
 
+enum StatsStoreType {
+  GRAPHITE = 0
+}
+
 struct StatsPluginConfig {
   1: required bool stats_enabled
   2: optional string stats_store_endpoint
   3: optional i32 stats_store_port
   4: optional string stats_host_tags
+  5: optional StatsStoreType stats_store_type
 }
 
 // Stats request: change the collection level of the stats collector

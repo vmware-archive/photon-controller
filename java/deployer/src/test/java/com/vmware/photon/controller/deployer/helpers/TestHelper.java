@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
@@ -233,6 +234,7 @@ public class TestHelper {
     startState.statsEnabled = true;
     startState.statsStoreEndpoint = "STATS_STORE_ENDPOINT";
     startState.statsStorePort = 8081;
+    startState.statsStoreType = StatsStoreType.GRAPHITE;
     startState.oAuthEnabled = authEnabled;
     startState.oAuthServerAddress = "OAUTH_ENDPOINT";
     startState.chairmanServerList = Collections.singleton("127.0.0.1:13000");
