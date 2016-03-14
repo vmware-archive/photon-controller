@@ -25,12 +25,6 @@ from stats import graphite_publisher
 
 
 class TestGraphitePublisher(unittest.TestCase):
-    def test_plain_format_not_supported(self):
-        self.assertRaises(
-            NotImplementedError,
-            graphite_publisher.GraphitePublisher,
-            hostname="hostname", carbon_host="1.1.1.1", carbon_port=2003,
-            use_pickle_format=False)
 
     @patch("pickle.dumps", return_value="picklemsg")
     @patch("struct.pack", return_value="packed_header")
@@ -46,6 +40,19 @@ class TestGraphitePublisher(unittest.TestCase):
         _dumps.assert_called_once_with(expected_data, protocol=2)
         _pack.assert_called_once_with("!L", len("picklemsg"))
         assert_that(result, is_("packed_header" + "picklemsg"))
+
+    @patch("pickle.dumps", return_value="picklemsg")
+    @patch("struct.pack", return_value="packed_header")
+    def test_build_lines_message(self, _pack, _dumps):
+        hostname = "fake-hostname"
+        stats = {"key1": [(1000000, 1), (1000020, 2)]}
+        pub = graphite_publisher.GraphitePublisher(
+            hostname=hostname, carbon_host="10.10.10.10", carbon_port=2004, host_tags="tag", use_pickle_format=False)
+
+        result = pub._build_pickled_data_msg(stats)
+        expected_data = 'photon.fake-hostname.tag.key1 1 1000000\n' \
+                        'photon.fake-hostname.tag.key1 2 1000020\n'
+        assert_that(result, is_(expected_data))
 
     def test_host_tags_are_sensitized_and_sorted(self):
         assert_that(graphite_publisher.GraphitePublisher.get_sensitized_tags(None), is_(""))
