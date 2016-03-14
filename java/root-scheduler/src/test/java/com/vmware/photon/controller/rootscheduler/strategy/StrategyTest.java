@@ -83,6 +83,16 @@ public class StrategyTest extends PowerMockTestCase {
     resource.setType(ResourceConstraintType.HOST);
     resource.setValues(Arrays.asList("Host1", "Host2", "Host3", "Host4"));
     hostResources.add(resource);
+
+    resource = new ResourceConstraint();
+    resource.setType(ResourceConstraintType.NETWORK);
+    resource.setValues(Arrays.asList("Vm Network5"));
+    hostResources.add(resource);
+
+    resource = new ResourceConstraint();
+    resource.setType(ResourceConstraintType.NETWORK);
+    resource.setValues(Arrays.asList("Vm Network6"));
+    hostResources.add(resource);
   }
 
   @Test
@@ -144,6 +154,15 @@ public class StrategyTest extends PowerMockTestCase {
     constraint = new ResourceConstraint();
     constraint.setType(ResourceConstraintType.DATASTORE);
     constraint.setValues(Arrays.asList("Datastore1", "Datastore2"));
+    constraints.add(constraint);
+    res = strategy.testValidateConstraints(hostResources, constraints);
+    assertThat(res, is(Integer.MAX_VALUE));
+
+    // Check OR among distinct values, should succeed
+    constraints = new HashSet<>();
+    constraint = new ResourceConstraint();
+    constraint.setType(ResourceConstraintType.NETWORK);
+    constraint.setValues(Arrays.asList("Vm Network5", "Vm Network6"));
     constraints.add(constraint);
     res = strategy.testValidateConstraints(hostResources, constraints);
     assertThat(res, is(Integer.MAX_VALUE));

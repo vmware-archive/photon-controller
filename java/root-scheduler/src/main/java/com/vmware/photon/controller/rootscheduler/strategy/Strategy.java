@@ -20,6 +20,7 @@ import com.vmware.photon.controller.rootscheduler.service.ManagedScheduler;
 import com.vmware.photon.controller.scheduler.gen.PlaceParams;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -171,7 +172,7 @@ public abstract class Strategy {
 
   /**
    * @param constraint
-   * @param schedResources
+   * @param schedulerResources
    * @return Several assumptions here:
    * The single constraint contains a list
    * of values. The match can occur on any
@@ -185,22 +186,25 @@ public abstract class Strategy {
    */
   protected int validateSingleConstraint(
       ResourceConstraint constraint,
-      Set<ResourceConstraint> schedResources) {
-    /**
-     * Get the sched resources of the right type
-     */
-    ResourceConstraint schedResource = null;
+      Set<ResourceConstraint> schedulerResources) {
 
-    for (ResourceConstraint resource : schedResources) {
+    /**
+     * Get the scheduler resources of the passed constraint type.
+     */
+    Set<String> mergedConstraintValues = new HashSet<>();
+    for (ResourceConstraint resource : schedulerResources) {
       if (resource.getType() == constraint.getType()) {
-        schedResource = resource;
-        break;
+        mergedConstraintValues.addAll(resource.getValues());
       }
     }
 
-    if (schedResource == null) {
+    if (mergedConstraintValues.isEmpty()) {
       return 0;
     }
+
+    ResourceConstraint schedResource = new ResourceConstraint(
+        constraint.getType(),
+        new ArrayList<>(mergedConstraintValues));
 
     List<String> resourceValues = schedResource.getValues();
     List<String> constraintValues = constraint.getValues();
