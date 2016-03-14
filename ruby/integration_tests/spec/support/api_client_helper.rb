@@ -46,9 +46,12 @@ class ApiClientHelper
     end
 
     def endpoint(protocol = nil, address = nil, port = nil)
-      protocol ||= (ENV["API_FE_PORT"] ? "https" : "http")
-      address ||= (ENV["API_ADDRESS"] || "172.31.253.66").strip
       port ||= (ENV["API_FE_PORT"] || "9000").strip
+      if protocol.nil?
+        protocol ||= ENV["API_FE_PROTOCOL"]
+        protocol ||= port == 443 ? "https" : "http"
+      end
+      address ||= (ENV["API_ADDRESS"] || "172.31.253.66").strip
 
       "#{protocol}://#{address}:#{port}"
     end
