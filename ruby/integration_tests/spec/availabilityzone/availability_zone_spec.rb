@@ -13,9 +13,12 @@ require "spec_helper"
 
 describe "Availability Zone", availabilityzone: true do
   before(:all) do
-    @seeder = EsxCloud::SystemSeeder.new(create_small_limits, [5.0])
+    @seeder = EsxCloud::SystemSeeder.instance
     @cleaner = EsxCloud::SystemCleaner.new(client)
-    @project = @seeder.project!
+
+    # seed the image on all image datastores
+    @seeder.image!
+    wait_for_image_seeding_progress_is_done
   end
 
   after(:all) do
@@ -46,7 +49,7 @@ describe "Availability Zone", availabilityzone: true do
     # create VMs in specific availability zone
     for i in 1..3
       vm_name = random_name("vm-#{i}-")
-      vm = create_vm(@project, name: vm_name, affinities: [{id: availability_zone.id, kind: "availabilityZone"}])
+      vm = create_vm(@seeder.project!, name: vm_name, affinities: [{id: availability_zone.id, kind: "availabilityZone"}])
       expect(vm).to_not be_nil
       expect(vm.name).to eq(vm_name)
       expect(vm.host).to eq(host.address)

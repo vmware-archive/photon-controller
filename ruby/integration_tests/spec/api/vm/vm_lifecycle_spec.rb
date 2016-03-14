@@ -13,8 +13,12 @@ require "spec_helper"
 
 describe "VM lifecycle", life_cycle: true do
   before(:all) do
-    @seeder = EsxCloud::SystemSeeder.new(create_small_limits)
+    @seeder = EsxCloud::SystemSeeder.instance
     @cleaner = EsxCloud::SystemCleaner.new(client)
+
+    # seed the image on all image datastores
+    @seeder.image!
+    wait_for_image_seeding_progress_is_done
   end
 
   after(:all) do
