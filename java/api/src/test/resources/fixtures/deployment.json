@@ -5,7 +5,8 @@
     "stats": {
         "enabled": true,
         "storeEndpoint": "10.146.64.111",
-        "storePort": 2004
+        "storePort": 2004,
+        "storeType": "GRAPHITE"
     },
     "ntpEndpoint": "0.0.0.2",
     "imageDatastores": [

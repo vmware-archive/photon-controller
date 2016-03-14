@@ -46,8 +46,9 @@ module EsxCloud
         EsxCloud::StatsInfo.new(
           deployment['stats_enabled'],
           deployment['stats_store_endpoint'],
-          deployment['stats_store_port']
-        ),
+          deployment['stats_store_port'],
+          deployment['stats_store_type']
+      ),
         deployment['syslog_endpoint'],
         deployment['ntp_endpoint'],
         deployment['use_image_datastore_for_vms'])

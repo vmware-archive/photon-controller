@@ -52,6 +52,7 @@ deployment:
   stats_enabled: true
   stats_store_endpoint: 0.1.2.3
   stats_store_port: '2004'
+  stats_store_type: 'GRAPHITE'
   use_image_datastore_for_vms: true
 CONTENT
         end
@@ -61,7 +62,7 @@ CONTENT
           let(:spec) do
             EsxCloud::DeploymentCreateSpec.new(["image_datastore"],
                                                EsxCloud::AuthInfo.new(true, '0.0.0.0', '8080', 't', 'u', 'p', ['sg1', 'sg2']),
-                                               EsxCloud::StatsInfo.new(true, '0.1.2.3', '2004'),
+                                               EsxCloud::StatsInfo.new(true, '0.1.2.3', '2004', 'GRAPHITE'),
                                                "0.0.0.1",
                                                "0.0.0.2",
                                                true)

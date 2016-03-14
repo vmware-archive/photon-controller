@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.entities;
 
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.StatsStoreType;
 
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -53,6 +54,7 @@ public class DeploymentEntityTest {
       entity.setStatsEnabled(true);
       entity.setStatsStoreEndpoint("http://statsStore");
       entity.setStatsStorePort(2004);
+      entity.setStatsStoreType(StatsStoreType.GRAPHITE);
       entity.setAuthEnabled(true);
       entity.setOauthEndpoint("192.168.0.1");
       entity.setOauthPort(443);
@@ -95,6 +97,7 @@ public class DeploymentEntityTest {
       entity.setStatsEnabled(true);
       entity.setStatsStoreEndpoint("http://statsStore");
       entity.setStatsStorePort(2004);
+      entity.setStatsStoreType(StatsStoreType.GRAPHITE);
       entity.setAuthEnabled(true);
       entity.setOauthEndpoint("192.168.0.1");
       entity.setOauthPort(443);
