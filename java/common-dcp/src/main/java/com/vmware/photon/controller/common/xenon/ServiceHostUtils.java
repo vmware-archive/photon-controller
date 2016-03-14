@@ -64,7 +64,7 @@ public class ServiceHostUtils {
    */
   public static final int DEFAULT_NODE_GROUP_CONVERGENCE_SLEEP = 200;
 
-  public static final long DEFAULT_DELETE_ALL_DOCUMENTS_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(1);
+  public static final long DEFAULT_DELETE_ALL_DOCUMENTS_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(10);
 
   private static final Logger logger = LoggerFactory.getLogger(ServiceHostUtils.class);
   /**
@@ -583,7 +583,7 @@ public class ServiceHostUtils {
       throws Throwable {
     QueryTask.Query selfLinkClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_SELF_LINK)
-        .setTermMatchValue("*")
+        .setTermMatchValue("/photon/*")
         .setTermMatchType(QueryTask.QueryTerm.MatchType.WILDCARD);
 
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
