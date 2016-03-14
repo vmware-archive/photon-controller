@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -340,6 +341,11 @@ public class DeploymentService extends StatefulService {
     public Integer statsStorePort;
 
     /**
+     * This value represents the type of stats store.
+     */
+    public StatsStoreType statsStoreType;
+
+      /**
      * This value represents the list of chairman servers.
      */
     public Set<String> chairmanServerList;

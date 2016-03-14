@@ -44,6 +44,7 @@ public class StatsInfoTest {
     stats.setEnabled(true);
     stats.setStoreEndpoint("10.146.64.236");
     stats.setStorePort(2004);
+    stats.setStoreType(StatsStoreType.GRAPHITE);
 
     return stats;
   }
@@ -86,7 +87,7 @@ public class StatsInfoTest {
           },
           {
             new StatsInfoBuilder()
-              .enabled(true).storeEndpoint("test").storePort(100)
+              .enabled(true).storeEndpoint("test").storePort(100).storeType(StatsStoreType.GRAPHITE)
               .build(),
           },
           {
@@ -121,14 +122,12 @@ public class StatsInfoTest {
               .enabled(false)
               .storeEndpoint("e")
               .storePort(1)
+              .storeType(StatsStoreType.GRAPHITE)
               .build(),
               statsDisabledErrorMsgs},
       };
     }
   }
-
-
-
 
   /**
    * Tests {@link StatsInfo#toString()}.
@@ -138,7 +137,7 @@ public class StatsInfoTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "StatsInfo{enabled=true, storeEndpoint=10.146.64.236, storePort=2004}";
+          "StatsInfo{enabled=true, storeEndpoint=10.146.64.236, storePort=2004, storeType=GRAPHITE}";
       StatsInfo stats = createStatsInfo();
       assertThat(stats.toString(), is(expectedString));
     }

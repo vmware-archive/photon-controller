@@ -14,7 +14,7 @@ module EsxCloud
   # Contains Stats Info
   class StatsInfo
 
-    attr_reader :enabled, :storeEndpoint, :storePort
+    attr_reader :enabled, :storeEndpoint, :storePort, :storeType
 
     # @return [StatsInfo]
     def self.get
@@ -36,30 +36,34 @@ module EsxCloud
         fail UnexpectedFormat, "Invalid StatsInfo hash: #{hash}"
       end
 
-      new(hash["enabled"], hash["storeEndpoint"], hash["storePort"]) unless hash.nil?
+      new(hash["enabled"], hash["storeEndpoint"], hash["storePort"], hash["storeType"]) unless hash.nil?
     end
 
     # @param [Boolean] enabled
     # @param [String] storeEndpoint
     # @param [String] storePort
-    def initialize(enabled, storeEndpoint = nil, storePort = nil)
+    # @param [String] storeType
+    def initialize(enabled, storeEndpoint = nil, storePort = nil, storeType = nil)
       @enabled = enabled
       @storeEndpoint = storeEndpoint
       @storePort = storePort
+      @storeType = storeType
     end
 
     # @param [StatsInfo] other
     def ==(other)
       @enabled == other.enabled &&
         @storeEndpoint == other.storeEndpoint &&
-        @storePort == other.storePort
+        @storePort == other.storePort &&
+        @storeType == other.storeType
     end
 
     def to_hash
       {
         enabled: @enabled,
         storeEndpoint: @storeEndpoint,
-        storePort: @storePort
+        storePort: @storePort,
+        storeType: @storeType
       }
     end
 

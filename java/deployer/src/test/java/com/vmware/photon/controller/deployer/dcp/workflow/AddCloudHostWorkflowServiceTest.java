@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
@@ -516,6 +517,7 @@ public class AddCloudHostWorkflowServiceTest {
       state.statsEnabled = false;
       state.statsStoreEndpoint = "statsStoreEndpoint";
       state.statsStorePort = 8081;
+      state.statsStoreType = StatsStoreType.GRAPHITE;
       state.chairmanServerList = Collections.singleton("0.0.0.0:13000");
       state.state = DeploymentState.READY;
 

@@ -246,6 +246,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     stats.setEnabled(deploymentEntity.getStatsEnabled());
     stats.setStoreEndpoint(deploymentEntity.getStatsStoreEndpoint());
     stats.setStorePort(deploymentEntity.getStatsStorePort());
+    stats.setStoreType(deploymentEntity.getStatsStoreType());
     deployment.setStats(stats);
 
     deployment.setNtpEndpoint(deploymentEntity.getNtpEndpoint());
@@ -430,6 +431,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
       deployment.statsEnabled = stats.getEnabled();
       deployment.statsStoreEndpoint = stats.getStoreEndpoint();
       deployment.statsStorePort = stats.getStorePort();
+      deployment.statsStoreType = stats.getStoreType();
     }
 
     deployment.ntpEndpoint = spec.getNtpEndpoint();
@@ -467,6 +469,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     entity.setStatsEnabled(deployment.statsEnabled);
     entity.setStatsStoreEndpoint(deployment.statsStoreEndpoint);
     entity.setStatsStorePort(deployment.statsStorePort);
+    entity.setStatsStoreType(deployment.statsStoreType);
     entity.setNtpEndpoint(deployment.ntpEndpoint);
     entity.setAuthEnabled(deployment.oAuthEnabled);
     entity.setOauthEndpoint(deployment.oAuthServerAddress);
