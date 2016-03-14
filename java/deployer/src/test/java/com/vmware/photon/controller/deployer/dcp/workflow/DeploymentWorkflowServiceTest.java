@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
@@ -944,6 +945,7 @@ public class DeploymentWorkflowServiceTest {
             assertThat(state.statsEnabled, is(true));
             assertThat(state.statsStoreEndpoint, is("STATS_STORE_ENDPOINT"));
             assertThat(state.statsStorePort, is(8081));
+            assertThat(state.statsStoreType, is(StatsStoreType.GRAPHITE));
 
             assertThat(state.chairmanServerList, is(notNullValue()));
 
