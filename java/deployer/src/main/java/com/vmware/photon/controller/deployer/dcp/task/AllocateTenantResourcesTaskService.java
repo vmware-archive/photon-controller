@@ -263,6 +263,7 @@ public class AllocateTenantResourcesTaskService extends StatefulService {
       validateState(currentState);
     } catch (IllegalStateException e) {
       ServiceUtils.failOperationAsBadRequest(this, patchOp, e);
+      return;
     }
 
     patchOp.complete();
