@@ -79,6 +79,10 @@ public class Deployment extends Base {
   private AuthInfo auth;
 
   @JsonProperty
+  @ApiModelProperty(value = "Network configuration information")
+  private NetworkConfiguration networkConfiguration;
+
+  @JsonProperty
   @ApiModelProperty(value = "deploy a loadbalancer")
   private boolean loadBalancerEnabled = true;
 
@@ -151,6 +155,14 @@ public class Deployment extends Base {
     this.auth = auth;
   }
 
+  public NetworkConfiguration getNetworkConfiguration() {
+    return networkConfiguration;
+  }
+
+  public void setNetworkConfiguration(NetworkConfiguration networkConfiguration) {
+    this.networkConfiguration = networkConfiguration;
+  }
+
   public boolean isLoadBalancerEnabled() {
     return this.loadBalancerEnabled;
   }
@@ -202,6 +214,7 @@ public class Deployment extends Base {
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms())
         && Objects.equals(this.getAuth(), other.getAuth())
+        && Objects.equals(this.getNetworkConfiguration(), other.getNetworkConfiguration())
         && Objects.equals(this.isLoadBalancerEnabled(), other.isLoadBalancerEnabled())
         && Objects.equals(this.getLoadBalancerAddress(), other.getLoadBalancerAddress())
         && Objects.equals(this.getMigrationStatus(), other.getMigrationStatus())
@@ -218,6 +231,7 @@ public class Deployment extends Base {
         this.getImageDatastores(),
         this.isUseImageDatastoreForVms(),
         this.getAuth(),
+        this.getNetworkConfiguration(),
         this.isLoadBalancerEnabled(),
         this.getLoadBalancerAddress(),
         this.getClusterConfigurations());
@@ -232,6 +246,7 @@ public class Deployment extends Base {
         .add("ntpEndpoint", ntpEndpoint)
         .add("useImageDatastoreForVms", useImageDatastoreForVms)
         .add("auth", auth.toString())
+        .add("networkConfiguration", networkConfiguration.toString())
         .add("loadBalancerEnabled", loadBalancerEnabled)
         .add("loadBalancerAddress", loadBalancerAddress)
         .add("migrationProgress", migrationStatus)

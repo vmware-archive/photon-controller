@@ -318,6 +318,21 @@ public class DeploymentService extends StatefulService {
     public String oAuthMgmtUiLogoutEndpoint;
 
     /**
+     * This value represents the IP address of the network manager.
+     */
+    public String networkManagerAddress;
+
+    /**
+     * This value represents the username for accessing the network manager.
+     */
+    public String networkManagerUsername;
+
+    /**
+     * This value represents the password for accessing the network manager.
+     */
+    public String networkManagerPassword;
+
+    /**
      * This value represents the syslog endpoint for the deployment.
      */
     @Immutable
