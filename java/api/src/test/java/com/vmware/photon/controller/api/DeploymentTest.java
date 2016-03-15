@@ -15,6 +15,7 @@ package com.vmware.photon.controller.api;
 
 import com.vmware.photon.controller.api.base.Base;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.NetworkConfigurationBuilder;
 import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.helpers.Validator;
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.asJson;
@@ -63,7 +64,12 @@ public class DeploymentTest {
         .tenant("t")
         .username("u")
         .password("p")
-        .securityGroups(Arrays.asList(new String[] { "adminGroup1", "adminGroup2"}))
+        .securityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}))
+        .build());
+    deployment.setNetworkConfiguration(new NetworkConfigurationBuilder()
+        .networkManagerAddress("1.2.3.4")
+        .networkManagerUsername("networkManagerUsername")
+        .networkManagerPassword("networkManagerPassword")
         .build());
     deployment.setLoadBalancerEnabled(true);
     deployment.setLoadBalancerAddress(loadBalancerAddress);
@@ -147,9 +153,12 @@ public class DeploymentTest {
               "syslogEndpoint=0.0.0.1, stats=StatsInfo{enabled=true, storeEndpoint=10.146.64.111, " +
               "storePort=2004, storeType=GRAPHITE}, " +
               "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, " +
-              "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443," +
-              " tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, loadBalancerEnabled=true," +
-              " loadBalancerAddress=0.0.0.4, migrationProgress=null, clusterConfigurations=null}";
+              "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443, " +
+              "tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, " +
+              "networkConfiguration=NetworkConfiguration{networkManagerAddress=1.2.3.4, " +
+              "networkManagerUsername=networkManagerUsername, networkManagerPassword=networkManagerPassword}, " +
+              "loadBalancerEnabled=true, loadBalancerAddress=0.0.0.4, migrationProgress=null, " +
+              "clusterConfigurations=null}";
       HashSet<String> imageDatastores = new HashSet<String>();
       imageDatastores.add("image-datastore1");
       imageDatastores.add("image-datastore2");
