@@ -1098,18 +1098,6 @@ class EsxImageManager(ImageManager):
 
         return deleted_images
 
-    def _fake_delete_single_image(self, image_sweeper,
-                                  curdir, image_id):
-        self._logger.info("IMAGE SCANNER, fake delete image: %s" % image_id)
-        return self._do_delete_single_image(
-            image_sweeper, curdir, image_id, False)
-
-    def _delete_single_image(self, image_sweeper,
-                             curdir, image_id):
-        self._logger.info("IMAGE SCANNER, real delete image: %s" % image_id)
-        return self._do_delete_single_image(
-            image_sweeper, curdir, image_id, True)
-
     """
     Delete a single image following the delete image steps. This
     method is supposed to be safe when run concurrently with:
@@ -1136,9 +1124,7 @@ class EsxImageManager(ImageManager):
     False if the image could not be removed.
     """
 
-    def _do_delete_single_image(self, image_sweeper,
-                                curdir, image_id,
-                                modify):
+    def _delete_single_image(self, image_sweeper, curdir, image_id, modify=True):
         self._logger.info("IMAGE SCANNER: Starting to "
                           "delete image: %s, %s"
                           % (curdir, image_id))
