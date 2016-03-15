@@ -20,7 +20,6 @@ import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.ResourceTicketReservation;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -42,7 +41,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
@@ -727,7 +725,7 @@ public class AllocateTenantResourcesTaskService extends StatefulService {
   private void updateVms(State currentState, List<String> vmServiceLinks) {
 
     VmService.State vmPatchState = new VmService.State();
-    vmPatchState.projectServiceLink = UriUtils.buildUriPath(ProjectServiceFactory.SELF_LINK, currentState.projectId);
+    vmPatchState.projectId = currentState.projectId;
 
     OperationJoin
         .create(vmServiceLinks.stream()

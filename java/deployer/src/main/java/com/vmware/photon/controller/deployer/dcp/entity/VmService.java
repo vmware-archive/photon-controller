@@ -14,10 +14,12 @@
 package com.vmware.photon.controller.deployer.dcp.entity;
 
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
+import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
@@ -44,46 +46,53 @@ public class VmService extends StatefulService {
     public String name;
 
     /**
-     * This value represents the link of the {@link HostService} associated
-     * with this VM.
+     * This value represents the document self-link of the {@link HostService} document in cloud
+     * store representing the host on which the VM was or should be created.
      */
     @NotNull
     @Immutable
     public String hostServiceLink;
 
     /**
-     * This value represents the link of the image service document
-     * associated with this VM.
+     * This value represents the static IP address assigned to the VM.
      */
-    public String imageServiceLink;
-
-    /**
-     * This value represents the link of the project service document
-     * associated with this VM.
-     */
-    public String projectServiceLink;
-
-    /**
-     * This value represents the link of the VM flavor service document
-     * associated with this VM.
-     */
-    public String vmFlavorServiceLink;
-
-    /**
-     * This value represents the link of the disk flavor service document
-     * associated with this VM.
-     */
-    public String diskFlavorServiceLink;
-
-    /**
-     * This value represents the ID of the VM object in APIFE.
-     */
-    public String vmId;
-
-    /**
-     * This value represents the IP of the VM.
-     */
+    @NotNull
+    @Immutable
     public String ipAddress;
+
+    /**
+     * This value represents the ID of the API-level image object from which this VM was or should
+     * be created.
+     */
+    @WriteOnce
+    public String imageId;
+
+    /**
+     * This value represents the ID of the API-level project object under which this VM was or
+     * should be created.
+     */
+    @WriteOnce
+    public String projectId;
+
+    /**
+     * This value represents the ID of the API-level flavor object from which the VM was or should
+     * be created.
+     */
+    @WriteOnce
+    public String vmFlavorId;
+
+    /**
+     * This value represents the ID of the API-level flavor object from which the boot disk for the
+     * VM was or should be created.
+     */
+    @WriteOnce
+    public String diskFlavorId;
+
+    /**
+     * This value represents the ID of the API-level VM object created by the current task.
+     */
+    @WriteOnce
+    public String vmId;
 
     /**
      * This value represents the port number of the deployer's DCP service of the VM. Note that this should be used
@@ -91,6 +100,7 @@ public class VmService extends StatefulService {
      * machine and hence they will have different port numbers. In real deployment, deployer should all listen on
      * the same port number.
      */
+    @Immutable
     public Integer deployerDcpPort;
   }
 
@@ -117,7 +127,7 @@ public class VmService extends StatefulService {
     validateState(currentState);
     State patchState = patchOperation.getBody(State.class);
     validatePatchState(currentState, patchState);
-    applyPatch(currentState, patchState);
+    PatchUtils.patchState(currentState, patchState);
     validateState(currentState);
     patchOperation.complete();
   }
@@ -135,20 +145,20 @@ public class VmService extends StatefulService {
       currentState.vmId = patchState.vmId;
     }
 
-    if (null != patchState.vmFlavorServiceLink) {
-      currentState.vmFlavorServiceLink = patchState.vmFlavorServiceLink;
+    if (null != patchState.vmFlavorId) {
+      currentState.vmFlavorId = patchState.vmFlavorId;
     }
 
-    if (null != patchState.diskFlavorServiceLink) {
-      currentState.diskFlavorServiceLink = patchState.diskFlavorServiceLink;
+    if (null != patchState.diskFlavorId) {
+      currentState.diskFlavorId = patchState.diskFlavorId;
     }
 
-    if (null != patchState.imageServiceLink) {
-      currentState.imageServiceLink = patchState.imageServiceLink;
+    if (null != patchState.imageId) {
+      currentState.imageId = patchState.imageId;
     }
 
-    if (null != patchState.projectServiceLink) {
-      currentState.projectServiceLink = patchState.projectServiceLink;
+    if (null != patchState.projectId) {
+      currentState.projectId = patchState.projectId;
     }
   }
 }

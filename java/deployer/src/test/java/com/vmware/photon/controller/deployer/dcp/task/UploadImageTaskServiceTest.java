@@ -21,7 +21,6 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ImagesApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
@@ -459,7 +458,7 @@ public class UploadImageTaskServiceTest {
       QueryTask result = testEnvironment.sendQueryAndWait(queryTask);
       for (Object vmDocument : result.results.documents.values()) {
         VmService.State vmState = Utils.fromJson(vmDocument, VmService.State.class);
-        assertThat(vmState.imageServiceLink, is(UriUtils.buildUriPath(ImageServiceFactory.SELF_LINK, imageId)));
+        assertThat(vmState.imageId, is(imageId));
       }
 
       DeploymentService.State deploymentState = cloudStoreEnvironment.getServiceState(finalState.deploymentServiceLink,
@@ -509,7 +508,7 @@ public class UploadImageTaskServiceTest {
       QueryTask result = testEnvironment.sendQueryAndWait(queryTask);
       for (Object vmDocument : result.results.documents.values()) {
         VmService.State vmState = Utils.fromJson(vmDocument, VmService.State.class);
-        assertThat(vmState.imageServiceLink, is(UriUtils.buildUriPath(ImageServiceFactory.SELF_LINK, imageId)));
+        assertThat(vmState.imageId, is(imageId));
       }
 
       DeploymentService.State deploymentState = cloudStoreEnvironment.getServiceState(finalState.deploymentServiceLink,

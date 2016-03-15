@@ -16,10 +16,7 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
@@ -97,7 +94,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -108,7 +104,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * This class implements tests for the {@link DeploymentWorkflowService} class.
@@ -803,9 +798,6 @@ public class DeploymentWorkflowServiceTest {
       verifyContainerServiceStates();
       verifyTenantServiceState();
       verifyResourceTicketServiceState();
-      verifyProjectServiceState();
-      verifyImageServiceState();
-      verifyFlavorServiceStates();
     }
 
     private void createHostService(Set<String> usageTags, String bindAddress) throws Throwable {
@@ -1084,30 +1076,7 @@ public class DeploymentWorkflowServiceTest {
       List<ResourceTicketService.State> states = queryForServiceStates(ResourceTicketService.State.class, localStore);
       assertThat(states.size(), is(1));
     }
-
-    private void verifyProjectServiceState() throws Throwable {
-      List<ProjectService.State> states = queryForServiceStates(ProjectService.State.class, localStore);
-      assertThat(states.size(), is(1));
-    }
-
-    private void verifyImageServiceState() throws Throwable {
-      List<ImageService.State> states = queryForServiceStates(ImageService.State.class, localStore);
-      assertThat(states.size(), is(1));
-    }
-
-    private void verifyFlavorServiceStates() throws Throwable {
-      List<FlavorService.State> states = queryForServiceStates(FlavorService.State.class, localStore);
-      List<VmService.State> vmStates = queryForServiceStates(VmService.State.class, localDeployer);
-
-      for (final VmService.State vmState : vmStates) {
-        Collection<FlavorService.State> flavorsForVm = states.stream()
-            .filter(flavorState -> vmState.vmFlavorServiceLink.equals(flavorState.documentSelfLink))
-            .collect(Collectors.toList());
-
-        assertThat(flavorsForVm.size(), is(1));
-      }
-    }
-
+    
     private <T extends ServiceDocument> void verifySingletonServiceState(Class<T> classType, Predicate<T> predicate,
                                                                          MultiHostEnvironment<?> multiHostEnvironment)
         throws Throwable {
