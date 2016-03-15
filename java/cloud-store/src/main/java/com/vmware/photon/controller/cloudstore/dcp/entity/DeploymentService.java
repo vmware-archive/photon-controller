@@ -103,6 +103,11 @@ public class DeploymentService extends StatefulService {
     }
   }
 
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
+  }
+
   private void handlePatchUpdateHostListInfo(Operation patchOperation) {
     ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
     try {

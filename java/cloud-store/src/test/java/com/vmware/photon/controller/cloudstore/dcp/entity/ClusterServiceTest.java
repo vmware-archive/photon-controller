@@ -15,7 +15,10 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.ClusterState;
 import com.vmware.photon.controller.api.ClusterType;
+import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -29,8 +32,11 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests {@link ClusterService}.
@@ -124,4 +130,93 @@ public class ClusterServiceTest {
       host.getServiceState(ClusterService.State.class);
     }
   }
+
+  /**
+   * Tests for the handleDelete method.
+   */
+  public class HandleDeleteTest {
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      service = new ClusterService();
+      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
+          BasicServiceHost.BIND_PORT,
+          null,
+          ClusterServiceFactory.SELF_LINK,
+          10, 10);
+
+      StaticServerSet serverSet = new StaticServerSet(
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      dcpRestClient.start();
+
+      buildValidStartState();
+
+      host.startServiceSynchronously(new ClusterServiceFactory(), null);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+      }
+
+      service = null;
+      dcpRestClient.stop();
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in current state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          ClusterServiceFactory.SELF_LINK,
+          testState,
+          ClusterService.State.class,
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
+          0L,
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE));
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in delete operation state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          ClusterServiceFactory.SELF_LINK,
+          testState,
+          ClusterService.State.class,
+          ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1)),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE));
+    }
+
+    /**
+     * Test expiration of deleted document using default value.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDeleteWithDefaultExpiration() throws Throwable {
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          ClusterServiceFactory.SELF_LINK,
+          testState,
+          ClusterService.State.class,
+          0L,
+          0L,
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS));
+    }
+  }
+
 }

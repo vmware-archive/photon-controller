@@ -78,6 +78,11 @@ public class AvailabilityZoneService extends StatefulService {
     }
   }
 
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
+  }
+
   /**
    * Validate the service state for coherence.
    *

@@ -74,6 +74,11 @@ public class ClusterService extends StatefulService {
     }
   }
 
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
+  }
+
   /**
    * This class defines the document state associated with a single
    * {@link ClusterService} instance.

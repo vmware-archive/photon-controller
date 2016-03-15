@@ -117,6 +117,11 @@ public class DatastoreService extends StatefulService {
   }
 
   @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
+  }
+
+  @Override
   public ServiceDocument getDocumentTemplate() {
     ServiceDocument template = super.getDocumentTemplate();
     ServiceUtils.setExpandedIndexing(template, State.FIELD_NAME_TAGS);
