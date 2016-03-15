@@ -15,8 +15,6 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -902,9 +900,8 @@ public class AddManagementHostWorkflowService extends StatefulService {
                                       String vmServiceLink) {
 
     VmService.State vmPatchState = new VmService.State();
-    vmPatchState.imageServiceLink = UriUtils.buildUriPath(ImageServiceFactory.SELF_LINK, deploymentState.imageId);
-    vmPatchState.projectServiceLink = UriUtils.buildUriPath(ProjectServiceFactory.SELF_LINK,
-        deploymentState.projectId);
+    vmPatchState.imageId = deploymentState.imageId;
+    vmPatchState.projectId = deploymentState.projectId;
 
     sendRequest(Operation
         .createPatch(this, vmServiceLink)

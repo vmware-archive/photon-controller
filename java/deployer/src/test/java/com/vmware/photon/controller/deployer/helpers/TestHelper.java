@@ -15,7 +15,6 @@ package com.vmware.photon.controller.deployer.helpers;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.DeploymentState;
-import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ImageReplicationType;
@@ -26,14 +25,10 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
@@ -431,25 +426,6 @@ public class TestHelper {
     return imageServiceState;
   }
 
-  public static FlavorService.State createFlavor(MultiHostEnvironment<?> cloudStoreMachine, String name) throws
-      Throwable {
-    FlavorService.State flavorServiceStartState = new FlavorService.State();
-    if (name == null) {
-      flavorServiceStartState.name = "dummyName";
-    } else {
-      flavorServiceStartState.name = name;
-    }
-    flavorServiceStartState.kind = "dummyKind";
-    flavorServiceStartState.cost = new ArrayList<>();
-    flavorServiceStartState.tags = new HashSet<>();
-    flavorServiceStartState.state = FlavorState.READY;
-    FlavorService.State flavorServiceState = cloudStoreMachine.callServiceSynchronously(
-        FlavorServiceFactory.SELF_LINK,
-        flavorServiceStartState,
-        FlavorService.State.class);
-    return flavorServiceState;
-  }
-
   public static TenantService.State createTenant(MultiHostEnvironment<?> cloudStoreMachine) throws Throwable {
     TenantService.State tenantServiceStartState = new TenantService.State();
     tenantServiceStartState.name = Constants.TENANT_NAME;
@@ -472,20 +448,6 @@ public class TestHelper {
             resourceTicketServiceStartState,
             ResourceTicketService.State.class);
     return resourceTicketState;
-  }
-
-  public static ProjectService.State createProject(String tenantId, String resourceTicketId, MultiHostEnvironment<?>
-      cloudStoreMachine) throws Throwable {
-    ProjectService.State projectServiceStartState = new ProjectService.State();
-    projectServiceStartState.name = Constants.PROJECT_NAME;
-    projectServiceStartState.resourceTicketId = resourceTicketId;
-    projectServiceStartState.tenantId = tenantId;
-    ProjectService.State projectState =
-        cloudStoreMachine.callServiceSynchronously(
-            ProjectServiceFactory.SELF_LINK,
-            projectServiceStartState,
-            ProjectService.State.class);
-    return projectState;
   }
 
   //
