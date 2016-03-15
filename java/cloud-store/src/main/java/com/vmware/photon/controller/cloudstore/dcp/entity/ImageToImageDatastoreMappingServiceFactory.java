@@ -27,7 +27,7 @@ public class ImageToImageDatastoreMappingServiceFactory extends FactoryService {
 
   public ImageToImageDatastoreMappingServiceFactory() {
     super(ImageToImageDatastoreMappingService.State.class);
-    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.NODE_SELECTOR_FOR_SYMMETRIC_REPLICATION);
   }
 
   @Override

@@ -26,7 +26,6 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
-import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.ImageSettingsEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -332,23 +331,12 @@ public class ImageDcpBackend implements ImageBackend {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     termsBuilder.put("imageId", imageId);
 
-    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(ImageToImageDatastoreMappingService.State.class,
-        termsBuilder.build(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), true);
+    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(
+        ImageToImageDatastoreMappingService.State.class, termsBuilder.build(), Optional.<Integer>absent(), true, false);
     List<String> seededImageDatastores = new ArrayList<>();
     queryResult.documents.values().forEach(item -> {
       seededImageDatastores.add(Utils.fromJson(item, ImageToImageDatastoreMappingService.State.class).imageDatastoreId);
     });
-
-    try {
-      while (StringUtils.isNotBlank(queryResult.nextPageLink)) {
-        queryResult = dcpClient.queryDocumentPage(queryResult.nextPageLink);
-        queryResult.documents.values().forEach(
-            item -> seededImageDatastores
-                .add(Utils.fromJson(item, ImageToImageDatastoreMappingService.State.class).imageDatastoreId));
-      }
-    } catch (DocumentNotFoundException e) {
-      throw new PageExpiredException(queryResult.nextPageLink);
-    }
 
     return seededImageDatastores;
   }
