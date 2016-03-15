@@ -31,15 +31,16 @@ describe "VM lifecycle", life_cycle: true do
 
   context "multiple VMs simultaneously" do
     N_VMS = (ENV["N_VMS"] || 0).to_i
+    N_EXPECTED_PASS_RATE = (ENV["N_EXPECTED_PASS_RATE"] || 100).to_i
 
     it "should succeed creating 15 VMs simultaneously" do
-      create_vms_simultaneously(15, @seeder.tenant!, @seeder.vm_flavor!, @seeder.persistent_disk_flavor!)
+      create_vms_simultaneously(15, @seeder.tenant!, @seeder.vm_flavor!, @seeder.persistent_disk_flavor!, 100)
       puts "create 15 vms simultaneously completed"
     end
 
     unless N_VMS <= 0
-      it "should succeed creating #{N_VMS} VMs simultaneously" do
-        create_vms_simultaneously(N_VMS, @seeder.tenant!, @seeder.vm_flavor!, @seeder.persistent_disk_flavor!)
+      it "should succeed creating #{N_VMS} VMs simultaneously with #{N_EXPECTED_PASS_RATE}% pass rate" do
+        create_vms_simultaneously(N_VMS, @seeder.tenant!, @seeder.vm_flavor!, @seeder.persistent_disk_flavor!, N_EXPECTED_PASS_RATE)
         puts "create #{N_VMS} vms simultaneously completed"
       end
     end
@@ -102,8 +103,9 @@ describe "VM lifecycle", life_cycle: true do
     ignoring_all_errors { vm.delete if vm }
   end
 
-  def create_vms_simultaneously(n_vms, tenant, vm_flavor, disk_flavor)
+  def create_vms_simultaneously(n_vms, tenant, vm_flavor, disk_flavor, n_expected_pass_rate)
     fail "Negative n_vms #{n_vms} is not allowed!" if n_vms < 0
+    fail "Invalid expected pass rate #{n_expected_pass_rate}" if n_expected_pass_rate <= 0 || n_expected_pass_rate > 100
 
     limit_vms = EsxCloud::QuotaLineItem.new("vm.flavor.#{vm_flavor.name}", n_vms, "COUNT")
 
@@ -128,7 +130,11 @@ describe "VM lifecycle", life_cycle: true do
 
     threads.each { |thr| thr.join }
 
-    success_count.should == n_vms
+    puts "Successfully created #{success_count} vms simultaneously."
+
+    pass_rate = ((success_count / n_vms.to_f) * 100).round
+    puts "Current run pass rate: #{pass_rate}. Expected pass rate: #{n_expected_pass_rate}"
+    pass_rate.should >= n_expected_pass_rate
 
     ticket = find_resource_ticket_by_id(ticket.id)
     ticket.usage.find { |qli| qli.key == "vm.flavor.#{vm_flavor.name}" }.value.should == n_vms
