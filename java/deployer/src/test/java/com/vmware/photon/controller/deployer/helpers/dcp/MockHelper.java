@@ -16,6 +16,8 @@ package com.vmware.photon.controller.deployer.helpers.dcp;
 import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
+import com.vmware.photon.controller.api.Image;
+import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.Task;
@@ -315,6 +317,24 @@ public class MockHelper {
     };
   }
 
+  public static Answer<Image> mockGetImageAsync(String imageId, String imageSeedingProgress) {
+    return mockGetImageAsync(TestHelper.createImage(imageId, imageSeedingProgress));
+  }
+
+  public static Answer<Image> mockGetImageAsync(String imageId, ImageState imageState) {
+    return mockGetImageAsync(TestHelper.createImage(imageId, imageState));
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<Image> mockGetImageAsync(Image returnValue) {
+    return (invocation) -> {
+      ((FutureCallback<Image>) invocation.getArguments()[1]).onSuccess(returnValue);
+      return null;
+    };
+  }
+
+
+
   public static Answer<Task> mockPerformStartOperationAsync(String taskId, String entityId, String state) {
     return mockPerformStartOperationAsync(TestHelper.createTask(taskId, entityId, state));
   }
@@ -411,6 +431,7 @@ public class MockHelper {
     final Task taskReturnedByCreateProject = TestHelper.createCompletedApifeTask("CREATE_PROJECT",
         ServiceUtils.getIDFromDocumentSelfLink(projectState.documentSelfLink));
     final Task taskReturnedByPerformVmOperation = TestHelper.createCompletedApifeTask("PERFORM_VM_OPERATION");
+    final Image imageReturnedByGetImageAsync = TestHelper.createImage("IMAGE_ID", "100.0%");
 
     if (isSuccess) {
       // Create project
@@ -541,6 +562,13 @@ public class MockHelper {
       // Upload image
       doReturn(taskReturnedByUploadManagementImage).
           when(imagesApi).uploadImage(anyString(), anyString());
+      doAnswer(new Answer() {
+        @Override
+        public Object answer(InvocationOnMock invocation) throws Throwable {
+          ((FutureCallback<Image>) invocation.getArguments()[1]).onSuccess(imageReturnedByGetImageAsync);
+          return null;
+        }
+      }).when(imagesApi).getImageAsync(anyString(), any(FutureCallback.class));
 
       // Create VM
       doAnswer(new Answer() {
