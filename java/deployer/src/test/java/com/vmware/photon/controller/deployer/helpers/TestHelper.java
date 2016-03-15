@@ -17,6 +17,7 @@ import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.FlavorState;
 import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.StatsStoreType;
@@ -588,6 +589,21 @@ public class TestHelper {
     return sourceFile;
   }
 
+  public static Image createImage(String imageId, String imageSeedingProgress) {
+    Image image = new Image();
+    image.setId(imageId);
+    image.setState(ImageState.READY);
+    image.setSeedingProgress(imageSeedingProgress);
+    return image;
+  }
+
+  public static Image createImage(String imageId, ImageState imageState) {
+    Image image = new Image();
+    image.setId(imageId);
+    image.setState(imageState);
+    return image;
+  }
+
   public static Task createCompletedApifeTask(String taskName) {
     String entityId = String.format("%s_ENTITY_ID", taskName);
     return createCompletedApifeTask(taskName, entityId);
@@ -620,6 +636,88 @@ public class TestHelper {
   //
   // Utility routines
   //
+
+  public static Object[][] getValidStartStages(@Nullable Class<? extends Enum> subStages) {
+
+    if (subStages == null) {
+
+      //
+      // N.B. Tasks without defined sub-stages must accept these default start stages.
+      //
+
+      return new Object[][]{
+          {null},
+          {TaskState.TaskStage.CREATED},
+          {TaskState.TaskStage.STARTED},
+          {TaskState.TaskStage.FINISHED},
+          {TaskState.TaskStage.FAILED},
+          {TaskState.TaskStage.CANCELLED},
+      };
+    }
+
+    if (!subStages.isEnum() || subStages.getEnumConstants().length == 0) {
+      throw new IllegalStateException("Class " + subStages.getName() + " is not a valid enum");
+    }
+
+    Enum[] enumConstants = subStages.getEnumConstants();
+    List<Object[]> validStartStages = new ArrayList<>();
+    validStartStages.add(new Object[]{null, null});
+    validStartStages.add(new Object[]{TaskState.TaskStage.CREATED, null});
+    for (int i = 0; i < enumConstants.length; i++) {
+      validStartStages.add(new Object[]{TaskState.TaskStage.STARTED, enumConstants[i]});
+    }
+    validStartStages.add(new Object[]{TaskState.TaskStage.FINISHED, null});
+    validStartStages.add(new Object[]{TaskState.TaskStage.FAILED, null});
+    validStartStages.add(new Object[]{TaskState.TaskStage.CANCELLED, null});
+
+    Object[][] returnValue = new Object[validStartStages.size()][2];
+    for (int i = 0; i < validStartStages.size(); i++) {
+      returnValue[i][0] = validStartStages.get(i)[0];
+      returnValue[i][1] = validStartStages.get(i)[1];
+    }
+
+    return returnValue;
+  }
+
+  public static Object[][] getInvalidStartStages(@Nullable Class<? extends Enum> subStages) {
+
+    if (subStages == null) {
+
+      //
+      // N.B. Tasks without defined sub-stages must accept all default start stages.
+      //
+
+      throw new IllegalArgumentException("subStages");
+    }
+
+    if (!subStages.isEnum() || subStages.getEnumConstants().length == 0) {
+      throw new IllegalStateException("Class " + subStages.getName() + " is not a valid enum");
+    }
+
+    Enum[] enumConstants = subStages.getEnumConstants();
+    List<Object[]> invalidStartStages = new ArrayList<>();
+    for (int i = 0; i < enumConstants.length; i++) {
+      invalidStartStages.add(new Object[]{TaskState.TaskStage.CREATED, enumConstants[i]});
+    }
+    invalidStartStages.add(new Object[]{TaskState.TaskStage.STARTED, null});
+    for (int i = 0; i < enumConstants.length; i++) {
+      invalidStartStages.add(new Object[]{TaskState.TaskStage.FINISHED, enumConstants[i]});
+    }
+    for (int i = 0; i < enumConstants.length; i++) {
+      invalidStartStages.add(new Object[]{TaskState.TaskStage.FAILED, enumConstants[i]});
+    }
+    for (int i = 0; i < enumConstants.length; i++) {
+      invalidStartStages.add(new Object[]{TaskState.TaskStage.CANCELLED, enumConstants[i]});
+    }
+
+    Object[][] returnValue = new Object[invalidStartStages.size()][2];
+    for (int i = 0; i < invalidStartStages.size(); i++) {
+      returnValue[i][0] = invalidStartStages.get(i)[0];
+      returnValue[i][1] = invalidStartStages.get(i)[1];
+    }
+
+    return returnValue;
+  }
 
   public static Object[][] getValidStageTransitions(@Nullable Class<? extends Enum> subStages) {
 

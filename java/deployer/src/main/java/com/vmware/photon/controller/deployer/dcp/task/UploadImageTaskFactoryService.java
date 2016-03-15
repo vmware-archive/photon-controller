@@ -18,12 +18,12 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
 /**
- * This class implements a DCP micro-service which provides a factory for
- * {@link UploadImageTaskService} instances.
+ * This class implements a Xenon service which provides a factory for {@link UploadImageTaskService}
+ * instances.
  */
 public class UploadImageTaskFactoryService extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/image-uploads";
+  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/deployer/tasks/upload-image";
 
   public UploadImageTaskFactoryService() {
     super(UploadImageTaskService.State.class);
