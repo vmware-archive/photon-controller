@@ -9,15 +9,18 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
-
+import os
 from enum import Enum
 import logging
 import threading
 
 from common.lock import locked
+from host.hypervisor.esx.vm_config import SUPPORT_VSAN
+from host.hypervisor.esx.vm_config import image_directory_path
 
 from host.hypervisor.task_runner import TaskRunner, TaskAlreadyRunning
 from host.hypervisor.image_scanner import InvalidStateTransition
+from host.hypervisor.image_scanner import waste_time
 
 """
 Execute the task of running an image sweep
@@ -28,36 +31,80 @@ on a datastore.
 class DatastoreImageSweeperTaskRunner(TaskRunner):
     def __init__(self, name, ds_image_sweeper):
         super(DatastoreImageSweeperTaskRunner, self).__init__(name)
-        self.logger = logging.getLogger(__name__)
+        self._logger = logging.getLogger(__name__)
         self._ds_image_sweeper = ds_image_sweeper
         self._image_manager = ds_image_sweeper.image_manager
 
     # Override
     def execute_task(self):
         try:
-            self._ds_image_sweeper.set_state(
-                DatastoreImageSweeper.State.IMAGE_SWEEP)
-            deleted_images = self._image_manager.\
-                delete_unused(self._ds_image_sweeper)
+            self._ds_image_sweeper.set_state(DatastoreImageSweeper.State.IMAGE_SWEEP)
+            if SUPPORT_VSAN:
+                deleted_images = self._delete_unused_images(self._ds_image_sweeper)
+            else:
+                deleted_images = self._image_manager.delete_unused(self._ds_image_sweeper)
             self._ds_image_sweeper.set_deleted_images(deleted_images)
         except Exception as e:
-            self.logger.warning("Exception caught by image "
-                                "sweeper thread, %s, ds_id : %s, state: %s, "
-                                "target images: %d, deleted images: %d"
-                                % (e,
-                                   self._ds_image_sweeper.datastore_id,
-                                   self._ds_image_sweeper.get_state(),
-                                   len(self._ds_image_sweeper.
-                                       get_target_images()),
-                                   len(self._ds_image_sweeper.
-                                       get_deleted_images()))
-                                )
+            self._logger.exception("Exception caught by image "
+                                   "sweeper thread, %s, ds_id : %s, state: %s, "
+                                   "target images: %d, deleted images: %d"
+                                   % (e,
+                                      self._ds_image_sweeper.datastore_id,
+                                      self._ds_image_sweeper.get_state(),
+                                      len(self._ds_image_sweeper.
+                                          get_target_images()),
+                                      len(self._ds_image_sweeper.
+                                          get_deleted_images())))
             # Re-raise exception so it can be saved in
             # the task_runner
             raise e
         finally:
-            self._ds_image_sweeper.set_state(
-                DatastoreImageSweeper.State.IDLE)
+            self._ds_image_sweeper.set_state(DatastoreImageSweeper.State.IDLE)
+
+    """
+    This method scans the image tree for the current
+    datastore starting from the directory "root"
+    (e.g.: /vmfs/volumes/<ds-id>/images). It looks for
+    unused images in a directory containing the marker
+    file, moves the directory to a GC location and
+    deletes it.
+    """
+    def _delete_unused_images(self, image_sweeper):
+        deleted_images = list()
+        target_images = image_sweeper.get_target_images()
+
+        # Compute sweep rest interval
+        rest_interval_sec = image_sweeper.get_image_sweep_rest_interval()
+
+        for image_id in target_images:
+            # On a directory change check if it still needs to run
+            if image_sweeper.is_stopped():
+                return
+
+            image_dir = image_directory_path(image_sweeper.datastore_id, image_id)
+            # If there is not a marker file, skip it
+            marker_pathname = os.path.join(image_dir, self._image_manager.IMAGE_MARKER_FILE_NAME)
+            if not os.path.isfile(marker_pathname):
+                self._logger.warn("skipping image(%s) because marker file not found" % image_id)
+                continue
+
+            try:
+                if self._image_manager._delete_single_image(image_sweeper, image_dir, image_id):
+                    deleted_images.append(image_id)
+            except Exception as ex:
+                self._logger.warning("Failed to remove image: %s, %s" % (image_dir, ex))
+                continue
+
+            waste_time(rest_interval_sec)
+
+        # Now attempt GCing the image directory.
+        try:
+            self._image_manager._clean_gc_dir(image_sweeper.datastore_id)
+        except Exception:
+            # Swallow the exception the next clean call will clear it all.
+            self._logger.exception("Failed to delete gc dir on datastore %s" % image_sweeper.datastore_id)
+
+        return deleted_images
 
 """
 The purpose of the object in this class is to
@@ -178,8 +225,7 @@ class DatastoreImageSweeper:
         return self._deleted_images, self._task_runner.end_time
 
     def get_image_sweep_rest_interval(self):
-        return (60.0 / self.image_sweep_rate) - \
-            self.IMAGE_SWEEP_SINGLE_OP_DURATION
+        return (60.0 / self.image_sweep_rate) - self.IMAGE_SWEEP_SINGLE_OP_DURATION
 
     def get_grace_period(self):
         return self._grace_period
