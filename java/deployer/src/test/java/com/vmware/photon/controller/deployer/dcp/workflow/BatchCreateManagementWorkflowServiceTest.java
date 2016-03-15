@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.FlavorCreateSpec;
+import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ProjectCreateSpec;
 import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.Task;
@@ -70,6 +71,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.io.FileUtils;
 import org.mockito.ArgumentMatcher;
+import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.annotations.AfterClass;
@@ -722,6 +724,9 @@ public class BatchCreateManagementWorkflowServiceTest {
           return null;
         }
       }).when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
+      doAnswer(MockHelper.mockGetImageAsync("IMAGE_ID", "100.0%"))
+          .when(imagesApi)
+          .getImageAsync(anyString(), Matchers.<FutureCallback<Image>>any());
     }
 
     private void mockSuccessfulAllocateResources() throws Throwable {
