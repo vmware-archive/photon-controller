@@ -45,6 +45,10 @@ MANIFEST_FILE_EXT = "manifest"
 DEFAULT_VMX_VERSION = "vmx-10"
 SHADOW_VM_NAME_PREFIX = "shadow_"
 
+SUPPORT_VSAN = True
+COMPOND_PATH_SEPARATOR = '_'
+VMFS_VOLUMES = "/vmfs/volumes"
+
 diskAdapterType = vim.VirtualDiskManager.VirtualDiskAdapterType
 
 controller_to_disk_adapter_map = {
@@ -92,6 +96,10 @@ def string_to_bool(string_val):
 
 def os_datastore_path(datastore, folder):
     return os.path.join("/vmfs/volumes", datastore, folder)
+
+
+def os_datastore_path_pattern(datastore, folder_prefix):
+    return os.path.join(VMFS_VOLUMES, datastore, folder_prefix) + COMPOND_PATH_SEPARATOR + "*"
 
 
 def datastore_path(datastore, folder):
