@@ -80,6 +80,13 @@ public interface XenonClient {
                                                                         boolean expandContent)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
+  <T extends ServiceDocument> ServiceDocumentQueryResult queryDocuments(Class<T> documentType,
+                                                                        ImmutableMap<String, String> terms,
+                                                                        Optional<Integer> pageSize,
+                                                                        boolean expandContent,
+                                                                        boolean broadCast)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
+
   ServiceDocumentQueryResult queryDocumentPage(String pageLink)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
