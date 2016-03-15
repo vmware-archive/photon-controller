@@ -15,8 +15,10 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
@@ -40,6 +42,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests {@link ResourceTicketService}.
@@ -372,4 +375,74 @@ public class ResourceTicketServiceTest {
       assertThat(patchedState.usageMap.get("key2").getValue(), is(0.0));
     }
   }
+
+  /**
+   * Tests for the handleDelete method.
+   */
+  public class HandleDeleteTest {
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonSetup();
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonTearDown();
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in current state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          ResourceTicketServiceFactory.SELF_LINK,
+          testState,
+          ResourceTicketService.State.class,
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
+          0L,
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE));
+    }
+
+    /**
+     * Test default expiration is not applied if it is already specified in delete operation state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          ResourceTicketServiceFactory.SELF_LINK,
+          testState,
+          ResourceTicketService.State.class,
+          ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1)),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
+          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE));
+    }
+
+    /**
+     * Test expiration of deleted document using default value.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDeleteWithDefaultExpiration() throws Throwable {
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          ResourceTicketServiceFactory.SELF_LINK,
+          testState,
+          ResourceTicketService.State.class,
+          0L,
+          0L,
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS));
+    }
+  }
+
 }
