@@ -1345,6 +1345,8 @@ class HostHandler(Host.Iface):
     def _create_unused_image_descriptors(self, response, images):
         # Get the list of ids
         response.image_descs = list()
+        if not images:
+            return
         ids = images.keys()
         ids.sort()
         for image_id in ids:
