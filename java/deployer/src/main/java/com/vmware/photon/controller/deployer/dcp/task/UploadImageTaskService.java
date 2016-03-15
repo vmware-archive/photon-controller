@@ -17,7 +17,6 @@ import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -38,7 +37,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
@@ -552,7 +550,7 @@ public class UploadImageTaskService extends StatefulService {
   private void updateVms(State currentState, List<String> vmServiceLinks) {
 
     VmService.State vmPatchState = new VmService.State();
-    vmPatchState.imageServiceLink = UriUtils.buildUriPath(ImageServiceFactory.SELF_LINK, currentState.imageId);
+    vmPatchState.imageId = currentState.imageId;
 
     OperationJoin
         .create(vmServiceLinks.stream()

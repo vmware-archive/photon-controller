@@ -30,10 +30,7 @@ import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
@@ -562,8 +559,8 @@ public class CreateManagementVmTaskServiceTest {
           Collections.singleton(UsageTag.MGMT.name()));
 
       VmService.State vmStartState = TestHelper.getVmServiceStartState(hostState);
-      vmStartState.imageServiceLink = ImageServiceFactory.SELF_LINK + "/" + "IMAGE_ID";
-      vmStartState.projectServiceLink = ProjectServiceFactory.SELF_LINK + "/" + "PROJECT_ID";
+      vmStartState.imageId = "IMAGE_ID";
+      vmStartState.projectId = "PROJECT_ID";
       VmService.State vmState = TestHelper.createVmService(testEnvironment, vmStartState);
 
       for (ContainersConfig.ContainerType containerType : ContainersConfig.ContainerType.values()) {
@@ -627,8 +624,8 @@ public class CreateManagementVmTaskServiceTest {
       HostService.State hostState = TestHelper.createHostService(cloudStoreEnvironment, hostStartState);
 
       VmService.State vmStartState = TestHelper.getVmServiceStartState(hostState);
-      vmStartState.imageServiceLink = ImageServiceFactory.SELF_LINK + "/" + "IMAGE_ID";
-      vmStartState.projectServiceLink = ProjectServiceFactory.SELF_LINK + "/" + "PROJECT_ID";
+      vmStartState.imageId = "IMAGE_ID";
+      vmStartState.projectId = "PROJECT_ID";
       VmService.State vmState = TestHelper.createVmService(testEnvironment, vmStartState);
 
       for (ContainersConfig.ContainerType containerType : ContainersConfig.ContainerType.values()) {
@@ -706,10 +703,8 @@ public class CreateManagementVmTaskServiceTest {
       ArgumentCaptor<VmMetadata> metadataCaptor = ArgumentCaptor.forClass(VmMetadata.class);
 
       VmService.State finalVmState = testEnvironment.getServiceState(startState.vmServiceLink, VmService.State.class);
-      assertThat(finalVmState.vmFlavorServiceLink,
-          is(UriUtils.buildUriPath(FlavorServiceFactory.SELF_LINK, "VM_FLAVOR_ID")));
-      assertThat(finalVmState.diskFlavorServiceLink,
-          is(UriUtils.buildUriPath(FlavorServiceFactory.SELF_LINK, "DISK_FLAVOR_ID")));
+      assertThat(finalVmState.vmFlavorId, is("VM_FLAVOR_ID"));
+      assertThat(finalVmState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalVmState.vmId, is(vmId));
 
       verify(vmApi).setMetadataAsync(
@@ -821,10 +816,8 @@ public class CreateManagementVmTaskServiceTest {
           Matchers.<FutureCallback<Task>>any());
 
       VmService.State finalVmState = testEnvironment.getServiceState(startState.vmServiceLink, VmService.State.class);
-      assertThat(finalVmState.vmFlavorServiceLink,
-          is(UriUtils.buildUriPath(FlavorServiceFactory.SELF_LINK, "VM_FLAVOR_ID")));
-      assertThat(finalVmState.diskFlavorServiceLink,
-          is(UriUtils.buildUriPath(FlavorServiceFactory.SELF_LINK, "DISK_FLAVOR_ID")));
+      assertThat(finalVmState.vmFlavorId, is("VM_FLAVOR_ID"));
+      assertThat(finalVmState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalVmState.vmId, is(vmId));
 
       ArgumentCaptor<VmMetadata> captor = ArgumentCaptor.forClass(VmMetadata.class);

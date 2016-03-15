@@ -28,10 +28,7 @@ import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -578,9 +575,8 @@ public class BatchCreateManagementWorkflowServiceTest {
       taskReturnedByGetCreateVmFlavorTask = new Task();
       taskReturnedByGetCreateVmFlavorTask.setId("createVmFlavorTaskId");
       taskReturnedByGetCreateVmFlavorTask.setState("COMPLETED");
-      FlavorService.State flavorService = TestHelper.createFlavor(cloudStoreMachine, null);
       Task.Entity taskEntity = new Task.Entity();
-      taskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(flavorService.documentSelfLink));
+      taskEntity.setId("VM_FLAVOR_ID");
       taskReturnedByGetCreateVmFlavorTask.setEntity(taskEntity);
 
       taskReturnedByCreateDiskFlavor = new Task();
@@ -590,9 +586,8 @@ public class BatchCreateManagementWorkflowServiceTest {
       taskReturnedByGetCreateDiskFlavorTask = new Task();
       taskReturnedByGetCreateDiskFlavorTask.setId("createDiskFlavorTaskId");
       taskReturnedByGetCreateDiskFlavorTask.setState("COMPLETED");
-      FlavorService.State diskFlavorService = TestHelper.createFlavor(cloudStoreMachine, "mgmt-vm-disk-NAME");
       Task.Entity diskTaskEntity = new Task.Entity();
-      diskTaskEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(diskFlavorService.documentSelfLink));
+      diskTaskEntity.setId("DISK_FLAVOR_ID");
       taskReturnedByGetCreateDiskFlavorTask.setEntity(diskTaskEntity);
 
       taskReturnedByCreateTenant = new Task();
@@ -616,14 +611,12 @@ public class BatchCreateManagementWorkflowServiceTest {
       taskReturnedByCreateProject = new Task();
       taskReturnedByCreateProject.setId("createProjectTaskId");
       taskReturnedByCreateProject.setState("COMPLETED");
-      ProjectService.State projectState = TestHelper.createProject(tenantId, rtId, cloudStoreMachine);
       Task.Entity projectEntity = new Task.Entity();
-      projectEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(projectState.documentSelfLink));
+      projectEntity.setId("PROJECT_ID");
       taskReturnedByCreateProject.setEntity(projectEntity);
 
-      ImageService.State imageServiceState = TestHelper.createImageService(cloudStoreMachine);
       Task.Entity taskEntityUpload = new Task.Entity();
-      taskEntityUpload.setId(ServiceUtils.getIDFromDocumentSelfLink(imageServiceState.documentSelfLink));
+      taskEntityUpload.setId("IMAGE_ID");
 
       taskReturnedByUploadImage = new Task();
       taskReturnedByUploadImage.setId("taskId");
@@ -850,11 +843,8 @@ public class BatchCreateManagementWorkflowServiceTest {
       HostService.State hostServiceState = TestHelper.createHostService(cloudStoreMachine,
           Collections.singleton(UsageTag.MGMT.name()));
 
-      ImageService.State imageServiceState = TestHelper.createImageService(cloudStoreMachine);
-
       VmService.State vmServiceStartState = TestHelper.getVmServiceStartState(hostServiceState);
       vmServiceStartState.ipAddress = "1.1.1.1";
-      vmServiceStartState.imageServiceLink = imageServiceState.documentSelfLink;
       VmService.State vmServiceState = TestHelper.createVmService(machine, vmServiceStartState);
       for (ContainersConfig.ContainerType containerType : ContainersConfig.ContainerType.values()) {
 

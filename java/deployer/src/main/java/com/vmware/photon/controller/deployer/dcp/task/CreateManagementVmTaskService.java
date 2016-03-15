@@ -22,7 +22,6 @@ import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.VmMetadata;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -53,7 +52,6 @@ import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -811,7 +809,7 @@ public class CreateManagementVmTaskService extends StatefulService {
   private void updateVmFlavorId(State currentState, String vmFlavorId) {
 
     VmService.State vmPatchState = new VmService.State();
-    vmPatchState.vmFlavorServiceLink = UriUtils.buildUriPath(FlavorServiceFactory.SELF_LINK, vmFlavorId);
+    vmPatchState.vmFlavorId = vmFlavorId;
 
     State selfPatchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_DISK_FLAVOR, null);
     selfPatchState.vmFlavorId = vmFlavorId;
@@ -959,7 +957,7 @@ public class CreateManagementVmTaskService extends StatefulService {
   private void updateDiskFlavorId(State currentState, String diskFlavorId) {
 
     VmService.State vmPatchState = new VmService.State();
-    vmPatchState.diskFlavorServiceLink = UriUtils.buildUriPath(FlavorServiceFactory.SELF_LINK, diskFlavorId);
+    vmPatchState.diskFlavorId = diskFlavorId;
 
     State selfPatchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_VM, null);
     selfPatchState.diskFlavorId = diskFlavorId;
@@ -1046,14 +1044,14 @@ public class CreateManagementVmTaskService extends StatefulService {
     VmCreateSpec vmCreateSpec = new VmCreateSpec();
     vmCreateSpec.setName(vmState.name);
     vmCreateSpec.setFlavor("mgmt-vm-" + vmState.name);
-    vmCreateSpec.setSourceImageId(ServiceUtils.getIDFromDocumentSelfLink(vmState.imageServiceLink));
+    vmCreateSpec.setSourceImageId(vmState.imageId);
     vmCreateSpec.setEnvironment(new HashMap<>());
     vmCreateSpec.setAttachedDisks(Collections.singletonList(bootDiskCreateSpec));
     vmCreateSpec.setAffinities(Arrays.asList(hostLocalitySpec, datastoreLocalitySpec, portGroupLocalitySpec));
 
     HostUtils.getApiClient(this)
         .getProjectApi()
-        .createVmAsync(ServiceUtils.getIDFromDocumentSelfLink(vmState.projectServiceLink), vmCreateSpec,
+        .createVmAsync(vmState.projectId, vmCreateSpec,
             new FutureCallback<Task>() {
               @Override
               public void onSuccess(@javax.validation.constraints.NotNull Task task) {

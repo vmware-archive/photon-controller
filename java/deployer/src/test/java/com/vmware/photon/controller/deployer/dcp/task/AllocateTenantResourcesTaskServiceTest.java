@@ -23,7 +23,6 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -551,7 +550,7 @@ public class AllocateTenantResourcesTaskServiceTest {
       QueryTask result = testEnvironment.sendQueryAndWait(queryTask);
       for (Object vmDocument : result.results.documents.values()) {
         VmService.State vmState = Utils.fromJson(vmDocument, VmService.State.class);
-        assertThat(vmState.projectServiceLink, is(UriUtils.buildUriPath(ProjectServiceFactory.SELF_LINK, projectId)));
+        assertThat(vmState.projectId, is(projectId));
       }
 
       DeploymentService.State deploymentState = cloudStoreEnvironment.getServiceState(finalState.deploymentServiceLink,
@@ -621,7 +620,7 @@ public class AllocateTenantResourcesTaskServiceTest {
       QueryTask result = testEnvironment.sendQueryAndWait(queryTask);
       for (Object vmDocument : result.results.documents.values()) {
         VmService.State vmState = Utils.fromJson(vmDocument, VmService.State.class);
-        assertThat(vmState.projectServiceLink, is(UriUtils.buildUriPath(ProjectServiceFactory.SELF_LINK, projectId)));
+        assertThat(vmState.projectId, is(projectId));
       }
 
       DeploymentService.State deploymentState = cloudStoreEnvironment.getServiceState(finalState.deploymentServiceLink,
