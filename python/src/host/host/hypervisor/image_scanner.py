@@ -9,15 +9,23 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
+import glob
+import uuid
 
+import os
 from enum import Enum
 import logging
 import threading
 import time
 
 from common.lock import locked
+from host.hypervisor.esx.folder import VM_FOLDER_NAME, IMAGE_FOLDER_NAME
+from host.hypervisor.esx.vm_config import SUPPORT_VSAN
+from host.hypervisor.esx.vm_config import os_datastore_path_pattern
+from host.hypervisor.esx.vm_config import vmdk_add_suffix
 
 from host.hypervisor.task_runner import TaskRunner, TaskAlreadyRunning
+from host.hypervisor.vm_utils import parse_vmdk
 
 
 class InvalidStateTransition(Exception):
@@ -40,7 +48,7 @@ on a datastore.
 class DatastoreImageScannerTaskRunner(TaskRunner):
     def __init__(self, name, ds_image_scanner):
         super(DatastoreImageScannerTaskRunner, self).__init__(name)
-        self.logger = logging.getLogger(__name__)
+        self._logger = logging.getLogger(__name__)
         self._ds_image_scanner = ds_image_scanner
         self._vm_manager = ds_image_scanner.vm_manager
         self._image_manager = ds_image_scanner.image_manager
@@ -49,10 +57,11 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
     def execute_task(self):
         try:
             # Scan the vms first
-            self._ds_image_scanner.\
-                set_state(DatastoreImageScanner.State.VM_SCAN)
-            active_images = self._vm_manager.\
-                get_vm_images(self._ds_image_scanner)
+            self._ds_image_scanner.set_state(DatastoreImageScanner.State.VM_SCAN)
+            if SUPPORT_VSAN:
+                active_images = self._scan_vms_for_active_images(self._ds_image_scanner)
+            else:
+                active_images = self._vm_manager.get_vm_images(self._ds_image_scanner)
             self._ds_image_scanner.set_active_images(active_images)
 
             # Check if we are still running
@@ -60,30 +69,154 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
                 return
 
             # Mark the images
-            self._ds_image_scanner.\
-                set_state(DatastoreImageScanner.State.IMAGE_MARK)
-            unused_images = self._image_manager.\
-                mark_unused(self._ds_image_scanner)
+            self._ds_image_scanner.set_state(DatastoreImageScanner.State.IMAGE_MARK)
+            if SUPPORT_VSAN:
+                unused_images = self._scan_for_unused_images(self._ds_image_scanner)
+            else:
+                unused_images = self._image_manager.mark_unused(self._ds_image_scanner)
             self._ds_image_scanner.set_unused_images(unused_images)
 
         except Exception as e:
-            self.logger.warning("Exception caught by image "
-                                "scanner thread, %s, ds_id : %s, state: %s, "
-                                "active images: %d, unused images: %d"
-                                % (e,
-                                   self._ds_image_scanner.datastore_id,
-                                   self._ds_image_scanner.get_state(),
-                                   len(self._ds_image_scanner.
-                                       get_active_images()),
-                                   len(self._ds_image_scanner.
-                                       get_unused_images()))
-                                )
+            self._logger.exception("Exception caught by image "
+                                   "scanner thread, %s, ds_id : %s, state: %s, "
+                                   "active images: %d, unused images: %d"
+                                   % (e,
+                                      self._ds_image_scanner.datastore_id,
+                                      self._ds_image_scanner.get_state(),
+                                      len(self._ds_image_scanner.get_active_images()),
+                                      len(self._ds_image_scanner.get_unused_images())))
             # Re-raise exception so it can be saved in
             # the task_runner
             raise e
         finally:
-            self._ds_image_scanner.\
-                set_state(DatastoreImageScanner.State.IDLE)
+            self._ds_image_scanner.set_state(DatastoreImageScanner.State.IDLE)
+
+    def _scan_vms_for_active_images(self, image_scanner):
+        vm_folder_pattern = os_datastore_path_pattern(image_scanner.datastore_id, VM_FOLDER_NAME)
+        rest_interval_sec = image_scanner.get_vm_scan_rest_interval()
+        active_images = dict()
+        for vm_dir in glob.glob(vm_folder_pattern):
+            # On a directory change check if it still needs to run
+            if image_scanner.is_stopped():
+                break
+
+            self._logger.info("current_vm = %s" % vm_dir)
+            image_id, file_name_hint = self._get_vm_base_image(image_scanner, vm_dir)
+            if image_id and image_id not in active_images:
+                self._logger.info("found active image: %s" % image_id)
+                active_images[image_id] = file_name_hint
+
+            waste_time(rest_interval_sec)
+
+        return active_images
+
+    def _get_vm_base_image(self, image_scanner, vm_dir):
+        image_id = None
+        file_name_hint = None
+        # Look for the vmdk file
+        for vm_file in os.listdir(vm_dir):
+            # Skip non vmdk files or directories
+            if not vm_file.endswith(".vmdk"):
+                continue
+            # Skip vmdk delta files
+            if vm_file.endswith("delta.vmdk"):
+                continue
+            # Skip vmdk flat file
+            if vm_file.endswith("flat.vmdk"):
+                continue
+            vmdk_pathname = os.path.join(vm_dir, vm_file)
+            self._logger.info("found vmdk: %s" % vmdk_pathname)
+            try:
+                vmdk_dictionary = parse_vmdk(vmdk_pathname)
+                # In vmdk of linked clone, parentFileNameHint points to base image.
+                # If there is no file_name_hint, skip it
+                if image_scanner.FILE_NAME_HINT not in vmdk_dictionary:
+                    self._logger.info("skipping vmdk(%s) due to missing parent hint" % vmdk_pathname)
+                    continue
+                file_name_hint = vmdk_dictionary[image_scanner.FILE_NAME_HINT]
+                image_id = self._image_manager.get_image_id_from_path(file_name_hint)
+            except Exception as ex:
+                self._logger.warn("skipping vmdk(%s) due to exception: %s" % (vmdk_pathname, ex))
+            break
+
+        return image_id, file_name_hint
+
+    """
+    This method scans the image tree for the current
+    datastore starting from the directory "root"
+    (e.g.: /vmfs/volumes/<ds-id>/images). It looks for
+    unused images and creates a marker file in the
+    directory containing the image.
+    """
+    def _scan_for_unused_images(self, image_scanner):
+        image_folder_pattern = os_datastore_path_pattern(image_scanner.datastore_id, IMAGE_FOLDER_NAME)
+        active_images = image_scanner.get_active_images()
+        unused_images = dict()
+        # Compute scan rest interval
+        rest_interval_sec = image_scanner.get_image_mark_rest_interval()
+        for image_dir in glob.glob(image_folder_pattern):
+            # On a directory change check if it still needs to run
+            if image_scanner.is_stopped():
+                break
+
+            self._logger.info("current_image = %s" % image_dir)
+            image_id = self._parse_image_id_from_dir(image_dir)
+            if not image_id:
+                continue
+
+            if image_id in active_images:
+                self._logger.info("skipping active image %s" % image_id)
+                continue
+
+            self._mark_unused_image(image_scanner, image_id, image_dir, unused_images)
+
+            waste_time(rest_interval_sec)
+
+        return unused_images
+
+    def _mark_unused_image(self, image_scanner, image_id, image_dir, unused_images):
+        vmdk_filepath = os.path.join(image_dir, vmdk_add_suffix(image_id))
+        # If a file of the format: <image-id>.vmdk does not exists, we assume this is
+        # the result of a partial image copy, it should be deleted, log a message
+        # and continue
+        if not os.path.isfile(vmdk_filepath):
+            self._logger.info("No vmdk file found in image directory: %s", image_dir)
+            return
+
+        # If there is not already a marker file, create the file
+        marker_pathname = os.path.join(image_dir, self._image_manager.IMAGE_MARKER_FILE_NAME)
+        if not os.path.isfile(marker_pathname):
+            # Write the content of _start_time to the marker file, any change occurred to
+            # the image after _start_time, invalidates the image as a candidate for removal
+            try:
+                self._write_marker_file(marker_pathname, image_scanner.start_time_str)
+            except Exception as ex:
+                self._logger.warning("Failed to write maker file: %s, %s" % (marker_pathname, ex))
+
+        self._logger.info("Found unused image: %s" % image_id)
+        unused_images[image_id] = image_dir
+
+    def _parse_image_id_from_dir(self, image_dir):
+        try:
+            image_id = os.path.split(image_dir)[1].split('_')[1]
+            # Validate directory name, if not valid skip it
+            if not self._validate_image_id(image_id):
+                self._logger.info("Invalid image id for directory: %s", image_dir)
+                return None
+            return image_id
+        except Exception as ex:
+            self._logger.info("Failed to get image vmdk: %s, %s" % (image_dir, ex))
+            return None
+
+    @staticmethod
+    def _validate_image_id(image_id):
+        image_uuid = uuid.UUID(image_id)
+        return str(image_uuid) == image_id
+
+    @staticmethod
+    def _write_marker_file(filename, content):
+        with open(filename, "wx") as marker_file:
+            marker_file.write(content)
 
 
 """
@@ -148,8 +281,7 @@ class DatastoreImageScanner:
         self._active_images = dict()
         self._timeout = DatastoreImageScanner.DEFAULT_TIMEOUT
         task_runner_name = __name__ + "_" + datastore_id
-        self._task_runner = \
-            DatastoreImageScannerTaskRunner(task_runner_name, self)
+        self._task_runner = DatastoreImageScannerTaskRunner(task_runner_name, self)
         self.lock = threading.Lock()
 
     @locked
@@ -226,9 +358,7 @@ class DatastoreImageScanner:
         self._active_images = active_images
 
     def get_vm_scan_rest_interval(self):
-        return (60.0 / self.vm_scan_rate) - \
-            self.VM_SCAN_SINGLE_OP_DURATION
+        return (60.0 / self.vm_scan_rate) - self.VM_SCAN_SINGLE_OP_DURATION
 
     def get_image_mark_rest_interval(self):
-        return (60.0 / self.image_mark_rate) - \
-            self.IMAGE_MARK_SINGLE_OP_DURATION
+        return (60.0 / self.image_mark_rate) - self.IMAGE_MARK_SINGLE_OP_DURATION
