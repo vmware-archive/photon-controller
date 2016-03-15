@@ -29,7 +29,6 @@ from gen.scheduler.ttypes import PlaceResultCode
 from scheduler.base_scheduler import BaseScheduler
 from scheduler.base_scheduler import InvalidScheduler
 from scheduler.count_up_down_latch import CountUpDownLatch
-from scheduler.health_checker import HealthChecker
 from scheduler.scheduler_client import SchedulerClient
 from scheduler.strategy.default_scorer import DefaultScorer
 from scheduler.strategy.random_subset_strategy import RandomSubsetStrategy
@@ -59,7 +58,8 @@ class LeafScheduler(BaseScheduler):
 
         :param scheduler_id: scheduler id
         :type scheduler_id: str
-        :type enable_health_checker: enables health checking of children.
+        :type enable_health_checker: does nothing, we are in the process
+        of removing it as a part of our move to flat scheduler.
         """
         self._logger = logging.getLogger(__name__)
         self._logger.info("Creating leaf scheduler: %s" % scheduler_id)
@@ -73,8 +73,6 @@ class LeafScheduler(BaseScheduler):
         self._scorer = DefaultScorer(ut_ratio)
         self._threadpool = None
         self._initialize_services(scheduler_id)
-        self._health_checker = None
-        self._enable_health_checker = enable_health_checker
         self._configured = ConfigStates.UNINITIALIZED
 
     def _initialize_services(self, scheduler_id):
@@ -91,17 +89,6 @@ class LeafScheduler(BaseScheduler):
         # coalesce constraints, so searches are more efficient.
         self._hosts = hosts
         self._coalesce_resources(self._hosts)
-
-        if self._health_checker:
-            self._health_checker.stop()
-        if self._enable_health_checker:
-            # initialize health checker with the new set of children.
-            agent_config = common.services.get(ServiceName.AGENT_CONFIG)
-            children = dict((host.id, ServerAddress(host.address, host.port))
-                            for host in self._hosts)
-            self._health_checker = HealthChecker(self._scheduler_id, children,
-                                                 agent_config)
-            self._health_checker.start()
         self._configured = ConfigStates.INITIALIZED
 
     @locked
@@ -229,12 +216,7 @@ class LeafScheduler(BaseScheduler):
             return PlaceResponse(PlaceResultCode.SYSTEM_ERROR)
 
     def _filter_missing_hosts(self, selected_hosts):
-        if self._health_checker is None:
-            return selected_hosts
-        missing = self._health_checker.get_missing_hosts
-        filtered_hosts = [host for host in selected_hosts
-                          if host.id not in missing]
-        return filtered_hosts
+        return selected_hosts
 
     def _execute_placement(self, agents, request):
         return self._execute_placement_serial(agents, request)
@@ -329,7 +311,5 @@ class LeafScheduler(BaseScheduler):
                 "Waiting for %d calls to complete before demotion"
                 % self._latch.count)
         self._latch.await()
-        if self._health_checker:
-            self._health_checker.stop()
         self._logger.info("Cleaned up leaf scheduler")
         self._configured = ConfigStates.UNINITIALIZED
