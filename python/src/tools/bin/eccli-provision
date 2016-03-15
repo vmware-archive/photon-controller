@@ -2,42 +2,19 @@
 # Copyright (c) 2015 VMware, Inc. All Rights Reserved.
 import sys
 
-from eccli.concurrency import run_concurrency
 from eccli.format import print_request
 from eccli.format import print_response
 from eccli.optparser import default_parser
 from eccli.thrift import get_client
 from gen.common.ttypes import ServerAddress
-from gen.host.ttypes import ProvisionRequest
+from gen.agent.ttypes import ProvisionRequest
 from gen.resource.ttypes import ImageDatastore
 
 parser = default_parser(usage="eccli-provision [options]",
                         add_help=True)
-parser.add_option("-f", "--fault-domain",
-                  action="store", type="string", dest="fault_domain",
-                  help="fault domain")
 parser.add_option("-d", "--datastores",
                   action="store", type="string", dest="datastores",
                   help="list of datastore names (e.g. ds1,ds2)")
-parser.add_option("-n", "--networks",
-                  action="store", type="string", dest="networks",
-                  help="list of networks (e.g. ns1,ns2)")
-parser.add_option("-a", "--address",
-                  action="store", type="string", dest="address",
-                  help="host ip,port information agent binds to (ip:port)")
-parser.add_option("-m", "--memory-overcommit",
-                  action="store", type="float", dest="memory_overcommit",
-                  help="memory overcommit rate")
-parser.add_option("-c", "--cpu-overcommit",
-                  action="store", type="float", dest="cpu_overcommit",
-                  help="cpu overcommit rate")
-parser.add_option("-i", "--image-datastore",
-                  action="store", type="string", dest="image_datastore",
-                  help="image datastore name")
-parser.add_option("-v", "--image-datasotre-for-vms",
-                  action="store_true",
-                  dest="image_datastore_for_vm",
-                  help="Whether the image datastore could be used for vms")
 (options, args) = parser.parse_args()
 
 if not options.datastores:
@@ -45,26 +22,13 @@ if not options.datastores:
     parser.print_help()
     exit(1)
 
-client = get_client(options)
+client = get_client(options, "AgentControl")
 
 request = ProvisionRequest()
-request.fault_domain = options.fault_domain
-request.memory_overcommit = options.memory_overcommit
-request.cpu_overcommit = options.cpu_overcommit
-if options.datastores:
-    request.datastores = options.datastores.split(',')
-if options.networks:
-    request.networks = options.networks.split(',')
-if options.image_datastore:
-    request.image_datastores = set([ImageDatastore(
-        name=options.image_datastore,
-        used_for_vms=options.image_datastore_for_vm)])
-if options.address:
-    host, port = options.address.split(':')
-    request.address = ServerAddress(host, int(port))
+request.address = ServerAddress(options.host, options.port)
+request.datastores = options.datastores.split(',')
+request.image_datastores = set([ImageDatastore(name=ds, used_for_vms=True) for ds in request.datastores])
 
 print_request(request)
 response = client.provision(request)
 print_response(response)
-
-report = run_concurrency("provision", request, options)

@@ -22,7 +22,7 @@ client = get_client(options)
 
 request = StartImageScanRequest()
 request.datastore_id = options.datastore
-request.scan_rate = None
+request.scan_rate = 300
 request.timeout = 2 * 60  # 2 minutes
 
 print_request(request)
