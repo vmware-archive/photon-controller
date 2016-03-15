@@ -101,7 +101,13 @@ def rm_rf(dir):
 
     """
     try:
-        shutil.rmtree(dir)
+        if os.path.islink(dir):
+            # if dir is a symlink, delete the link target
+            link = os.readlink(dir)
+            shutil.rmtree(link)
+            os.remove(dir)
+        else:
+            shutil.rmtree(dir)
     except OSError as exc:
         if exc.errno == errno.ENOENT:
             pass
