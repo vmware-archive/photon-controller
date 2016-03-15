@@ -539,31 +539,70 @@ public class ImageDcpBackendTest {
    */
   @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
   public static class ImageSeedingProgressCheckTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private ImageBackend imageBackend;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
     @Test
     public void testImageSeedingInProgress() throws Throwable {
-      String imageId = createImageDocument(dcpClient, "image-name", ImageState.READY, 1L, 10, 8, 3, 2);
+      String imageId = createImageDocument(dcpClient, "image-name", ImageState.READY, 1L, 10, 3, 3, 2);
 
+      // Create Image to DataStore mapping services
       List<String> imageDatastores = Arrays.asList(new String[]{"datastore1", "datastore2"});
       for (String datastoreId : imageDatastores) {
         createImageToImageDatastoreMappingService(imageId, datastoreId);
       }
 
-      // An unrelated imagestore, and it should not be returned by
-      // getSeededImageDatastores
-      createImageToImageDatastoreMappingService("image2", "datastore3");
+      // An unrelated imagestore, and it should not be returned by getSeededImageDatastores
+      createImageToImageDatastoreMappingService("image2", "datastore4");
 
-      boolean done = BackendHelpers.isImageSeedingDone(dcpClient, imageId);
+      // Assert
+      boolean done = imageBackend.isImageSeedingDone(imageId);
       assertThat(done, is(false));
 
-      List<String> candidateDatastores = BackendHelpers.getSeededImageDatastores(dcpClient, imageId);
+      List<String> candidateDatastores = imageBackend.getSeededImageDatastores(imageId);
       assertThat(CollectionUtils.isEqualCollection(imageDatastores, candidateDatastores), is(true));
     }
 
     @Test
     public void testImageSeedingFinished() throws Throwable {
-      String imageId = createImageDocument(dcpClient, "image-name", ImageState.READY, 1L, 10, 8, 8, 8);
-      boolean done = BackendHelpers.isImageSeedingDone(dcpClient, imageId);
+      String imageId = createImageDocument(dcpClient, "image-name", ImageState.READY, 1L, 10, 3, 3, 3);
+
+      // Create Image to DataStore mapping services
+      List<String> imageDatastores = Arrays.asList(new String[]{"datastore1", "datastore2", "datastore3"});
+      for (String datastoreId : imageDatastores) {
+        createImageToImageDatastoreMappingService(imageId, datastoreId);
+      }
+
+      // An unrelated imagestore, and it should not be returned by getSeededImageDatastores
+      createImageToImageDatastoreMappingService("image2", "datastore3");
+
+      boolean done = imageBackend.isImageSeedingDone(imageId);
       assertThat(done, is(true));
+
+      List<String> candidateDatastores = imageBackend.getSeededImageDatastores(imageId);
+      assertThat(CollectionUtils.isEqualCollection(imageDatastores, candidateDatastores), is(true));
     }
   }
 }

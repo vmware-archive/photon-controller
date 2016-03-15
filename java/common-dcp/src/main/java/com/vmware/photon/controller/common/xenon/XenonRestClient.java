@@ -351,6 +351,15 @@ public class XenonRestClient implements XenonClient {
     return QueryTaskUtils.getBroadcastQueryDocuments(documentType, result);
   }
 
+  @Override
+  public <T extends ServiceDocument> ServiceDocumentQueryResult queryDocuments(Class<T> documentType,
+                                                                               ImmutableMap<String, String> terms,
+                                                                               Optional<Integer> pageSize,
+                                                                               boolean expandContent)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    return queryDocuments(documentType, terms, pageSize, expandContent, true);
+  }
+
   /**
    * Executes a Xenon query which queries for documents of type T. The query terms are optional. The pageSize is also
    * optional. If it is not provided, the complete document will be retrieved.
@@ -359,6 +368,7 @@ public class XenonRestClient implements XenonClient {
    * @param terms
    * @param pageSize
    * @param expandContent
+   * @param broadCast
    * @param <T>
    * @return
    * @throws BadRequestException
@@ -370,7 +380,8 @@ public class XenonRestClient implements XenonClient {
   public <T extends ServiceDocument> ServiceDocumentQueryResult queryDocuments(Class<T> documentType,
                                                                                ImmutableMap<String, String> terms,
                                                                                Optional<Integer> pageSize,
-                                                                               boolean expandContent)
+                                                                               boolean expandContent,
+                                                                               boolean broadCast)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
 
     checkNotNull(documentType, "Cannot query documents with null documentType");
@@ -379,7 +390,9 @@ public class XenonRestClient implements XenonClient {
     }
 
     QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(documentType, terms);
-    spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.BROADCAST);
+    if (broadCast) {
+      spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.BROADCAST);
+    }
     if (expandContent) {
       spec.options.add(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
     }

@@ -714,15 +714,15 @@ public class XenonRestClientTest {
       assertThat(documentLinks.size(), is(0));
     }
 
-    @Test
-    public void testBroadcastQueryOfCreatedDocuments() throws Throwable {
+    @Test(dataProvider = "QueryOfCreateDocuments")
+    public void testQueryOfCreatedDocuments(boolean broadCast) throws Throwable {
       final int numDocuments = 100;
       final int pageSize = 30;
 
       doReturn(1L).when(xenonRestClient).getServiceDocumentStatusCheckIntervalMillis();
 
-      checkNoDocumentsRetrieved(Optional.<Integer>absent());
-      checkNoDocumentsRetrieved(Optional.of(pageSize));
+      checkNoDocumentsRetrieved(Optional.<Integer>absent(), broadCast);
+      checkNoDocumentsRetrieved(Optional.of(pageSize), broadCast);
 
       Map<String, ExampleService.ExampleServiceState> exampleServiceStateMap = new HashMap<>();
       for (int i = 0; i < numDocuments; i++) {
@@ -735,21 +735,34 @@ public class XenonRestClientTest {
 
       checkBroadcastQueryParams();
 
-      checkDocumentsRetrievedInAll(numDocuments, null, true, exampleServiceStateMap.values());
-      checkDocumentsRetrievedPageByPage(numDocuments, pageSize, null, true, exampleServiceStateMap.values());
+      checkDocumentsRetrievedInAll(
+          numDocuments, null, true, broadCast, exampleServiceStateMap.values());
+      checkDocumentsRetrievedPageByPage(
+          numDocuments, pageSize, null, true, broadCast, exampleServiceStateMap.values());
 
       ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
-      checkDocumentsRetrievedInAll(numDocuments, termsBuilder.build(), true, exampleServiceStateMap.values());
-      checkDocumentsRetrievedPageByPage(numDocuments, pageSize, termsBuilder.build(), true,
-          exampleServiceStateMap.values());
+      checkDocumentsRetrievedInAll(
+          numDocuments, termsBuilder.build(), true, broadCast, exampleServiceStateMap.values());
+      checkDocumentsRetrievedPageByPage(
+          numDocuments, pageSize, termsBuilder.build(), true, broadCast, exampleServiceStateMap.values());
 
       for (Map.Entry<String, ExampleService.ExampleServiceState> entry : exampleServiceStateMap.entrySet()) {
         termsBuilder = new ImmutableMap.Builder<>();
         termsBuilder.put("name", entry.getValue().name);
 
-        checkDocumentsRetrievedInAll(1, termsBuilder.build(), true, ImmutableSet.of(entry.getValue()));
-        checkDocumentsRetrievedPageByPage(1, pageSize, termsBuilder.build(), true, ImmutableSet.of(entry.getValue()));
+        checkDocumentsRetrievedInAll(
+            1, termsBuilder.build(), true, broadCast, ImmutableSet.of(entry.getValue()));
+        checkDocumentsRetrievedPageByPage(
+            1, pageSize, termsBuilder.build(), true, broadCast, ImmutableSet.of(entry.getValue()));
       }
+    }
+
+    @DataProvider(name = "QueryOfCreateDocuments")
+    Object[][] queryOfCreateDocumentsParams() {
+      return new Object[][] {
+          {false},
+          {true}
+      };
     }
 
     private void checkBroadcastQueryParams() throws Throwable {
@@ -993,13 +1006,13 @@ public class XenonRestClientTest {
       assertThat(queryResult.results, is(nullValue()));
     }
 
-    @Test
-    public void testBroadcastQueryOfCreatedDocuments() throws Throwable {
+    @Test(dataProvider = "QueryOfCreateDocuments")
+    public void testQueryOfCreatedDocuments(boolean broadCast) throws Throwable {
       final int numDocuments = 100;
       final int pageSize = 30;
 
-      checkNoDocumentsRetrieved(Optional.<Integer>absent());
-      checkNoDocumentsRetrieved(Optional.of(pageSize));
+      checkNoDocumentsRetrieved(Optional.<Integer>absent(), broadCast);
+      checkNoDocumentsRetrieved(Optional.of(pageSize), broadCast);
 
       Map<String, ExampleService.ExampleServiceState> exampleServiceStateMap = new HashMap<>();
       for (int i = 0; i < numDocuments; i++) {
@@ -1010,27 +1023,39 @@ public class XenonRestClientTest {
         exampleServiceStateMap.put(documentSelfLink, exampleServiceState);
       }
 
-      checkDocumentsRetrievedInAll(numDocuments, null, true, exampleServiceStateMap.values());
-      checkDocumentsRetrievedPageByPage(numDocuments, pageSize, null, true, exampleServiceStateMap.values());
+      checkDocumentsRetrievedInAll(numDocuments, null, true, broadCast, exampleServiceStateMap.values());
+      checkDocumentsRetrievedPageByPage(
+          numDocuments, pageSize, null, true, broadCast, exampleServiceStateMap.values());
 
       ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
-      checkDocumentsRetrievedInAll(numDocuments, termsBuilder.build(), true, exampleServiceStateMap.values());
-      checkDocumentsRetrievedPageByPage(numDocuments, pageSize, termsBuilder.build(), true,
-          exampleServiceStateMap.values());
+      checkDocumentsRetrievedInAll(
+          numDocuments, termsBuilder.build(), true, broadCast, exampleServiceStateMap.values());
+      checkDocumentsRetrievedPageByPage(
+          numDocuments, pageSize, termsBuilder.build(), true, broadCast, exampleServiceStateMap.values());
 
       for (Map.Entry<String, ExampleService.ExampleServiceState> entry : exampleServiceStateMap.entrySet()) {
         termsBuilder = new ImmutableMap.Builder<>();
         termsBuilder.put("name", entry.getValue().name);
 
-        checkDocumentsRetrievedInAll(1, termsBuilder.build(), true, ImmutableSet.of(entry.getValue()));
-        checkDocumentsRetrievedPageByPage(1, pageSize, termsBuilder.build(), true, ImmutableSet.of(entry.getValue()));
+        checkDocumentsRetrievedInAll(
+            1, termsBuilder.build(), true, broadCast, ImmutableSet.of(entry.getValue()));
+        checkDocumentsRetrievedPageByPage(
+            1, pageSize, termsBuilder.build(), true, broadCast, ImmutableSet.of(entry.getValue()));
       }
+    }
+
+    @DataProvider(name = "QueryOfCreateDocuments")
+    Object[][] queryOfCreateDocumentsParams() {
+      return new Object[][] {
+          {false},
+          {true}
+      };
     }
   }
 
-  private void checkNoDocumentsRetrieved(Optional<Integer> pageSize) throws Throwable {
+  private void checkNoDocumentsRetrieved(Optional<Integer> pageSize, boolean broadCast) throws Throwable {
     ServiceDocumentQueryResult queryResult = xenonRestClient.queryDocuments(ExampleService.ExampleServiceState.class,
-        null, pageSize, false);
+        null, pageSize, false, broadCast);
 
     assertThat(queryResult.documentCount, is(0L));
     assertNull(queryResult.nextPageLink);
@@ -1040,11 +1065,12 @@ public class XenonRestClientTest {
   private void checkDocumentsRetrievedInAll(int numDocuments,
                                             ImmutableMap<String, String> queryTerms,
                                             boolean expandContent,
+                                            boolean broadCast,
                                             Collection<ExampleService.ExampleServiceState> expectedDocuments)
       throws Throwable {
 
     ServiceDocumentQueryResult queryResult = xenonRestClient.queryDocuments
-        (ExampleService.ExampleServiceState.class, queryTerms, Optional.absent(), expandContent);
+        (ExampleService.ExampleServiceState.class, queryTerms, Optional.absent(), expandContent, broadCast);
 
     Set<String> expectedDocumentNames = expectedDocuments.stream()
         .map(d -> d.name)
@@ -1064,11 +1090,12 @@ public class XenonRestClientTest {
                                                  int pageSize,
                                                  ImmutableMap<String, String> queryTerms,
                                                  boolean expandContent,
+                                                 boolean broadCast,
                                                  Collection<ExampleService.ExampleServiceState> expectedDocuments)
       throws Throwable {
 
     ServiceDocumentQueryResult queryResult = xenonRestClient.queryDocuments
-        (ExampleService.ExampleServiceState.class, queryTerms, Optional.of(pageSize), expandContent);
+        (ExampleService.ExampleServiceState.class, queryTerms, Optional.of(pageSize), expandContent, broadCast);
 
     assertNotNull(queryResult.documents);
     assertNotNull(queryResult.nextPageLink);
