@@ -179,6 +179,11 @@ public class HostService extends StatefulService {
     }
   }
 
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
+  }
+
   /**
    * When we are running in the unit tests, we want to disable the host ping because it will always fail (we have fake
    * hosts) and mark the agentState as missing. This allows us to do so.
