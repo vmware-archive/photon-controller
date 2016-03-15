@@ -198,27 +198,6 @@ class LeafSchedulerTestCase(unittest.TestCase):
         assert_that(response, is_(same_instance(baz_response)))
 
     @patch("scheduler.rpc_client.DirectClient")
-    @patch("scheduler.leaf_scheduler.HealthChecker")
-    def test_place_res_with_missing(self, health_checker, client_class):
-        client_class.side_effect = self.create_fake_client
-        _health_checker = MagicMock()
-        health_checker.return_value = _health_checker
-        _health_checker.get_missing_hosts = ["bar"]
-
-        baz_client = MagicMock()
-        baz_response = PlaceResponse(PlaceResultCode.OK, agent_id="baz",
-                                     score=Score(30, 80))
-        baz_client.host_place.return_value = baz_response
-        self._clients["baz"] = baz_client
-
-        scheduler = LeafScheduler("foo", 1.0, True)
-        scheduler.configure([ChildInfo(id="bar", address="bar"),
-                             ChildInfo(id="baz", address="baz")])
-
-        response = scheduler.place(self._place_request())
-        assert_that(response, is_(same_instance(baz_response)))
-
-    @patch("scheduler.rpc_client.DirectClient")
     @patch("random.shuffle")
     def test_place_sampling(self, shuffle, client_class):
         client_class.side_effect = self.create_fake_client
