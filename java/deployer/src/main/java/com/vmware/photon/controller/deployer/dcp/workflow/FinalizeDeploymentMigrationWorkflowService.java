@@ -245,11 +245,11 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
       case MIGRATE_FINAL:
         migrateFinal(currentState);
         break;
-      case REINSTALL_AGENTS:
-        reinstallAgents(currentState);
-        break;
       case DATA_ADJUSTMENT:
         dataAdjustment(currentState);
+        break;
+      case REINSTALL_AGENTS:
+        reinstallAgents(currentState);
         break;
       case RESUME_DESTINATION_SYSTEM:
         resumeDestinationSystem(currentState);
@@ -264,42 +264,43 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
       = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
     InetSocketAddress socketAddress = sourceServers.iterator().next();
     URI destinationUri = UriUtils.buildUri(socketAddress.getHostName(), socketAddress.getPort(), null, null);
-    URI broadcastRequestUri
+    URI remoteBroadcastRequestUri
       = UriUtils.buildBroadcastRequestUri(
           UriUtils
             .buildUri(destinationUri, ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.DEFAULT_NODE_SELECTOR);
 
-    Query datastoreQuery = Query.Builder.create()
-        .addFieldClause(ServiceDocument.FIELD_NAME_SELF_LINK, "*/cloudstore/datastores/*",
-                QueryTask.QueryTerm.MatchType.WILDCARD)
-        .build();
-    Operation imageOp
-      = Operation.createPost(broadcastRequestUri)
-          .setBody(QueryTask.Builder.createDirectTask()
-              .setQuery(datastoreQuery)
-              .addOption(QueryOption.EXPAND_CONTENT)
-              .build());
+    QueryTask.Query datastoreClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
+    Operation datastoreOperation = HostUtils.getCloudStoreHelper(this)
+      .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+      .setBody(QueryTask.Builder.createDirectTask()
+          .setQuery(datastoreClause)
+          .addOption(QueryOption.EXPAND_CONTENT)
+          .build());
 
     Query deploymentQuery = Query.Builder.create()
         .addFieldClause(ServiceDocument.FIELD_NAME_SELF_LINK, "*/cloudstore/deployments/*",
             QueryTask.QueryTerm.MatchType.WILDCARD)
         .build();
     Operation deploymentOp
-      = Operation.createPost(broadcastRequestUri)
+      = Operation.createPost(remoteBroadcastRequestUri)
           .setBody(QueryTask.Builder.createDirectTask()
               .setQuery(deploymentQuery)
               .addOption(QueryOption.EXPAND_CONTENT)
               .build());
 
-    OperationJoin.create(imageOp, deploymentOp)
+    OperationJoin.create(datastoreOperation, deploymentOp)
       .setCompletion((os, ts) -> {
         if (ts != null && !ts.isEmpty()) {
           failTask(ts.values());
           return;
         }
         Set<String> imageStoreNames = getImageStoreNames(os.get(deploymentOp.getId()));
-        Set<String> imageStoreIds = getImageStoreId(os.get(imageOp.getId()), imageStoreNames);
-        dataAdjustment(currentState, imageStoreIds);
+        List<DatastoreService.State> datastores
+          = QueryTaskUtils.getBroadcastQueryDocuments(DatastoreService.State.class, os.get(datastoreOperation.getId()));
+        Set<String> imageStoreIds = getImageStoreId(datastores, imageStoreNames);
+        dataAdjustment(currentState, imageStoreIds, datastores);
       })
       .sendWith(this);
   }
@@ -337,11 +338,9 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     return names;
   }
 
-  private Set<String> getImageStoreId(Operation operation, Set<String> imageStoreNames) {
-    List<DatastoreService.State> documents
-      = QueryTaskUtils.getBroadcastQueryDocuments(DatastoreService.State.class, operation);
+  private Set<String> getImageStoreId(List<DatastoreService.State> datastores, Set<String> imageStoreNames) {
     Set<String> ids = new HashSet<>();
-    for (DatastoreService.State store : documents) {
+    for (DatastoreService.State store : datastores) {
       if (imageStoreNames.contains(store.name)) {
         ids.add(ServiceUtils.getIDFromDocumentSelfLink(store.documentSelfLink));
       }
@@ -349,7 +348,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     return ids;
   }
 
-  private void dataAdjustment(State currentState, Set<String> imageStoreIds) {
+  private void dataAdjustment(State currentState, Set<String> imageStoreIds, List<DatastoreService.State> datastores) {
     // get all images
     QueryTask.Query imageClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -361,17 +360,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
           .addOption(QueryOption.EXPAND_CONTENT)
           .build());
 
-    QueryTask.Query datastoreClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
-    Operation datastoreOperation = HostUtils.getCloudStoreHelper(this)
-      .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-      .setBody(QueryTask.Builder.createDirectTask()
-          .setQuery(datastoreClause)
-          .addOption(QueryOption.EXPAND_CONTENT)
-          .build());
-
-    OperationJoin.create(imageOperation, datastoreOperation)
+    OperationJoin.create(imageOperation)
       .setCompletion((os, ts) -> {
         if (ts != null && !ts.isEmpty()) {
           failTask(ts.values());
@@ -380,8 +369,6 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         List<ImageService.State> images
           = QueryTaskUtils.getBroadcastQueryDocuments(ImageService.State.class, os.get(imageOperation.getId()));
         images = images.stream().filter(image -> image.totalImageDatastore == 0).collect(Collectors.toList());
-        List<DatastoreService.State> datastores
-          = QueryTaskUtils.getBroadcastQueryDocuments(DatastoreService.State.class, os.get(datastoreOperation.getId()));
         Collection<Operation> updateOperations = getImageRelatedUpdateOperations(images, datastores, imageStoreIds);
         OperationJoin.create(updateOperations)
           .setCompletion((ops, ths) -> {
@@ -670,7 +657,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         getHost().schedule(
             () -> waitUntilCopyStateTasksFinished(handler, currentState),
             currentState.taskPollDelay,
-            TimeUnit.SECONDS);
+            TimeUnit.MILLISECONDS);
       })
       .sendWith(this);
   }
