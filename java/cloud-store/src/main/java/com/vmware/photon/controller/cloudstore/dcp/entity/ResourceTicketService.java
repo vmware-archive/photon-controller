@@ -98,6 +98,11 @@ public class ResourceTicketService extends StatefulService {
     }
   }
 
+  @Override
+  public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
+  }
+
   private void consumeQuota(Patch patch, State currentState)
       throws QuotaException {
     // first, whip through the cost's actualCostKeys and
