@@ -66,6 +66,10 @@ public class DeploymentCreateSpec {
   private AuthInfo auth;
 
   @JsonProperty
+  @ApiModelProperty(value = "Network configuration information")
+  private NetworkConfigurationCreateSpec networkConfiguration;
+
+  @JsonProperty
   @ApiModelProperty(value = "deploy load balancer")
   private boolean loadBalancerEnabled = true;
 
@@ -117,6 +121,14 @@ public class DeploymentCreateSpec {
     this.auth = auth;
   }
 
+  public NetworkConfigurationCreateSpec getNetworkConfiguration() {
+    return networkConfiguration;
+  }
+
+  public void setNetworkConfiguration(NetworkConfigurationCreateSpec networkConfiguration) {
+    this.networkConfiguration = networkConfiguration;
+  }
+
   public boolean getLoadBalancerEnabled() {
     return loadBalancerEnabled;
   }
@@ -142,6 +154,7 @@ public class DeploymentCreateSpec {
         Objects.equals(getNtpEndpoint(), other.getNtpEndpoint()) &&
         Objects.equals(isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms()) &&
         Objects.equals(getAuth(), other.getAuth()) &&
+        Objects.equals(getNetworkConfiguration(), other.getNetworkConfiguration()) &&
         Objects.equals(getLoadBalancerEnabled(), other.getLoadBalancerEnabled());
   }
 
@@ -153,7 +166,8 @@ public class DeploymentCreateSpec {
         stats,
         ntpEndpoint,
         useImageDatastoreForVms,
-        auth
+        auth,
+        networkConfiguration
     );
   }
 
@@ -166,6 +180,7 @@ public class DeploymentCreateSpec {
         .add("ntpEndpoint", ntpEndpoint)
         .add("useImageDatastoreForVms", useImageDatastoreForVms)
         .add("auth", auth)
+        .add("networkConfiguration", networkConfiguration)
         .add("loadBalancerEnabled", loadBalancerEnabled)
         .toString();
   }
