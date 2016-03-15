@@ -13,11 +13,8 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -25,7 +22,6 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -58,7 +54,6 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState.TaskStage;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.NodeGroupService.NodeGroupState;
 import com.vmware.xenon.services.common.NodeGroupService.UpdateQuorumRequest;
 import com.vmware.xenon.services.common.NodeState;
@@ -556,129 +551,24 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
    * @param currentState Supplies the current state object.
    */
   private void uploadImage(final State currentState) {
-    final Service service = this;
 
-    FutureCallback<UploadImageTaskService.State> callback = new FutureCallback<UploadImageTaskService.State>() {
-      @Override
-      public void onSuccess(@Nullable UploadImageTaskService.State result) {
-        if (result.taskState.stage == TaskState.TaskStage.FAILED) {
-          TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FAILED, null, result.taskState.failure));
-        } else if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
-          TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null));
-        } else {
-          updateVmServices(currentState, ImageServiceFactory.SELF_LINK + "/" + result.imageId);
-        }
-      }
+    UploadImageTaskService.State startState = new UploadImageTaskService.State();
+    startState.parentTaskServiceLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(buildPatch(TaskStage.STARTED, TaskState.SubStage.ALLOCATE_RESOURCES));
+    startState.taskPollDelay = currentState.childPollInterval;
+    startState.deploymentServiceLink = currentState.deploymentServiceLink;
+    startState.imageName = "management-vm-image";
+    startState.imageFile = currentState.imageFile;
 
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-    UploadImageTaskService.State startState = createUploadImageState(currentState);
-
-    TaskUtils.startTaskAsync(
-        this,
-        UploadImageTaskFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        UploadImageTaskService.State.class,
-        currentState.taskPollDelay,
-        callback);
-  }
-
-  /**
-   * This method creates a {@link UploadImageTaskService.State} object.
-   *
-   * @param currentState Supplies the current state object.
-   * @return
-   */
-  private UploadImageTaskService.State createUploadImageState(State currentState) {
-    UploadImageTaskService.State state = new UploadImageTaskService.State();
-    state.imageName = "management-vm-image";
-    state.imageFile = currentState.imageFile;
-    state.imageReplicationType = ImageReplicationType.ON_DEMAND;
-    state.taskState = new com.vmware.xenon.common.TaskState();
-    state.taskState.stage = TaskState.TaskStage.CREATED;
-    state.queryUploadImageTaskInterval = currentState.childPollInterval;
-    return state;
-  }
-
-  /**
-   * @param currentState
-   */
-  private void updateVmServices(final State currentState, final String imageServiceLink) {
-
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(VmService.State.class));
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query = kindClause;
-    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            try {
-              NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-              Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
-              QueryTaskUtils.logQueryResults(BatchCreateManagementWorkflowService.this, documentLinks);
-              updateVmStates(currentState, documentLinks, imageServiceLink);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        });
-
-    sendRequest(queryPostOperation);
-  }
-
-  private void updateVmStates(State currentState, Set<String> documentLinks, String imageServiceLink) {
-
-    if (documentLinks.isEmpty()) {
-      throw new XenonRuntimeException("Document links set is empty");
-    }
-
-    VmService.State patchState = new VmService.State();
-    patchState.imageServiceLink = imageServiceLink;
-
-    OperationJoin
-        .create(documentLinks.stream()
-            .map(documentLink -> Operation.createPatch(this, documentLink).setBody(patchState)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs.values());
-          } else {
-            updateDeploymentState(currentState, imageServiceLink);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void updateDeploymentState(State currentState, String imageServiceLink) {
-    DeploymentService.State deploymentService = new DeploymentService.State();
-    deploymentService.imageId = ServiceUtils.getIDFromDocumentSelfLink(imageServiceLink);
-    MiscUtils.updateDeploymentState(this, deploymentService, (operation, throwable) -> {
-      if (throwable != null) {
-        failTask(throwable);
-        return;
-      }
-
-      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED,
-          TaskState.SubStage.ALLOCATE_RESOURCES));
-    });
+    sendRequest(Operation
+        .createPost(this, UploadImageTaskFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              }
+            }));
   }
 
   private void allocateResources(State currentState) {

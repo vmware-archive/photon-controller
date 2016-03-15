@@ -13,142 +13,186 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
+import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ImageReplicationType;
-import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.client.ApiClient;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
+import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
-import com.vmware.photon.controller.common.xenon.validation.DefaultUuid;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
+import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
+import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.io.IOException;
-import java.util.concurrent.Callable;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * This class implements a DCP micro-service which performs the task of
- * uploading an VM image to the image datastore.
+ * This class implements a Xenon service which uploads an image.
  */
 public class UploadImageTaskService extends StatefulService {
 
   /**
-   * This class defines the document state associated with a single
-   * {@link UploadImageTaskService} instance.
+   * This class defines the state of a {@link UploadImageTaskService} task.
+   */
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+
+    /**
+     * This type defines the possible sub-stages for a {@link UploadImageTaskService} task.
+     */
+    public enum SubStage {
+      UPLOAD_IMAGE,
+      WAIT_FOR_IMAGE_UPLOAD,
+      WAIT_FOR_IMAGE_SEEDING,
+      UPDATE_VMS,
+    }
+
+    /**
+     * This value defines the sub-stage of the current task.
+     */
+    public SubStage subStage;
+  }
+
+  /**
+   * This class defines the document state associated with a {@link UploadImageTaskService} task.
    */
   public static class State extends ServiceDocument {
+
     /**
      * This value represents the state of the current task.
      */
-    @DefaultTaskState(value = TaskState.TaskStage.STARTED)
+    @DefaultTaskState(value = TaskState.TaskStage.CREATED)
     public TaskState taskState;
 
     /**
-     * This value represents the unique ID of the image upload task.
+     * This value represents the control flags for the current task.
      */
-    @NotNull
-    @DefaultUuid
+    @DefaultInteger(value = 0)
     @Immutable
-    public String uniqueId;
+    public Integer controlFlags;
 
     /**
-     * This value represents the image filename.
+     * This value represents the optional document self-link of the parent task service to be
+     * notified on completion.
+     */
+    @Immutable
+    public String parentTaskServiceLink;
+
+    /**
+     * This value represents the optional patch body to be sent to the parent task service on
+     * successful completion.
+     */
+    @Immutable
+    public String parentPatchBody;
+
+    /**
+     * This value represents the delay, in milliseconds, to use when polling child tasks.
+     */
+    @Positive
+    @Immutable
+    public Integer taskPollDelay;
+
+    /**
+     * This value represents the document self-link of the {@link DeploymentService} document to be
+     * updated with the ID of the created image.
      */
     @NotNull
     @Immutable
-    public String imageFile;
+    public String deploymentServiceLink;
 
     /**
-     * This value represents the image name.
+     * This value represents the name to assign to the API-level image object when uploading the
+     * image.
      */
     @NotNull
     @Immutable
     public String imageName;
 
     /**
-     * This value represents the image replication type.
+     * This value represents the full path to the image file to upload.
      */
     @NotNull
     @Immutable
-    public ImageReplicationType imageReplicationType;
+    public String imageFile;
 
     /**
-     * This value represents the APIFE endpoint for uploading the image. Note that this parameter is only used by
-     * {@link AllocateClusterManagerResourcesTaskService}, where the cluster image needs to be uploaded to the
-     * management plane. By default this value should be null, and the image will be uploaded to the installer.
-     * <p>
-     * The reason that the cluster image upload is different is because the upload happens after APIFE data being
-     * migrated from installer to management plane. Therefore if we upload the cluster image to installer, the imageId
-     * of the cluster image will not show up in the management plane.
+     * This value represents the ID of the API-level task to create the image.
      */
-    @Immutable
-    public String apiFeEndpoint;
+    @WriteOnce
+    public String uploadImageTaskId;
 
     /**
-     * This value represents the id of to the created image service.
+     * This value represents the number of polling iterations which have been performed by the
+     * current task while waiting for the image upload operation to complete. It is informational
+     * only.
+     */
+    @DefaultInteger(value = 0)
+    public Integer uploadImagePollCount;
+
+    /**
+     * This value represents the ID of the API-level image object created by the current task.
      */
     @WriteOnce
     public String imageId;
 
     /**
-     * This value represents the interval between querying the state of the
-     * upload image task.
-     */
-    @Immutable
-    public Integer queryUploadImageTaskInterval;
-
-    /**
-     * This value represents the control flags for the operation.
+     * This value represents the number of polling iterations which have been performed by the
+     * current task while waiting for image replication to complete. It is informational only.
      */
     @DefaultInteger(value = 0)
-    @Immutable
-    public Integer controlFlags;
+    public Integer imageSeedingPollCount;
+
+    /**
+     * This value represents the seeding progress of the image, as reported by the image API.
+     * It is informational only.
+     */
+    public String imageSeedingProgress;
   }
 
   public UploadImageTaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
-  /**
-   * This method is called when a start operation is performed for the current
-   * service instance.
-   *
-   * @param start Supplies the start operation object.
-   */
   @Override
-  public void handleStart(Operation start) {
-    ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
-    State startState = start.getBody(State.class);
+  public void handleStart(Operation startOp) {
+    ServiceUtils.logTrace(this, "Handling start operation");
+    if (!startOp.hasBody()) {
+      startOp.fail(new IllegalArgumentException("Body is required"));
+      return;
+    }
+
+    State startState = startOp.getBody(State.class);
     InitializationUtils.initialize(startState);
 
-    if (null == startState.queryUploadImageTaskInterval) {
-      startState.queryUploadImageTaskInterval = HostUtils.getDeployerContext(this).getTaskPollDelay();
+    if (startState.taskPollDelay == null) {
+      startState.taskPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -156,259 +200,436 @@ public class UploadImageTaskService extends StatefulService {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
     }
 
-    validateState(startState);
-
-    if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
-      startState.taskState.stage = TaskState.TaskStage.STARTED;
+    try {
+      validateState(startState);
+    } catch (IllegalStateException e) {
+      ServiceUtils.failOperationAsBadRequest(this, startOp, e);
+      return;
     }
 
-    start.setBody(startState).complete();
+    startOp.setBody(startState).complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-      } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        sendStageProgressPatch(startState.taskState.stage);
+      } else if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
+        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_IMAGE);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method is called when a patch operation is performed on the current service.
-   *
-   * @param patch Supplies the patch operation object.
-   */
   @Override
-  public void handlePatch(Operation patch) {
-    ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
-    State startState = getState(patch);
-    State patchState = patch.getBody(State.class);
-    validatePatchState(startState, patchState);
-    State currentState = applyPatch(startState, patchState);
-    validateState(currentState);
-    patch.complete();
+  public void handlePatch(Operation patchOp) {
+    ServiceUtils.logTrace(this, "Handing patch operation");
+    if (!patchOp.hasBody()) {
+      patchOp.fail(new IllegalArgumentException("Body is required"));
+      return;
+    }
+
+    State currentState = getState(patchOp);
+    State patchState = patchOp.getBody(State.class);
+
+    try {
+      validatePatch(currentState, patchState);
+      PatchUtils.patchState(currentState, patchState);
+      validateState(currentState);
+    } catch (IllegalStateException e) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOp, e);
+    }
+
+    patchOp.complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
-        ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
-      } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        processUploadImage(currentState);
+        ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
+      } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
+        processStartedStage(currentState);
+      } else {
+        notifyParentTask(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method validates the state of a service document for internal
-   * consistency.
-   *
-   * @param currentState
-   */
   private void validateState(State currentState) {
     ValidationUtils.validateState(currentState);
-    ValidationUtils.validateTaskStage(currentState.taskState);
+    validateTaskState(currentState.taskState);
   }
 
-  /**
-   * This method validates a patch against a valid service document.
-   *
-   * @param startState
-   * @param patchState
-   */
-  private void validatePatchState(State startState, State patchState) {
-    ValidationUtils.validatePatch(startState, patchState);
-    ValidationUtils.validateTaskStage(patchState.taskState);
-    ValidationUtils.validateTaskStageProgression(startState.taskState, patchState.taskState);
+  private void validatePatch(State currentState, State patchState) {
+    ValidationUtils.validatePatch(currentState, patchState);
+    validateTaskState(patchState.taskState);
+    validateTaskStageProgression(currentState.taskState, patchState.taskState);
   }
 
-  /**
-   * This method creates a upload image task and submits it to the APIFE service
-   * for the DCP host.
-   *
-   * @param currentState Supplies the current state object.
-   * @throws IOException Throws exception if submitting the task to APIFE encounters
-   *                     any error.
-   */
-  private void processUploadImage(final State currentState)
-      throws IOException {
-
-    ListenableFutureTask<Task> futureTask = ListenableFutureTask.create(new Callable<Task>() {
-      @Override
-      public Task call() {
-        try {
-          return getApiClient(currentState).getImagesApi()
-              .uploadImage(currentState.imageFile, currentState.imageReplicationType.name());
-        } catch (RuntimeException e) {
-          throw e;
-        } catch (Exception e) {
-          throw new RuntimeException(e);
+  private void validateTaskState(TaskState taskState) {
+    ValidationUtils.validateTaskStage(taskState);
+    switch (taskState.stage) {
+      case CREATED:
+      case FINISHED:
+      case FAILED:
+      case CANCELLED:
+        checkState(taskState.subStage == null);
+        break;
+      case STARTED:
+        checkState(taskState.subStage != null);
+        switch (taskState.subStage) {
+          case UPLOAD_IMAGE:
+          case WAIT_FOR_IMAGE_UPLOAD:
+          case WAIT_FOR_IMAGE_SEEDING:
+          case UPDATE_VMS:
+            break;
+          default:
+            throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
         }
-      }
-    });
+    }
+  }
+
+  private void validateTaskStageProgression(TaskState currentState, TaskState patchState) {
+    ValidationUtils.validateTaskStageProgression(currentState, patchState);
+    if (currentState.subStage != null && patchState.subStage != null) {
+      checkState(patchState.subStage.ordinal() >= currentState.subStage.ordinal());
+    }
+  }
+
+  private void processStartedStage(State currentState) throws Throwable {
+    switch (currentState.taskState.subStage) {
+      case UPLOAD_IMAGE:
+        processUploadImageSubStage(currentState);
+        break;
+      case WAIT_FOR_IMAGE_UPLOAD:
+        processWaitForImageUploadSubStage(currentState);
+        break;
+      case WAIT_FOR_IMAGE_SEEDING:
+        processWaitForImageSeedingSubStage(currentState);
+        break;
+      case UPDATE_VMS:
+        processUpdateVmsSubStage(currentState);
+        break;
+    }
+  }
+
+  private void notifyParentTask(State currentState) {
+
+    if (currentState.parentTaskServiceLink == null) {
+      ServiceUtils.logInfo(this, "Skipping parent task notification");
+      return;
+    }
+
+    Operation patchOp = Operation.createPatch(this, currentState.parentTaskServiceLink);
+    switch (currentState.taskState.stage) {
+      case FINISHED:
+        if (currentState.parentPatchBody != null) {
+          patchOp.setBody(currentState.parentPatchBody);
+          break;
+        }
+        // Fall through
+      case FAILED:
+      case CANCELLED:
+        TaskServiceState patchState = new TaskServiceState();
+        patchState.taskState = currentState.taskState;
+        patchOp.setBody(patchState);
+        break;
+      default:
+        throw new IllegalStateException("Unexpected state: " + currentState.taskState.stage);
+    }
+
+    sendRequest(patchOp);
+  }
+
+  //
+  // UPLOAD_IMAGE sub-stage routines
+  //
+
+  private void processUploadImageSubStage(State currentState) {
+
+    //
+    // N.B. Image upload is not performed asynchronously (and can't be), so this operation is
+    // performed on a separate thread.
+    //
+
+    ListenableFutureTask<Task> futureTask = ListenableFutureTask.create(
+        () -> HostUtils.getApiClient(this)
+            .getImagesApi()
+            .uploadImage(currentState.imageFile, ImageReplicationType.ON_DEMAND.name()));
 
     HostUtils.getListeningExecutorService(this).submit(futureTask);
 
-    FutureCallback<Task> futureCallback = new FutureCallback<Task>() {
-      @Override
-      public void onSuccess(@Nullable Task result) {
-        try {
-          if (null == result) {
-            failTask(new IllegalStateException("Image upload returned null"));
-            return;
+    Futures.addCallback(futureTask,
+        new FutureCallback<Task>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+            try {
+              processUploadImageTaskResult(task);
+            } catch (Throwable t) {
+              failTask(t);
+            }
           }
-          processTask(currentState, result);
-        } catch (Throwable e) {
-          failTask(e);
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        });
+  }
+
+  private void processUploadImageTaskResult(Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_IMAGE_UPLOAD);
+        patchState.uploadImageTaskId = task.getId();
+        patchState.uploadImagePollCount = 1;
+        sendStageProgressPatch(patchState);
+        break;
+      case "COMPLETED":
+        updateImageId(task.getEntity().getId());
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  //
+  // WAIT_FOR_IMAGE_UPLOAD sub-stage routines
+  //
+
+  private void processWaitForImageUploadSubStage(State currentState) throws Throwable {
+
+    HostUtils.getApiClient(this)
+        .getTasksApi()
+        .getTaskAsync(currentState.uploadImageTaskId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Task task) {
+                try {
+                  processWaitForImageUploadTaskResult(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+  }
+
+  private void processWaitForImageUploadTaskResult(State currentState, Task task) {
+    switch (task.getState().toUpperCase()) {
+      case "QUEUED":
+      case "STARTED":
+        getHost().schedule(
+            () -> {
+              State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_IMAGE_UPLOAD);
+              patchState.uploadImagePollCount = currentState.uploadImagePollCount + 1;
+              TaskUtils.sendSelfPatch(this, patchState);
+            },
+            currentState.taskPollDelay, TimeUnit.MILLISECONDS);
+        break;
+      case "COMPLETED":
+        updateImageId(task.getEntity().getId());
+        break;
+      case "ERROR":
+        throw new IllegalStateException(ApiUtils.getErrors(task));
+      default:
+        throw new IllegalStateException("Unknown task state: " + task.getState());
+    }
+  }
+
+  private void updateImageId(String imageId) {
+    ServiceUtils.logInfo(this, "Created image with ID " + imageId);
+    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_IMAGE_SEEDING);
+    patchState.imageSeedingPollCount = 1;
+    patchState.imageId = imageId;
+    sendStageProgressPatch(patchState);
+  }
+
+  //
+  // WAIT_FOR_IMAGE_SEEDING sub-stage routines
+  //
+
+  private void processWaitForImageSeedingSubStage(State currentState) throws Throwable {
+
+    HostUtils.getApiClient(this)
+        .getImagesApi()
+        .getImageAsync(currentState.imageId,
+            new FutureCallback<Image>() {
+              @Override
+              public void onSuccess(@javax.validation.constraints.NotNull Image image) {
+                try {
+                  processImage(currentState, image);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+  }
+
+  private void processImage(State currentState, Image image) {
+    switch (image.getState()) {
+      case READY:
+        String imageSeedingProgress = image.getSeedingProgress();
+
+        //
+        // N.B. This is a best-effort computation based on the information provided in the image
+        // API. It's not clear that this pattern will work well for callers.
+        //
+
+        if (imageSeedingProgress != null && Float.valueOf(imageSeedingProgress.trim().replace("%", "")) == 100.0) {
+          State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPDATE_VMS);
+          patchState.imageSeedingProgress = imageSeedingProgress;
+          sendStageProgressPatch(patchState);
+          return;
         }
-      }
 
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
+        if (imageSeedingProgress != null && !imageSeedingProgress.equals(currentState.imageSeedingProgress)) {
+          ServiceUtils.logInfo(this, "Image " + image.getId() + " reached seeding progress " +
+              imageSeedingProgress.replace("%", "%%"));
+        }
 
-    Futures.addCallback(futureTask, futureCallback);
-  }
-
-  /**
-   * This method polls the status of the create VM task. Depending the status
-   * returned, the service is transitioned to wait for image seeding completion or failure.
-   *
-   * @param currentState Supplies the current state object.
-   * @param task         Supplies the task object.
-   */
-  private void processTask(final State currentState, final Task task) {
-
-    FutureCallback<Task> callback = new FutureCallback<Task>() {
-      @Override
-      public void onSuccess(@Nullable Task result) {
-        waitForImageSeedingCompletion(currentState, task.getEntity().getId());
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-
-    ApiUtils.pollTaskAsync(task,
-        getApiClient(currentState),
-        this,
-        currentState.queryUploadImageTaskInterval,
-        callback);
-  }
-
-  /**
-   * This method polls the state of the image service. Depending on the state returned,
-   * the service is transitioned to the corresponding stage or sub-stage.
-   *
-   * @param currentState Supplies the current state object.
-   * @param imageId      Supplies the imageId.
-   */
-  private void waitForImageSeedingCompletion(final State currentState, String imageId) {
-    getHost().schedule(
-        () -> {
-          Operation getOperation =
-              HostUtils.getCloudStoreHelper(this).createGet(ImageServiceFactory.SELF_LINK + "/" + imageId)
-                  .setCompletion((operation, throwable) -> {
-                    if (throwable != null) {
-                      failTask(throwable);
-                      return;
-                    }
-
-                    ImageService.State imageState = operation.getBody(ImageService.State.class);
-                    if (imageState.replicatedImageDatastore != null &&
-                        imageState.totalImageDatastore != null &&
-                        imageState.replicatedImageDatastore.equals(imageState.totalImageDatastore)) {
-
-                      State patchState = new State();
-                      patchState.taskState = new TaskState();
-                      patchState.taskState.stage = TaskState.TaskStage.FINISHED;
-                      patchState.imageId = imageId;
-                      TaskUtils.sendSelfPatch(UploadImageTaskService.this, patchState);
-                      return;
-                    }
-
-                    if (imageState.state == ImageState.ERROR) {
-                      failTask(new IllegalStateException("Image state is ERROR. Image seeder process errors out " +
-                          "unexpectedly."));
-                      return;
-                    }
-
-                    waitForImageSeedingCompletion(currentState, imageId);
-                  });
-          sendRequest(getOperation);
-        }, currentState.queryUploadImageTaskInterval, TimeUnit.MILLISECONDS);
-  }
-
-  private ApiClient getApiClient(State currentState) {
-    return (null == currentState.apiFeEndpoint || currentState.apiFeEndpoint.isEmpty()) ?
-        HostUtils.getApiClient(this) : HostUtils.getApiClient(this, currentState.apiFeEndpoint);
-  }
-
-  /**
-   * This method applies a patch to a state object.
-   *
-   * @param startState Supplies the start state object.
-   * @param patchState Supplies the patch state object.
-   */
-  private State applyPatch(State startState, State patchState) {
-    if (patchState.taskState != null && patchState.taskState.stage != startState.taskState.stage) {
-      ServiceUtils.logInfo(this, "Moving to stage %s", patchState.taskState.stage);
-      startState.taskState = patchState.taskState;
+        getHost().schedule(
+            () -> {
+              State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_IMAGE_SEEDING);
+              patchState.imageSeedingProgress = imageSeedingProgress;
+              patchState.imageSeedingPollCount = currentState.imageSeedingPollCount + 1;
+              TaskUtils.sendSelfPatch(this, patchState);
+            },
+            currentState.taskPollDelay, TimeUnit.MILLISECONDS);
+        break;
+      case ERROR:
+        ServiceUtils.logSevere(this, "Image reached ERROR state: " + Utils.toJsonHtml(image));
+        throw new IllegalStateException("Image " + image.getId() + " reached ERROR state");
+      default:
+        ServiceUtils.logSevere(this, "Image reached unexpected state: " + Utils.toJsonHtml(image));
+        throw new IllegalStateException("Image " + image.getId() + " reached unexpected state " + image.getState());
     }
-
-    if (startState.imageId == null) {
-      startState.imageId = patchState.imageId;
-    }
-
-    return startState;
   }
 
-  /**
-   * This method sends a patch operation to the current service instance to move to
-   * a new state.
-   *
-   * @param stage Supplies the stage that the current service instance is moving to.
-   */
-  private void sendStageProgressPatch(TaskState.TaskStage stage) {
-    ServiceUtils.logInfo(this, "Sending self-patch to stage %s", stage);
-    TaskUtils.sendSelfPatch(this, buildPatch(stage, null));
+  //
+  // UPDATE_VMS sub-stage
+  //
+
+  private void processUpdateVmsSubStage(State currentState) {
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(VmService.State.class)
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                updateVms(currentState, o.getBody(QueryTask.class).results.documentLinks);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
-  /**
-   * This method builds a state object which can be used to submit a stage
-   * progress self-patch.
-   *
-   * @param stage Supplies the stage that the current service instance is moving to.
-   * @param e     Supplies the exception that the current service instance encountered if any.
-   * @return Returns a patch state object that the current service instance is moving to.
-   */
+  private void updateVms(State currentState, List<String> vmServiceLinks) {
+
+    VmService.State vmPatchState = new VmService.State();
+    vmPatchState.imageServiceLink = UriUtils.buildUriPath(ImageServiceFactory.SELF_LINK, currentState.imageId);
+
+    OperationJoin
+        .create(vmServiceLinks.stream()
+            .map((vmServiceLink) -> Operation.createPatch(this, vmServiceLink).setBody(vmPatchState)))
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
+
+              try {
+                updateDeployment(currentState);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+        .sendWith(this);
+  }
+
+  private void updateDeployment(State currentState) {
+
+    DeploymentService.State deploymentPatchState = new DeploymentService.State();
+    deploymentPatchState.imageId = currentState.imageId;
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createPatch(currentState.deploymentServiceLink)
+        .setBody(deploymentPatchState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              } else {
+                sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+              }
+            }));
+  }
+  //
+  // Utility routines
+  //
+
+  private void sendStageProgressPatch(TaskState.TaskStage stage, TaskState.SubStage subStage) {
+    ServiceUtils.logTrace(this, "Sending self-patch to stage %s:%s", stage, subStage);
+    TaskUtils.sendSelfPatch(this, buildPatch(stage, subStage, null));
+  }
+
+  private void sendStageProgressPatch(State patchState) {
+    ServiceUtils.logTrace(this, "Sending self-patch: {}", patchState);
+    TaskUtils.sendSelfPatch(this, patchState);
+  }
+
+  private void failTask(Throwable failure) {
+    ServiceUtils.logSevere(this, failure);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failure));
+  }
+
+  private void failTask(Collection<Throwable> failures) {
+    ServiceUtils.logSevere(this, failures);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
+  }
+
   @VisibleForTesting
-  protected State buildPatch(TaskState.TaskStage stage, @Nullable Throwable e) {
-    State state = new State();
-    state.taskState = new TaskState();
-    state.taskState.stage = stage;
-
-    if (null != e) {
-      state.taskState.failure = Utils.toServiceErrorResponse(e);
-    }
-
-    return state;
+  protected static State buildPatch(TaskState.TaskStage stage, TaskState.SubStage subStage) {
+    return buildPatch(stage, subStage, null);
   }
 
-  /**
-   * This method sends a patch operation to the current service instance
-   * to moved to the FAILED state in response to the specified exception.
-   *
-   * @param e Supplies the exception that the current service instance encountered.
-   */
-  private void failTask(Throwable e) {
-    ServiceUtils.logSevere(this, e);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, e));
+  @VisibleForTesting
+  protected static State buildPatch(TaskState.TaskStage stage,
+                                    TaskState.SubStage subStage,
+                                    @Nullable Throwable failure) {
+    State patchState = new State();
+    patchState.taskState = new TaskState();
+    patchState.taskState.stage = stage;
+    patchState.taskState.subStage = subStage;
+    if (failure != null) {
+      patchState.taskState.failure = Utils.toServiceErrorResponse(failure);
+    }
+
+    return patchState;
   }
 }

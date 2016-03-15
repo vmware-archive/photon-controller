@@ -13,26 +13,31 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
+import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ImagesApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
-import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
-import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.ApiTestUtils;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
+import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
@@ -40,12 +45,13 @@ import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import org.mockito.Matchers;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -55,17 +61,22 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.Matchers.any;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.testng.Assert.fail;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+import javax.annotation.Nullable;
+
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.EnumSet;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 /**
@@ -73,775 +84,662 @@ import java.util.concurrent.Executors;
  */
 public class UploadImageTaskServiceTest {
 
-  private static final String configFilePath = "/config.yml";
-
-  private TestHost host;
-  private UploadImageTaskService service;
-
-  @Test
-  private void dummy() {
-  }
-
-  private UploadImageTaskService.State buildValidStartupState() {
-    return buildValidStartupState(TaskState.TaskStage.CREATED);
-  }
-
-  private UploadImageTaskService.State buildValidStartupState(TaskState.TaskStage stage) {
-    UploadImageTaskService.State state = new UploadImageTaskService.State();
-    state.taskState = new TaskState();
-    state.taskState.stage = stage;
-    state.imageFile = "imageFile";
-    state.imageName = "imageName";
-    state.imageReplicationType = ImageReplicationType.ON_DEMAND;
-    state.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-
-    return state;
-  }
-
-  private UploadImageTaskService.State buildValidPatchState() {
-    return buildValidPatchState(TaskState.TaskStage.STARTED);
-  }
-
-  private UploadImageTaskService.State buildValidPatchState(TaskState.TaskStage stage) {
-    UploadImageTaskService.State state = new UploadImageTaskService.State();
-    state.taskState = new TaskState();
-    state.taskState.stage = stage;
-    return state;
-  }
-
-  public TestEnvironment createTestEnvironment(
-      DeployerContext deployerContext,
-      ListeningExecutorService listeningExecutorService,
-      ApiClientFactory apiClientFactory,
-      ServerSet cloudServerSet,
-      int hostCount)
-      throws Throwable {
-
-    return new TestEnvironment.Builder()
-        .deployerContext(deployerContext)
-        .apiClientFactory(apiClientFactory)
-        .listeningExecutorService(listeningExecutorService)
-        .cloudServerSet(cloudServerSet)
-        .hostCount(hostCount)
-        .build();
+  /**
+   * This dummy test case enables IntelliJ to recognize this as a test class.
+   */
+  @Test(enabled = false)
+  public void dummy() {
   }
 
   /**
-   * Tests for the constructors.
+   * This class implements tests for object initialization.
    */
   public class InitializationTest {
 
-    @BeforeMethod
-    public void setUp() throws Throwable {
-      service = new UploadImageTaskService();
+    private UploadImageTaskService uploadImageTaskService;
+
+    @BeforeClass
+    public void setUpClass() throws Throwable {
+      uploadImageTaskService = new UploadImageTaskService();
     }
 
-    /**
-     * Tests that the service starts with the expected capabilities.
-     */
     @Test
-    public void testCapabilities() {
-
-      EnumSet<Service.ServiceOption> expected = EnumSet.of(
-          Service.ServiceOption.CONCURRENT_GET_HANDLING,
-          Service.ServiceOption.OWNER_SELECTION,
-          Service.ServiceOption.PERSISTENCE,
-          Service.ServiceOption.REPLICATION);
-
-      assertThat(service.getOptions(), is(expected));
+    public void testOptions() {
+      assertThat(uploadImageTaskService.getOptions(), is(EnumSet.noneOf(Service.ServiceOption.class)));
     }
   }
 
   /**
-   * Tests for the handleStart method.
+   * This class implements tests for the {@link UploadImageTaskService#handleStart(Operation)}
+   * method.
    */
   public class HandleStartTest {
 
+    private TestHost testHost;
+    private UploadImageTaskService uploadImageTaskService;
+
     @BeforeClass
     public void setUpClass() throws Throwable {
-      host = TestHost.create();
+      testHost = TestHost.create();
     }
 
     @BeforeMethod
     public void setUpTest() {
-      service = new UploadImageTaskService();
+      uploadImageTaskService = new UploadImageTaskService();
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
       try {
-        host.deleteServiceSynchronously();
+        testHost.deleteServiceSynchronously();
       } catch (ServiceHost.ServiceNotFoundException e) {
-        // Exceptions are expected in the case where a service instance was not successfully created.
+        // Exceptions are expected in the case where a service instance was not successfully started.
       }
     }
 
     @AfterClass
     public void tearDownClass() throws Throwable {
-      TestHost.destroy(host);
+      TestHost.destroy(testHost);
     }
 
-    /**
-     * This test verifies that service instances can be created with specific
-     * start states.
-     *
-     * @param stage Supplies the stage of state.
-     * @throws Throwable Throws exception if any error is encountered.
-     */
-    @Test(dataProvider = "validStartStates")
-    public void testMinimalStartState(TaskState.TaskStage stage) throws Throwable {
+    @Test(dataProvider = "ValidStartStages")
+    public void testValidStartState(
+        TaskState.TaskStage taskStage,
+        UploadImageTaskService.TaskState.SubStage subStage) throws Throwable {
+      UploadImageTaskService.State startState = buildValidStartState(taskStage, subStage);
+      Operation op = testHost.startServiceSynchronously(uploadImageTaskService, startState);
+      assertThat(op.getStatusCode(), is(200));
 
-      UploadImageTaskService.State startState = buildValidStartupState(stage);
-      Operation startOp = host.startServiceSynchronously(service, startState);
-      assertThat(startOp.getStatusCode(), is(200));
+      UploadImageTaskService.State serviceState = testHost.getServiceState(UploadImageTaskService.State.class);
+      assertThat(serviceState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
+      assertThat(serviceState.taskPollDelay, is(10));
+      assertThat(serviceState.imageName, is("IMAGE_NAME"));
+      assertThat(serviceState.imageFile, is("IMAGE_FILE"));
 
-      UploadImageTaskService.State savedState = host.getServiceState(
-          UploadImageTaskService.State.class);
-      assertThat(savedState.taskState, notNullValue());
-      assertThat(savedState.uniqueId, notNullValue());
-      assertThat(savedState.imageFile, notNullValue());
-      assertThat(savedState.imageName, notNullValue());
-      assertThat(savedState.queryUploadImageTaskInterval, notNullValue());
+      if (taskStage == null) {
+        assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.CREATED));
+      } else {
+        assertThat(serviceState.taskState.stage, is(taskStage));
+      }
+
+      assertThat(serviceState.taskState.subStage, is(subStage));
     }
 
-    @DataProvider(name = "validStartStates")
-    public Object[][] getValidStartStatesWithoutUploadImageId() {
-
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CANCELLED}
-      };
+    @DataProvider(name = "ValidStartStages")
+    public Object[][] getValidStartStages() {
+      return TestHelper.getValidStartStages(UploadImageTaskService.TaskState.SubStage.class);
     }
 
-    /**
-     * This test verifies that a service instance which is started in the CREATED state
-     * are transitioned to STARTED:UNTAR_IMAGE state as part of start operation handling.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test
-    public void testMinimalStartStateChanged() throws Throwable {
-
-      UploadImageTaskService.State startState = buildValidStartupState();
-      Operation startOp = host.startServiceSynchronously(service, startState);
-      assertThat(startOp.getStatusCode(), is(200));
-
-      UploadImageTaskService.State savedState = host.getServiceState(UploadImageTaskService.State.class);
-      assertThat(savedState.taskState, notNullValue());
-      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(savedState.imageFile, is("imageFile"));
-      assertThat(savedState.imageName, is("imageName"));
-      assertThat(savedState.uniqueId, notNullValue());
-      assertThat(savedState.queryUploadImageTaskInterval, notNullValue());
+    @Test(dataProvider = "InvalidStartStages", expectedExceptions = BadRequestException.class)
+    public void testInvalidStartState(
+        TaskState.TaskStage taskStage,
+        UploadImageTaskService.TaskState.SubStage subStage) throws Throwable {
+      UploadImageTaskService.State startState = buildValidStartState(taskStage, subStage);
+      testHost.startServiceSynchronously(uploadImageTaskService, startState);
     }
 
-    /**
-     * This test verifies that the task state of a service instance which is started
-     * in a terminal state is not modified on startup when state transitions are
-     * enabled.
-     *
-     * @param stage Supplies the stage of the state.
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test(dataProvider = "startStateNotChanged")
-    public void testMinimalStartStateNotChanged(TaskState.TaskStage stage) throws Throwable {
-
-      UploadImageTaskService.State startState = buildValidStartupState(stage);
-      startState.controlFlags = 0;
-      Operation startOp = host.startServiceSynchronously(service, startState);
-      assertThat(startOp.getStatusCode(), is(200));
-
-      UploadImageTaskService.State savedState = host.getServiceState(UploadImageTaskService.State.class);
-      assertThat(savedState.taskState, notNullValue());
-      assertThat(savedState.taskState.stage, is(stage));
-      assertThat(savedState.imageFile, is("imageFile"));
-      assertThat(savedState.imageName, is("imageName"));
-      assertThat(savedState.uniqueId, notNullValue());
-      assertThat(savedState.queryUploadImageTaskInterval, notNullValue());
+    @DataProvider(name = "InvalidStartStages")
+    public Object[][] getInvalidStartStages() {
+      return TestHelper.getInvalidStartStages(UploadImageTaskService.TaskState.SubStage.class);
     }
 
-    @DataProvider(name = "startStateNotChanged")
-    public Object[][] getStartStateNotChanged() {
-
-      return new Object[][]{
-          {TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CANCELLED}
-      };
-    }
-
-    /**
-     * This test verifies that the service handles the missing of the specified list of attributes
-     * in the start state.
-     *
-     * @param attributeName Supplies the attribute name.
-     * @throws Throwable
-     */
-    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "attributeNames")
-    public void testMissingStateValue(String attributeName) throws Throwable {
-      UploadImageTaskService.State startState = buildValidStartupState();
-      Field declaredField = startState.getClass().getDeclaredField(attributeName);
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = BadRequestException.class)
+    public void testInvalidStartStateRequiredFieldMissing(String fieldName) throws Throwable {
+      UploadImageTaskService.State startState = buildValidStartState(null, null);
+      Field declaredField = startState.getClass().getDeclaredField(fieldName);
       declaredField.set(startState, null);
-
-      host.startServiceSynchronously(service, startState);
+      testHost.startServiceSynchronously(uploadImageTaskService, startState);
     }
 
-    @DataProvider(name = "attributeNames")
-    public Object[][] getAttributeNames() {
-      return new Object[][]{
-          {"imageFile"},
-      };
-    }
-
-    /**
-     * This test verifies that the service instance handles the change of uniqueId
-     * in the start state.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test
-    public void testChangeUniqueId() throws Throwable {
-
-      UploadImageTaskService.State startState = buildValidStartupState();
-      startState.uniqueId = "uniqueId";
-
-      Operation startOp = host.startServiceSynchronously(service, startState);
-      assertThat(startOp.getStatusCode(), is(200));
-
-      UploadImageTaskService.State savedState = host.getServiceState(UploadImageTaskService.State.class);
-      assertThat(savedState.uniqueId, is("uniqueId"));
-    }
-
-    /**
-     * This test verifies that the service instance handles the change of queryUploadImageTaskInterval
-     * in the start state.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test
-    public void testChangeQueryUploadImageTaskInterval() throws Throwable {
-
-      UploadImageTaskService.State startState = buildValidStartupState();
-      startState.queryUploadImageTaskInterval = 12345;
-
-      Operation startOp = host.startServiceSynchronously(service, startState);
-      assertThat(startOp.getStatusCode(), is(200));
-
-      UploadImageTaskService.State savedState = host.getServiceState(UploadImageTaskService.State.class);
-      assertThat(savedState.queryUploadImageTaskInterval, is(12345));
+    @DataProvider(name = "RequiredFieldNames")
+    public Object[][] getRequiredFieldNames() {
+      return TestHelper.toDataProvidersList(
+          ReflectionUtils.getAttributeNamesWithAnnotation(
+              UploadImageTaskService.State.class, NotNull.class));
     }
   }
 
   /**
-   * Tests for the handlePatch method.
+   * This class implements tests for the {@link UploadImageTaskService#handlePatch(Operation)}
+   * method.
    */
   public class HandlePatchTest {
 
+    private TestHost testHost;
+    private UploadImageTaskService uploadImageTaskService;
+
     @BeforeClass
     public void setUpClass() throws Throwable {
-      host = TestHost.create();
+      testHost = TestHost.create();
     }
 
     @BeforeMethod
     public void setUpTest() {
-      service = new UploadImageTaskService();
+      uploadImageTaskService = new UploadImageTaskService();
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      host.deleteServiceSynchronously();
+      testHost.deleteServiceSynchronously();
     }
 
     @AfterClass
     public void tearDownClass() throws Throwable {
-      TestHost.destroy(host);
+      TestHost.destroy(testHost);
     }
 
-    /**
-     * This test verifies that legal stage and substage transitions succeed.
-     *
-     * @param startStage  Supplies the stage of the start state.
-     * @param targetStage Supplies the stage of the target state.
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test(dataProvider = "validStageUpdates")
-    public void testValidStageUpdates(TaskState.TaskStage startStage, TaskState.TaskStage targetStage)
-        throws Throwable {
-
-      UploadImageTaskService.State startState = buildValidStartupState(startStage);
-      host.startServiceSynchronously(service, startState);
-
-      UploadImageTaskService.State patchState = buildValidPatchState(targetStage);
-      Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-          .setBody(patchState);
-
-      Operation resultOp = host.sendRequestAndWait(patchOp);
-      assertThat(resultOp.getStatusCode(), is(200));
-
-      UploadImageTaskService.State savedState = host.getServiceState(UploadImageTaskService.State.class);
-      assertThat(savedState.taskState.stage, is(targetStage));
-    }
-
-    @DataProvider(name = "validStageUpdates")
-    public Object[][] getValidStageUpdates()
-        throws Throwable {
-
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CANCELLED},
-      };
-    }
-
-    /**
-     * This test verifies that illegal stage and substage transitions fail.
-     *
-     * @param startStage  Supplies the stage of the start state.
-     * @param targetStage Supplies the stage of the target state.
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test(dataProvider = "illegalStageUpdatesInvalidPatch")
-    public void testIllegalStageUpdatesInvalidPatch(
+    @Test(dataProvider = "ValidStageTransitions")
+    public void testValidStageTransition(
         TaskState.TaskStage startStage,
-        TaskState.TaskStage targetStage)
-        throws Throwable {
+        UploadImageTaskService.TaskState.SubStage startSubStage,
+        TaskState.TaskStage patchStage,
+        UploadImageTaskService.TaskState.SubStage patchSubStage) throws Throwable {
+      UploadImageTaskService.State startState = buildValidStartState(startStage, startSubStage);
+      Operation op = testHost.startServiceSynchronously(uploadImageTaskService, startState);
+      assertThat(op.getStatusCode(), is(200));
 
-      UploadImageTaskService.State startState = buildValidStartupState(startStage);
-      host.startServiceSynchronously(service, startState);
+      Operation patchOp = Operation.createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
+          .setBody(UploadImageTaskService.buildPatch(patchStage, patchSubStage));
 
-      UploadImageTaskService.State patchState = buildValidPatchState(targetStage);
-      Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-          .setBody(patchState);
+      op = testHost.sendRequestAndWait(patchOp);
+      assertThat(op.getStatusCode(), is(200));
 
-      try {
-        host.sendRequestAndWait(patchOp);
-        fail("Patch handling should throw in response to invalid start state");
-      } catch (XenonRuntimeException e) {
-      }
+      UploadImageTaskService.State serviceState = testHost.getServiceState(UploadImageTaskService.State.class);
+      assertThat(serviceState.taskState.stage, is(patchStage));
+      assertThat(serviceState.taskState.subStage, is(patchSubStage));
+      assertThat(serviceState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
     }
 
-    @DataProvider(name = "illegalStageUpdatesInvalidPatch")
-    public Object[][] getIllegalStageUpdatesInvalidPatch() {
-
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.CREATED},
-
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CREATED},
-
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.CANCELLED},
-
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.CANCELLED},
-
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CANCELLED},
-      };
+    @DataProvider(name = "ValidStageTransitions")
+    public Object[][] getValidStageTransitions() {
+      return TestHelper.getValidStageTransitions(UploadImageTaskService.TaskState.SubStage.class);
     }
 
-    /**
-     * This test verifies that the service instance fails when uniqueId is supplied
-     * in the patch state.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test
-    public void testInvalidPatchUniqueId() throws Throwable {
-      UploadImageTaskService.State startState = buildValidStartupState();
-      host.startServiceSynchronously(service, startState);
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = BadRequestException.class)
+    public void testInvalidStageTransition(
+        TaskState.TaskStage startStage,
+        UploadImageTaskService.TaskState.SubStage startSubStage,
+        TaskState.TaskStage patchStage,
+        UploadImageTaskService.TaskState.SubStage patchSubStage) throws Throwable {
+      UploadImageTaskService.State startState = buildValidStartState(startStage, startSubStage);
+      Operation op = testHost.startServiceSynchronously(uploadImageTaskService, startState);
+      assertThat(op.getStatusCode(), is(200));
 
-      UploadImageTaskService.State patchState = buildValidPatchState();
-      patchState.uniqueId = "uniqueId";
+      Operation patchOp = Operation.createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
+          .setBody(UploadImageTaskService.buildPatch(patchStage, patchSubStage));
 
-      Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-          .setBody(patchState);
-
-      try {
-        host.sendRequestAndWait(patchOp);
-        fail("Patch handling should throw in response to a non-null uniqueId");
-      } catch (XenonRuntimeException e) {
-        assertThat(e.getMessage(), is("uniqueId is immutable"));
-      }
+      testHost.sendRequestAndWait(patchOp);
     }
 
-    /**
-     * This test verifies that the service instance fails when queryUploadImageTaskInterval
-     * is supplied in the patch state.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test
-    public void testInvalidPatchQueryUploadImageTaskInterval() throws Throwable {
-      UploadImageTaskService.State startState = buildValidStartupState();
-      host.startServiceSynchronously(service, startState);
-
-      UploadImageTaskService.State patchState = buildValidPatchState();
-      patchState.queryUploadImageTaskInterval = 12345;
-
-      Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-          .setBody(patchState);
-
-      try {
-        host.sendRequestAndWait(patchOp);
-        fail("Patch handling should throw in response to a non-null queryUploadImageTaskInterval");
-      } catch (XenonRuntimeException e) {
-        assertThat(e.getMessage(), is("queryUploadImageTaskInterval is immutable"));
-      }
+    @DataProvider(name = "InvalidStageTransitions")
+    public Object[][] getInvalidStageTransitions() {
+      return TestHelper.getInvalidStageTransitions(UploadImageTaskService.TaskState.SubStage.class);
     }
 
-    /**
-     * This test verifies that the service instance fails when isOperationProcessingDisabled
-     * is supplied in the patch state.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test
-    public void testInvalidPatchIsOperationProcessingDisabled() throws Throwable {
-      UploadImageTaskService.State startState = buildValidStartupState();
-      host.startServiceSynchronously(service, startState);
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = BadRequestException.class)
+    public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
+      UploadImageTaskService.State startState = buildValidStartState(null, null);
+      Operation op = testHost.startServiceSynchronously(uploadImageTaskService, startState);
+      assertThat(op.getStatusCode(), is(200));
 
-      UploadImageTaskService.State patchState = buildValidPatchState();
-      patchState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+      UploadImageTaskService.State patchState = UploadImageTaskService.buildPatch(TaskState.TaskStage.STARTED,
+          UploadImageTaskService.TaskState.SubStage.UPLOAD_IMAGE);
+      Field declaredField = patchState.getClass().getDeclaredField(fieldName);
+      declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
 
-      Operation patchOp = Operation
-          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-          .setBody(patchState);
+      Operation patchOp = Operation.createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI)).setBody(patchState);
+      testHost.sendRequestAndWait(patchOp);
+    }
+
+    @DataProvider(name = "ImmutableFieldNames")
+    public Object[][] getImmutableFieldNames() {
+      return TestHelper.toDataProvidersList(
+          ReflectionUtils.getAttributeNamesWithAnnotation(
+              UploadImageTaskService.State.class, Immutable.class));
+    }
+
+    @Test(dataProvider = "WriteOnceFieldNames", expectedExceptions = BadRequestException.class)
+    public void testInvalidPatchWriteOnceFieldWrittenTwice(String fieldName) throws Throwable {
+      UploadImageTaskService.State startState = buildValidStartState(null, null);
+      Operation op = testHost.startServiceSynchronously(uploadImageTaskService, startState);
+      assertThat(op.getStatusCode(), is(200));
+
+      UploadImageTaskService.State patchState = UploadImageTaskService.buildPatch(TaskState.TaskStage.STARTED,
+          UploadImageTaskService.TaskState.SubStage.UPLOAD_IMAGE);
+      Field declaredField = patchState.getClass().getDeclaredField(fieldName);
+      declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
+
+      Operation patchOp = Operation.createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI)).setBody(patchState);
 
       try {
-        host.sendRequestAndWait(patchOp);
-        fail("Patch handling should throw in response to a non-null controlFlags");
-      } catch (XenonRuntimeException e) {
-        assertThat(e.getMessage(), is("controlFlags is immutable"));
+        testHost.sendRequestAndWait(patchOp);
+      } catch (BadRequestException e) {
+        throw new RuntimeException(e);
       }
+
+      UploadImageTaskService.State serviceState = testHost.getServiceState(UploadImageTaskService.State.class);
+      assertThat(declaredField.get(serviceState), is(ReflectionUtils.getDefaultAttributeValue(declaredField)));
+      testHost.sendRequestAndWait(patchOp);
+    }
+
+    @DataProvider(name = "WriteOnceFieldNames")
+    public Object[][] getWriteOnceFieldNames() {
+      return TestHelper.toDataProvidersList(
+          ReflectionUtils.getAttributeNamesWithAnnotation(
+              UploadImageTaskService.State.class, WriteOnce.class));
     }
   }
 
   /**
-   * End-to-end tests for the image upload task.
+   * This class implements end-to-end tests for the {@link UploadImageTaskService} task.
    */
   public class EndToEndTest {
 
-    private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
-    private DeployerContext deployerContext;
-    private ListeningExecutorService listeningExecutorService;
+    private final Task failedTask = ApiTestUtils.createFailingTask(2, 1, "errorCode", "errorMessage");
+
     private ApiClientFactory apiClientFactory;
-    private UploadImageTaskService.State startState;
-    private ApiClient apiClient;
+    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private DeployerContext deployerContext;
+    private String imageId;
     private ImagesApi imagesApi;
+    private ListeningExecutorService listeningExecutorService;
+    private UploadImageTaskService.State startState;
     private TasksApi tasksApi;
-    private Task taskReturnedByUploadImage;
-    private Task taskReturnedByGetTask;
-    private ImageService.State imageState;
+    private TestEnvironment testEnvironment;
 
     @BeforeClass
-    public void setUpClass() throws Exception {
-
-      deployerContext = ConfigBuilder.build(DeployerConfig.class,
-          UploadImageTaskServiceTest.class.getResource(configFilePath).getPath())
-          .getDeployerContext();
-      listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-
-      apiClient = mock(ApiClient.class);
-      imagesApi = mock(ImagesApi.class);
-      tasksApi = mock(TasksApi.class);
-      doReturn(imagesApi).when(apiClient).getImagesApi();
-      doReturn(tasksApi).when(apiClient).getTasksApi();
+    public void setUpClass() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
-      doReturn(apiClient).when(apiClientFactory).create();
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      deployerContext = ConfigBuilder.build(DeployerConfig.class,
+          this.getClass().getResource("/config.yml").getPath()).getDeployerContext();
+      listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
+      testEnvironment = new TestEnvironment.Builder()
+          .apiClientFactory(apiClientFactory)
+          .cloudServerSet(cloudStoreEnvironment.getServerSet())
+          .deployerContext(deployerContext)
+          .listeningExecutorService(listeningExecutorService)
+          .hostCount(1)
+          .build();
     }
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
+      ApiClient apiClient = mock(ApiClient.class);
+      doReturn(apiClient).when(apiClientFactory).create();
+      imagesApi = mock(ImagesApi.class);
+      doReturn(imagesApi).when(apiClient).getImagesApi();
+      tasksApi = mock(TasksApi.class);
+      doReturn(tasksApi).when(apiClient).getTasksApi();
 
-      startState = buildValidStartupState();
-      startState.controlFlags = 0;
-      startState.queryUploadImageTaskInterval = 10;
+      imageId = UUID.randomUUID().toString();
 
-      imageState = new ImageService.State();
-      imageState.name = "imageName";
-      imageState.replicationType = ImageReplicationType.ON_DEMAND;
-      imageState.state = ImageState.READY;
-      imageState.totalDatastore = 10;
-      imageState.totalImageDatastore = 5;
-      imageState.replicatedImageDatastore = 5;
+      doReturn(TestHelper.createTask("UPLOAD_IMAGE_TASK_ID", imageId, "QUEUED"))
+          .when(imagesApi)
+          .uploadImage(anyString(), anyString());
 
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
-      machine = createTestEnvironment(
-          deployerContext,
-          listeningExecutorService,
-          apiClientFactory,
-          cloudStoreMachine.getServerSet(),
-          1);
+      doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_IMAGE_TASK_ID", imageId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_IMAGE_TASK_ID", imageId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_IMAGE_TASK_ID", imageId, "COMPLETED"))
+          .when(tasksApi)
+          .getTaskAsync(eq("UPLOAD_IMAGE_TASK_ID"), Matchers.<FutureCallback<Task>>any());
 
-      ImageService.State savedImageState = cloudStoreMachine.callServiceAndWaitForState(
-          ImageServiceFactory.SELF_LINK,
-          imageState,
-          ImageService.State.class,
-          (document) -> true);
-      String imageId = ServiceUtils.getIDFromDocumentSelfLink(savedImageState.documentSelfLink);
+      doAnswer(MockHelper.mockGetImageAsync(imageId, "33.33%"))
+          .doAnswer(MockHelper.mockGetImageAsync(imageId, "66.67%"))
+          .doAnswer(MockHelper.mockGetImageAsync(imageId, "100.0%"))
+          .when(imagesApi)
+          .getImageAsync(eq(imageId), Matchers.<FutureCallback<Image>>any());
 
-      taskReturnedByUploadImage = new Task();
-      taskReturnedByUploadImage.setId("taskId");
-      taskReturnedByUploadImage.setState("STARTED");
+      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DeploymentService.State.class);
+      TestHelper.assertNoServicesOfType(testEnvironment, VmService.State.class);
 
-      taskReturnedByGetTask = new Task();
-      taskReturnedByGetTask.setId("taskId");
-      taskReturnedByGetTask.setState("COMPLETED");
+      DeploymentService.State deploymentState = TestHelper.createDeploymentService(cloudStoreEnvironment);
 
-      Task.Entity taskEntity = new Task.Entity();
-      taskEntity.setId(imageId);
-      taskReturnedByUploadImage.setEntity(taskEntity);
-      taskReturnedByGetTask.setEntity(taskEntity);
+      for (int i = 0; i < 3; i++) {
+        TestHelper.createVmService(testEnvironment);
+      }
+
+      startState = buildValidStartState(null, null);
+      startState.controlFlags = null;
+      startState.deploymentServiceLink = deploymentState.documentSelfLink;
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      if (null != machine) {
-        machine.stop();
-        machine = null;
-      }
-
-      if (null != cloudStoreMachine) {
-        cloudStoreMachine.stop();
-        cloudStoreMachine = null;
-      }
-
-      startState = null;
-      imageState = null;
-      taskReturnedByUploadImage = null;
-      taskReturnedByGetTask = null;
+      TestHelper.deleteServicesOfType(cloudStoreEnvironment, DeploymentService.State.class);
+      TestHelper.deleteServicesOfType(testEnvironment, VmService.State.class);
     }
 
     @AfterClass
-    public void tearDownClass() throws Exception {
+    public void tearDownClass() throws Throwable {
+      testEnvironment.stop();
+      cloudStoreEnvironment.stop();
       listeningExecutorService.shutdown();
     }
 
-    /**
-     * This test verifies an successful end-to-end scenario.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
     @Test
-    public void testEndToEndSuccess() throws Throwable {
-      doReturn(taskReturnedByUploadImage).when(imagesApi).uploadImage(anyString(), anyString());
-
-      doAnswer(new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetTask);
-          return null;
-        }
-      }).when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
+    public void testSuccess() throws Throwable {
 
       UploadImageTaskService.State finalState =
-          machine.callServiceAndWaitForState(
+          testEnvironment.callServiceAndWaitForState(
               UploadImageTaskFactoryService.SELF_LINK,
               startState,
               UploadImageTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.uploadImageTaskId, is("UPLOAD_IMAGE_TASK_ID"));
+      assertThat(finalState.uploadImagePollCount, is(3));
+      assertThat(finalState.imageId, is(imageId));
+      assertThat(finalState.imageSeedingProgress, is("100.0%"));
+      assertThat(finalState.imageSeedingPollCount, is(3));
+
+      verify(imagesApi).uploadImage(
+          eq("IMAGE_FILE"),
+          eq(ImageReplicationType.ON_DEMAND.name()));
+
+      verify(tasksApi, times(3)).getTaskAsync(
+          eq("UPLOAD_IMAGE_TASK_ID"),
+          Matchers.<FutureCallback<Task>>any());
+
+      verify(imagesApi, times(3)).getImageAsync(
+          eq(imageId),
+          Matchers.<FutureCallback<Image>>any());
+
+      QueryTask queryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(QueryTask.Query.Builder.create()
+              .addKindFieldClause(VmService.State.class)
+              .build())
+          .addOptions(EnumSet.of(
+              QueryTask.QuerySpecification.QueryOption.BROADCAST,
+              QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+          .build();
+
+      QueryTask result = testEnvironment.sendQueryAndWait(queryTask);
+      for (Object vmDocument : result.results.documents.values()) {
+        VmService.State vmState = Utils.fromJson(vmDocument, VmService.State.class);
+        assertThat(vmState.imageServiceLink, is(UriUtils.buildUriPath(ImageServiceFactory.SELF_LINK, imageId)));
+      }
+
+      DeploymentService.State deploymentState = cloudStoreEnvironment.getServiceState(finalState.deploymentServiceLink,
+          DeploymentService.State.class);
+      assertThat(deploymentState.imageId, is(imageId));
     }
 
-    /**
-     * This test verifies that the service instance handles failure in
-     * STARTED:UPLOAD_KUBERNETES_IMAGE state where the uploadImage call
-     * throws exception.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
     @Test
-    public void testEndToEndFailureUploadImageThrowsException() throws Throwable {
-      doThrow(new RuntimeException("Exception during uploadImage"))
-          .when(imagesApi).uploadImage(anyString(), anyString());
+    public void testSuccessNoTaskPolling() throws Throwable {
+
+      doReturn(TestHelper.createTask("UPLOAD_IMAGE_TASK_ID", imageId, "COMPLETED"))
+          .when(imagesApi)
+          .uploadImage(anyString(), anyString());
 
       UploadImageTaskService.State finalState =
-          machine.callServiceAndWaitForState(
+          testEnvironment.callServiceAndWaitForState(
               UploadImageTaskFactoryService.SELF_LINK,
               startState,
               UploadImageTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString("Exception during uploadImage"));
-    }
+      TestHelper.assertTaskStateFinished(finalState.taskState);
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.uploadImageTaskId, nullValue());
+      assertThat(finalState.uploadImagePollCount, is(0));
+      assertThat(finalState.imageId, is(imageId));
+      assertThat(finalState.imageSeedingProgress, is("100.0%"));
+      assertThat(finalState.imageSeedingPollCount, is(3));
 
-    /**
-     * This test verifies that the service instance handles failure in
-     * STARTED:UPLOAD_KUBERNETES_IMAGE state where the getTask call
-     * throws exception.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
+      verify(imagesApi).uploadImage(
+          eq("IMAGE_FILE"),
+          eq(ImageReplicationType.ON_DEMAND.name()));
+
+      verify(imagesApi, times(3)).getImageAsync(
+          eq(imageId),
+          Matchers.<FutureCallback<Image>>any());
+
+      QueryTask queryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(QueryTask.Query.Builder.create()
+              .addKindFieldClause(VmService.State.class)
+              .build())
+          .addOptions(EnumSet.of(
+              QueryTask.QuerySpecification.QueryOption.BROADCAST,
+              QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+          .build();
+
+      QueryTask result = testEnvironment.sendQueryAndWait(queryTask);
+      for (Object vmDocument : result.results.documents.values()) {
+        VmService.State vmState = Utils.fromJson(vmDocument, VmService.State.class);
+        assertThat(vmState.imageServiceLink, is(UriUtils.buildUriPath(ImageServiceFactory.SELF_LINK, imageId)));
+      }
+
+      DeploymentService.State deploymentState = cloudStoreEnvironment.getServiceState(finalState.deploymentServiceLink,
+          DeploymentService.State.class);
+      assertThat(deploymentState.imageId, is(imageId));
+    }
 
     @Test
-    public void testEndToEndFailureGetTaskThrowsException() throws Throwable {
-      doReturn(taskReturnedByUploadImage).when(imagesApi).uploadImage(anyString(), anyString());
-      doThrow(new RuntimeException("Exception during getTask"))
-          .when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
+    public void testSuccessNoImagePolling() throws Throwable {
 
-      doThrow(new RuntimeException("Exception during getTask"))
-          .when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
+      doAnswer(MockHelper.mockGetImageAsync(imageId, "100.0%"))
+          .when(imagesApi)
+          .getImageAsync(eq(imageId), Matchers.<FutureCallback<Image>>any());
 
       UploadImageTaskService.State finalState =
-          machine.callServiceAndWaitForState(
+          testEnvironment.callServiceAndWaitForState(
               UploadImageTaskFactoryService.SELF_LINK,
               startState,
               UploadImageTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString("Exception during getTask"));
+      TestHelper.assertTaskStateFinished(finalState.taskState);
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.uploadImageTaskId, is("UPLOAD_IMAGE_TASK_ID"));
+      assertThat(finalState.uploadImagePollCount, is(3));
+      assertThat(finalState.imageId, is(imageId));
+      assertThat(finalState.imageSeedingProgress, is("100.0%"));
+      assertThat(finalState.imageSeedingPollCount, is(1));
+
+      verify(imagesApi).uploadImage(
+          eq("IMAGE_FILE"),
+          eq(ImageReplicationType.ON_DEMAND.name()));
+
+      verify(tasksApi, times(3)).getTaskAsync(
+          eq("UPLOAD_IMAGE_TASK_ID"),
+          Matchers.<FutureCallback<Task>>any());
+
+      verify(imagesApi).getImageAsync(
+          eq(imageId),
+          Matchers.<FutureCallback<Image>>any());
     }
 
-    /**
-     * This test verifies that the service instance handles failure in
-     * STARTED:UPLOAD_KUBERNETES_IMAGE state where the task returned by UploadImage call
-     * has error state.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test(dataProvider = "errorTasksResponses")
-    public void testEndToEndFailureUploadImageReturnsErrorTaskState(final Task task) throws Throwable {
-      doReturn(task).when(imagesApi).uploadImage(anyString(), anyString());
-
-      doAnswer(new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetTask);
-          return null;
-        }
-      }).when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
-
-      UploadImageTaskService.State finalState =
-          machine.callServiceAndWaitForState(
-              UploadImageTaskFactoryService.SELF_LINK,
-              startState,
-              UploadImageTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(task)));
-    }
-
-    /**
-     * This test verifies that the service instance handles failure in
-     * STARTED:UPLOAD_KUBERNETES_IMAGE state where the task returned by GetTask call
-     * has error state.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
-    @Test(dataProvider = "errorTasksResponses")
-    public void testEndToEndFailureGetTaskReturnsErrorTaskState(final Task task) throws Throwable {
-      doReturn(taskReturnedByUploadImage).when(imagesApi).uploadImage(anyString(), anyString());
-
-      doAnswer(new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(task);
-          return null;
-        }
-      }).when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
-
-      UploadImageTaskService.State finalState =
-          machine.callServiceAndWaitForState(
-              UploadImageTaskFactoryService.SELF_LINK,
-              startState,
-              UploadImageTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(task)));
-    }
-
-    @DataProvider(name = "errorTasksResponses")
-    public Object[][] getErrorTasksResponses() {
-      return new Object[][]{
-          {ApiTestUtils.createFailingTask(0, 1, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(0, 2, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(2, 1, "errorCode", "errorMessage")},
-          {ApiTestUtils.createFailingTask(2, 1, "errorCode", "errorMessage")},
-      };
-    }
-
-    /**
-     * This test verifies that the service instance handles failure in
-     * STARTED:UPLOAD_KUBERNETES_IMAGE state where the task returned by UploadImage call
-     * has unknown state.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
     @Test
-    public void testEndToEndFailureUploadImageReturnsInvalidTaskState() throws Throwable {
-      taskReturnedByUploadImage.setState("unknown");
-      doReturn(taskReturnedByUploadImage).when(imagesApi).uploadImage(anyString(), anyString());
-      doAnswer(new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetTask);
-          return null;
-        }
-      }).when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
+    public void testUploadImageFailure() throws Throwable {
+
+      doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_IMAGE_TASK_ID", imageId, "QUEUED"))
+          .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_IMAGE_TASK_ID", imageId, "STARTED"))
+          .doAnswer(MockHelper.mockGetTaskAsync(failedTask))
+          .when(tasksApi)
+          .getTaskAsync(eq("UPLOAD_IMAGE_TASK_ID"), Matchers.<FutureCallback<Task>>any());
 
       UploadImageTaskService.State finalState =
-          machine.callServiceAndWaitForState(
+          testEnvironment.callServiceAndWaitForState(
               UploadImageTaskFactoryService.SELF_LINK,
               startState,
               UploadImageTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString("Unknown task state: unknown"));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.uploadImageTaskId, is("UPLOAD_IMAGE_TASK_ID"));
+      assertThat(finalState.uploadImagePollCount, is(3));
+      assertThat(finalState.imageId, nullValue());
+
+      verify(imagesApi).uploadImage(
+          eq("IMAGE_FILE"),
+          eq(ImageReplicationType.ON_DEMAND.name()));
+
+      verify(tasksApi, times(3)).getTaskAsync(
+          eq("UPLOAD_IMAGE_TASK_ID"),
+          Matchers.<FutureCallback<Task>>any());
     }
 
-    /**
-     * This test verifies that the service instance handles failure in
-     * STARTED:UPLOAD_KUBERNETES_IMAGE state where the task state returned by GetTask call
-     * has unknown state.
-     *
-     * @throws Throwable Throws an exception if any error is encountered.
-     */
     @Test
-    public void testEndToEndFailureGetTaskReturnsInvalidTaskState() throws Throwable {
-      taskReturnedByGetTask.setState("unknown");
-      doReturn(taskReturnedByUploadImage).when(imagesApi).uploadImage(anyString(), anyString());
+    public void testUploadImageFailureNoTaskPolling() throws Throwable {
 
-      doAnswer(new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetTask);
-          return null;
-        }
-      }).when(tasksApi).getTaskAsync(anyString(), any(FutureCallback.class));
+      doReturn(failedTask).when(imagesApi).uploadImage(anyString(), anyString());
 
       UploadImageTaskService.State finalState =
-          machine.callServiceAndWaitForState(
+          testEnvironment.callServiceAndWaitForState(
               UploadImageTaskFactoryService.SELF_LINK,
               startState,
               UploadImageTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString("Unknown task state: unknown"));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
+      assertThat(finalState.uploadImageTaskId, nullValue());
+      assertThat(finalState.uploadImagePollCount, is(0));
     }
+
+    @Test
+    public void testUploadImageFailureExceptionInUploadImageCall() throws Throwable {
+
+      doThrow(new IOException("I/O exception in uploadImage call"))
+          .when(imagesApi)
+          .uploadImage(anyString(), anyString());
+
+      UploadImageTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              UploadImageTaskFactoryService.SELF_LINK,
+              startState,
+              UploadImageTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("I/O exception in uploadImage call"));
+      assertThat(finalState.uploadImageTaskId, nullValue());
+      assertThat(finalState.uploadImagePollCount, is(0));
+    }
+
+    @Test
+    public void testUploadImageFailureExceptionInGetTaskCall() throws Throwable {
+
+      doThrow(new IOException("I/O exception in getTaskAsync call"))
+          .when(tasksApi)
+          .getTaskAsync(eq("UPLOAD_IMAGE_TASK_ID"), Matchers.<FutureCallback<Task>>any());
+
+      UploadImageTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              UploadImageTaskFactoryService.SELF_LINK,
+              startState,
+              UploadImageTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("I/O exception in getTaskAsync call"));
+      assertThat(finalState.uploadImageTaskId, is("UPLOAD_IMAGE_TASK_ID"));
+      assertThat(finalState.uploadImagePollCount, is(1));
+    }
+
+    @Test
+    public void testImageInErrorState() throws Throwable {
+
+      doAnswer(MockHelper.mockGetImageAsync(imageId, ImageState.ERROR))
+          .when(imagesApi)
+          .getImageAsync(eq(imageId), Matchers.<FutureCallback<Image>>any());
+
+      UploadImageTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              UploadImageTaskFactoryService.SELF_LINK,
+              startState,
+              UploadImageTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("Image " + imageId + " reached ERROR state"));
+      assertThat(finalState.uploadImageTaskId, is("UPLOAD_IMAGE_TASK_ID"));
+      assertThat(finalState.uploadImagePollCount, is(3));
+      assertThat(finalState.imageId, is(imageId));
+      assertThat(finalState.imageSeedingPollCount, is(1));
+    }
+
+    @Test
+    public void testImageInPendingDeleteState() throws Throwable {
+
+      doAnswer(MockHelper.mockGetImageAsync(imageId, ImageState.PENDING_DELETE))
+          .when(imagesApi)
+          .getImageAsync(eq(imageId), Matchers.<FutureCallback<Image>>any());
+
+      UploadImageTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              UploadImageTaskFactoryService.SELF_LINK,
+              startState,
+              UploadImageTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("Image " + imageId +
+          " reached unexpected state PENDING_DELETE"));
+      assertThat(finalState.uploadImageTaskId, is("UPLOAD_IMAGE_TASK_ID"));
+      assertThat(finalState.uploadImagePollCount, is(3));
+      assertThat(finalState.imageId, is(imageId));
+      assertThat(finalState.imageSeedingPollCount, is(1));
+      assertThat(finalState.imageSeedingProgress, nullValue());
+    }
+
+    @Test
+    public void testGetImageFailureExceptionInGetImageCall() throws Throwable {
+
+      doThrow(new IOException("I/O exception in getImageAsync call"))
+          .when(imagesApi)
+          .getImageAsync(eq(imageId), Matchers.<FutureCallback<Image>>any());
+
+      UploadImageTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              UploadImageTaskFactoryService.SELF_LINK,
+              startState,
+              UploadImageTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString("I/O exception in getImageAsync call"));
+      assertThat(finalState.uploadImageTaskId, is("UPLOAD_IMAGE_TASK_ID"));
+      assertThat(finalState.uploadImagePollCount, is(3));
+      assertThat(finalState.imageId, is(imageId));
+      assertThat(finalState.imageSeedingPollCount, is(1));
+      assertThat(finalState.imageSeedingProgress, nullValue());
+    }
+  }
+
+  private UploadImageTaskService.State buildValidStartState(
+      @Nullable TaskState.TaskStage taskStage,
+      @Nullable UploadImageTaskService.TaskState.SubStage subStage) {
+    UploadImageTaskService.State startState = new UploadImageTaskService.State();
+    startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    startState.taskPollDelay = 10;
+    startState.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
+    startState.imageName = "IMAGE_NAME";
+    startState.imageFile = "IMAGE_FILE";
+    if (taskStage != null) {
+      startState.taskState = new UploadImageTaskService.TaskState();
+      startState.taskState.stage = taskStage;
+      startState.taskState.subStage = subStage;
+    }
+
+    return startState;
   }
 }
