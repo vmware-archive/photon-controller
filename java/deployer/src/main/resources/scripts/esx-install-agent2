@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash
 
 tools=$(readlink -nf $(dirname $0))
 source $tools/common.sh
@@ -52,34 +52,37 @@ esxcli -s $host_address -u $username -p "$password" system syslog reload
 fi
 
 function remove_vib() {
-  result=`esxcli -s $host_address -u $username -p "$password" software vib remove -f -n $1 || echo "failed"`
-  if [[ $result == "failed" ]]
+  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n $1
+  if [[ $? -ne 0 ]]
   then
     echo "retrying remove vib"
-	  esxcli -s $host_address -u $username -p "$password" software vib remove -f -n $1
+    sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n $1
+	  if [[ $? -ne 0 ]]
+	  then
+	    exit 1
+	  fi
 	fi
 }
 
 function install_vib() {
-  result=`esxcli -s $host_address -u $username -p "$password" software vib install -f -v $vib_path || echo "failed"`
-  if [[ $result == "failed" ]]
+  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib install -f -v $vib_path
+  if [[ $? -ne 0 ]]
   then
     echo "retrying installing vib"
-	  esxcli -s $host_address -u $username -p "$password" software vib install -f -v $vib_path
+	  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib install -f -v $vib_path
+
+	  if [[ $? -ne 0 ]]
+	  then
+	    exit 1
+	  fi
 	fi
 }
-
-# Remove original agent if existed
-agent_existing=`esxcli -s $host_address -u $username -p "$password" software vib list | grep esxcloud | wc -l`
-if [ $agent_existing -ne 0 ]
-then
-  remove_vib esxcloud
-fi
 
 # Remove agent if existed
 agent_existing=`esxcli -s $host_address -u $username -p "$password" software vib list | grep photon-controller-agent | wc -l`
 if [ $agent_existing -ne 0 ]
 then
+  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} /etc/init.d/photon-controller-agent stop
   remove_vib photon-controller-agent
 fi
 
