@@ -458,8 +458,8 @@ class AgentCommonTests(object):
         find_response = vm_wrapper.find()
         vm_id = vm_wrapper.id
         assert_that(find_response.path,
-                    matches_regexp("\[.*\] vms/%s/%s/%s\.vmx" %
-                                   (vm_id[0:2], vm_id, vm_id)))
+                    matches_regexp("\[.*\] vm_%s/%s/%s\.vmx" %
+                                   (vm_id, vm_id, vm_id)))
 
     def test_find_vm(self):
         vm_wrapper = VmWrapper(self.host_client)
@@ -640,8 +640,8 @@ class AgentCommonTests(object):
 
     def test_copy_image_not_found(self):
         datastore = self._find_configured_datastore_in_host_config()
-        src_image = Image("not_found_source_id", datastore)
-        dst_image = Image("destination_id", datastore)
+        src_image = Image("not-found-source-id", datastore)
+        dst_image = Image("destination-id", datastore)
 
         request = Host.CopyImageRequest(src_image, dst_image)
         response = self.host_client.copy_image(request)
@@ -655,14 +655,14 @@ class AgentCommonTests(object):
         # ttylinux is the default image that is copied to datastore1
         # when agent starts
         src_image = Image("ttylinux", datastore)
-        dst_image = Image("test_copy_image", datastore)
+        dst_image = Image("test-copy-image", datastore)
 
-        # verify test_copy_image is not in datastore
+        # verify test-copy-image is not in datastore
         request = Host.GetImagesRequest(datastore.id)
         response = self.host_client.get_images(request)
         assert_that(response.result, is_(GetImagesResultCode.OK))
         assert_that(response.image_ids, has_item("ttylinux"))
-        assert_that(response.image_ids, not(has_item("test_copy_image")))
+        assert_that(response.image_ids, not(has_item("test-copy-image")))
         image_number = len(response.image_ids)
 
         # Copy image
@@ -676,16 +676,16 @@ class AgentCommonTests(object):
         assert_that(response.result,
                     is_(CopyImageResultCode.DESTINATION_ALREADY_EXIST))
 
-        # Verify test_copy_image is in datastore
+        # Verify test-copy-image is in datastore
         request = Host.GetImagesRequest(datastore.id)
         response = self.host_client.get_images(request)
         assert_that(response.result, is_(GetImagesResultCode.OK))
         assert_that(response.image_ids, has_item("ttylinux"))
-        assert_that(response.image_ids, has_item("test_copy_image"))
+        assert_that(response.image_ids, has_item("test-copy-image"))
         assert_that(response.image_ids, has_length(image_number + 1))
 
         # Create VM
-        image = DiskImage("test_copy_image", CloneType.COPY_ON_WRITE)
+        image = DiskImage("test-copy-image", CloneType.COPY_ON_WRITE)
         disks = [
             Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
                  image=image,
@@ -701,18 +701,18 @@ class AgentCommonTests(object):
         # Delete VM
         vm_wrapper.delete(request=vm_wrapper.delete_request(disk_ids=[]))
 
-        # Verify test_copy_image is in datastore
+        # Verify test-copy-image is in datastore
         request = Host.GetImagesRequest(datastore.id)
         response = self.host_client.get_images(request)
         assert_that(response.result, is_(GetImagesResultCode.OK))
         assert_that(response.image_ids, has_item("ttylinux"))
-        assert_that(response.image_ids, has_item("test_copy_image"))
+        assert_that(response.image_ids, has_item("test-copy-image"))
         assert_that(response.image_ids, has_length(image_number + 1))
 
         # Copy image using datastore with name as id should succeed
         # This datastore object uses the datastore name as its id
         datastore.id = datastore.name
-        dst_image2 = Image("test_copy_image2", datastore)
+        dst_image2 = Image("test-copy-image2", datastore)
         request = Host.CopyImageRequest(src_image, dst_image2)
         response = self.host_client.copy_image(request)
         assert_that(response.result, is_(CopyImageResultCode.OK))

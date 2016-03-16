@@ -27,7 +27,7 @@ class KnownOptionParser(OptionParser):
 
 def default_parser(usage, add_help=True):
     default_host = "localhost"
-    if os.environ["ECCLI_HOST"]:
+    if "ECCLI_HOST" in os.environ:
         default_host = os.environ["ECCLI_HOST"]
 
     parser = KnownOptionParser(usage, add_help_option=add_help)

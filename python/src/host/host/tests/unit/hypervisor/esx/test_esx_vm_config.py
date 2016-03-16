@@ -226,7 +226,7 @@ class TestEsxVmConfig(unittest.TestCase):
         cfgOption.defaultDevice.append(virtual_ide_controller)
         self.vm_config._cfg_opts = cfgOption
         # fake iso ds path
-        fake_iso_ds_path = '[ds] vms/fa/fake/fake.iso'
+        fake_iso_ds_path = '[ds] vm_fake/fake.iso'
 
         # test if no virtual cdrom attached to the VM
         cfg_info = FakeConfigInfo()
@@ -306,7 +306,7 @@ class TestEsxVmConfig(unittest.TestCase):
         assert_that(len(cspec.deviceChange), equal_to(0))
 
         # on vm config with no a fake cdrom device
-        fake_iso_ds_path = '[ds] vms/fa/fake/fake.iso'
+        fake_iso_ds_path = '[ds] vm_fake/fake.iso'
         cspec = self.vm_config.update_spec()
         cfg_info = self._get_config_info_with_iso(fake_iso_ds_path)
         iso_path = self.vm_config.disconnect_iso_cdrom(cspec, cfg_info)
@@ -323,7 +323,7 @@ class TestEsxVmConfig(unittest.TestCase):
         assert_that(dev.connectable.startConnected, equal_to(False))
 
     def test_remove_iso_cdrom_device(self):
-        fake_iso_ds_path = '[ds] vms/fa/fake/fake.iso'
+        fake_iso_ds_path = '[ds] vm_fake/fake.iso'
         cspec = self.vm_config.update_spec()
         cfg_info = self._get_config_info_with_iso(fake_iso_ds_path)
         self.vm_config.remove_iso_cdrom(cspec, cfg_info)
@@ -363,11 +363,11 @@ class TestEsxVmConfig(unittest.TestCase):
         assert_that(path, equal_to(expected_os_path))
 
     @parameterized.expand([
-        (['[foo] images/a/b/c.vmdk'], True, False, False),
-        (['[foo] vms/a/b/c.vmdk'], False, True, False),
-        (['[foo] images/a/b/c.vmdk', '[foo] vms/a.vmdk'], False, True, False),
-        (['[foo] disks/a/b/c.vmdk'], False, False, True),
-        (['[foo] images/a/c.vmdk', '[foo] disks/a.vmdk'], False, False, True),
+        (['[foo] image_a_b/c.vmdk'], True, False, False),
+        (['[foo] vm_a_b/c.vmdk'], False, True, False),
+        (['[foo] image_a_b/c.vmdk', '[foo] vm/a.vmdk'], False, True, False),
+        (['[foo] disk_a_b/c.vmdk'], False, False, True),
+        (['[foo] image_a/c.vmdk', '[foo] disk/a.vmdk'], False, False, True),
         ([], False, False, False)
     ])
     def test_is_what_disk(self, disk_files, image, ephemeral, persistent):
@@ -377,9 +377,9 @@ class TestEsxVmConfig(unittest.TestCase):
 
     @parameterized.expand([
         ("ds1", "image_id",
-         "/vmfs/volumes/ds1/images/im/image_id/image_id.manifest"),
+         "/vmfs/volumes/ds1/image_image_id/image_id.manifest"),
         ("123 456", "image_id",
-         "/vmfs/volumes/123 456/images/im/image_id/image_id.manifest"),
+         "/vmfs/volumes/123 456/image_image_id/image_id.manifest"),
     ])
     def test_os_image_manifest_path(self, datastore, image_id, expected):
         assert_that(os_image_manifest_path(datastore, image_id),

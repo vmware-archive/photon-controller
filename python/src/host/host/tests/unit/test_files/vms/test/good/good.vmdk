@@ -5,7 +5,7 @@ CID=fffffffe
 parentCID=fffffffe
 isNativeSnapshot="no"
 createType="vmfsSparse"
-parentFileNameHint="/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/images/92/92e62599-6689-4a8f-ba2a-633914b5048e/92e62599-6689-4a8f-ba2a-633914b5048e.vmdk"
+parentFileNameHint="/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/image_92e62599-6689-4a8f-ba2a-633914b5048e/92e62599-6689-4a8f-ba2a-633914b5048e.vmdk"
 # Extent description
 RW 16777216 VMFSSPARSE "64957258-3dbb-41b6-8fea-15479167e95d-delta.vmdk"
 

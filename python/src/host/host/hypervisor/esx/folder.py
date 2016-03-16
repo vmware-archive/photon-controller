@@ -10,7 +10,7 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
-DISK_FOLDER_NAME = "disks"
-IMAGE_FOLDER_NAME = "images"
-VM_FOLDER_NAME = "vms"
-TMP_IMAGE_FOLDER_NAME = "tmp_images"
+DISK_FOLDER_NAME = "disk"
+IMAGE_FOLDER_NAME = "image"
+VM_FOLDER_NAME = "vm"
+TMP_IMAGE_FOLDER_NAME = "tmp_image"

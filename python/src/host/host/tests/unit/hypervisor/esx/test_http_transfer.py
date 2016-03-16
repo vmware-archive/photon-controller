@@ -127,8 +127,7 @@ class TestHttpTransfer(unittest.TestCase):
         self.assertEqual(vm_id_arg, shadow_vm_id)
         self.assertEqual(
             vm_spec_arg.files.vmPathName,
-            '[] /vmfs/volumes/%s/vms/%s' % (
-                self.image_datastores[0], shadow_vm_id[:2]))
+            '[] /vmfs/volumes/%s/vm_%s' % (self.image_datastores[0], shadow_vm_id))
 
     def test_configure_shadow_vm_with_disk(self):
         image_id = "fake_image_id"
