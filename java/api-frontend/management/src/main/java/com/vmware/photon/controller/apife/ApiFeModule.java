@@ -79,6 +79,7 @@ import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.config.RootSchedulerConfig;
 import com.vmware.photon.controller.apife.config.StatusConfig;
 import com.vmware.photon.controller.chairman.gen.Chairman;
+import com.vmware.photon.controller.common.BareMetalProvisionerServerSet;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -294,6 +295,13 @@ public class ApiFeModule extends AbstractModule {
   @CloudStoreServerSet
   public ServerSet getCloudStoreServerSet(ZookeeperServerSetFactory serverSetFactory) {
     return serverSetFactory.createServiceServerSet("cloudstore", true);
+  }
+
+  @Provides
+  @Singleton
+  @BareMetalProvisionerServerSet
+  public ServerSet getBareMetalProvisionerServerSet(ZookeeperServerSetFactory serverSetFactory) {
+    return serverSetFactory.createServiceServerSet("bare-metal-provisioner", true);
   }
 
   @Provides
