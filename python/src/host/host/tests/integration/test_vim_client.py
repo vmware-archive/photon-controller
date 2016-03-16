@@ -63,7 +63,7 @@ class TestVimClient(unittest.TestCase):
 
     def _create_test_vm(self, suffix="host-integ"):
         # Create VM
-        vm_id = "%s-%s-%s" % (
+        vm_id = "vm_%s-%s-%s" % (
             time.strftime("%Y-%m-%d-%H%M%S", time.localtime()),
             str(random.randint(100000, 1000000)),
             suffix)

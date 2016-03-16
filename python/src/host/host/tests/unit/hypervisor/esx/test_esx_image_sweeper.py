@@ -19,6 +19,7 @@ import tempfile
 import unittest
 
 from hamcrest import *  # noqa
+from host.hypervisor.esx import vm_config
 from mock import MagicMock
 from mock import patch
 from nose_parameterized import parameterized
@@ -725,7 +726,6 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
         return ret
 
     def create_dir(self, image_id):
-        dirname = os.path.join(self.dir0,
-                               _disk_path(image_id))
+        dirname = vm_config.compond_path_join(self.dir0, _disk_path(image_id))
         os.makedirs(dirname)
         return dirname

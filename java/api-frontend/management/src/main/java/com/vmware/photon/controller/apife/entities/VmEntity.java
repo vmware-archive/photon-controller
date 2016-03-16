@@ -265,6 +265,6 @@ public class VmEntity extends InfrastructureEntity {
    * @return
    */
   public String buildVmFolderPath() {
-    return String.format("[%s] vms/%s/%s", datastoreName, getId().substring(0, 2), getId());
+    return String.format("[%s] vm_%s", datastoreName, getId());
   }
 }

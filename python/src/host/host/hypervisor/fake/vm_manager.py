@@ -270,7 +270,7 @@ class FakeVmManager(VmManager):
         return self._hypervisor.disk_manager
 
     def _vm_path(self, datastore, vm_id):
-        return "[%s] vms/%s/%s/%s.vmx" % (datastore, vm_id[0:2], vm_id, vm_id)
+        return "[%s] vm_%s/%s/%s.vmx" % (datastore, vm_id, vm_id, vm_id)
 
     def get_vm_config(self, vm_id):
         return self._get_vm(vm_id).fake_vm_spec
