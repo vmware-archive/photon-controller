@@ -1,0 +1,9 @@
+{
+    "name": "vn1",
+    "description": "desc",
+    "switchReplicationMode": "SOURCE",
+    "transportZone": "tz1",
+    "tierZeroRouterName": "r1",
+    "edgeClusterName": "c1",
+    "dhcpServerEndpoint": "192.168.1.1"
+}
