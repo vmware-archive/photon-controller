@@ -65,7 +65,7 @@ $SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'esxcfg-vswitch -A "VM Network" test' |
 $SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'vim-cmd hostsvc/net/refresh' || true
 $SSH_PATH/ssh -t -t root@$ESX_IP sh -xec '/etc/init.d/photon-controller-agent restart'
 
-IMAGE_SUB_DIR=images/tt/ttylinux
+IMAGE_SUB_DIR=image_ttylinux
 
 # Copy the ttylinux image and metadata to datastore
 $SSH_PATH/ssh -t -t root@$ESX_IP sh -xec "mkdir -p $DATASTORE_DIR/$IMAGE_SUB_DIR" || true

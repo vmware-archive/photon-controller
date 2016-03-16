@@ -80,6 +80,7 @@ from hamcrest import equal_to
 from hamcrest import has_item
 from hamcrest import has_length
 from hamcrest import is_
+from hamcrest import is_in
 from hamcrest import not_none
 from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
 from host.hypervisor.esx.vim_client import VimClient
@@ -631,7 +632,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         # Copy image
         request = Host.CopyImageRequest(src_image, dst_image)
         response = self.host_client.copy_image(request)
-        assert_that(response.result, is_(CopyImageResultCode.OK))
+        assert_that(response.result, is_in([CopyImageResultCode.OK, CopyImageResultCode.DESTINATION_ALREADY_EXIST]))
 
         return dst_image, datastore
 
@@ -640,11 +641,11 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         Test deletes an image and verifies that the image gets deleted
         correctly.
         """
-        image_id = new_id() + "_test_delete_image"
+        image_id = new_id() + "-test-delete-image"
         dst_image, _ = self._create_test_image(image_id)
 
         # dst_image_2's datastore is specified by datastore name
-        image_id_2 = new_id() + "_test_delete_image_2"
+        image_id_2 = new_id() + "-test-delete-image_2"
         dst_image_2, ds = self._create_test_image(image_id_2)
         dst_image_2.datastore.id = ds.name
 
@@ -774,7 +775,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         results = {"ok": 0, "existed": 0}
 
         datastore = self._find_configured_datastore_in_host_config()
-        new_image_id = "concurrent_copy_%s" % str(uuid.uuid4())
+        new_image_id = "concurrent-copy-%s" % str(uuid.uuid4())
 
         src_image = Image("ttylinux", datastore)
         dst_image = Image(new_image_id, datastore)
@@ -1164,10 +1165,10 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
 
     def test_create_image(self):
         """ Integration test for atomic image create """
-        img_id = "test_create_image"
-        tmp_img_id = "_tmp_" + img_id
+        img_id = "test-create-image"
+        tmp_img_id = "-tmp-" + img_id
         tmp_image, ds = self._create_test_image(tmp_img_id)
-        tmp_image_path = "images/_t/_tmp_test_create_image"
+        tmp_image_path = "image_" + tmp_img_id
         src_vmdk = vmdk_path(ds.id, tmp_img_id, IMAGE_FOLDER_NAME)
         dst_vmdk = "[%s] %s/%s.vmdk" % (ds.name, tmp_image_path, img_id)
 
@@ -1367,11 +1368,11 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
 
     def test_create_image_from_vm(self):
         """ Integration test for creating an image from a VM """
-        img_id = "test_new_im_from_vm_%s" % new_id()
-        tmp_img_id = "_tmp_" + img_id
+        img_id = "test-new-im-from-vm-%s" % new_id()
+        tmp_img_id = "-tmp-" + img_id
         tmp_image, ds = self._create_test_image(tmp_img_id)
 
-        tmp_image_path = "images/_t/%s" % tmp_img_id
+        tmp_image_path = "image_" + tmp_img_id
         src_vmdk = vmdk_path(ds.id, tmp_img_id, IMAGE_FOLDER_NAME)
         vm_wrapper = VmWrapper(self.host_client)
 
@@ -1481,9 +1482,9 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
 
     def test_delete_tmp_image(self):
         """ Integration test for deleting temp image directory """
-        img_id = "test_delete_tmp_image"
+        img_id = "test-delete-tmp-image"
         tmp_iamge, ds = self._create_test_image(img_id)
-        tmp_image_path = "images/te/test_delete_tmp_image"
+        tmp_image_path = "image_" + img_id
         req = DeleteDirectoryRequest(datastore=ds.id,
                                      directory_path=tmp_image_path)
         res = self.host_client.delete_directory(req)

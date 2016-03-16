@@ -54,7 +54,7 @@ public class VsphereImageStore implements ImageStore {
   // Nfc client timeout in millisecond
   public static final int NFC_CLIENT_TIMEOUT = 0;
   private static final Logger logger = LoggerFactory.getLogger(VsphereImageStore.class);
-  private static final String TMP_IMAGE_UPLOADS_FOLDER = "tmp_uploads";
+  private static final String TMP_IMAGE_UPLOAD_FOLDER_PREFIX = "tmp_upload_";
 
   private final HostBackend hostBackend;
   private final HostClientFactory hostClientFactory;
@@ -106,7 +106,7 @@ public class VsphereImageStore implements ImageStore {
    */
   @Override
   public void finalizeImage(String imageId) throws InternalException {
-    String tmpImagePath = String.format("%s/%s", TMP_IMAGE_UPLOADS_FOLDER, imageId);
+    String tmpImagePath = TMP_IMAGE_UPLOAD_FOLDER_PREFIX + imageId;
     logger.info("Calling createImage {} on {} {}", imageId, this.getDatastore(), tmpImagePath);
     try {
       getHostClient().createImage(imageId, this.getDatastore(), tmpImagePath);
@@ -128,7 +128,7 @@ public class VsphereImageStore implements ImageStore {
   @Override
   public void createImageFromVm(String imageId, String vmId, String hostIp)
       throws ExternalException, InternalException {
-    String tmpImagePath = String.format("%s/%s", TMP_IMAGE_UPLOADS_FOLDER, imageId);
+    String tmpImagePath = TMP_IMAGE_UPLOAD_FOLDER_PREFIX + imageId;
     String datastore = this.getDatastore(hostIp);
     logger.info("Calling createImage {} on {} {}", imageId, datastore, tmpImagePath);
     try {
@@ -278,7 +278,7 @@ public class VsphereImageStore implements ImageStore {
    * @return image
    */
   private String dsImageFolder(String imageId) {
-    return String.format("[%s] %s/%s", this.getDatastore(), TMP_IMAGE_UPLOADS_FOLDER, imageId);
+    return String.format("[%s] %s%s", this.getDatastore(), TMP_IMAGE_UPLOAD_FOLDER_PREFIX, imageId);
   }
 
   /**

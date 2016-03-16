@@ -44,7 +44,7 @@ public class VsphereImageStoreImage implements Image {
 
   /**
    * Upload file to remote datastore. If the file name exists in the datastore, it will be overwritten. A typical
-   * datastore path for image id 123456789 is: [datastore1] images/12/123456789/[fileName]
+   * datastore path for image id 123456789 is: [datastore1] tmp_upload_123456789/[fileName]
    */
   @Override
   public long addFile(String fileName, InputStream inputStream, long fileSize) throws IOException, NameTakenException,
@@ -67,7 +67,7 @@ public class VsphereImageStoreImage implements Image {
 
   /**
    * Upload disk to remote datastore. If the image name exists in the datastore, it will be overwritten. A typical
-   * datastore path for image id 123456789 is: [datastore1] images/12/123456789/123456789.vmdk
+   * datastore path for image id 123456789 is: [datastore1] tmp_upload_123456789/123456789.vmdk
    */
   @Override
   public long addDisk(String fileName, InputStream inputStream) throws IOException, VmdkFormatException,
