@@ -23,11 +23,12 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
-import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
@@ -52,7 +53,6 @@ import com.vmware.xenon.common.ServiceStats;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.Assert;
@@ -63,7 +63,6 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Matchers.any;
@@ -906,7 +905,8 @@ public class ImageDatastoreSweeperServiceTest {
                             int[] refImageParams,
                             int[] iaImageParams,
                             boolean isImageDatastore,
-                            int deletedImages) throws Throwable {
+                            int deletedImages,
+                            int deletedCloudStoreImages) throws Throwable {
 
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
       ServiceHost host = machine.getHosts()[0];
@@ -924,6 +924,9 @@ public class ImageDatastoreSweeperServiceTest {
       // create reference images
       List<ImageService.State> refImages =
           buildReferenceImages(host, refImageParams[0], refImageParams[1]);
+      if (isImageDatastore) {
+        createImageToImageDatastoreService(refImages);
+      }
 
       // adjust request
       request.isImageDatastore = isImageDatastore;
@@ -973,9 +976,28 @@ public class ImageDatastoreSweeperServiceTest {
       QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
       querySpecification.query.addBooleanClause(kindClause).addBooleanClause(datastoreClause);
       querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-      NodeGroupBroadcastResponse queryResponse = machine.sendBroadcastQueryAndWait(queryTask);
-      assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), lessThanOrEqualTo(deletedImages));
+      QueryTask query = QueryTask.create(querySpecification)
+          .setDirect(true);
+
+      machine.waitForQuery(query,
+          (QueryTask queryTask) ->
+              queryTask.results.documentLinks.size() == deletedCloudStoreImages
+      );
+
+      if (isImageDatastore) {
+        kindClause = new QueryTask.Query()
+            .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+            .setTermMatchValue(Utils.buildKind(ImageToImageDatastoreMappingService.State.class));
+        querySpecification = new QueryTask.QuerySpecification();
+        querySpecification.query.addBooleanClause(kindClause);
+        querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+        query = QueryTask.create(querySpecification)
+            .setDirect(true);
+        machine.waitForQuery(query,
+            (QueryTask queryTask) ->
+                queryTask.results.documentLinks.size() == refImageParams[0] - deletedCloudStoreImages
+        );
+      }
     }
 
     @DataProvider(name = "Success")
@@ -985,54 +1007,54 @@ public class ImageDatastoreSweeperServiceTest {
            * Image datastore cleanup
            */
           // 0 (0 tombstoned), 0 unused, 0 extra
-          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 0, 0}, true, 0},
-          {3, 6.0, new int[]{0, 0}, new int[]{0, 0, 0, 0}, true, 0},
+          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 0, 0}, true, 0, 0},
+          {3, 6.0, new int[]{0, 0}, new int[]{0, 0, 0, 0}, true, 0, 0},
           // 0 (0 tombstoned), 0 unused, 2 extra (0 newer than timestamp)
-          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 2, 0}, true, 2},
+          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 2, 0}, true, 2, 0},
           // 0 (0 tombstoned), 0 unused, 2 extra (1 newer than timestamp)
-          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 2, 1}, true, 1},
+          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 2, 1}, true, 1, 0},
 
           // 5 (0 tombstoned), 0 unused
-          {1, 6.0, new int[]{5, 0}, new int[]{0, 0, 0, 0}, true, 0},
+          {1, 6.0, new int[]{5, 0}, new int[]{0, 0, 0, 0}, true, 0, 0},
           // 5 (2 tombstoned), 0 unused
-          {1, 6.0, new int[]{5, 2}, new int[]{0, 0, 0, 0}, true, 0},
+          {1, 6.0, new int[]{5, 2}, new int[]{0, 0, 0, 0}, true, 0, 0},
           // 5 (2 tombstoned), 3 unused (2:eager, 1:on-demand) (0 newer than watermark)
-          {1, 6.0, new int[]{5, 2}, new int[]{3, 0, 0, 0}, true, 2},
-          {3, 6.0, new int[]{5, 2}, new int[]{3, 0, 0, 0}, true, 2},
+          {1, 6.0, new int[]{5, 2}, new int[]{3, 0, 0, 0}, true, 2, 2},
+          {3, 6.0, new int[]{5, 2}, new int[]{3, 0, 0, 0}, true, 2, 2},
           // 5 (2 tombstoned), 3 unused (3:eager, 2:on-demand) (2 newer then watermark)
-          {1, 6.0, new int[]{5, 2}, new int[]{3, 2, 0, 0}, true, 0},
+          {1, 6.0, new int[]{5, 2}, new int[]{3, 2, 0, 0}, true, 0, 0},
           // 5 (2 tombstoned), 3 unused (2:eager, 1:on-demand) (2 newer then watermark),
           // 4 extra (1 newer than watermark)
-          {1, 6.0, new int[]{5, 2}, new int[]{3, 2, 4, 1}, true, 3},
+          {1, 6.0, new int[]{5, 2}, new int[]{3, 2, 4, 1}, true, 3, 0},
 
           /**
            * Non-Image datastore cleanup
            */
           // 0 on image datastore, 0 unused
-          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 0, 0}, false, 0},
-          {3, 6.0, new int[]{0, 0}, new int[]{0, 0, 0, 0}, false, 0},
+          {1, 6.0, new int[]{0, 0}, new int[]{0, 0, 0, 0}, false, 0, 0},
+          {3, 6.0, new int[]{0, 0}, new int[]{0, 0, 0, 0}, false, 0, 0},
 
           // 5 on image datastore (0 tombstoned), 0 unused
-          {1, 6.0, new int[]{5, 0}, new int[]{0, 0, 0, 0}, false, 0},
+          {1, 6.0, new int[]{5, 0}, new int[]{0, 0, 0, 0}, false, 0, 0},
 
           // 5 on image datastore (2 tombstoned), 0 unused
-          {1, 6.0, new int[]{5, 2}, new int[]{0, 0, 0, 0}, false, 0},
+          {1, 6.0, new int[]{5, 2}, new int[]{0, 0, 0, 0}, false, 0, 0},
 
           // 5 on image datastore (2 tombstoned), 4 unused (2:eager, 2:on-demand) (0 newer than watermark), 0 extra
-          {1, 6.0, new int[]{5, 2}, new int[]{4, 0, 0, 0}, false, 3},
-          {3, 6.0, new int[]{5, 2}, new int[]{4, 0, 0, 0}, false, 3},
+          {1, 6.0, new int[]{5, 2}, new int[]{4, 0, 0, 0}, false, 3, 3},
+          {3, 6.0, new int[]{5, 2}, new int[]{4, 0, 0, 0}, false, 3, 3},
 
           // 5 on image datastore (0 tombstoned), 4 unused (2:eager, 2:on-demand) (0 newer than watermark), 0 extra
-          {1, 6.0, new int[]{5, 0}, new int[]{4, 0, 0, 0}, false, 2},
+          {1, 6.0, new int[]{5, 0}, new int[]{4, 0, 0, 0}, false, 2, 2},
 
           // 5 on image datastore (0 tombstoned), 4 unused (2:eager, 2:on-demand) (0 newer than watermark),
           // 3 extra (0 newer than watermark)
-          {1, 6.0, new int[]{5, 0}, new int[]{4, 0, 3, 0}, false, 5},
+          {1, 6.0, new int[]{5, 0}, new int[]{4, 0, 3, 0}, false, 5, 2},
 
           // 5 on image datastore (0 tombstoned), 4 unused (2:eager, 2:on-demand) (0 newer than watermark),
           // 3 extra (1 newer than watermark)
-          {1, 6.0, new int[]{5, 0}, new int[]{4, 0, 3, 1}, false, 4},
-          {3, 6.0, new int[]{5, 0}, new int[]{4, 0, 3, 1}, false, 4}
+          {1, 6.0, new int[]{5, 0}, new int[]{4, 0, 3, 1}, false, 4, 2},
+          {3, 6.0, new int[]{5, 0}, new int[]{4, 0, 3, 1}, false, 4, 2}
       };
     }
 
@@ -1050,7 +1072,7 @@ public class ImageDatastoreSweeperServiceTest {
         throws Throwable {
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
       machine.startFactoryServiceSynchronously(
-              ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
+          ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
 
       setServerSet(machine.getHosts()[0]);
       List<DatastoreService.State> dataStores = new ArrayList<>();
@@ -1130,8 +1152,8 @@ public class ImageDatastoreSweeperServiceTest {
                                    List<DatastoreService.State> imageDatastores) throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       machine.startFactoryServiceSynchronously(
-              HostServiceFactory.class,
-              HostServiceFactory.SELF_LINK);
+          HostServiceFactory.class,
+          HostServiceFactory.SELF_LINK);
 
 
       Iterator<DatastoreService.State> datastoreIterator = datastores.iterator();
@@ -1150,16 +1172,39 @@ public class ImageDatastoreSweeperServiceTest {
         state.reportedImageDatastores.add(imageDatastore.id);
 
         Operation op = cloudStoreHelper
-                .createPost(HostServiceFactory.SELF_LINK)
-                .setBody(state)
-                .setCompletion((operation, throwable) -> {
-                  if (null != throwable) {
-                    Assert.fail("Failed to create a host in cloud store.");
-                  }
-                });
-        Operation ops = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
-        int i = 0;
-        i++;
+            .createPost(HostServiceFactory.SELF_LINK)
+            .setBody(state)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                Assert.fail("Failed to create a host in cloud store.");
+              }
+            });
+        ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
+      }
+    }
+
+    private void createImageToImageDatastoreService(List<ImageService.State> refImages) throws Throwable {
+      ServiceHost host = machine.getHosts()[0];
+      machine.startFactoryServiceSynchronously(
+          ImageToImageDatastoreMappingServiceFactory.class,
+          ImageToImageDatastoreMappingServiceFactory.SELF_LINK);
+
+      for (ImageService.State s : refImages) {
+        ImageToImageDatastoreMappingService.State state = new
+            ImageToImageDatastoreMappingService.State();
+        state.imageId = ServiceUtils.getIDFromDocumentSelfLink(s.documentSelfLink);
+        state.imageDatastoreId = "image-datastore-id-1";
+        state.documentSelfLink = "/" + state.imageId + "_" + state.imageDatastoreId;
+
+        Operation op = cloudStoreHelper
+            .createPost(ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
+            .setBody(state)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                Assert.fail("Failed to create a host in cloud store.");
+              }
+            });
+        ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
       }
     }
 
@@ -1168,8 +1213,8 @@ public class ImageDatastoreSweeperServiceTest {
       ServiceHost host = machine.getHosts()[0];
 
       machine.startFactoryServiceSynchronously(
-              DatastoreServiceFactory.class,
-              DatastoreServiceFactory.SELF_LINK);
+          DatastoreServiceFactory.class,
+          DatastoreServiceFactory.SELF_LINK);
 
       for (int i = 0; i < datastoreNum; i++) {
         DatastoreService.State state = new DatastoreService.State();
@@ -1181,13 +1226,13 @@ public class ImageDatastoreSweeperServiceTest {
         datastores.add(state);
 
         Operation op = cloudStoreHelper
-                .createPost(DatastoreServiceFactory.SELF_LINK)
-                .setBody(state)
-                .setCompletion((operation, throwable) -> {
-                  if (null != throwable) {
-                    Assert.fail("Failed to create a datastore document in cloud store.");
-                  }
-                });
+            .createPost(DatastoreServiceFactory.SELF_LINK)
+            .setBody(state)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                Assert.fail("Failed to create a datastore document in cloud store.");
+              }
+            });
         ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
       }
 
@@ -1200,19 +1245,19 @@ public class ImageDatastoreSweeperServiceTest {
       imageDatastores.add(state);
 
       Operation op = cloudStoreHelper
-              .createPost(DatastoreServiceFactory.SELF_LINK)
-              .setBody(state)
-              .setCompletion((operation, throwable) -> {
-                if (null != throwable) {
-                  Assert.fail("Failed to create a datastore document in cloud store.");
-                }
-              });
+          .createPost(DatastoreServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a datastore document in cloud store.");
+            }
+          });
       ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
     }
 
     private void setServerSet(ServiceHost host) {
       StaticServerSet serverSet = new StaticServerSet(
-        new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       cloudStoreHelper.setServerSet(serverSet);
     }
 
