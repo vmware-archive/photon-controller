@@ -24,15 +24,9 @@ password=$1
 shift
 
 # Remove agent if existed
-agent_existing=`esxcli -s $host_address -u $username -p "$password" software vib list | grep esxcloud | wc -l`
+agent_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep photon-controller-agent | wc -l`
 if [ $agent_existing -ne 0 ]
 then
-  esxcli -s $host_address -u $username -p "$password" software vib remove -f -n esxcloud
-fi
-
-# Remove agent if existed
-agent_existing=`esxcli -s $host_address -u $username -p "$password" software vib list | grep photon-controller-agent | wc -l`
-if [ $agent_existing -ne 0 ]
-then
-  esxcli -s $host_address -u $username -p "$password" software vib remove -f -n photon-controller-agent
+  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} /etc/init.d/photon-controller-agent stop
+  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n photon-controller-agent
 fi
