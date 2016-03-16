@@ -37,5 +37,5 @@ class VmUtilsTest(unittest.TestCase):
         assert_that(dictionary["createType"] == "vmfsSparse")
         assert_that(dictionary["parentFileNameHint"] ==
                     "/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/"
-                    "images/92/92e62599-6689-4a8f-ba2a-633914b5048e/92e"
+                    "image_92e62599-6689-4a8f-ba2a-633914b5048e/92e"
                     "62599-6689-4a8f-ba2a-633914b5048e.vmdk")

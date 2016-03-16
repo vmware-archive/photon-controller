@@ -693,8 +693,8 @@ class EsxImageManager(ImageManager):
 
     def _temp(self, file):
         """ Generate a temp file name based on real file name
-            [] /vmfs/volumes/datastore1/images/tt/ttylinux/ttylinux.vmdk
-            [] /vmfs/volumes/datastore1/images/tt/ttylinux/ttylinux-tmp.vmdk
+            [] /vmfs/volumes/datastore1/image_ttylinux/ttylinux.vmdk
+            [] /vmfs/volumes/datastore1/image_ttylinux/ttylinux-tmp.vmdk
         :param file: real file name
         :return: temp file name
         """
@@ -746,7 +746,7 @@ class EsxImageManager(ImageManager):
 
         The image path looks something like this:
 
-            /vmfs/volumes/datastore1/images/tt/ttylinux/ttylinux.vmdk
+            /vmfs/volumes/datastore1/image_ttylinux/ttylinux.vmdk
 
         This method returns "datastore1" with this input.
         """
@@ -757,7 +757,7 @@ class EsxImageManager(ImageManager):
 
         The image path looks something like this:
 
-            /vmfs/volumes/datastore1/images/tt/ttylinux/ttylinux.vmdk
+            /vmfs/volumes/datastore1/image_ttylinux/ttylinux.vmdk
             or with SUPPORT_VSAN:
             /vmfs/volumes/datastore1/images_ttylinux/ttylinux.vmdk
 
