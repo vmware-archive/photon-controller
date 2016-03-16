@@ -15,6 +15,8 @@ import os
 import shutil
 import uuid
 
+from common import services
+from common.service_name import ServiceName
 from mock import MagicMock
 from mock import PropertyMock
 from mock import patch
@@ -127,13 +129,7 @@ class TestEsxVmManager(unittest.TestCase):
                           "existing_vm_name",
                           mock_spec)
 
-    @parameterized.expand([
-        (True, ),
-        (False, )
-    ])
-    @patch("os.path.exists")
-    @patch("host.hypervisor.esx.vm_manager.mkdir_p")
-    def test_create_vm(self, dir_exists, _mkdir_p, _exists):
+    def test_create_vm(self):
         """Test VM creation"""
 
         vim_mock = MagicMock()
@@ -148,16 +144,9 @@ class TestEsxVmManager(unittest.TestCase):
         vim_mock.get_vm_in_cache = MagicMock(return_value=None)
         vm_folder_mock.CreateVm.return_value = "fake-task"
 
-        _exists.return_value = dir_exists
         mock_spec = MagicMock()
-        mock_spec.files.vmPathName = "[] /vmfs/volumes/ds/vms/fa"
+        mock_spec.files.vmPathName = "[] /vmfs/volumes/ds/vms"
         self.vm_manager.create_vm("fake_vm_id", mock_spec)
-
-        _exists.assert_called_once_with("/vmfs/volumes/ds/vms/fa")
-        if not dir_exists:
-            _mkdir_p.assert_called_once_with("/vmfs/volumes/ds/vms/fa")
-        else:
-            assert_that(_mkdir_p.called, is_(False))
 
         vim_mock.get_vm_in_cache.assert_called_once_with("fake_vm_id")
         vm_folder_mock.CreateVm.assert_called_once_with(
@@ -630,7 +619,7 @@ class TestEsxVmManager(unittest.TestCase):
         assert_that(image_path("vm1"), is_(None))
 
         # image found
-        image = "[ds1] images/tt/ttylinux/ttylinux.vmdk"
+        image = "[ds1] image_ttylinux/ttylinux.vmdk"
         vm = MagicMock(return_value=VmCache(disks=["a", "b", image]))
         self.vm_manager.vim_client.get_vm_in_cache = vm
         assert_that(image_path("vm1"), is_(datastore_to_os_path(image)))
@@ -726,6 +715,7 @@ class ImageScannerTestCase(unittest.TestCase):
         self.patcher = patch("host.hypervisor.esx.vm_config.GetEnv")
         self.patcher.start()
         self.vm_manager = EsxVmManager(self.vim_client, MagicMock())
+        services.register(ServiceName.AGENT_CONFIG, MagicMock())
 
         # Set up test files
         self.base_dir = os.path.dirname(__file__)
@@ -749,7 +739,7 @@ class ImageScannerTestCase(unittest.TestCase):
         assert_that(len(dictionary) is 1)
         assert_that(dictionary["92e62599-6689-4a8f-ba2a-633914b5048e"] ==
                     "/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/"
-                    "images/92/92e62599-6689-4a8f-ba2a-633914b5048e/92e"
+                    "image_92e62599-6689-4a8f-ba2a-633914b5048e/92e"
                     "62599-6689-4a8f-ba2a-633914b5048e.vmdk")
 
     def test_vm_scan_bad_root(self):
@@ -785,7 +775,7 @@ class ImageScannerTestCase(unittest.TestCase):
         assert_that(len(dictionary) is 1)
         assert_that(dictionary["92e62599-6689-4a8f-ba2a-633914b5048e"] ==
                     "/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/"
-                    "images/92/92e62599-6689-4a8f-ba2a-633914b5048e/92e"
+                    "image_92e62599-6689-4a8f-ba2a-633914b5048e/92e"
                     "62599-6689-4a8f-ba2a-633914b5048e.vmdk")
 
     def fake_waste_time(self, seconds):

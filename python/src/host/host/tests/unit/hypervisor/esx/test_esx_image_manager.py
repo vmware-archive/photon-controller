@@ -64,14 +64,14 @@ class TestEsxImageManager(unittest.TestCase):
     @patch("os.path.isdir", return_value=False)
     @patch("os.makedirs", side_effect=OSError)
     def test_make_image_dir(self, _makedirs, _isdir):
+        path = "/vmfs/volumes/ds/image_fake_iid"
         self.assertRaises(
             OSError, self.image_manager._make_image_dir, "ds", "fake_iid")
-        _isdir.assert_called_once_with("/vmfs/volumes/ds/images/fa/fake_iid")
+        _isdir.assert_called_once_with(path)
         self.assertEqual(
             _makedirs.call_count, EsxImageManager.NUM_MAKEDIRS_ATTEMPTS)
         for i in range(0, EsxImageManager.NUM_MAKEDIRS_ATTEMPTS):
-            self.assertEqual(_makedirs.call_args_list[i][0],
-                             ("/vmfs/volumes/ds/images/fa/fake_iid",))
+            self.assertEqual(_makedirs.call_args_list[i][0], (path,))
 
     @patch(
         "host.hypervisor.esx.image_manager.EsxImageManager.reap_tmp_images")
@@ -149,7 +149,7 @@ class TestEsxImageManager(unittest.TestCase):
                               True)   # dest image dir is created
 
         self.image_manager._make_image_dir("ds", "fake_iid")
-        _isdir.assert_called("/vmfs/volumes/ds/images/fa/fake_iid")
+        _isdir.assert_called("/vmfs/volumes/ds/image_fake_iid")
 
     @patch("pysdk.task.WaitForTask")
     @patch("uuid.uuid4", return_value="fake_id")
@@ -177,25 +177,23 @@ class TestEsxImageManager(unittest.TestCase):
 
         self.image_manager.copy_image("ds1", "foo", "ds2", "bar")
 
-        os_path_prefix1 = '/vmfs/volumes/ds1/images'
-        os_path_prefix2 = '/vmfs/volumes/ds2/images'
-        os_tmp_path_prefix = '/vmfs/volumes/ds2/tmp_images'
+        os_path_prefix1 = '/vmfs/volumes/ds1'
+        os_path_prefix2 = '/vmfs/volumes/ds2'
+        ds_tmp_path_prefix = '[] /vmfs/volumes/ds2'
 
         assert_that(_copy.call_count, equal_to(2))
         _copy.assert_has_calls([
-            call('%s/fo/foo/foo.%s' % (os_path_prefix1, METADATA_FILE_EXT),
-                 '/vmfs/volumes/ds2/tmp_images/fake_id/bar.%s' %
+            call('%s/image_foo/foo.%s' % (os_path_prefix1, METADATA_FILE_EXT),
+                 '/vmfs/volumes/ds2/tmp_image_fake_id/bar.%s' %
                  METADATA_FILE_EXT),
-            call('%s/fo/foo/foo.%s' % (os_path_prefix1, MANIFEST_FILE_EXT),
-                 '/vmfs/volumes/ds2/tmp_images/fake_id/bar.%s' %
+            call('%s/image_foo/foo.%s' % (os_path_prefix1, MANIFEST_FILE_EXT),
+                 '/vmfs/volumes/ds2/tmp_image_fake_id/bar.%s' %
                  MANIFEST_FILE_EXT),
         ])
 
         ds_path_prefix1 = '[] ' + os_path_prefix1
-        ds_tmp_path_prefix = '[] ' + os_tmp_path_prefix
 
-        expected_tmp_disk_ds_path = '%s/fake_id/%s.vmdk' % (ds_tmp_path_prefix,
-                                                            'bar')
+        expected_tmp_disk_ds_path = '%s/tmp_image_fake_id/bar.vmdk' % (ds_tmp_path_prefix)
 
         _vd_spec = _manage_disk.call_args_list[0][1]['destSpec']
 
@@ -203,15 +201,15 @@ class TestEsxImageManager(unittest.TestCase):
         self.assertEqual("lsiLogic", _vd_spec.adapterType)
 
         copy_call = call(vim.VirtualDiskManager.CopyVirtualDisk_Task,
-                         sourceName='%s/fo/foo/foo.vmdk' % ds_path_prefix1,
+                         sourceName='%s/image_foo/foo.vmdk' % ds_path_prefix1,
                          destName=expected_tmp_disk_ds_path,
                          destSpec=_vd_spec)
         expected_vim_calls = [copy_call]
         self.assertEqual(expected_vim_calls, _manage_disk.call_args_list)
-        _mv_dir.assert_called_once_with('/vmfs/volumes/ds2/tmp_images/fake_id',
-                                        '%s/ba/bar' % os_path_prefix2)
+        _mv_dir.assert_called_once_with('/vmfs/volumes/ds2/tmp_image_fake_id',
+                                        '%s/image_bar' % os_path_prefix2)
         _create_image_timestamp.assert_called_once_with(
-            "/vmfs/volumes/ds2/tmp_images/fake_id")
+            "/vmfs/volumes/ds2/tmp_image_fake_id")
 
     @patch("pysdk.task.WaitForTask")
     @patch("uuid.uuid4", return_value="fake_id")
@@ -233,11 +231,11 @@ class TestEsxImageManager(unittest.TestCase):
 
         # Check that things work when the src metadata file doesn't exist.
         _exists.side_effect = (False, False, True)
-        ds_path_prefix1 = '[] /vmfs/volumes/ds1/images'
+        ds_path_prefix1 = '[] /vmfs/volumes/ds1'
         expected_tmp_disk_ds_path = \
-            "[] /vmfs/volumes/ds2/tmp_images/fake_id/bar.vmdk"
+            "[] /vmfs/volumes/ds2/tmp_image_fake_id/bar.vmdk"
         self.image_manager._create_tmp_image("ds1", "foo", "ds2", "bar")
-        _flock.assert_called_once_with("/vmfs/volumes/ds2/tmp_images/fake_id",
+        _flock.assert_called_once_with("/vmfs/volumes/ds2/tmp_image_fake_id",
                                        DatastoreType.EXT3)
         # Verify that we don't copy the metadata file.
         self.assertFalse(_copy.called)
@@ -248,7 +246,7 @@ class TestEsxImageManager(unittest.TestCase):
         self.assertEqual("thin", _vd_spec.diskType)
         self.assertEqual("lsiLogic", _vd_spec.adapterType)
         copy_call = call(vim.VirtualDiskManager.CopyVirtualDisk_Task,
-                         sourceName='%s/fo/foo/foo.vmdk' % ds_path_prefix1,
+                         sourceName='%s/image_foo/foo.vmdk' % ds_path_prefix1,
                          destName=expected_tmp_disk_ds_path,
                          destSpec=_vd_spec)
         expected_vim_calls = [copy_call]
@@ -262,10 +260,10 @@ class TestEsxImageManager(unittest.TestCase):
         self.assertRaises(IOError, self.image_manager._create_tmp_image,
                           "ds1", "foo", "ds2", "bar")
         self.assertFalse(_manage_disk.called)
-        _flock.assert_called_once_with("/vmfs/volumes/ds2/tmp_images/fake_id",
+        _flock.assert_called_once_with("/vmfs/volumes/ds2/tmp_image_fake_id",
                                        DatastoreType.EXT3)
         _create_image_timestamp.assert_called_once_with(
-            "/vmfs/volumes/ds2/tmp_images/fake_id")
+            "/vmfs/volumes/ds2/tmp_image_fake_id")
 
     @patch("os.makedirs")
     @patch("shutil.rmtree")
@@ -288,7 +286,7 @@ class TestEsxImageManager(unittest.TestCase):
         self.image_manager._move_image("foo", "ds1", expected_tmp_disk_folder)
         self.assertEqual(expected_rm_calls, _rmtree.call_args_list)
         _makedirs.assert_called_once_with('/vmfs/volumes/ds1/images/fo')
-        _flock.assert_called_once_with('/vmfs/volumes/ds1/images/fo/foo',
+        _flock.assert_called_once_with('/vmfs/volumes/ds1/image_foo',
                                        DatastoreType.EXT3, 3)
 
     @parameterized.expand([
@@ -310,7 +308,7 @@ class TestEsxImageManager(unittest.TestCase):
                                      _path_exists):
         self._create_image_timestamp_file = create
         _path_exists.side_effect = self._local_os_path_exists
-        _disk_folder = '/vmfs/volumes/ds1/images/fo/foo'
+        _disk_folder = '/vmfs/volumes/ds1/image_foo'
         self.image_manager._check_image_repair("foo", "ds1")
 
         if create:
@@ -375,7 +373,7 @@ class TestEsxImageManager(unittest.TestCase):
         dst_path.assert_called_once_with("ds1", GC_IMAGE_FOLDER)
 
     def test_image_path(self):
-        image_path = "/vmfs/volumes/ds/images/tt/ttylinux/ttylinux.vmdk"
+        image_path = "/vmfs/volumes/ds/image_ttylinux/ttylinux.vmdk"
         ds = self.image_manager.get_datastore_id_from_path(image_path)
         image = self.image_manager.get_image_id_from_path(image_path)
         self.assertEqual(ds, "ds")

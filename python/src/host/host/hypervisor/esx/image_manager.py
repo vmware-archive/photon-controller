@@ -599,6 +599,9 @@ class EsxImageManager(ImageManager):
         image_ids = []
 
         if SUPPORT_VSAN:
+            if not os.path.exists(os_datastore_path(datastore, "")):
+                raise DatastoreNotFoundException()
+
             # image_folder is /vmfs/volumes/${datastore}/images_*
             image_folder_pattern = os_datastore_path_pattern(datastore,
                                                              IMAGE_FOLDER_NAME)
@@ -693,8 +696,8 @@ class EsxImageManager(ImageManager):
 
     def _temp(self, file):
         """ Generate a temp file name based on real file name
-            [] /vmfs/volumes/datastore1/images/tt/ttylinux/ttylinux.vmdk
-            [] /vmfs/volumes/datastore1/images/tt/ttylinux/ttylinux-tmp.vmdk
+            [] /vmfs/volumes/datastore1/image_ttylinux/ttylinux.vmdk
+            [] /vmfs/volumes/datastore1/image_ttylinux/ttylinux-tmp.vmdk
         :param file: real file name
         :return: temp file name
         """
@@ -746,7 +749,7 @@ class EsxImageManager(ImageManager):
 
         The image path looks something like this:
 
-            /vmfs/volumes/datastore1/images/tt/ttylinux/ttylinux.vmdk
+            /vmfs/volumes/datastore1/image_ttylinux/ttylinux.vmdk
 
         This method returns "datastore1" with this input.
         """
@@ -757,7 +760,7 @@ class EsxImageManager(ImageManager):
 
         The image path looks something like this:
 
-            /vmfs/volumes/datastore1/images/tt/ttylinux/ttylinux.vmdk
+            /vmfs/volumes/datastore1/image_ttylinux/ttylinux.vmdk
             or with SUPPORT_VSAN:
             /vmfs/volumes/datastore1/images_ttylinux/ttylinux.vmdk
 
