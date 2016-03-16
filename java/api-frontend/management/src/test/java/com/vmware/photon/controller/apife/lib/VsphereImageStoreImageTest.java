@@ -108,7 +108,7 @@ public class VsphereImageStoreImageTest {
     NfcClient nfcClient = mock(NfcClient.class);
     doReturn(nfcClient).when(imageStore).getNfcClient(any(HostServiceTicket.class));
     when(nfcClient.putStreamOptimizedDisk(
-        eq(String.format("[%s] tmp_uploads/%s/%s.vmdk",
+        eq(String.format("[%s] tmp_upload_%s/%s.vmdk",
             imageDatastore,
             imageId,
             imageId)),
@@ -119,7 +119,7 @@ public class VsphereImageStoreImageTest {
     Image imageFolder = spy(imageStore.createImage(imageId));
     imageFolder.addDisk("disk1.vmdk", inputStream);
 
-    verify(nfcClient).mkdir(String.format("[%s] tmp_uploads/%s", imageDatastore, imageId));
+    verify(nfcClient).mkdir(String.format("[%s] tmp_upload_%s", imageDatastore, imageId));
   }
 
   @Test(expectedExceptions = RuntimeException.class)
@@ -137,13 +137,13 @@ public class VsphereImageStoreImageTest {
   public void testFinalizeImage() throws Exception {
     imageStore.finalizeImage(imageId);
     verify(hostClient).setHostIp(imageConfig.getEndpointHostAddress());
-    verify(hostClient).createImage(imageId, imageDatastore, String.format("tmp_uploads/%s", imageId));
+    verify(hostClient).createImage(imageId, imageDatastore, String.format("tmp_upload_%s", imageId));
     verifyNoMoreInteractions(hostClient);
   }
 
   @Test
   public void testFinalizeImageError() throws Exception {
-    String tmpImagePath = String.format("tmp_uploads/%s", imageId);
+    String tmpImagePath = String.format("tmp_upload_%s", imageId);
     when(hostClient.createImage(imageId, imageDatastore, tmpImagePath))
         .thenThrow(new SystemErrorException("Error"));
 
