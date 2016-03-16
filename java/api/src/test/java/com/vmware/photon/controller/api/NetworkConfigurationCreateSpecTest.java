@@ -11,8 +11,9 @@
  * specific language governing permissions and limitations under the License.
  */
 
-import com.vmware.photon.controller.api.NetworkConfiguration;
-import com.vmware.photon.controller.api.builders.NetworkConfigurationBuilder;
+package com.vmware.photon.controller.api;
+
+import com.vmware.photon.controller.api.builders.NetworkConfigurationCreateSpecBuilder;
 import com.vmware.photon.controller.api.helpers.JsonHelpers;
 import com.vmware.photon.controller.api.helpers.Validator;
 
@@ -28,13 +29,15 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * Tests {@link NetworkConfiguration}.
+ * Tests {@link NetworkConfigurationCreateSpec}.
  */
-public class NetworkConfigurationTest {
+public class NetworkConfigurationCreateSpecTest {
 
-  private static final String NETWORK_CONFIGURATION_JSON_FILE = "fixtures/network-configuration.json";
+  private static final String NETWORK_CONFIGURATION_CREATE_SPEC_JSON_FILE =
+      "fixtures/network-configuration-create-spec.json";
 
-  private NetworkConfiguration sampleNetworkConfiguration = new NetworkConfigurationBuilder()
+  private NetworkConfigurationCreateSpec sampleNetworkConfigurationCreateSpec =
+      new NetworkConfigurationCreateSpecBuilder()
       .networkManagerAddress("1.2.3.4")
       .networkManagerUsername("networkManagerUsername")
       .networkManagerPassword("networkManagerPassword")
@@ -53,13 +56,13 @@ public class NetworkConfigurationTest {
 
     @Test
     public void testValidNetworkConfiguration() {
-      ImmutableList<String> violations = validator.validate(sampleNetworkConfiguration);
+      ImmutableList<String> violations = validator.validate(sampleNetworkConfigurationCreateSpec);
       assertThat(violations.isEmpty(), is(true));
     }
 
     @Test
     public void testInvalidNetworkConfiguration() {
-      NetworkConfiguration networkConfiguration = new NetworkConfigurationBuilder()
+      NetworkConfigurationCreateSpec networkConfigurationCreateSpec = new NetworkConfigurationCreateSpecBuilder()
           .networkManagerAddress("invalidAddress")
           .networkManagerUsername(null)
           .networkManagerPassword(null)
@@ -78,16 +81,17 @@ public class NetworkConfigurationTest {
   }
 
   /**
-   * Tests {@link NetworkConfiguration#toString()}.
+   * Tests {@link NetworkConfigurationCreateSpec#toString()}.
    */
   public class ToStringTest {
 
     @Test
     public void testCorrectString() {
       String expectedString =
-          "NetworkConfiguration{networkManagerAddress=1.2.3.4, networkManagerUsername=networkManagerUsername, " +
+          "NetworkConfigurationCreateSpec{networkManagerAddress=1.2.3.4, " +
+          "networkManagerUsername=networkManagerUsername, " +
           "networkManagerPassword=networkManagerPassword}";
-      assertThat(sampleNetworkConfiguration.toString(), is(expectedString));
+      assertThat(sampleNetworkConfigurationCreateSpec.toString(), is(expectedString));
     }
   }
 
@@ -98,10 +102,11 @@ public class NetworkConfigurationTest {
 
     @Test
     public void testSerialization() throws IOException {
-      String json = JsonHelpers.jsonFixture(NETWORK_CONFIGURATION_JSON_FILE);
+      String json = JsonHelpers.jsonFixture(NETWORK_CONFIGURATION_CREATE_SPEC_JSON_FILE);
 
-      MatcherAssert.assertThat(JsonHelpers.asJson(sampleNetworkConfiguration), is(equalTo(json)));
-      MatcherAssert.assertThat(JsonHelpers.fromJson(json, NetworkConfiguration.class), is(sampleNetworkConfiguration));
+      MatcherAssert.assertThat(JsonHelpers.asJson(sampleNetworkConfigurationCreateSpec), is(equalTo(json)));
+      MatcherAssert.assertThat(JsonHelpers.fromJson(json, NetworkConfigurationCreateSpec.class),
+          is(sampleNetworkConfigurationCreateSpec));
     }
   }
 }
