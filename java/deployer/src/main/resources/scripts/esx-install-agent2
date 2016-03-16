@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash
 
 tools=$(readlink -nf $(dirname $0))
 source $tools/common.sh
@@ -52,20 +52,30 @@ esxcli -s $host_address -u $username -p "$password" system syslog reload
 fi
 
 function remove_vib() {
-  result=`esxcli -s $host_address -u $username -p "$password" software vib remove -f -n $1 || echo "failed"`
-  if [[ $result == "failed" ]]
+  esxcli -s $host_address -u $username -p "$password" software vib remove -f -n $1
+  if [[ $? -ne 0 ]]
   then
     echo "retrying remove vib"
 	  esxcli -s $host_address -u $username -p "$password" software vib remove -f -n $1
+
+	  if [[ $? -ne 0 ]]
+	  then
+	    exit 1
+	  fi
 	fi
 }
 
 function install_vib() {
-  result=`esxcli -s $host_address -u $username -p "$password" software vib install -f -v $vib_path || echo "failed"`
-  if [[ $result == "failed" ]]
+  esxcli -s $host_address -u $username -p "$password" software vib install -f -v $vib_path
+  if [[ $? -ne 0 ]]
   then
     echo "retrying installing vib"
 	  esxcli -s $host_address -u $username -p "$password" software vib install -f -v $vib_path
+
+	  if [[ $? -ne 0 ]]
+	  then
+	    exit 1
+	  fi
 	fi
 }
 
