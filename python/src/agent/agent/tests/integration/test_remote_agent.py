@@ -1322,7 +1322,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         img_id = "test_create_image"
         tmp_img_id = "_tmp_" + img_id
         tmp_image, ds = self._create_test_image(tmp_img_id)
-        tmp_image_path = "images/_t/_tmp_test_create_image"
+        tmp_image_path = "image_" + tmp_img_id
         src_vmdk = vmdk_path(ds.id, tmp_img_id, IMAGE_FOLDER_NAME)
         dst_vmdk = "[%s] %s/%s.vmdk" % (ds.name, tmp_image_path, img_id)
 
@@ -1526,7 +1526,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         tmp_img_id = "_tmp_" + img_id
         tmp_image, ds = self._create_test_image(tmp_img_id)
 
-        tmp_image_path = "images/_t/%s" % tmp_img_id
+        tmp_image_path = "image_" + tmp_img_id
         src_vmdk = vmdk_path(ds.id, tmp_img_id, IMAGE_FOLDER_NAME)
         vm_wrapper = VmWrapper(self.host_client)
 
@@ -1638,7 +1638,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         """ Integration test for deleting temp image directory """
         img_id = "test_delete_tmp_image"
         tmp_iamge, ds = self._create_test_image(img_id)
-        tmp_image_path = "images/te/test_delete_tmp_image"
+        tmp_image_path = "image_" + img_id
         req = DeleteDirectoryRequest(datastore=ds.id,
                                      directory_path=tmp_image_path)
         res = self.host_client.delete_directory(req)

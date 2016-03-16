@@ -31,7 +31,7 @@ request = CreateImageFromVmRequest()
 request.vm_id = options.vm_id
 request.image_id = str(uuid.uuid1())
 request.datastore = options.datastore
-request.tmp_image_path = "tmp_uploads/" + request.image_id
+request.tmp_image_path = "tmp_upload_" + request.image_id
 
 print_request(request)
 response = client.create_image_from_vm(request)

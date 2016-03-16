@@ -458,8 +458,8 @@ class AgentCommonTests(object):
         find_response = vm_wrapper.find()
         vm_id = vm_wrapper.id
         assert_that(find_response.path,
-                    matches_regexp("\[.*\] vms/%s/%s/%s\.vmx" %
-                                   (vm_id[0:2], vm_id, vm_id)))
+                    matches_regexp("\[.*\] vm_%s/%s\.vmx" %
+                                   (vm_id, vm_id)))
 
     def test_find_vm(self):
         vm_wrapper = VmWrapper(self.host_client)

@@ -14,7 +14,7 @@ import unittest
 import time
 
 from matchers import *  # noqa
-from mock import MagicMock
+from mock import MagicMock, patch
 
 from host.hypervisor.task_runner import TaskTerminated, TaskTimeout
 from host.hypervisor.image_scanner import DatastoreImageScanner
@@ -48,10 +48,6 @@ class ImageScannerTestCase(unittest.TestCase):
             self.DATASTORE_ID)
         self.synchronizer = TestSynchronizer()
         self.wait_at_the_end_of_scan = False
-        self.vm_manager.get_vm_images.side_effect = \
-            self.fake_get_vm_images
-        self.image_manager.mark_unused.side_effect = \
-            self.fake_mark_unused
 
         self.raise_exception = False
         self.timeout = self.TIMEOUT
@@ -59,9 +55,14 @@ class ImageScannerTestCase(unittest.TestCase):
     def tearDown(self):
         self.image_scanner.stop()
 
-    def test_lifecycle(self):
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_for_unused_images")
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_vms_for_active_images")
+    def test_lifecycle(self, get_vm_images, mark_unused):
         assert_that(self.image_scanner.get_state() is
                     DatastoreImageScanner.State.IDLE)
+
+        get_vm_images.side_effect = self.fake_get_vm_images
+        mark_unused.side_effect = self.fake_mark_unused
 
         self.image_scanner.start(self.timeout,
                                  self.VM_SCAN_RATE,
@@ -72,14 +73,17 @@ class ImageScannerTestCase(unittest.TestCase):
         assert_that(self.image_scanner.get_state() is
                     DatastoreImageScanner.State.IDLE)
 
-        self.vm_manager.get_vm_images.\
-            assert_called_once_with(self.image_scanner)
-        self.image_manager.mark_unused.\
-            assert_called_once_with(self.image_scanner)
+        get_vm_images.assert_called_once_with(self.image_scanner)
+        mark_unused.assert_called_once_with(self.image_scanner)
 
-    def test_stop(self):
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_for_unused_images")
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_vms_for_active_images")
+    def test_stop(self, get_vm_images, mark_unused):
         assert_that(self.image_scanner.get_state() is
                     DatastoreImageScanner.State.IDLE)
+
+        get_vm_images.side_effect = self.fake_get_vm_images
+        mark_unused.side_effect = self.fake_mark_unused
 
         self.wait_at_the_end_of_scan = True
         self.image_scanner.start(self.timeout,
@@ -97,13 +101,17 @@ class ImageScannerTestCase(unittest.TestCase):
         exception = self.image_scanner.get_exception()
         assert_that(isinstance(exception, TaskTerminated) is True)
 
-        self.vm_manager.get_vm_images.\
-            assert_called_with(self.image_scanner)
-        assert_that(self.image_manager.mark_unused.called is False)
+        get_vm_images.assert_called_with(self.image_scanner)
+        assert_that(mark_unused.called is False)
 
-    def test_timeout(self):
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_for_unused_images")
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_vms_for_active_images")
+    def test_timeout(self, get_vm_images, mark_unused):
         assert_that(self.image_scanner.get_state() is
                     DatastoreImageScanner.State.IDLE)
+
+        get_vm_images.side_effect = self.fake_get_vm_images
+        mark_unused.side_effect = self.fake_mark_unused
 
         self.timeout = 1
         self.wait_at_the_end_of_scan = True
@@ -122,9 +130,8 @@ class ImageScannerTestCase(unittest.TestCase):
         exception = self.image_scanner.get_exception()
         assert_that(isinstance(exception, TaskTimeout) is True)
 
-        self.vm_manager.get_vm_images.\
-            assert_called_with(self.image_scanner)
-        assert_that(self.image_manager.mark_unused.called is False)
+        get_vm_images.assert_called_with(self.image_scanner)
+        assert_that(mark_unused.called is False)
 
     def fake_get_vm_images(self, image_scanner):
         assert_that(image_scanner.datastore_id is self.DATASTORE_ID)
