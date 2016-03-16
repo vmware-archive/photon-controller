@@ -1069,15 +1069,32 @@ public class XenonRestClientTest {
                                             Collection<ExampleService.ExampleServiceState> expectedDocuments)
       throws Throwable {
 
-    ServiceDocumentQueryResult queryResult = xenonRestClient.queryDocuments
-        (ExampleService.ExampleServiceState.class, queryTerms, Optional.absent(), expandContent, broadCast);
+    Integer iterations = 60;
+    if (broadCast) {
+      iterations = 1;
+    }
 
-    Set<String> expectedDocumentNames = expectedDocuments.stream()
-        .map(d -> d.name)
-        .collect(Collectors.toSet());
-    Set<String> actualDocumentNames = queryResult.documents.values().stream()
-        .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
-        .collect(Collectors.toSet());
+    ServiceDocumentQueryResult queryResult = null;
+    Set<String> expectedDocumentNames = null;
+    Set<String> actualDocumentNames = null;
+
+    for (int i = 0; i < iterations; i++) {
+      queryResult = xenonRestClient.queryDocuments
+          (ExampleService.ExampleServiceState.class, queryTerms, Optional.absent(), expandContent, broadCast);
+
+      expectedDocumentNames = expectedDocuments.stream()
+          .map(d -> d.name)
+          .collect(Collectors.toSet());
+      actualDocumentNames = queryResult.documents.values().stream()
+          .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
+          .collect(Collectors.toSet());
+
+      if (queryResult.documentLinks.size() == numDocuments) {
+        break;
+      }
+
+      Thread.sleep(1000L);
+    }
 
     assertThat(queryResult.documentLinks.size(), is(numDocuments));
     assertThat(queryResult.documents.size(), is(numDocuments));
@@ -1094,30 +1111,46 @@ public class XenonRestClientTest {
                                                  Collection<ExampleService.ExampleServiceState> expectedDocuments)
       throws Throwable {
 
-    ServiceDocumentQueryResult queryResult = xenonRestClient.queryDocuments
-        (ExampleService.ExampleServiceState.class, queryTerms, Optional.of(pageSize), expandContent, broadCast);
+    Integer iterations = 60;
+    if (broadCast) {
+      iterations = 1;
+    }
 
-    assertNotNull(queryResult.documents);
-    assertNotNull(queryResult.nextPageLink);
-    assertNull(queryResult.prevPageLink);
+    Set<String> expectedDocumentNames = null;
+    Set<String> actualDocumentNames = null;
 
-    Set<String> actualDocumentNames = new HashSet<>();
-    actualDocumentNames.addAll(queryResult.documents.values().stream()
-            .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
-            .collect(Collectors.toSet())
-    );
+    for (int i = 0; i < iterations; i++) {
+      ServiceDocumentQueryResult queryResult = xenonRestClient.queryDocuments
+          (ExampleService.ExampleServiceState.class, queryTerms, Optional.of(pageSize), expandContent, broadCast);
 
-    Set<String> expectedDocumentNames = expectedDocuments.stream()
-        .map(d -> d.name)
-        .collect(Collectors.toSet());
+      assertNotNull(queryResult.documents);
+      assertNotNull(queryResult.nextPageLink);
+      assertNull(queryResult.prevPageLink);
 
-    while (queryResult.nextPageLink != null) {
-      queryResult = xenonRestClient.queryDocumentPage(queryResult.nextPageLink);
-
+      actualDocumentNames = new HashSet<>();
       actualDocumentNames.addAll(queryResult.documents.values().stream()
               .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
               .collect(Collectors.toSet())
       );
+
+      expectedDocumentNames = expectedDocuments.stream()
+          .map(d -> d.name)
+          .collect(Collectors.toSet());
+
+      while (queryResult.nextPageLink != null) {
+        queryResult = xenonRestClient.queryDocumentPage(queryResult.nextPageLink);
+
+        actualDocumentNames.addAll(queryResult.documents.values().stream()
+                .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
+                .collect(Collectors.toSet())
+        );
+      }
+
+      if (actualDocumentNames.size() == numDocuments) {
+        break;
+      }
+
+      Thread.sleep(1000L);
     }
 
     assertThat(actualDocumentNames.size(), is(numDocuments));
