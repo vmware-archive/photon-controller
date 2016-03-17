@@ -1161,7 +1161,8 @@ public class XenonRestClientTest {
    * Tests helper methods in XenonRestClient.
    */
   public class HelperMethodTest {
-    @Test
+
+    @Test(enabled = false)
     public void testGetServiceUri() throws Throwable {
       InetAddress localHostInetAddress = OperationUtils.getLocalHostInetAddress();
       assertThat(localHostInetAddress, is(notNullValue()));
