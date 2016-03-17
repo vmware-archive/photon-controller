@@ -40,6 +40,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Base64;
@@ -97,7 +98,13 @@ public class XenonRestClient implements XenonClient {
     }
 
     this.localHostUri = OperationUtils.getLocalHostUri();
-    this.localHostIpAddresses = OperationUtils.getLocalHostIpAddresses();
+
+    try {
+      this.localHostIpAddresses = OperationUtils.getLocalHostIpAddresses();
+    } catch (SocketException e) {
+      logger.error("ctor: SocketException={}", e.toString());
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

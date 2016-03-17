@@ -58,7 +58,7 @@ public class OperationUtilsTest {
      * Tests that the method returns a list of local host ip addresses.
      */
     @Test
-    public void testGetLocalHostIpAddresses() {
+    public void testGetLocalHostIpAddresses() throws Throwable {
       assertThat(OperationUtils.getLocalHostIpAddresses().size(), greaterThan(0));
     }
 
