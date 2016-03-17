@@ -1,5 +1,5 @@
 {
-  "VM_IP": "127.0.0.1",
+  "REGISTRATION_ADDRESS": "127.0.0.1",
   "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
   "LOG_DIRECTORY": "/var/log/esxcloud",
   "ZOOKEEPER_QUORUM": "127.0.0.1:2181",

@@ -23,7 +23,7 @@ import com.vmware.xenon.common.Service;
  */
 public class BuildRuntimeConfigurationTaskFactoryService extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/build-runtime-configuration-tasks";
+  public static final String SELF_LINK = ServiceUriPaths.SERVICES_ROOT + "/deployer/tasks/build-runtime-configuration";
 
   public BuildRuntimeConfigurationTaskFactoryService() {
     super(BuildRuntimeConfigurationTaskService.State.class);

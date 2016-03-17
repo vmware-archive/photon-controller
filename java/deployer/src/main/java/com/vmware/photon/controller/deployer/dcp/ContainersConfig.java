@@ -34,14 +34,14 @@ public class ContainersConfig {
    */
   public enum ContainerType {
     Chairman,
+    CloudStore,
     Deployer,
     Housekeeper,
+    Lightwave,
     LoadBalancer,
     ManagementApi,
     RootScheduler,
     Zookeeper,
-    CloudStore,
-    Lightwave,
     ManagementUi
   }
 
