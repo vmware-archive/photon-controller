@@ -19,7 +19,7 @@ import threading
 import time
 
 from common.lock import locked
-from host.hypervisor.esx.folder import VM_FOLDER_NAME, IMAGE_FOLDER_NAME
+from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX, IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import SUPPORT_VSAN
 from host.hypervisor.esx.vm_config import os_datastore_path_pattern
 from host.hypervisor.esx.vm_config import vmdk_add_suffix
@@ -92,7 +92,7 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
             self._ds_image_scanner.set_state(DatastoreImageScanner.State.IDLE)
 
     def _scan_vms_for_active_images(self, image_scanner):
-        vm_folder_pattern = os_datastore_path_pattern(image_scanner.datastore_id, VM_FOLDER_NAME)
+        vm_folder_pattern = os_datastore_path_pattern(image_scanner.datastore_id, VM_FOLDER_NAME_PREFIX)
         rest_interval_sec = image_scanner.get_vm_scan_rest_interval()
         active_images = dict()
         for vm_dir in glob.glob(vm_folder_pattern):
@@ -149,7 +149,7 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
     directory containing the image.
     """
     def _scan_for_unused_images(self, image_scanner):
-        image_folder_pattern = os_datastore_path_pattern(image_scanner.datastore_id, IMAGE_FOLDER_NAME)
+        image_folder_pattern = os_datastore_path_pattern(image_scanner.datastore_id, IMAGE_FOLDER_NAME_PREFIX)
         active_images = image_scanner.get_active_images()
         unused_images = dict()
         # Compute scan rest interval

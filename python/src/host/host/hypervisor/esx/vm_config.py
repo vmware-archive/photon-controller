@@ -27,11 +27,6 @@ from pysdk.vmconfig import GetCnxInfo
 from pysdk.vmconfig import GetFreeBusNumber
 from pysdk.invt import GetEnv
 
-from host.hypervisor.esx.folder import DISK_FOLDER_NAME
-from host.hypervisor.esx.folder import VM_FOLDER_NAME
-from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
-from host.hypervisor.esx.folder import TMP_IMAGE_FOLDER_NAME
-
 
 class DeviceNotFoundException(Exception):
     pass
@@ -48,6 +43,11 @@ SHADOW_VM_NAME_PREFIX = "shadow_"
 SUPPORT_VSAN = True
 COMPOND_PATH_SEPARATOR = '_'
 VMFS_VOLUMES = "/vmfs/volumes"
+
+DISK_FOLDER_NAME_PREFIX = "disk"
+IMAGE_FOLDER_NAME_PREFIX = "image"
+VM_FOLDER_NAME_PREFIX = "vm"
+TMP_IMAGE_FOLDER_NAME_PREFIX = "tmp_image"
 
 diskAdapterType = vim.VirtualDiskManager.VirtualDiskAdapterType
 
@@ -137,18 +137,18 @@ def compond_path_join(s1, s2, s3=None):
             return os.path.join(s1, s2)
 
 
-def os_vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME):
+def os_vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
     return compond_path_join(os_datastore_path(datastore, folder),
                              partial_vmdk_path(disk_id))
 
 
-def os_vmdk_flat_path(datastore, disk_id, folder=IMAGE_FOLDER_NAME):
+def os_vmdk_flat_path(datastore, disk_id, folder=IMAGE_FOLDER_NAME_PREFIX):
     """ Return the path for the flat vmdk file """
     return compond_path_join(os_datastore_path(datastore, folder),
                              partial_flat_vmdk_path(disk_id))
 
 
-def vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME):
+def vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
     return compond_path_join(datastore_path(datastore, folder),
                              partial_vmdk_path(disk_id))
 
@@ -164,7 +164,7 @@ def vmx_add_suffix(vm_id):
 def tmp_image_path(datastore, image_id):
     """ Datastore path to the temporary location to copy the image to. """
 
-    subdir = compond_path_join(TMP_IMAGE_FOLDER_NAME, str(uuid.uuid4()))
+    subdir = compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4()))
     return os.path.join(
         datastore_path(datastore, subdir), "%s.vmdk" % image_id)
 
@@ -172,16 +172,16 @@ def tmp_image_path(datastore, image_id):
 def tmp_image_folder_os_path(datastore):
     """ File system path of parent of all temporary images directories. """
 
-    return os_datastore_path(datastore, TMP_IMAGE_FOLDER_NAME)
+    return os_datastore_path(datastore, TMP_IMAGE_FOLDER_NAME_PREFIX)
 
 
-def os_metadata_path(datastore, disk_id, folder=DISK_FOLDER_NAME):
+def os_metadata_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
     return compond_path_join(os_datastore_path(datastore, folder),
                              partial_path(disk_id, disk_id, METADATA_FILE_EXT))
 
 
 def os_image_manifest_path(image_datastore, image_id):
-    return compond_path_join(os_datastore_path(image_datastore, IMAGE_FOLDER_NAME),
+    return compond_path_join(os_datastore_path(image_datastore, IMAGE_FOLDER_NAME_PREFIX),
                              partial_path(image_id, image_id, MANIFEST_FILE_EXT))
 
 
@@ -192,7 +192,7 @@ def image_directory_path(datastore, image_id):
 
     where $image_id_prefix is the first two characters of image_id.
     """
-    return compond_path_join(os_datastore_path(datastore, IMAGE_FOLDER_NAME),
+    return compond_path_join(os_datastore_path(datastore, IMAGE_FOLDER_NAME_PREFIX),
                              _disk_path(image_id))
 
 
@@ -204,7 +204,7 @@ def _disk_path(disk_id):
 
 
 def partial_vmx_path(vm_id):
-    return os.path.join(compond_path_join(VM_FOLDER_NAME, _disk_path(vm_id)),
+    return os.path.join(compond_path_join(VM_FOLDER_NAME_PREFIX, _disk_path(vm_id)),
                         vmx_add_suffix(vm_id))
 
 
@@ -236,15 +236,15 @@ def vmdk_id(path):
 
 
 def is_persistent_disk(disk_files):
-    return _find_root_in_disk_files(disk_files) == DISK_FOLDER_NAME
+    return _find_root_in_disk_files(disk_files) == DISK_FOLDER_NAME_PREFIX
 
 
 def is_ephemeral_disk(disk_files):
-    return _find_root_in_disk_files(disk_files) == VM_FOLDER_NAME
+    return _find_root_in_disk_files(disk_files) == VM_FOLDER_NAME_PREFIX
 
 
 def is_image(disk_files):
-    return _find_root_in_disk_files(disk_files) == IMAGE_FOLDER_NAME
+    return _find_root_in_disk_files(disk_files) == IMAGE_FOLDER_NAME_PREFIX
 
 
 def _find_root_in_disk_files(disk_files):
@@ -256,7 +256,7 @@ def _find_root_in_disk_files(disk_files):
 
     for disk_file in disk_files:
         root = _root_folder(disk_file)
-        if root != IMAGE_FOLDER_NAME:
+        if root != IMAGE_FOLDER_NAME_PREFIX:
             return root
 
 
@@ -282,7 +282,7 @@ def get_image_base_disk(disk_files):
                        vm.layout.disk.diskFile field in vim client.
     """
     for disk_file in disk_files:
-        if _root_folder(disk_file) == IMAGE_FOLDER_NAME:
+        if _root_folder(disk_file) == IMAGE_FOLDER_NAME_PREFIX:
             return datastore_to_os_path(disk_file)
     return None
 
@@ -301,7 +301,7 @@ def get_root_disk(disk_files):
     # XXX Assumes first non image disk path is the child disk.
     # TODO(Vui) Fix cached disk layout so this is more reliable.
     for disk_file in disk_files:
-        if _root_folder(disk_file) != IMAGE_FOLDER_NAME:
+        if _root_folder(disk_file) != IMAGE_FOLDER_NAME_PREFIX:
             return datastore_to_os_path(disk_file)
     return None
 
@@ -370,7 +370,7 @@ class EsxVmConfig(object):
 
     def _add_disk(self, cfg_spec, datastore, disk_id, controller_key,
                   size_mb=None, parent_id=None, create=False, with_vm=False,
-                  disk_root_folder=DISK_FOLDER_NAME):
+                  disk_root_folder=DISK_FOLDER_NAME_PREFIX):
         """Create a spec for adding a virtual disk.
 
         If with_vm is true, the disk is created in the vm folder, otherwise,
@@ -408,7 +408,7 @@ class EsxVmConfig(object):
 
         if parent_id:
             backing.parent = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(
-                fileName=vmdk_path(datastore, parent_id, IMAGE_FOLDER_NAME),
+                fileName=vmdk_path(datastore, parent_id, IMAGE_FOLDER_NAME_PREFIX),
             )
 
         disk = vim.vm.device.VirtualDisk(
@@ -512,7 +512,7 @@ class EsxVmConfig(object):
         """
         controller = self._find_or_add_scsi_controller(
             cfg_spec, cfg_info)
-        folder = IMAGE_FOLDER_NAME if disk_is_image else DISK_FOLDER_NAME
+        folder = IMAGE_FOLDER_NAME_PREFIX if disk_is_image else DISK_FOLDER_NAME_PREFIX
 
         self._add_disk(cfg_spec, datastore, disk_id, controller.key,
                        disk_root_folder=folder)
@@ -764,9 +764,9 @@ class EsxVmConfig(object):
         :rtype: EsxVmConfigSpec
         """
         if SUPPORT_VSAN:
-            vm_path = datastore_path(datastore, compond_path_join(VM_FOLDER_NAME, vm_id))
+            vm_path = datastore_path(datastore, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
         else:
-            vm_path = datastore_path(datastore, os.path.join(VM_FOLDER_NAME, vm_id[0:2]))
+            vm_path = datastore_path(datastore, os.path.join(VM_FOLDER_NAME_PREFIX, vm_id[0:2]))
 
         filled_metadata = {}
         meta_config = metadata.get("configuration") if metadata else {}
@@ -797,7 +797,7 @@ class EsxVmConfig(object):
         id of the image disk we we planning to send over via this import.
         """
         vm_path = datastore_path(datastore,
-                                 compond_path_join(TMP_IMAGE_FOLDER_NAME, vm_id))
+                                 compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, vm_id))
         spec = EsxVmConfigSpec(image_id, "otherGuest", memory, cpus, vm_path,
                                None)
         return spec
@@ -918,7 +918,7 @@ class EsxVmConfig(object):
     def disk_matcher(self, datastore, disk_id):
         # device.backing.fileName is always in the form of:
         # '[ds_name] disks/disk_id[0:2]/disk_id/disk_id.vmdk'
-        path = compond_path_join(DISK_FOLDER_NAME, partial_vmdk_path(disk_id))
+        path = compond_path_join(DISK_FOLDER_NAME_PREFIX, partial_vmdk_path(disk_id))
         return lambda device: device.backing.fileName.endswith(path)
 
     def get_device(self, devices, device_type, **kwargs):
