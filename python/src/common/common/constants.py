@@ -18,8 +18,6 @@ ROOT_SCHEDULER_ID = "ROOT"
 
 ROOT_SCHEDULER_SERVICE = "/services/root-scheduler"
 
-CHAIRMAN_SERVICE = "/services/chairman"
-
 MISSING_PREFIX = "/missing"
 
 HOSTS_PREFIX = "/hosts"

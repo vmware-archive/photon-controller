@@ -16,38 +16,34 @@ import logging
 import time
 import uuid
 
-from hamcrest import *  # noqa
-from hamcrest.library.text.stringmatches import matches_regexp  # hamcrest bug
-from matchers import *  # noqa
-
-from gen.common.ttypes import ServerAddress
-from gen.flavors.ttypes import Flavor
-from gen.flavors.ttypes import QuotaLineItem
-from gen.flavors.ttypes import QuotaUnit
 from gen.agent.ttypes import AgentStatusCode
 from gen.agent.ttypes import PingRequest
 from gen.agent.ttypes import ProvisionRequest
 from gen.agent.ttypes import ProvisionResultCode
 from gen.agent.ttypes import VersionRequest
 from gen.agent.ttypes import VersionResultCode
+from gen.common.ttypes import ServerAddress
+from gen.flavors.ttypes import Flavor
+from gen.flavors.ttypes import QuotaLineItem
+from gen.flavors.ttypes import QuotaUnit
 from gen.host import Host
-from gen.host.ttypes import CreateDiskResultCode
 from gen.host.ttypes import CopyImageResultCode
-from gen.host.ttypes import DeleteImageRequest
+from gen.host.ttypes import CreateDiskResultCode
 from gen.host.ttypes import DeleteDiskResultCode
-from gen.host.ttypes import GetHostModeResultCode
+from gen.host.ttypes import DeleteImageRequest
 from gen.host.ttypes import GetHostModeRequest
+from gen.host.ttypes import GetHostModeResultCode
 from gen.host.ttypes import GetImagesResultCode
-from gen.host.ttypes import GetResourcesResultCode
 from gen.host.ttypes import GetResourcesRequest
+from gen.host.ttypes import GetResourcesResultCode
 from gen.host.ttypes import HostMode
 from gen.host.ttypes import ImageInfoRequest
 from gen.host.ttypes import ImageInfoResultCode
 from gen.host.ttypes import Ipv4Address
 from gen.host.ttypes import MksTicketRequest
 from gen.host.ttypes import MksTicketResultCode
-from gen.host.ttypes import NicConnectionSpec
 from gen.host.ttypes import NetworkConnectionSpec
+from gen.host.ttypes import NicConnectionSpec
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
@@ -67,12 +63,15 @@ from gen.resource.ttypes import Resource
 from gen.resource.ttypes import State
 from gen.resource.ttypes import Vm
 from gen.resource.ttypes import VmLocator
-from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import FindRequest
-from gen.scheduler.ttypes import PlaceResultCode
+from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import PlaceRequest
 from gen.scheduler.ttypes import PlaceResponse
+from gen.scheduler.ttypes import PlaceResultCode
+from hamcrest import *  # noqa
+from hamcrest.library.text.stringmatches import matches_regexp  # hamcrest bug
 from host.host_handler import HostHandler
+from matchers import *  # noqa
 from thrift.transport import TTransport
 
 logger = logging.getLogger(__name__)
@@ -1035,8 +1034,6 @@ class AgentCommonTests(object):
         req.networks = ["Bootstrap Network"]
         addr = ServerAddress(host="foobar", port=8835)
         req.address = addr
-        req.chairman_server = [ServerAddress("h1", 13000),
-                               ServerAddress("h2", 13000)]
         req.memory_overcommit = 2.0
         res = self.control_client.provision(req)
         self.assertEqual(res.result, ProvisionResultCode.OK)
@@ -1075,8 +1072,6 @@ class AgentCommonTests(object):
         req.networks = ["Bootstrap Network"]
         addr = ServerAddress(host="foobar", port=8835)
         req.address = addr
-        req.chairman_server = [ServerAddress("h1", 13000),
-                               ServerAddress("h2", 13000)]
         req.memory_overcommit = 0.5
         res = self.control_client.provision(req)
         self.assertEqual(res.result, ProvisionResultCode.INVALID_CONFIG)
