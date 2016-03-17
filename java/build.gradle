@@ -17,6 +17,8 @@ ext {
       commons_lang3: '3.1',
       commons_math3: '3.5',
       xenon_common: '0.7.0',
+      testng      : '6.8',
+      hamcrest    : '1.3',
   ]
 }
 
