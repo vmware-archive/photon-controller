@@ -1,5 +1,5 @@
 {
-  "VM_IP": "localhost",
+  "REGISTRATION_ADDRESS": "localhost",
   "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
   "LOG_DIRECTORY": "/vagrant/log",
   "APIFE_PORT": 9000,

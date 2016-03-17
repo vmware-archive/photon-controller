@@ -1,5 +1,5 @@
 {
-  "VM_IP": "localhost",
+  "REGISTRATION_ADDRESS": "localhost",
   "HOUSEKEEPER_DCP_STORAGE_PATH": "/etc/esxcloud/housekeeper/sandbox_16000",
   "LOG_DIRECTORY": "/vagrant/log",
   "HOUSEKEEPER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/housekeeper",

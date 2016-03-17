@@ -5,7 +5,7 @@ constraintChecker: dcp
 # Refresh interval for in-memory constraint checker cache in seconds.
 refreshIntervalSec: 30
 bind: "0.0.0.0"
-registrationAddress: "{{{VM_IP}}}"
+registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
 port: 13010
 storagePath: "{{{ROOT-SCHEDULER_DCP_STORAGE_PATH}}}"
 zookeeper:
