@@ -296,7 +296,7 @@ Vagrant.configure("2") do |config|
     dynamic_params += "\n, \"APIFE_PORT\" : \"28080\""
   end
 
-  dynamic_params += "\n,  \"LOAD_BALANCER_SERVERS\": [ { \"serverName\": \"devbox-management-api\", \"serverAddress\": \"#{network_ip}:9000\" } ]"
+  dynamic_params += "\n,  \"MGMT_API_HTTP_SERVERS\": [ { \"serverName\": \"devbox-management-api\", \"serverAddress\": \"#{network_ip}:9000\" } ]"
   dynamic_params += "\n,  \"MGMT_UI_HTTP_SERVERS\": [ { \"serverName\": \"devbox-management-ui-http\", \"serverAddress\": \"#{network_ip}:80\" } ]"
   dynamic_params += "\n,  \"MGMT_UI_HTTPS_SERVERS\": [ { \"serverName\": \"devbox-management-ui-https\", \"serverAddress\": \"#{network_ip}:443\" } ]"
 

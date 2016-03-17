@@ -36,6 +36,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskService;
+import com.vmware.photon.controller.deployer.dcp.task.BuildRuntimeConfigurationTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
@@ -323,7 +324,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
         processCreateManagementPlaneLayout(currentState, deploymentService);
         break;
       case BUILD_RUNTIME_CONFIGURATION:
-        processBuildRuntimeConfiguration(currentState, deploymentService);
+        processBuildRuntimeConfiguration(currentState);
         break;
       case SET_QUORUM_ON_DEPLOYMENT_ENTITY:
         queryZookeeperContainerTemplate(currentState);
@@ -471,59 +472,24 @@ public class AddManagementHostWorkflowService extends StatefulService {
     return state;
   }
 
-  private void processBuildRuntimeConfiguration(final State currentState, DeploymentService.State deploymentService)
-      throws Throwable {
-    ServiceUtils.logInfo(this, "Building runtime configuration");
-    final Service service = this;
+  private void processBuildRuntimeConfiguration(State currentState) {
 
-    FutureCallback<BuildContainersConfigurationWorkflowService.State> callback
-        = new FutureCallback<BuildContainersConfigurationWorkflowService.State>() {
-      @Override
-      public void onSuccess(@Nullable BuildContainersConfigurationWorkflowService.State result) {
-        switch (result.taskState.stage) {
-          case FINISHED:
-            TaskUtils.sendSelfPatch(service, buildPatch(
-                TaskState.TaskStage.STARTED,
-                TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY,
-                null));
-            break;
-          case FAILED:
-            State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-            patchState.taskState.failure = result.taskState.failure;
-            TaskUtils.sendSelfPatch(service, patchState);
-            break;
-          case CANCELLED:
-            TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null, null));
-            break;
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-
-    BuildContainersConfigurationWorkflowService.State startState = buildConfigurationWorkflowState(currentState);
-
-    TaskUtils.startTaskAsync(
-        this,
-        BuildContainersConfigurationWorkflowFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        BuildContainersConfigurationWorkflowService.State.class,
-        currentState.taskPollDelay,
-        callback);
-  }
-
-  private BuildContainersConfigurationWorkflowService.State buildConfigurationWorkflowState(State currentState) {
-    BuildContainersConfigurationWorkflowService.State startState = new BuildContainersConfigurationWorkflowService
-        .State();
+    BuildRuntimeConfigurationTaskService.State startState = new BuildRuntimeConfigurationTaskService.State();
+    startState.parentTaskServiceLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.STARTED,
+        TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY, null));
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.taskPollDelay = currentState.taskPollDelay;
-    startState.isNewDeployment = currentState.isNewDeployment;
     startState.hostServiceLink = currentState.hostServiceLink;
-    return startState;
+
+    sendRequest(Operation
+        .createPost(this, BuildContainersConfigurationWorkflowFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              }
+            }));
   }
 
   private void processProvisionManagementHosts(State currentState, DeploymentService.State deploymentService)

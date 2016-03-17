@@ -1,5 +1,5 @@
 {
-  "VM_IP": "127.0.0.1",
+  "REGISTRATION_ADDRESS": "127.0.0.1",
   "LOG_DIRECTORY": "/vagrant/log",
   "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
   "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=39000,suspend=n"
