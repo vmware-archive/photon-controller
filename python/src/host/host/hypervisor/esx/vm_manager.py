@@ -55,7 +55,7 @@ from host.hypervisor.esx.vm_config import is_persistent_disk
 from host.hypervisor.esx.vm_config import os_datastore_path
 from host.hypervisor.esx.vm_config import SUPPORT_VSAN
 from host.hypervisor.esx.vm_config import vmdk_id
-from host.hypervisor.esx.folder import VM_FOLDER_NAME
+from host.hypervisor.esx.folder import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 
 from common.log import log_duration
@@ -911,7 +911,7 @@ class EsxVmManager(VmManager):
 
     def get_vm_images(self, image_scanner):
         vms_dir_path = os_datastore_path(image_scanner.datastore_id,
-                                         VM_FOLDER_NAME)
+                                         VM_FOLDER_NAME_PREFIX)
         # Log messages with prefix: "IMAGE SCANNER" are for debugging
         # and will be removed after basic testing
         self._logger.info("IMAGE SCANNER: vms_dir: %s" % vms_dir_path)

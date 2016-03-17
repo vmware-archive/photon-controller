@@ -37,7 +37,7 @@ from common.thread import Periodic
 from gen.resource.ttypes import ImageReplication
 from gen.resource.ttypes import ImageType
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
-from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import datastore_to_os_path
 from host.hypervisor.esx.vm_config import metadata_filename
 from host.hypervisor.esx.vm_config import manifest_filename
@@ -103,7 +103,7 @@ class EsxImageManager(ImageManager):
 
     @log_duration
     def check_image(self, image_id, datastore):
-        image_dir = os_vmdk_path(datastore, image_id, IMAGE_FOLDER_NAME)
+        image_dir = os_vmdk_path(datastore, image_id, IMAGE_FOLDER_NAME_PREFIX)
         try:
             return os.path.exists(image_dir)
         except:
@@ -122,7 +122,7 @@ class EsxImageManager(ImageManager):
     """
     def check_and_validate_image(self, image_id, ds_id):
         image_dir = os.path.dirname(
-            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME))
+            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME_PREFIX))
 
         try:
             if not os.path.exists(image_dir):
@@ -159,7 +159,7 @@ class EsxImageManager(ImageManager):
         :return:
         """
         image_path = os.path.dirname(
-            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME))
+            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME_PREFIX))
 
         # Check the existence of the timestamp file
         tombstone_pathname = \
@@ -197,7 +197,7 @@ class EsxImageManager(ImageManager):
         :return:
         """
         image_path = os.path.dirname(
-            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME))
+            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME_PREFIX))
 
         # Create tombstone file for the image
         tombstone_pathname = \
@@ -214,7 +214,7 @@ class EsxImageManager(ImageManager):
 
     @log_duration
     def check_image_dir(self, image_id, datastore):
-        image_path = os_vmdk_path(datastore, image_id, IMAGE_FOLDER_NAME)
+        image_path = os_vmdk_path(datastore, image_id, IMAGE_FOLDER_NAME_PREFIX)
         try:
             return os.path.exists(os.path.dirname(image_path))
         except:
@@ -226,13 +226,13 @@ class EsxImageManager(ImageManager):
         return image_directory_path(datastore_id, image_id)
 
     def get_image_path(self, datastore_id, image_id):
-        return os_vmdk_path(datastore_id, image_id, IMAGE_FOLDER_NAME)
+        return os_vmdk_path(datastore_id, image_id, IMAGE_FOLDER_NAME_PREFIX)
 
     def image_size(self, image_id):
         for image_ds in self._ds_manager.image_datastores():
             try:
                 image_path = os_vmdk_flat_path(image_ds, image_id,
-                                               IMAGE_FOLDER_NAME)
+                                               IMAGE_FOLDER_NAME_PREFIX)
                 return os.path.getsize(image_path)
             except os.error:
                 self._logger.info("Image %s not found in DataStore %s" %
@@ -260,7 +260,7 @@ class EsxImageManager(ImageManager):
     def get_image_metadata(self, image_id, datastore):
         metadata_path = os_metadata_path(datastore,
                                          image_id,
-                                         IMAGE_FOLDER_NAME)
+                                         IMAGE_FOLDER_NAME_PREFIX)
         self._logger.info("Loading metadata %s" % metadata_path)
         return self._load_json(metadata_path)
 
@@ -317,7 +317,7 @@ class EsxImageManager(ImageManager):
 
             @return the tmp image directory on success.
         """
-        source = vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME)
+        source = vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
         temp_dest = tmp_image_path(dest_datastore, dest_id)
         ds_type = self._get_datastore_type(dest_datastore)
         tmp_image_dir_path = os.path.dirname(datastore_to_os_path(temp_dest))
@@ -326,7 +326,7 @@ class EsxImageManager(ImageManager):
         # later.
         with FileBackedLock(tmp_image_dir_path, ds_type):
             source_meta = os_metadata_path(source_datastore, source_id,
-                                           IMAGE_FOLDER_NAME)
+                                           IMAGE_FOLDER_NAME_PREFIX)
             # Create the temp directory
             mkdir_p(tmp_image_dir_path)
 
@@ -389,7 +389,7 @@ class EsxImageManager(ImageManager):
         """
         ds_type = self._get_datastore_type(datastore)
         image_path = os.path.dirname(os_vmdk_path(datastore, image_id,
-                                                  IMAGE_FOLDER_NAME))
+                                                  IMAGE_FOLDER_NAME_PREFIX))
         parent_path = os.path.dirname(image_path)
         # Create the parent image directory if it doesn't exist.
         try:
@@ -431,7 +431,7 @@ class EsxImageManager(ImageManager):
     def _check_image_repair(self, image_id, datastore):
         vmdk_pathname = os_vmdk_path(datastore,
                                      image_id,
-                                     IMAGE_FOLDER_NAME)
+                                     IMAGE_FOLDER_NAME_PREFIX)
 
         image_dirname = os.path.dirname(vmdk_pathname)
         try:
@@ -604,14 +604,14 @@ class EsxImageManager(ImageManager):
 
             # image_folder is /vmfs/volumes/${datastore}/images_*
             image_folder_pattern = os_datastore_path_pattern(datastore,
-                                                             IMAGE_FOLDER_NAME)
+                                                             IMAGE_FOLDER_NAME_PREFIX)
             for dir in glob.glob(image_folder_pattern):
                 image_id = dir.split(COMPOND_PATH_SEPARATOR)[1]
                 if self.check_image(image_id, datastore):
                     image_ids.append(image_id)
         else:
             # image_folder is /vmfs/volumes/${datastore}/images
-            image_folder = os_datastore_path(datastore, IMAGE_FOLDER_NAME)
+            image_folder = os_datastore_path(datastore, IMAGE_FOLDER_NAME_PREFIX)
 
             if not os.path.exists(image_folder):
                 raise DatastoreNotFoundException()
@@ -632,7 +632,7 @@ class EsxImageManager(ImageManager):
 
     def mark_unused(self, image_scanner):
         images_dir_path = os_datastore_path(image_scanner.datastore_id,
-                                            IMAGE_FOLDER_NAME)
+                                            IMAGE_FOLDER_NAME_PREFIX)
         # Log messages with prefix: "IMAGE SCANNER" are for debugging
         # and will be removed after basic testing
         self._logger.info("IMAGE SCANNER: images_dir: %s" % images_dir_path)
@@ -648,7 +648,7 @@ class EsxImageManager(ImageManager):
 
     def delete_unused(self, image_sweeper):
         images_dir_path = os_datastore_path(image_sweeper.datastore_id,
-                                            IMAGE_FOLDER_NAME)
+                                            IMAGE_FOLDER_NAME_PREFIX)
         # Log messages with prefix: "IMAGE SWEEPER" are for debugging
         # and will be removed after basic testing
         self._logger.info("IMAGE SWEEPER: images_dir: %s" % images_dir_path)
@@ -714,7 +714,7 @@ class EsxImageManager(ImageManager):
         return self._vim_client.virtual_disk_manager
 
     def _make_image_dir(self, datastore, image_id,
-                        parent_folder_name=IMAGE_FOLDER_NAME):
+                        parent_folder_name=IMAGE_FOLDER_NAME_PREFIX):
         path = os.path.dirname(
             os_vmdk_path(
                 datastore,
@@ -740,7 +740,7 @@ class EsxImageManager(ImageManager):
             break
 
     def _rm_image_dir(self, datastore, id,
-                      parent_folder_name=IMAGE_FOLDER_NAME):
+                      parent_folder_name=IMAGE_FOLDER_NAME_PREFIX):
         path = os.path.dirname(os_vmdk_path(datastore, id, parent_folder_name))
         shutil.rmtree(path)
 
@@ -780,7 +780,7 @@ class EsxImageManager(ImageManager):
         there can only be one move happening at any point in time.
         """
         src_path = os.path.dirname(os_vmdk_path(datastore_id, image_id,
-                                                IMAGE_FOLDER_NAME))
+                                                IMAGE_FOLDER_NAME_PREFIX))
         # Verify locking held.
         assert(os.path.exists(src_path))
         # Generate a random suffix, this is to address the following.
@@ -887,7 +887,7 @@ class EsxImageManager(ImageManager):
         # Save raw metadata
         if metadata:
             metadata_path = os_metadata_path(datastore_id, image_id,
-                                             IMAGE_FOLDER_NAME)
+                                             IMAGE_FOLDER_NAME_PREFIX)
             with open(metadata_path, 'w') as f:
                 f.write(metadata)
 
@@ -1313,7 +1313,7 @@ class EsxImageManager(ImageManager):
 
     def _create_image_timestamp_file_from_ids(self, ds_id, image_id):
         image_path = os.path.dirname(
-            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME))
+            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME_PREFIX))
         self._create_image_timestamp_file(image_path)
 
     def _delete_renamed_image_timestamp_file(self, dirname):

@@ -32,8 +32,8 @@ from gen.resource.ttypes import DatastoreType
 from gen.resource.ttypes import ImageReplication
 from gen.resource.ttypes import ImageType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
-from host.hypervisor.esx.folder import TMP_IMAGE_FOLDER_NAME
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageNotFoundException
 
@@ -110,7 +110,7 @@ class TestEsxImageManager(unittest.TestCase):
         # In a random transient directory, set up a directory to act as the
         # tmp images folder and to contain a stray image folder with a file.
         tmpdir = file_util.mkdtemp(delete=True)
-        tmp_images_folder = _fake_ds_folder(ds.id, TMP_IMAGE_FOLDER_NAME)
+        tmp_images_folder = _fake_ds_folder(ds.id, TMP_IMAGE_FOLDER_NAME_PREFIX)
         tmp_images_dir = os.path.join(tmpdir, tmp_images_folder)
         tmp_image_dir = os.path.join(tmp_images_dir, "stray_image")
         os.mkdir(tmp_images_dir)
@@ -369,7 +369,7 @@ class TestEsxImageManager(unittest.TestCase):
         # Verify the src directory has been moved into the garbage dir.
         self.assertEqual(os.listdir(uuid_dir), [os.path.basename(src_dir)])
 
-        src_path.assert_called_once_with("ds1", "foo", IMAGE_FOLDER_NAME)
+        src_path.assert_called_once_with("ds1", "foo", IMAGE_FOLDER_NAME_PREFIX)
         dst_path.assert_called_once_with("ds1", GC_IMAGE_FOLDER)
 
     def test_image_path(self):

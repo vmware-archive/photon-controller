@@ -23,10 +23,10 @@ from common.kind import Flavor
 from host.hypervisor.disk_manager import DiskManager
 from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.disk_manager import DiskPathException
-from host.hypervisor.esx.folder import DISK_FOLDER_NAME
-from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
-from host.hypervisor.esx.folder import TMP_IMAGE_FOLDER_NAME
-from host.hypervisor.esx.folder import VM_FOLDER_NAME
+from host.hypervisor.esx.vm_config import DISK_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from host.hypervisor.esx.vm_config import os_datastore_path
 from host.hypervisor.esx.vm_config import os_vmdk_path
@@ -55,8 +55,8 @@ def vmdk_mkdir(datastore, disk_id, logger):
 
 
 def datastore_mkdirs(vim_client, datastore):
-    for path in [DISK_FOLDER_NAME, VM_FOLDER_NAME, IMAGE_FOLDER_NAME,
-                 TMP_IMAGE_FOLDER_NAME]:
+    for path in [DISK_FOLDER_NAME_PREFIX, VM_FOLDER_NAME_PREFIX, IMAGE_FOLDER_NAME_PREFIX,
+                 TMP_IMAGE_FOLDER_NAME_PREFIX]:
         ds_path = os_datastore_path(datastore, path)
         # On shared folders os.mkdir races with other hosts attempting to
         # create ds_path. try - pass works around that.
@@ -127,7 +127,7 @@ class EsxDiskManager(DiskManager):
           $ vmkfstools -i source dest
 
         """
-        source = vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME)
+        source = vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
         dest = vmdk_path(dest_datastore, dest_id)
         vmdk_mkdir(dest_datastore, dest_id, self._logger)
         self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task,
@@ -159,7 +159,7 @@ class EsxDiskManager(DiskManager):
         ext = "-flat.vmdk"
         ids = set()
         if datastore:
-            path = os.path.join("/vmfs/volumes", datastore, DISK_FOLDER_NAME)
+            path = os.path.join("/vmfs/volumes", datastore, DISK_FOLDER_NAME_PREFIX)
             for name in os.listdir(path):
                 if name.endswith(ext):
                     ids.add(name[0:len(name) - len(ext)])
