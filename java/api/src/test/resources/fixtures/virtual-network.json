@@ -1,0 +1,8 @@
+{
+    "kind": "virtualNetwork",
+    "tags": [],
+    "name": "vn1",
+    "description": "desc",
+    "state": "READY",
+    "allowToAccessInternet": true
+}
