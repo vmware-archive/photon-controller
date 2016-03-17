@@ -21,8 +21,6 @@ import com.vmware.photon.controller.apife.clients.status.DcpStatusProviderFactor
 import com.vmware.photon.controller.apife.clients.status.StatusProviderFactory;
 import com.vmware.photon.controller.apife.clients.status.ThriftClientFactory;
 import com.vmware.photon.controller.apife.config.StatusConfig;
-import com.vmware.photon.controller.chairman.gen.Chairman;
-import com.vmware.photon.controller.common.clients.ChairmanClient;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
@@ -77,23 +75,19 @@ public class StatusFeClientTest {
   private List<ClientProxy> singleInstanceClientProxies;
 
   private List<StatusProvider> housekeeperClients;
-  private List<StatusProvider> chairmanClients;
   private List<StatusProvider> rootSchedulerClients;
   private List<StatusProvider> deployerClients;
   private List<StatusProvider> cloudStoreClients;
 
   private ClientProxyFactory<Housekeeper.AsyncClient> houseKeeperProxyFactory = mock(ClientProxyFactory.class);
-  private ClientProxyFactory<Chairman.AsyncClient> chairmanProxyFactory = mock(ClientProxyFactory.class);
   private ClientProxyFactory<RootScheduler.AsyncClient> rootSchedulerProxyFactory = mock(ClientProxyFactory.class);
   private ClientProxyFactory<Deployer.AsyncClient> deployerProxyFactory = mock(ClientProxyFactory.class);
 
   private ClientPoolFactory<Housekeeper.AsyncClient> houseKeeperPoolFactory = mock(ClientPoolFactory.class);
-  private ClientPoolFactory<Chairman.AsyncClient> chairmanPoolFactory = mock(ClientPoolFactory.class);
   private ClientPoolFactory<RootScheduler.AsyncClient> rootSchedulerPoolFactory = mock(ClientPoolFactory.class);
   private ClientPoolFactory<Deployer.AsyncClient> deployerPoolFactory = mock(ClientPoolFactory.class);
 
   private ServerSet housekeeperServerSet = mock(StaticServerSet.class);
-  private ServerSet chairmanServerSet = mock(StaticServerSet.class);
   private ServerSet rootSchedulerServerSet = mock(StaticServerSet.class);
   private ServerSet deployerServerSet = mock(StaticServerSet.class);
   private ServerSet cloudStoreServerSet = mock(StaticServerSet.class);
@@ -104,7 +98,7 @@ public class StatusFeClientTest {
   public void setup() throws Throwable {
     statusConfig = new StatusConfig();
     statusConfig.setComponents(
-        ImmutableList.of("housekeeper", "chairman", "rootScheduler", "deployer", "cloudStore"));
+        ImmutableList.of("housekeeper", "rootScheduler", "deployer", "cloudStore"));
 
     createServerSet();
 
@@ -189,7 +183,6 @@ public class StatusFeClientTest {
     Status errorStatus = new Status(StatusType.ERROR);
     setMessageAndStats(errorStatus);
 
-    when(chairmanServerSet.getServers()).thenReturn(singleInstanceServerSets.get(0).getServers());
     when(rootSchedulerServerSet.getServers()).thenReturn(singleInstanceServerSets.get(1).getServers());
 
     mockAllClientsToReturnSameStatus(readyStatus);
@@ -211,8 +204,7 @@ public class StatusFeClientTest {
         assertThat(status.getStats().get(StatusType.READY.toString()), is("1"));
         assertThat(status.getStats().get(StatusType.INITIALIZING.toString()), is("1"));
         assertThat(status.getStats().get(StatusType.ERROR.toString()), is("1"));
-      } else if (status.getComponent().equals(Component.CHAIRMAN) ||
-          status.getComponent().equals(Component.ROOT_SCHEDULER)) {
+      } else if (status.getComponent().equals(Component.ROOT_SCHEDULER)) {
         assertThat(status.getStatus(), is(StatusType.READY));
         assertThat(status.getStats().get(StatusType.READY.toString()), is("1"));
       } else {
@@ -255,7 +247,7 @@ public class StatusFeClientTest {
 
     SystemStatus systemStatus = client.getSystemStatus();
 
-    assertThat(systemStatus.getComponents().size(), is(5));
+    assertThat(systemStatus.getComponents().size(), is(4));
     assertThat(systemStatus.getStatus(), is(StatusType.ERROR));
 
     ComponentStatus deployerComponent = systemStatus.getComponents().stream()
@@ -268,7 +260,6 @@ public class StatusFeClientTest {
   private void mockAllClientsToReturnSameStatus(Status status) {
     for (int i = 0; i < SERVER_COUNT; i++) {
       when(housekeeperClients.get(i).getStatus()).thenReturn(status);
-      when(chairmanClients.get(i).getStatus()).thenReturn(status);
       when(rootSchedulerClients.get(i).getStatus()).thenReturn(status);
       when(deployerClients.get(i).getStatus()).thenReturn(status);
       when(cloudStoreClients.get(i).getStatus()).thenReturn(status);
@@ -284,11 +275,9 @@ public class StatusFeClientTest {
 
     client = new StatusFeClient(
         executor,
-        housekeeperServerSet, chairmanServerSet, rootSchedulerServerSet, deployerServerSet, cloudStoreServerSet,
+        housekeeperServerSet, rootSchedulerServerSet, deployerServerSet, cloudStoreServerSet,
         houseKeeperProxyFactory,
         houseKeeperPoolFactory,
-        chairmanProxyFactory,
-        chairmanPoolFactory,
         rootSchedulerProxyFactory,
         rootSchedulerPoolFactory,
         deployerProxyFactory,
@@ -300,11 +289,6 @@ public class StatusFeClientTest {
         housekeeperServerSet, houseKeeperPoolFactory, houseKeeperProxyFactory, HousekeeperClient.class, "Housekeeper"));
     setupStatusProviderFactory(housekeeperClientFactory, housekeeperClients);
     statusProviderFactories.put(Component.HOUSEKEEPER, housekeeperClientFactory);
-
-    ThriftClientFactory chairmanClientFactory = spy(new ThriftClientFactory(
-        chairmanServerSet, chairmanPoolFactory, chairmanProxyFactory, ChairmanClient.class, "Chairman"));
-    setupStatusProviderFactory(chairmanClientFactory, chairmanClients);
-    statusProviderFactories.put(Component.CHAIRMAN, chairmanClientFactory);
 
     ThriftClientFactory rootSchedulerClientFactory = spy(new ThriftClientFactory(
         rootSchedulerServerSet, rootSchedulerPoolFactory, rootSchedulerProxyFactory, RootSchedulerClient.class,
@@ -347,7 +331,6 @@ public class StatusFeClientTest {
     }
 
     when(housekeeperServerSet.getServers()).thenReturn(serverSet);
-    when(chairmanServerSet.getServers()).thenReturn(serverSet);
     when(rootSchedulerServerSet.getServers()).thenReturn(serverSet);
     when(deployerServerSet.getServers()).thenReturn(serverSet);
     when(cloudStoreServerSet.getServers()).thenReturn(serverSet);
@@ -369,13 +352,11 @@ public class StatusFeClientTest {
 
   private void mockComponentClients() {
     housekeeperClients = new ArrayList<>();
-    chairmanClients = new ArrayList<>();
     rootSchedulerClients = new ArrayList<>();
     deployerClients = new ArrayList<>();
     cloudStoreClients = new ArrayList<>();
     for (int i = 0; i < SERVER_COUNT; i++) {
       housekeeperClients.add(mock(HousekeeperClient.class));
-      chairmanClients.add(mock(ChairmanClient.class));
       rootSchedulerClients.add(mock(RootSchedulerClient.class));
       deployerClients.add(mock(DeployerClient.class));
       cloudStoreClients.add(mock(DcpStatusProvider.class));

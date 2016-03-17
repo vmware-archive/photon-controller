@@ -28,15 +28,14 @@ public class ComponentTest {
   @Test
   public void testFromString() {
     assertThat(Component.fromString("housekeeper"), is(Component.HOUSEKEEPER));
-    assertThat(Component.fromString("chairman"), is(Component.CHAIRMAN));
     assertThat(Component.fromString("rootScheduler"), is(Component.ROOT_SCHEDULER));
     assertThat(Component.fromString("deployer"), is(Component.DEPLOYER));
   }
 
   @Test
   public void testFromStrings() {
-    assertThat(Component.fromStrings(ImmutableList.of("housekeeper", "chairman", "chairman")), is
-        (Sets.newHashSet(EnumSet.of(Component.HOUSEKEEPER, Component.CHAIRMAN))));
+    assertThat(Component.fromStrings(ImmutableList.of("housekeeper", "deployer")), is
+        (Sets.newHashSet(EnumSet.of(Component.HOUSEKEEPER, Component.DEPLOYER))));
   }
 
   @Test (expectedExceptions = IllegalArgumentException.class)
@@ -46,6 +45,6 @@ public class ComponentTest {
 
   @Test (expectedExceptions = IllegalArgumentException.class)
   public void testContainsInvalid() {
-    Component.fromStrings(ImmutableList.of("housekeeper", "chairman", "invalid"));
+    Component.fromStrings(ImmutableList.of("housekeeper", "deployer", "invalid"));
   }
 }
