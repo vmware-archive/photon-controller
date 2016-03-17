@@ -78,15 +78,21 @@ module EsxCloud
       end
 
       # @param [String] deployment_id
-      # @return [Deployment]
       def pause_system(deployment_id)
-        @api_client.pause_system(deployment_id)
+        cmd = "deployment pause_system #{deployment_id}"
+        run_cli(cmd)
       end
 
       # @param [String] deployment_id
-      # @return [Deployment]
+      def pause_background_tasks(deployment_id)
+        cmd = "deployment pause_background_tasks #{deployment_id}"
+        run_cli(cmd)
+      end
+
+      # @param [String] deployment_id
       def resume_system(deployment_id)
-        @api_client.resume_system(deployment_id)
+        cmd = "deployment resume_system #{deployment_id}"
+        run_cli(cmd)
       end
 
       # @param [String] deployment_id

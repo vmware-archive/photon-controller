@@ -120,23 +120,21 @@ module EsxCloud
       end
 
       # @param [String] deployment_id
-      # @return [Deployment]
       def pause_system(deployment_id)
         cmd = "deployment pause_system #{deployment_id}"
         run_cli(cmd)
-        deployments = find_all_api_deployments.items
-        fail EsxCloud::CliError, "There are more than one Deployment." if deployments.size > 1
-        deployments.first
       end
 
       # @param [String] deployment_id
-      # @return [Deployment]
+      def pause_background_tasks(deployment_id)
+        cmd = "deployment pause_background_tasks #{deployment_id}"
+        run_cli(cmd)
+      end
+
+      # @param [String] deployment_id
       def resume_system(deployment_id)
         cmd = "deployment resume_system #{deployment_id}"
         run_cli(cmd)
-        deployments = find_all_api_deployments.items
-        fail EsxCloud::CliError, "There are more than one Deployment." if deployments.size > 1
-        deployments.first
       end
 
       # @param [String] deployment_id

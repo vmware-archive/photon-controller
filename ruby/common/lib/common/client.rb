@@ -327,12 +327,14 @@ module EsxCloud
     end
 
     # @param [String] deployment_id
-    # @return [Deployment]
     def pause_system(deployment_id)
     end
 
     # @param [String] deployment_id
-    # @return [Deployment]
+    def pause_background_tasks(deployment_id)
+    end
+
+    # @param [String] deployment_id
     def resume_system(deployment_id)
     end
 
