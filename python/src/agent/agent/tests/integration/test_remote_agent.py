@@ -164,7 +164,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
             vm_networks = [self._vm_network]
         req.networks = vm_networks
         req.address = ServerAddress(host=self.server, port=8835)
-        req.chairman_server = [self._chairman]
         req.memory_overcommit = mem_overcommit
         req.image_datastore_info = ImageDatastore(
             name=image_datastore,
@@ -245,9 +244,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         self._vm_network = "VM Network"
         self._datastores = None
 
-        # Set a dummy value for the chairman, we don't connect against a real
-        # chairman for these tests
-
         if "vm_network" in config["agent_remote_test"]:
             self._vm_network = config["agent_remote_test"]["vm_network"]
 
@@ -256,8 +252,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
             self._datastores = [d.strip() for d in datastores.split(",")]
         else:
             self.fail("datastores not provided for test setUp")
-
-        self._chairman = ServerAddress("localhost", 13000)
 
         # Optionally update the specification of a remote iso file. The file
         # needs to exist on the remote esx server for this test to succeed.

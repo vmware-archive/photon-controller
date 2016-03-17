@@ -103,18 +103,12 @@ build_for_py_ver() {
        find $DEST_SITE_PACKAGES \( -type d -and -name fake \) -exec rm -rf {} +
    fi
 
-   # Delete stress_test
-   find $DEST_SITE_PACKAGES -maxdepth 1 \( -type d -and -name chairman \) -exec rm -rf {} +
-
    # Delete files we don't want in the vib
    find $DEST_VIB_LAYOUT -name '.gitkeep' -exec rm -rf {} \;
 
-   # Fill in templates (primarily for integration test)
+   # Copy firewall configuration to destination directory (firewall is needed mainly for integration tests)
    FIREWALL_CONF=payloads/agent/etc/vmware/firewall/photon-controller-agent.xml
-   CHAIRMAN_PORT=${CHAIRMAN_PORT:-13000}
-   ../misc/fill_template $SRC_VIB_LAYOUT/$FIREWALL_CONF \
-     CHAIRMAN_PORT $CHAIRMAN_PORT \
-     > $DEST_VIB_LAYOUT/$FIREWALL_CONF
+   cp $SRC_VIB_LAYOUT/$FIREWALL_CONF $DEST_VIB_LAYOUT/$FIREWALL_CONF
 
    # Fill in template for stats publisher's port rule
    # TODO: Update this port based on user's provided state store port number at deployment time.

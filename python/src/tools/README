@@ -5,5 +5,5 @@ A set of debugger tools for photon controller agent.
 ## zlookup - ZooKeeper service lookup
 
 zlookup -z localhost:2181 # list all services
-zlookup -z localhost:2181 chairman # find service by name
+zlookup -z localhost:2181 deployer # find service by name
 zlookup -z localhost:2181 agent/<id> # works for nested services
