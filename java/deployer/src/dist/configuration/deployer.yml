@@ -1,5 +1,5 @@
 bind: "0.0.0.0"
-registrationAddress: "{{{VM_IP}}}"
+registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
 port: 18000
 
 dcp:

@@ -1415,13 +1415,17 @@ public class CreateManagementVmTaskService extends StatefulService {
         dynamicParameters.putAll(containerState.dynamicParameters);
       }
 
-      dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_LOADBALANCER_SERVERS,
+      dynamicParameters.computeIfPresent(
+          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS,
           (k, v) -> new Gson().fromJson(v.toString(), loadBalancerTypeToken.getType()));
-      dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_HTTP_SERVERS,
+      dynamicParameters.computeIfPresent(
+          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_SERVERS,
           (k, v) -> new Gson().fromJson(v.toString(), loadBalancerTypeToken.getType()));
-      dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_MGMT_UI_HTTPS_SERVERS,
+      dynamicParameters.computeIfPresent(
+          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_SERVERS,
           (k, v) -> new Gson().fromJson(v.toString(), loadBalancerTypeToken.getType()));
-      dynamicParameters.computeIfPresent(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM,
+      dynamicParameters.computeIfPresent(
+          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES,
           (k, v) -> new Gson().fromJson(v.toString(), zookeeperTypeToken.getType()));
 
       serviceConfigurator.applyDynamicParameters(serviceConfigDirectoryPath.toString(),
