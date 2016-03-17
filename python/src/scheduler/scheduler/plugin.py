@@ -27,7 +27,7 @@ class SchedulerPlugin(common.plugin.Plugin):
         config = common.services.get(ServiceName.AGENT_CONFIG)
 
         # Create scheduler handler
-        scheduler_handler = SchedulerHandler(config.utilization_transfer_ratio)
+        scheduler_handler = SchedulerHandler()
         common.services.register(Scheduler.Iface, scheduler_handler)
 
         # Load num_threads
