@@ -1,15 +1,5 @@
 {"components": [
     {
-        "component": "CHAIRMAN",
-        "status": "INITIALIZING",
-        "instances": [
-            {
-                "address": "127.0.0.0",
-                "status": "INITIALIZING"
-            }
-        ]
-    },
-    {
         "component": "ROOT_SCHEDULER",
         "status": "ERROR",
         "instances": [

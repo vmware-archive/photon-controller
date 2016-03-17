@@ -20,7 +20,6 @@ import com.vmware.photon.controller.api.SystemStatus;
 import com.vmware.photon.controller.api.builders.ComponentInstanceBuilder;
 import com.vmware.photon.controller.api.builders.ComponentStatusBuilder;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
-import com.vmware.photon.controller.apife.ChairmanServerSet;
 import com.vmware.photon.controller.apife.DeployerServerSet;
 import com.vmware.photon.controller.apife.HousekeeperServerSet;
 import com.vmware.photon.controller.apife.RootSchedulerServerSet;
@@ -30,9 +29,7 @@ import com.vmware.photon.controller.apife.clients.status.StatusProviderFactory;
 import com.vmware.photon.controller.apife.clients.status.ThriftClientFactory;
 import com.vmware.photon.controller.apife.config.StatusConfig;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
-import com.vmware.photon.controller.chairman.gen.Chairman;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
-import com.vmware.photon.controller.common.clients.ChairmanClient;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
@@ -80,13 +77,10 @@ public class StatusFeClient {
    * Creating StatusFeClient with component server sets to iterate through individual servers to get their status.
    *
    * @param housekeeperServerSet
-   * @param chairmanServerSet
    * @param rootSchedulerServerSet
    * @param deployerServerSet
    * @param houseKeeperProxyFactory
    * @param houseKeeperPoolFactory
-   * @param chairmanProxyFactory
-   * @param chairmanPoolFactory
    * @param rootSchedulerProxyFactory
    * @param rootSchedulerPoolFactory
    * @param deployerProxyFactory
@@ -97,14 +91,11 @@ public class StatusFeClient {
   public StatusFeClient(
       @BackendTaskExecutor ExecutorService executor,
       @HousekeeperServerSet ServerSet housekeeperServerSet,
-      @ChairmanServerSet ServerSet chairmanServerSet,
       @RootSchedulerServerSet ServerSet rootSchedulerServerSet,
       @DeployerServerSet ServerSet deployerServerSet,
       @CloudStoreServerSet ServerSet cloudStoreServerSet,
       ClientProxyFactory<Housekeeper.AsyncClient> houseKeeperProxyFactory,
       ClientPoolFactory<Housekeeper.AsyncClient> houseKeeperPoolFactory,
-      ClientProxyFactory<Chairman.AsyncClient> chairmanProxyFactory,
-      ClientPoolFactory<Chairman.AsyncClient> chairmanPoolFactory,
       ClientProxyFactory<RootScheduler.AsyncClient> rootSchedulerProxyFactory,
       ClientPoolFactory<RootScheduler.AsyncClient> rootSchedulerPoolFactory,
       ClientProxyFactory<Deployer.AsyncClient> deployerProxyFactory,
@@ -116,8 +107,6 @@ public class StatusFeClient {
     statusProviderFactories = Maps.newEnumMap(Component.class);
     statusProviderFactories.put(Component.HOUSEKEEPER, new ThriftClientFactory(
         housekeeperServerSet, houseKeeperPoolFactory, houseKeeperProxyFactory, HousekeeperClient.class, "Housekeeper"));
-    statusProviderFactories.put(Component.CHAIRMAN, new ThriftClientFactory(
-        chairmanServerSet, chairmanPoolFactory, chairmanProxyFactory, ChairmanClient.class, "Chairman"));
     statusProviderFactories.put(Component.ROOT_SCHEDULER, new ThriftClientFactory(
         rootSchedulerServerSet, rootSchedulerPoolFactory, rootSchedulerProxyFactory, RootSchedulerClient.class,
         "RootScheduler"));

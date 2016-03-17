@@ -19,7 +19,7 @@ describe "system" do
   it "shows system status as ready", management: true do
     system_status = api_client.get_status
     expect(system_status.status).to_not be_nil
-    expect(system_status.components.size).to eq 5
+    expect(system_status.components.size).to eq 4
 
     system_status.components.each do |component|
       expect(component.name).to_not be_nil

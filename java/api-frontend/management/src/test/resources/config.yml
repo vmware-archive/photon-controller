@@ -18,7 +18,6 @@ pagination:
 status:
   components:
     - housekeeper
-    - chairman
     - rootScheduler
     - deployer
     - cloudStore
