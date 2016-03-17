@@ -372,6 +372,12 @@ public class TestHelper {
   }
 
   public static HostService.State createHostService(
+      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment, UsageTag usageTag)
+      throws Throwable {
+    return createHostService(testEnvironment, Collections.singleton(usageTag.name()));
+  }
+
+  public static HostService.State createHostService(
       com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment, Set<String> usageTags)
       throws Throwable {
     return createHostService(testEnvironment, usageTags, HostState.READY);

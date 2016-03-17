@@ -74,7 +74,7 @@ public class ServiceConfiguratorTest {
     List<LoadBalancerServer> list = new ArrayList<>();
     list.add(new LoadBalancerServer("server-1", "0.0.0.0"));
     list.add(new LoadBalancerServer("server-2", "1.1.1.1"));
-    dynamicParameters.put("LOAD_BALANCER_SERVERS", list);
+    dynamicParameters.put("MGMT_API_HTTP_SERVERS", list);
     serviceConfigurator.applyDynamicParameters(TMP_DIR, ContainersConfig.ContainerType.LoadBalancer, dynamicParameters);
     File file = new File(TMP_DIR + "haproxy/haproxy.cfg");
     String haproxyCfg = FileUtils.readFileToString(file);
