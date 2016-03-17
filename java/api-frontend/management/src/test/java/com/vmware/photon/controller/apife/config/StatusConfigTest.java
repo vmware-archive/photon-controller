@@ -55,7 +55,7 @@ public class StatusConfigTest {
   @Test
   public void testAllConfig() {
     config.setComponents(ImmutableList.of(
-        "housekeeper", "chairman", "rootScheduler", "deployer", "cloudStore"));
+        "housekeeper", "rootScheduler", "deployer", "cloudStore"));
     Set<Component> expected = EnumSet.allOf(Component.class);
 
     assertThat(config.getComponents(), is(expected));

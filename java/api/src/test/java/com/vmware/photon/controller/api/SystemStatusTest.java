@@ -41,12 +41,8 @@ public class SystemStatusTest {
   private SystemStatus createSystemStatus() {
     SystemStatusBuilder systemStatusBuilder = new SystemStatusBuilder();
     systemStatusBuilder.status(StatusType.ERROR);
-    int i = 0;
+    int i = 1;
     systemStatusBuilder.components(ImmutableList.of(
-        new ComponentStatusBuilder().component(Component.CHAIRMAN).status(StatusType.INITIALIZING)
-            .instances(ImmutableList.of(
-                new ComponentInstanceBuilder().address("127.0.0." + i++).status(StatusType.INITIALIZING).build()))
-            .build(),
         new ComponentStatusBuilder().component(Component.ROOT_SCHEDULER).status(StatusType.ERROR)
             .instances(ImmutableList.of(
                 new ComponentInstanceBuilder().address("127.0.0." + i++).status(StatusType.ERROR).build()))
@@ -143,9 +139,7 @@ public class SystemStatusTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "SystemStatus{status=ERROR, components=[ComponentStatus{status=INITIALIZING, message=null, stats=null, " +
-              "component=chairman, instances=[ComponentInstance{status=INITIALIZING, message=null, stats=null, " +
-              "address=127.0.0.0, buildInfo=null}], buildInfo=null}, ComponentStatus{status=ERROR, message=null, " +
+          "SystemStatus{status=ERROR, components=[ComponentStatus{status=ERROR, message=null, " +
               "stats=null, component=rootScheduler, instances=[ComponentInstance{status=ERROR, message=null, " +
               "stats=null, address=127.0.0.1, buildInfo=null}], buildInfo=null}, ComponentStatus{status=READY, " +
               "message=null, stats=null, component=housekeeper, instances=[ComponentInstance{status=READY, " +

@@ -80,7 +80,7 @@ describe "deployment lifecycle", order: :defined, deployer: true do
     lb_client = ApiClientHelper.management(address: load_balancer_ip)
     system_status = lb_client.get_status
     expect(system_status.status).to eq("READY")
-    expect(system_status.components.size).to eq(5)
+    expect(system_status.components.size).to eq(4)
 
     system_status.components.each do |component|
       expect(component.name).not_to be_nil
