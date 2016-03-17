@@ -27,7 +27,6 @@ import java.util.Set;
  */
 public enum Component {
   HOUSEKEEPER("housekeeper"),
-  CHAIRMAN("chairman"),
   ROOT_SCHEDULER("rootScheduler"),
   DEPLOYER("deployer"),
   CLOUD_STORE("cloudStore");
