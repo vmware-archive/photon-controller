@@ -59,9 +59,13 @@ By default Dev Box starts with a private IP address (172.31.253.66). As describe
 
 ### Accessing Dev Box
 
+#### via SSH
 You can go into the Dev Box VM using the vagrant ssh command.
 
     vagrant ssh [photon]
+
+#### via Photon Controller CLI
+devbox does not deploy a load balancer, thus you need to point your CLI directly at the API-FE. Set your target to `http://<devbox_ip>:9000`.
 
 ### Stopping and destroying Dev Box
 
