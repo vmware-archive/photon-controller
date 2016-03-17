@@ -50,7 +50,6 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Arrays;
@@ -1163,12 +1162,8 @@ public class XenonRestClientTest {
   public class HelperMethodTest {
     @Test
     public void testGetServiceUri() throws Throwable {
-      InetAddress localHostInetAddress = OperationUtils.getLocalHostInetAddress();
-      assertThat(localHostInetAddress, is(notNullValue()));
-      String localHostAddress = null;
-      if (localHostInetAddress != null) {
-        localHostAddress = localHostInetAddress.getHostAddress();
-      }
+      List<String> localIpAddresses = OperationUtils.getLocalHostIpAddresses();
+      String localHostAddress = localIpAddresses.get(0);
       assertThat(localHostAddress, is(notNullValue()));
 
       InetSocketAddress[] servers1 = new InetSocketAddress[3];
@@ -1190,11 +1185,14 @@ public class XenonRestClientTest {
       // the local address should not get selected since none of the provided addresses would match with it
       assertThat(result1.getHost().equals(localHostAddress), is(false));
 
-      InetSocketAddress[] servers2 = new InetSocketAddress[4];
+      InetSocketAddress[] servers2 = new InetSocketAddress[localIpAddresses.size() + servers1.length];
       servers2[0] = servers1[0];
       servers2[1] = servers1[1];
       servers2[2] = servers1[2];
-      servers2[3] = new InetSocketAddress(OperationUtils.getLocalHostInetAddress(), 3);
+      for (int i = servers1.length; i < servers1.length + localIpAddresses.size(); i++) {
+        servers2[i] = new InetSocketAddress(localIpAddresses.get(i - servers1.length), i);
+      }
+
       staticServerSet = new StaticServerSet(servers2);
       testXenonRestClient = new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1));
       final URI result2 = testXenonRestClient.getServiceUri("/dummyPath");
@@ -1218,7 +1216,12 @@ public class XenonRestClientTest {
               .isPresent(), is(true));
 
       //the selected URI should be using local address
-      assertThat(result2.getHost().equals(localHostAddress), is(true));
+      assertThat(
+          localIpAddresses
+              .stream()
+              .filter(a -> a.equals(result2.getHost()))
+              .findFirst()
+              .isPresent(), is(true));
     }
   }
 
