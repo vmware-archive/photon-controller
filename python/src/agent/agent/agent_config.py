@@ -20,7 +20,6 @@ import common
 from common.file_util import atomic_write_file
 from common.lock import lock_with
 from common.lock import locked
-from gen.common.ttypes import ServerAddress
 
 
 class InvalidConfig(Exception):
@@ -58,7 +57,6 @@ class AgentConfig(object):
     AVAILABILITY_ZONE = "availability_zone"
     HOSTNAME = "hostname"
     HOST_PORT = "port"
-    CHAIRMAN = "chairman"
     MEMORY_OVERCOMMIT = "memory_overcommit"
     CPU_OVERCOMMIT = "cpu_overcommit"
     WAIT_TIMEOUT = "wait_timeout"
@@ -73,8 +71,8 @@ class AgentConfig(object):
     STATS_HOST_TAGS = "stats_host_tags"
 
     PROVISION_ARGS = [HOST_PORT]
-    BOOTSTRAP_ARGS = PROVISION_ARGS + [AVAILABILITY_ZONE, HOSTNAME, CHAIRMAN,
-                                       HOST_ID, DEPLOYMENT_ID]
+    BOOTSTRAP_ARGS = PROVISION_ARGS + [AVAILABILITY_ZONE, HOSTNAME, HOST_ID,
+                                       DEPLOYMENT_ID]
 
     # List of attributes persisted to config.json by default
 
@@ -204,11 +202,6 @@ class AgentConfig(object):
             reboot |= self._check_and_set_attr(
                 self.STATS_HOST_TAGS,
                 provision_req.stats_plugin_config.stats_host_tags)
-
-        chairman_str = \
-            self._parse_chairman_server_address(provision_req.chairman_server)
-        if self._check_and_set_attr(self.CHAIRMAN, chairman_str):
-            self._trigger_callbacks(self.CHAIRMAN, self.chairman_list)
 
         if self._check_and_set_attr(self.MEMORY_OVERCOMMIT, memory_overcommit):
             self._trigger_callbacks(self.MEMORY_OVERCOMMIT, memory_overcommit)
@@ -360,12 +353,6 @@ class AgentConfig(object):
     @locked
     def bootstrap_poll_frequency(self):
         return self._options.bootstrap_poll_frequency
-
-    @property
-    @locked
-    def chairman_list(self):
-        chairman_str = getattr(self._options, self.CHAIRMAN)
-        return self._parse_chairman_list(chairman_str)
 
     @property
     @locked
@@ -525,8 +512,6 @@ class AgentConfig(object):
         parser.add_option("--bootstrap-poll-frequency",
                           dest="bootstrap_poll_frequency",
                           type="int", default=5)
-        parser.add_option("--chairman", dest=self.CHAIRMAN, type="string",
-                          help="comma separated list of chairman ip:port")
         parser.add_option("--memory-overcommit", dest=self.MEMORY_OVERCOMMIT,
                           type="float", default=1.0,
                           help="The memory overcommit for this host")
@@ -632,49 +617,6 @@ class AgentConfig(object):
         # config file already stores it as a list
         self._sanitize_config()
 
-    def _parse_chairman_list(self, chairman_list):
-        """
-        Converts a list of chairman with port config into a list of
-        ServerAddress.
-        Chairman list is persisted as a list of "ip:port"
-        :param chairman_list: The list of chairman as a comma separated string.
-        :rtype list of chairman service addresses of type ServerAddress
-        """
-
-        if not chairman_list:
-            return []
-
-        server_list = []
-        for server in chairman_list:
-            try:
-                host, port = server.split(":")
-                server_list.append(ServerAddress(host=host, port=int(port)))
-            except ValueError:
-                self._logger.warning(
-                    "Failed to parse server %s, Invalid delemiter" % server)
-                pass
-            except AttributeError:
-                self._logger.warning("Failed to parse chairman server %s" %
-                                     server)
-                pass
-
-        return server_list
-
-    def _parse_chairman_server_address(self, server_addresses):
-        """
-        Converts a thrift list of ServeAddress objects to a list of : separated
-        ip:port pairs.
-        :type server_addresses a list of ServerAddress objects representing the
-        list of chairman services
-        :rtype server_str list of server addresses
-        """
-        servers = []
-        if server_addresses:
-            for address in server_addresses:
-                server_str = str(address.host) + ":" + str(address.port)
-                servers.append(server_str)
-        return servers
-
     def _convert_image_datastores(self, image_datastores):
         """
         Convert a set of ImageDatastore thrift struct to a simple dict.
@@ -701,8 +643,6 @@ class AgentConfig(object):
                 self._parse_list(getattr(self._options, self.DATASTORES)))
         setattr(self._options, self.VM_NETWORK,
                 self._parse_list(getattr(self._options, self.VM_NETWORK)))
-        setattr(self._options, self.CHAIRMAN,
-                self._parse_list(getattr(self._options, self.CHAIRMAN)))
 
     def _parse_list(self, string_option):
         """

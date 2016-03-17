@@ -13,18 +13,6 @@
     <porttype>dst</porttype>
     <port>8835</port>
   </rule>
-  <rule id = '0002'>
-    <direction>inbound</direction>
-    <protocol>tcp</protocol>
-    <porttype>dst</porttype>
-    <port>$CHAIRMAN_PORT</port>
-  </rule>
-  <rule id = '0003'>
-    <direction>outbound</direction>
-    <protocol>tcp</protocol>
-    <porttype>dst</porttype>
-    <port>$CHAIRMAN_PORT</port>
-  </rule>
   <enabled>true</enabled>
   <required>false</required>
 </service>

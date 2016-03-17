@@ -168,7 +168,7 @@ ZOOKEEPER_PATH=/usr/local/Cellar/zookeeper/3.4.5/libexec make test
 ```
 
 ZOOKEEPER\_PATH environment variable must be set in order to run
-integration tests against chairman and root scheduler:
+integration tests against root scheduler:
 
 ```bash
 ZOOKEEPER_PATH=/usr/local/Cellar/zookeeper/3.4.5/libexec make test SCHEDULER_INTEGRATION=1

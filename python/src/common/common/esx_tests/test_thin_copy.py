@@ -88,7 +88,6 @@ class ThinCopyTestCase(unittest.TestCase):
         req.datastores = [datastore]
         req.networks = ["VM Network"]
         req.address = ServerAddress(host="localhost", port=8835)
-        req.chairman_server = [ServerAddress("localhost", 13000)]
         req.memory_overcommit = 2.0
         req.image_datastores = set([ImageDatastore(name=datastore,
                                                    used_for_vms=True)])

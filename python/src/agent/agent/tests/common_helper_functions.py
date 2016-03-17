@@ -15,48 +15,31 @@
 import json
 import logging
 import os
-import pystache
 import shutil
 import subprocess
 import tempfile
 import threading
 import time
 import uuid
-import yaml
 
+import pystache
+import yaml
+from common.file_util import mkdir_p
+from common.photon_thrift.direct_client import DirectClient
+from gen.agent import AgentControl
+from gen.host import Host
+from gen.scheduler.root import RootScheduler
+from scheduler.tests.base_kazoo_test import DEFAULT_ZK_PORT
 from thrift.protocol import TCompactProtocol
 from thrift.protocol import TMultiplexedProtocol
 from thrift.transport import TSocket
 from thrift.transport import TTransport
-
-from common.photon_thrift.direct_client import DirectClient
-from common.file_util import mkdir_p
-from gen.agent import AgentControl
-from gen.chairman import Chairman
-from gen.chairman.ttypes import RegisterHostRequest
-from gen.common.ttypes import ServerAddress
-from gen.host import Host
-from gen.host.ttypes import HostConfig
-from gen.scheduler.root import RootScheduler
-from scheduler.tests.base_kazoo_test import DEFAULT_ZK_PORT
 
 logger = logging.getLogger(__name__)
 CLEAN = "clean"
 INSTALL = "install"
 WAIT = 20
 SLEEP_STEP = 3
-
-
-def get_register_host_request(host, port, agent_id, networks, datastores,
-                              image_datastore, availability_zone,
-                              management_only=False):
-    host_config = HostConfig(agent_id=agent_id, datastores=datastores,
-                             address=ServerAddress(host, port=port),
-                             networks=networks,
-                             availability_zone=availability_zone,
-                             image_datastore_ids=set([image_datastore]),
-                             management_only=management_only)
-    return RegisterHostRequest(agent_id, host_config)
 
 
 def get_default_java_path():
@@ -92,16 +75,6 @@ def get_default_config(service):
                 value = pystache.render(template.read(), json.load(params))
                 config.write(value)
     return config.name
-
-
-def create_chairman_client(host, port):
-    socket = TSocket.TSocket(host, port)
-    transport = TTransport.TFramedTransport(socket)
-    protocol = TCompactProtocol.TCompactProtocol(transport)
-    mp = TMultiplexedProtocol.TMultiplexedProtocol(protocol, "Chairman")
-    client = Chairman.Client(mp)
-    _wait_for_transport(transport)
-    return (transport, client)
 
 
 def create_root_client(port, host):
@@ -216,7 +189,6 @@ def _wait_for_configuration(client, num_children, num_retries=20):
 
 class RuntimeUtils(object):
 
-    CHAIRMAN = "chairman"
     CLOUD_STORE = "cloud-store"
     ROOT_SCHEDULER = "root-scheduler"
 
@@ -238,7 +210,6 @@ class RuntimeUtils(object):
         mkdir_p(self.test_dir)
         self.agent_procs = []
         self.root_procs = []
-        self.chairman_procs = []
         self.thrift_procs = []
 
     def cleanup(self):
@@ -252,10 +223,6 @@ class RuntimeUtils(object):
         # Stop all root-schedule procs
         for root_proc in self.root_procs:
             stop_service(root_proc)
-
-        # Stop all chairman procs
-        for chairman_proc in self.chairman_procs:
-            stop_service(chairman_proc)
 
     def _configure_logging(self, config, service_name):
         filename = os.path.join(self.test_dir, "%s.log" % service_name)
@@ -285,22 +252,6 @@ class RuntimeUtils(object):
                 proc = start_service(self.ROOT_SCHEDULER, conf.name)
                 # append to the cleanup list for teardown
                 self.root_procs.append(proc)
-                return proc
-
-    def start_chairman(self, host, port, leaf_fanout=32,
-                       zk_port=DEFAULT_ZK_PORT):
-        with open(get_default_config(self.CHAIRMAN)) as f:
-            conf = yaml.load(f)
-            conf['bind'] = host
-            conf['port'] = port
-            conf['zookeeper']['quorum'] = "localhost:%i" % zk_port
-            conf['zookeeper']['hostMonitorBackend'] = "zookeeper"
-            self._configure_logging(conf, self.CHAIRMAN)
-        with tempfile.NamedTemporaryFile(delete=False) as conffile:
-            with open(conffile.name, 'w+') as f:
-                f.write(yaml.dump(conf, default_flow_style=False))
-                proc = start_service(self.CHAIRMAN, conffile.name)
-                self.chairman_procs.append(proc)
                 return proc
 
     def start_cloud_store(self, host="localhost", port=40000,
@@ -383,17 +334,6 @@ class RuntimeUtils(object):
             # Doesn't matter
             pass
 
-    def get_agent_config(self, host, port, chairman_host, chairman_port):
-        """
-        A convenient wrapper around get_default_agent_config() to get a config
-        with agent and chairman ports specified.
-        """
-        conf = self.get_default_agent_config()
-        conf["--hostname"] = host
-        conf["--port"] = str(port)
-        conf["--chairman"] = "%s:%s" % (chairman_host, chairman_port)
-        return conf
-
     def get_default_agent_config(self):
         """
         Get the default agent configuration.
@@ -410,7 +350,6 @@ class RuntimeUtils(object):
         return {
             "--hostname": "localhost",
             "--port": "8835",
-            "--chairman": "localhost:12345",
             "--host-id": host_id,
             "--stats-enabled": "True",
             "--stats-store-endpoint": "10.1.1.20",

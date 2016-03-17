@@ -80,16 +80,12 @@ class TestUnitAgent(unittest.TestCase):
         """
         Test that we can process and persist config options.
         """
-        self.agent._parse_options(["--chairman", "h1:13000, h2:13000",
-                                   "--memory-overcommit", "1.5",
+        self.agent._parse_options(["--memory-overcommit", "1.5",
                                    "--datastore", ["datastore1"],
                                    "--in-uwsim",
                                    "--config-path", self.agent_conf_dir,
                                    "--utilization-transfer-ratio", "0.5"])
 
-        self.assertEqual(self.agent.chairman_list,
-                         [ServerAddress("h1", 13000),
-                          ServerAddress("h2", 13000)])
         self.assertEqual(self.agent.memory_overcommit, 1.5)
         self.assertEqual(self.agent.in_uwsim, True)
         self.assertEqual(self.agent.utilization_transfer_ratio, 0.5)
@@ -97,8 +93,6 @@ class TestUnitAgent(unittest.TestCase):
 
         # Simulate an agent restart.
         new_agent = AgentConfig(["--config-path", self.agent_conf_dir])
-        self.assertEqual(new_agent.chairman_list, [ServerAddress("h1", 13000),
-                                                   ServerAddress("h2", 13000)])
         self.assertEqual(new_agent.memory_overcommit, 1.5)
         self.assertEqual(new_agent.in_uwsim, True)
         self.assertEqual(self.agent.utilization_transfer_ratio, 0.5)
@@ -114,8 +108,7 @@ class TestUnitAgent(unittest.TestCase):
                                    "--stats-enabled", "True",
                                    "--stats-store-endpoint", "10.10.10.10",
                                    "--stats-store-port", "8081",
-                                   "--stats-host-tags", "MGMT,CLOUD",
-                                   "--chairman", "h1:1300, h2:1300"])
+                                   "--stats-host-tags", "MGMT,CLOUD"])
         assert_that(self.agent.availability_zone, equal_to("test"))
         assert_that(self.agent.hostname, equal_to("localhost"))
         assert_that(self.agent.stats_enabled, equal_to(True))
@@ -126,17 +119,12 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.datastores, equal_to(["ds1", "ds2"]))
         assert_that(self.agent.networks, equal_to(["VM Network"]))
         assert_that(self.agent.wait_timeout, equal_to(5))
-        assert_that(self.agent.chairman_list,
-                    equal_to([ServerAddress("h1", 1300),
-                              ServerAddress("h2", 1300)]))
 
     def test_boostrap_ready(self):
-        chairman_str = ["10.10.10.1:13000"]
         self.agent._parse_options(["--config-path", self.agent_conf_dir,
                                    "--availability-zone", "test",
                                    "--hostname", "localhost",
                                    "--port", "1234",
-                                   "--chairman", chairman_str,
                                    "--host-id", "host1",
                                    "--deployment-id", "deployment1"])
         self.assertTrue(self.agent.bootstrap_ready)
@@ -150,7 +138,6 @@ class TestUnitAgent(unittest.TestCase):
                                    "--datastores", "ds1, ds2"])
         expected_image_ds = [{"name": "ds3", "used_for_vms": True}]
 
-        # Without chairman config we can't be provision ready
         self.assertFalse(self.agent.bootstrap_ready)
         self.assertTrue(self.agent.provision_ready)
         self.assertFalse(self.agent.reboot_required)
@@ -162,8 +149,6 @@ class TestUnitAgent(unittest.TestCase):
         req.memory_overcommit = 1.5
         req.image_datastores = set([ImageDatastore("ds3", True)])
         addr = ServerAddress(host="localhost", port=2345)
-        req.chairman_server = [ServerAddress("h1", 13000),
-                               ServerAddress("h2", 13000)]
         req.address = addr
 
         stats_plugin_config = StatsPluginConfig(
@@ -182,9 +167,6 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.host_port, equal_to(2345))
         assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
         assert_that(self.agent.networks, equal_to(["Public"]))
-        assert_that(self.agent.chairman_list,
-                    equal_to([ServerAddress("h1", 13000),
-                              ServerAddress("h2", 13000)]))
         assert_that(self.agent.memory_overcommit,
                     equal_to(1.5))
         assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
@@ -203,7 +185,6 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.host_port, equal_to(8835))
         assert_that(self.agent.datastores, equal_to([]))
         assert_that(self.agent.networks, equal_to([]))
-        assert_that(self.agent.chairman_list, equal_to([]))
         # Unsetting memory overcommit should set it to the default value.
         self.assertEqual(self.agent.memory_overcommit, 1.0)
 
@@ -219,8 +200,6 @@ class TestUnitAgent(unittest.TestCase):
         req.networks = ["Public"]
         req.memory_overcommit = 0.5
         addr = ServerAddress(host="localhost", port=2345)
-        req.chairman_server = [ServerAddress("h1", 13000),
-                               ServerAddress("h2", 13000)]
         req.address = addr
 
         # Verify an exception is raised.
@@ -230,7 +209,6 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.host_port, equal_to(8835))
         assert_that(self.agent.datastores, equal_to([]))
         assert_that(self.agent.networks, equal_to([]))
-        assert_that(self.agent.chairman_list, equal_to([]))
         self.assertFalse(self.agent.bootstrap_ready)
         self.assertEqual(self.agent.memory_overcommit, 1.0)
 
@@ -243,7 +221,6 @@ class TestUnitAgent(unittest.TestCase):
                                    "--datastores", "ds1, ds2"])
         expected_image_ds = [{"name": "ds3", "used_for_vms": True}]
 
-        # Without chairman config we can't be ready
         self.assertFalse(self.agent.bootstrap_ready)
         self.assertTrue(self.agent.provision_ready)
         self.assertFalse(self.agent.reboot_required)
@@ -255,8 +232,6 @@ class TestUnitAgent(unittest.TestCase):
         req.memory_overcommit = 1.5
         req.image_datastores = set([ImageDatastore("ds3", True)])
         addr = ServerAddress(host="localhost", port=2345)
-        req.chairman_server = [ServerAddress("h1", 13000),
-                               ServerAddress("h2", 13000)]
         req.address = addr
         req.host_id = "host1"
         req.deployment_id = "deployment1"
@@ -267,9 +242,6 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.host_port, equal_to(2345))
         assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
         assert_that(self.agent.networks, equal_to(["Public"]))
-        assert_that(self.agent.chairman_list,
-                    equal_to([ServerAddress("h1", 13000),
-                              ServerAddress("h2", 13000)]))
         assert_that(self.agent.memory_overcommit,
                     equal_to(1.5))
         assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
@@ -289,9 +261,6 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.host_port, equal_to(2345))
         assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
         assert_that(self.agent.networks, equal_to(["Public"]))
-        assert_that(self.agent.chairman_list,
-                    equal_to([ServerAddress("h1", 13000),
-                              ServerAddress("h2", 13000)]))
         assert_that(self.agent.memory_overcommit,
                     equal_to(1.5))
         assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
@@ -331,47 +300,6 @@ class TestUnitAgent(unittest.TestCase):
         req.address = addr
         self.agent.update_config(req)
         self.assertTrue(self.agent.reboot_required)
-
-    def test_chairman_parsing(self):
-        """Tests that the parsing logic for chairman works"""
-        str_1 = "10.10.10.1:13000"
-        str_2 = "10.10.10.2:13000"
-        str_3 = "10.10.10.3:13000"
-        invalid_str = "10.10.10.3;13000"
-        srv_1 = ServerAddress(host="10.10.10.1", port=13000)
-        srv_2 = ServerAddress(host="10.10.10.2", port=13000)
-        srv_3 = ServerAddress(host="10.10.10.3", port=13000)
-
-        # Test 1 check that we can parse a list of chairman services.
-        chairman_str = [str_1, str_2, str_3]
-        chairman_list = self.agent._parse_chairman_list(chairman_str)
-        self.assertEqual(len(chairman_list), 3)
-        self.assertEqual([srv_1, srv_2, srv_3], chairman_list)
-
-        # Test 2 check that we can parse single chairman
-        chairman_str = str_1
-        chairman_list = self.agent._parse_chairman_list([chairman_str])
-        self.assertEqual(len(chairman_list), 1)
-        self.assertEqual([srv_1], chairman_list)
-
-        # Test invalid input string - 2; one of the delimiters are invalid
-        chairman_str = [str_1, str_2, invalid_str, str_3]
-        chairman_list = self.agent._parse_chairman_list(chairman_str)
-        self.assertEqual(len(chairman_list), 3)
-        self.assertEqual([srv_1, srv_2, srv_3], chairman_list)
-
-        # Test conversion from server address to string.
-        chairman_str = self.agent._parse_chairman_server_address([srv_1, srv_2,
-                                                                  srv_3])
-        self.assertEqual([str_1, str_2, str_3], chairman_str)
-
-        # Handle empty list
-        chairman_str = self.agent._parse_chairman_server_address([])
-        self.assertEqual([], chairman_str)
-
-        # Handle None
-        chairman_str = self.agent._parse_chairman_server_address(None)
-        self.assertEqual([], chairman_str)
 
     def test_thrift_thread_settings(self):
         """ Simple test that sets and reads thrift thread settings"""
@@ -426,26 +354,11 @@ class TestUnitAgent(unittest.TestCase):
                     contains_inanyorder(*expected_image_ds))
 
     def test_config_change(self):
-        # Test chairman config change
-        chairman_callback1 = mock.MagicMock()
-        chairman_callback2 = mock.MagicMock()
-
-        chairman_server = [
-            ServerAddress("192.168.0.1", 8835),
-            ServerAddress("192.168.0.2", 8835),
-        ]
-        self.agent.on_config_change(self.agent.CHAIRMAN, chairman_callback1)
-        self.agent.on_config_change(self.agent.CHAIRMAN, chairman_callback2)
-        provision = ProvisionRequest(chairman_server=chairman_server)
-        self.agent.update_config(provision)
-        chairman_callback1.assert_called_once_with(chairman_server)
-        chairman_callback2.assert_called_once_with(chairman_server)
-        self.assertFalse(self.agent.reboot_required)
-
         # Test cpu_overcommit and memory_overcommit config change
         cpu_callback = mock.MagicMock()
         mem_callback = mock.MagicMock()
 
+        provision = ProvisionRequest()
         provision.cpu_overcommit = 5.0
         provision.memory_overcommit = 6.0
         self.agent.on_config_change(self.agent.CPU_OVERCOMMIT, cpu_callback)
