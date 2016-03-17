@@ -1,4 +1,5 @@
 {
     "name": "vn1",
-    "description": "desc"
+    "description": "desc",
+    "allowToAccessInternet": true
 }

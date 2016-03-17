@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api;
 
+import com.vmware.photon.controller.api.builders.VirtualNetworkCreateSpecBuilder;
 import com.vmware.photon.controller.api.helpers.JsonHelpers;
 import com.vmware.photon.controller.api.helpers.Validator;
 
@@ -48,10 +49,13 @@ public class VirtualNetworkCreateSpecTest {
     public Object[][] getValidVirtualNetworkData() {
       return new Object[][] {
           {
-              new VirtualNetworkCreateSpec("vn1", null)
+              new VirtualNetworkCreateSpecBuilder().name("vn1").build()
           },
           {
-              new VirtualNetworkCreateSpec("vn1", "desc")
+              new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc").build()
+          },
+          {
+              new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc").allowToAccessInternet(true).build()
           }
       };
     }
@@ -68,16 +72,16 @@ public class VirtualNetworkCreateSpecTest {
     public Object[][] getInvalidVirtualNetworkData() {
       return new Object[][] {
           {
-              new VirtualNetworkCreateSpec(),
+              new VirtualNetworkCreateSpecBuilder().build(),
               ImmutableList.of("name may not be null (was null)")
           },
           {
-              new VirtualNetworkCreateSpec("", null),
+              new VirtualNetworkCreateSpecBuilder().name("").build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
                   "^[a-zA-Z][a-zA-Z0-9-]* (was )")
           },
           {
-              new VirtualNetworkCreateSpec("1a", null),
+              new VirtualNetworkCreateSpecBuilder().name("1a").build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
                   "^[a-zA-Z][a-zA-Z0-9-]* (was 1a)")
           }
@@ -98,10 +102,12 @@ public class VirtualNetworkCreateSpecTest {
     @DataProvider(name = "VirtualNetworkData")
     public Object[][] getVirtualNetworkData() {
       return new Object[][] {
-          {new VirtualNetworkCreateSpec("vn1", null),
-              "VirtualNetworkCreateSpec{name=vn1, description=null}"},
-          {new VirtualNetworkCreateSpec("vn1", "desc"),
-              "VirtualNetworkCreateSpec{name=vn1, description=desc}"}
+          {new VirtualNetworkCreateSpecBuilder().name("vn1").build(),
+              "VirtualNetworkCreateSpec{name=vn1, description=null, allowToAccessInternet=false}"},
+          {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc").build(),
+              "VirtualNetworkCreateSpec{name=vn1, description=desc, allowToAccessInternet=false}"},
+          {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc").allowToAccessInternet(true).build(),
+              "VirtualNetworkCreateSpec{name=vn1, description=desc, allowToAccessInternet=true}"}
       };
     }
   }
@@ -113,7 +119,11 @@ public class VirtualNetworkCreateSpecTest {
 
     @Test
     public void testSerializeCompleteData() throws IOException {
-      VirtualNetworkCreateSpec virtualNetworkCreateSpec = new VirtualNetworkCreateSpec("vn1", "desc");
+      VirtualNetworkCreateSpec virtualNetworkCreateSpec = new VirtualNetworkCreateSpecBuilder()
+          .name("vn1")
+          .description("desc")
+          .allowToAccessInternet(true)
+          .build();
       String json = JsonHelpers.jsonFixture("fixtures/virtual-network-create-spec.json");
 
       assertThat(JsonHelpers.asJson(virtualNetworkCreateSpec), is(json));
