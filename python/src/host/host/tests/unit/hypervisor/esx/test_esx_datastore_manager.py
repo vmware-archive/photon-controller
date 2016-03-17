@@ -22,10 +22,10 @@ from gen.resource.constants import NFS_TAG
 from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import DatastoreType as DSType
 from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
-from host.hypervisor.esx.folder import DISK_FOLDER_NAME
-from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
-from host.hypervisor.esx.folder import TMP_IMAGE_FOLDER_NAME
-from host.hypervisor.esx.folder import VM_FOLDER_NAME
+from host.hypervisor.esx.vm_config import DISK_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
 
 
 class TestEsxDatastoreManager(unittest.TestCase):
@@ -58,8 +58,8 @@ class TestEsxDatastoreManager(unittest.TestCase):
 
         expected_call_args = []
         for ds in ds_list:
-            for folder in [DISK_FOLDER_NAME, VM_FOLDER_NAME, IMAGE_FOLDER_NAME,
-                           TMP_IMAGE_FOLDER_NAME]:
+            for folder in [DISK_FOLDER_NAME_PREFIX, VM_FOLDER_NAME_PREFIX, IMAGE_FOLDER_NAME_PREFIX,
+                           TMP_IMAGE_FOLDER_NAME_PREFIX]:
                 expected_call_args.append('/vmfs/volumes/%s/%s' % (ds, folder))
         called_args = [c[0][0] for c in mkdir_mock.call_args_list]
         assert_that(called_args, contains_inanyorder(*expected_call_args))

@@ -31,8 +31,8 @@ from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.esx.folder import IMAGE_FOLDER_NAME
 from host.hypervisor.esx.vim_client import VimClient
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import EsxVmConfig, SHADOW_VM_NAME_PREFIX
 from host.hypervisor.esx.vm_config import os_image_manifest_path
 from host.hypervisor.esx.vm_config import os_metadata_path
@@ -403,7 +403,7 @@ class HttpNfcTransferer(HttpTransferer):
 
             # Transfer raw metadata
             metadata_path = os_metadata_path(image_datastore, image_id,
-                                             IMAGE_FOLDER_NAME)
+                                             IMAGE_FOLDER_NAME_PREFIX)
             metadata = None
             if os.path.exists(metadata_path):
                 with open(metadata_path, 'r') as f:

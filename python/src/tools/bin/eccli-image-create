@@ -9,10 +9,10 @@ import time
 
 import os
 import re
-from host.hypervisor.esx.folder import TMP_IMAGE_FOLDER_NAME
 from host.hypervisor.esx.vim_client import VimClient
 from pyVmomi import vim
 
+from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec, datastore_path, \
     tmp_image_folder_os_path
 
@@ -42,7 +42,7 @@ if not options.file_path or not options.datastore:
 
 # create import spec
 def create_import_spec(datastore, image_id):
-    vm_path = datastore_path(datastore, TMP_IMAGE_FOLDER_NAME)
+    vm_path = datastore_path(datastore, TMP_IMAGE_FOLDER_NAME_PREFIX)
     vm_spec = EsxVmConfigSpec(image_id, "otherGuest", 32, 1, vm_path, None)
     disk_controller = vim.vm.device.VirtualLsiLogicController(
         key=0,
