@@ -17,103 +17,104 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
-import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
-import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.configuration.LoadBalancerServer;
-import com.vmware.photon.controller.deployer.configuration.ZookeeperServer;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
-import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
-import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
-import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.gson.Gson;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-/**
- * This class implements a DCP micro-service which performs the task of
- * building the runtime configuration for a specific container.
- */
 public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
-  public static final String ENV_ZOOKEEPER_MY_ID = "ZOOKEEPER_MYID";
-  public static final String ENV_ZOOKEEPER_QUORUM = "ZOOKEEPER_INSTANCES";
+  private static final String MUSTACHE_KEY_CHAIRMAN_DEPLOYMENT_ID = "DEPLOYMENT_ID";
+  private static final String MUSTACHE_KEY_COMMON_CONTAINER_MEMORY_MB = "memoryMb";
+  private static final String MUSTACHE_KEY_COMMON_CONTAINER_CPU_COUNT = "cpuCount";
+  private static final String MUSTACHE_KEY_COMMON_CONTAINER_DISK_GB = "diskGb";
+  private static final String MUSTACHE_KEY_COMMON_ENABLE_AUTH = "ENABLE_AUTH";
+  private static final String MUSTACHE_KEY_COMMON_ENABLE_SYSLOG = "ENABLE_SYSLOG";
+  private static final String MUSTACHE_KEY_COMMON_LOAD_BALANCER_IP = "APIFE_IP";
+  private static final String MUSTACHE_KEY_COMMON_LOAD_BALANCER_PORT = "APIFE_PORT";
+  private static final String MUSTACHE_KEY_COMMON_REGISTRATION_ADDRESS = "REGISTRATION_ADDRESS";
+  private static final String MUSTACHE_KEY_COMMON_SHARED_SECRET = "SHARED_SECRET";
+  private static final String MUSTACHE_KEY_COMMON_SYSLOG_ENDPOINT = "SYSLOG_ENDPOINT";
+  private static final String MUSTACHE_KEY_COMMON_ZOOKEEPER_QUORUM = "ZOOKEEPER_QUORUM";
+  private static final String MUSTACHE_KEY_HAPROXY_MGMT_API_PORT_SELECTOR = "MGMT_API_PORT_SELECTOR";
+  private static final String MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS = "MGMT_API_HTTP_SERVERS";
+  private static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_PORT = "MANAGEMENT_UI_HTTP_PORT";
+  private static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_SERVERS = "MGMT_UI_HTTP_SERVERS";
+  private static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_PORT = "MANAGEMENT_UI_HTTPS_PORT";
+  private static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_SERVERS = "MGMT_UI_HTTPS_SERVERS";
+  private static final String MUSTACHE_KEY_LIGHTWAVE_ADDRESS = "LIGHTWAVE_ADDRESS";
+  private static final String MUSTACHE_KEY_LIGHTWAVE_DOMAIN = "LIGHTWAVE_DOMAIN";
+  private static final String MUSTACHE_KEY_LIGHTWAVE_PASSWORD = "LIGHTWAVE_PASSWORD";
+  private static final String MUSTACHE_KEY_MGMT_API_AUTH_SERVER_ADDRESS = "AUTH_SERVER_ADDRESS";
+  private static final String MUSTACHE_KEY_MGMT_API_AUTH_SERVER_TENANT = "AUTH_SERVER_TENANT";
+  private static final String MUSTACHE_KEY_MGMT_API_AUTH_SERVER_PORT = "AUTH_SERVER_PORT";
+  private static final String MUSTACHE_KEY_MGMT_API_DATASTORE = "DATASTORE";
+  private static final String MUSTACHE_KEY_MGMT_API_ESX_HOST = "ESX_HOST";
+  private static final String MUSTACHE_KEY_MGMT_API_SWAGGER_LOGIN_URL = "SWAGGER_LOGIN_URL";
+  private static final String MUSTACHE_KEY_MGMT_API_SWAGGER_LOGOUT_URL = "SWAGGER_LOGOUT_URL";
+  private static final String MUSTACHE_KEY_MGMT_UI_LOGIN_URL = "MGMT_UI_LOGIN_URL";
+  private static final String MUSTACHE_KEY_MGMT_UI_LOGOUT_URL = "MGMT_UI_LOGOUT_URL";
+  private static final String MUSTACHE_KEY_ZOOKEEPER_INSTANCES = "ZOOKEEPER_INSTANCES";
+  private static final String MUSTACHE_KEY_ZOOKEEPER_MY_ID = "ZOOKEEPER_MYID";
 
-  public static final String ENV_LOADBALANCER_SERVERS = "LOAD_BALANCER_SERVERS";
-  public static final String ENV_LOADBALANCER_IP = "APIFE_IP";
-  public static final String ENV_LOADBALANCER_API_PORT = "APIFE_PORT";
-  public static final String ENV_LOADBALANCER_MGMT_UI_HTTP_PORT = "MANAGEMENT_UI_HTTP_PORT";
-  public static final String ENV_LOADBALANCER_MGMT_UI_HTTPS_PORT = "MANAGEMENT_UI_HTTPS_PORT";
-  public static final String ENV_LOADBALANCER_API_PORT_SELECTOR = "LOADBALANCER_API_PORT_SELECTOR";
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
 
-  public static final String ENV_ZOOKEEPER_QUORUM_URL = "ZOOKEEPER_QUORUM";
-  public static final String ENV_ESX_HOST = "ESX_HOST";
-  public static final String ENV_DATASTORE = "DATASTORE";
-  public static final String ENV_ENABLE_SYSLOG = "ENABLE_SYSLOG";
-  public static final String ENV_SYSLOG_ENDPOINT = "SYSLOG_ENDPOINT";
-  public static final String ENV_NTP_ENDPOINT = "NTP_SERVER";
-  public static final String ENV_DEPLOYMENT_ID = "DEPLOYMENT_ID";
+    /**
+     * This type defines the possible sub-stages for a {@link BuildRuntimeConfigurationTaskService}
+     * task.
+     */
+    public enum SubStage {
+      BUILD_COMMON_STATE,
+      BUILD_TYPE_SPECIFIC_STATE,
+      PATCH_ENTITY_DOCUMENTS,
+    }
 
-  public static final String ENV_ENABLE_AUTH = "ENABLE_AUTH";
-  public static final String ENV_SWAGGER_LOGIN_URL = "SWAGGER_LOGIN_URL";
-  public static final String ENV_SWAGGER_LOGOUT_URL = "SWAGGER_LOGOUT_URL";
-  public static final String ENV_MGMT_UI_LOGIN_URL = "MGMT_UI_LOGIN_URL";
-  public static final String ENV_MGMT_UI_LOGOUT_URL = "MGMT_UI_LOGOUT_URL";
-  public static final String ENV_SHARED_SECRET = "SHARED_SECRET";
-  public static final String ENV_AUTH_SERVER_ADDRESS = "AUTH_SERVER_ADDRESS";
-  public static final String ENV_AUTH_SERVER_TENANT = "AUTH_SERVER_TENANT";
-  public static final String ENV_AUTH_SERVER_PORT = "AUTH_SERVER_PORT";
-
-  public static final String ENV_LIGHTWAVE_DOMAIN = "LIGHTWAVE_DOMAIN";
-  public static final String ENV_LIGHTWAVE_ADMIN_USERNAME = "LIGHTWAVE_ADMIN_USERNAME";
-  public static final String ENV_LIGHTWAVE_PASSWORD = "LIGHTWAVE_PASSWORD";
-  public static final String ENV_LIGHTWAVE_ADDRESS = "LIGHTWAVE_ADDRESS";
-
-  public static final String ENV_MGMT_UI_HTTP_SERVERS = "MGMT_UI_HTTP_SERVERS";
-  public static final String ENV_MGMT_UI_HTTPS_SERVERS = "MGMT_UI_HTTPS_SERVERS";
+    /**
+     * This value represents the sub-stage of the current task.
+     */
+    public SubStage subStage;
+  }
 
   /**
-   * This class defines the document state associated with a single
-   * {@link BuildRuntimeConfigurationTaskService} instance.
+   * This class defines the document state associated with a {@link BuildRuntimeConfigurationTaskService}
+   * task.
    */
   public static class State extends ServiceDocument {
+
     /**
      * This value represents the state of the current task.
      */
@@ -121,833 +122,739 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     public TaskState taskState;
 
     /**
-     * This value represents the URL of the DeploymentService object.
+     * This value represents the control flags for the current task.
+     */
+    @DefaultInteger(value = 0)
+    @Immutable
+    public Integer controlFlags;
+
+    /**
+     * This value represents the optional document self-link of the parent task service to be
+     * notified on completion.
+     */
+    @Immutable
+    public String parentTaskServiceLink;
+
+    /**
+     * This value represents the optional patch body to be sent to the parent task service on
+     * successful completion.
+     */
+    @Immutable
+    public String parentPatchBody;
+
+    /**
+     * This value represents the document self-link of the {@link DeploymentService} representing
+     * the deployment in whose context the operation is being performed.
      */
     @NotNull
     @Immutable
     public String deploymentServiceLink;
 
     /**
-     * This value represents the URL of the ContainerService object.
+     * This value represents the document self-link of the {@link ContainerService} representing
+     * the container whose runtime state should be
      */
     @NotNull
     @Immutable
     public String containerServiceLink;
 
     /**
-     * Control flags.
+     * This value represents the type of the specified container.
      */
-    @Immutable
-    @DefaultInteger(value = 0)
-    public Integer controlFlags;
+    @WriteOnce
+    public ContainersConfig.ContainerType containerType;
 
-    @Immutable
-    @DefaultBoolean(value = true)
-    public Boolean isNewDeployment;
+    /**
+     * This value represents the static IP address of the VM on which the container was or will be
+     * created.
+     */
+    @WriteOnce
+    public String vmIpAddress;
+
+    /**
+     * This value represents the document self-link of the {@link HostService} document
+     * representing the host on which the container host VM was or will be created.
+     */
+    @WriteOnce
+    public String hostServiceLink;
+
+    /**
+     * This value specifies whether authentication is enabled for the parent deployment.
+     */
+    @WriteOnce
+    public Boolean oAuthEnabled;
+
+    /**
+     * This value represents the runtime configuration state allocated for the new container by the
+     * current task.
+     */
+    public Map<String, String> dynamicParameters;
   }
 
   public BuildRuntimeConfigurationTaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
   }
 
-  /**
-   * This method is called when a start operation is performed on the current
-   * service instance.
-   *
-   * @param start Supplies a patch operation to be handled.
-   */
   @Override
-  public void handleStart(Operation start) {
-    ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
-    State startState = start.getBody(State.class);
-    InitializationUtils.initialize(startState);
-    validateState(startState);
-
-    if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
-      startState.taskState.stage = TaskState.TaskStage.STARTED;
+  public void handleStart(Operation startOp) {
+    ServiceUtils.logTrace(this, "Handling start operation");
+    if (!startOp.hasBody()) {
+      startOp.fail(new IllegalArgumentException("Body is required"));
+      return;
     }
+
+    State startState = startOp.getBody(State.class);
+    InitializationUtils.initialize(startState);
 
     if (startState.documentExpirationTimeMicros <= 0) {
       startState.documentExpirationTimeMicros =
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME);
     }
 
-    start.setBody(startState).complete();
+    try {
+      validateState(startState);
+    } catch (IllegalStateException e) {
+      ServiceUtils.failOperationAsBadRequest(this, startOp, e);
+      return;
+    }
+
+    startOp.setBody(startState).complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-      } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage, null));
+      } else if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
+        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.BUILD_COMMON_STATE);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method is called when a patch operation is performed on the current
-   * service instance.
-   *
-   * @param patch Supplies a patch operation to be handled.
-   */
   @Override
-  public void handlePatch(Operation patch) {
-    ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
-    State startState = getState(patch);
-    State patchState = patch.getBody(State.class);
-    validatePatchState(startState, patchState);
-    State currentState = applyPatch(startState, patchState);
-    validateState(currentState);
-    patch.complete();
+  public void handlePatch(Operation patchOp) {
+    ServiceUtils.logTrace(this, "Handling patch operation");
+    if (!patchOp.hasBody()) {
+      patchOp.fail(new IllegalArgumentException("Body is required"));
+      return;
+    }
+
+    State currentState = getState(patchOp);
+    State patchState = patchOp.getBody(State.class);
+
+    try {
+      validatePatch(currentState, patchState);
+      PatchUtils.patchState(currentState, patchState);
+      validateState(currentState);
+    } catch (IllegalStateException e) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOp, e);
+      return;
+    }
+
+    patchOp.complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
-        ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
-      } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        getDocuments(currentState);
+        ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
+      } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
+        processStartedStage(currentState);
+      } else {
+        notifyParentTask(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method validates a state object for internal consistency.
-   *
-   * @param currentState Supplies the current state of the service instance.
-   */
-  protected void validateState(State currentState) {
+  private void validateState(State currentState) {
     ValidationUtils.validateState(currentState);
-    ValidationUtils.validateTaskStage(currentState.taskState);
+    validateTaskState(currentState.taskState);
   }
 
-  /**
-   * This method validates a patch object against a valid document state
-   * object.
-   *
-   * @param startState Supplies the state of the current service instance.
-   * @param patchState Supplies the state object specified in the patch
-   *                   operation.
-   */
-  protected void validatePatchState(State startState, State patchState) {
-    ValidationUtils.validatePatch(startState, patchState);
-    ValidationUtils.validateTaskStage(patchState.taskState);
-    ValidationUtils.validateTaskStageProgression(startState.taskState, patchState.taskState);
+  private void validatePatch(State currentState, State patchState) {
+    ValidationUtils.validatePatch(currentState, patchState);
+    validateTaskState(patchState.taskState);
+    validateTaskStageProgression(currentState.taskState, patchState.taskState);
   }
 
-  /**
-   * This method applies a patch to a state object.
-   *
-   * @param startState Supplies the initial state of the current service
-   *                   instance.
-   * @param patchState Supplies the patch state associated with a patch
-   *                   operation.
-   * @return The updated state of the current service instance.
-   */
-  private State applyPatch(State startState, State patchState) {
-    if (patchState.taskState != null) {
-      if (patchState.taskState.stage != startState.taskState.stage) {
-        ServiceUtils.logInfo(this, "Moving to stage %s", patchState.taskState.stage);
-      }
+  private void validateTaskState(TaskState taskState) {
+    ValidationUtils.validateTaskStage(taskState);
+    switch (taskState.stage) {
+      case CREATED:
+      case FINISHED:
+      case FAILED:
+      case CANCELLED:
+        checkState(taskState.subStage == null);
+        break;
+      case STARTED:
+        checkState(taskState.subStage != null);
+        switch (taskState.subStage) {
+          case BUILD_COMMON_STATE:
+          case BUILD_TYPE_SPECIFIC_STATE:
+          case PATCH_ENTITY_DOCUMENTS:
+            break;
+          default:
+            throw new IllegalStateException("Unknown task sub-stage " + taskState.subStage);
+        }
+    }
+  }
 
-      startState.taskState = patchState.taskState;
+  private void validateTaskStageProgression(TaskState currentState, TaskState patchState) {
+    ValidationUtils.validateTaskStageProgression(currentState, patchState);
+    if (currentState.subStage != null && patchState.subStage != null) {
+      checkState(patchState.subStage.ordinal() >= currentState.subStage.ordinal());
+    }
+  }
+
+  private void processStartedStage(State currentState) {
+    switch (currentState.taskState.subStage) {
+      case BUILD_COMMON_STATE:
+        processBuildCommonStateSubStage(currentState);
+        break;
+      case BUILD_TYPE_SPECIFIC_STATE:
+        processBuildTypeSpecificStateSubStage(currentState);
+        break;
+      case PATCH_ENTITY_DOCUMENTS:
+        processPatchEntityDocumentsSubStage(currentState);
+        break;
+    }
+  }
+
+  private void notifyParentTask(State currentState) {
+
+    if (currentState.parentTaskServiceLink == null) {
+      ServiceUtils.logInfo(this, "Skipping parent task notification");
+      return;
     }
 
-    return startState;
+    Operation patchOp = Operation.createPatch(this, currentState.parentTaskServiceLink);
+    switch (currentState.taskState.stage) {
+      case FINISHED:
+        if (currentState.parentPatchBody != null) {
+          patchOp.setBody(currentState.parentPatchBody);
+          break;
+        }
+        // Fall through
+      case FAILED:
+      case CANCELLED:
+        TaskServiceState patchState = new TaskServiceState();
+        patchState.taskState = currentState.taskState;
+        patchOp.setBody(patchState);
+        break;
+      default:
+        throw new IllegalStateException("Unexpected state: " + currentState.taskState.stage);
+    }
+
+    sendRequest(patchOp);
   }
 
-  /**
-   * This method retrieves the container service pointed to by the service link.
-   *
-   * @param currentState
-   */
-  private void getDocuments(State currentState) {
+  //
+  // BUILD_COMMON_STATE sub-stage routines
+  //
 
-    Operation containerGet = Operation.createGet(this, currentState.containerServiceLink);
-    Operation deploymentGet = HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymentServiceLink);
+  private void processBuildCommonStateSubStage(State currentState) {
+
+    Operation containerGetOp = Operation.createGet(this, currentState.containerServiceLink);
+    Operation deploymentGetOp = HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymentServiceLink);
 
     OperationJoin
-        .create(containerGet, deploymentGet)
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
+        .create(containerGetOp, deploymentGetOp)
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
 
-          try {
-            getDocuments(currentState,
-                ops.get(containerGet.getId()).getBody(ContainerService.State.class),
-                ops.get(deploymentGet.getId()).getBody(DeploymentService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
+              try {
+                processBuildCommonStateSubStage(ops.get(containerGetOp.getId()).getBody(ContainerService.State.class),
+                    ops.get(deploymentGetOp.getId()).getBody(DeploymentService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
         .sendWith(this);
   }
 
-  private void getDocuments(State currentState,
-                            ContainerService.State containerState,
-                            DeploymentService.State deploymentState) {
+  private void processBuildCommonStateSubStage(ContainerService.State containerState,
+                                               DeploymentService.State deploymentState) {
 
-    Operation templateGet = Operation.createGet(this, containerState.containerTemplateServiceLink);
-    Operation vmGet = Operation.createGet(this, containerState.vmServiceLink);
+    Operation templateGetOp = Operation.createGet(this, containerState.containerTemplateServiceLink);
+    Operation vmGetOp = Operation.createGet(this, containerState.vmServiceLink);
 
     OperationJoin
-        .create(templateGet, vmGet)
-        .setCompletion((ops, exs) -> {
-          if (exs != null && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
+        .create(templateGetOp, vmGetOp)
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
 
-          try {
-            setCommonState(currentState, containerState, deploymentState,
-                ops.get(templateGet.getId()).getBody(ContainerTemplateService.State.class),
-                ops.get(vmGet.getId()).getBody(VmService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
+              try {
+                processBuildCommonStateSubStage(containerState, deploymentState,
+                    ops.get(templateGetOp.getId()).getBody(ContainerTemplateService.State.class),
+                    ops.get(vmGetOp.getId()).getBody(VmService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
         .sendWith(this);
   }
 
-  private void setCommonState(State currentState,
-                              ContainerService.State containerState,
-                              DeploymentService.State deploymentState,
-                              ContainerTemplateService.State templateState,
-                              VmService.State vmState) {
+  private void processBuildCommonStateSubStage(ContainerService.State containerState,
+                                               DeploymentService.State deploymentState,
+                                               ContainerTemplateService.State templateState,
+                                               VmService.State vmState) {
 
-    // Set syslog endpoint and ntp server
-    if (containerState.dynamicParameters == null) {
-      containerState.dynamicParameters = new HashMap<>();
+    Map<String, String> dynamicParameters = containerState.dynamicParameters;
+    if (dynamicParameters == null) {
+      dynamicParameters = new HashMap<>();
     }
 
-    containerState.dynamicParameters.put(ENV_NTP_ENDPOINT, deploymentState.ntpEndpoint);
-
-    if (null != deploymentState.syslogEndpoint) {
-      containerState.dynamicParameters.put(ENV_ENABLE_SYSLOG, "true");
-      containerState.dynamicParameters.put(ENV_SYSLOG_ENDPOINT, deploymentState.syslogEndpoint);
-    } else {
-      containerState.dynamicParameters.put(ENV_ENABLE_SYSLOG, "false");
-      containerState.dynamicParameters.put(ENV_SYSLOG_ENDPOINT, "");
-    }
-
-    // Set load balancer port
-    int loadBalancerPort = deploymentState.oAuthEnabled ? ServicePortConstants.LOADBALANCER_API_HTTPS_PORT :
-        ServicePortConstants.LOADBALANCER_API_HTTP_PORT;
-    containerState.dynamicParameters.put(ENV_LOADBALANCER_API_PORT, String.valueOf(loadBalancerPort));
-
-    String vmIpAddress = vmState.ipAddress;
-    ContainersConfig.ContainerType containerType = ContainersConfig.ContainerType.valueOf(templateState.name);
-
-    String sharedSecret = HostUtils.getDeployerContext(this).getSharedSecret();
-    ContainersConfig containersConfig = HostUtils.getContainersConfig(this);
-    Map<String, String> dynamicParameters = containersConfig.getContainerSpecs().get(containerType.name())
-        .getDynamicParameters();
-    dynamicParameters.put("memoryMb",
-        String.valueOf(containersConfig.getContainerSpecs().get(containerType.name()).getMemoryMb()));
-    dynamicParameters.put("cpuCount",
-        String.valueOf(containersConfig.getContainerSpecs().get(containerType.name()).getCpuCount()));
-    dynamicParameters.put("diskGb",
-        String.valueOf(containersConfig.getContainerSpecs().get(containerType.name()).getDiskGb()));
-    dynamicParameters.put("VM_IP", vmIpAddress);
-    containerState.dynamicParameters.putAll(dynamicParameters);
-
-    containerState.dynamicParameters.put(ENV_SHARED_SECRET, sharedSecret);
-    containerState.dynamicParameters.put(ENV_DATASTORE, deploymentState.imageDataStoreNames.iterator().next());
-    containerState.dynamicParameters.put(ENV_ENABLE_AUTH, deploymentState.oAuthEnabled.toString());
+    ContainersConfig.Spec spec = HostUtils.getContainersConfig(this).getContainerSpecs().get(templateState.name);
+    dynamicParameters.putAll(spec.getDynamicParameters());
+    dynamicParameters.put(MUSTACHE_KEY_COMMON_ENABLE_AUTH, String.valueOf(deploymentState.oAuthEnabled));
+    dynamicParameters.put(MUSTACHE_KEY_COMMON_CONTAINER_MEMORY_MB, String.valueOf(spec.getMemoryMb()));
+    dynamicParameters.put(MUSTACHE_KEY_COMMON_CONTAINER_CPU_COUNT, String.valueOf(spec.getCpuCount()));
+    dynamicParameters.put(MUSTACHE_KEY_COMMON_CONTAINER_DISK_GB, String.valueOf(spec.getDiskGb()));
+    dynamicParameters.put(MUSTACHE_KEY_COMMON_SHARED_SECRET, HostUtils.getDeployerContext(this).getSharedSecret());
+    dynamicParameters.put(MUSTACHE_KEY_COMMON_REGISTRATION_ADDRESS, vmState.ipAddress);
 
     if (deploymentState.oAuthEnabled) {
-      containerState.dynamicParameters.put(ENV_SWAGGER_LOGIN_URL, deploymentState.oAuthSwaggerLoginEndpoint);
-      containerState.dynamicParameters.put(ENV_SWAGGER_LOGOUT_URL, deploymentState.oAuthSwaggerLogoutEndpoint);
-      containerState.dynamicParameters.put(ENV_MGMT_UI_LOGIN_URL, deploymentState.oAuthMgmtUiLoginEndpoint);
-      containerState.dynamicParameters.put(ENV_MGMT_UI_LOGOUT_URL, deploymentState.oAuthMgmtUiLogoutEndpoint);
-      containerState.dynamicParameters.put(ENV_AUTH_SERVER_TENANT, deploymentState.oAuthTenantName);
-      containerState.dynamicParameters.put(ENV_AUTH_SERVER_PORT,
-          String.valueOf(ServicePortConstants.LIGHTWAVE_PORT));
+      dynamicParameters.put(MUSTACHE_KEY_COMMON_LOAD_BALANCER_PORT,
+          String.valueOf(ServicePortConstants.LOADBALANCER_API_HTTPS_PORT));
+    } else {
+      dynamicParameters.put(MUSTACHE_KEY_COMMON_LOAD_BALANCER_PORT,
+          String.valueOf(ServicePortConstants.LOADBALANCER_API_HTTP_PORT));
     }
-    containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADDRESS, vmIpAddress);
-    containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
-    containerState.dynamicParameters.put(ENV_LIGHTWAVE_ADMIN_USERNAME, deploymentState.oAuthUserName);
-    containerState.dynamicParameters.put(ENV_LIGHTWAVE_PASSWORD, deploymentState.oAuthPassword);
-    containerState.dynamicParameters.put(ENV_LIGHTWAVE_DOMAIN, deploymentState.oAuthTenantName);
-    containerState.dynamicParameters.put(ENV_DEPLOYMENT_ID,
-        ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink));
 
-    switch (containerType) {
+    if (deploymentState.syslogEndpoint != null) {
+      dynamicParameters.put(MUSTACHE_KEY_COMMON_ENABLE_SYSLOG, "true");
+      dynamicParameters.put(MUSTACHE_KEY_COMMON_SYSLOG_ENDPOINT, deploymentState.syslogEndpoint);
+    } else {
+      dynamicParameters.put(MUSTACHE_KEY_COMMON_ENABLE_SYSLOG, "false");
+      dynamicParameters.put(MUSTACHE_KEY_COMMON_SYSLOG_ENDPOINT, "");
+    }
+
+    switch (ContainersConfig.ContainerType.valueOf(templateState.name)) {
       case Chairman:
-      case RootScheduler:
-      case Housekeeper:
-      case CloudStore:
-      case Zookeeper:
-        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-            deploymentState, Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
+        dynamicParameters.put(MUSTACHE_KEY_CHAIRMAN_DEPLOYMENT_ID,
+            ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink));
         break;
-
-      case ManagementApi:
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(vmState.hostServiceLink)
-            .setCompletion((op, ex) -> {
-              if (null != ex) {
-                failTask(ex);
-                return;
-              }
-
-              try {
-                containerState.dynamicParameters.put(ENV_ESX_HOST, op.getBody(HostService.State.class).hostAddress);
-                scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-                    deploymentState,
-                    (deploymentState.oAuthEnabled && currentState.isNewDeployment) ?
-                        Arrays.asList(ContainersConfig.ContainerType.Zookeeper,
-                            ContainersConfig.ContainerType.Lightwave) :
-                        Collections.singletonList(ContainersConfig.ContainerType.Zookeeper));
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-            .sendWith(this);
-
-        break;
-
-      case ManagementUi:
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(vmState.hostServiceLink)
-            .setCompletion((op, ex) -> {
-              if (null != ex) {
-                failTask(ex);
-                return;
-              }
-
-              try {
-                scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-                    deploymentState, Collections.singletonList(ContainersConfig.ContainerType.LoadBalancer));
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-            .sendWith(this);
-
-        break;
-
-      case Deployer:
-        List<ContainersConfig.ContainerType> containerTypes = currentState.isNewDeployment ?
-            Arrays.asList(ContainersConfig.ContainerType.Zookeeper, ContainersConfig.ContainerType.LoadBalancer) :
-            Collections.singletonList(ContainersConfig.ContainerType.Zookeeper);
-        scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-            deploymentState, containerTypes);
-        break;
-
-      case LoadBalancer:
-
-        DeploymentService.State patchState = new DeploymentService.State();
-        patchState.loadBalancerAddress = vmIpAddress;
-
-        HostUtils.getCloudStoreHelper(this)
-            .createPatch(deploymentState.documentSelfLink)
-            .setBody(patchState)
-            .setCompletion((op, ex) -> {
-              if (null != ex) {
-                failTask(ex);
-                return;
-              }
-
-              try {
-                scheduleQueriesForGeneratingRuntimeState(currentState, vmIpAddress, templateState, containerState,
-                  deploymentState, Collections.singletonList(ContainersConfig.ContainerType.ManagementApi));
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-            .sendWith(this);
-        break;
-
       case Lightwave:
-
-        patchState = new DeploymentService.State();
-        patchState.oAuthServerAddress = vmIpAddress;
-        patchState.oAuthServerPort = ServicePortConstants.LIGHTWAVE_PORT;
-        HostUtils.getCloudStoreHelper(this)
-            .createPatch(deploymentState.documentSelfLink)
-            .setBody(patchState)
-            .setCompletion((op, ex) -> {
-              if (null != ex) {
-                failTask(ex);
-                return;
-              }
-
-              try {
-                patchContainerWithDynamicParameters(currentState, containerState);
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-            .sendWith(this);
-
+        dynamicParameters.put(MUSTACHE_KEY_LIGHTWAVE_ADDRESS, vmState.ipAddress);
+        dynamicParameters.put(MUSTACHE_KEY_LIGHTWAVE_DOMAIN, deploymentState.oAuthTenantName);
+        dynamicParameters.put(MUSTACHE_KEY_LIGHTWAVE_PASSWORD, deploymentState.oAuthPassword);
         break;
-
-      default:
-        ServiceUtils.logInfo(this, "No runtime environment needs to be generated for: ", containerType);
-        patchContainerWithDynamicParameters(currentState, containerState);
-        break;
-    }
-  }
-
-  /**
-   * Generates a bunch of queries to get the other container type related information
-   * which is needed for the current container.
-   *
-   * @param currentState
-   * @param vmIpAddress
-   * @param containerTemplateState
-   * @param containerState
-   * @param containerTypeList
-   */
-  private void scheduleQueriesForGeneratingRuntimeState(
-      final State currentState,
-      final String vmIpAddress,
-      final ContainerTemplateService.State containerTemplateState,
-      final ContainerService.State containerState,
-      final DeploymentService.State deploymentState,
-      List<ContainersConfig.ContainerType> containerTypeList) {
-    final AtomicInteger pendingRequests = new AtomicInteger(containerTypeList.size());
-    final Map<ContainersConfig.ContainerType, List<String>> response = new ConcurrentHashMap<>();
-
-    FutureCallback<Triple<ContainersConfig.ContainerType, List<String>, DeploymentService.State>> futureCallback =
-        new FutureCallback<Triple<ContainersConfig.ContainerType, List<String>, DeploymentService.State>>() {
-      @Override
-      public void onSuccess(@Nullable Triple<ContainersConfig.ContainerType, List<String>, DeploymentService.State>
-                                result) {
-        response.put(result.getLeft(), result.getMiddle());
-
-        if (0 == pendingRequests.decrementAndGet()) {
-          for (Map.Entry<ContainersConfig.ContainerType, List<String>> entry : response.entrySet()) {
-            buildRuntimeEnvironmentVars(vmIpAddress, containerState, result.getRight(), containerTemplateState,
-                entry.getValue(), entry.getKey());
-          }
-          patchContainerWithDynamicParameters(currentState, containerState);
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-
-    FutureCallback<Pair<ContainersConfig.ContainerType, List<String>>> setZookeeperMapCallback =
-        new FutureCallback<Pair<ContainersConfig.ContainerType, List<String>>>() {
-          @Override
-          public void onSuccess(@Nullable Pair<ContainersConfig.ContainerType, List<String>> result) {
-            // We have the IPs, now create the zookeeper map
-            addZookeeperToDeploymentServiceMap(deploymentState, result, futureCallback);
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
-
-    for (ContainersConfig.ContainerType containerType : containerTypeList) {
-      scheduleQueryContainerTemplateService(containerType, setZookeeperMapCallback);
-    }
-  }
-
-  private void scheduleQueryContainerTemplateService(
-      final ContainersConfig.ContainerType containerType,
-      final FutureCallback<Pair<ContainersConfig.ContainerType, List<String>>> callback) {
-
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ContainerTemplateService.State.class));
-
-    QueryTask.Query nameClause = new QueryTask.Query()
-        .setTermPropertyName(ContainerTemplateService.State.FIELD_NAME_NAME)
-        .setTermMatchValue(containerType.name());
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(nameClause);
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(BuildRuntimeConfigurationTaskService.this, documentLinks);
-              checkState(1 == documentLinks.size());
-              queryContainersForTemplate(documentLinks.iterator().next(), containerType, callback);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        });
-
-    sendRequest(queryPostOperation);
-  }
-
-  public void queryContainersForTemplate(
-      String containerTemplateServiceLink,
-      final ContainersConfig.ContainerType containerType,
-      final FutureCallback<Pair<ContainersConfig.ContainerType, List<String>>> callback) {
-
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ContainerService.State.class));
-
-    QueryTask.Query containerTemplateServiceLinkClause = new QueryTask.Query()
-        .setTermPropertyName(ContainerService.State.FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK)
-        .setTermMatchValue(containerTemplateServiceLink);
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(containerTemplateServiceLinkClause);
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(BuildRuntimeConfigurationTaskService.this, documentLinks);
-              getContainerEntities(documentLinks, containerType, callback);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        });
-
-    sendRequest(queryPostOperation);
-  }
-
-  private void getContainerEntities(
-      Collection<String> documentLinks,
-      final ContainersConfig.ContainerType containerType,
-      final FutureCallback<Pair<ContainersConfig.ContainerType, List<String>>> callback) {
-
-    if (documentLinks.isEmpty()) {
-      throw new XenonRuntimeException("Document links set is empty");
-    }
-
-    OperationJoin
-        .create(documentLinks.stream()
-            .map(documentLink -> Operation.createGet(this, documentLink)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
-
-          try {
-            List<String> vmServiceLinks = ops.values().stream()
-                .map(operation -> operation.getBody(ContainerService.State.class).vmServiceLink)
-                .collect(Collectors.toList());
-            loadIpsForVms(vmServiceLinks, containerType, callback);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void loadIpsForVms(
-      List<String> vmServiceLinks,
-      final ContainersConfig.ContainerType containerType,
-      final FutureCallback<Pair<ContainersConfig.ContainerType, List<String>>> futureCallback) {
-
-    if (vmServiceLinks.isEmpty()) {
-      throw new XenonRuntimeException("VM service links set is empty");
-    }
-
-    OperationJoin
-        .create(vmServiceLinks.stream()
-            .map(vmServiceLink -> Operation.createGet(this, vmServiceLink)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
-
-          try {
-            List<String> vmIps = ops.values().stream()
-                .map(getOperation -> getOperation.getBody(VmService.State.class).ipAddress)
-                .collect(Collectors.toList());
-            futureCallback.onSuccess(new Pair<>(containerType, vmIps));
-          } catch (Throwable t) {
-            futureCallback.onFailure(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void buildRuntimeEnvironmentVars(
-      final String vmIpAddress,
-      final ContainerService.State containerState,
-      final DeploymentService.State deploymentState,
-      final ContainerTemplateService.State containerTemplateState,
-      List<String> ipList,
-      ContainersConfig.ContainerType containerTypeForIpList) {
-
-    ContainersConfig.ContainerType containerType = ContainersConfig.ContainerType.valueOf(containerTemplateState.name);
-    String zookeeperUrl = generateReplicaList(ipList, String.valueOf(ServicePortConstants.ZOOKEEPER_PORT));
-
-    switch (containerType) {
       case ManagementApi:
-        if (containerTypeForIpList == ContainersConfig.ContainerType.Zookeeper) {
-          containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
-        } else if (containerTypeForIpList == ContainersConfig.ContainerType.Lightwave) {
-          if (0 != ipList.size()) {
-            containerState.dynamicParameters.put(ENV_AUTH_SERVER_ADDRESS, ipList.get(0));
-          }
-        }
-        break;
-
-      case ManagementUi:
-        containerState.dynamicParameters.put(ENV_LOADBALANCER_IP, ipList.get(0));
-        break;
-
-      case Chairman:
-        containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
-        break;
-
-      case RootScheduler:
-        containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
-        break;
-
-      case Deployer:
-        if (containerTypeForIpList == ContainersConfig.ContainerType.LoadBalancer) {
-          containerState.dynamicParameters.put(ENV_LOADBALANCER_IP, ipList.get(0));
-        } else if (containerTypeForIpList == ContainersConfig.ContainerType.Zookeeper) {
-          containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
-        }
-        break;
-
-      case Housekeeper:
-        containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
-        break;
-
-      case CloudStore:
-        containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
-        break;
-
-      case LoadBalancer:
-        Map<String, String> serverPortMap = new HashMap<>();
-        serverPortMap.put(ENV_LOADBALANCER_SERVERS, String.valueOf(ServicePortConstants.MANAGEMENT_API_PORT));
-        serverPortMap.put(ENV_MGMT_UI_HTTP_SERVERS, String.valueOf(ServicePortConstants.MANAGEMENT_UI_HTTP_PORT));
-        serverPortMap.put(ENV_MGMT_UI_HTTPS_SERVERS, String.valueOf(ServicePortConstants.MANAGEMENT_UI_HTTPS_PORT));
-
-        for (Map.Entry<String, String> entry : serverPortMap.entrySet()) {
-          List<LoadBalancerServer> serverList = generateServerList(ipList, entry.getValue());
-          containerState.dynamicParameters.put(entry.getKey(), new Gson().toJson(serverList));
-        }
-
-        containerState.dynamicParameters.put(ENV_LOADBALANCER_MGMT_UI_HTTP_PORT,
-            String.valueOf(ServicePortConstants.LOADBALANCER_MGMT_UI_HTTP_PORT));
-        containerState.dynamicParameters.put(ENV_LOADBALANCER_MGMT_UI_HTTPS_PORT,
-            String.valueOf(ServicePortConstants.LOADBALANCER_MGMT_UI_HTTPS_PORT));
-
+        dynamicParameters.put(MUSTACHE_KEY_MGMT_API_DATASTORE, deploymentState.imageDataStoreNames.iterator().next());
         if (deploymentState.oAuthEnabled) {
-          containerState.dynamicParameters.put(ENV_LOADBALANCER_API_PORT_SELECTOR, "true");
+          dynamicParameters.put(MUSTACHE_KEY_MGMT_API_AUTH_SERVER_PORT,
+              String.valueOf(ServicePortConstants.LIGHTWAVE_PORT));
+          dynamicParameters.put(MUSTACHE_KEY_MGMT_API_AUTH_SERVER_TENANT, deploymentState.oAuthTenantName);
+          dynamicParameters.put(MUSTACHE_KEY_MGMT_API_SWAGGER_LOGIN_URL, deploymentState.oAuthSwaggerLoginEndpoint);
+          dynamicParameters.put(MUSTACHE_KEY_MGMT_API_SWAGGER_LOGOUT_URL, deploymentState.oAuthSwaggerLogoutEndpoint);
+        }
+        break;
+      case ManagementUi:
+        if (deploymentState.oAuthEnabled) {
+          dynamicParameters.put(MUSTACHE_KEY_MGMT_UI_LOGIN_URL, deploymentState.oAuthMgmtUiLoginEndpoint);
+          dynamicParameters.put(MUSTACHE_KEY_MGMT_UI_LOGOUT_URL, deploymentState.oAuthMgmtUiLogoutEndpoint);
+        }
+        break;
+    }
+
+    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.BUILD_TYPE_SPECIFIC_STATE);
+    patchState.dynamicParameters = dynamicParameters;
+    patchState.containerType = ContainersConfig.ContainerType.valueOf(templateState.name);
+    patchState.vmIpAddress = vmState.ipAddress;
+    patchState.hostServiceLink = vmState.hostServiceLink;
+    patchState.oAuthEnabled = deploymentState.oAuthEnabled;
+    sendStageProgressPatch(patchState);
+  }
+
+  //
+  // BUILD_TYPE_SPECIFIC_STATE sub-stage routines
+  //
+
+  private void processBuildTypeSpecificStateSubStage(State currentState) {
+
+    //
+    // Most Photon Controller services require knowledge of the Zookeeper cluster in order to
+    // discover peers and other services in the management plane.
+    //
+
+    switch (currentState.containerType) {
+      case Chairman:
+      case CloudStore:
+      case Deployer:
+      case Housekeeper:
+      case ManagementApi:
+      case RootScheduler:
+        if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_COMMON_ZOOKEEPER_QUORUM)) {
+          getIpsForContainerType(ContainersConfig.ContainerType.Zookeeper,
+              (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_COMMON_ZOOKEEPER_QUORUM,
+                  generateReplicaList(vmIpAddresses, String.valueOf(ServicePortConstants.ZOOKEEPER_PORT))));
+          return;
+        }
+    }
+
+    //
+    // Some services require service-specific configuration data.
+    //
+
+    switch (currentState.containerType) {
+
+      //
+      // The deployer and the management UI service (incorrectly) require knowledge of the load
+      // balancer IP address in order to communicate with API-FE.
+      //
+
+      case Deployer:
+      case ManagementUi:
+        if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_COMMON_LOAD_BALANCER_IP)) {
+          getIpsForContainerType(ContainersConfig.ContainerType.LoadBalancer,
+              (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_COMMON_LOAD_BALANCER_IP,
+                  vmIpAddresses.iterator().next()));
+          return;
         }
         break;
 
-      case Zookeeper:
-        // Ensure that different instances of BuildRuntimeConfigurationTaskService will independently see replicas
-        // in same order
-        Collections.sort(ipList);
-        generateZookeeperQuorumList(containerState, deploymentState, ipList, vmIpAddress);
+      //
+      // The load balancer requires knowledge of the management API IP addresses so that it can
+      // load balance traffic across them.
+      //
+
+      case LoadBalancer:
+        if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS)) {
+          getIpsForContainerType(ContainersConfig.ContainerType.ManagementApi,
+              (vmIpAddresses) -> patchLoadBalancerParameters(currentState, vmIpAddresses));
+          return;
+        }
         break;
-      case Lightwave:
-        break;
-      default:
-        throw new RuntimeException("Unkown Container Type");
-    }
-  }
 
-  private void addZookeeperToDeploymentServiceMap(DeploymentService.State deploymentState,
-                                                  Pair<ContainersConfig.ContainerType, List<String>> ipListPair,
-                                                  final FutureCallback<Triple<ContainersConfig.ContainerType,
-                                                      List<String>, DeploymentService.State>> callback) {
-    DeploymentService.HostListChangeRequest hostListChangeRequest = new DeploymentService.HostListChangeRequest();
-    hostListChangeRequest.kind = DeploymentService.HostListChangeRequest.Kind.UPDATE_ZOOKEEPER_INFO;
-    hostListChangeRequest.zookeeperIpsToAdd = ipListPair.getSecond();
+      //
+      // The management API server requires information about the host and data store to use for
+      // image upload as well as the address of the Lightwave server, if one is present.
+      //
 
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createPatch(deploymentState.documentSelfLink)
-            .setBody(hostListChangeRequest)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (failure != null) {
-                    ServiceUtils.logSevere(BuildRuntimeConfigurationTaskService.this, failure);
-                    failTask(failure);
-                    return;
-                  }
-
-                  DeploymentService.State newDeploymentState = completedOp.getBody(DeploymentService.State.class);
-                  callback.onSuccess(new ImmutableTriple<>
-                      (ipListPair.getFirst(), ipListPair.getSecond(), newDeploymentState));
-                }
-            ));
-  }
-
-  private void generateZookeeperQuorumList(ContainerService.State containerState,
-                                           DeploymentService.State deploymentState,
-                                           List<String> ipList, String vmIpAddress) {
-
-    String myId = null;
-    String zookeeperServers = null;
-    Pair<Integer, List<ZookeeperServer>> result = null;
-    // New deployment or no management host on this deployment
-    result = generateZookeeperQuorumList(ipList, vmIpAddress, deploymentState);
-    myId = result.getFirst().toString();
-    zookeeperServers = new Gson().toJson(result.getSecond());
-    containerState.dynamicParameters.put(ENV_ZOOKEEPER_MY_ID, myId);
-    containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM, zookeeperServers);
-  }
-
-  /**
-   * This method creates a docker container by submitting a future task to
-   * the executor service for the DCP host. On successful completion, the
-   * service is transitioned to the FINISHED state.
-   */
-  private void patchContainerWithDynamicParameters(final State currentState,
-                                                   final ContainerService.State containerState) {
-    final Service service = this;
-
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
+      case ManagementApi:
+        if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_MGMT_API_ESX_HOST)) {
+          patchEsxHostState(currentState);
           return;
         }
 
-        State selfPatchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-        TaskUtils.sendSelfPatch(service, selfPatchState);
-      }
-    };
+        if (currentState.oAuthEnabled &&
+            !currentState.dynamicParameters.containsKey(MUSTACHE_KEY_MGMT_API_AUTH_SERVER_ADDRESS)) {
+          getIpsForContainerType(ContainersConfig.ContainerType.Lightwave,
+              (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_MGMT_API_AUTH_SERVER_ADDRESS,
+                  vmIpAddresses.iterator().next()));
+          return;
+        }
+        break;
 
-    ContainerService.State patchState = new ContainerService.State();
-    patchState.dynamicParameters = containerState.dynamicParameters;
+      //
+      // Zookeeper requires special handling of the Zookeeper server information in order to be
+      // configured correctly.
+      //
 
-    // Update the Container service state with the dynamic parameters.
-    Operation patchOperation = Operation
-        .createPatch(UriUtils.buildUri(getHost(), currentState.containerServiceLink))
-        .setBody(patchState)
-        .setCompletion(completionHandler);
-    sendRequest(patchOperation);
+      case Zookeeper:
+        if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_ZOOKEEPER_MY_ID)) {
+          patchZookeeperParameters(currentState);
+          return;
+        }
+        break;
+    }
+
+    sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PATCH_ENTITY_DOCUMENTS);
   }
 
+  private void patchDynamicParameter(State currentState, String key, String value) {
+    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.BUILD_TYPE_SPECIFIC_STATE);
+    patchState.dynamicParameters = currentState.dynamicParameters;
+    patchState.dynamicParameters.put(key, value);
+    TaskUtils.sendSelfPatch(this, patchState);
+  }
 
   private String generateReplicaList(List<String> replicaIps, String port) {
-    StringBuilder builder = new StringBuilder();
+    return replicaIps.stream().map((ip) -> ip + ":" + port).collect(Collectors.joining(","));
+  }
 
-    for (int i = 0; i < replicaIps.size(); i++) {
-      builder.append(replicaIps.get(i)).append(":").append(port);
-      if (i != replicaIps.size() - 1) {
-        builder.append(",");
+  private void patchLoadBalancerParameters(State currentState, List<String> vmIpAddresses) {
+    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.BUILD_TYPE_SPECIFIC_STATE);
+    patchState.dynamicParameters = currentState.dynamicParameters;
+    patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS,
+        generateServerList(vmIpAddresses, String.valueOf(ServicePortConstants.MANAGEMENT_API_PORT)));
+    patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_SERVERS,
+        generateServerList(vmIpAddresses, String.valueOf(ServicePortConstants.MANAGEMENT_UI_HTTP_PORT)));
+    patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_SERVERS,
+        generateServerList(vmIpAddresses, String.valueOf(ServicePortConstants.MANAGEMENT_UI_HTTPS_PORT)));
+    patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_PORT,
+        String.valueOf(ServicePortConstants.LOADBALANCER_MGMT_UI_HTTP_PORT));
+    patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_PORT,
+        String.valueOf(ServicePortConstants.LOADBALANCER_MGMT_UI_HTTPS_PORT));
+    patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_API_PORT_SELECTOR,
+        String.valueOf(currentState.oAuthEnabled));
+    TaskUtils.sendSelfPatch(this, patchState);
+  }
+
+  private String generateServerList(List<String> serverAddresses, String serverPort) {
+
+    List<LoadBalancerServer> serverList = IntStream.range(0, serverAddresses.size())
+        .mapToObj((i) -> new LoadBalancerServer("server-" + i, serverAddresses.get(i) + ":" + serverPort))
+        .collect(Collectors.toList());
+
+    return new Gson().toJson(serverList);
+  }
+
+  private void patchEsxHostState(State currentState) {
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                patchDynamicParameter(currentState, MUSTACHE_KEY_MGMT_API_ESX_HOST,
+                    o.getBody(HostService.State.class).hostAddress);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void patchZookeeperParameters(State currentState) {
+
+    //
+    // N.B. Zookeeper server ID mappings are maintained by the patch handler in the deployment
+    // service entity, so it is necessary to register the current container with the deployment
+    // document before computing the parameters here.
+    //
+    // This violates the sub-stage separation between generating dynamic state and writing it to
+    // entities, but this is unavoidable.
+    //
+
+    DeploymentService.HostListChangeRequest hostListChangeRequest = new DeploymentService.HostListChangeRequest();
+    hostListChangeRequest.kind = DeploymentService.HostListChangeRequest.Kind.UPDATE_ZOOKEEPER_INFO;
+    hostListChangeRequest.zookeeperIpsToAdd = Collections.singletonList(currentState.vmIpAddress);
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createPatch(currentState.deploymentServiceLink)
+        .setBody(hostListChangeRequest)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+
+                //
+                // N.B. Because this operation can occur in parallel for multiple Zookeeper service
+                // containers, it is impossible to generate the final Zookeeper quorum here. This
+                // step is performed as a separate sub-stage in the parent workflow.
+                //
+
+                int myId = o.getBody(DeploymentService.State.class).zookeeperIdToIpMap.entrySet().stream()
+                    .filter((entry) -> entry.getValue().equals(currentState.vmIpAddress))
+                    .mapToInt(Map.Entry::getKey)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Replica list does not contain " +
+                        currentState.vmIpAddress));
+
+                patchDynamicParameter(currentState, MUSTACHE_KEY_ZOOKEEPER_MY_ID, String.valueOf(myId));
+
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  @FunctionalInterface
+  private interface CompletionHandler {
+    void handle(List<String> vmIpAddresses);
+  }
+
+  private void getIpsForContainerType(ContainersConfig.ContainerType containerType, CompletionHandler handler) {
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerTemplateService.State.class)
+            .addFieldClause(ContainerTemplateService.State.FIELD_NAME_NAME, containerType.name())
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                List<String> documentLinks = o.getBody(QueryTask.class).results.documentLinks;
+                checkState(documentLinks.size() == 1);
+                getContainersForType(documentLinks.iterator().next(), handler);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void getContainersForType(String templateServiceLink, CompletionHandler handler) {
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerService.State.class)
+            .addFieldClause(ContainerService.State.FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK, templateServiceLink)
+            .build())
+        .addOptions(EnumSet.of(
+            QueryTask.QuerySpecification.QueryOption.BROADCAST,
+            QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                getVmsForContainers(o.getBody(QueryTask.class).results.documents, handler);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void getVmsForContainers(Map<String, Object> containerDocuments, CompletionHandler handler) {
+
+    OperationJoin
+        .create(containerDocuments.values().stream()
+            .map((containerDocument) -> Utils.fromJson(containerDocument, ContainerService.State.class))
+            .map((containerState) -> Operation.createGet(this, containerState.vmServiceLink)))
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
+
+              try {
+                getIpsForVms(ops, handler);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+        .sendWith(this);
+  }
+
+  private void getIpsForVms(Map<Long, Operation> vmServiceOps, CompletionHandler handler) {
+
+    List<String> vmIpAddresses = vmServiceOps.values().stream()
+        .map((vmServiceOp) -> vmServiceOp.getBody(VmService.State.class).ipAddress)
+        .collect(Collectors.toList());
+
+    handler.handle(vmIpAddresses);
+  }
+
+  //
+  // PATCH_ENTITY_DOCUMENTS sub-stage routines
+  //
+
+  private void processPatchEntityDocumentsSubStage(State currentState) {
+
+    ContainerService.State containerPatchState = new ContainerService.State();
+    containerPatchState.dynamicParameters = currentState.dynamicParameters;
+    List<Operation> patchOps = Collections.singletonList(Operation.createPatch(this, currentState.containerServiceLink)
+        .setBody(containerPatchState));
+
+    switch (currentState.containerType) {
+      case Lightwave: {
+        DeploymentService.State deploymentPatchState = new DeploymentService.State();
+        deploymentPatchState.oAuthServerAddress = currentState.vmIpAddress;
+        deploymentPatchState.oAuthServerPort = ServicePortConstants.LIGHTWAVE_PORT;
+        patchOps.add(HostUtils.getCloudStoreHelper(this).createPatch(currentState.deploymentServiceLink)
+            .setBody(deploymentPatchState));
+        break;
+      }
+      case LoadBalancer: {
+        DeploymentService.State deploymentPatchState = new DeploymentService.State();
+        deploymentPatchState.loadBalancerAddress = currentState.vmIpAddress;
+        patchOps.add(HostUtils.getCloudStoreHelper(this).createPatch(currentState.deploymentServiceLink)
+            .setBody(deploymentPatchState));
+        break;
       }
     }
-    return builder.toString();
+
+    OperationJoin
+        .create(patchOps)
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+              } else {
+                sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+              }
+            })
+        .sendWith(this);
   }
 
-  private List<LoadBalancerServer> generateServerList(List<String> serverIps, String port) {
-    List<LoadBalancerServer> serverList = new ArrayList<>();
-    AtomicInteger index = new AtomicInteger(0);
-    serverIps.stream()
-        .forEach(serverIp ->
-            serverList.add(new LoadBalancerServer("server-" + index.incrementAndGet(), serverIp + ":" + port)));
-    return serverList;
+  //
+  // Utility routines
+  //
+
+  private void sendStageProgressPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
+    ServiceUtils.logInfo(this, "Sending self-patch to stage %s:%s", taskStage, subStage);
+    TaskUtils.sendSelfPatch(this, buildPatch(taskStage, subStage));
   }
 
-  private Pair<Integer, List<ZookeeperServer>> generateZookeeperQuorumList(List<String> zookeeperReplicas,
-      String myIp, DeploymentService.State deploymentState) {
-
-    //'server.1=zookeeper1:2888:3888', 'server.2=zookeeper2:2888:3888',
-    List<ZookeeperServer> quorumConfig = new ArrayList<>();
-    boolean matchFound = false;
-    int myId = 1;
-    for (Map.Entry<Integer, String> zkPair : deploymentState.zookeeperIdToIpMap.entrySet()) {
-      if (zkPair.getValue().equals(myIp)) {
-        matchFound = true;
-        myId = zkPair.getKey();
-      }
-      quorumConfig.add(new ZookeeperServer(String.format("server.%s=%s:2888:3888",
-          zkPair.getKey(), zkPair.getValue())));
-    }
-
-    if (!matchFound) {
-      // Really should NEVER EVER happen. But just a sanity check
-      throw new RuntimeException("Zookeeper replica list doesn't contain IP: " + myIp);
-    }
-
-    ServiceUtils.logInfo(this, "Generated Zookeeper(%s) Quorum: %s", myId, quorumConfig.toString());
-
-    return new Pair<Integer, List<ZookeeperServer>>(myId, quorumConfig);
+  private void sendStageProgressPatch(State patchState) {
+    ServiceUtils.logInfo(this, "Sending self-patch: {}", patchState);
+    TaskUtils.sendSelfPatch(this, patchState);
   }
 
+  private void failTask(Throwable failure) {
+    ServiceUtils.logSevere(this, failure);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failure));
+  }
 
-  /**
-   * This method builds a state object which can be used to submit a stage
-   * progress self-patch.
-   *
-   * @param stage Supplies the state to which the service instance should be
-   *              transitioned.
-   * @param e     Supplies an optional Throwable object representing the failure
-   *              encountered by the service instance.
-   * @return A State object which can be used to submit a stage progress self-
-   * patch.
-   */
+  private void failTask(Collection<Throwable> failures) {
+    ServiceUtils.logSevere(this, failures);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
+  }
+
   @VisibleForTesting
-  protected State buildPatch(TaskState.TaskStage stage, @Nullable Throwable e) {
-    State state = new State();
-    state.taskState = new TaskState();
-    state.taskState.stage = stage;
+  protected static State buildPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
+    return buildPatch(taskStage, subStage, null);
+  }
 
-    if (null != e) {
-      state.taskState.failure = Utils.toServiceErrorResponse(e);
+  @VisibleForTesting
+  protected static State buildPatch(TaskState.TaskStage taskStage,
+                                    TaskState.SubStage subStage,
+                                    @Nullable Throwable failure) {
+    State patchState = new State();
+    patchState.taskState = new TaskState();
+    patchState.taskState.stage = taskStage;
+    patchState.taskState.subStage = subStage;
+    if (failure != null) {
+      patchState.taskState.failure = Utils.toServiceErrorResponse(failure);
     }
 
-    return state;
-  }
-
-  /**
-   * This method sends a patch operation to the current service instance to
-   * transition to the FAILED state in response to the specified exception.
-   *
-   * @param e Supplies the failure encountered by the service instance.
-   */
-  private void failTask(Throwable e) {
-    ServiceUtils.logSevere(this, e);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, e));
-  }
-
-  private void failTask(Map<Long, Throwable> exs) {
-    exs.values().forEach(e -> ServiceUtils.logSevere(this, e));
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, exs.values().iterator().next()));
+    return patchState;
   }
 }

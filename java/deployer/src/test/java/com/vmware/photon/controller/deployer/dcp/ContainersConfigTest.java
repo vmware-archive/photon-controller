@@ -50,7 +50,7 @@ public class ContainersConfigTest {
   private DeployerConfig deployerConfig;
 
   private static Map<String, Object> defaultDynamicParamters = ImmutableMap.<String, Object>builder()
-      .put("VM_IP", "99.99.99.99")
+      .put("REGISTRATION_ADDRESS", "99.99.99.99")
       .put("ZOOKEEPER_QUORUM", "zk1:999")
       .put("ENABLE_SYSLOG", false)
       .build();

@@ -7,7 +7,7 @@ server:
       port: 9000
       bindHost: "0.0.0.0"
 
-registrationAddress: "{{{VM_IP}}}"
+registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
 
 # to add console logging add '- type: console' below
 logging:
