@@ -108,25 +108,18 @@ describe EsxCloud::CliClient do
   end
 
   it "pauses a system under deployment" do
-    deployment = double(EsxCloud::Deployment, id: "d1")
-    deployments = double(EsxCloud::DeploymentList, items: [deployment])
+    expect(client).to receive(:run_cli).with("deployment pause_system d1")
+    expect(client.pause_system("d1")).to eq true
+  end
 
-    expect(client).to receive(:run_cli)
-                      .with("deployment pause_system d1")
-    expect(client).to receive(:find_all_api_deployments).and_return(deployments)
-
-    expect(client.pause_system("d1")).to eq deployment
+  it "pauses_background_tasks under deployment" do
+    expect(client).to receive(:run_cli).with("deployment pause_background_tasks d1")
+    expect(client.pause_background_tasks("d1")).to eq true
   end
 
   it "resumes a system under deployment" do
-    deployment = double(EsxCloud::Deployment, id: "d1")
-    deployments = double(EsxCloud::DeploymentList, items: [deployment])
-
-    expect(client).to receive(:run_cli)
-                      .with("deployment resume_system d1")
-    expect(client).to receive(:find_all_api_deployments).and_return(deployments)
-
-    expect(client.resume_system("d1")).to eq deployment
+    expect(client).to receive(:run_cli).with("deployment resume_system d1")
+    expect(client.resume_system("d1")).to eq true
   end
 
   it "finds deployment by id" do

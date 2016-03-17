@@ -50,31 +50,30 @@ describe EsxCloud::ApiClient do
   end
 
   it "pauses a system under deployment" do
-    deployment = double(EsxCloud::Deployment)
-
     expect(@http_client).to receive(:post)
                             .with("/deployments/deployment-id/pause_system", nil)
                             .and_return(task_created("aaa"))
 
     expect(@http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "deployment-id"))
-    expect(@http_client).to receive(:get).with("/deployments/deployment-id").and_return(ok_response("deployment"))
-    expect(EsxCloud::Deployment).to receive(:create_from_json).with("deployment").and_return(deployment)
+    expect(client.pause_system("deployment-id")).to eq true
+  end
 
-    expect(client.pause_system("deployment-id")).to eq deployment
+  it "pauses background tasks under deployment" do
+    expect(@http_client).to receive(:post)
+                            .with("/deployments/deployment-id/pause_background_tasks", nil)
+                            .and_return(task_created("aaa"))
+
+    expect(@http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "deployment-id"))
+    expect(client.pause_background_tasks("deployment-id")).to eq true
   end
 
   it "resumes a system under deployment" do
-    deployment = double(EsxCloud::Deployment)
-
     expect(@http_client).to receive(:post)
                             .with("/deployments/deployment-id/resume_system", nil)
                             .and_return(task_created("aaa"))
 
     expect(@http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "deployment-id"))
-    expect(@http_client).to receive(:get).with("/deployments/deployment-id").and_return(ok_response("deployment"))
-    expect(EsxCloud::Deployment).to receive(:create_from_json).with("deployment").and_return(deployment)
-
-    expect(client.resume_system("deployment-id")).to eq deployment
+    expect(client.resume_system("deployment-id")).to eq true
   end
 
   it "deletes a deployment" do
