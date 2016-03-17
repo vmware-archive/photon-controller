@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -79,20 +80,15 @@ public class OperationUtils {
     return null;
   }
 
-  public static List<String> getLocalHostIpAddresses() {
+  public static List<String> getLocalHostIpAddresses() throws SocketException {
     List<String> localHostIpAddresses = new ArrayList<>();
     // get all ip addresses of all the network interfaces of the local host
-    try {
-      Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-      while (interfaces != null && interfaces.hasMoreElements()) {
-        Enumeration<InetAddress> inetAddresses = interfaces.nextElement().getInetAddresses();
-        while (inetAddresses != null && inetAddresses.hasMoreElements()) {
-          localHostIpAddresses.add(inetAddresses.nextElement().getHostAddress());
-        }
+    Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+    while (interfaces != null && interfaces.hasMoreElements()) {
+      Enumeration<InetAddress> inetAddresses = interfaces.nextElement().getInetAddresses();
+      while (inetAddresses.hasMoreElements()) {
+        localHostIpAddresses.add(inetAddresses.nextElement().getHostAddress());
       }
-    } catch (Exception e) {
-      logger.warn("Failed to get the network interfaces on the local host, will use a random cloudstore instance: " +
-          e.getMessage());
     }
     return localHostIpAddresses;
   }

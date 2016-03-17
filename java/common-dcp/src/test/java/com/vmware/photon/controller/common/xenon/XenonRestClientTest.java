@@ -37,8 +37,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -50,7 +52,6 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Arrays;
@@ -67,6 +68,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Tests {@link XenonRestClient}.
@@ -1129,7 +1131,8 @@ public class XenonRestClientTest {
 
       actualDocumentNames = new HashSet<>();
       actualDocumentNames.addAll(queryResult.documents.values().stream()
-              .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
+              .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class))
+              .map(s -> s.name)
               .collect(Collectors.toSet())
       );
 
@@ -1141,7 +1144,8 @@ public class XenonRestClientTest {
         queryResult = xenonRestClient.queryDocumentPage(queryResult.nextPageLink);
 
         actualDocumentNames.addAll(queryResult.documents.values().stream()
-                .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
+                .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class))
+                .map(s -> s.name)
                 .collect(Collectors.toSet())
         );
       }
@@ -1163,62 +1167,36 @@ public class XenonRestClientTest {
   public class HelperMethodTest {
     @Test
     public void testGetServiceUri() throws Throwable {
-      InetAddress localHostInetAddress = OperationUtils.getLocalHostInetAddress();
-      assertThat(localHostInetAddress, is(notNullValue()));
-      String localHostAddress = null;
-      if (localHostInetAddress != null) {
-        localHostAddress = localHostInetAddress.getHostAddress();
-      }
-      assertThat(localHostAddress, is(notNullValue()));
+
+      String localHostAddress = OperationUtils.getLocalHostInetAddress().getHostAddress();
 
       InetSocketAddress[] servers1 = new InetSocketAddress[3];
       servers1[0] = new InetSocketAddress("0.0.0.1", 1);
       servers1[1] = new InetSocketAddress("0.0.0.2", 2);
       servers1[2] = new InetSocketAddress("0.0.0.3", 3);
-      StaticServerSet staticServerSet = new StaticServerSet(servers1);
-      XenonRestClient testXenonRestClient = new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1));
-      final URI result1 = testXenonRestClient.getServiceUri("/dummyPath");
 
-      // the selected URI should be from the provided addresses
-      assertThat(
-          Arrays.asList(servers1)
-              .stream()
-              .filter(a -> a.getAddress().getHostAddress().equals(result1.getHost()))
-              .findFirst()
-              .isPresent(), is(true));
+      StaticServerSet serverSet1 = new StaticServerSet(servers1);
+      XenonRestClient client1 = new XenonRestClient(serverSet1, Executors.newFixedThreadPool(1));
+      URI result1 = client1.getServiceUri("/dummyPath");
 
-      // the local address should not get selected since none of the provided addresses would match with it
-      assertThat(result1.getHost().equals(localHostAddress), is(false));
+      String[] hosts1 = Stream.of(servers1).map((a) -> a.getAddress().getHostAddress()).toArray(String[]::new);
+      assertThat(hosts1, hasItemInArray(result1.getHost()));
+      assertThat(result1.getHost(), not(localHostAddress));
 
       InetSocketAddress[] servers2 = new InetSocketAddress[4];
       servers2[0] = servers1[0];
       servers2[1] = servers1[1];
       servers2[2] = servers1[2];
-      servers2[3] = new InetSocketAddress(OperationUtils.getLocalHostInetAddress(), 3);
-      staticServerSet = new StaticServerSet(servers2);
-      testXenonRestClient = new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1));
-      final URI result2 = testXenonRestClient.getServiceUri("/dummyPath");
+      servers2[3] = new InetSocketAddress(localHostAddress, 4);
 
-      //the selected URI should not be from the servers1 list as they do not match local address and servers2 has
-      //one that matches
-      assertThat(
-          Arrays.asList(servers1)
-              .stream()
-              .filter(a -> a.getAddress().getHostAddress().equals(result2.getHost()))
-              .findFirst()
-              .isPresent(), is(false));
+      StaticServerSet serverSet2 = new StaticServerSet(servers2);
+      XenonRestClient client2 = new XenonRestClient(serverSet2, Executors.newFixedThreadPool(1));
+      URI result2 = client2.getServiceUri("/dummyPath");
 
-      //the selected URI should be from servers2 since it has
-      //one that matches local address
-      assertThat(
-          Arrays.asList(servers2)
-              .stream()
-              .filter(a -> a.getAddress().getHostAddress().equals(result2.getHost()))
-              .findFirst()
-              .isPresent(), is(true));
-
-      //the selected URI should be using local address
-      assertThat(result2.getHost().equals(localHostAddress), is(true));
+      String[] hosts2 = Stream.of(servers2).map((a) -> a.getAddress().getHostAddress()).toArray(String[]::new);
+      assertThat(hosts2, hasItemInArray(result2.getHost()));
+      assertThat(result2.getHost(), is(localHostAddress));
+      assertThat(hosts1, not(hasItemInArray(result2.getHost())));
     }
   }
 
