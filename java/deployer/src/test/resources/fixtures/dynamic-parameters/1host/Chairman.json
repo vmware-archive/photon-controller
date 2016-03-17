@@ -1,0 +1,15 @@
+{
+  "ENABLE_SYSLOG": "true",
+  "SHARED_SECRET": "shared-secret",
+  "ENABLE_AUTH": "false",
+  "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
+  "ZOOKEEPER_QUORUM": "0.0.0.0:2181",
+  "LOG_DIRECTORY": "/var/log/esxcloud",
+  "memoryMb": "1024",
+  "APIFE_PORT": "28080",
+  "REGISTRATION_ADDRESS": "0.0.0.0",
+  "CHAIRMAN_INSTALL_DIRECTORY": "/usr/lib/esxcloud/chairman",
+  "DEPLOYMENT_ID": "e93f96c9-1391-4cc0-8028-68be7fe65d00",
+  "diskGb": "1",
+  "cpuCount": "1"
+}
