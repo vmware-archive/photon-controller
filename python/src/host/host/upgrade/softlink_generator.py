@@ -20,14 +20,17 @@ from host.hypervisor.esx.vm_config import IMAGE_FILE_EXT
 from host.hypervisor.esx.vm_config import VMFS_VOLUMES
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 
+IMAGES_FOLDER_NAME = "images"
+
 
 class SoftLinkGenerator():
 
-    def __init__(self, datastore_id):
-        self.datastore_id = datastore_id
+    def __init__(self):
         self._logger = logging.getLogger(__name__)
 
-    def _create_symlinks_to_new_image_path(self, root, datastore):
+    def create_symlinks_to_new_image_path(self, datastore):
+
+        root = os.path.join(os.path.join(VMFS_VOLUMES, datastore, IMAGES_FOLDER_NAME))
 
         for curdir, dirs, files in os.walk(root):
 

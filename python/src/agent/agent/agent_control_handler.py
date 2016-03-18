@@ -13,6 +13,7 @@
 import logging
 
 import common
+from host.upgrade.upgrade import HostUpgrade
 
 from . import version
 from .agent_config import InvalidConfig
@@ -50,6 +51,8 @@ class AgentControlHandler(AgentControl.Iface):
         :type request: ProvisionRequest
         :rtype: ProvisionResponse
         """
+        HostUpgrade.upgrade()
+
         try:
             agent_config = common.services.get(ServiceName.AGENT_CONFIG)
             agent_config.update_config(request)
