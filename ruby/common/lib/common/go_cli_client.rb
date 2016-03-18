@@ -72,7 +72,10 @@ module EsxCloud
     # @param [String] command
     # @return [String]
     def run_cli(command)
-      cmd = "#{@cli_path} --non-interactive #{command}"
+      unless EsxCloud::Config.log_file_name.to_s.empty?
+        log_file = " --log-file #{EsxCloud::Config.log_file_name}"
+      end
+      cmd = "#{@cli_path} --non-interactive #{log_file} #{command}"
       EsxCloud::CmdRunner.run(cmd)
     end
 
