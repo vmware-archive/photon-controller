@@ -76,6 +76,22 @@ describe EsxCloud::GoCliClient do
     expect(client.find_disk_by_id(disk_id)).to eq disk
   end
 
+  it "finds all disks" do
+    tenant = double(EsxCloud::Tenant, :name => "t1")
+    project = double(EsxCloud::Project, :id => "foo", :name => "p1")
+    client.project_to_tenant["foo"] = tenant
+
+    disks = double(EsxCloud::DiskList)
+    result ="d1 disk1  READY
+             d2 disk2  READY"
+
+    expect(client).to receive(:find_project_by_id).with("foo").and_return(project)
+    expect(client).to receive(:run_cli).with("disk list -t 't1' -p 'p1'").and_return(result)
+    expect(client).to receive(:get_disk_list_from_response).with(result).and_return(disks)
+
+    client.find_all_disks("foo").should == disks
+  end
+
   context "when deleting a disk" do
     it "deletes a disk" do
       disk_id = double("bar")

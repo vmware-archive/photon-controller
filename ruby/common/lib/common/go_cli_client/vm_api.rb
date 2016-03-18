@@ -278,7 +278,7 @@ module EsxCloud
         VmList.new(vms)
       end
 
-      def get_vm_list_from_response(vm_id)
+      def get_vm_details(vm_id)
         begin
           find_vm_by_id vm_id
         rescue EsxCloud::CliError => e

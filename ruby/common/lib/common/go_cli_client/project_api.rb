@@ -37,13 +37,17 @@ module EsxCloud
       # @param [String] id
       # @return [Project]
       def find_project_by_id(id)
-        @api_client.find_project_by_id(id)
+        result = run_cli("project show #{id}")
+        get_project_from_response result
       end
 
       # @param [String] tenant_id
       # @return [ProjectList]
       def find_all_projects(tenant_id)
-        @api_client.find_all_projects(tenant_id)
+        tenant = find_tenant_by_id tenant_id
+        result = run_cli("project list -t '#{tenant.name}'")
+
+        get_project_list_from_response result
       end
 
       # @param [String] name
@@ -89,6 +93,46 @@ module EsxCloud
       def set_project_security_groups(id, payload)
         cmd = "project set_security_groups '#{id}' '#{payload[:items].join(",")}'"
         run_cli(cmd)
+      end
+
+      private
+
+      def get_project_from_response(result)
+        result.slice! "\n"
+        values = result.split("\t", -1)
+        project_hash = Hash.new
+        project_hash["id"]    = values[0] unless values[0] == ""
+        project_hash["name"]  = values[1] unless values[1] == ""
+        project_hash["resourceTicket"]  = getResourceTicket(values[2], values[3], values[4], values[5])
+        project_hash["securityGroups"]  = getSecurityGroups(values[6])
+
+        Project.create_from_hash(project_hash)
+      end
+
+      def get_project_list_from_response(result)
+        projects = result.split("\n").map do |project_info|
+          get_project_details project_info.split("\t")[0]
+        end
+        ProjectList.new(projects)
+      end
+
+      def get_project_details(project_id)
+        begin
+          find_project_by_id project_id
+        rescue EsxCloud::CliError => e
+          raise() unless e.message.include? "NotFound"
+          nil
+        end
+      end
+
+      def getResourceTicket(id, name, limits, usage)
+        rt_hash = Hash.new
+        rt_hash["tenantTicketId"]   = id
+        rt_hash["tenantTicketName"] = name
+        rt_hash["limits"] = getLimitsOrUsage(limits)
+        rt_hash["usage"] = getLimitsOrUsage(usage)
+
+        rt_hash
       end
     end
   end
