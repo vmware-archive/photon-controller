@@ -44,7 +44,6 @@ import static com.google.common.base.Preconditions.checkState;
 import javax.annotation.Nullable;
 
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * This class implements a DCP micro-service which performs the task of
@@ -185,7 +184,7 @@ public class AddCloudHostWorkflowService extends StatefulService {
                     Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(completedOp);
                     QueryTaskUtils.logQueryResults(AddCloudHostWorkflowService.this, documentLinks);
                     checkState(documentLinks.size() >= 1);
-                    getDeploymentService(currentState, documentLinks.iterator().next());
+                    provisionCloudHost(currentState, documentLinks.iterator().next());
                   } catch (Throwable t) {
                     failTask(t);
                   }
@@ -193,26 +192,7 @@ public class AddCloudHostWorkflowService extends StatefulService {
             ));
   }
 
-  private void getDeploymentService(final State currentState, final String deploymentServiceLink) {
-
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(deploymentServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
-
-                  DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
-                  provisionCloudHost(currentState, deploymentServiceLink, deploymentState.chairmanServerList);
-                }
-            ));
-  }
-
-  private void provisionCloudHost(final State currentState, String deploymentServiceLink, Set<String>
-      chairmanServerList) {
+  private void provisionCloudHost(final State currentState, String deploymentServiceLink) {
     final Service service = this;
 
     FutureCallback<BulkProvisionHostsWorkflowService.State> callback = new
@@ -243,7 +223,6 @@ public class AddCloudHostWorkflowService extends StatefulService {
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
     startState.deploymentServiceLink = deploymentServiceLink;
-    startState.chairmanServerList = chairmanServerList;
     startState.usageTag = UsageTag.CLOUD.name();
     startState.querySpecification = MiscUtils.generateHostQuerySpecification(currentState.hostServiceLink, null);
 

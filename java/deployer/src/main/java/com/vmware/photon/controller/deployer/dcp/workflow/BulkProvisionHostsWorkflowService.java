@@ -85,13 +85,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     public String deploymentServiceLink;
 
     /**
-     * This value represents the list of chairman servers used by the current task.
-     */
-    @NotNull
-    @Immutable
-    public Set<String> chairmanServerList;
-
-    /**
      * This value represents the usage tag associated with the hosts to be provisioned.
      */
     @NotNull

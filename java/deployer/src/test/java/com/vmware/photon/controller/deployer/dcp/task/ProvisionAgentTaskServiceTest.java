@@ -44,7 +44,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -128,7 +127,6 @@ public class ProvisionAgentTaskServiceTest {
       ProvisionAgentTaskService.State serviceState = testHost.getServiceState(ProvisionAgentTaskService.State.class);
       assertThat(serviceState.deploymentServiceLink, is("DEPLOYMENT_SERVICE_LINK"));
       assertThat(serviceState.hostServiceLink, is("HOST_SERVICE_LINK"));
-      assertThat(serviceState.chairmanServerList, contains("CHAIRMAN_SERVER_1"));
       assertThat(serviceState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
     }
 
@@ -639,7 +637,6 @@ public class ProvisionAgentTaskServiceTest {
     ProvisionAgentTaskService.State startState = new ProvisionAgentTaskService.State();
     startState.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
     startState.hostServiceLink = "HOST_SERVICE_LINK";
-    startState.chairmanServerList = Collections.singleton("CHAIRMAN_SERVER_1");
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
 
     if (taskStage != null) {

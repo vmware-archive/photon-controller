@@ -52,7 +52,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -131,13 +130,6 @@ public class ProvisionAgentTaskService extends StatefulService {
     @NotNull
     @Immutable
     public String hostServiceLink;
-
-    /**
-     * This value represents the chairman server list with which to provision the agent.
-     */
-    @NotNull
-    @Immutable
-    public Set<String> chairmanServerList;
 
     /**
      * This value represents the maximum number of agent status polling iterations which should be attempted before
@@ -391,7 +383,6 @@ public class ProvisionAgentTaskService extends StatefulService {
           networks,
           hostState.hostAddress,
           hostState.agentPort,
-          new ArrayList<>(currentState.chairmanServerList),
           0, // Overcommit ratio is not implemented,
           deploymentState.syslogEndpoint,
           DEFAULT_AGENT_LOG_LEVEL,

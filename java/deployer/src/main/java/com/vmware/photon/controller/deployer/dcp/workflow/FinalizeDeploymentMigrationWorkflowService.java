@@ -774,7 +774,6 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     startState.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.STARTED;
     startState.taskState.subStage = BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB;
     startState.deploymentServiceLink = deploymentState.documentSelfLink;
-    startState.chairmanServerList = deploymentState.chairmanServerList;
     startState.usageTag = UsageTag.CLOUD.name();
     startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.CLOUD.name());
     // only reprovision hosts that are actually in ready state, otherwise this might fail due to trying

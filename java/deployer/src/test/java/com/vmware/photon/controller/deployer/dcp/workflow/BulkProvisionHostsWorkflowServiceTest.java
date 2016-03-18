@@ -148,7 +148,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
       assertThat(serviceState.taskState, notNullValue());
       assertThat(serviceState.deploymentServiceLink, is("DEPLOYMENT_SERVICE_LINK"));
       assertThat(serviceState.querySpecification, notNullValue());
-      assertThat(serviceState.chairmanServerList, notNullValue());
     }
 
     @DataProvider(name = "ValidStartStages")
@@ -615,7 +614,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
     startState.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
     startState.usageTag = UsageTag.MGMT.name();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-    startState.chairmanServerList = Collections.singleton("IP_ADDRESS:PORT");
 
     if (null != startStage) {
       startState.taskState = new BulkProvisionHostsWorkflowService.TaskState();

@@ -518,7 +518,6 @@ public class AddCloudHostWorkflowServiceTest {
       state.statsStoreEndpoint = "statsStoreEndpoint";
       state.statsStorePort = 8081;
       state.statsStoreType = StatsStoreType.GRAPHITE;
-      state.chairmanServerList = Collections.singleton("0.0.0.0:13000");
       state.state = DeploymentState.READY;
 
       cloudStoreMachine.callServiceSynchronously(

@@ -41,7 +41,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -196,7 +195,6 @@ public class AgentControlClient {
    * @param networkList
    * @param hostAddress
    * @param hostPort
-   * @param chairmanServerList
    * @param memoryOverCommit
    * @param loggingEndpoint
    * @param logLevel
@@ -216,7 +214,6 @@ public class AgentControlClient {
       List<String> networkList,
       String hostAddress,
       int hostPort,
-      List<String> chairmanServerList,
       double memoryOverCommit,
       String loggingEndpoint,
       String logLevel,
@@ -239,7 +236,6 @@ public class AgentControlClient {
     provisionRequest.setDatastores(dataStoreList);
     provisionRequest.setNetworks(networkList);
     provisionRequest.setAddress(new ServerAddress(hostAddress, hostPort));
-    provisionRequest.setChairman_server(Util.getServerAddressList(chairmanServerList));
     provisionRequest.setMemory_overcommit(memoryOverCommit);
     provisionRequest.setManagement_only(managementOnly);
     provisionRequest.setHost_id(hostId);
@@ -268,7 +264,6 @@ public class AgentControlClient {
    * @param networkList
    * @param hostAddress
    * @param hostPort
-   * @param chairmanServerList
    * @param memoryOverCommit
    * @param loggingEndpoint
    * @param logLevel
@@ -289,7 +284,6 @@ public class AgentControlClient {
       List<String> networkList,
       String hostAddress,
       int hostPort,
-      List<String> chairmanServerList,
       double memoryOverCommit,
       String loggingEndpoint,
       String logLevel,
@@ -301,7 +295,7 @@ public class AgentControlClient {
       throws InterruptedException, RpcException {
     SyncHandler<ProvisionResponse, AgentControl.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
     provision(availabilityZone, dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
-        chairmanServerList, memoryOverCommit, loggingEndpoint, logLevel, statsPluginConfig,
+        memoryOverCommit, loggingEndpoint, logLevel, statsPluginConfig,
         managementOnly, hostId, deploymentId, ntpEndpoint, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkProvisionResponse(syncHandler.getResponse());
@@ -405,37 +399,6 @@ public class AgentControlClient {
       }
 
       return agentStatusResponse;
-    }
-  }
-
-  /**
-   * Class for general utility functions.
-   */
-  private static class Util {
-    private static List<ServerAddress> getServerAddressList(List<String> chairmanServerList)
-        throws RpcException {
-      List<ServerAddress> result = new ArrayList<>();
-      for (String chairmanServer : chairmanServerList) {
-        String[] parts = chairmanServer.split(":");
-        if (parts.length != 2 || !isValidInteger(parts[1]) || 0 >= Integer.parseInt(parts[1])) {
-          logger.error("Invalid chairman entry for agent configuration: {}", chairmanServer);
-          throw new InvalidAgentConfigurationException("Invalid chairman entry for agent configuration: "
-              + chairmanServer);
-        }
-        result.add(new ServerAddress(parts[0], Integer.parseInt(parts[1])));
-      }
-      return result;
-    }
-
-    private static boolean isValidInteger(String integerString) {
-      boolean result = false;
-      try {
-        Integer.parseInt(integerString);
-        result = true;
-      } catch (Exception ex) {
-        // Empty
-      }
-      return result;
     }
   }
 }

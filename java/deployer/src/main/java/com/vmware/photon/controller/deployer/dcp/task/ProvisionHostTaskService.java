@@ -503,7 +503,6 @@ public class ProvisionHostTaskService extends StatefulService {
     startState.parentPatchBody = Utils.toJson(patchState);
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.hostServiceLink = currentState.hostServiceLink;
-    startState.chairmanServerList = deploymentState.chairmanServerList;
 
     sendRequest(Operation
         .createPost(this, ProvisionAgentTaskFactoryService.SELF_LINK)

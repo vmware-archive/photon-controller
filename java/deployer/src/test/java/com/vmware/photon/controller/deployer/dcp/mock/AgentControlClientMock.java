@@ -62,7 +62,6 @@ public class AgentControlClientMock extends AgentControlClient {
       List<String> networks,
       String hostAddress,
       int hostPort,
-      List<String> chairmanServerList,
       double memoryOvercommit,
       String loggingEndpoint,
       String logLevel,

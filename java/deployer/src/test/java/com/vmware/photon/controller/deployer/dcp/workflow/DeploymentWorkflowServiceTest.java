@@ -943,8 +943,6 @@ public class DeploymentWorkflowServiceTest {
             assertThat(state.statsStorePort, is(8081));
             assertThat(state.statsStoreType, is(StatsStoreType.GRAPHITE));
 
-            assertThat(state.chairmanServerList, is(notNullValue()));
-
             assertThat(state.zookeeperIdToIpMap.size() == mgmtHostCnt, is(true));
             return true;
           }, remoteStore);
@@ -1078,7 +1076,7 @@ public class DeploymentWorkflowServiceTest {
       List<ResourceTicketService.State> states = queryForServiceStates(ResourceTicketService.State.class, localStore);
       assertThat(states.size(), is(1));
     }
-    
+
     private <T extends ServiceDocument> void verifySingletonServiceState(Class<T> classType, Predicate<T> predicate,
                                                                          MultiHostEnvironment<?> multiHostEnvironment)
         throws Throwable {

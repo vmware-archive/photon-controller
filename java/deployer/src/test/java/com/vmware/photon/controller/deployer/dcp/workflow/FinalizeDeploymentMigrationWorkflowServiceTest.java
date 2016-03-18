@@ -833,7 +833,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       TasksApi tasksApi = mock(TasksApi.class);
 
       DeploymentService.State deploymentService = TestHelper.getDeploymentServiceStartState(false);
-      deploymentService.chairmanServerList = Collections.singleton("IP_ADDRESS:PORT");
       deploymentService = TestHelper.createDeploymentService(destinationCloudStore, deploymentService);
       Deployment deployment = new Deployment();
       deployment.setId(ServiceUtils.getIDFromDocumentSelfLink(deploymentService.documentSelfLink));

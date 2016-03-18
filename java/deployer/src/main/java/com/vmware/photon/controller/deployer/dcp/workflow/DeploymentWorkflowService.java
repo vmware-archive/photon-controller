@@ -710,36 +710,7 @@ public class DeploymentWorkflowService extends StatefulService {
     }
   }
 
-  private void processProvisionCloudHosts(final State currentState) throws
-      Throwable {
-
-    ServiceUtils.logInfo(this, "Bulk provisioning cloud hosts");
-
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(currentState.deploymentServiceLink)
-            .setCompletion(
-                (operation, throwable) -> {
-                  if (null != throwable) {
-                    failTask(throwable);
-                    return;
-                  }
-
-                  DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
-                  try {
-                    processProvisionCloudHosts(currentState, deploymentState);
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            )
-    );
-  }
-
-  private void processProvisionCloudHosts(final State currentState, DeploymentService.State deploymentService) throws
-      Throwable {
-
-    checkState(null != deploymentService.chairmanServerList);
+  private void processProvisionCloudHosts(final State currentState) throws Throwable {
 
     final Service service = this;
 
@@ -771,7 +742,6 @@ public class DeploymentWorkflowService extends StatefulService {
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.chairmanServerList = deploymentService.chairmanServerList;
     startState.usageTag = UsageTag.CLOUD.name();
     startState.taskPollDelay = currentState.taskPollDelay;
 

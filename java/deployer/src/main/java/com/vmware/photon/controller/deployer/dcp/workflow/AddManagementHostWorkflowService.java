@@ -36,12 +36,8 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskService;
-import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskService;
-import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
@@ -53,7 +49,6 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
@@ -77,7 +72,6 @@ import java.util.stream.Collectors;
  */
 public class AddManagementHostWorkflowService extends StatefulService {
 
-  public static final String CHAIRMAN_PORT = "13000";
   public static final String ZOOKEEPER_PORT = "2181";
 
   /**
@@ -100,7 +94,6 @@ public class AddManagementHostWorkflowService extends StatefulService {
       PROVISION_MANAGEMENT_HOSTS,
       CREATE_MANAGEMENT_PLANE,
       RECONFIGURE_ZOOKEEPER,
-      PROVISION_CLOUD_HOSTS,
     }
   }
 
@@ -255,7 +248,6 @@ public class AddManagementHostWorkflowService extends StatefulService {
         case PROVISION_MANAGEMENT_HOSTS:
         case CREATE_MANAGEMENT_PLANE:
         case RECONFIGURE_ZOOKEEPER:
-        case PROVISION_CLOUD_HOSTS:
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage);
@@ -334,7 +326,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
         processBuildRuntimeConfiguration(currentState, deploymentService);
         break;
       case SET_QUORUM_ON_DEPLOYMENT_ENTITY:
-        queryChairmanContainerTemplate(currentState);
+        queryZookeeperContainerTemplate(currentState);
         break;
       case PROVISION_MANAGEMENT_HOSTS:
         processProvisionManagementHosts(currentState, deploymentService);
@@ -345,23 +337,20 @@ public class AddManagementHostWorkflowService extends StatefulService {
       case RECONFIGURE_ZOOKEEPER:
         reconfigureZookeeper(currentState, deploymentService);
         break;
-      case PROVISION_CLOUD_HOSTS:
-        updateCloudHostAgentConfiguration(currentState, deploymentService);
-        break;
     }
   }
 
   private void reconfigureZookeeper(State currentState, DeploymentService.State deploymentService) {
     if (currentState.hostServiceLink == null) {
       TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(
-          TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_CLOUD_HOSTS, null));
+          TaskState.TaskStage.FINISHED, null, null));
     } else {
 
       FutureCallback callback = new FutureCallback() {
         @Override
         public void onSuccess(@Nullable Object result) {
           TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(
-              TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_CLOUD_HOSTS, null));
+              TaskState.TaskStage.FINISHED, null, null));
         }
 
         @Override
@@ -542,7 +531,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     bulkProvisionManagementHosts(currentState, deploymentService);
   }
 
-  private void queryChairmanContainerTemplate(final State currentState) {
+  private void queryZookeeperContainerTemplate(final State currentState) {
 
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -550,7 +539,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
     QueryTask.Query nameClause = new QueryTask.Query()
         .setTermPropertyName(ContainerTemplateService.State.FIELD_NAME_NAME)
-        .setTermMatchValue(ContainersConfig.ContainerType.Chairman.name());
+        .setTermMatchValue(ContainersConfig.ContainerType.Zookeeper.name());
 
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(kindClause);
@@ -572,7 +561,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
             Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
             QueryTaskUtils.logQueryResults(AddManagementHostWorkflowService.this, documentLinks);
             checkState(1 == documentLinks.size());
-            queryChairmanContainers(currentState, documentLinks.iterator().next());
+            queryZookeeperContainers(currentState, documentLinks.iterator().next());
           } catch (Throwable t) {
             failTask(t);
           }
@@ -581,7 +570,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     sendRequest(queryPostOperation);
   }
 
-  private void queryChairmanContainers(final State currentState, String containerTemplateServiceLink) {
+  private void queryZookeeperContainers(final State currentState, String containerTemplateServiceLink) {
 
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -613,7 +602,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
               Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
               QueryTaskUtils.logQueryResults(AddManagementHostWorkflowService.this, documentLinks);
               checkState(documentLinks.size() > 0);
-              getChairmanContainerEntities(currentState, documentLinks);
+              getZookeeperContainerEntities(currentState, documentLinks);
             } catch (Throwable t) {
               failTask(t);
             }
@@ -623,7 +612,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     sendRequest(queryPostOperation);
   }
 
-  private void getChairmanContainerEntities(final State currentState, Collection<String> documentLinks) {
+  private void getZookeeperContainerEntities(final State currentState, Collection<String> documentLinks) {
 
     if (documentLinks.isEmpty()) {
       throw new XenonRuntimeException("Document links set is empty");
@@ -641,7 +630,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
             Set<String> vmServiceLinks = ops.values().stream()
                 .map(operation -> operation.getBody(ContainerService.State.class).vmServiceLink)
                 .collect(Collectors.toSet());
-            getChairmanVmEntities(currentState, vmServiceLinks);
+            getZookeeperVmEntities(currentState, vmServiceLinks);
           } catch (Throwable t) {
             failTask(t);
           }
@@ -649,7 +638,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
         .sendWith(this);
   }
 
-  private void getChairmanVmEntities(final State currentState, Set<String> vmServiceLinks) {
+  private void getZookeeperVmEntities(final State currentState, Set<String> vmServiceLinks) {
 
     if (vmServiceLinks.isEmpty()) {
       throw new XenonRuntimeException("VM service links set is empty");
@@ -664,16 +653,12 @@ public class AddManagementHostWorkflowService extends StatefulService {
           }
 
           try {
-            Set<String> chairmanIpAddresses = ops.values().stream()
-                .map(operation -> operation.getBody(VmService.State.class).ipAddress + ":" + CHAIRMAN_PORT)
-                .collect(Collectors.toSet());
-
             String zookeeperQuorum = MiscUtils.generateReplicaList(
                 ops.values().stream().map(operation -> operation.getBody(VmService.State.class).ipAddress)
                     .collect(Collectors.toList()),
                 ZOOKEEPER_PORT);
 
-            patchDeploymentService(currentState, chairmanIpAddresses, zookeeperQuorum);
+            patchDeploymentService(currentState, zookeeperQuorum);
           } catch (Throwable t) {
             failTask(t);
           }
@@ -681,9 +666,8 @@ public class AddManagementHostWorkflowService extends StatefulService {
         .sendWith(this);
   }
 
-  private void patchDeploymentService(State currentState, Set<String> chairmanIpAddresses, String zookeeperQuorum) {
+  private void patchDeploymentService(State currentState, String zookeeperQuorum) {
     DeploymentService.State deploymentService = new DeploymentService.State();
-    deploymentService.chairmanServerList = chairmanIpAddresses;
     deploymentService.zookeeperQuorum = zookeeperQuorum;
 
     HostUtils.getCloudStoreHelper(this)
@@ -736,7 +720,6 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.chairmanServerList = deploymentService.chairmanServerList;
     startState.usageTag = UsageTag.MGMT.name();
     startState.taskPollDelay = currentState.taskPollDelay;
     if (currentState.hostServiceLink != null) {
@@ -1009,103 +992,6 @@ public class AddManagementHostWorkflowService extends StatefulService {
                 }
             )
     );
-  }
-
-  private void updateCloudHostAgentConfiguration(final State currentState, DeploymentService.State deploymentService)
-      throws Throwable {
-
-    if (currentState.isNewDeployment) {
-      TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(
-          TaskState.TaskStage.FINISHED, null, null));
-    } else {
-      // Get all cloud hosts and call provision on them to introduce new ChairmanList
-      checkState(null != deploymentService.chairmanServerList);
-      ServiceUtils.logInfo(this, "Provisioning cloud hosts with chairmanList " + deploymentService.chairmanServerList
-          .size());
-
-      QueryTask.QuerySpecification querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.CLOUD
-          .name());
-
-      sendRequest(
-          HostUtils.getCloudStoreHelper(this)
-              .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-              .setBody(QueryTask.create(querySpecification).setDirect(true))
-              .setCompletion(
-                  (completedOp, failure) -> {
-                    if (null != failure) {
-                      failTask(failure);
-                      return;
-                    }
-
-                    try {
-                      NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
-                      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
-                      if (documentLinks.isEmpty()) {
-                        TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this,
-                            buildPatch(TaskState.TaskStage.FINISHED, null, null));
-                        return;
-                      }
-                      provisionCloudAgents(currentState, deploymentService, documentLinks);
-                    } catch (Throwable t) {
-                      failTask(t);
-                    }
-                  }
-              ));
-    }
-  }
-
-  private void provisionCloudAgents(State currentState,
-                                    DeploymentService.State deploymentState,
-                                    Set<String> documentLinks) {
-
-    ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
-    startState.parentTaskLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.FINISHED, null, null));
-    startState.pendingCompletionCount = documentLinks.size();
-    startState.errorThreshold = 0.0;
-
-    sendRequest(Operation
-        .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
-        .setBody(startState)
-        .setCompletion(
-            (o, e) -> {
-              if (e != null) {
-                failTask(e);
-                return;
-              }
-
-              try {
-                provisionCloudAgents(currentState, deploymentState, documentLinks,
-                    o.getBody(ServiceDocument.class).documentSelfLink);
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void provisionCloudAgents(State currentState,
-                                    DeploymentService.State deploymentState,
-                                    Set<String> documentLinks,
-                                    String aggregatorServiceLink) {
-
-    ProvisionAgentTaskService.State startState = new ProvisionAgentTaskService.State();
-    startState.parentTaskServiceLink = aggregatorServiceLink;
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.chairmanServerList = deploymentState.chairmanServerList;
-
-    for (String hostServiceLink : documentLinks) {
-      startState.hostServiceLink = hostServiceLink;
-
-      sendRequest(Operation
-          .createPost(this, ProvisionAgentTaskFactoryService.SELF_LINK)
-          .setBody(startState)
-          .setCompletion(
-              (o, e) -> {
-                if (e != null) {
-                  failTask(e);
-                }
-              }));
-    }
   }
 
   private State applyPatch(State currentState, State patchState) {

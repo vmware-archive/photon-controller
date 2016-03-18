@@ -359,11 +359,6 @@ public class DeploymentService extends StatefulService {
      */
     public StatsStoreType statsStoreType;
 
-      /**
-     * This value represents the list of chairman servers.
-     */
-    public Set<String> chairmanServerList;
-
     /**
      * This value represents the zookeeper quorum.
      */
