@@ -79,11 +79,13 @@ end
 
 def reset_logger(log_dir, counter, name)
   path = "%03d_%s.log" % [counter.next, name.gsub(/[^a-z0-9\s_-]/i, "").gsub(/\s+/, "_") ]
+  log_file_name = File.join(log_dir, path)
 
-  logger = Logger.new(File.join(log_dir, path))
+  logger = Logger.new(log_file_name)
   logger.level = Logger::DEBUG
 
   EsxCloud::Config.logger = logger
+  EsxCloud::Config.log_file_name = log_file_name
 end
 
 RSpec.configure do |config|
@@ -136,7 +138,6 @@ RSpec.configure do |config|
   config.filter_run_excluding go_cli: true unless ENV["DRIVER"] == "gocli"
 
   if RSpec.configuration.inclusion_filter[:management]
-    EsxCloud::TestHelpers.await_system_ready
   end
 
   config.after(:suite) do
