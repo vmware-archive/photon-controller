@@ -107,6 +107,10 @@ module EsxCloud
       def get_task_details(task_id)
         begin
           find_task_by_id task_id
+
+          # When listing all tasks, if a task gets deleted
+          # handle the Error to return nil for that task to
+          # create task list for the tasks that exist.
         rescue EsxCloud::CliError => e
           raise() unless e.message.include? "NotFound"
           nil

@@ -68,12 +68,16 @@ module EsxCloud
           get_resource_ticket_details resource_ticket_info.split("\t")[0]
         end
 
-        ResourceTicketList.new(resource_tickets)
+        ResourceTicketList.new(resource_tickets.compact)
       end
 
       def get_resource_ticket_details(resource_ticket_id)
         begin
           find_resource_ticket_by_id resource_ticket_id
+
+          # When listing all resource tickets, if a resource ticket gets deleted
+          # handle the Error to return nil for that resource ticket to
+          # create resource ticket list for those that exist.
         rescue EsxCloud::CliError => e
           raise() unless e.message.include? "ResourceTicketNotFound"
           nil

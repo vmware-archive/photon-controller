@@ -85,6 +85,10 @@ module EsxCloud
       def get_network_details(network_id)
         begin
           find_network_by_id network_id
+
+          # When listing all networks, if a network gets deleted
+          # handle the Error to return nil for that network to
+          # create network list for the networks that exist.
         rescue EsxCloud::CliError => e
           raise() unless e.message.include? "NetworkNotFound"
           nil

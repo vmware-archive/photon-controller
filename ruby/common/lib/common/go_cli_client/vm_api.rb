@@ -274,17 +274,20 @@ module EsxCloud
         str == "true"
       end
 
-
       def get_vm_list_from_response(result)
         vms = result.split("\n").map do |vm_info|
           get_vm_details vm_info.split("\t")[0]
         end
-        VmList.new(vms)
+        VmList.new(vms.compact)
       end
 
-      def get_vm_list_from_response(vm_id)
+      def get_vm_details(vm_id)
         begin
           find_vm_by_id vm_id
+
+          # When listing all vms, if a vm gets deleted
+          # handle the Error to return nil for that vm to
+          # create vm list for the vms that exist.
         rescue EsxCloud::CliError => e
           raise() unless e.message.include? "VmNotFound"
           nil
