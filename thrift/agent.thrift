@@ -158,7 +158,6 @@ struct ProvisionRequest {
   99: optional tracing.TracingInfo tracing_info
 }
 
-
 // Provisioning result code
 enum ProvisionResultCode {
   // Provisioning was successful.
@@ -180,6 +179,26 @@ struct ProvisionResponse {
   2: optional string error
 }
 
+// Agent status response
+struct UpgradeRequest {
+  1: required string previous_version
+}
+
+// Upgrade result code
+enum UpgradeResultCode {
+  // Upgrade started.
+  OK = 0
+
+  // Catch all error
+  SYSTEM_ERROR = 1
+}
+
+// Agent status response
+struct UpgradeResponse {
+  1: required UpgradeResultCode result
+  2: optional string error
+}
+
 // The current status of the agent
 enum AgentStatusCode {
    // The agent is up and running and can accept thrift calls.
@@ -188,8 +207,8 @@ enum AgentStatusCode {
    // The agent is in the process of restarting
    RESTARTING = 1
 
-   // There is no image datastore connected to host.
-   IMAGE_DATASTORE_NOT_CONNECTED = 2
+   // The agent is in the process of upgrading
+   UPGRADING = 2
 }
 
 // Agent status response
@@ -204,6 +223,9 @@ service AgentControl {
 
   // Method to provision an agent for esxcloud purposes.
   ProvisionResponse provision(1: ProvisionRequest request)
+
+  // Method to upgrade an agent.
+  UpgradeResponse upgrade(1: UpgradeRequest request)
 
   // Get the status of the agent.
   AgentStatusResponse get_agent_status()

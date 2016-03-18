@@ -121,7 +121,7 @@ public class MockHelper {
       agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.SYSTEM_ERROR)
           .provisionFailure(new Exception("ProvisionHost throws exception"))
-          .agentStatusCode(AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED)
+          .agentStatusCode(AgentStatusCode.UPGRADING)
           .getAgentStatusFailure(new Exception("GetAgentStatus throws Exception"))
           .build();
 
@@ -233,7 +233,7 @@ public class MockHelper {
     } else {
       agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.SYSTEM_ERROR)
-          .agentStatusCode(AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED)
+          .agentStatusCode(AgentStatusCode.UPGRADING)
           .build();
       hostClient = new HostClientMock.Builder()
           .getConfigResultCode(GetConfigResultCode.SYSTEM_ERROR)

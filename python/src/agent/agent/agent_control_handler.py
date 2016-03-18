@@ -24,6 +24,8 @@ from gen.agent.ttypes import AgentStatusResponse
 from gen.agent.ttypes import AgentStatusCode
 from gen.agent.ttypes import ProvisionResponse
 from gen.agent.ttypes import ProvisionResultCode
+from gen.agent.ttypes import UpgradeResponse
+from gen.agent.ttypes import UpgradeResultCode
 from gen.agent.ttypes import VersionResponse
 from gen.agent.ttypes import VersionResultCode
 
@@ -63,13 +65,38 @@ class AgentControlHandler(AgentControl.Iface):
 
         return ProvisionResponse(ProvisionResultCode.OK)
 
+    @log_request
+    @error_handler(UpgradeResponse, UpgradeResultCode)
+    def upgrade(self, request):
+        """
+        Upgrade an agent.
+        :type request: UpgradeRequest
+        :rtype: UpgradeResponse
+        """
+        try:
+            upgrade = common.services.get(ServiceName.UPGRADE)
+            upgrade.start(request.previous_version)
+        except Exception, e:
+            self._logger.warning("Unexpected exception", exc_info=True)
+            return UpgradeResponse(UpgradeResultCode.SYSTEM_ERROR, str(e))
+
+        return UpgradeResponse(UpgradeResultCode.OK)
+
     def get_agent_status(self):
         """
         Get the current status of the agent
         """
         agent_config = common.services.get(ServiceName.AGENT_CONFIG)
         if agent_config.reboot_required:
+            # agent needs to reboot after provisioning
             return AgentStatusResponse(AgentStatusCode.RESTARTING)
+
+        upgrade = common.services.get(ServiceName.UPGRADE)
+        if upgrade.in_progress():
+            # agent is performing upgrade during first launch after provisioning
+            return AgentStatusResponse(AgentStatusCode.UPGRADING)
+
+        # agent is ready
         return AgentStatusResponse(AgentStatusCode.OK)
 
     @log_request
