@@ -344,7 +344,7 @@ public class AgentControlClient {
     SyncHandler<AgentStatusResponse, AgentControl.AsyncClient.get_agent_status_call> syncHandler = new SyncHandler<>();
     getAgentStatus(syncHandler);
     syncHandler.await();
-    return ResponseValidator.checkAgentStatusResponse(syncHandler.getResponse());
+    return ResponseValidator.checkAgentStatusResponse(syncHandler.getResponse(), null);
   }
 
   /**
@@ -391,15 +391,16 @@ public class AgentControlClient {
      * specified as a parameter.
      * @throws RpcException
      */
-    public static AgentStatusResponse checkAgentStatusResponse(AgentStatusResponse agentStatusResponse)
-        throws RpcException {
+    public static AgentStatusResponse checkAgentStatusResponse(AgentStatusResponse agentStatusResponse,
+                                                               String hostAddress) throws RpcException {
       logger.info("Checking {}", agentStatusResponse);
       switch (agentStatusResponse.getStatus()) {
         case OK:
-        case RESTARTING:
           break;
-        case IMAGE_DATASTORE_NOT_CONNECTED:
-          throw new InvalidAgentConfigurationException(String.format("No image datastore connected to host."));
+        case RESTARTING:
+          throw new IllegalStateException("Agent is restarting, host = " + hostAddress);
+        case UPGRADING:
+          throw new IllegalStateException("Agent is upgrading, host = " + hostAddress);
         default:
           throw new RpcException(String.format("Unknown result: %s", agentStatusResponse.getStatus()));
       }

@@ -16,6 +16,7 @@ from common.service_name import ServiceName
 from gen.host import Host
 from host.host_handler import HostHandler
 from host.hypervisor import hypervisor
+from host.upgrade.upgrade import HostUpgrade
 
 
 class HostPlugin(common.plugin.Plugin):
@@ -38,6 +39,11 @@ class HostPlugin(common.plugin.Plugin):
 
         # Register hypervisor in services
         common.services.register(ServiceName.HYPERVISOR, hv)
+
+        # Create the upgrade object
+        upgrade = HostUpgrade(hv.datastore_manager, config.options.config_path)
+        common.services.register(ServiceName.UPGRADE, upgrade)
+        upgrade.start()
 
         # Create host handler
         host_handler = HostHandler(hv)

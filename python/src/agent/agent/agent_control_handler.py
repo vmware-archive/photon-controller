@@ -51,6 +51,10 @@ class AgentControlHandler(AgentControl.Iface):
         :rtype: ProvisionResponse
         """
         try:
+            # Run upgrade on next launch
+            upgrade = common.services.get(ServiceName.UPGRADE)
+            upgrade.set_upgrade_needed()
+
             agent_config = common.services.get(ServiceName.AGENT_CONFIG)
             agent_config.update_config(request)
         except InvalidConfig as e:
@@ -69,7 +73,15 @@ class AgentControlHandler(AgentControl.Iface):
         """
         agent_config = common.services.get(ServiceName.AGENT_CONFIG)
         if agent_config.reboot_required:
+            # agent needs to reboot after provisioning
             return AgentStatusResponse(AgentStatusCode.RESTARTING)
+
+        upgrade = common.services.get(ServiceName.UPGRADE)
+        if upgrade.in_progress():
+            # agent is performing upgrade during first launch after provisioning
+            return AgentStatusResponse(AgentStatusCode.UPGRADING)
+
+        # agent is ready
         return AgentStatusResponse(AgentStatusCode.OK)
 
     @log_request
