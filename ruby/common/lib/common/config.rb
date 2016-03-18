@@ -19,6 +19,9 @@ module EsxCloud
       # @return [Logger]
       attr_accessor :logger
 
+      # @return [string]
+      attr_accessor :log_file_name
+
       def client
         return @client if @client
         raise EsxCloud::Error, "API client not initialized"
@@ -28,6 +31,7 @@ module EsxCloud
         @client = nil
         @logger = Logger.new(STDOUT)
         @logger.level = debug? ? Logger::DEBUG : Logger::WARN
+        @log_file_name = ""
       end
 
       def debug?
