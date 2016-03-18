@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
-import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -454,12 +453,8 @@ public class ProvisionAgentTaskService extends StatefulService {
         public void onComplete(AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall) {
           try {
             AgentStatusResponse agentStatusResponse = getAgentStatusCall.getResult();
-            AgentControlClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse);
-            if (agentStatusResponse.getStatus().equals(AgentStatusCode.RESTARTING)) {
-              throw new IllegalStateException("The agent on host " + hostState.hostAddress + " is restarting");
-            } else {
-              sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-            }
+            AgentControlClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse, hostState.hostAddress);
+            sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
           } catch (Throwable t) {
             retryGetAgentStatusOrFail(currentState, hostState, t);
           }
