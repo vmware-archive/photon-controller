@@ -16,74 +16,93 @@ import logging
 import os.path
 import uuid
 
-from host.hypervisor.esx.vm_config import IMAGE_FILE_EXT
-from host.hypervisor.esx.vm_config import VMFS_VOLUMES
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import VMFS_VOLUMES
 
 
 class SoftLinkGenerator():
+
+    IMAGE_FILE_EXT = "vmdk"
+    VM_FILE_EXT = "vmx"
+    OLD_IMAGE_ROOT_FOLDER_NAME = "images"
+    OLD_VM_ROOT_FOLDER_NAME = "vms"
 
     def __init__(self, datastore_id):
         self.datastore_id = datastore_id
         self._logger = logging.getLogger(__name__)
 
-    def _create_symlinks_to_new_image_path(self, root, datastore):
+    def _create_symlinks_to_new_image_path(self, datastore):
 
-        for curdir, dirs, files in os.walk(root):
+        self._logger.info("Processing datastore %s to create symlinks for image" % (datastore))
+
+        self._traverse_dir_to_create_symlinks(datastore, self.OLD_IMAGE_ROOT_FOLDER_NAME, IMAGE_FOLDER_NAME_PREFIX,
+                                              self.IMAGE_FILE_EXT)
+
+    def _create_symlinks_to_new_vm_path(self, datastore):
+
+        self._logger.info("Processing datastore %s to create symlinks for vm" % (datastore))
+
+        self._traverse_dir_to_create_symlinks(datastore, self.OLD_VM_ROOT_FOLDER_NAME, VM_FOLDER_NAME_PREFIX,
+                                              self.VM_FILE_EXT)
+
+    def _traverse_dir_to_create_symlinks(self, datastore, old_folder_name, folder_prefix, file_ext):
+
+        for curdir, dirs, files in os.walk(os.path.join(VMFS_VOLUMES, datastore, old_folder_name)):
 
             # If this contains only other directories skip it
             if len(files) == 0:
                 continue
 
-            image_id = self._get_and_validate_image_id(curdir, files)
+            entity_id = self._get_and_validate_id(curdir, files, file_ext)
 
-            if not image_id:
+            if not entity_id:
                 continue
 
             # Creating symlink
             try:
-                new_image_dir = self._get_new_image_dir_name(image_id)
-                new_image_dir_path = os.path.join(VMFS_VOLUMES, datastore, new_image_dir)
-                if os.path.islink(new_image_dir_path):
-                    self._logger.info("Symlink %s exists", new_image_dir_path)
+                new_dir = self._get_new_folder_name(folder_prefix, entity_id)
+                new_dir_path = os.path.join(VMFS_VOLUMES, datastore, new_dir)
+                if os.path.islink(new_dir_path):
+                    self._logger.info("Symlink %s exists", new_dir_path)
                     continue
-                if os.path.exists(new_image_dir_path):
-                    self._logger.warn("Path %s exists and it's not a symlink", new_image_dir_path)
+                if os.path.exists(new_dir_path):
+                    self._logger.warn("Path %s exists and it's not a symlink", new_dir_path)
                     continue
 
-                os.symlink(curdir, new_image_dir_path)
-                self._logger.info("Symlink %s to %s created.", new_image_dir_path, curdir)
+                os.symlink(curdir, new_dir_path)
+                self._logger.info("Symlink %s to %s created.", new_dir_path, curdir)
 
             except Exception as ex:
-                self._logger.exception("Failed to create symlink %s with: %s" % (new_image_dir_path, ex))
+                self._logger.exception("Failed to create symlink %s with: %s" % (new_dir_path, ex))
 
-    def _get_and_validate_image_id(self, imagedir, files):
+    def _get_and_validate_id(self, dir_name, files, file_ext):
         try:
-            _, image_id = os.path.split(imagedir)
+            _, id = os.path.split(dir_name)
 
             # Validate directory name, if not valid skip it
-            if not self._validate_image_id(image_id):
-                self._logger.info("Invalid image id for directory: %s", imagedir)
+            if not self._validate_uuid(id):
+                self._logger.info("Invalid id for directory: %s", dir_name)
                 return None
-            vmdk_filename = self._vmdk_add_suffix(image_id)
+            filename = self._file_add_suffix(id, file_ext)
 
-            # If a file of the format: <image-id>.vmdk does not exists, log a message and continue
-            if vmdk_filename not in files:
-                self._logger.info("No vmdk file found in image directory: %s", imagedir)
+            # If a file of the relevant format does not exists, log a message and continue
+            if filename not in files:
+                self._logger.info("No relevant file found in directory: %s", dir_name)
                 return None
-            return image_id
+            return id
 
         except Exception as ex:
-            self._logger.exception("Failed to get image vmdk: %s, %s" % (imagedir, ex))
+            self._logger.exception("Failed to get relevant file : %s, %s" % (dir_name, ex))
             return None
 
-    def _vmdk_add_suffix(self, pathname):
-        return "%s.%s" % (pathname, IMAGE_FILE_EXT)
+    def _file_add_suffix(self, filename, file_suffix):
+        return "%s.%s" % (filename, file_suffix)
 
-    def _get_new_image_dir_name(self, image_id):
-        return "%s_%s" % (IMAGE_FOLDER_NAME_PREFIX, image_id)
+    def _get_new_folder_name(self, folder_prefix, folder_suffix):
+        return "%s_%s" % (folder_prefix, folder_suffix)
 
     @staticmethod
-    def _validate_image_id(image_id):
-        image_uuid = uuid.UUID(image_id)
-        return str(image_uuid) == image_id
+    def _validate_uuid(id):
+        entity_uuid = uuid.UUID(id)
+        return str(entity_uuid) == id
