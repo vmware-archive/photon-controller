@@ -50,12 +50,43 @@ describe EsxCloud::GoCliClient do
     client.project_to_tenant[project_id].should == tenant
   end
 
+  it "finds project by id" do
+    project_id = double("project1-id")
+    project_hash = { "id" => project_id,
+                     "name" => "project1",
+                     "resourceTicket" => { "tenantTicketId" => "ticketID",
+                                            "tenantTicketName" => "ticketName",
+                                            "limits" => [{"key" => "a", "value" => "b", "unit" => "c"}],
+                                            "usage" => [{"key" => "d", "value" => "e", "unit" => "f"}]
+                     },
+                     "securityGroups"=> [{"name"=>"a\\b", "inherited"=>false},
+                                         {"name"=>"c\\d", "inherited"=>false}]
+                   }
+    project = EsxCloud::Project.create_from_hash(project_hash)
+    result = "project1-id project1  ticketID  ticketName  a:b:c d:e:f a\\b:false,c\\d:false"
+    expect(client).to receive(:run_cli).with("project show #{project_id}").and_return(result)
+    expect(client).to receive(:get_project_from_response).with(result).and_return(project)
+    client.find_project_by_id(project_id).should == project
+  end
 
   it "deletes project" do
     project_id = double("aaa")
 
     expect(client).to receive(:run_cli).with("project delete #{project_id}")
     client.delete_project(project_id).should be_true
+  end
+
+  it "finds all projects" do
+    tenant = double(EsxCloud::Tenant, :name => "t1")
+    projects = double(EsxCloud::ProjectList)
+    result ="p1 project1  a:b:c d:e:f
+             p2 project2  a:b:c d:e:f"
+
+    expect(@api_client).to receive(:find_tenant_by_id).with("tenantID").and_return(tenant)
+    expect(client).to receive(:run_cli).with("project list -t 't1'").and_return(result)
+    expect(client).to receive(:get_project_list_from_response).with(result).and_return(projects)
+
+    client.find_all_projects("tenantID").should == projects
   end
 
   it "sets project security groups" do

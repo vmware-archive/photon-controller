@@ -54,7 +54,15 @@ module EsxCloud
       # @param [String] project_id
       # @return [DiskList]
       def find_all_disks(project_id)
-        @api_client.find_all_disks(project_id)
+        project = find_project_by_id(project_id)
+        tenant = @project_to_tenant[project.id]
+
+        if tenant.nil?
+          return @api_client.find_all_disks(project_id)
+        end
+
+        result = run_cli("disk list -t '#{tenant.name}' -p '#{project.name}'")
+        get_disk_list_from_response(result)
       end
 
       # @param [String] id
@@ -78,10 +86,11 @@ module EsxCloud
       def get_disk_tasks(id, state = nil)
         @api_client.get_disk_tasks(id, state)
       end
+
       private
 
       # @param [String] result
-      # @return [Host]
+      # @return [Disk]
       def get_disk_from_response(result)
         result.slice! "\n"
         values = result.split("\t", -1)
@@ -97,6 +106,22 @@ module EsxCloud
         disk_hash["vms"]        = stringToArray(values[8])
 
         Disk.create_from_hash(disk_hash)
+      end
+
+      def get_disk_list_from_response(result)
+        disks = result.split("\n").map do |disk_info|
+          get_disk_details disk_info.split("\t")[0]
+        end
+        DiskList.new(disks)
+      end
+
+      def get_disk_details(disk_id)
+        begin
+          find_disk_by_id disk_id
+        rescue EsxCloud::CliError => e
+          raise() unless e.message.include? "DiskNotFound"
+          nil
+        end
       end
     end
   end

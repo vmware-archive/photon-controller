@@ -95,13 +95,15 @@ module EsxCloud
 
       # @param [String] id
       def mgmt_delete_host(id)
-        @api_client.mgmt_delete_host(id)
+        run_cli("host delete '#{id}'")
+        true
       end
 
       # @param [String] id
       # @return [VmList]
       def mgmt_get_host_vms(id)
-        @api_client.mgmt_get_host_vms(id)
+        result = run_cli ("host list-vms '#{id}'")
+        get_vm_list_from_response(result)
       end
 
       # @param [String] id
@@ -132,7 +134,8 @@ module EsxCloud
       # @param [Hash] payload
       # @return [Host]
       def host_set_availability_zone(host_id, payload)
-        @api_client.host_set_availability_zone(host_id, payload)
+        host_id = run_cli("host set-availability-zone '#{host_id}' '#{payload[:availability_zone]}'")
+        mgmt_find_host_by_id(host_id)
       end
 
       private
