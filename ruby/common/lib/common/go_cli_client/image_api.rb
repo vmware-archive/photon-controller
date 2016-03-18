@@ -96,6 +96,10 @@ module EsxCloud
       def get_image_details(image_id)
         begin
           find_image_by_id image_id
+
+          # When listing all images, if a image gets deleted
+          # handle the Error to return nil for that image to
+          # create image list for the images that exist.
         rescue EsxCloud::CliError => e
           raise() unless e.message.include? "ImageNotFound"
           nil

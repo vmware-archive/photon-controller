@@ -74,9 +74,12 @@ module EsxCloud
           get_availability_zone_details availability_zone_info.split("\t")[0]
         end
 
-        AvailabilityZoneList..new(availability_zones)
+        AvailabilityZoneList.new(availability_zones.compact)
       end
 
+      # When listing all availability-zones, if availability-zone gets deleted
+      # handle the Error to return nil for that availability-zone to
+      # create availability-zone list for those that exist.
       def get_availability_zone_details(availability_zone_id)
         begin
           find_availability_zone_by_id availability_zone_id

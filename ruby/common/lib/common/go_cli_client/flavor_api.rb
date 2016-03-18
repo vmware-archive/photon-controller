@@ -45,20 +45,23 @@ module EsxCloud
       # @param [String] kind
       # @return [FlavorList]
       def find_flavors_by_name_kind(name, kind)
-        @api_client.find_flavors_by_name_kind(name, kind)
+        result = run_cli("flavor list -n '#{name}' -k '#{kind}'")
+
+        get_flavor_list_from_response result
       end
 
       # @param [String] name
       # @param [String] kind
       # @return [FlavorList]
       def delete_flavor_by_name_kind(name, kind)
-        run_cli("flavor delete -n '#{name}' -k '#{kind}'")
+        @api_client.delete_flavor_by_name_kind(name, kind)
       end
 
       # @param [String] id
       # @return [Boolean]
       def delete_flavor(id)
-        @api_client.delete_flavor(id)
+        run_cli("flavor delete '#{id}'")
+        true
       end
 
       # @param [String] id
@@ -87,6 +90,27 @@ module EsxCloud
         flavor_hash["state"] = values[4] unless values[4] == ""
 
         Flavor.create_from_hash(flavor_hash)
+      end
+
+      def get_flavor_list_from_response(result)
+        flavors = result.split("\n").map do |flavor_info|
+          get_flavor_details flavor_info.split("\t")[0]
+        end
+
+        FlavorList.new(flavors.compact)
+      end
+
+      def get_flavor_details(flavor_id)
+        begin
+          find_flavor_by_id flavor_id
+
+          # When listing all flavors, if a flavor gets deleted
+          # handle the Error to return nil for that flavor to
+          # create flavor list for the flavors that exist.
+        rescue EsxCloud::CliError => e
+          raise() unless e.message.include? "FlavorNotFound"
+          nil
+        end
       end
 
       # @param [String] costs

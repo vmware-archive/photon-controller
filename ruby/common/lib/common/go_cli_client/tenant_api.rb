@@ -104,6 +104,10 @@ module EsxCloud
       def get_tenant_details(tenant_id)
         begin
           find_tenant_by_id tenant_id
+
+          # When listing all tenants, if a tenant gets deleted
+          # handle the Error to return nil for that tenant to
+          # create tenant list for the tenants that exist.
         rescue EsxCloud::CliError => e
           raise() unless e.message.include? "NotFound"
           nil

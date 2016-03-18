@@ -63,4 +63,35 @@ describe EsxCloud::GoCliClient do
     expect(client).to receive(:get_task_list_from_response).with(result).and_return(tasks)
     client.find_tasks_by_host_id(host_id).should == tasks
   end
+
+  it "deletes a host" do
+    host_id = double("bar")
+    expect(client).to receive(:run_cli).with("host delete '#{host_id}'")
+
+    client.mgmt_delete_host(host_id).should be_true
+  end
+
+  it "gets all vms in the specified host" do
+    host_id = double("bar")
+    vms = double(EsxCloud::VmList)
+    result ="hostId1  host1 READY
+             hostId2  host2 READY"
+    expect(client).to receive(:run_cli).with("host list-vms '#{host_id}'").and_return(result)
+    expect(client).to receive(:get_vm_list_from_response).with(result).and_return(vms)
+
+    client.mgmt_get_host_vms(host_id).should == vms
+  end
+
+  it "set availability zone for the specified host" do
+    host_id = double("h1")
+    host = double(EsxCloud::Host, id: host_id, address: "10.146.36.28")
+    payload = {availability_zone: "availabilityzone1"}
+
+    expect(client).to receive(:run_cli)
+                      .with("host set-availability-zone '#{host_id}' '#{payload[:availability_zone]}'")
+                      .and_return(host_id)
+    expect(client).to receive(:mgmt_find_host_by_id).with(host_id).and_return(host)
+    client.host_set_availability_zone(host_id, payload).should == host
+
+  end
 end
