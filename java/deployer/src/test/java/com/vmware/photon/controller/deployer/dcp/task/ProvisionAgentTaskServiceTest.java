@@ -601,7 +601,7 @@ public class ProvisionAgentTaskServiceTest {
     public Object[][] getAgentStatusFailureCodes() {
       return new Object[][]{
           {AgentStatusCode.RESTARTING},
-          {AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED},
+          {AgentStatusCode.UPGRADING},
       };
     }
 
