@@ -472,7 +472,8 @@ public class AgentControlClientTest {
     @DataProvider(name = "GetAgentStatusFailureResultCodes")
     public Object[][] getAgentStatusFailureResultCodes() {
       return new Object[][]{
-          {AgentStatusCode.IMAGE_DATASTORE_NOT_CONNECTED, InvalidAgentConfigurationException.class},
+          {AgentStatusCode.RESTARTING, IllegalStateException.class},
+          {AgentStatusCode.UPGRADING, IllegalStateException.class},
       };
     }
   }
