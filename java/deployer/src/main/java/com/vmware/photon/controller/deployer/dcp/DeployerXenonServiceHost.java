@@ -58,6 +58,7 @@ import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryS
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.SetDatastoreTagsTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.UpgradeAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskService;
@@ -169,6 +170,7 @@ public class DeployerXenonServiceHost
       SetDatastoreTagsTaskFactoryService.class,
       UploadImageTaskFactoryService.class,
       UploadVibTaskFactoryService.class,
+      UpgradeAgentTaskFactoryService.class,
       ValidateHostTaskFactoryService.class,
       TaskSchedulerServiceFactory.class,
 
