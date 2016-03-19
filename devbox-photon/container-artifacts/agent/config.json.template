@@ -7,7 +7,6 @@
   "image_datastore_for_vms": true,
   "hypervisor": "fake",
   "zookeeper": "{{{AGENT_ZOOKEEPER}}}",
-  "chairman": "{{{AGENT_CHAIRMAN}}}",
   "logging_file": "{{{AGENT_LOG_PATH}}}/esxcloud-agent.log",
   "no_syslog": true,
   "fault_domain_id": "fake_fault_domain",
