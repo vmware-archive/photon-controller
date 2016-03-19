@@ -415,7 +415,6 @@ Vagrant.configure("2") do |config|
     agent_parameters += "  \"AGENT_BIND_ADDRESS\": \"#{network_ip}\",\n"
     agent_parameters += "  \"AGENT_LOG_PATH\": \"/vagrant/log\",\n"
     agent_parameters += "  \"AGENT_ZOOKEEPER\": \"#{network_ip}:2181\",\n"
-    agent_parameters += "  \"AGENT_CHAIRMAN\": \"#{network_ip}:13000\",\n"
     if ENV["ESX_AGENT_COUNT"]
       agent_parameters += ",  \"AGENT_COUNT\": \"#{ENV["ESX_AGENT_COUNT"]}\"\n"
     end
