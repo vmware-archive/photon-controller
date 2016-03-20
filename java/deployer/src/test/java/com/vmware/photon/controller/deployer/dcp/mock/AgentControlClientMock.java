@@ -18,6 +18,8 @@ import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
 import com.vmware.photon.controller.agent.gen.ProvisionResponse;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
+import com.vmware.photon.controller.agent.gen.UpgradeResponse;
+import com.vmware.photon.controller.agent.gen.UpgradeResultCode;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
@@ -42,6 +44,8 @@ public class AgentControlClientMock extends AgentControlClient {
 
   private ProvisionResultCode provisionResultCode;
   private Exception provisionFailure;
+  private UpgradeResultCode upgradeResultCode;
+  private Exception upgradeFailure;
   private AgentStatusCode agentStatusCode;
   private Exception getAgentStatusFailure;
 
@@ -49,6 +53,8 @@ public class AgentControlClientMock extends AgentControlClient {
     super(mock(ClientProxyFactory.class), mock(ClientPoolFactory.class));
     this.provisionResultCode = builder.provisionResultCode;
     this.provisionFailure = builder.provisionFailure;
+    this.upgradeResultCode = builder.upgradeResultCode;
+    this.upgradeFailure = builder.upgradeFailure;
     this.agentStatusCode = builder.agentStatusCode;
     this.getAgentStatusFailure = builder.getAgentStatusFailure;
   }
@@ -96,6 +102,34 @@ public class AgentControlClientMock extends AgentControlClient {
   }
 
   @Override
+  public void upgrade(
+      String previousVersion,
+      AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call> handler) {
+
+    logger.info("Host upgrade complete invocation");
+
+    if (null != upgradeFailure) {
+      handler.onError(upgradeFailure);
+
+    } else if (null != upgradeResultCode) {
+      AgentControl.AsyncClient.upgrade_call upgradeCall = mock(AgentControl.AsyncClient.upgrade_call.class);
+      UpgradeResponse upgradeResponse = new UpgradeResponse();
+      upgradeResponse.setResult(upgradeResultCode);
+
+      try {
+        when(upgradeCall.getResult()).thenReturn(upgradeResponse);
+      } catch (TException e) {
+        throw new RuntimeException("Failed to mock upgradeCall.getResult");
+      }
+
+      handler.onComplete(upgradeCall);
+
+    } else {
+      throw new IllegalStateException("No result or failure specified for upgrade");
+    }
+  }
+
+  @Override
   public void getAgentStatus(AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call> handler) {
 
     logger.info("Agent get status complete invocation");
@@ -131,6 +165,8 @@ public class AgentControlClientMock extends AgentControlClient {
 
     private ProvisionResultCode provisionResultCode;
     private Exception provisionFailure;
+    private UpgradeResultCode upgradeResultCode;
+    private Exception upgradeFailure;
     private AgentStatusCode agentStatusCode;
     private Exception getAgentStatusFailure;
 
@@ -141,6 +177,16 @@ public class AgentControlClientMock extends AgentControlClient {
 
     public Builder provisionFailure(Exception provisionFailure) {
       this.provisionFailure = provisionFailure;
+      return this;
+    }
+
+    public Builder upgradeResultCode(UpgradeResultCode upgradeResultCode) {
+      this.upgradeResultCode = upgradeResultCode;
+      return this;
+    }
+
+    public Builder upgradeFailure(Exception upgradeFailure) {
+      this.upgradeFailure = upgradeFailure;
       return this;
     }
 

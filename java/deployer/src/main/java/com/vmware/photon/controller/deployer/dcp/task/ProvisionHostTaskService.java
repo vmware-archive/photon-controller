@@ -47,6 +47,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -89,6 +90,7 @@ public class ProvisionHostTaskService extends StatefulService {
       WAIT_FOR_AGENT,
       PROVISION_AGENT,
       GET_HOST_CONFIG,
+      UPGRADE_AGENT,
     }
 
     /**
@@ -276,6 +278,7 @@ public class ProvisionHostTaskService extends StatefulService {
           case WAIT_FOR_AGENT:
           case PROVISION_AGENT:
           case GET_HOST_CONFIG:
+          case UPGRADE_AGENT:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -303,6 +306,9 @@ public class ProvisionHostTaskService extends StatefulService {
         break;
       case GET_HOST_CONFIG:
         processGetHostConfigSubStage(currentState);
+        break;
+      case UPGRADE_AGENT:
+        processUpgradeAgentSubStage(currentState);
         break;
     }
   }
@@ -466,27 +472,7 @@ public class ProvisionHostTaskService extends StatefulService {
   //
   // PROVISION_AGENT sub-stage routines
   //
-
   private void processProvisionAgentSubStage(State currentState) {
-
-    HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.deploymentServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
-
-          try {
-            processProvisionAgentSubStage(currentState, op.getBody(DeploymentService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void processProvisionAgentSubStage(State currentState, DeploymentService.State deploymentState) {
 
     State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GET_HOST_CONFIG, null);
     if (ControlFlags.disableOperationProcessingOnStageTransition(currentState.controlFlags)) {
@@ -676,10 +662,35 @@ public class ProvisionHostTaskService extends StatefulService {
           if (e != null) {
             failTask(e);
           } else {
-            sendStageProgressPatch(currentState, TaskState.TaskStage.FINISHED, null);
+            sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.UPGRADE_AGENT);
           }
         })
         .sendWith(this);
+  }
+
+  //
+  // UPGRADE_AGENT sub-stage routines
+  //
+  private void processUpgradeAgentSubStage(State currentState) {
+    State patchState = buildPatch(TaskState.TaskStage.FINISHED, null, null);
+    if (ControlFlags.disableOperationProcessingOnStageTransition(currentState.controlFlags)) {
+      patchState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    }
+
+    UpgradeAgentTaskService.State startState = new UpgradeAgentTaskService.State();
+    startState.parentTaskServiceLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(patchState);
+    startState.hostServiceLink = currentState.hostServiceLink;
+
+    sendRequest(Operation
+        .createPost(this, UpgradeAgentTaskFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              }
+            }));
   }
 
   //
