@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.helpers.dcp;
 
 import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
+import com.vmware.photon.controller.agent.gen.UpgradeResultCode;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
 import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ImageState;
@@ -111,6 +112,7 @@ public class MockHelper {
       agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .agentStatusCode(AgentStatusCode.OK)
+          .upgradeResultCode(UpgradeResultCode.OK)
           .build();
 
       hostClient = new HostClientMock.Builder()
@@ -122,6 +124,8 @@ public class MockHelper {
       agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.SYSTEM_ERROR)
           .provisionFailure(new Exception("ProvisionHost throws exception"))
+          .upgradeResultCode(UpgradeResultCode.SYSTEM_ERROR)
+          .upgradeFailure(new Exception("UpgradeHost throws exception"))
           .agentStatusCode(AgentStatusCode.UPGRADING)
           .getAgentStatusFailure(new Exception("GetAgentStatus throws Exception"))
           .build();
