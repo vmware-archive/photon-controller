@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.builders;
 
+import com.vmware.photon.controller.api.InternetAccessState;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
 
 /**
@@ -21,7 +22,7 @@ import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
 public class VirtualNetworkCreateSpecBuilder {
   private String name;
   private String description;
-  private boolean allowToAccessInternet;
+  private InternetAccessState internetAccessState;
 
   public VirtualNetworkCreateSpecBuilder name(String name) {
     this.name = name;
@@ -33,8 +34,8 @@ public class VirtualNetworkCreateSpecBuilder {
     return this;
   }
 
-  public VirtualNetworkCreateSpecBuilder allowToAccessInternet(boolean allowToAccessInternet) {
-    this.allowToAccessInternet = allowToAccessInternet;
+  public VirtualNetworkCreateSpecBuilder internetAccessState(InternetAccessState internetAccessState) {
+    this.internetAccessState = internetAccessState;
     return this;
   }
 
@@ -42,7 +43,7 @@ public class VirtualNetworkCreateSpecBuilder {
     VirtualNetworkCreateSpec virtualNetworkCreateSpec = new VirtualNetworkCreateSpec();
     virtualNetworkCreateSpec.setName(name);
     virtualNetworkCreateSpec.setDescription(description);
-    virtualNetworkCreateSpec.setAllowToAccessInternet(allowToAccessInternet);
+    virtualNetworkCreateSpec.setInternetAccessState(internetAccessState);
 
     return virtualNetworkCreateSpec;
   }

@@ -44,7 +44,7 @@ public class VirtualNetworkCreateSpec implements Named {
   @JsonProperty
   @ApiModelProperty(value = "Whether allow the VMs on this network to access Internet", required = true)
   @NotNull
-  private boolean allowToAccessInternet;
+  private InternetAccessState internetAccessState;
 
   public String getName() {
     return name;
@@ -62,12 +62,12 @@ public class VirtualNetworkCreateSpec implements Named {
     this.description = description;
   }
 
-  public boolean getAllowToAccessInternet() {
-    return allowToAccessInternet;
+  public InternetAccessState getInternetAccessState() {
+    return internetAccessState;
   }
 
-  public void setAllowToAccessInternet(boolean allowToAccessInternet) {
-    this.allowToAccessInternet = allowToAccessInternet;
+  public void setInternetAccessState(InternetAccessState internetAccessState) {
+    this.internetAccessState = internetAccessState;
   }
 
   @Override
@@ -83,12 +83,12 @@ public class VirtualNetworkCreateSpec implements Named {
     VirtualNetworkCreateSpec other = (VirtualNetworkCreateSpec) o;
     return Objects.equals(this.name, other.name)
         && Objects.equals(this.description, other.description)
-        && Objects.equals(this.allowToAccessInternet, other.allowToAccessInternet);
+        && Objects.equals(this.internetAccessState, other.internetAccessState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), this.name, this.description);
+    return Objects.hash(super.hashCode(), this.name, this.description, this.internetAccessState);
   }
 
   @Override
@@ -96,7 +96,7 @@ public class VirtualNetworkCreateSpec implements Named {
     return com.google.common.base.Objects.toStringHelper(this)
         .add("name", name)
         .add("description", description)
-        .add("allowToAccessInternet", allowToAccessInternet)
+        .add("internetAccessState", internetAccessState)
         .toString();
   }
 }
