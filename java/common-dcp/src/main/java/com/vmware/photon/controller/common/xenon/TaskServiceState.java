@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.deployer.dcp.task;
+package com.vmware.photon.controller.common.xenon;
 
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;

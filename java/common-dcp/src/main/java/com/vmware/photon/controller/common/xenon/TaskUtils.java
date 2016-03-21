@@ -140,4 +140,51 @@ public class TaskUtils {
           }
         }));
   }
+
+  /**
+   * This function sends a completion notification to a parent service.
+   * <p>
+   * N.B. If and when the task services are refactored to inherit from a common parent class, then
+   * this function can be modified to take a simple service document object instead of the last
+   * three parameters here.
+   *
+   * @param service               Supplies a Xenon service.
+   * @param taskState             Supplies the current task state of the service.
+   * @param parentTaskServiceLink Supplies the optional document self-link of the parent task to be
+   *                              notified. If this value is not specified, then no notification is
+   *                              performed.
+   * @param parentPatchBody       Supplies the optional patch body to send to the parent task. If
+   *                              this parameter is not specified, then the parent task receives a
+   *                              simple {@link TaskServiceState} message indicating completion.
+   */
+  public static void notifyParentTask(Service service,
+                                      TaskState taskState,
+                                      String parentTaskServiceLink,
+                                      String parentPatchBody) {
+
+    if (parentTaskServiceLink == null) {
+      ServiceUtils.logInfo(service, "Skipping parent task notification");
+      return;
+    }
+
+    Operation patchOp = Operation.createPatch(service, parentTaskServiceLink);
+    switch (taskState.stage) {
+      case FINISHED:
+        if (parentPatchBody != null) {
+          patchOp.setBody(parentPatchBody);
+          break;
+        }
+        // Fall through
+      case FAILED:
+      case CANCELLED:
+        TaskServiceState taskServiceState = new TaskServiceState();
+        taskServiceState.taskState = taskState;
+        patchOp.setBody(taskServiceState);
+        break;
+      default:
+        throw new IllegalStateException("Unexpected task state:" + taskState.stage);
+    }
+
+    service.sendRequest(patchOp);
+  }
 }
