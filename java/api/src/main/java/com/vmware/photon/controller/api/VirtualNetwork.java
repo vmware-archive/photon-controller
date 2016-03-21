@@ -47,9 +47,10 @@ public class VirtualNetwork extends VisibleModel {
   private NetworkState state;
 
   @JsonProperty
-  @ApiModelProperty(value = "Whether allow the VMs on this network to access Internet", required = true)
+  @ApiModelProperty(value = "Whether allow the VMs on this network to access Internet",
+      allowableValues = InternetAccessState.ALLOWABLE_VALUES, required = true)
   @NotNull
-  private boolean allowToAccessInternet;
+  private InternetAccessState internetAccessState;
 
   @Override
   public String getKind() {
@@ -72,12 +73,12 @@ public class VirtualNetwork extends VisibleModel {
     this.state = state;
   }
 
-  public boolean getAllowToAccessInternet() {
-    return allowToAccessInternet;
+  public InternetAccessState getInternetAccessState() {
+    return internetAccessState;
   }
 
-  public void setAllowToAccessInternet(boolean allowToAccessInternet) {
-    this.allowToAccessInternet = allowToAccessInternet;
+  public void setInternetAccessState(InternetAccessState internetAccessState) {
+    this.internetAccessState = internetAccessState;
   }
 
   @Override
@@ -95,12 +96,12 @@ public class VirtualNetwork extends VisibleModel {
     return Objects.equals(this.getName(), other.getName())
         && Objects.equals(this.description, other.description)
         && Objects.equals(this.state, other.state)
-        && Objects.equals(this.allowToAccessInternet, other.allowToAccessInternet);
+        && Objects.equals(this.internetAccessState, other.internetAccessState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), this.description, this.state, this.allowToAccessInternet);
+    return Objects.hash(super.hashCode(), this.description, this.state, this.internetAccessState);
   }
 
   @Override
@@ -109,7 +110,7 @@ public class VirtualNetwork extends VisibleModel {
         .add("name", getName())
         .add("description", description)
         .add("state", state)
-        .add("allowToAccessInternet", allowToAccessInternet)
+        .add("internetAccessState", internetAccessState)
         .toString();
   }
 }

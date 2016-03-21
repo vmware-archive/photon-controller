@@ -51,16 +51,19 @@ public class VirtualNetworkTest {
       return new Object[][]{
           {
               new VirtualNetworkBuilder().name("vn1")
+                  .internetAccessState(InternetAccessState.ROUTED)
                   .state(NetworkState.READY)
                   .build()
           },
           {
               new VirtualNetworkBuilder().name("vn1")
+                  .internetAccessState(InternetAccessState.ROUTED)
                   .state(NetworkState.READY)
                   .build()
           },
           {
               new VirtualNetworkBuilder().name("vn1")
+                  .internetAccessState(InternetAccessState.ROUTED)
                   .description("desc")
                   .state(NetworkState.READY)
                   .build()
@@ -69,7 +72,7 @@ public class VirtualNetworkTest {
               new VirtualNetworkBuilder()
                   .name("vn1")
                   .state(NetworkState.READY)
-                  .allowToAccessInternet(true)
+                  .internetAccessState(InternetAccessState.ROUTED)
                   .build()
           },
       };
@@ -89,7 +92,8 @@ public class VirtualNetworkTest {
           {
               new VirtualNetworkBuilder().build(),
               ImmutableList.of("name may not be null (was null)",
-                  "state may not be null (was null)")
+                  "state may not be null (was null)",
+                  "internetAccessState may not be null (was null)")
           },
           {
               new VirtualNetworkBuilder()
@@ -97,14 +101,16 @@ public class VirtualNetworkTest {
                   .state(NetworkState.READY)
                   .build(),
               ImmutableList.of("name must match \"^[a-zA-Z][a-zA-Z0-9-]*\" (was )",
-                  "name size must be between 1 and 63 (was )")
+                  "name size must be between 1 and 63 (was )",
+                  "internetAccessState may not be null (was null)")
           },
           {
               new VirtualNetworkBuilder()
                   .name("1a")
                   .state(NetworkState.READY)
                   .build(),
-              ImmutableList.of("name must match \"^[a-zA-Z][a-zA-Z0-9-]*\" (was 1a)")
+              ImmutableList.of("name must match \"^[a-zA-Z][a-zA-Z0-9-]*\" (was 1a)",
+                  "internetAccessState may not be null (was null)")
           }
       };
     }
@@ -127,17 +133,18 @@ public class VirtualNetworkTest {
               new VirtualNetworkBuilder()
                   .name("vn1")
                   .state(NetworkState.READY)
+                  .internetAccessState(InternetAccessState.ROUTED)
                   .build(),
-                  "VirtualNetwork{name=vn1, description=null, state=READY, allowToAccessInternet=false}"
+                  "VirtualNetwork{name=vn1, description=null, state=READY, internetAccessState=ROUTED}"
           },
           {
               new VirtualNetworkBuilder()
               .name("vn1")
               .description("desc")
               .state(NetworkState.READY)
-              .allowToAccessInternet(true)
+              .internetAccessState(InternetAccessState.ROUTED)
               .build(),
-              "VirtualNetwork{name=vn1, description=desc, state=READY, allowToAccessInternet=true}"
+              "VirtualNetwork{name=vn1, description=desc, state=READY, internetAccessState=ROUTED}"
           }
       };
     }
@@ -154,7 +161,7 @@ public class VirtualNetworkTest {
           .name("vn1")
           .description("desc")
           .state(NetworkState.READY)
-          .allowToAccessInternet(true)
+          .internetAccessState(InternetAccessState.ROUTED)
           .build();
       String json = JsonHelpers.jsonFixture("fixtures/virtual-network.json");
 

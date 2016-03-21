@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.builders;
 
+import com.vmware.photon.controller.api.InternetAccessState;
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.VirtualNetwork;
 
@@ -23,7 +24,7 @@ public class VirtualNetworkBuilder {
   private String name;
   private String description;
   private NetworkState state;
-  private boolean allowToAccessInternet;
+  private InternetAccessState internetAccessState;
 
   public VirtualNetworkBuilder() {
   }
@@ -43,8 +44,8 @@ public class VirtualNetworkBuilder {
     return this;
   }
 
-  public VirtualNetworkBuilder allowToAccessInternet(boolean allowToAccessInternet) {
-    this.allowToAccessInternet = allowToAccessInternet;
+  public VirtualNetworkBuilder internetAccessState(InternetAccessState internetAccessState) {
+    this.internetAccessState = internetAccessState;
     return this;
   }
 
@@ -53,7 +54,7 @@ public class VirtualNetworkBuilder {
     virtualNetwork.setName(name);
     virtualNetwork.setDescription(description);
     virtualNetwork.setState(state);
-    virtualNetwork.setAllowToAccessInternet(allowToAccessInternet);
+    virtualNetwork.setInternetAccessState(internetAccessState);
 
     return virtualNetwork;
   }
